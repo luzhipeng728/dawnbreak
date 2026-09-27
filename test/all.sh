@@ -15,6 +15,7 @@ run items     node test/items.mjs
 run quests    node test/quests.mjs
 run world     node test/world.mjs
 run combat    node test/combat.mjs
+run avatar    node test/avatar.mjs
 run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,gun:ranger,gun:launcher,mage:elemental,mage:battlemage
 [ "$1" = quick ] && exit 0
 run bestiary  node test/bestiary.mjs

@@ -84,7 +84,7 @@ function drawQuestTracker(c) {
   const ids = d.questTrack.filter(id => d.quests[id] && QUESTS[id]).slice(0, dg ? 4 : QUEST_TRACK_MAX);
   const hint = !dg && questNextMain();
   if (!ids.length && !hint) { questUI.trackRect = null; return; }
-  const W = 420, x1 = 1900, x0 = x1 - W, y0 = dg ? 330 + hudComboDy() : 128, font = '"PingFang SC","Microsoft YaHei",sans-serif';
+  const W = 420, x1 = 1900, x0 = x1 - W, y0 = dg ? 330 + hudComboDy() : (typeof townTrackerTop === 'function' ? townTrackerTop() : 128), font = '"PingFang SC","Microsoft YaHei",sans-serif';
   // 先量高度
   const rows = [];
   for (const id of ids) {

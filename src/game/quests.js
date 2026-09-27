@@ -232,7 +232,7 @@ function questAccept(id) {
 }
 function questAbandon(id) {
   const d = qdata(); if (!d || !d.quests[id]) return;
-  delete d.quests[id]; d.questTrack = d.questTrack.filter(x => x !== id); questItemsTake(QUESTS[id]);
+  delete d.quests[id]; d.questTrack = d.questTrack.filter(x => x !== id); questItemsTake(QUESTS[id]); questDirty();
   toastMsg(`放弃了任务：${QUESTS[id].name}`, '#c8b8a0'); sfx.click();
   bus.emit('questAbandon', { id }); save.write();
 }
@@ -256,6 +256,7 @@ function questItemMake(key) { if (typeof makeItem !== 'function' || typeof ITEMS
 function questItemsTake(q) { for (const g of q.goals) if (g.type === 'collect' && g.key && inv.count(g.key)) inv.take(g.key, inv.count(g.key)); }
 // 检查是否刚刚全部达成 → 提示去交付
 function questCheck(id) {
+  questDirty();
   const rec = questRec(id); if (!rec) return;
   const r = questReady(id);
   if (r && !rec.r) { const q = QUESTS[id]; rec.r = 1; sfxQuest('ready'); toastMsg(q.to ? `任务目标达成：${q.name} → 找 ${npcName(q.to)} 交付` : `任务目标达成：${q.name}`, '#ffd23a'); bus.emit('questReady', { id }); }
@@ -268,7 +269,7 @@ function questComplete(id) {
   for (const g of q.goals) if (g.type === 'item') inv.take(g.key, g.n);
   questItemsTake(q);
   delete d.quests[id]; d.questTrack = d.questTrack.filter(x => x !== id);
-  d.questDone[id] = Date.now();
+  d.questDone[id] = Date.now(); questDirty();
   const got = giveQuestRewards(q);
   sfxQuest('done');
   if (game.player) { recalcStats(game.player); if (typeof fxAura === 'function') fxAura(game.player, '#ffd23a', 1.2); }
@@ -278,7 +279,7 @@ function questComplete(id) {
 }
 // 每天 06:00：每日任务的进度和完成记录清零（save.js 的 daily() 调用）
 function questsDailyReset(d) {
-  d.quests ??= {}; d.questDone ??= {};
+  d.quests ??= {}; d.questDone ??= {}; questDirty();
   for (const id in QUESTS) if (QUESTS[id].type === 'daily') { delete d.quests[id]; delete d.questDone[id]; }
   if (d.questTrack) d.questTrack = d.questTrack.filter(id => !QUESTS[id] || QUESTS[id].type !== 'daily');
 }
@@ -355,7 +356,15 @@ function questsOfNpc(npcId) {
 function questTalkPending(id, npcId) { const q = QUESTS[id], rec = questRec(id); if (!rec) return null; const i = q.goals.findIndex((g, k) => g.type === 'talk' && g.npc === npcId && (rec.p[k] || 0) < g.n); return i >= 0 ? q.goals[i] : null; }
 function questTalksFor(npcId) { const out = []; for (const q of activeQuests()) { const g = questTalkPending(q.id, npcId); if (g) out.push({ q, g }); } return out; }
 // 头顶标记：可交付 / 有对话目标 → 黄色 ?；可接 → 黄色 !；进行中 → 灰色 ?
+const questMkCache = { k: '', v: 0, m: {} };
+const questDirty = () => { questMkCache.v++; };
 function questMarkerInfo(npcId) {
+  const k = `${game.t}:${game.lvl}:${game.job}:${questMkCache.v}`;   // 每帧每个 NPC 只算一次；任务状态一变就失效
+  if (questMkCache.k !== k) { questMkCache.k = k; questMkCache.m = {}; }
+  if (npcId in questMkCache.m) return questMkCache.m[npcId];
+  return (questMkCache.m[npcId] = questMarkerCalc(npcId));
+}
+function questMarkerCalc(npcId) {
   if (!qdata() || !NPCS[npcId]) return null;
   let avail = null, active = false;
   for (const id of questsOfNpc(npcId)) {

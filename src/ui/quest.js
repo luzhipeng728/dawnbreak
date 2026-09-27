@@ -14,6 +14,7 @@ addStyle(`
 .qchip.exp{color:#9fe0ff}.qchip.gold{color:#ffd24a}.qchip.sp{color:#b8ff9a}.qchip.coin{color:#ffe8a0}.qchip.title{color:#ff9ad8}.qchip.unlock{color:#e0a0ff}.qchip.flag{color:#ff9a5a}
 .qgoals{display:flex;flex-direction:column;gap:.2em;font-size:.92em}
 .qgoal{display:flex;gap:.5em;align-items:center}.qgoal .v{margin-left:auto;font-weight:800;color:#ffe8a8}.qgoal.ok{color:#8aff9a}.qgoal.ok .v{color:#8aff9a}
+.qgoal .qgi{width:1.5em;height:1.5em;border-radius:.2em;margin-right:-.2em}
 .qgoal::before{content:'◆';color:#8a6a3a;font-size:.7em}.qgoal.ok::before{content:'✔';color:#8aff9a}
 /* ---- 任务日志 ---- */
 .qlog{display:flex;flex-direction:column;gap:.6em;width:48em}
@@ -90,7 +91,7 @@ function drawQuestTracker(c) {
     const q = QUESTS[id], rec = d.quests[id], ready = questReady(id);
     rows.push({ q, head: true, ready });
     if (ready) rows.push({ q, txt: q.to ? `找 ${npcName(q.to)} 交付` : '目标达成', ok: true, turnIn: true });
-    else q.goals.forEach((g, i) => { const v = goalVal(q, rec, i); rows.push({ q, txt: goalText(g), val: goalProgText(q, rec, i), ok: v >= g.n }); });
+    else q.goals.forEach((g, i) => { const v = goalVal(q, rec, i); rows.push({ q, txt: goalText(g), val: goalProgText(q, rec, i), ok: v >= g.n, icon: g.type === 'collect' && g.key && IMG['icon/' + g.key] }); });
   }
   if (hint) { rows.push({ q: hint, head: true, hint: true }); rows.push({ q: hint, txt: hint.lvl > game.lvl ? `Lv.${hint.lvl} 后可接取` : `去找 ${npcWhere(hint.npc)} 接取`, hintRow: true }); }
   const H = 40 + rows.reduce((s, r) => s + (r.head ? 36 : 28), 0) + 6;
@@ -114,9 +115,10 @@ function drawQuestTracker(c) {
       y += 36;
     } else {
       c.font = `700 17px ${font}`;
-      const valW = r.val ? c.measureText(r.val).width + 12 : 0, txt = qtFit(c, (r.turnIn ? '▶ ' : r.hintRow ? '· ' : r.ok ? '✔ ' : '· ') + r.txt, W - 30 - valW);
+      const valW = r.val ? c.measureText(r.val).width + 12 : 0, txt = qtFit(c, (r.icon ? (r.ok ? '✔ ' : '') : r.turnIn ? '▶ ' : r.hintRow ? '· ' : r.ok ? '✔ ' : '· ') + r.txt, W - 30 - valW - (r.icon ? 26 : 0));
       const col = r.turnIn ? (Math.sin(game.t * 5) > -0.2 ? '#ffd23a' : '#fff6c0') : r.hintRow ? '#a8a090' : r.ok ? '#8aff9a' : '#e8e0d0';
-      uiText(txt, x0 + 22, y + 20, { size: 17, color: col, sw: 3 });
+      if (r.icon) { c.drawImage(r.icon, x0 + 20, y + 2, 22, 22); }
+      uiText(txt, x0 + (r.icon ? 48 : 22), y + 20, { size: 17, color: col, sw: 3 });
       if (r.val) uiText(r.val, x1 - 6, y + 20, { size: 17, align: 'right', color: r.ok ? '#8aff9a' : '#ffe8a8', sw: 3 });
       y += 28;
     }
@@ -134,7 +136,8 @@ function questGoalsEl(q) {
   if (!q.goals.length) return h('div', { class: 'qgoals' }, h('div', { class: 'qgoal' + (rec ? ' ok' : '') }, h('span', {}, `去找 ${npcWhere(q.to)}`)));
   return h('div', { class: 'qgoals' }, q.goals.map((g, i) => {
     const v = rec ? goalVal(q, rec, i) : 0;
-    return h('div', { class: 'qgoal' + (rec && v >= g.n ? ' ok' : '') }, h('span', {}, goalText(g)), rec ? h('span', { class: 'v' }, goalProgText(q, rec, i)) : (goalCounted(g) && g.n > 1 ? h('span', { class: 'v' }, `×${g.n}`) : null));
+    const ic = g.type === 'collect' && g.key && IMG['icon/' + g.key];
+    return h('div', { class: 'qgoal' + (rec && v >= g.n ? ' ok' : '') }, ic ? h('img', { class: 'qgi', src: ic.src }) : null, h('span', {}, goalText(g)), rec ? h('span', { class: 'v' }, goalProgText(q, rec, i)) : (goalCounted(g) && g.n > 1 ? h('span', { class: 'v' }, `×${g.n}`) : null));
   }));
 }
 const REWARD_ICON = { exp: 'icon/x_trophy', gold: 'icon/gold', sp: 'icon/x_scroll', coin: 'icon/coin', title: 'icon/x_card', unlock: 'icon/x_key', flag: 'icon/x_map' };

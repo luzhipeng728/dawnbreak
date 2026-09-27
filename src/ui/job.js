@@ -14,6 +14,12 @@ function jobAvailable(N) {
   if (!N || N.jobFor !== cls || game.job || !jobsOf(cls)) return false;
   return game.lvl >= JOB_LVL && jobTrialDone(cls);
 }
+// 转职立绘：jobs[id].art → job/<jobId>（本组生成的立绘）→ 职业插图 cutin/<职业> → 职业立绘
+const jobArtKey = (cls, id) => { const J = jobsOf(cls) && jobsOf(cls)[id]; return [J && J.art, 'job/' + id].find(k => k && IMG[k]) || null; };
+const jobArt = (cls, id) => IMG[jobArtKey(cls, id)] || IMG['cutin/' + cls] || IMG['class/' + cls] || null;
+// 立绘单独分包（build.mjs 里 job/ → 'job'）：打开导师对话 / 转职窗口时再加载；分包不存在时这些图已在 core 里
+function jobArtPreload(then) { if (typeof loadBundles !== 'function') return; const p = loadBundles(['job']); if (then) p.then(then); }
+bus.on('npcTalk', e => { const N = NPCS[e.id]; if (N && N.jobFor) jobArtPreload(); });
 function jobName(cls = playerCls(), job = game.job) { const J = job && jobsOf(cls) && jobsOf(cls)[job]; return J ? J.name : null; }
 function doJobChange(jobId) {
   const cls = playerCls(), J = jobsOf(cls) && jobsOf(cls)[jobId];
@@ -33,7 +39,7 @@ addStyle(`
 .jobcard{flex:1;max-width:25em;display:flex;flex-direction:column;gap:.5em;padding:.8em;border-radius:.4em;cursor:pointer;background:linear-gradient(180deg,rgba(40,30,44,.9),rgba(16,12,20,.95));border:.12em solid #4a3a2a;transition:transform .15s,border-color .15s,box-shadow .15s}
 .jobcard:hover{transform:translateY(-.2em);border-color:#a88040}
 .jobcard.sel{border-color:#ffd23a;box-shadow:0 0 1.2em rgba(255,210,60,.35),inset 0 0 1.5em rgba(255,210,60,.08)}
-.jobcard .art{height:11em;border-radius:.3em;overflow:hidden;background:radial-gradient(ellipse at 50% 80%,rgba(255,200,90,.25),rgba(0,0,0,0) 70%),#120e16;display:flex;align-items:flex-end;justify-content:center}
+.jobcard .art{height:15em;border-radius:.3em;overflow:hidden;background:radial-gradient(ellipse at 50% 80%,rgba(255,200,90,.25),rgba(0,0,0,0) 70%),#120e16;display:flex;align-items:flex-end;justify-content:center}
 .jobcard .art img{max-height:100%;max-width:100%;object-fit:contain}
 .jobcard .nm{font-size:1.5em;font-weight:900;color:#ffe8a8;letter-spacing:.1em}
 .jobcard .role{font-size:.8em;color:#8fd8ff;font-weight:800}
@@ -80,11 +86,12 @@ Object.assign(menus, {
       h('div', {}, h('b', { class: 'gold' }, N ? N.name : '导师'), '：', game.job ? `你已经是一名${jobName()}了。` : !jobs ? '转职的道路……还没有完全准备好，过些日子再来吧。（转职数据尚未就绪）' : `${save.data.name || '勇士'}，你已经证明了自己的实力。${C.name}的道路在这里分成了 ${Object.keys(jobs).length} 条——选择吧。一旦踏上，就再也不能回头。`)));
     if (!jobs || game.job) { const el = this.win('转职', body, { w: 56, block: true }); el._arg = N; return el; }
     const ids = Object.keys(jobs); if (!ids.includes(ui.sel)) ui.sel = null;
+    if (ids.some(id => !jobArtKey(cls, id))) jobArtPreload(() => { if (this.isOpen('job') && !ids.some(id => !jobArtKey(cls, id))) this.refresh('job', N); });
     body.append(h('div', { class: 'jobcards' }, ids.map(id => {
-      const J = jobs[id], art = (J.art && IMG[J.art]) || IMG['cutin/' + cls] || IMG['class/' + cls];
+      const J = jobs[id], own = jobArtKey(cls, id), art = jobArt(cls, id);
       const sks = (J.skills || []).filter(s => SKILLS[s] && !SKILLS[s].awaken).slice(0, 3);
       return h('div', { class: 'jobcard' + (ui.sel === id ? ' sel' : ''), onclick: () => { ui.sel = id; sfx.click(); this.refresh('job', N); } },
-        h('div', { class: 'art' }, art ? h('img', { src: art.src, style: J.art ? '' : `filter:hue-rotate(${ids.indexOf(id) * 140}deg) saturate(1.1)` }) : null),
+        h('div', { class: 'art' }, art ? h('img', { src: art.src, style: own ? '' : `filter:hue-rotate(${ids.indexOf(id) * 140}deg) saturate(1.1)` }) : null),
         h('div', { class: 'nm' }, J.name), h('div', { class: 'role' }, J.role ? `定位：${J.role}` : `${C.name} · 转职`),
         h('div', { class: 'desc' }, J.desc || ''),
         h('div', { class: 'sks' }, sks.map(s => h('div', { class: 'sk' }, h('img', { src: skillIcon(s).toDataURL() }), SKILLS[s].name))),
@@ -106,12 +113,12 @@ Object.assign(menus, {
 // 转职演出：全屏特效 + 立绘 + 音效；演出 0.9 秒（白闪）时真正执行转职
 function jobCeremony(jobId) {
   const cls = playerCls(), J = jobsOf(cls) && jobsOf(cls)[jobId]; if (!J) return null;
-  const art = (J.art && IMG[J.art]) || IMG['cutin/' + cls] || IMG['class/' + cls];
+  const own = jobArtKey(cls, jobId), art = jobArt(cls, jobId);
   const cv = h('canvas', { width: 960, height: 540 });
   const el = h('div', { class: 'jobfx', 'data-block': '1', 'data-hud': 'hide' },
     h('div', { class: 'bg' }), h('div', { class: 'rays' }), cv,
     IMG['fx/rune'] ? h('div', { class: 'ring' }, h('img', { src: IMG['fx/rune'].src })) : null,
-    art ? h('img', { class: 'art' + (J.art && IMG[J.art] ? ' full' : ''), src: art.src }) : null,
+    art ? h('img', { class: 'art' + (own ? ' full' : ''), src: art.src }) : null,
     h('div', { class: 'txt' }, h('div', { class: 't1' }, `${CLASSES[cls].name} · 转职`), h('div', { class: 't2' }, J.name), h('div', { class: 't3' }, J.desc || ''), J.awakenName ? h('div', { class: 't4' }, `觉醒之路：${J.awakenName}`) : null),
     h('div', { class: 'flash' }), h('div', { class: 'cont' }, '点击任意处继续'));
   const t0 = performance.now();

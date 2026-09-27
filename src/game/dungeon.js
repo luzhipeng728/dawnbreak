@@ -151,7 +151,8 @@ class Dungeon {
     game.slowmo = true; cam.flash = 0.25; cam.flashCol = '#fff'; cam.shake = 10; sfx.boom(1.3); fxBurst(b.x, b.y, b.z + 60, 360); fxShock(b.x, b.y, 220, '#ffe070');
     game.after(1.4, () => { game.slowmo = false; });
     for (const e of ents) if (e.team === 'e' && !e.dead) { e.hp = 0; killEnt(e, game.player, {}); }
-    for (let i = projs.length - 1; i >= 0; i--) if (projs[i].team !== 'p') projs.splice(i, 1);
+    // 领主常常是被投射物打死的（此时正处在 updateProjs 的遍历中），清理敌方投射物要推到下一帧，否则会删乱遍历中的数组
+    game.after(0, () => { for (let i = projs.length - 1; i >= 0; i--) if (projs[i].team !== 'p') projs.splice(i, 1); });
     groundFx.length = 0; const p = game.player; p.status = {}; p.invul = Math.max(p.invul, 4);
     this.room.cleared = true; this.doorsOpen = true;
     game.after(2.6, () => this.finish());

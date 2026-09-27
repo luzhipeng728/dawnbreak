@@ -64,6 +64,7 @@ defineTitle('title_goblin', { name: '哥布林克星', lvl: 3, rar: 2, noSell: f
 defineTitle('title_slayer', { name: '格兰之森的解放者', lvl: 18, rar: 4, noDrop: true, st: { str: 18, int: 18, vit: 18, spr: 18 }, fx: { dmgUp: 0.04, critDmg: 0.05 }, desc: '将格兰之森从黑暗中解放的英雄。' });
 defineTitle('title_kanina', { name: '卡妮娜的希望☆', lvl: 10, rar: 3, noDrop: true, st: { str: 8, int: 8, vit: 8, spr: 8 }, fx: { mspd: 0.02 }, desc: '收集了四色小晶块送给卡妮娜的冒险家。移动速度 +2%。' });
 defineTitle('title_hunter', { name: '怪兽猎杀者', lvl: 12, rar: 3, noDrop: true, st: { str: 12, int: 12 }, fx: { dmgUp: 0.03 }, desc: '讨伐了无数怪物的猎手。' });
+defineTitle('title_skycastle', { name: '天空之城的解放者', lvl: 23, rar: 4, noDrop: true, st: { str: 22, int: 22, vit: 22, spr: 22 }, fx: { dmgUp: 0.05, mspd: 0.03 }, desc: '登上天空之城、击败城主的英雄。移动速度 +3%。' });
 defineTitle('title_basic', { name: '基础精通者', lvl: 5, rar: 2, noDrop: true, st: { str: 5, int: 5, vit: 5, spr: 5 }, fx: { cdr: 0.02 }, desc: '掌握了战斗的基础。' });
 defineTitle('title_awaken', { name: '觉醒者', lvl: 18, rar: 4, noDrop: true, st: { str: 16, int: 16, vit: 16, spr: 16 }, fx: { cdr: 0.04 }, desc: '跨越了极限的勇士。' });
 /* ---- 时装（帕丽丝）：官方 8 部位，同一套集齐有套装效果 ---- */

@@ -85,7 +85,7 @@ check((cls === 'mage' ? s1.matk > s0.matk : s1.atk > s0.atk) && s1.def > s0.def,
 // tooltip（背包里的装备并排对比当前装备）
 await ev(() => { IW.invTab = 'equip'; itemsRefresh(); });
 const oldIdx = await ev(() => inv.items.filter(x => TAB_OF(x) === 'equip').findIndex(x => x.slot === 'weapon'));
-if (oldIdx >= 0) { await page.hover(`[data-win=inv] .igrid .islot >> nth=${oldIdx}`); await wait(250); check(await page.isVisible('#tip .itip-pair'), 'tooltip 并排显示当前装备对比'); await shot('05-tooltip-compare'); }
+if (oldIdx >= 0) { await page.hover(`[data-win=inv] .igrid .islot >> nth=${oldIdx}`); await wait(250); check(await page.isVisible('#itip .itip-pair'), 'tooltip 并排显示当前装备对比'); await shot('05-tooltip-compare'); }
 await page.mouse.move(5, 5);
 await shot('06-inv-status');
 

@@ -39,7 +39,7 @@ addStyle(`
 .ilist{display:flex;flex-direction:column;gap:.2em;max-height:24em;overflow:auto;padding-right:.2em}
 .ilist::-webkit-scrollbar,.igrid::-webkit-scrollbar{width:.4em}.ilist::-webkit-scrollbar-thumb{background:#5a4a36;border-radius:.2em}
 /* tooltip */
-#tip.itemtip{max-width:none;min-width:0;padding:0;background:none;border:none;box-shadow:none}
+#itip{position:absolute;z-index:60;pointer-events:none}
 .itip-pair{display:flex;gap:.4em;align-items:flex-start}
 .itip{width:17em;background:linear-gradient(180deg,rgba(18,14,24,.98),rgba(8,6,12,.98));border:.1em solid #5a4a36;border-radius:.3em;padding:.5em .65em;font-size:.86em;line-height:1.45;box-shadow:0 .4em 1.4em rgba(0,0,0,.7);color:#e0d8c4}
 .itip.r5{border-color:#a8801a;box-shadow:0 0 1em rgba(255,180,0,.35),0 .4em 1.4em rgba(0,0,0,.7)}
@@ -162,16 +162,20 @@ function itemTip(it, opt = {}) {
   if (!cur || cur === it) return main;
   return h('div', { class: 'itip-pair' }, main, itemTipOne(cur, null, '▶ 装备中'));
 }
+// 物品 tooltip 用自己的浮层 #itip（不借用窗口框架的 #tip，避免样式互相影响）；menus.hideTip() 时一起收起
+let itipEl = null;
 function showItemTip(it, ev, opt) {
   if (!it) return;
-  menus.showTip('', ev);
-  const tip = menus.tip || document.getElementById('tip'); if (!tip) return;
-  tip.classList.add('itemtip'); tip.replaceChildren(itemTip(it, opt));
+  if (menus.tip) menus.tip.classList.add('hidden');
+  if (!itipEl || !itipEl.isConnected) { itipEl = h('div', { id: 'itip' }); dom.appendChild(itipEl); }
+  itipEl.replaceChildren(itemTip(it, opt)); itipEl.hidden = false;
   const r = stage.getBoundingClientRect(), x = ev.clientX - r.left + 18, y = ev.clientY - r.top + 14;
-  const tw = tip.offsetWidth, th = tip.offsetHeight;
-  tip.style.left = Math.max(4, x + tw > r.width - 6 ? ev.clientX - r.left - tw - 14 : x) + 'px';
-  tip.style.top = Math.max(4, Math.min(y, r.height - th - 6)) + 'px';
+  const tw = itipEl.offsetWidth, th = itipEl.offsetHeight;
+  itipEl.style.left = Math.max(4, x + tw > r.width - 6 ? ev.clientX - r.left - tw - 14 : x) + 'px';
+  itipEl.style.top = Math.max(4, Math.min(y, r.height - th - 6)) + 'px';
 }
+function hideItemTip() { if (itipEl) itipEl.hidden = true; }
+{ const hide0 = menus.hideTip; menus.hideTip = function () { hideItemTip(); return hide0.apply(this, arguments); }; }
 // 旧接口：返回 HTML 字符串
 menus.itemTip = it => itemTip(it).outerHTML;
 /* ---- 物品格子 ---- */
@@ -192,10 +196,10 @@ function itemSlot(it, opt = {}) {
     if (it.enh) el.append(h('span', { class: 'e' }, '+' + it.enh));
     if (opt.quick && it.kind === 'use') { const qi = inv.quick.indexOf(it.key); if (qi >= 0) el.append(h('span', { class: 'qk' }, String(qi + 1))); }
     el.addEventListener('mousemove', ev => { if (!dnd.cur) showItemTip(it, ev, { cmp: opt.cmp }); });
-    el.addEventListener('mouseleave', () => menus.hideTip());
+    el.addEventListener('mouseleave', () => hideItemTip());
     let lp = null;   // 触屏长按看说明
     el.addEventListener('touchstart', ev => { const t = ev.touches[0]; lp = setTimeout(() => showItemTip(it, t, { cmp: opt.cmp }), 450); }, { passive: true });
-    el.addEventListener('touchend', () => { clearTimeout(lp); setTimeout(() => menus.hideTip(), 1500); });
+    el.addEventListener('touchend', () => { clearTimeout(lp); setTimeout(() => hideItemTip(), 1500); });
   } else if (opt.label) el.append(h('span', { class: 'lbl' }, opt.label));
   if (opt.onClick) el.addEventListener('click', ev => { if (el._dndJustDropped) return; opt.onClick(ev); });
   if (opt.onRight) el.addEventListener('contextmenu', ev => { ev.preventDefault(); menus.hideTip(); opt.onRight(ev); });

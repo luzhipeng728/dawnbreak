@@ -6,13 +6,16 @@
 const NET_INTERP_DELAY = 140;   // 插值延迟（毫秒）：位置 10Hz 更新，留 1.4 帧的缓冲，网络抖动时也平滑
 class NetPeer {
   constructor(p) {
-    Object.assign(this, { id: p.id, name: p.name, char: null, x: p.x || 0, y: p.y || 100, z: 0, face: p.f || 1, st: p.s || 'idle', a: 0, fade: 1, buf: [], model: null, seed: Math.random() * 99, net: true, cls: null });
+    Object.assign(this, { id: p.id, acct: p.name, name: p.name, guild: '', char: null, x: p.x || 0, y: p.y || 100, z: 0, face: p.f || 1, st: p.s || 'idle', a: 0, fade: 1, buf: [], model: null, seed: Math.random() * 99, net: true, cls: null });
     this.pose = { __c: 'idle', __t: 0 };
     this.setChar(p.char); this.push(p.x, p.y, p.f, p.s);
   }
   setChar(ch) {
     if (!ch) return;
     const old = this.char; this.char = ch;
+    // 名牌文字（world.js 的 drawCrowdLabels 按 name / guild 两行排版避让）：第一行 Lv + 角色名，上面一行职业 / 转职
+    const J = ch.job && CLASSES[ch.cls] && CLASSES[ch.cls].jobs && CLASSES[ch.cls].jobs[ch.job];
+    this.name = `Lv.${ch.lvl} ${ch.name}`; this.guild = J ? J.name : (CLASSES[ch.cls] ? CLASSES[ch.cls].name : '');
     const lookSig = JSON.stringify(ch.look || {});
     if (old && old.cls === ch.cls && this.lookSig === lookSig && this.model) return;
     this.lookSig = lookSig; this.cls = CLASSES[ch.cls] && SPR_DATA[ch.cls] ? ch.cls : 'sword';
@@ -50,8 +53,9 @@ class NetPeer {
   draw(c) {
     const X = sx(this.x), Y = sy(this.y); if (this.a <= 0 || X < -90 || X > WW + 90) return;
     if (this.model) { c.save(); c.globalAlpha = this.a; c.translate(X, Y); c.scale(this.face, 1); this.model.draw(c, this.pose, game.t + this.seed, NO_OPTS); c.restore(); }
-    netNamePlate(c, X, sy(this.y, 128), this.char, this.name, this.id, this.a, netTown.hover === this);
   }
+  // 名牌：所有角色画完后由 world.js 的 drawCrowdLabels 统一画（和路人、NPC 名牌互相避让）
+  drawLabel(c, X, ny) { netNamePlate(c, X, ny, this.char, this.acct, this.id, this.a, netTown.hover === this); }
   hit(mx, my) { const X = this.x, top = FLOOR_Y + this.y - 112, bot = FLOOR_Y + this.y + 6; return Math.abs(mx - X) < 24 && my > top && my < bot; }
 }
 // 头顶名牌：Lv + 角色名（颜色：队友橙、好友绿、其他蓝）+ 小字职业 / 转职；鼠标悬停时加底框
@@ -132,7 +136,7 @@ netTown.timer = setInterval(() => { if (netOn()) { netTown.sync(); if (++netTown
 wcan.addEventListener('click', ev => {
   const P = netTown.pick(ev); if (!P) return;
   ev.stopImmediatePropagation(); sfx.click();
-  netPlayerMenu({ id: P.id, name: P.name, char: P.char }, ev);
+  netPlayerMenu({ id: P.id, name: P.acct, char: P.char }, ev);
 }, true);
 addEventListener('pointermove', ev => {
   if (game.scene !== 'town' || !netTown.peers.size) { netTown.hover = null; return; }

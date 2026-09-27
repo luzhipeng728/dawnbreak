@@ -11,7 +11,7 @@ try {
   await until(A, () => netTown.peers.size === 1, null, 10000);
   const before = await A.evaluate(() => ({ lvl: game.lvl, gold: game.gold, items: inv.items.length, quick: inv.quick.slice() }));
   // alice 点 bob → 发起决斗；bob 接受
-  await A.evaluate(() => { const p = [...netTown.peers.values()][0]; netPlayerMenu({ id: p.id, name: p.name, char: p.char }); });
+  await A.evaluate(() => { const p = [...netTown.peers.values()][0]; netPlayerMenu({ id: p.id, name: p.acct, char: p.char }); });
   await A.click('.pmenu button:has-text("发起决斗")');
   ok(await until(B, () => menus.isOpen('nd_duelask'), null, 5000), 'bob 收到决斗邀请');
   await B.screenshot({ path: `${out}/01-ask.png` });

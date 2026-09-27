@@ -117,7 +117,13 @@ async function open(q) {
   await tap('ArrowLeft'); await tap('ArrowRight'); await tap('ArrowRight'); await tap('KeyZ'); await wait(60); res.bff = await skill(); await wait(1400);
   await page.waitForFunction(() => { const p = game.player; return p.z === 0 && p.free; }); await page.evaluate(() => { const p = game.player; p.face = 1; });
   await kb.down('ArrowUp'); await tap('KeyZ'); await kb.up('ArrowUp'); await wait(60); res.u = await skill(); await wait(800);
-  report('指令：↓→+Z 地裂·波动剑 / →↓+Z 崩山击 / ↓↓+X 格挡 / Z 上挑 / ←→→+Z 破军升龙击 / ↑+Z 鬼斩', res.df === 'wave' && res.fd === 'slam' && res.ddX === 'guard' && res.z === 'upslash' && res.bff === 'rise' && res.u === 'ghost', res);
+  // Buff 指令键（Space = cmd + cmdB）：↓↑+Space 血之狂暴、↓↑+Z 怒气爆发（狂战士）
+  await page.waitForFunction(() => { const p = game.player; return p.z === 0 && p.free; });
+  await page.evaluate(() => { game.job = 'berserker'; for (const id of classSkills('sword', 'berserker')) game.skillLv[id] = 5; });
+  await tap('ArrowDown'); await tap('ArrowUp'); await tap('Space'); await wait(60); res.duSpace = await skill(); await wait(700);
+  await tap('ArrowDown'); await tap('ArrowUp'); await tap('KeyZ'); await wait(60); res.duZ = await skill(); await wait(800);
+  await page.evaluate(() => { game.job = 'blade'; });
+  report('指令：↓→+Z 地裂·波动剑 / →↓+Z 崩山击 / ↓↓+X 格挡 / Z 上挑 / ←→→+Z 破军升龙击 / ↑+Z 鬼斩 / ↓↑+Space 血之狂暴 / ↓↑+Z 怒气爆发', res.df === 'wave' && res.fd === 'slam' && res.ddX === 'guard' && res.z === 'upslash' && res.bff === 'rise' && res.u === 'ghost' && res.duSpace === 'frenzy' && res.duZ === 'outrage', res);
   // 连招：X×3 → 上挑（技能取消普攻）→ 跳起 X（空中追击）→ 落地后鬼斩；木桩全程浮空 / 倒地，连击数 ≥ 7
   await page.waitForFunction(() => { const p = game.player; return p.z === 0 && p.free; });
   await page.evaluate(() => { const p = game.player; p.x = 300; p.face = 1; game.combo = 0; game.maxCombo = 0; for (const e of ents) if (e.team === 'e') e.remove = true;

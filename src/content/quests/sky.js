@@ -136,7 +136,7 @@ skyQuest('q_hidden_floating', { type: 'hidden', story: true, chapter: Q_CHF, nam
   goals: [{ type: 'clear', dungeon: 'dark_corridor', diff: 1 }],
   talk: { offer: ['悬空城……传说是赛格哈特真正的王座。', '去那里太危险了！除非你能在冒险级以上的难度通关黑暗玄廊，不然我可不告诉你入口在哪~'],
     doing: ['冒险级以上的黑暗玄廊！说好了哦~'], done: ['……好吧，我服了你。', '悬空城的入口，就在天空之城的最高处。门已经为你打开了。'] },
-  reward: { exp: qexp(21, 0.08), gold: 1500, unlock: 'floating_castle' } });
+  reward: QR(21, 0.08, 1500, { unlock: 'floating_castle' }) });
 skyQuest('q_fl3', { type: 'hidden', chapter: Q_CHF, name: '悬空城的第一个关口', npc: 'kiri', lvl: 21, pre: 'q_hidden_floating',
   desc: '悬空城的守卫佩戴着龙纹装饰品。收集 10 个，证明你已经突破了第一个关口。',
   goals: [{ type: 'collect', key: 'q_dragon_ornament', item: '龙纹装饰品', from: ['knight', 'expeller', 'expellerAxe'], dungeon: 'floating_castle', rate: 0.5, n: 10, desc: '悬空城守卫的徽饰，刻着盘绕的龙纹。' }],

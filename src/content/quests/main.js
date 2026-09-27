@@ -7,7 +7,9 @@ const Q_GOBLINS = ['goblin', 'goblinThrower', 'goblinCaptain', 'goblinBlue', 'go
 const Q_TAUS = ['tauSoldier', 'tauVanguard', 'tauGuard', 'tauBeast'];
 const Q_CATS = ['catDemon', 'catGlow', 'catVenom', 'catCurse', 'catKing'];
 const QI = (key, n = 1) => ({ key, n }), QE = (equip, lvl, rar = 1) => ({ equip, lvl, rar });
-const QR = (lv, frac, gold, o = {}) => ({ exp: qexp(lv, frac), gold, ...o });
+// 任务奖励总倍率（经济模拟 test/econ.mjs 校准：算上任务约 12~15 次地下城到 Lv20）；单个任务里写的比例是相对值
+const Q_EXP_SCALE = 0.8, Q_GOLD_SCALE = 0.7;
+const QR = (lv, frac, gold, o = {}) => ({ exp: qexp(lv, frac * Q_EXP_SCALE), gold: Math.round(gold * Q_GOLD_SCALE / 10) * 10, ...o });
 
 /* ---------------- 第一章 · 艾尔文防线 ---------------- */
 const Q_CH1 = '第一章 · 艾尔文防线';

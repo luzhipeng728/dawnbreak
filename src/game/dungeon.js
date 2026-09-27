@@ -104,7 +104,7 @@ class Dungeon {
     }
     if (this.state === 'dead') { this.deadT -= dt; if (this.deadT < 9.2 && input.hit('attack') && save.data.coins > 0) this.revive(); else if (this.deadT <= 0) this.fail(); return; }
     if (this.state === 'result') return;
-    if (p.dead && this.state === 'play') { this.state = 'dead'; this.deadT = 10; sfx.gameOver(); return; }
+    if (p.dead && this.state === 'play') { this.state = 'dead'; this.deadT = 10; sfx.gameOver(); bus.emit('playerDeath', { dungeon: this.def.id }); return; }
     // 连击统计：一段 ≥5 的连击结束时记一次操作分
     if (game.combo >= 5 && game.combo > this.lastComboCounted) this.pendingCombo = game.combo;
     if (game.combo === 0 && this.pendingCombo) { this.combos5++; this.pendingCombo = 0; }
@@ -221,18 +221,20 @@ class Dungeon {
       if (r === this.room) { c.fillStyle = '#fff'; c.beginPath(); c.arc(x + cs / 2, y + cs / 2, 5, 0, TAU); c.fill(); }
     }
     // 实时评价（右下）
-    const S = this.score(), rk = rankOf(S.total);
-    c.fillStyle = 'rgba(8,6,10,.6)'; c.fillRect(1640, 840, 260, 96);
-    uiText(rk[0], 1890, 912, { size: 62, align: 'right', color: RANK_COL[rk[0]], sw: 7, font: '"Arial Black",sans-serif', weight: 900, stroke: '#1a0a00' });
-    uiText(`操作 ${S.ops}`, 1652, 870, { size: 18, color: '#ffe8c0', sw: 3 });
-    uiText(`技巧 ${S.tech}`, 1652, 896, { size: 18, color: '#ffe8c0', sw: 3 });
-    uiText(`被击 ${this.hurt}`, 1652, 922, { size: 18, color: '#ff9a9a', sw: 3 });
+    if (!(typeof uiPref === 'function' && uiPref('hideRank'))) {   // End 键 / 设置里可以隐藏
+      const S = this.score(), rk = rankOf(S.total);
+      c.fillStyle = 'rgba(8,6,10,.6)'; c.fillRect(1640, 840, 260, 96);
+      uiText(rk[0], 1890, 912, { size: 62, align: 'right', color: RANK_COL[rk[0]], sw: 7, font: '"Arial Black",sans-serif', weight: 900, stroke: '#1a0a00' });
+      uiText(`操作 ${S.ops}`, 1652, 870, { size: 18, color: '#ffe8c0', sw: 3 });
+      uiText(`技巧 ${S.tech}`, 1652, 896, { size: 18, color: '#ffe8c0', sw: 3 });
+      uiText(`被击 ${this.hurt}`, 1652, 922, { size: 18, color: '#ff9a9a', sw: 3 });
+    }
     uiText(`${Math.floor(this.t / 60)}:${String(Math.floor(this.t % 60)).padStart(2, '0')}`, 1880, 58, { size: 18, align: 'right', color: '#ccc', sw: 3 });
     if (this.state === 'dead') {
       c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(0, 0, 1920, 1080);
       uiText('你倒下了……', 960, 420, { size: 64, align: 'center', color: '#ff6a6a', sw: 8 });
       uiText(`${Math.ceil(this.deadT)}`, 960, 540, { size: 120, align: 'center', color: '#fff', sw: 10, font: '"Arial Black",sans-serif' });
-      uiText(save.data.coins > 0 ? `按 X 使用复活币原地复活（剩余 ${save.data.coins} 枚）` : '没有复活币了，倒计时结束后返回城镇', 960, 630, { size: 30, align: 'center', color: '#ffe8a8', sw: 5 });
+      uiText(save.data.coins > 0 ? `按 ${typeof keyName === 'function' ? keyName('attack') : 'X'} 使用复活币原地复活（剩余 ${save.data.coins} 枚）` : '没有复活币了，倒计时结束后返回城镇', 960, 630, { size: 30, align: 'center', color: '#ffe8a8', sw: 5 });
     }
     // 提示消息
     let ty = 360;

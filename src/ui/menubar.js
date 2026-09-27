@@ -3,6 +3,7 @@
    点击 = 按对应快捷键（走同一个 uiKey 入口）；快捷键改了以后标注会跟着变。触屏模式下不显示（触屏有自己的按钮）
    ===================================================================== */
 addStyle(`
+#menubar[hidden]{display:none}
 #menubar{position:absolute;right:calc(var(--u) * 8px);bottom:calc(var(--u) * 6px);display:grid;grid-template-columns:repeat(3,calc(var(--u) * 86px));gap:calc(var(--u) * 4px);z-index:1}
 #menubar button{height:calc(var(--u) * 58px);padding:0;border:.08em solid #6a5436;border-radius:.3em;background:linear-gradient(#3a2e22,#1a130d);color:#f0dcb0;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.05em;box-shadow:inset 0 .06em 0 rgba(255,230,170,.25),0 .1em .25em rgba(0,0,0,.6)}
 #menubar button:hover{border-color:#e8c26a;color:#fff6d8;background:linear-gradient(#5a4428,#2a1d10)}

@@ -18,6 +18,9 @@ function h(tag, attrs = {}, ...kids) {
 }
 // 各模块自带样式：addStyle(css)（新窗口的 CSS 写在自己的 JS 文件里，不用都挤进 shell_top.html）
 function addStyle(css) { document.head.appendChild(h('style', {}, css)); }
+// 手机（触屏字体有最小值，窗口相对屏幕更大）：结算画面整体收紧，保证“再次挑战 / 返回城镇”在屏幕里
+addStyle(`body.touchui #result{gap:.3em;justify-content:safe center;overflow-y:auto}body.touchui #result .ttl{font-size:2em}body.touchui #result .rank{font-size:4.6em}
+body.touchui #result .line{font-size:1em;gap:1.2em}body.touchui .cards{grid-template-columns:repeat(2,6.4em);gap:.5em;margin-top:.2em}body.touchui .card{width:6.4em;height:7.6em}body.touchui .card .f img{width:2.6em;height:2.6em}`);
 // 屏幕中间的提示横幅（drops.js 的 drawToastBanner）：在所有窗口之上，不挡鼠标
 addStyle(`#toastbar{position:absolute;left:0;right:0;z-index:99990;pointer-events:none;text-align:center}
 #toastbar span{display:inline-block;padding:.35em 5em;font-size:1.75em;font-weight:700;background:linear-gradient(90deg,rgba(8,6,12,0),rgba(8,6,12,.62) 20%,rgba(8,6,12,.62) 80%,rgba(8,6,12,0));-webkit-text-stroke:.16em rgba(0,0,0,.85);paint-order:stroke fill;max-width:80%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}`);

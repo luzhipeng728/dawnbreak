@@ -29,7 +29,7 @@ function boot() {
   const tcls = PARAMS.get('cls') || 'sword';
   if (PARAMS.has('test')) {
     const kinds = PARAMS.has('mon') ? PARAMS.get('mon').split(',') : ['goblin', 'goblinThrower'];
-    return withLoading(['spr:' + tcls, 'bg:forest', ...monBundles(kinds)], () => { save.newGame(tcls); game.player = makePlayer(tcls); cmdLabel(tcls); for (const id of CLASSES[tcls].skills) game.skillLv[id] = Math.max(game.skillLv[id] || 0, 1); game.skillBar = CLASSES[tcls].skills.concat([null, null]).slice(0, 12); startTestRoom(); });
+    return withLoading(['spr:' + tcls, 'bg:forest', ...monBundles(kinds)], () => { save.newGame(tcls); (save.data.flags ??= {}).awaken = true; /* 测试房间：觉醒视为已完成觉醒任务 */ game.player = makePlayer(tcls); cmdLabel(tcls); for (const id of CLASSES[tcls].skills) game.skillLv[id] = Math.max(game.skillLv[id] || 0, 1); game.skillBar = CLASSES[tcls].skills.concat([null, null]).slice(0, 12); startTestRoom(); });
   }
   const alias = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
   const devSave = () => { save.loadAll(); const i = PARAMS.has('cls') ? save.chars.findIndex(c => c.cls === tcls) : save.chars.length - 1; if (i >= 0) save.select(i); else save.newGame(tcls); save.apply(); };

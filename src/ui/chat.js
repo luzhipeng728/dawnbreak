@@ -128,6 +128,7 @@ menus.drawUI = function (c) {
 addStyle(`
 #chatbox{position:absolute;left:.8%;bottom:39.5%;width:27%;max-width:30em;pointer-events:auto;display:flex;flex-direction:column;gap:.2em;font-size:.82em;z-index:2;transition:opacity .4s}
 #chatbox.quiet:not(.hover):not(.open){opacity:.45}
+#chatbox.quiet:not(.hover):not(.open) .chatlog{max-height:4.4em}
 #chatbox .chattop{display:flex;gap:.3em;align-items:center}
 #chatbox .chatbtn{font:inherit;font-weight:800;color:#f0dcb0;background:rgba(20,14,10,.78);border:.08em solid #6a5436;border-radius:.25em;padding:.1em .55em;cursor:pointer;display:inline-flex;gap:.35em;align-items:center;position:relative}
 #chatbox .chatbtn:hover{border-color:#e8c26a;color:#fff}

@@ -77,7 +77,7 @@ const bot = {
 // 测试用：直接把角色拉到指定等级，穿上同等级的蓝/紫装，所有技能学到合理等级
 function testLoadout(lv) {
   const p = game.player; game.lvl = lv;
-  for (const s of SLOTS) inv.equip[s] = makeEquip(s, lv, s === 'weapon' ? 2 : 1, p.cls);
+  for (const s of Object.keys(SLOT_WEIGHT)) inv.equip[s] = makeEquip(s, lv, s === 'weapon' ? 2 : 1, p.cls);   // 只填能掉落的部位（称号 / 时装栏不填）
   for (const id of CLASSES[p.cls].skills) { const S = SKILLS[id]; if (S.lvReq <= lv) game.skillLv[id] = Math.max(1, Math.min(S.maxLv, 1 + Math.floor((lv - S.lvReq) / 2))); }
   game.skillBar = CLASSES[p.cls].skills.filter(id => game.skillLv[id] > 0).concat(Array(12).fill(null)).slice(0, 12);
   inv.add(makeConsumable('hpM', 20)); inv.add(makeConsumable('mpM', 20)); inv.quick = ['hpM', 'mpM', null, null, null, null];

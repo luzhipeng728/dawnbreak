@@ -54,10 +54,14 @@ export function kbPlayer(page, { out = 'test/shots/kb', log = console.log } = {}
     // 走到 NPC 跟前按 X 对话
     async talk(id) {
       const n = await P.npcPos(id); if (!n) { P.note(`当前场景找不到 NPC ${id}`); return false; }
-      await P.walkTo(n.x - 45, n.y + 4); await wait(150);
-      await P.tap('KeyX'); await wait(500);
-      const ok = await page.evaluate(() => menus.isOpen('npc'));
-      if (!ok) P.note(`走到 ${id} 旁边按 X 没打开对话`);
+      let ok = false;
+      for (let k = 0; k < 3 && !ok; k++) {
+        const n2 = await P.npcPos(id); await P.walkTo(n2.x - 40 + k * 8, n2.y + 2, { tol: 8, ytol: 5 }); await wait(150);
+        const s = await page.evaluate(() => ({ near: world.near && world.near.npc.id, p: [Math.round(game.player.x), Math.round(game.player.y)], m: menus.stack.slice() }));
+        await P.tap('KeyX'); await wait(500);
+        ok = await page.evaluate(() => menus.isOpen('npc'));
+        if (!ok) P.note(`走到 ${id} 旁边按 X 没打开对话（第 ${k + 1} 次，near=${s.near} 位置 ${s.p} 窗口 ${s.m.join(',')}）`);
+      }
       return ok;
     },
     // 对话里按 X 一路推进，直到出现可点的按钮（接受 / 完成任务），点它

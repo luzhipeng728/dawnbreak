@@ -3,7 +3,9 @@
    属性语义见协作板“战斗与动作 第 4 节”：面板值写到玩家实体上，伤害结算读取
    ===================================================================== */
 const MAX_LVL = 30;
-const expNeed = lv => Math.round(200 * Math.pow(lv, 1.85) + 300);
+// 升级所需经验（2026-09-27 主线程拍板 ×1.8：每个地下城约打 1.5~2 次，Lv1→20 约 15 次，见 test/econ.mjs）
+const EXP_CURVE_MUL = 1.8;
+const expNeed = lv => Math.round((200 * Math.pow(lv, 1.85) + 300) * EXP_CURVE_MUL);
 function gainExp(n) {
   if (game.lvl >= MAX_LVL) return;
   const p = game.player;

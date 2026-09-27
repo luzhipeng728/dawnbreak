@@ -8,17 +8,19 @@
 //     每次进图消耗 2~4 瓶等级合适的药；被击 ≈ 房间数 × 4 次 → 耐久损耗 → 回城修理；
 //     手里金币超过“保底”（等级 × 1500）时，把武器强化到目标等级（Lv10 前 +4，Lv15 前 +6，之后 +8），晶块不够就按 40 G 买
 import { launch, URL_BASE } from './lib.mjs';
-const N = +(process.argv[2] || 20), DIFF = +(process.argv[3] || 0), EXPK = +(process.argv[4] || 1);   // EXPK：把升级所需经验放大几倍（评估等级曲线用）
+const N = +(process.argv[2] || 20), DIFF = +(process.argv[3] || 0), EXPK = +(process.argv[4] || 1), QUEST = process.argv[5] === 'q';   // EXPK：把升级所需经验再放大几倍（评估等级曲线用）；q：算上任务奖励
+// 任务奖励（任务组分支 content/quests/main.js + side.js 的汇总，任务等级 → [经验占该级升级所需的比例合计, 金币合计]）
+const QUESTS = { 1: [1.15, 1200], 2: [1.05, 1400], 3: [2.05, 4400], 4: [1.1, 2200], 5: [1.3, 3300], 6: [1.55, 5100], 7: [1.15, 4100], 8: [2.45, 11700], 9: [1.1, 6200], 10: [1.7, 10100], 11: [1.35, 9800], 12: [1.35, 10500], 13: [1.75, 12500], 14: [0.25, 1500], 16: [0.9, 10000], 17: [0.4, 4000], 18: [0.5, 8000] };
 const { browser, page, logs } = await launch({ width: 640, height: 360 });
 await page.goto(`${URL_BASE}?town&fresh&cls=sword&mute`);
 await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 30000 });
-const res = await page.evaluate(({ N, DIFF, EXPK }) => {
+const res = await page.evaluate(({ N, DIFF, EXPK, QUEST, QUESTS }) => {
   const toastMsg0 = window.toastMsg; window.toastMsg = () => {};
   const D = DIFFS[DIFF], dgs = Object.values(DUNGEONS).filter(d => !d.hidden).sort((a, b) => a.lvl[0] - b.lvl[0]);
   const all = [];
   for (let sim = 0; sim < N; sim++) {
     game.lvl = 1; game.exp = 0; game.gold = 1500; inv.starter('sword'); recalcStats(game.player);
-    const log = { runs: 0, rooms: 0, inc: { mob: 0, card: 0, sell: 0 }, out: { pot: 0, repair: 0, gear: 0, enh: 0 }, byLv: {}, maxEnh: 0, broke: 0, bought: [], minGold: 1e9 };
+    const log = { runs: 0, rooms: 0, perDg: {}, qDone: 0, inc: { mob: 0, card: 0, sell: 0, quest: 0 }, out: { pot: 0, repair: 0, gear: 0, enh: 0 }, byLv: {}, maxEnh: 0, broke: 0, bought: [], minGold: 1e9 };
     const snap = () => { if (!log.byLv[game.lvl]) log.byLv[game.lvl] = { run: log.runs, gold: Math.round(game.gold), enh: inv.equip.weapon ? inv.equip.weapon.enh : 0, wlv: inv.equip.weapon ? inv.equip.weapon.lvl : 0, wr: inv.equip.weapon ? inv.equip.weapon.rar : 0 }; };
     const better = (it) => { const c = inv.equip[it.slot]; if (it.lvl > game.lvl || (it.cls && it.cls !== 'sword')) return false; if (!c) return true; const sc = x => x.lvl * RAR_MUL[x.rar] * (1 + enhBonus(x.enh || 0) * 0.5); return sc(it) > sc(c) * 1.05; };
     const take = (it) => { if (it.kind !== 'equip') { if (it.key === 'crystal') inv.add(it); else if (ITEMS[it.key].kind === 'use') inv.add(it); else { log.inc.sell += sellPrice(it); game.gold += sellPrice(it); } return; }
@@ -42,6 +44,7 @@ const res = await page.evaluate(({ N, DIFF, EXPK }) => {
       log.maxEnh = Math.max(log.maxEnh, inv.equip.weapon.enh); snap();
       // 进图
       const dg = dgs.filter(d => d.lvl[0] <= game.lvl).pop(), dgObj = { def: dg, D, diff: DIFF };
+      log.perDg[dg.id] = (log.perDg[dg.id] || 0) + 1;
       const main = dg.rooms, br = Math.round((dg.branches ?? Math.floor(dg.rooms / 3)) / 2), rooms = main + br;
       // 药剂
       const pots = rndi(2, 4), potKey = game.lvl < 6 ? 'hpS' : game.lvl < 14 ? 'hpM' : 'hpL'; log.out.pot += pots * ITEMS[potKey].price; game.gold -= pots * ITEMS[potKey].price;
@@ -69,6 +72,8 @@ const res = await page.evaluate(({ N, DIFF, EXPK }) => {
       let pts = Math.round(rooms * 4 / 4); while (pts-- > 0) { const L = durItems(); if (L.length) { const it = pick(L); it.dur = Math.max(0, it.dur - 1); } }
       const rc = repairCost(); game.gold -= rc; log.out.repair += rc;
       log.runs++; log.rooms += rooms; log.minGold = Math.min(log.minGold, game.gold);
+      // 任务：到了任务等级就交（假设主线 + 支线都做）
+      if (QUEST) for (let q = log.qDone + 1; q <= game.lvl; q++) { log.qDone = q; const Q = QUESTS[q]; if (!Q) continue; gainExp(expNeed(q) * Q[0] / EXPK); game.gold += Q[1]; log.inc.quest += Q[1]; }
     }
     snap();
     log.final = Math.round(game.gold); log.days = +(log.rooms / FATIGUE_MAX).toFixed(1);
@@ -77,11 +82,14 @@ const res = await page.evaluate(({ N, DIFF, EXPK }) => {
   window.toastMsg = toastMsg0;
   const avg = f => Math.round(all.reduce((s, l) => s + f(l), 0) / all.length);
   const lv = {}; for (const L of [3, 5, 8, 10, 12, 15, 18, 20]) lv[L] = { run: avg(l => (l.byLv[L] || {}).run || 0), gold: avg(l => (l.byLv[L] || {}).gold || 0), enh: +(all.reduce((s, l) => s + ((l.byLv[L] || {}).enh || 0), 0) / all.length).toFixed(1) };
-  return { N, diff: D.name, runs: avg(l => l.runs), days: +(all.reduce((s, l) => s + l.days, 0) / all.length).toFixed(1), inc: { mob: avg(l => l.inc.mob), card: avg(l => l.inc.card), sell: avg(l => l.inc.sell) }, out: { pot: avg(l => l.out.pot), repair: avg(l => l.out.repair), gear: avg(l => l.out.gear), enh: avg(l => l.out.enh) }, final: avg(l => l.final), minGold: avg(l => l.minGold), maxEnh: avg(l => l.maxEnh), broke: avg(l => l.broke * 100) / 100, lv, bought: all[0].bought };
-}, { N, DIFF, EXPK });
+  const perDg = {}; for (const l of all) for (const k in l.perDg) perDg[k] = (perDg[k] || 0) + l.perDg[k] / all.length;
+  for (const k in perDg) perDg[k] = +perDg[k].toFixed(1);
+  return { N, diff: D.name, quests: QUEST, perDg, runs: avg(l => l.runs), days: +(all.reduce((s, l) => s + l.days, 0) / all.length).toFixed(1), inc: { mob: avg(l => l.inc.mob), card: avg(l => l.inc.card), sell: avg(l => l.inc.sell), quest: avg(l => l.inc.quest) }, out: { pot: avg(l => l.out.pot), repair: avg(l => l.out.repair), gear: avg(l => l.out.gear), enh: avg(l => l.out.enh) }, final: avg(l => l.final), minGold: avg(l => l.minGold), maxEnh: avg(l => l.maxEnh), broke: avg(l => l.broke * 100) / 100, lv, bought: all[0].bought };
+}, { N, DIFF, EXPK, QUEST, QUESTS });
 console.log(JSON.stringify(res, null, 1));
-const tot = res.inc.mob + res.inc.card + res.inc.sell, spend = res.out.pot + res.out.repair + res.out.gear + res.out.enh;
-console.log(`收入 ${tot}（怪物 ${Math.round(res.inc.mob / tot * 100)}%、翻牌 ${Math.round(res.inc.card / tot * 100)}%、卖装备 ${Math.round(res.inc.sell / tot * 100)}%），支出 ${spend}（药 ${res.out.pot}、修理 ${res.out.repair}、买装备 ${res.out.gear}、强化 ${res.out.enh}），Lv20 时余额 ${res.final}`);
+const tot = res.inc.mob + res.inc.card + res.inc.sell + res.inc.quest, spend = res.out.pot + res.out.repair + res.out.gear + res.out.enh;
+console.log(`${res.runs} 次地下城到 Lv20（${res.days} 天疲劳）；每个地下城次数 ${JSON.stringify(res.perDg)}`);
+console.log(`收入 ${tot}（怪物 ${Math.round(res.inc.mob / tot * 100)}%、翻牌 ${Math.round(res.inc.card / tot * 100)}%、卖装备 ${Math.round(res.inc.sell / tot * 100)}%、任务 ${Math.round(res.inc.quest / tot * 100)}%），支出 ${spend}（药 ${res.out.pot}、修理 ${res.out.repair}、买装备 ${res.out.gear}、强化 ${res.out.enh}），Lv20 时余额 ${res.final}`);
 const warn = [];
 if (res.minGold < 0) warn.push('有模拟出现金币为负（药剂 / 修理付不起）');
 if (res.final > 400000) warn.push('Lv20 时金币过多（> 40 万），价格偏低或产出偏高');

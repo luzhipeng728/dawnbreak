@@ -4,7 +4,7 @@
    官方依据：艾尔文防线集市向左是赫顿玛尔市政街（Lv.3），向右是洛兰；格兰之森在赫顿玛尔左手边（经过风振一直向左）；
             NPC 名单与功能参照官方百科的各区域 NPC 表。标“自创”的是为了让城镇热闹一点补的原创角色
    新增 NPC：defineNpc(id, { name, title, art, h, services, lines, greet })，再放进某个场景的 npcs（步骤见 docs/CONTENT_GUIDE.md）
-     services：quest（任务）、shop:<商店id>、storage（仓库）、repair（修理）、enhance（强化）、disassemble（分解）、job（转职）、cure（解除虚弱）、travel（区域移动）、arena（决斗场）
+     services：quest（任务）、shop:<商店id>、storage（仓库）、repair（修理）、enhance（强化）、disassemble（分解）、job（转职）、cure（解除虚弱）、travel（区域移动）、arena（决斗场）、auction（拍卖行）、mail（邮箱）
      greet：打开对话时的开场白（没有就从 lines 里随机）；still：不做待机动画（布告栏这类物件）
    ===================================================================== */
 const START_SCENE = 'seria_room';
@@ -51,7 +51,7 @@ defineNpc('kiri', { name: '凯丽', title: '强化 · 神枪手导师', art: 'wo
 defineNpc('fengzhen', { name: '风振', title: '格斗家导师', art: 'world/npc_fengzhen', h: 114, services: ['quest'],
   greet: ['嗯，来得正好。'],
   lines: ['拳头，才是最诚实的武器。', '风拳流的修行，没有捷径。', '往左一直走就是格兰之森，路上小心。', '……你的身法还欠火候。（格斗家职业尚未开放）'] });
-defineNpc('norton', { name: '诺顿', title: '商人 · 分解', art: 'world/npc_norton', h: 120, services: ['quest', 'shop:norton', 'disassemble'],
+defineNpc('norton', { name: '诺顿', title: '商人 · 分解', art: 'world/npc_norton', h: 120, services: ['quest', 'shop:norton', 'disassemble', 'auction', 'mail'],   // auction 拍卖行、mail 邮箱：社交组注册，没登录时按钮自动隐藏
   greet: ['欢迎光临！诺顿的店，只做公道生意。'],
   lines: ['用不上的装备别急着卖，拿来分解，能得到不少好材料。', '赫顿玛尔是整个大陆的商业中心，什么稀罕货都能在这里找到。', '价钱嘛……好商量，好商量。', '我这双眼睛，看宝石从来没走眼过。'] });
 defineNpc('sosia', { name: '索西雅', title: '药剂商人', art: 'world/npc_sosia', h: 114, services: ['quest', 'shop:sosia', 'cure'],

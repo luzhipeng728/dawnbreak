@@ -86,3 +86,19 @@
 - 数据归属：
   - 角色存档（含背包、点券）存在云存档里。
   - 拍卖行、邮件、排行榜、公告这类跨玩家的数据存在服务端数据表里。
+
+## 实现记录（联机组，分支 worktree-agent-a88ded703a4bf2b36）
+
+### 服务端（M1）
+- 运行环境：便携版 Node 22 + 内置 `node:sqlite`（理由：零原生依赖，不用在服务器上编译或下载与 Node 18 ABI 对应的 better-sqlite3；系统 Node 18 不动）。唯一依赖 `ws`。部署见 `server/deploy/DEPLOY.md`。
+- 结构：`server/index.js`（入口、模块加载）、`server/lib/`（数据库、HTTP 路由、WS 连接中心、限流）、`server/core/`（account / saves / social / party / room，和扩展模块用同一套接口）、`server/modules/`（其他组的扩展模块，自动加载）。扩展点接口见协作板“服务端模块扩展点”一条。
+- 账号：scrypt 哈希；token 32 字节随机数，数据库只存 sha256；30 天有效、使用中每天续期；邀请码 = `DNF_INVITE`（可重复用）或管理员生成的一次性码（invites 表）；`DNF_ADMIN` 指定管理员。
+- 云存档：`PUT /api/saves {data, baseUpdatedAt, force?}`，版本不一致返回 409。每个账号保留最近 20 份历史（最多 10 分钟一份）。存档里多存了两个字段：`bank`（账号金库，登录后按账号同步）和 `_rev`（客户端内容编号）。
+- 安全：每 IP 10 秒 120 个请求；登录 10 分钟 20 次（按 IP）/ 10 次（按用户名）；注册 1 小时 6 次；请求体默认 64 KB（存档 4 MB）；WS 单条 64 KB、每连接 3 秒 300 条（持续超出断开）、每 IP 每分钟最多新建 20 条连接；5 秒内不鉴权就断开；同一账号新连接顶掉旧连接；房间转发只在成员之间。
+- 掉线宽限：`DNF_GRACE_MS`（默认 20 秒）内重连，队伍和房间都保留（决斗 10 秒）。
+
+### 客户端（M1）
+- `src/net/net.js`：`net.api / net.on / net.send`、自动重连（0.8 秒起指数退避，最多 10 秒；浏览器 online 事件立即重连）、每 2 秒 ping 测延迟（9 秒没回音当作断线）。页面加载时先请求 `/api/health`，通了才显示登录入口（离线单文件、没有服务端的静态托管保持原样）。
+- `src/net/account.js`：云存档。登录后存档键换成 `dawnbreak_cloud_<uid>`（金库 `dawnbreak_bank_cloud_<uid>`），`save.persist()` 通知改动，防抖 2 秒上传；断网写本地，恢复后退避重试补传；409 时先看云端的 `_rev` 是不是自己早先传的（关页面时回应丢失的情况），是就继续传，不是才弹“使用云端存档 / 用本机覆盖云端”。第一次登录时提示把本机角色上传到账号（名字重复自动加后缀，超出角色位的不传）。`netSaveFlush()` 立即上传。
+- `src/ui/login.js`：标题的“登录 / 注册 / 不登录直接玩”、登录注册窗口、账号窗口（同步状态、立即同步、导入本机角色、改密码、登出）、系统菜单里的账号信息与登出。
+- `save.js` 改动：写 localStorage 的两处合并成 `save.persist()`，末尾调用 `cloudSave.changed()`。

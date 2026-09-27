@@ -159,6 +159,8 @@ function itemTipOne(it, cur, head) {
 function itemTip(it, opt = {}) {
   const cur = it.kind === 'equip' && opt.cmp !== false ? inv.equip[it.slot] : null;
   const main = itemTipOne(it, cur);
+  const sum = it.kind === 'equip' && opt.cmp !== false && typeof equipCompareTip === 'function' ? equipCompareTip(it) : null;   // 换上后综合 ▲x%（输出 / 生存）
+  if (sum) main.insertBefore(sum, main.firstChild);
   if (!cur || cur === it) return main;
   return h('div', { class: 'itip-pair' }, main, itemTipOne(cur, null, '▶ 装备中'));
 }
@@ -201,6 +203,8 @@ function itemSlot(it, opt = {}) {
     if (it.n > 1) el.append(h('span', { class: 'n' }, it.n > 9999 ? '9999+' : String(it.n)));
     if (it.enh) el.append(h('span', { class: 'e' }, '+' + it.enh));
     if (opt.quick && it.kind === 'use') { const qi = inv.quick.indexOf(it.key); if (qi >= 0) el.append(h('span', { class: 'qk' }, String(qi + 1))); }
+    if (it.kind === 'equip' && typeof setSlotDecor === 'function') setSlotDecor(el, it, opt.worn);   // 套装：绿框 + 件数角标
+    if ((opt.quick || opt.cmp === true) && it.kind === 'equip' && typeof equipCompareBadge === 'function') { const b = equipCompareBadge(it); if (b) { el.append(b); if (b.classList.contains('up')) el.classList.add('better'); } }   // ▲▼ 比身上的好 / 差
     el.addEventListener('mousemove', ev => { if (!dnd.cur) showItemTip(it, ev, { cmp: opt.cmp }); });
     el.addEventListener('mouseleave', () => hideItemTip());
     let lp = null;   // 触屏长按看说明

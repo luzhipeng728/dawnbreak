@@ -79,7 +79,7 @@ Object.assign(menus, {
         h('button', { class: 'btn sm', onclick: () => { inv.sort(); sfx.click(); itemsRefresh(); } }, '整理'),
         menus.w_status ? h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('status')) menus.open('status'); } }, '个人信息') : null);
       const acts = invActions(IW.invSel, el);
-      const hint = h('div', { class: 'ihint' }, menus.isOpen('shop') ? '右键 / 拖进商店：出售' : menus.isOpen('storage') ? '右键：存入仓库' : '右键：穿戴 / 使用 · 拖动：换位置、放进快捷栏 · 拖到窗外：丢弃');
+      const hint = h('div', { class: 'ihint' }, menus.isOpen('shop') ? '右键 / 拖进商店：出售' : menus.isOpen('storage') ? '右键：存入仓库' : '▲ 比身上的好 · ▼ 比身上的差 · 右键：穿戴 / 使用 · 拖动：换位置、放进快捷栏 · 拖到窗外：丢弃');
       return [tabs, grid, quests, bar, acts, hint];
     }, { w: 29, at: 'right' });
     return el;

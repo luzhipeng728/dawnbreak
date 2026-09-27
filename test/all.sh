@@ -12,6 +12,7 @@ run() { name=$1; shift; printf '== %-12s ' "$name"; start=$(date +%s); "$@" > $L
 run flow      node test/flow.mjs
 run ui        node test/ui.mjs
 run items     node test/items.mjs
+run compare   node test/compare.mjs
 run quests    node test/quests.mjs
 run world     node test/world.mjs
 run combat    node test/combat.mjs

@@ -26,7 +26,7 @@ const AV_LEFT = ['av_hair', 'av_hat', 'av_face', 'av_chest'], AV_RIGHT = ['av_to
 function equipSlotEl(slot, win) {
   const it0 = inv.equip[slot], it = it0 && it0.slot === slot ? it0 : null;
   return itemSlot(it, {
-    label: SLOT_NAME[slot], cmp: false,
+    label: SLOT_NAME[slot], cmp: false, worn: true,
     onRight: () => { if (it && inv.unwear(slot)) { save.write(); itemsRefresh(); } },
     onDbl: () => { if (it && inv.unwear(slot)) { save.write(); itemsRefresh(); } },
     drag: it ? () => ({ type: 'item', item: it, from: 'equip', slot }) : null,

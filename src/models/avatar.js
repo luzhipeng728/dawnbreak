@@ -94,7 +94,7 @@ class AvatarLayer {
     const H = F.head;
     for (const a of this.acc) {
       if (!!a.back !== back || (a.face && H.f === 0)) continue;
-      const im = IMG['avatar/' + a.img], P = a.pos[this.cls]; if (!im || !P) continue;
+      const im = IMG['avatar/' + a.img], P = (this.S2 && a.pos[this.setKey]) || a.pos[this.cls]; if (!im || !P) continue;
       c.save(); c.translate(H.x - F.ax, H.y - F.ay); if (H.a) c.rotate(H.a); c.translate(P[0], P[1]); if (P[2]) c.rotate(P[2]);
       const k = AVATAR_ACC_SCALE * (P[3] || 1); c.scale(k, k); c.drawImage(im, -im.width / 2, -im.height / 2); c.restore();
     }
@@ -124,12 +124,20 @@ Object.defineProperty(SpriteModel.prototype, 'av', {
 });
 // 指定某个模型的外观（路人冒险家、预览）；look 传 null 恢复自动
 function avatarSetLook(m, look) { const L = m && m.av; if (!L) return; L.fixed = look || null; L.look = null; L.own = null; L.sync(); }
-// 给界面用：按外观画一个站姿小人到新画布（个人信息纸娃娃、选角预览）
+// 给界面用：按外观画一个站姿小人到新画布（个人信息纸娃娃、选角预览）。素材没加载时先返回空画布，加载完自动画上
+//   look 省略 = 职业默认；想跟随当前装备：avatarCanvas(cls, lookFromEquip(cls, inv.equip))；存档里的角色：lookFromEquip(d.cls, d.equip)
 function avatarCanvas(cls, look, w = 110, h = 134, scale = 1) {
   const [cv, x] = offCanvas(w, h);
-  if (!(SPR_DATA[cls] && IMG[`spr/${cls}/idle`])) return cv;
-  const m = new SpriteModel(cls, SPR_FALLBACK, SPR_ANIMS[cls]); avatarSetLook(m, look || defaultLook(cls));
-  const draw = () => { x.clearRect(0, 0, w, h); x.save(); x.translate(w / 2, h - 6); x.scale(scale, scale); m.draw(x, { __c: 'idle', __t: 0 }, 0, NO_OPTS); x.restore(); };
-  draw(); if (m.av && m.av.setKey && !m.av.S2) loadBundles(['spr:' + m.av.setKey]).then(draw);
+  if (!SPR_DATA[cls]) return cv;
+  look = look || defaultLook(cls);
+  const want = ['spr:' + cls, look.set && SPR_DATA[`${cls}@${look.set}`] ? `spr:${cls}@${look.set}` : null];
+  const go = () => {
+    if (!IMG[`spr/${cls}/idle`]) return;
+    const m = new SpriteModel(cls, SPR_FALLBACK, SPR_ANIMS[cls]); avatarSetLook(m, look);
+    const draw = () => { x.clearRect(0, 0, w, h); x.save(); x.translate(w / 2, h - 6); x.scale(scale, scale); m.draw(x, { __c: 'idle', __t: 0 }, 0, NO_OPTS); x.restore(); };
+    draw();
+    const L = m.av; if (L && L.A && !L.wim) loadArtKey('weapon/' + look.wpn).then(() => { L.wim = IMG['weapon/' + look.wpn]; draw(); });
+  };
+  if (IMG[`spr/${cls}/idle`] && (!want[1] || IMG[`spr/${cls}@${look.set}/idle`])) go(); else loadBundles(want).then(go);
   return cv;
 }

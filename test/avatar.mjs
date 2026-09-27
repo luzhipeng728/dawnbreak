@@ -35,29 +35,59 @@ const HELPERS = () => {
   await page.goto(`${URL_BASE}?art&m=sword`);
   await page.waitForFunction(() => window.__ART_READY, null, { timeout: 30000 });
   await page.evaluate(HELPERS);
-  console.log('逐帧绘制（三职业全部帧 × 默认外观）');
-  const r = await page.evaluate(() => {
+  console.log('逐帧绘制（三职业全部帧 × 每种武器 × 时装）+ 全部动画片段');
+  const r = await page.evaluate(async () => {
     const res = {};
     for (const cls of ['sword', 'gun', 'mage']) {
-      const S = SPR_DATA[cls], frames = Object.keys(S.frames); let wpn = 0, bad = [], green = 0;
+      const S = SPR_DATA[cls], frames = Object.keys(S.frames); let wpn = 0, bad = [], green = {}, draws = 0;
       const m = new SpriteModel(cls, SPR_FALLBACK, SPR_ANIMS[cls]);
-      for (const f of frames) {
-        if (S.frames[f].wpn) wpn++;
-        try { const cv = __av.drawFrame(cls, f); if (S.frames[f].wpn) green += __av.green(cv); } catch (e) { bad.push(f + ':' + e.message); }
+      const sets = Object.values(AVATAR_SETS).map(X => X.id).filter(id => SPR_DATA[`${cls}@${id}`]);
+      for (const id of sets) await loadBundles(['spr:' + cls + '@' + id]);
+      const looks = [...Object.keys(WEAPON_IMG).filter(k => WTYPES[WEAPON_IMG[k].type].cls === cls).map(w => ({ wpn: w, set: null, acc: [] })), { wpn: null, set: null, acc: [] },
+                     ...sets.map(id => ({ wpn: defaultLook(cls).wpn, set: id, acc: Object.keys(AVATAR_ACC) }))];
+      for (const f of frames) if (S.frames[f].wpn) wpn++;
+      for (const look of looks) for (const f of frames) {
+        try { const cv = __av.drawFrame(cls, f, look); draws++; const F = (look.set && SPR_DATA[`${cls}@${look.set}`].frames[f]) || S.frames[f]; if (F.wpn) { const g = __av.green(cv); if (g) green[f + (look.set ? '@' + look.set : '')] = g; } }
+        catch (e) { bad.push(f + ':' + e.message); }
       }
-      // 动画表里引用的帧都存在
+      // 动画表里的每个片段按时间走一遍（用游戏里的选帧逻辑）
+      let clips = 0;
+      for (const [name, A] of Object.entries(SPR_ANIMS[cls])) {
+        const dur = A.frames ? A.frames.length / A.fps : A[A.length - 1][1] + 0.1;
+        for (let t = 0; t <= dur; t += 0.05) { try { m.draw(document.createElement('canvas').getContext('2d'), { __c: name, __t: t }, t, NO_OPTS); } catch (e) { bad.push(name + ':' + e.message); } }
+        clips++;
+      }
       const missing = [];
       for (const [name, A] of Object.entries(SPR_ANIMS[cls])) for (const fn of (A.frames || A.map(a => a[0]))) if (!S.frames[fn]) missing.push(`${name}/${fn}`);
-      res[cls] = { n: frames.length, wpn, bad, green, missing, av: !!m.av };
+      const setMissing = sets.flatMap(id => frames.filter(f => !SPR_DATA[`${cls}@${id}`].frames[f]).map(f => `${id}/${f}`));
+      res[cls] = { n: frames.length, wpn, bad, green, missing, setMissing, av: !!m.av, looks: looks.length, draws, clips, sets };
     }
     return res;
   });
   for (const [cls, v] of Object.entries(r)) {
-    ok(v.bad.length === 0, `${cls}: ${v.n} 帧全部能画（其中 ${v.wpn} 帧有武器轨迹）${v.bad.length ? ' 出错：' + v.bad.slice(0, 3).join(' ') : ''}`);
-    ok(v.green === 0, `${cls}: 抠过占位棍的帧里绿色残留 ${v.green} 像素`);
+    ok(v.bad.length === 0, `${cls}: ${v.n} 帧 × ${v.looks} 种外观（${v.draws} 次）+ ${v.clips} 个动画片段全部能画（${v.wpn} 帧有武器轨迹）${v.bad.length ? ' 出错：' + v.bad.slice(0, 3).join(' ') : ''}`);
+    const gk = Object.keys(v.green);
+    ok(gk.length === 0, `${cls}: 绿色占位像素残留 ${gk.length ? gk.map(k => k + ':' + v.green[k]).join(' ') : '0'}`);
     ok(v.av, `${cls}: 职业精灵模型自动挂上外观层`);
+    if (v.sets.length) ok(v.setMissing.length === 0, `${cls}: 时装 ${v.sets.join(' ')} 帧齐全${v.setMissing.length ? '，缺 ' + v.setMissing.slice(0, 8).join(' ') : ''}`);
     if (v.missing.length) console.log(`    （动画表引用了不存在的帧，走兜底：${v.missing.slice(0, 6).join(' ')}${v.missing.length > 6 ? ' …' : ''}）`);
   }
+  console.log('性能：外观层每帧的额外开销');
+  const perf = await page.evaluate(() => {
+    const cv = document.createElement('canvas'); cv.width = 400; cv.height = 400; const x = cv.getContext('2d');
+    const run = (look, n = 3000) => {
+      const m = new SpriteModel('sword', SPR_FALLBACK, SPR_ANIMS.sword); if (look) avatarSetLook(m, look); else m.av = null;
+      const frames = Object.keys(SPR_DATA.sword.frames).filter(f => SPR_DATA.sword.frames[f].wpn);
+      const A = { ...SPR_ANIMS.sword, __all: { fps: 60, frames } }; m.anims = A;
+      for (let i = 0; i < 200; i++) m.draw(x, { __c: '__all', __t: i / 60 }, 0, NO_OPTS);   // 预热（握拳小图第一次用到时生成）
+      const t = performance.now(); for (let i = 0; i < n; i++) { x.setTransform(1, 0, 0, 1, 200, 380); m.draw(x, { __c: '__all', __t: i / 60 }, 0, NO_OPTS); }
+      return (performance.now() - t) / n;
+    };
+    const base = run(null), wpn = run({ wpn: 'katana', set: null, acc: [] }), all = run({ wpn: 'katana', set: 'festival', acc: Object.keys(AVATAR_ACC) });
+    return { base: +base.toFixed(4), wpn: +wpn.toFixed(4), all: +all.toFixed(4) };
+  });
+  console.log(`    每次绘制：原帧 ${perf.base} ms，+武器 ${perf.wpn} ms，+时装 + 3 件配件 ${perf.all} ms`);
+  ok(perf.all - perf.base < 0.25, `外观层每个角色每帧多花 ${(perf.all - perf.base).toFixed(3)} ms（< 0.25 ms，远小于 16.7 ms 的帧预算）`);
   console.log('换武器 / 换时装 → 外观改变');
   const d = await page.evaluate(() => {
     const cls = 'sword', f = Object.keys(SPR_DATA.sword.frames).find(k => SPR_DATA.sword.frames[k].wpn) || 'idle';
@@ -93,7 +123,7 @@ const HELPERS = () => {
       const path = `${out}/${cls}_looks.png`; fs.writeFileSync(path, Buffer.from(file.split(',')[1], 'base64')); console.log('  写出', path);
     }
   }
-  ok(!logs.some(l => l.type === 'pageerror'), '页面没有报错' + (logs.length ? ' ' + JSON.stringify(logs.slice(0, 3)) : ''));
+  { const errs = logs.filter(l => l.type !== 'warning'); ok(!errs.length, '页面没有报错' + (errs.length ? ' ' + JSON.stringify(errs.slice(0, 3)) : '')); }
   await browser.close();
 }
 
@@ -109,7 +139,7 @@ const EQUIP = keys => {
   for (const k of keys) { const it = typeof k === 'string' ? makeItem(k) : rollEquip(k); if (!it) return 'no item ' + JSON.stringify(k); inv.add(it); if (!inv.wear(it)) return 'wear failed ' + it.key; }
   return null;
 };
-for (const cls of ['sword']) {
+for (const cls of ['sword', 'gun', 'mage']) {
   console.log(`游戏里（${cls}）：换武器 / 穿脱时装 / 刷新`);
   const { browser, page, logs } = await launch({ width: 1280, height: 720 });
   await page.goto(`${URL_BASE}?town&cls=${cls}&mute&fresh`);
@@ -142,11 +172,11 @@ for (const cls of ['sword']) {
     L = await look(); ok(L.set === 'festival' && L.hash === worn, '刷新后外观不变');
     await page.evaluate(() => inv.unwear('av_top'));
     L = await look(); ok(!L.set, '脱下上衣 → 身体换回原样');
-    ok(L.acc.length === 3 || cls !== 'sword', '帽子 / 发饰 / 眼镜仍然戴着');
+    ok(cls === 'sword' ? L.acc.length === 3 : L.acc.length === 1, cls === 'sword' ? '帽子 / 发饰 / 眼镜仍然戴着' : '默认造型自带帽子：脱下整套后只剩眼镜');
   }
   await page.evaluate(() => inv.unwear('weapon'));
   { const L = await look(); ok(L.wpn === null, '卸下武器 → 空手'); }
-  ok(!logs.some(l => l.type === 'pageerror'), '页面没有报错' + (logs.length ? ' ' + JSON.stringify(logs.slice(0, 3)) : ''));
+  { const errs = logs.filter(l => l.type !== 'warning'); ok(!errs.length, '页面没有报错' + (errs.length ? ' ' + JSON.stringify(errs.slice(0, 3)) : '')); }
   await browser.close();
 }
 

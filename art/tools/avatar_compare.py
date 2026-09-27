@@ -14,6 +14,7 @@ def main():
     src = source_sheets(); os.makedirs(os.path.join(OUT, 'cut'), exist_ok=True)
     for name in args:
         a = os.path.join(OUT, 'sheets', f'{name}.png') if sid else src[name]
+        if not os.path.exists(a): a = src[name]   # 技能道具表没有占位版：和原表比
         b = os.path.join(OUT, 'sets', sid, f'{name}.png') if sid else os.path.join(OUT, 'sheets', f'{name}.png')
         if not os.path.exists(b): print('缺', b); continue
         A = Image.open(a).convert('RGB').resize((900, 900)); B = Image.open(b).convert('RGB').resize((900, 900))

@@ -288,9 +288,50 @@ def inside_mask(hole, al, sticks, white):
         ok = side[0] & side[1]; res[py[ok], px[ok]] = True
     return res
 
-def process_sheet(char, sheet, path, names, res, fixes, pv_path):
+def ref_height(path):
+    """表里第 1 格（站姿参考）的高度（原图像素，不含占位棍）"""
+    a = np.array(fill_holes(remove_bg(Image.open(path)), min_area=90, thr=251)); g, m = key_maps(a)
+    al = np.where((g > 0.35) | (m > 0.35), 0, a[..., 3]).astype(np.uint8)
+    _, order = cut_boxes(al); r = order[0]; return r['y1'] - r['y0']
+
+def keep_clothes_holes(rb, a, ref_path):
+    """时装表：fill_holes 会把被围住的纯白块当成透出来的白底挖掉，但时装的白毛边、白袜子也是纯白。
+    对照占位表（同一套姿势）：挖掉的块在占位表同一位置（逐格对齐后）大部分也是透明的才算真的白底，否则还原。"""
+    R = np.array(_fill_holes(remove_bg(Image.open(ref_path)), min_area=90, thr=251))
+    ref_opaque = R[..., 3] > 40; ref_bg = dil(~ref_opaque, 3)
+    A0 = rb[..., 3] > 40; hole = A0 & (a[..., 3] == 0)
+    if not hole.any(): return a
+    _, boxes = cut_boxes(rb[..., 3].astype(np.uint8))
+    H, W = A0.shape; restored = 0
+    for b in boxes:
+        y0, y1, x0, x1 = b['y0'], b['y1'], b['x0'], b['x1']
+        hb = hole[y0:y1, x0:x1]
+        if not hb.any(): continue
+        # 逐格对齐：1/4 分辨率下搜 ±48 像素的平移，取重合度最高的
+        cur = A0[y0:y1:4, x0:x1:4]; best = (-1, 0, 0)
+        for dy in range(-12, 13):
+            for dx in range(-12, 13):
+                ya, xa = y0 + dy * 4, x0 + dx * 4
+                if ya < 0 or xa < 0 or ya + (y1 - y0) > H or xa + (x1 - x0) > W: continue
+                rr = ref_opaque[ya:ya + (y1 - y0):4, xa:xa + (x1 - x0):4]
+                if rr.shape != cur.shape: continue
+                iou = (rr & cur).sum() / max(1, (rr | cur).sum())
+                if iou > best[0]: best = (iou, dx * 4, dy * 4)
+        _, ox, oy = best
+        lab, comps = components((hb * 255).astype(np.uint8), f=1, min_cells=1)
+        for c, _ in comps:
+            ys, xs = np.where(lab == c)
+            ry, rx = np.clip(ys + y0 + oy, 0, H - 1), np.clip(xs + x0 + ox, 0, W - 1)
+            if ref_bg[ry, rx].mean() < 0.5:   # 占位表这里是身体：是白色衣物，还原
+                a[ys + y0, xs + x0] = rb[ys + y0, xs + x0]; restored += len(ys)
+    return a
+
+def process_sheet(char, sheet, path, names, res, fixes, pv_path, ref_h=None, ref_path=None):
+    """ref_h：按这个参考高度定缩放（时装表用对应占位表的站姿高度：时装去掉了帽子，按自己的站姿量会把人放大）
+    ref_path：时装表对照的占位表（区分透出来的白底和白色衣物）"""
     img = Image.open(path)
-    im = fill_holes(remove_bg(img), min_area=90, thr=251); a = np.array(im)
+    rb = np.array(remove_bg(img)); im = fill_holes(Image.fromarray(rb, 'RGBA'), min_area=90, thr=251); a = np.array(im)
+    if ref_path: a = keep_clothes_holes(rb, a, ref_path)
     g, m = key_maps(a)
     use_m = char == 'mage'
     solid = g > 0.5
@@ -308,7 +349,7 @@ def process_sheet(char, sheet, path, names, res, fixes, pv_path):
         x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
         dist = lambda b: max(0, b['x0'] - x1, x0 - b['x1']) + max(0, b['y0'] - y1, y0 - b['y1'])
         b = min(range(len(order)), key=lambda i: dist(order[i])); owner.setdefault(b, []).append(gid)
-    ref = order[0]; k = HEIGHT[char] * res / (ref['y1'] - ref['y0'])
+    ref = order[0]; k = HEIGHT[char] * res / (ref_h or (ref['y1'] - ref['y0']))
     fist = (ref['y1'] - ref['y0']) * 0.088
     frames, pv_items = {}, []
     base = {}
@@ -335,10 +376,11 @@ def process_sheet(char, sheet, path, names, res, fixes, pv_path):
             for st in sticks[1:]: st['minor'] = (st['t1'] - st['t0']) < 0.5 * (sticks[0]['t1'] - sticks[0]['t0'])
             if fix.get('one'): sticks = sticks[:1]   # 手工：只有一把（另一段是改图留下的碎块）
         hole = stickreg & ((lg > 0.07) | ((lm > 0.1) if use_m else False))
+        stray = (lg > 0.3) & (la[..., 3] > 0) & ~hole; hole |= stray; stickreg = stickreg | dil(stray, 2)   # 太小没进连通块的占位碎点（露出拳头的一点棍尖）
         white = bg_white(la)
         inside = inside_mask(hole, la[..., 3], sticks, white)
-        band = dil(hole, 2) & ~hole & (la[..., 3] > 0)
-        fillset = (hole & inside) | (band & dil(hole & inside, 3))
+        band = dil(hole, 4) & ~hole & (la[..., 3] > 0)
+        fillset = (hole & inside) | (band & dil(hole & inside, 5))
         known = (la[..., 3] > 127) & ~hole & ~band & ~white
         polys = []
         for st in sticks: st['polys'] = fist_poly(st, la, lg, body, fist) if st['front'] and not st.get('minor') else []
@@ -348,16 +390,22 @@ def process_sheet(char, sheet, path, names, res, fixes, pv_path):
         out[..., 1] = np.where(sp & (rgb[..., 1] > mx), mx, rgb[..., 1]).astype(np.uint8)
         # 棍子原来围住的白底（remove_bg 泛洪不到的地方）：从抠空的位置向外吃掉相连的近白像素
         clear_white(out, hole & ~fillset)
+        # 棍子附近残留的细白边（白底和棍子之间的抗锯齿）：挨着透明、又细（开运算去不掉）的浅色像素去掉
+        # 以及棍子描边留下的细线（两边都透明）：对不透明区域做半径 3 的开运算，棍子附近被开运算去掉的细结构都删掉
+        solid2 = out[..., 3] > 20
+        opened = dil(~dil(~solid2, 4), 4)
+        thin = solid2 & ~opened & dil(stickreg, 10) & ~fillset
+        out[..., 3] = np.where(thin, 0, out[..., 3])
         # 裁到身体
         al = out[..., 3] > 40
         rows = np.where(al.any(1))[0]; cols = np.where(al.any(0))[0]
         y0, y1, x0, x1 = rows.min(), rows.max() + 1, cols.min(), cols.max() + 1
         sub = out[y0:y1, x0:x1]
-        frames[fn] = {'sub': sub, 'row': b['row'], 'y1': Y0 + y1, 'y0': Y0 + y0, 'sticks': sticks, 'org': (X0 + x0, Y0 + y0), 'org_l': (x0, y0)}
+        frames[fn] = {'sub': sub, 'row': b['row'], 'y1': Y0 + y1, 'y0': Y0 + y0, 'sticks': sticks, 'org': (X0 + x0, Y0 + y0), 'org_l': (x0, y0), 'fix': fix}
         base[b['row']] = max(base.get(b['row'], 0), Y0 + y1)
     return frames, base, k, a
 
-def finish(char, sheet, frames, base, k, res, meta, out_dir, pv_path, dry):
+def finish(char, sheet, frames, base, k, res, meta, out_dir, pv_path, dry, base_frames=None):
     cyc = sheet in frames2.CYCLE
     tiles = []
     for fn, F in frames.items():
@@ -378,6 +426,15 @@ def finish(char, sheet, frames, base, k, res, meta, out_dir, pv_path, dry):
             wp = {'gx': round((st['gx'] - ox) * k, 1), 'gy': round((st['gy'] - oy) * k, 1), 'ang': round(st['ang'], 3), 'len': round(st['len'] * k, 1), 'bk': round(st['back'] * k, 1), 'front': st['front']}
             if st['polys']: wp['hand'] = [[round(v, 1) for p in poly for v in ((p[0] - ox) * k, (p[1] - oy) * k)] for poly in st['polys']]
             ent['wpn' if j == 0 else 'wpn2'] = wp
+        W = F['fix'].get('wpn')   # 手工直接给轨迹（基础职业帧的帧像素，ang 为角度）：{ gx, gy, ang, len?, front?, hr 握拳半径 }
+        if W:
+            W = dict(W)
+            if base_frames and fn in base_frames:   # 时装帧：姿势和缩放一样，按脚底锚点平移过来
+                B = base_frames[fn]; W['gx'] += ent['ax'] - B['ax']; W['gy'] += ent['ay'] - B['ay']
+            wp = ent.setdefault('wpn', {'len': 60, 'bk': 0, 'front': 1})
+            wp.update({k: round(W[k], 1) for k in ('gx', 'gy', 'len', 'front') if k in W})
+            if 'ang' in W: wp['ang'] = round(math.radians(W['ang']), 3)
+            if 'hr' in W: wp['hand'] = [[round(v, 1) for i in range(10) for v in (W['gx'] + W['hr'] * math.cos(i * math.pi / 5), W['gy'] + W['hr'] * math.sin(i * math.pi / 5))]]
         meta['frames'][fn] = ent
         if not dry: sm.save(os.path.join(out_dir, f'{fn}.webp'), 'WEBP', quality=Q, method=6)
         tiles.append((fn, sm, ent))
@@ -422,8 +479,15 @@ def main():
         res = meta['res']
         for sheet, path in sheets:
             names = frames2.names_for(char, sheet)
-            frames, base, k, _ = process_sheet(char, sheet, path, names, res, fixes, None)
-            finish(char, sheet, frames, base, k, res, meta, out_dir, os.path.join(pv_dir, f'{char}_{sheet}.png'), A.dry)
+            ref_h = None
+            if A.set:   # 时装表：缩放跟对应的占位表（或原表）一致
+                bp = os.path.join(AV, 'sheets', f'{char}_{sheet}.png')
+                if not os.path.exists(bp):
+                    from avatar_gen import source_sheets
+                    bp = source_sheets().get(f'{char}_{sheet}')
+                ref_h = ref_height(bp) if bp else None
+            frames, base, k, _ = process_sheet(char, sheet, path, names, res, fixes, None, ref_h, bp if A.set else None)
+            finish(char, sheet, frames, base, k, res, meta, out_dir, os.path.join(pv_dir, f'{char}_{sheet}.png'), A.dry, base_meta['frames'] if A.set else None)
         if not A.dry:
             meta['frames'] = dict(sorted(meta['frames'].items()))
             json.dump(meta, open(mp, 'w'), indent=1)

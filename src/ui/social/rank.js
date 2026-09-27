@@ -1,5 +1,5 @@
 /* =====================================================================
-   排行榜窗口（rank）：等级 / 装备评分 / 决斗胜场 / 通关时间（按地下城 + 难度）/ 史诗收集；全部玩家 / 好友
+   排行榜窗口（rank）：等级 / 装备评分 / 成就点 / 决斗胜场 / 通关时间（按地下城 + 难度）/ 史诗收集 / 公会；全部玩家 / 好友
    数据由 net/social.js 自动上报（进城、升级、换装、转职、通关、决斗后）
    ===================================================================== */
 addStyle(`
@@ -7,7 +7,7 @@ addStyle(`
 .sxrank .rlist{height:22em}
 .sxrank .mine{font-size:.88em;color:#ffe8a8;background:rgba(255,210,60,.08);border:.08em solid #6a5436;border-radius:.25em;padding:.3em .6em}
 `);
-const SX_BOARDS = [['lvl', '等级'], ['score', '装备评分'], ['duel', '决斗胜场'], ['clear', '通关时间'], ['epic', '史诗收集']];
+const SX_BOARDS = [['lvl', '等级'], ['score', '装备评分'], ['ach', '成就点'], ['duel', '决斗胜场'], ['clear', '通关时间'], ['epic', '史诗收集'], ['guild', '公会']];
 const SXR = { board: 'lvl', scope: 'all', dungeon: '', diff: 0 };
 const sxrDungeons = () => typeof DUNGEONS === 'undefined' ? [] : Object.values(DUNGEONS).filter(d => d && d.id && d.lvl).sort((a, b) => a.lvl[0] - b.lvl[0] || (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0));
 function sxrValue(board, e) {
@@ -15,6 +15,7 @@ function sxrValue(board, e) {
   if (board === 'score') return fmtNum(e.score);
   if (board === 'duel') return `${e.win} 胜 ${e.lose} 负${e.draw ? ` ${e.draw} 平` : ''}`;
   if (board === 'clear') return sxFmtTime(e.time);
+  if (board === 'ach') return `${fmtNum(e.ach)} 点`;
   return `${e.epics} 件`;
 }
 Object.assign(menus, {
@@ -23,10 +24,11 @@ Object.assign(menus, {
     if (!SXR.dungeon) { const L = sxrDungeons(); const near = L.filter(d => d.lvl[0] <= game.lvl).pop() || L[0]; SXR.dungeon = near ? near.id : ''; }
     const el = sxWin('rank', '排行榜', {
       w: 46,
-      load: () => sxApi('GET', `/api/rank?board=${SXR.board}&scope=${SXR.scope}${SXR.board === 'clear' ? `&dungeon=${encodeURIComponent(SXR.dungeon)}&diff=${SXR.diff}` : ''}`),
+      load: () => SXR.board === 'guild' ? sxApi('GET', '/api/guild/rank') : sxApi('GET', `/api/rank?board=${SXR.board}&scope=${SXR.scope}${SXR.board === 'clear' ? `&dungeon=${encodeURIComponent(SXR.dungeon)}&diff=${SXR.diff}` : ''}`),
       render: (el, d) => {
         const reload = () => { el._data = undefined; el._reload(); el._render(); };
         const tabs = h('div', { class: 'itabs' }, SX_BOARDS.map(([id, nm]) => h('div', { class: 'itab' + (SXR.board === id ? ' on' : ''), onclick: () => { SXR.board = id; sfx.click(); reload(); } }, nm)));
+        if (SXR.board === 'guild') return [tabs, sxgRankTable(d.list)];   // 公会排行（公会等级、经验）
         const top = h('div', { class: 'rtop' }, h('div', { class: 'sxchips' }, [['all', '全部玩家'], ['friends', '好友']].map(([v, t]) => h('span', { class: 'sxchip' + (SXR.scope === v ? ' on' : ''), onclick: () => { SXR.scope = v; sfx.click(); reload(); } }, t))));
         if (SXR.board === 'clear') {
           const dg = sxInput({ style: 'width:11em' }, 'select');
@@ -38,11 +40,11 @@ Object.assign(menus, {
           top.append(dg, df);
         }
         top.append(h('span', { class: 'sp' }), h('button', { class: 'btn sm blue', onclick: () => { sxRankReport(); setTimeout(() => el.isConnected && el._reload(), 400); } }, '刷新'));
-        const vh = { lvl: '等级', score: '装备评分', duel: '战绩', clear: '用时', epic: '史诗' }[SXR.board];
+        const vh = { lvl: '等级', score: '装备评分', duel: '战绩', clear: '用时', epic: '史诗', ach: '成就点' }[SXR.board];
         const myName = net.user && net.user.name, myCid = save.data ? String(save.data.created) : '';
         const rows = d.list.map(e => h('tr', { class: e.uid === (net.user && net.user.id) ? 'me' : '' },
           h('td', { class: 'num ' + (e.rank <= 3 ? 'rank' + e.rank : '') }, String(e.rank)),
-          h('td', { style: 'font-weight:900' }, e.char || '—', e.cid === myCid && e.user === myName ? h('span', { class: 'small', style: 'color:#ffd23a;margin-left:.3em' }, '（当前角色）') : null),
+          h('td', { style: 'font-weight:900' }, e.char || '—', e.cid === myCid && e.user === myName ? h('span', { class: 'small', style: 'color:#ffd23a;margin-left:.3em' }, '（当前角色）') : null, typeof GD !== 'undefined' && GD.tags.get(e.uid) ? h('div', { class: 'small', style: 'color:#9aff7a;font-weight:700' }, `<${GD.tags.get(e.uid)}>`) : null),
           h('td', { class: 'small' }, sxClsName(e.cls, e.job)),
           h('td', { class: 'num' }, SXR.board === 'lvl' ? '' : `Lv.${e.lvl}`),
           h('td', { class: 'num', style: 'color:#ffe8a8;font-weight:900' }, sxrValue(SXR.board, e)),
@@ -58,3 +60,12 @@ Object.assign(menus, {
     return el;
   },
 });
+// 公会排行表（排行榜窗口和公会窗口共用）
+function sxgRankTable(list) {
+  const mine = typeof GD !== 'undefined' && GD.data && GD.data.guild ? GD.data.guild.id : 0;
+  return h('div', { class: 'sxscroll rlist', 'data-sk': 'rg' }, list.length ? h('table', { class: 'sxtbl' }, h('thead', {}, h('tr', {}, ['名次', '', '公会', '等级', '经验', '成员', '会长'].map(t => h('th', {}, t)))),
+    h('tbody', {}, list.map(g => h('tr', { class: g.id === mine ? 'me' : '' }, h('td', { class: 'num ' + (g.rank <= 3 ? 'rank' + g.rank : '') }, String(g.rank)),
+      h('td', {}, h('img', { src: guildBadgeSrc(g.badge, 48), style: 'width:1.8em;height:1.8em;vertical-align:middle' })),
+      h('td', { style: 'font-weight:900;color:#9aff7a' }, g.name), h('td', { class: 'num' }, `Lv.${g.lvl}`), h('td', { class: 'num' }, fmtNum(g.exp)), h('td', { class: 'num' }, `${g.members}/${g.maxMembers}`), h('td', { class: 'small' }, g.leader)))))
+    : h('div', { class: 'sxload' }, '还没有公会'));
+}

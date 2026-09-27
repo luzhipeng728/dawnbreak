@@ -87,20 +87,25 @@ const sxMoney = (gold, cera) => [gold ? h('span', { class: 'gold', style: 'font-
 NPC_SERVICES.auction ??= { label: '拍卖行', show: () => socialOn(), run: () => menus.show('auction') };
 NPC_SERVICES.mail ??= { label: '邮箱', show: () => socialOn(), run: () => menus.show('mail') };
 
-/* ---- 快捷键：拍卖行 B（加进按键设置的“窗口”组，可以改键） ---- */
-KEYMAP_DEFAULT.auction = ['KeyB'];
-if (!KEYMAP.auction) {
-  KEYMAP.auction = ['KeyB'];
-  try { const k = (JSON.parse(localStorage.getItem(UI_PREF_KEY) || '{}').keys || {}).auction; if (Array.isArray(k)) KEYMAP.auction = k.filter(c => typeof c === 'string').slice(0, 2); } catch (e) { /* 用默认键 */ }
-  for (const a in KEYMAP) if (a !== 'auction' && KEYMAP.auction.some(c => KEYMAP[a].includes(c))) KEYMAP.auction = KEYMAP.auction.filter(c => !KEYMAP[a].includes(c));   // 被别的动作占用了就让出来
+/* ---- 快捷键（加进按键设置的“窗口”组，可以改键）：拍卖行 B、公会 J、成就 U ---- */
+function sxAddKey(a, code, name, win = a) {
+  KEYMAP_DEFAULT[a] = [code];
+  if (!KEYMAP[a]) {
+    KEYMAP[a] = [code];
+    try { const k = (JSON.parse(localStorage.getItem(UI_PREF_KEY) || '{}').keys || {})[a]; if (Array.isArray(k)) KEYMAP[a] = k.filter(c => typeof c === 'string').slice(0, 2); } catch (e) { /* 用默认键 */ }
+    for (const b in KEYMAP) if (b !== a && KEYMAP[a].some(c => KEYMAP[b].includes(c))) KEYMAP[a] = KEYMAP[a].filter(c => !KEYMAP[b].includes(c));   // 被别的动作占用了就让出来
+  }
+  ACTION_NAME[a] = name;
+  const g = KEY_GROUPS.find(x => x[0] === '窗口'); if (g && !g[1].includes(a)) g[1].push(a);
+  UI_WIN[a] = win; UI_ACTIONS.add(a);
+  if (typeof MB_WIN !== 'undefined') MB_WIN[a] = win;
 }
-ACTION_NAME.auction = '拍卖行';
-{ const g = KEY_GROUPS.find(x => x[0] === '窗口'); if (g && !g[1].includes('auction')) g[1].push('auction'); }
-UI_WIN.auction = 'auction'; UI_ACTIONS.add('auction');
+sxAddKey('auction', 'KeyB', '拍卖行');
+sxAddKey('guild', 'KeyJ', '公会');
 
 /* ---- 屏幕左侧的社交按钮条 ---- */
 const SX_BAR = [
-  ['signin', '签到'], ['mail', '邮件'], ['auction', '拍卖行'], ['rank', '排行榜'], ['gm', '管理'],
+  ['signin', '签到'], ['mail', '邮件'], ['guild', '公会'], ['auction', '拍卖行'], ['rank', '排行榜'], ['gm', '管理'],
 ];
 const SX_ENV_SVG = '<svg viewBox="0 0 24 18"><rect x="1" y="1" width="22" height="16" rx="2" fill="#f4e6c0" stroke="#3a2a1a" stroke-width="1.6"/><path d="M1.8 2.4 12 10.2 22.2 2.4" fill="none" stroke="#a0302a" stroke-width="1.8"/></svg>';
 const sxbar = {
@@ -111,7 +116,7 @@ const sxbar = {
       const b = h('button', { title: name, onclick: e => { e.currentTarget.blur(); sfx.click(); menus.open(w); } });
       if (w === 'mail') b.innerHTML = SX_ENV_SVG;
       b.append(h('span', {}, name));
-      if (w === 'auction') { b._kb = h('kbd', {}, ''); b.append(b._kb); }
+      if (w === 'auction' || w === 'guild') { b._kb = h('kbd', {}, ''); b.append(b._kb); }
       b._badge = h('span', { class: 'badge', hidden: '' }); b.append(b._badge);
       this.btns[w] = b; this.el.append(b);
     }
@@ -132,6 +137,9 @@ const sxbar = {
     B.mail._badge.hidden = !n; B.mail._badge.textContent = n > 99 ? '99+' : String(n);
     B.mail.classList.toggle('hot', SX.unread > 0);
     B.signin.classList.toggle('hot', !SX.signed);
+    const gd = typeof GD !== 'undefined' && GD.data, gn = gd ? (gd.guild ? (gd.reqs || []).length : (gd.invites || []).length) : 0;
+    B.guild._badge.hidden = !gn; B.guild._badge.textContent = String(gn); B.guild.classList.toggle('hot', gn > 0);
+    if (B.guild._kb) B.guild._kb.textContent = keyName('guild');
     for (const [w] of SX_BAR) B[w].classList.toggle('on', menus.isOpen(w));
   },
 };

@@ -62,7 +62,7 @@ async function sxSignin(el, btn) {
   SX.signing = true; if (btn) btn.classList.add('off');
   try {
     const r = await sxApi('POST', '/api/signin');
-    SX.signed = true; sfx.levelUp();
+    SX.signed = true; sfx.levelUp(); bus.emit('sxSignin', { count: r.count, streak: r.streak });
     toastMsg(`签到成功（本月第 ${r.count} 天${r.bonus ? `，连续 ${r.streak} 天` : ''}）`, '#8aff9a');
     // 奖励邮件：立即领取（背包满了就留在邮箱）
     const inbox = await sxApi('GET', '/api/mail'); sxSetCounts(inbox);

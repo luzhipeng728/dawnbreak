@@ -181,7 +181,7 @@ const gate = await ev(() => ({ gf: SCENES.gf_graca.gates.some(g => g.dungeon ===
 check(gate.gf && gate.sky && gate.hidden, '深渊之门放在格拉卡 / 天空之城，资格任务完成前不出现');
 const noTk = await ev(() => { inv.take('abyss_ticket', inv.count('abyss_ticket')); save.data.fatigue = FATIGUE_MAX; return enterDungeon('abyss_gf', 0); });
 check(noTk === false && await ev(() => game.scene === 'town'), '没有邀请函进不去');
-await ev(() => { save.data.questDone.q_abyss_gf = Date.now(); inv.add(makeItem('abyss_ticket', 2)); game.lvl = 22; recalcStats(game.player); });
+await ev(() => { save.data.questDone.q_abyss_gf = Date.now(); inv.items = inv.items.filter(x => x.kind !== 'equip'); inv.add(makeItem('abyss_ticket', 2)); game.lvl = 22; recalcStats(game.player); });   // 先清空背包里的装备，免得捡东西时背包满
 await ev(() => enterDungeon('abyss_gf', 0));
 await page.waitForFunction(() => game.scene === 'dungeon' && game.dungeon && game.dungeon.def.id === 'abyss_gf', null, { timeout: 20000 });
 await wait(300);

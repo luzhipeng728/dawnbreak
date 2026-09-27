@@ -146,7 +146,7 @@ for (const cls of ['sword', 'gun', 'mage']) {
   await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
   await page.evaluate(HELPERS);
   const look = () => page.evaluate(PLAYER_LOOK);
-  const types = await page.evaluate(cls => Object.keys(WEAPON_IMG).filter(k => !k.startsWith('ep_') && WTYPES[WEAPON_IMG[k].type].cls === cls), cls);
+  const types = await page.evaluate(cls => Object.keys(WEAPON_IMG).filter(k => k === WEAPON_IMG[k].type && WTYPES[k].cls === cls), cls);
   const seen = {};
   for (const t of types) {
     const err = await page.evaluate(([EQ, t, cls]) => (0, eval)(EQ)([{ slot: 'weapon', wtype: t, lvl: 10, cls, rar: 2 }]   /* 固定稀有品级：不指定时可能随机出史诗（史诗有专属外观 ep_*） */), [`(${EQUIP})`, t, cls]);

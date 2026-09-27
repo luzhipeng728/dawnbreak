@@ -137,7 +137,8 @@ def main():
                 sub = solo; ys, xs = np.where(sub[..., 3] > 40); sub = sub[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
             if 'cut' in f:   # 只保留左边这么多（去掉枪口的火焰等特效）
                 sub = sub[:, :int(sub.shape[1] * f['cut'])]; cols = np.where((sub[..., 3] > 40).any(0))[0]; sub = sub[:, :cols.max() + 1]
-            wt = EP_TYPE.get(key, key); kind = KIND[wt]; H, W = sub.shape[:2]
+            wt = EP_TYPE.get(key) or (key.split('_', 1)[1] if '_' in key and key.split('_', 1)[1] in SIZE else key)   # 装扮：<装扮>_<武器类型>
+            kind = KIND[wt]; H, W = sub.shape[:2]
             gx, gy = auto_grip(sub, kind)
             if 'gx' in f: gx = f['gx'] * W
             if 'gy' in f: gy = f['gy'] * H

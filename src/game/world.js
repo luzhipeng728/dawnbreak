@@ -254,6 +254,7 @@ function makePasserby(S, used, slot) {
   let name = pick(CROWD_NAMES); for (let k = 0; k < 6 && used.has(name); k++) name = pick(CROWD_NAMES); used.add(name);
   const looks = CROWD_LOOKS[cls].filter((l, i) => i || !game.player || game.player.cls !== cls);
   const w = new Passerby({ cls, name, guild: pick(CROWD_GUILDS), model: new SpriteModel(cls, SPR_FALLBACK, SPR_ANIMS[cls], pick(looks)) });
+  if (typeof avatarSetLook === 'function') avatarSetLook(w.model, avatarRandomLook(cls));   // 外观组：随机武器（20% 史诗）、35% 穿庆典时装（时装不吃上面的换色）
   const edges = S.exits.filter(e => (e.side === 'left' || e.side === 'right') && !e.locked), gates = S.gates.filter(gateVisible);
   if (slot !== undefined) { w.x = clamp(slot * S.width + rnd(-80, 80), 150, S.width - 150); w.y = rnd(30, DEPTH - 30); w.wait = rnd(0.5, 4); }
   else if (S.kind === 'field' && gates.length && Math.random() < 0.6) { const g = pick(gates); w.x = g.x; w.y = 24; }   // 刚从地下城出来

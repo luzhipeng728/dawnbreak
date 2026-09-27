@@ -50,7 +50,7 @@ defSkill('quake', { name: '崩山裂地斩', cls: 'sword', job: 'berserker', lvR
       blast(e, e.x + e.face * 40, e.y, 170, { dmg: skillDmg(4.0, 0.4, lv), launch: 520, knock: 80, hs: 0.12, big: 1.8, col: '#ffb060', downHit: true }, { zMax: 120 });
       for (let i = 0; i < 3; i++) game.after(0.16 + i * 0.14, () => { if (e.dead) return; const x = e.x + e.face * (90 + i * 70); sfx.boom(0.5); fxSpr('lava', x, e.y, 0, { w: 150, dur: 0.5, ay: 0.85, grow: [0.3, 1.1] });
         blast(e, x, e.y, 70, { dmg: skillDmg(1.7, 0.17, lv), airLift: 380, launch: 260, knock: 40, hs: 0.05, elem: 'fire', col: '#ffb060' }, { zMax: 260 }); }); } }) });
-defSkill('bz_awaken', { name: '魔狱血刹', cls: 'sword', job: 'berserker', lvReq: 18, maxLv: 3, mp: 150, cd: 60, type: 'phys', awaken: true, col: '#8a0010',
+defSkill('bz_awaken', { name: '魔狱血刹', cls: 'sword', job: 'berserker', lvReq: 18, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'phys', awaken: true, col: '#8a0010',
   desc: '【觉醒】魔剑吸收周围的血气不断变大，最后砸向大地，血气柱贯穿整个画面。', pow: lv => skillDmg(24, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
   act: (lv) => ({ name: 'bz_awaken', clip: 'bzAwk', dur: 2.6, superArmor: true, noCounter: true, invul: [0, 2.0],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '魔狱血刹', who: e }; game.timeStop = 0.9; sfx.awaken(); },

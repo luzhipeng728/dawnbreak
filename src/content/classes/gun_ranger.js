@@ -52,7 +52,7 @@ function hawkThrow(lv, n) {
   return { name: 'g_hawk' + n, clip: 'ghawk', dur: 0.55, cancelFrom: 0.42, follow: n < 3 ? () => hawkThrow(lv, n + 1) : null, followWin: [0.3, 0.55],
     events: [evAt(0.22, e => { sfx.swing(true); hawkGun(e, 0, skillDmg(1.5, 0.15, lv)); game.after(0.12, () => { if (!e.dead) hawkGun(e, 1, skillDmg(1.5, 0.15, lv)); }); })] };
 }
-defSkill('g_awaken', { name: '血腥狂欢', cls: 'gun', job: 'ranger', lvReq: 18, maxLv: 3, mp: 150, cd: 60, type: 'phys', awaken: true, col: '#c0102a',
+defSkill('g_awaken', { name: '血腥狂欢', cls: 'gun', job: 'ranger', lvReq: 18, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'phys', awaken: true, col: '#c0102a',
   desc: '【觉醒】重踏大地把周围敌人震上天，跃起在空中旋转扫射，落地后双枪乱射，最后以一朵血色蔷薇的爆炸收尾。', pow: lv => skillDmg(20, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
   act: (lv) => ({ name: 'g_awaken', clip: 'crazy', dur: 2.9, superArmor: true, noCounter: true, invul: [0, 2.9],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '血腥狂欢', who: e }; game.timeStop = 0.9; sfx.awaken(); },

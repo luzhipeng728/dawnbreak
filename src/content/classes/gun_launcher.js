@@ -56,7 +56,7 @@ defSkill('gl_x1', { name: 'X-1 压缩量子炮', cls: 'gun', job: 'launcher', lv
         update: (p, dt) => { for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - p.x, (t.y - p.y) * 1.4) < R && !(t.boss && hasSA(t))) { t.x = damp(t.x, p.x, 4, dt); t.y = damp(t.y, p.y, 4, dt); } },
         onEnd: p => { fxSpr('quantum', p.x, p.y, 40, { w: 220 + k * 80, dur: 0.5, grow: [0.4, 1.3] }); fxShock(p.x, p.y, 200, '#8fd0ff'); cam.shake = 9; sfx.boom(1.1);
           blast(e, p.x, p.y, R, { dmg: skillDmg(7, 0.7, lv), launch: 480, knock: 140, hs: 0.12, big: 1.8, col: '#bfe8ff' }, { zMax: 200 }); } }); })] }) });
-defSkill('gl_awaken', { name: '远古粒子炮', cls: 'gun', job: 'launcher', lvReq: 18, maxLv: 3, mp: 150, cd: 60, type: 'phys', awaken: true, col: '#e0a02a',
+defSkill('gl_awaken', { name: '远古粒子炮', cls: 'gun', job: 'launcher', lvReq: 18, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'phys', awaken: true, col: '#e0a02a',
   desc: '【觉醒】架起远古巨炮，蓄能后向前方发射贯穿整个画面的粒子光束，连续命中后引发大爆炸。', pow: lv => skillDmg(22, 6, lv), ai: { kind: 'awaken', r: [0, 700], dy: 50 },
   act: (lv) => ({ name: 'gl_awaken', clip: 'lAwk', dur: 2.8, superArmor: true, noCounter: true, invul: [0, 1.2],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '远古粒子炮', who: e }; game.timeStop = 0.9; sfx.awaken(); },

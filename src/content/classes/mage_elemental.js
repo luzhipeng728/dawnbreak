@@ -67,7 +67,7 @@ defSkill('mg_hole', { name: '湮灭黑洞', cls: 'mage', job: 'elemental', lvReq
       draw(c, pr) { const X = sx(pr.x), Y = sy(pr.y, pr.z), k = pr.t / pr.life, s = Math.min(1, k * 6) * (k > 0.92 ? (1 - k) / 0.08 : 1); c.fillStyle = 'rgba(10,2,20,.92)'; c.beginPath(); c.arc(X, Y, Math.max(0.5, 16 * s), 0, TAU); c.fill(); drawSpr(c, 'vortex', X, Y, 120 * s, 120 * s, { rot: -game.t * 5 }); } });
   })] }) });
 const ELEM4 = [['fire', '#ff9a50'], ['ice', '#9fe6ff'], ['light', '#fff38a'], ['dark', '#c79aff']];
-defSkill('mg_awaken', { name: '陨星幻灭', cls: 'mage', job: 'elemental', lvReq: 18, maxLv: 3, mp: 150, cd: 60, type: 'mag', awaken: true, icon: 'mg_awaken', col: '#ffd23a',
+defSkill('mg_awaken', { name: '陨星幻灭', cls: 'mage', job: 'elemental', lvReq: 18, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'mag', awaken: true, icon: 'mg_awaken', col: '#ffd23a',
   desc: '【觉醒】展开巨大的法阵（可用方向键移动，移动时法阵缩小、陨石更密集），火、冰、光、暗四属性陨石接连坠落。施放中只有霸体，没有无敌。', pow: lv => skillDmg(24, 6, lv), ai: { kind: 'awaken', r: [0, 360], dy: 90 },
   act: (lv) => ({ name: 'mg_awaken', clip: 'mAwk', dur: 3.4, superArmor: true, noCounter: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '陨星幻灭', who: e }; game.timeStop = 0.9; sfx.awaken(); const at = aimAhead(e, 220, 400); e.act.cx = at.x; e.act.cy = at.y; e.act.r = 170; },

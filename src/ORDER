@@ -50,4 +50,6 @@ content/sprites.js
 game/flow.js
 ui/artlab.js
 game/bot.js
+game/fighter_ai.js
+game/duel.js
 boot.js

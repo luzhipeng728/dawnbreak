@@ -86,6 +86,14 @@ content/sprites.js
 content/avatar/weapon_art.js
 content/avatar/looks.js
 models/avatar.js
+# 商城与礼包（商城组）：点券、商城、时装 / 天空套、宠物 / 光环、礼包、魔盒与箱子（依赖物品系统、外观、菜单栏）
+content/cash/items.js
+content/cash/catalog.js
+game/shop.js
+game/shop_box.js
+game/shop_pet.js
+ui/cash/shop.js
+ui/cash/box.js
 game/flow.js
 ui/artlab.js
 game/bot.js

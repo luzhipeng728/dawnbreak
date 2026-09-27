@@ -309,17 +309,17 @@ Object.assign(MON, {
     attacks: [
       { clip: 'cast', range: [0, 460], dy: 460, cd: [3, 4.2], w: 1.6, act: { dur: 1.3, events: [evAt(0.25, e => { const p = game.player; if (!p) return; skySpikeAt(e, p.x, p.y, 1.1, { r: 38, dmg: 1.05, follow: p }); skySpikeAt(e, p.x + rnd(-120, 120), clamp(p.y + rnd(-50, 50), 10, DEPTH - 10), 1.3, { r: 38, dmg: 1.05 }); })] } },
       { clip: 'roar', range: [0, 800], dy: 800, cd: [12, 16], w: 0.6, cond: () => skyAlive('golem') + skyAlive('golemBronze') < 2, act: { dur: 1.3, superArmor: true, events: [evAt(0.6, e => { fxText('起来吧，石巨人！', e.x, e.y, e.z + 30, { col: '#ffe060', size: 11 }); spawnMonster('golem', clamp(e.x + rnd(-160, 160), 80, (game.room ? game.room.x1 : 1200) - 80), rnd(20, DEPTH - 20), { lvl: e.lvl - 1, drop: true, ...skyMul() }); })] } }] },
-  // 卡格：扔毒飞镖，一次 1~3 枚
+  // 卡格：扔毒飞镖，一次 1~2 枚（黑暗玄廊远程怪多，机器人实测被击偏多，2026-09-27 调低频率）
   kargo: { name: '卡格', lvl: 18, hp: 5400, atk: 235, def: 230, w: 10, d: 10, h: 66, weight: 0.7, speed: 145, exp: 110, gold: [26, 50], shadowR: 14, pref: 220, clips: BEAST_CLIPS,
     model: () => buildGoblinVariant({ ...SKY_GOB, skin: '#5a6a8a', skin2: '#3a4a6a', eye: '#60ff90', band: '#c83a3a' }, { weapon: 'none' }),
     attacks: [
       melee('atk1', 0.08, 0.16, [0, 48, 20, 10, 60], { range: [0, 44], cd: [1.4, 2.4], hit: { dmg: 0.8, knock: 70, snd: 'stab' } }),
-      { clip: 'throw', range: [100, 380], dy: 40, cd: [2.2, 3.4], w: 1.6, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, rndi(1, 3)))] } }] },
+      { clip: 'throw', range: [100, 380], dy: 40, cd: [2.6, 3.8], w: 1.6, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, rndi(1, 2)))] } }] },
   // 夜视镜卡格：扔烟雾弹“关灯”（烟里会失明）；它还活着时黑暗玄廊会更黑（见 themes/sky_castle.js）
   kargoGoggle: { name: '夜视镜卡格', lvl: 19, hp: 5800, atk: 240, def: 240, w: 10, d: 10, h: 66, weight: 0.7, speed: 150, exp: 115, gold: [28, 52], shadowR: 14, pref: 240, clips: BEAST_CLIPS,
     model: () => buildGoblinVariant({ ...SKY_GOB, skin: '#6a5a8a', skin2: '#4a3a6a', eye: '#60ff90', band: '#3a3a3a' }, { weapon: 'none' }),
     attacks: [
-      { clip: 'throw', range: [100, 380], dy: 40, cd: [2.4, 3.6], w: 1.2, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, 2))] } },
+      { clip: 'throw', range: [100, 380], dy: 40, cd: [2.8, 4], w: 1.2, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, rndi(1, 2)))] } },
       { clip: 'throw', range: [120, 360], dy: 60, cd: [6, 8], w: 1, act: { dur: 0.9, events: [evAt(0.45, e => skySmokeBomb(e))] } }] },
   // 驱逐者：挥剑 + 短距离冲刺
   expeller: { name: '驱逐者', lvl: 19, hp: 11000, atk: 255, def: 420, w: 15, d: 12, h: 116, weight: 1.6, speed: 95, exp: 125, gold: [28, 56], shadowR: 20, pref: 60, clips: BEAST_CLIPS,

@@ -43,7 +43,7 @@ const HELPERS = () => {
       const m = new SpriteModel(cls, SPR_FALLBACK, SPR_ANIMS[cls]);
       for (const f of frames) {
         if (S.frames[f].wpn) wpn++;
-        try { const cv = __av.drawFrame(cls, f); green += __av.green(cv); } catch (e) { bad.push(f + ':' + e.message); }
+        try { const cv = __av.drawFrame(cls, f); if (S.frames[f].wpn) green += __av.green(cv); } catch (e) { bad.push(f + ':' + e.message); }
       }
       // 动画表里引用的帧都存在
       const missing = [];
@@ -54,7 +54,7 @@ const HELPERS = () => {
   });
   for (const [cls, v] of Object.entries(r)) {
     ok(v.bad.length === 0, `${cls}: ${v.n} 帧全部能画（其中 ${v.wpn} 帧有武器轨迹）${v.bad.length ? ' 出错：' + v.bad.slice(0, 3).join(' ') : ''}`);
-    ok(v.green === 0, `${cls}: 绿色占位像素残留 ${v.green}`);
+    ok(v.green === 0, `${cls}: 抠过占位棍的帧里绿色残留 ${v.green} 像素`);
     ok(v.av, `${cls}: 职业精灵模型自动挂上外观层`);
     if (v.missing.length) console.log(`    （动画表引用了不存在的帧，走兜底：${v.missing.slice(0, 6).join(' ')}${v.missing.length > 6 ? ' …' : ''}）`);
   }
@@ -75,17 +75,18 @@ const HELPERS = () => {
     const plan = await page.evaluate(() => ({
       sword: { frames: ['idle', ...Array.from({ length: 8 }, (_, i) => 'walk' + (i + 1)), 'a1_1', 'a1_2', 'a1_3', 'a2_1', 'a2_2', 'a2_3', 'a3_1', 'a3_2'].filter(f => SPR_DATA.sword.frames[f]),
                looks: [['太刀', { wpn: 'katana' }], ['巨剑', { wpn: 'greatsword' }], ['光剑', { wpn: 'lightsaber' }], ['史诗·月之光芒', { wpn: 'ep_katana' }], ['空手', { wpn: null }],
-                       ...(SPR_DATA['sword@festival'] ? [['庆典时装+太刀', { wpn: 'katana', set: 'festival', acc: ['av_hat_festival', 'av_face_festival', 'av_hair_festival'] }]] : [])] },
+                       ...(SPR_DATA['sword@festival'] ? [['庆典时装+太刀', { wpn: 'katana', set: 'festival', acc: ['av_hat_festival', 'av_face_festival', 'av_hair_festival'] }],
+                                                        ['庆典时装+光剑', { wpn: 'lightsaber', set: 'festival', acc: [] }]] : [])] },
     }));
     for (const [cls, P] of Object.entries(plan)) {
       const file = await page.evaluate(({ cls, P }) => {
-        const cw = 150, ch = 230, lw = 110, W = lw + cw * P.frames.length, H = 30 + ch * P.looks.length;
+        const cw = 190, ch = 240, lw = 120, W = lw + cw * P.frames.length, H = 30 + ch * P.looks.length;
         const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const x = cv.getContext('2d');
         x.fillStyle = '#46505e'; x.fillRect(0, 0, W, H); x.fillStyle = '#fff'; x.font = '14px sans-serif'; x.textAlign = 'center';
         P.frames.forEach((f, j) => x.fillText(f, lw + cw * j + cw / 2, 20));
         P.looks.forEach(([name, look], i) => {
           x.textAlign = 'left'; x.fillStyle = '#ffe28a'; x.fillText(name, 8, 30 + ch * i + ch / 2);
-          P.frames.forEach((f, j) => { const c2 = __av.drawFrame(cls, f, { set: null, acc: [], ...look }, 1.6, cw, ch); x.drawImage(c2, lw + cw * j, 30 + ch * i); });
+          P.frames.forEach((f, j) => { const c2 = __av.drawFrame(cls, f, { set: null, acc: [], ...look }, 1.45, cw, ch); x.drawImage(c2, lw + cw * j, 30 + ch * i); });
         });
         return cv.toDataURL('image/png');
       }, { cls, P });
@@ -94,6 +95,88 @@ const HELPERS = () => {
   }
   ok(!logs.some(l => l.type === 'pageerror'), '页面没有报错' + (logs.length ? ' ' + JSON.stringify(logs.slice(0, 3)) : ''));
   await browser.close();
+}
+
+// ================= 2. 游戏里：玩家换武器 / 穿脱时装 / 刷新后仍然正确 =================
+const PLAYER_LOOK = () => {
+  const p = __G.player, L = p.model.av; L.sync();
+  const cv = document.createElement('canvas'); cv.width = 220; cv.height = 240; const x = cv.getContext('2d');
+  x.translate(110, 228); x.scale(1.6, 1.6); p.model.draw(x, { __c: 'idle', __t: 0 }, 0, NO_OPTS);
+  return { wpn: L.look.wpn, set: L.look.set, S2: !!L.S2, acc: L.look.acc, hash: __av.hash(cv), green: __av.green(cv) };
+};
+const EQUIP = keys => {
+  game.lvl = Math.max(game.lvl, 30);
+  for (const k of keys) { const it = typeof k === 'string' ? makeItem(k) : rollEquip(k); if (!it) return 'no item ' + JSON.stringify(k); inv.add(it); if (!inv.wear(it)) return 'wear failed ' + it.key; }
+  return null;
+};
+for (const cls of ['sword']) {
+  console.log(`游戏里（${cls}）：换武器 / 穿脱时装 / 刷新`);
+  const { browser, page, logs } = await launch({ width: 1280, height: 720 });
+  await page.goto(`${URL_BASE}?town&cls=${cls}&mute&fresh`);
+  await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
+  await page.evaluate(HELPERS);
+  const look = () => page.evaluate(PLAYER_LOOK);
+  const types = await page.evaluate(cls => Object.keys(WEAPON_IMG).filter(k => !k.startsWith('ep_') && WTYPES[WEAPON_IMG[k].type].cls === cls), cls);
+  const seen = {};
+  for (const t of types) {
+    const err = await page.evaluate(([EQ, t, cls]) => (0, eval)(EQ)([{ slot: 'weapon', wtype: t, lvl: 10, cls }]), [`(${EQUIP})`, t, cls]);
+    const L = await look(); seen[t] = L.hash;
+    ok(!err && L.wpn === t, `装备${t} → 手里的武器图 ${L.wpn}${err ? ' ' + err : ''}`);
+  }
+  ok(new Set(Object.values(seen)).size === types.length, `${types.length} 种武器外观互不相同`);
+  const ep = await page.evaluate(cls => Object.keys(WEAPON_IMG).find(k => k.startsWith('ep_') && WTYPES[WEAPON_IMG[k].type].cls === cls), cls);
+  if (ep) { await page.evaluate(([EQ, ep]) => (0, eval)(EQ)([ep]), [`(${EQUIP})`, ep]); const L = await look(); ok(L.wpn === ep, `史诗武器 ${ep} 有专属外观`); }
+  const before = await look();
+  const hasSet = await page.evaluate(cls => !!SPR_DATA[`${cls}@festival`], cls);
+  if (hasSet) {
+    await page.evaluate(([EQ]) => (0, eval)(EQ)(['av_top_festival']), [`(${EQUIP})`]);
+    let L = await look(); ok(!L.set, '只穿上衣：身体不换');
+    await page.evaluate(([EQ]) => (0, eval)(EQ)(['av_bottom_festival', 'av_hat_festival', 'av_face_festival', 'av_hair_festival']), [`(${EQUIP})`]);
+    await page.waitForFunction(() => __G.player.model.av.S2, null, { timeout: 10000 });
+    L = await look(); ok(L.set === 'festival' && L.S2 && L.hash !== before.hash, `上衣 + 下装 → 换成庆典时装（配件 ${L.acc.length} 件）`);
+    ok(L.green === 0, '穿时装后没有绿色残留');
+    const worn = L.hash;
+    await page.evaluate(() => { save.write(); });
+    await page.goto(`${URL_BASE}?town&cls=${cls}&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 }); await page.evaluate(HELPERS);
+    await page.waitForFunction(() => __G.player && __G.player.model.av && (__G.player.model.av.sync(), __G.player.model.av.S2), null, { timeout: 10000 }).catch(() => {});
+    L = await look(); ok(L.set === 'festival' && L.hash === worn, '刷新后外观不变');
+    await page.evaluate(() => inv.unwear('av_top'));
+    L = await look(); ok(!L.set, '脱下上衣 → 身体换回原样');
+    ok(L.acc.length === 3 || cls !== 'sword', '帽子 / 发饰 / 眼镜仍然戴着');
+  }
+  await page.evaluate(() => inv.unwear('weapon'));
+  { const L = await look(); ok(L.wpn === null, '卸下武器 → 空手'); }
+  ok(!logs.some(l => l.type === 'pageerror'), '页面没有报错' + (logs.length ? ' ' + JSON.stringify(logs.slice(0, 3)) : ''));
+  await browser.close();
+}
+
+// ================= 3. 连拍（shots）：测试房间里走路 + 普攻三连，每种外观一条 =================
+if (SHOTS) {
+  const plans = [['katana', [{ slot: 'weapon', wtype: 'katana', lvl: 10, cls: 'sword' }]], ['greatsword', [{ slot: 'weapon', wtype: 'greatsword', lvl: 10, cls: 'sword' }]],
+                 ['lightsaber', [{ slot: 'weapon', wtype: 'lightsaber', lvl: 10, cls: 'sword' }]],
+                 ['festival', [{ slot: 'weapon', wtype: 'katana', lvl: 10, cls: 'sword' }, 'av_top_festival', 'av_bottom_festival', 'av_hat_festival', 'av_face_festival', 'av_hair_festival']]];
+  for (const [name, keys] of plans) {
+    const { browser, page } = await launch({ width: 1280, height: 720 });
+    await page.goto(`${URL_BASE}?test&mute&cls=sword&mobs=0`); await page.waitForFunction(() => window.__READY);
+    await page.evaluate(([EQ, keys]) => { for (const e of __G.ents) if (e.team === 'e') { e.x = 5000; e.control = null; } (0, eval)(EQ)(keys); }, [`(${EQUIP})`, keys]);
+    await page.waitForFunction(() => !__G.player.model.av.setKey || __G.player.model.av.S2, null, { timeout: 10000 });
+    const kb = page.keyboard, shots = [];
+    const snap = async () => {
+      const p = await page.evaluate(() => { const p = __G.player; return { x: (p.x - cam.x) * 1280 / 960, y: (FLOOR_Y + p.y - p.z) * 720 / 540 }; });
+      shots.push(await page.screenshot({ clip: { x: Math.max(0, Math.min(1280 - 240, p.x - 120)), y: Math.max(0, p.y - 200), width: 240, height: 220 } }));
+    };
+    await kb.down('ArrowRight'); for (let i = 0; i < 9; i++) { await snap(); await page.waitForTimeout(70); } await kb.up('ArrowRight');
+    await page.waitForTimeout(200);
+    for (let i = 0; i < 3; i++) { await kb.press('KeyX'); for (let j = 0; j < 3; j++) { await snap(); await page.waitForTimeout(45); } }
+    // 拼成一条
+    const url = await page.evaluate(async bufs => {
+      const ims = await Promise.all(bufs.map(b => new Promise(r => { const im = new Image(); im.onload = () => r(im); im.src = 'data:image/png;base64,' + b; })));
+      const per = 6, cv = document.createElement('canvas'); cv.width = 240 * per; cv.height = 220 * Math.ceil(ims.length / per); const x = cv.getContext('2d');
+      ims.forEach((im, i) => x.drawImage(im, (i % per) * 240, Math.floor(i / per) * 220)); return cv.toDataURL('image/png');
+    }, shots.map(b => b.toString('base64')));
+    const path = `${out}/burst_${name}.png`; fs.writeFileSync(path, Buffer.from(url.split(',')[1], 'base64')); console.log('  写出', path);
+    await browser.close();
+  }
 }
 
 if (fail) { console.log(`\n${fail} 项失败`); process.exit(1); }

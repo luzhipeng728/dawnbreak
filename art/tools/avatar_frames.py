@@ -187,15 +187,26 @@ def bg_white(a):
     return (rgb.min(-1) >= 243) & (rgb.max(-1) - rgb.min(-1) <= 12) & (a[..., 3] > 0)
 
 def clear_white(out, seed):
-    """棍子原来围住的白底（remove_bg 从图边泛洪不到）：从抠空的位置吃掉相连的纯白，再吃两圈抗锯齿浅色边"""
-    W = bg_white(out); cur = seed.copy()
-    for _ in range(400):
-        nx = dil(cur) & W & ~cur
-        if not nx.any(): break
-        cur |= nx
-    rgb = out[..., :3].astype(np.int16); L = (rgb.min(-1) >= 215) & (rgb.max(-1) - rgb.min(-1) <= 30) & (out[..., 3] > 0)
-    for _ in range(2): cur |= dil(cur) & L
-    out[..., 3] = np.where(cur & ~seed, 0, out[..., 3])
+    """棍子原来围住的白底（remove_bg 从图边泛洪不到）：从抠空的位置吃掉相连的纯白块。
+    白色衣物（毛边、衬衫）的高光块四周是浅灰阴影，白底四周是深色描边：边界上浅色像素多的块不吃。"""
+    W = bg_white(out); rgb = out[..., :3].astype(np.int16); H, Wd = W.shape
+    lab = np.zeros(W.shape, np.int32); n = 0; kill = np.zeros_like(W)
+    for y0, x0 in zip(*np.where(dil(seed) & W)):
+        if lab[y0, x0]: continue
+        n += 1; lab[y0, x0] = n; q = deque([(y0, x0)]); cells = []
+        while q:
+            y, x = q.popleft(); cells.append((y, x))
+            for ny, nx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+                if 0 <= ny < H and 0 <= nx < Wd and W[ny, nx] and not lab[ny, nx]: lab[ny, nx] = n; q.append((ny, nx))
+        reg = lab == n; edge = dil(reg, 5) & ~dil(reg, 2) & ~dil(seed, 2) & (out[..., 3] > 0) & ~W
+        if edge.sum() > 10:
+            lum = rgb[edge] @ np.array([0.3, 0.59, 0.11]); dark, light = (lum < 90).mean(), (lum > 150).mean()
+            if light > 0.5 and dark < 0.3: continue          # 白色衣物（外圈是浅灰阴影）：保留；白底外圈是深色描边
+        kill |= reg
+    L = (rgb.min(-1) >= 215) & (rgb.max(-1) - rgb.min(-1) <= 30) & (out[..., 3] > 0)
+    grow = kill.copy()
+    for _ in range(2): grow |= dil(grow) & L
+    out[..., 3] = np.where(grow, 0, out[..., 3])
 
 def key_and_fill(a, hole, fill, known):
     """抠掉占位棍：fill（身前那段被挡住的身体）用 known 里的干净颜色逐圈向内扩散补上；其余占位像素变透明"""

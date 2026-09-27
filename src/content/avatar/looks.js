@@ -14,11 +14,11 @@ const AVATAR_SETS = {
   av_festival: { id: 'festival', name: '庆典时装' },
 };
 // 头部配件（帽子 / 头部 / 脸部）：按每帧的头部锚点（art/tools/avatar_head.py 求出的站姿头部中心 + 转角）叠加；图 IMG['avatar/<img>']
-//   pos[职业] = [dx, dy, 转角]：配件图中心相对头部锚点的位置（帧像素，站姿朝右时）；back：画在身体后面
+//   pos[职业] = [dx, dy, 转角, 缩放]：配件图中心相对头部锚点的位置（帧像素，站姿朝右时）；face：脸部配件（脸被挡住的帧不画）
 const AVATAR_ACC = {
-  av_hat_festival: { img: 'festival_hat', pos: { sword: [2, -40, -0.12], gun: [2, -40, -0.12], mage: [2, -40, -0.12] } },
-  av_hair_festival: { img: 'festival_hair', pos: { sword: [-40, 2, 0.2], gun: [-40, 2, 0.2], mage: [-40, 2, 0.2] } },
-  av_face_festival: { img: 'festival_face', pos: { sword: [24, 16, 0], gun: [24, 16, 0], mage: [24, 16, 0] } },
+  av_hat_festival: { img: 'festival_hat', pos: { sword: [8, -34, -0.1, 0.72], gun: [8, -34, -0.1, 0.72], mage: [8, -34, -0.1, 0.72] } },
+  av_hair_festival: { img: 'festival_hair', pos: { sword: [-36, 16, 0.25, 0.5], gun: [-36, 16, 0.25, 0.5], mage: [-36, 16, 0.25, 0.5] } },
+  av_face_festival: { img: 'festival_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [10, 43, 0, 0.72], mage: [10, 43, 0, 0.72] } },
 };
 const AVATAR_ACC_SCALE = 0.8;   // 配件图比游戏里画的大 1.25 倍（art/tools/avatar_acc.py）
 /* 外观规则（写给玩家看的说明也用这一段）：

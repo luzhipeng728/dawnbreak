@@ -88,10 +88,10 @@ class AvatarLayer {
   accessories(c, F, back) {
     const H = F.head;
     for (const a of this.acc) {
-      if (!!a.back !== back) continue;
+      if (!!a.back !== back || (a.face && H.f === 0)) continue;
       const im = IMG['avatar/' + a.img], P = a.pos[this.cls]; if (!im || !P) continue;
       c.save(); c.translate(H.x - F.ax, H.y - F.ay); if (H.a) c.rotate(H.a); c.translate(P[0], P[1]); if (P[2]) c.rotate(P[2]);
-      c.scale(AVATAR_ACC_SCALE, AVATAR_ACC_SCALE); c.drawImage(im, -im.width / 2, -im.height / 2); c.restore();
+      const k = AVATAR_ACC_SCALE * (P[3] || 1); c.scale(k, k); c.drawImage(im, -im.width / 2, -im.height / 2); c.restore();
     }
   }
 }

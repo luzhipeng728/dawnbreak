@@ -70,7 +70,7 @@ function actionsOf(code) { const r = []; for (const a in KEYMAP) if (KEYMAP[a].i
 
 /* ---- 界面偏好（本机保存，与角色无关）：按键、音量、画面选项、窗口位置、手机按钮 ---- */
 const UI_PREF_KEY = 'dawnbreak_ui_v1';
-const PREF_DEFAULT = { music: 0.6, sfx: 0.9, dmgNum: true, shake: true, dropNames: true, hideRank: false, tipDetail: true, hudMode: 'full', winPos: {}, touchSize: 1, touchAlpha: 1, touchSwap: false };
+const PREF_DEFAULT = { music: 0.6, sfx: 0.9, dmgNum: true, shake: true, cutin: true, dropNames: true, hideRank: false, tipDetail: true, hudMode: 'full', winPos: {}, touchSize: 1, touchAlpha: 1, touchSwap: false };
 const prefs = JSON.parse(JSON.stringify(PREF_DEFAULT));
 function uiPref(k) { return k in prefs ? prefs[k] : PREF_DEFAULT[k]; }
 function setPref(k, v) { prefs[k] = v; savePrefs(); }

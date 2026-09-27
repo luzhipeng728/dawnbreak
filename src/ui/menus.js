@@ -419,9 +419,9 @@ const menus = {
   /* ---------------- 操作说明（按当前键位生成） ---------------- */
   w_help() {
     const cls = game.player ? game.player.cls : 'sword', C = CLASSES[cls] || CLASSES.sword;
-    const K = a => keyName(a, true), cmdKey = keyName('cmd');
+    const K = a => keyName(a, true);
     const cmds = (C.cmds || []).filter(c => SKILLS[c[1]] && (!SKILLS[c[1]].job || SKILLS[c[1]].job === game.job) && (game.skillLv[c[1]] || 0) > 0)
-      .map(([seq, id, key]) => `${typeof cmdTextOf === 'function' ? cmdTextOf(id) : (seq === '' ? '' : cmdText(seq) + '+') + (key === 'attack' ? keyName('attack') : cmdKey)}：${SKILLS[id].name}`).join('　') || '（学会技能后，这里会列出可以用指令释放的技能）';
+      .map(([seq, id, key]) => `${typeof cmdTextOf === 'function' ? cmdTextOf(id) : (seq === '' ? '' : cmdText(seq) + '+') + keyName({ attack: 'attack', buff: 'cmdB', jump: 'jump' }[key] || 'cmd')}：${SKILLS[id].name}`).join('　') || '（学会技能后，这里会列出可以用指令释放的技能）';
     const row = (k, t) => [h('b', {}, k), h('span', {}, t)];
     const sec = t => h('div', { class: 'helpsec' }, t);
     const body = h('div', { class: 'help' },

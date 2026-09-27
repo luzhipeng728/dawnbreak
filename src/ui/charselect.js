@@ -27,8 +27,8 @@ const className = (cls, job) => { const C = CLASSES[cls] || {}; const J = job &&
 const locName = d => { const id = d.loc && d.loc.scene; const S = SCENES[id] || SCENES[typeof START_SCENE !== 'undefined' ? START_SCENE : ''] || {}; return S.name || '艾尔文防线'; };
 const fmtPlay = s => { s = Math.floor(s || 0); const hh = Math.floor(s / 3600), mm = Math.floor(s % 3600 / 60); return hh ? `${hh} 小时 ${mm} 分` : `${mm} 分钟`; };
 // 职业立绘（手绘优先；没有就用模型画一帧站姿）
-function classArt(cls, cl = 'cart') {
-  const C = CLASSES[cls] || {}, im = IMG[`class/${cls}`];
+function classArt(cls, cl = 'cart', job) {
+  const C = CLASSES[cls] || {}, J = job && C.jobs && C.jobs[job], im = (J && J.art && IMG[J.art]) || IMG[`class/${cls}`];   // 转职后优先用转职立绘
   if (im) return h('img', { class: cl, src: im.src, draggable: 'false' });
   const cv = h('canvas', { class: cl, width: 90, height: 130 });
   requestAnimationFrame(() => { try { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.translate(45, 124); C.model().draw(x, (CLIPS[cls] || CLIPS.sword).idle.keys[0][1], 0, {}); } catch (e) { /* 模型未就绪 */ } });
@@ -67,7 +67,7 @@ Object.assign(menus, {
       const c = chars[i];
       if (!c) { slots.push(h('div', { class: 'cslot empty', onclick: () => { sfx.click(); this.close('charselect'); this.open('newgame'); } }, h('div', { class: 'plus' }, '+'), h('div', { class: 'small' }, '创建角色'))); continue; }
       const card = h('div', { class: 'cslot' + (i === sel ? ' sel' : ''), 'data-i': i, onclick: () => { if (this.csSel !== i) { this.csSel = i; sfx.click(); this.refresh('charselect'); } }, ondblclick: () => start(i) },
-        h('div', { class: 'lv' }, `Lv.${c.lvl}`), classArt(c.cls), h('div', { class: 'stage' }),
+        h('div', { class: 'lv' }, `Lv.${c.lvl}`), classArt(c.cls, 'cart', c.job), h('div', { class: 'stage' }),
         h('div', { class: 'nm' }, c.name || className(c.cls)), h('div', { class: 'job' }, className(c.cls, c.job)));
       slots.push(card);
     }

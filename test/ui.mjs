@@ -258,6 +258,33 @@ await page.keyboard.press('End'); await wait(80); ok(await ev(() => uiPref('hide
 const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 3000 }).catch(() => null), page.keyboard.press('F12')]);
 ok(dl && dl.suggestedFilename().endsWith('.png'), 'F12 截图下载 PNG', dl ? dl.suggestedFilename() : 'no download');
 
+sec('技能窗口：转职页签（没有转职数据时用假数据）');
+await ev(() => enterScene(START_SCENE)); await page.waitForFunction(() => game.scene === 'town'); await wait(300); await closeAll();
+const fakeJob = await ev(() => {
+  const C = CLASSES[game.player.cls]; let fake = false;
+  if (!C.jobs) { fake = true; const base = skillPages().base; const js = base.slice(-2); C.jobs = { testjob: { name: '测试转职', desc: '测试用', skills: js } }; js.forEach(id => { SKILLS[id]._job = SKILLS[id].job; SKILLS[id].job = 'testjob'; }); }
+  game.job = Object.keys(C.jobs)[0]; return fake;
+});
+await page.keyboard.press('KeyK'); await wait(150);
+await page.click('[data-win="skills"] .sktab >> nth=1'); await wait(150);
+const jobIds = await ev(() => skillPages().job);
+ok(jobIds.length > 0 && (await page.locator('[data-win="skills"] .ski2').count()) === jobIds.length, '转职页签只显示当前转职的技能', jobIds.join());
+ok(await ev(ids => ids.every(id => !skillPages().base.includes(id)), jobIds), '转职技能不出现在基础页签');
+await shot('14-skills-job');
+await ev(() => setPref('tipDetail', false)); await page.hover('[data-win="skills"] .ski2 .skic >> nth=0'); await wait(120);
+ok(!(await ev(() => document.getElementById('tip').textContent)).includes('下一等级'), '简略说明不显示数值');
+await ev(() => setPref('tipDetail', true));
+await closeAll();
+await ev(f => { const C = CLASSES[game.player.cls]; if (f) { for (const id in SKILLS) if (SKILLS[id].job === 'testjob') SKILLS[id].job = SKILLS[id]._job; delete C.jobs; } game.job = null; }, fakeJob);
+await page.keyboard.press('KeyO'); await page.click('[data-win="settings"] .sktab[data-tab="video"]'); await wait(150); await shot('15-settings-video');
+await page.click('[data-win="settings"] .tog[data-pref="dmgNum"]'); await wait(80);
+ok(await ev(() => uiPref('dmgNum') === false), '设置窗口：点击开关关闭伤害数字');
+await page.click('[data-win="settings"] .tog[data-pref="dmgNum"]'); await wait(80);
+await page.click('[data-win="settings"] .sktab[data-tab="sound"]'); await wait(100);
+await page.locator('[data-win="settings"] input[data-pref="music"]').fill('0.3'); await wait(80);
+ok(await ev(() => Math.abs(uiPref('music') - 0.3) < 0.01), '设置窗口：音乐音量滑条');
+await closeAll();
+
 await ev(() => { for (const n of ['quests', 'worldmap', 'status', 'duel']) if (menus['_stub_' + n]) delete menus['w_' + n]; });
 
 sec('手机（844×390，触屏）：选角 / 创建 / 窗口 / 虚拟按键');

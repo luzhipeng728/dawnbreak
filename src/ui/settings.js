@@ -28,11 +28,12 @@ Object.assign(menus, {
     else if (tab === 'video') page = h('div', { class: 'col' },
       toggle('伤害数字', 'dmgNum', '打中敌人时弹出的数字'),
       toggle('屏幕震动', 'shake', '重击、爆炸时的镜头震动'),
+      toggle('技能插图特效', 'cutin', '觉醒技能的角色插图'),
       toggle('掉落物名称', 'dropNames', `快捷键 ${keyName('dropNames')}`),
       toggle('实时评价', 'hideRank', `右下角的操作 / 技巧评价，快捷键 ${keyName('hideRank')}`, true),
       toggle('详细说明', 'tipDetail', `技能 / 装备提示框显示详细数值，快捷键 ${keyName('tipDetail')}`),
       h('div', { class: 'setrow' }, h('span', {}, '界面显示', h('span', { class: 'small dim' }, `  快捷键 ${keyName('uiMode')}`)),
-        h('div', { class: 'row' }, [['full', '完整'], ['lite', '简洁']].map(([v, t]) => h('button', { class: 'btn' + (uiPref('hudMode') === v ? '' : ' blue'), 'data-hud': v, onclick: () => { setPref('hudMode', v); sfx.click(); rf(); } }, t)))),
+        h('div', { class: 'row seg' }, [['full', '完整'], ['lite', '简洁']].map(([v, t]) => h('button', { class: 'btn' + (uiPref('hudMode') === v ? ' on' : ''), 'data-hud': v, onclick: () => { setPref('hudMode', v); sfx.click(); rf(); } }, t)))),
       h('div', { class: 'row', style: 'margin-top:.4em' },
         h('button', { class: 'btn', onclick: () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); } }, '全屏切换'),
         h('button', { class: 'btn', onclick: () => { setPref('winPos', {}); toastMsg('窗口位置已重置（下次打开生效）', '#bfe8ff'); sfx.click(); } }, '重置窗口位置')));
@@ -88,6 +89,7 @@ addStyle(`
 .tog{width:2.8em;height:1.4em;border-radius:.7em;background:#3a3040;position:relative;cursor:pointer;flex:none;transition:background .15s}
 .tog i{position:absolute;left:.15em;top:.15em;width:1.1em;height:1.1em;border-radius:50%;background:#bbb;transition:left .15s}
 .tog.on{background:#8a6a24}.tog.on i{left:1.55em;background:#ffe8a8}
+.seg{gap:0}.seg .btn{border-radius:0;opacity:.5}.seg .btn:first-child{border-radius:.25em 0 0 .25em}.seg .btn:last-child{border-radius:0 .25em .25em 0}.seg .btn.on{opacity:1;border-color:#ffd23a;color:#fff}
 .keygrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.4em 1em;max-height:24em;overflow:auto;padding-right:.3em}
 .kgroup{display:flex;flex-direction:column;gap:.15em}.kgt{color:#e8c26a;font-weight:900;font-size:.9em;border-bottom:.06em solid #5a4a36;margin-top:.2em}
 .krow{display:grid;grid-template-columns:1fr 5.4em 5.4em;gap:.3em;align-items:center;font-size:.85em}

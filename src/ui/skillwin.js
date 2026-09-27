@@ -21,7 +21,7 @@ function skillPages(cls = game.player && game.player.cls, job = game.job) {
 const skMin = id => { const C = game.player && CLASSES[game.player.cls]; return C && (C.start || []).includes(id) ? 1 : 0; };
 const skCost = (S, lv) => { try { if (typeof S.spCost === 'function') return Math.max(0, Math.round(S.spCost(lv))); } catch (e) { /* 回退 */ } return skillCost(S, lv); };
 const skLvReq = (S, lv) => (S.lvReq || 1) + (lv > 1 && S.lvStep ? (lv - 1) * S.lvStep : 0);   // 学到第 lv 级需要的角色等级
-const skCmd = id => { if (typeof cmdTextOf === 'function') return cmdTextOf(id) || ''; const C = game.player && CLASSES[game.player.cls], c = C && (C.cmds || []).find(x => x[1] === id); if (!c) return ''; const k = c[2] === 'attack' ? keyName('attack') : keyName('cmd'); return c[0] === '' ? k : cmdText(c[0]) + '+' + k; };
+const skCmd = id => { if (typeof cmdTextOf === 'function') return cmdTextOf(id) || ''; const C = game.player && CLASSES[game.player.cls], c = C && (C.cmds || []).find(x => x[1] === id); if (!c) return ''; const k = keyName({ attack: 'attack', buff: 'cmdB', jump: 'jump' }[c[2]] || 'cmd'); return c[0] === '' ? k : cmdText(c[0]) + '+' + k; };
 const cmdLocked = id => !!(save.data && save.data.opts && save.data.opts.cmdLock && save.data.opts.cmdLock[id]);
 // 为什么不能升级（返回 null 表示可以）
 function skillUpBlock(id) {

@@ -82,7 +82,7 @@ const ui = {
     if (this.panelOn()) { this.drawLog(c, rdt); this.drawPanel(c); }
     if (fight) { this.drawCombo(c); this.drawTarget(c); if (game.dungeon) game.dungeon.drawUI(c); if (typeof drawQuestTracker === 'function') drawQuestTracker(c); }
     if (game.scene === 'town' && world) worldUI(c);
-    if (game.cutin) this.drawCutin(c);
+    if (game.cutin && uiPref('cutin')) this.drawCutin(c);
     if (game.scene === 'title') this.drawToasts(c);
     if (PARAMS.has('fps')) uiText(`${fps.toFixed(0)} fps · ents ${ents.length} fx ${fxList.length}`, 1900, 30, { size: 20, align: 'right' });
     menus.drawUI(c);
@@ -97,6 +97,8 @@ const ui = {
     for (const m of toastList) if (!this.seen.has(m)) { this.seen.add(m); this.pushLog(m.msg, m.col); }
   },
   pushLog(msg, col = '#e8e0d0') { this.log.push({ msg, col, t: 0 }); if (this.log.length > 30) this.log.shift(); },
+  // 连续捡到的金币合并成一条
+  logGold(n) { const L = this.log[this.log.length - 1]; if (L && L.gold && L.t < 2) { L.gold += n; L.msg = `获得 ${fmtNum(L.gold)} G`; L.t = 0; } else { this.pushLog(`获得 ${fmtNum(n)} G`, '#ffd24a'); this.log[this.log.length - 1].gold = n; } },
   drawLog(c, dt) {
     const N = 6, list = this.log.slice(-N), lite = uiPref('hudMode') === 'lite';
     let y = 842;
@@ -296,3 +298,4 @@ const ui = {
     });
   },
 };
+bus.on('gold', e => { if (e && e.n > 0) ui.logGold(e.n); });

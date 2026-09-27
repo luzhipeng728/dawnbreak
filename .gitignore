@@ -1,0 +1,22 @@
+# 构建产物
+/index.html
+/dist/
+/preview/
+/.build-check.js
+node_modules/
+
+# 测试截图
+/test/shots/
+
+# AI 生成的原图与中间文件（体积大，保留在本地，不进仓库；最终素材在 art/final）
+/art/src/
+/art/src_v1/
+/art/cut/
+/art/cut_v1/
+/art/final_v1/
+/art/final_rigs/
+/art/proto/
+/art/style/
+/art/.upload_cache.json
+__pycache__/
+.DS_Store

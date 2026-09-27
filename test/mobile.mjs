@@ -1,0 +1,26 @@
+// 触屏测试：横屏手机尺寸，?touch 强制显示触屏按键；用指针拖动摇杆、点按钮
+import { launch, URL_BASE } from './lib.mjs';
+import fs from 'fs';
+const out = 'test/shots/mobile'; fs.mkdirSync(out, { recursive: true });
+const { browser, page, logs } = await launch({ width: 844, height: 390 });
+const wait = ms => page.waitForTimeout(ms);
+await page.goto(`${URL_BASE}?dungeon=path&touch&mute`);
+await page.waitForFunction(() => window.__READY); await wait(800);
+await page.screenshot({ path: `${out}/00-dungeon.png` });
+const P = () => page.evaluate(() => ({ x: Math.round(game.player.x), st: game.player.st, combo: game.maxCombo, act: game.player.act && game.player.act.name, mp: Math.round(game.player.mp) }));
+const x0 = (await P()).x;
+await page.mouse.move(150, 260); await page.mouse.down(); await page.mouse.move(185, 260, { steps: 3 }); await wait(900);
+const walk = await P(); await page.mouse.move(240, 260, { steps: 3 }); await wait(900); const run = await P(); await page.mouse.up();
+console.log('walk', JSON.stringify(walk), 'run', JSON.stringify(run), 'from', x0);
+const box = async sel => { const b = await page.locator(sel).first().boundingBox(); return [b.x + b.width / 2, b.y + b.height / 2]; };
+const tapEl = async (sel, ms = 60) => { const [x, y] = await box(sel); await page.mouse.move(x, y); await page.mouse.down(); await wait(ms); await page.mouse.up(); await wait(120); };
+await page.evaluate(() => { const e = __G.ents.find(e => e.team === 'e'); if (e) { game.player.x = e.x - 60; game.player.y = e.y; game.player.face = 1; } });
+for (let i = 0; i < 4; i++) await tapEl('#touch .atk', 40);
+console.log('attack', JSON.stringify(await P()));
+await tapEl('#touch .sk >> nth=0'); await wait(400); console.log('skill0', JSON.stringify(await P()));
+await tapEl('#touch .jump'); await wait(100); console.log('jump', JSON.stringify(await P()));
+await wait(600); await page.screenshot({ path: `${out}/01-fight.png` });
+await tapEl('#touch .tmisc .tbtn >> nth=3'); await wait(300); console.log('bag', await page.evaluate(() => menus.stack.join(',')), 'touch hidden', await page.evaluate(() => touch.el.classList.contains('hidden')));
+await page.screenshot({ path: `${out}/02-bag.png` });
+console.log('LOGS', JSON.stringify(logs.filter(l => l.type !== 'warning').slice(0, 5)));
+await browser.close();

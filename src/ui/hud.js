@@ -71,7 +71,7 @@ const quickIconSrc = key => { try { if (typeof itemIconSrc === 'function') retur
 const ui = {
   slotMsg: [], combo: { shown: 0, t: 0 }, log: [], lastNow: 0,
   flashSlot(i, msg) { this.slotMsg[i] = { msg, t: 0.8 }; sfx.error(); },
-  inGame() { return !!game.player && (game.scene === 'dungeon' || game.scene === 'test' || game.scene === 'town'); },
+  inGame() { return !!game.player && !!save.data && (game.scene === 'dungeon' || game.scene === 'test' || game.scene === 'town'); },   // 登出 / 切换角色的瞬间 save.data 为空，不画面板
   panelOn() { return this.inGame() && !menus.hudHidden(); },
   draw() {
     const c = uctx, now = performance.now(), rdt = Math.min(0.1, (now - (this.lastNow || now)) / 1000); this.lastNow = now;

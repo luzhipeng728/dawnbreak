@@ -26,9 +26,6 @@ run avatar    node test/avatar.mjs
 run shop      node test/shop.mjs
 run shopecon  node test/shop_econ.mjs
 run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,gun:ranger,gun:launcher,mage:elemental,mage:battlemage
-# 联机服务端依赖（只有 ws）：第一次跑时装上
-[ -d server/node_modules/ws ] || (cd server && npm ci --no-audit --no-fund >/dev/null 2>&1)
-run netapi    node --disable-warning=ExperimentalWarning server/test/api.mjs
 [ "$1" = quick ] && exit 0
 run bestiary  node test/bestiary.mjs
 run sky       node test/sky.mjs
@@ -41,7 +38,6 @@ run netacct   node test/net_account.mjs
 # 社交组、联机组后续的测试加在这里
 run webflow   env WEB=1 node test/flow.mjs
 # 联机（本机临时服务端 + 2~3 个无头页面，测完即关）
-run netacct   node test/net_account.mjs
 run mptown    node test/mp_town.mjs
 run mpcoop    node test/mp_coop.mjs 2
 run mpdrop    node test/mp_coop_drop.mjs

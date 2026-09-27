@@ -16,7 +16,7 @@ const COOP_INTERP = 100;                        // 傀儡 / 影子的插值延�
 const COOP_ST = ['idle', 'walk', 'run', 'jump', 'act', 'hit', 'air', 'down', 'getup', 'held', 'dead'];
 const coop = {
   role: null, room: null, state: 'none', dg: null, def: null, diff: 0, hostId: 0, mates: new Map(), puppets: new Map(), spawnInfo: new Map(),
-  nid: 0, spawnQ: [], dmgQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, stats: { remoteHits: 0, sentHits: 0, snaps: 0, kills: 0, mateActs: 0, monActs: 0 }, lastSnap: 0, lastSelf: 0, prep: null, waitT: 0, hostLag: false, lagSince: 0,
+  nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, stats: { remoteHits: 0, sentHits: 0, snaps: 0, kills: 0, mateActs: 0, monActs: 0 }, lastSnap: 0, lastSelf: 0, prep: null, waitT: 0, hostLag: false, lagSince: 0,
   active() { return !!this.role && (this.state === 'play' || this.state === 'prep' || this.state === 'load'); },
   isGuest() { return this.role === 'guest' && this.state !== 'none'; },
   me() { return net.user ? net.user.id : 0; },
@@ -211,8 +211,14 @@ const coop = {
     if (ok(cur) && now - (m.tgtT || 0) < 2.2) return cur;
     const list = [game.player, ...this.mates.values()].filter(ok);
     if (!list.length) return cur && !cur.dead ? cur : game.player;
+    // 队友用最新收到的位置（插值显示的位置慢 100ms，按它算距离会让怪总是先找队长）；已经被别的怪盯上的人稍微减分，怪物会分散到全队
+    const busy = new Map(); for (const e of ents) if (e !== m && e.tgt && e.team === 'e' && !e.dead) busy.set(e.tgt, (busy.get(e.tgt) || 0) + 1);
     let best = list[0], bd = 1e9;
-    for (const e of list) { const d = Math.abs(e.x - m.x) + Math.abs(e.y - m.y) * 1.5 + (e === cur ? -60 : 0) + rnd(0, 40); if (d < bd) { bd = d; best = e; } }
+    for (const e of list) {
+      const L = e.netBuf && e.netBuf[e.netBuf.length - 1], x = L ? L.x : e.x, y = L ? L.y : e.y;
+      const d = Math.abs(x - m.x) + Math.abs(y - m.y) * 1.5 + (e === cur ? -60 : 0) + (busy.get(e) || 0) * 70 + rnd(0, 60);
+      if (d < bd) { bd = d; best = e; }
+    }
     m.tgt = best; m.tgtT = now;
     return best;
   },
@@ -274,7 +280,7 @@ const coop = {
     const H = {}; for (const k of COOP_HIT_KEYS) if (h[k] !== undefined && h[k] !== null) H[k] = typeof h[k] === 'boolean' ? (h[k] ? 1 : 0) : h[k];
     if (h.grab) H.stun = Math.max(H.stun || 0, 0.6);
     const counter = isCounter(t); this.stats.sentHits++;
-    this.send({ k: 'h', id: t.nid, dmg, cr: crit ? 1 : 0, co: counter ? 1 : 0, x: Math.round(a.x), z: Math.round(a.z || 0), f: a.face, h: H });
+    this.hitQ.push({ id: t.nid, dmg, cr: crit ? 1 : 0, co: counter ? 1 : 0, x: Math.round(a.x), z: Math.round(a.z || 0), f: a.face, h: H });   // 每 25ms 打包发一次
   },
   onSnap(d, recvT) {
     if (!this.dg || this.dg.transition) { this.misT = 0; return; }
@@ -371,6 +377,7 @@ const coop = {
       this.flushSpawns();
       if (now - this.lastSnap >= COOP_SNAP_MS - 5) { this.lastSnap = now; this.snapshot(); }
     }
+    if (this.hitQ.length) { this.send({ k: 'hb', l: this.hitQ }); this.hitQ = []; }
     if (now - this.lastSelf >= COOP_SNAP_MS - 5) { this.lastSelf = now; this.sendSelf(); }
     // 队员：主机那边已经没有了的怪（快照里 1.5 秒没出现）→ 移除
     if (this.role === 'guest' && this.dg && !this.dg.transition && !this.hostLag) for (const [id, m] of this.puppets) {
@@ -394,7 +401,7 @@ const coop = {
     if (this.role === 'host') {
       if (d.k === 'ready') this.onResp(from, true);
       else if (d.k === 'nope') this.onResp(from, false, d.why);
-      else if (d.k === 'h' && this.state === 'play') this.remoteHit(from, d);
+      else if (d.k === 'hb' && this.state === 'play' && Array.isArray(d.l)) { for (const r of d.l.slice(0, 80)) this.remoteHit(from, r); }
       else if (d.k === 'resync' && this.state === 'play') this.onResync(from, +d.last || 0);
       else if (d.k === 'st' && this.state === 'play') { const m = this.puppets.get(d.id); if (m && !m.dead && ents.includes(m) && STATUS_COL[d.kind]) _coopAddStatus(m, d.kind, clamp(+d.dur || 0, 0, 30), { dps: clamp(+d.dps || 0, 0, 1e7), src: this.mates.get(from) || null, force: !!d.fo }); }
       else if (d.k === 'door' && this.state === 'play' && this.dg && this.dg.doorsOpen && !this.dg.transition && this.dg.room.doors[d.dir]) this.dg.go(d.dir);
@@ -420,6 +427,7 @@ const coop = {
   onRoomMsg(m) {
     const R = m.room;
     if (R.kind !== 'dungeon') return;
+    if (m.resume && this.state === 'none') { net.send({ t: 'room:leave' }); return; }   // 刷新过页面：服务端还记着旧房间，离开它
     this.room = R;
     if (m.resume) {
       this.hostLag = false; clearTimeout(this.resumeT);
@@ -485,7 +493,7 @@ const coop = {
   abort(msg) { if (msg) chatSys(msg); this.end('abort'); },
   reset() {
     clearTimeout(this.waitT); clearTimeout(this.resumeT);
-    Object.assign(this, { role: null, room: null, state: 'none', dg: null, def: null, prep: null, hostLag: false, nid: 0, spawnQ: [], dmgQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, mem: null });
+    Object.assign(this, { role: null, room: null, state: 'none', dg: null, def: null, prep: null, hostLag: false, nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, mem: null });
     this.mates.clear(); this.puppets.clear(); this.spawnInfo.clear();
   },
 };

@@ -25,9 +25,9 @@ export const cfg = {
   bodyLimit: 64 * 1024, saveLimit: 4 * 1024 * 1024,
   httpRate: [120, 10],          // 每个 IP：10 秒内最多 120 个请求
   wsConnRate: [20, 60],         // 每个 IP：60 秒内最多新建 20 条 WS 连接
-  wsRate: [300, 3],             // 每条连接：3 秒内最多 300 条消息（决斗 30Hz 输入 + 心跳绰绰有余）
+  wsRate: [450, 3],             // 每条连接：3 秒内最多 450 条消息（组队 20Hz 状态 + 命中 + 决斗 30Hz 输入都在 60 条/秒以内，留足余量）
   wsMaxPayload: 64 * 1024,
-  pingEvery: 20_000,
+  pingEvery: 10_000,             // WS 心跳：两轮没回应（10~20 秒）就当掉线（网络静默断开时也能尽快发现）
   graceMs: +(env.DNF_GRACE_MS || 20_000),   // 掉线后保留队伍 / 房间的时间（这段时间内重连可以接着玩）
   sessionDays: 30,
 };

@@ -17,7 +17,7 @@ const netDuel = {
   // 房间建好了（双方都会收到）
   onRoom(m) {
     const R = m.room; if (R.kind !== 'duel') return;
-    if (m.resume) { if (this.active()) chatSys('已恢复和对手的连接'); return; }
+    if (m.resume) { if (this.active()) chatSys('已恢复和对手的连接'); else net.send({ t: 'room:leave' }); return; }
     if (!game.player || game.scene !== 'town' || !save.live) { net.send({ t: 'room:leave' }); return; }
     this.room = R; this.role = R.host === net.user.id ? 'host' : 'guest'; this.state = 'setup'; this.t0 = performance.now();
     const other = R.members.find(x => x.id !== net.user.id); this.peer = { id: other.id, name: other.name };

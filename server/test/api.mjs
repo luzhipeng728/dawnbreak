@@ -170,7 +170,7 @@ try {
   // WS 频率限制
   const cf = await conn(B); await cf.wait(m => m.t === 'welcome');
   const closed = new Promise(res => cf.ws.on('close', code => res(code)));
-  for (let i = 0; i < 1500; i++) cf.send({ t: 'pos', x: i, y: 1 });
+  for (let i = 0; i < 3000; i++) cf.send({ t: 'pos', x: i, y: 1 });
   ok(await Promise.race([closed, sleep(2000).then(() => 0)]) === 4008, 'WS 刷屏 → 断开（4008）');
   // 登出
   ok((await api('POST', '/api/logout', null, A)).status === 200 && (await api('GET', '/api/me', null, A)).status === 401, '登出后 token 失效');

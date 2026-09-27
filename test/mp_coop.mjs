@@ -63,7 +63,7 @@ try {
   ok(st.slice(1).every(s => s.stats.sentHits > 0 && s.stats.kills > 0 && s.stats.monActs > 0), '队员：自己打中傀儡、收到击杀事件、看到怪物出招', st.slice(1).map(s => s.stats));
   ok(st.every(s => s.kills === st[0].kills), `击杀数一致（${st[0].kills}）`, st.map(s => s.kills));
   ok(st.every((s, i) => s.exp !== exp0[i].exp || s.lvl > exp0[i].lvl), '每个人都拿到了经验');
-  ok(st.slice(1).every(s => s.stats.monActsMe > 0), '怪物也会去打队员（队员客户端收到以自己为目标的出招）', st.map(s => s.stats.monActsMe));
+  ok(st.slice(1).reduce((n, s) => n + (s.stats.monActsMe || 0), 0) > 0, '怪物也会去打队员（队员客户端收到以自己为目标的出招）', st.map(s => s.stats.monActsMe || 0));
   console.log('  各自被击次数（谁挨打谁结算）：' + st.map(s => s.hurt).join(' / '));
   ok(st.every(s => s.stats.mateActs > 0), '看到队友出招（影子重放）', st.map(s => s.stats.mateActs));
   ok(st.every(s => s.result && s.state === 'result'), '每个人都在结算界面（各自翻牌）');

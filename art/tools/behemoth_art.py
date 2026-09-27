@@ -102,6 +102,7 @@ A.BG = {
                     'dark cracked temple floor with a faded blood-red ritual circle, melted red candles and scattered paper talismans',
                     'broken statues, red candles, stone coffins and chains'),
 }
+A.EDGE_HOLES = {'bhPurgatory', 'bhForbidden', 'bhJungle', 'bhSpine'}
 A.FLOOR_W = {'bhTemple': 1800, 'bhJungle': 2000, 'bhPurgatory': 1700, 'bhDay': 1800, 'bhSpine': 1800, 'bhForbidden': 1700}
 
 # 地下城门（沿用世界组 jobs.py 的 GATE 画风；原图写到主仓库 art/src/world/，再用 worldprep.py 处理成 art/final/world/g_<id>.webp）

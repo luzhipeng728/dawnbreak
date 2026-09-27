@@ -87,6 +87,7 @@ BG = {
                   'a low golden balustrade with white marble pillars, glowing light crystals and white flower planters'),
 }
 # 地面贴图缩放宽度（参照 bgs.py：越窄纹理越小）
+EDGE_HOLES = set()   # 需要去掉内部白底的交界带主题
 FLOOR_W = {'skyTower': 1800, 'skyHall': 1700, 'skyDark': 1600, 'skyPalace': 1800}
 
 
@@ -231,7 +232,9 @@ def bgcut(t):
         fw = FLOOR_W[t]; fl = Image.open(s('floor')).convert('RGB'); fl = fl.resize((fw, round(fl.height * fw / fl.width)), Image.LANCZOS); h = 470; y0 = (fl.height - h) // 2
         fl.crop((0, y0, fw, y0 + h)).save(f'{out}/{t}_floor.webp', 'WEBP', quality=68, method=6)
     if os.path.exists(s('edge')):
-        e = remove_bg(Image.open(s('edge'))); ew = 1400; e = e.resize((ew, round(e.height * ew / e.width)), Image.LANCZOS)
+        e = remove_bg(Image.open(s('edge')))
+        if t in EDGE_HOLES: e = clear_holes(e, thr=228, min_area=200)   # 深色交界带：被包住的白底也去掉
+        ew = 1400; e = e.resize((ew, round(e.height * ew / e.width)), Image.LANCZOS)
         bb = e.getbbox(); e = e.crop((0, bb[1], ew, bb[3])); e = e.crop((0, 0, ew, round(e.height * 0.75)))
         a = np.array(e).astype(np.float32); h = a.shape[0]; f0 = round(h * 0.65)
         ramp = np.ones(h, np.float32); ramp[f0:] = np.linspace(1, 0, h - f0); a[..., 3] *= ramp[:, None]

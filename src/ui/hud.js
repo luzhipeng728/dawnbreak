@@ -43,6 +43,8 @@ const HUD = {
   skill: { x: 1076, y: 962, s: 52, gap: 60, row: 58 },   // 技能栏 2×6
   dodge: { x: 912, y: 1018, r: 30 },
 };
+// 右上角小地图有 4 行时比较高：连击数和地下城里的任务追踪栏跟着往下挪，不和小地图重叠（小地图见 dungeon.drawUI：y0=70，格子 34）
+const hudComboDy = () => { const L = game.dungeon && game.dungeon.layout; return L ? Math.max(0, 70 + L.rows * 34 + 22 - 186) : 0; };
 const hudQuickRect = i => ({ x: HUD.quick.x + i * HUD.quick.gap, y: HUD.quick.y, s: HUD.quick.s });
 const hudSkillRect = i => ({ x: HUD.skill.x + (i % 6) * HUD.skill.gap, y: HUD.skill.y + Math.floor(i / 6) * HUD.skill.row, s: HUD.skill.s });
 const hudInRect = (R, x, y, pad = 3) => x >= R.x - pad && x <= R.x + R.s + pad && y >= R.y - pad && y <= R.y + R.s + pad;
@@ -67,7 +69,7 @@ const quickIconSrc = key => { try { if (typeof itemIconSrc === 'function') retur
 /* ---- 伤害数字开关（设置 → 画面）：包一层兜底，战斗组在 fx.js 原生支持后这层不冲突；屏幕震动由主线程在 game.js 的 updateCamera 里原生判断 uiPref('shake') ---- */
 { const dn = drawNumbers; drawNumbers = function (c) { if (uiPref('dmgNum')) return dn.apply(this, arguments); }; }
 const ui = {
-  slotMsg: [], combo: { shown: 0, t: 0 }, log: [], seen: new WeakSet(), lastNow: 0,
+  slotMsg: [], combo: { shown: 0, t: 0 }, log: [], lastNow: 0,
   flashSlot(i, msg) { this.slotMsg[i] = { msg, t: 0.8 }; sfx.error(); },
   inGame() { return !!game.player && (game.scene === 'dungeon' || game.scene === 'test' || game.scene === 'town'); },
   panelOn() { return this.inGame() && !menus.hudHidden(); },
@@ -75,27 +77,18 @@ const ui = {
     const c = uctx, now = performance.now(), rdt = Math.min(0.1, (now - (this.lastNow || now)) / 1000); this.lastNow = now;
     if (!this.inputReady) this.initInput();
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, ucan.width, ucan.height);
-    c.setTransform(uiScale, 0, 0, uiScale, 0, 0);
+    c.setTransform(uiScale, 0, 0, uiScale, 0, 0); toastBarFrame(false);
     if (save.data && game.player && game.scene !== 'title' && !game.paused) save.data.playTime = (save.data.playTime || 0) + rdt;   // 角色选择界面显示的游戏时间
-    if (this.inGame()) this.collectLog(); else for (const m of toastList) this.seen.add(m);
     const fight = game.scene === 'dungeon' || game.scene === 'test';
     if (this.panelOn()) { this.drawLog(c, rdt); this.drawPanel(c); }
     if (fight) { this.drawCombo(c); this.drawTarget(c); if (game.dungeon) game.dungeon.drawUI(c); if (typeof drawQuestTracker === 'function') drawQuestTracker(c); }
     if (game.scene === 'town' && world) worldUI(c);
     if (game.cutin && uiPref('cutin')) this.drawCutin(c);
-    if (game.scene === 'title') this.drawToasts(c);
+    if (game.scene === 'title') drawToastBanner(c, 120);
     if (PARAMS.has('fps') || uiPref('fps')) uiText(`${fps.toFixed(0)} fps · ents ${ents.length} fx ${fxList.length}`, 1900, 30, { size: 20, align: 'right' });
-    menus.drawUI(c);
+    menus.drawUI(c); toastBarFrame(true);
   },
-  // 标题 / 选角界面上的提示（城镇和地下城的提示由 worldUI / dungeon.drawUI 画）
-  drawToasts(c) {
-    let ty = 120;
-    for (let i = toastList.length - 1; i >= 0; i--) { const m = toastList[i]; m.t += 1 / 60; if (m.t > 3) { toastList.splice(i, 1); continue; } c.globalAlpha = m.t > 2.4 ? (3 - m.t) / 0.6 : 1; uiText(m.msg, 960, ty, { size: 30, align: 'center', color: m.col, sw: 5 }); ty += 42; c.globalAlpha = 1; }
-  },
-  /* ---- 左下系统消息（获得物品 / 金币 / 升级 / 系统提示的滚动记录） ---- */
-  collectLog() {
-    for (const m of toastList) if (!this.seen.has(m)) { this.seen.add(m); this.pushLog(m.msg, m.col); }
-  },
+  /* ---- 左下系统消息（获得物品 / 金币 / 任务进度的滚动记录；toastMsg 的 'log' 类消息写到这里，横幅类不重复记录） ---- */
   pushLog(msg, col = '#e8e0d0') { this.log.push({ msg, col, t: 0 }); if (this.log.length > 30) this.log.shift(); },
   // 连续捡到的金币合并成一条
   logGold(n) { const L = this.log[this.log.length - 1]; if (L && L.gold && L.t < 2) { L.gold += n; L.msg = `获得 ${fmtNum(L.gold)} G`; L.t = 0; } else { this.pushLog(`获得 ${fmtNum(n)} G`, '#ffd24a'); this.log[this.log.length - 1].gold = n; } },
@@ -198,9 +191,9 @@ const ui = {
     const shown = this.combo.shown; if (shown < 2 || this.combo.t > 0.6) return;
     const a = n >= 2 ? 1 : 1 - this.combo.t / 0.6, col = shown >= 20 ? '#ff4040' : shown >= 10 ? '#ffd23a' : '#ffffff';
     c.save(); c.globalAlpha = a;
-    const pop = game.comboT > 1.5 ? 1.15 : 1;
-    uiText(`${shown}`, 1780, 250, { size: 72 * pop, align: 'right', color: col, sw: 8, font: '"Arial Black",Impact,sans-serif', weight: 900 });
-    uiText('Hit Combo!', 1790, 290, { size: 28, align: 'right', color: col, sw: 5, font: '"Arial Black",sans-serif', weight: 900 });
+    const pop = game.comboT > 1.5 ? 1.15 : 1, dy = hudComboDy();
+    uiText(`${shown}`, 1780, 250 + dy, { size: 72 * pop, align: 'right', color: col, sw: 8, font: '"Arial Black",Impact,sans-serif', weight: 900 });
+    uiText('Hit Combo!', 1790, 290 + dy, { size: 28, align: 'right', color: col, sw: 5, font: '"Arial Black",sans-serif', weight: 900 });
     c.restore();
   },
   // 目标血条：最近被玩家打中的怪物（领主多管血条颜色循环 紫→蓝→绿→黄→红，旁边显示剩余管数 ×N）

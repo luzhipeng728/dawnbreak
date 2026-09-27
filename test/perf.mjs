@@ -25,4 +25,15 @@ for (const cls of classes) {
   console.log(cls, ok ? 'OK ' : 'LOW', JSON.stringify(r), errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
   await browser.close();
 }
+// 决斗场（AI 对 AI，正常速度，不截图）
+if (process.env.DUEL !== '0') {
+  const { browser, page, logs } = await launch({ width: 1280, height: 720 });
+  await page.goto(`${URL_BASE}?duel=sword&vs=mage&auto&ai=3&mute`); await page.waitForFunction(() => window.__READY);
+  const r = await page.evaluate(async secs => { let frames = 0; const t0 = performance.now(); let minFps = 99;
+    await new Promise(res => { const f = () => { frames++; if (performance.now() - t0 < secs * 1000) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });
+    return { fps: +(frames / secs).toFixed(1), fx: __G.fxList.length, projs: __G.projs.length }; }, secs * 2);
+  const errs = logs.filter(l => l.type !== 'warning'), ok = r.fps >= 55 && !errs.length; if (!ok) fail++;
+  console.log('duel', ok ? 'OK ' : 'LOW', JSON.stringify(r), errs.length ? JSON.stringify(errs.slice(0, 3)) : '');
+  await browser.close();
+}
 process.exit(fail ? 1 : 0);

@@ -118,6 +118,15 @@ async function open(q) {
   await page.waitForFunction(() => { const p = game.player; return p.z === 0 && p.free; }); await page.evaluate(() => { const p = game.player; p.face = 1; });
   await kb.down('ArrowUp'); await tap('KeyZ'); await kb.up('ArrowUp'); await wait(60); res.u = await skill(); await wait(800);
   report('指令：↓→+Z 地裂·波动剑 / →↓+Z 崩山击 / ↓↓+X 格挡 / Z 上挑 / ←→→+Z 破军升龙击 / ↑+Z 鬼斩', res.df === 'wave' && res.fd === 'slam' && res.ddX === 'guard' && res.z === 'upslash' && res.bff === 'rise' && res.u === 'ghost', res);
+  // 连招：X×3 → 上挑（技能取消普攻）→ 跳起 X（空中追击）→ 落地后鬼斩；木桩全程浮空 / 倒地，连击数 ≥ 7
+  await page.waitForFunction(() => { const p = game.player; return p.z === 0 && p.free; });
+  await page.evaluate(() => { const p = game.player; p.x = 300; p.face = 1; game.combo = 0; game.maxCombo = 0; for (const e of ents) if (e.team === 'e') e.remove = true;
+    const m = spawnMonster('goblin', 360, p.y); m.control = null; m.hp = m.hpMax = 1e9; m.invul = 0; window.__m = m; window.__airMax = 0; setInterval(() => { window.__airMax = Math.max(window.__airMax, __m.z); }, 16); });
+  for (let i = 0; i < 3; i++) { await tap('KeyX'); await wait(110); }
+  await tap('KeyA'); await page.waitForFunction(() => game.player.act && game.player.act.skill === 'upslash'); await page.waitForFunction(() => game.player.free);
+  await tap('KeyC'); await wait(120); await tap('KeyX'); await page.waitForFunction(() => game.player.z === 0 && game.player.st !== 'jump'); await tap('KeyS'); await wait(700);
+  const combo = await page.evaluate(() => ({ maxCombo: game.maxCombo, airMax: Math.round(window.__airMax), juggle: __m.cmb.air, st: __m.st }));
+  report('连招：普攻×3 → 上挑取消 → 空中追击', combo.maxCombo >= 5 && combo.airMax > 80 && combo.juggle >= 2, combo);
   // 受身：被打倒后按 C
   await page.evaluate(() => { const p = game.player; p.reboundCd = 0; p.setState('down'); p.stT = 0.2; p.downTime = 3; });
   await tap('KeyC'); await wait(50);
@@ -135,7 +144,7 @@ async function open(q) {
   const { browser, page, logs } = await open('duel=sword&vs=gun&auto');
   const R = await page.evaluate(() => {
     const out = {}, A = duel.a, B = duel.b; duel.state = 'fight'; A.control = B.control = null;
-    B.x = A.x + 60; B.y = A.y; B.hp = B.hpMax; resetCmb(B); A.face = 1;
+    B.x = A.x + 60; B.y = A.y; B.hp = B.hpMax; resetCmb(B); A.face = 1; A.crit = A.mcrit = B.crit = B.mcrit = 0;
     out.pvp = game.pvp && isPvp(A, B);
     // 伤害修正：同一攻击在决斗场里 × PVP.dmg
     const hp0 = B.hp; B.setState('idle'); applyHit(A, B, { dmg: 1, sure: true, type: 'phys' }, { proj: true }); const d1 = hp0 - B.hp;
@@ -152,6 +161,10 @@ async function open(q) {
     // 抓取保护：被抓释放后 1.5 秒内不能再被抓
     B.invul = 0; B.setState('idle'); resetCmb(B); A.doAct({ name: 'g', dur: 1, hits: [] }); applyHit(A, B, { dmg: 0.1, grab: true }, {}); const held = B.st; A.endAct(); T.run(2);
     A.doAct({ name: 'g', dur: 1, hits: [] }); applyHit(A, B, { dmg: 0.1, grab: true }, {}); out.grab = { first: held, second: B.st, prot: +B.grabProt.toFixed(2) }; A.endAct();
+    // 平推保护：站着连续挨打累计超过 22% → 强制击倒
+    B.hp = B.hpMax; resetCmb(B); B.invul = 0; B.grabProt = 0; B.z = 0; B.vz = 0; B.setState('idle'); let st2 = [];
+    for (let i = 0; i < 80 && B.st !== 'air'; i++) { B.setState('idle'); applyHit(A, B, { dmg: 0.8, stun: 0.3, sure: true, type: 'phys' }, { proj: true }); st2.push(B.st); }
+    out.stand = { st: B.st, ratio: +((B.hpMax - B.hp) / B.hpMax).toFixed(2) };
     // 被格斗者打中不再给 0.2 秒保护无敌（否则连不上招）
     A.invul = 0; A.setState('idle'); applyHit(B, A, { dmg: 0.1, sure: true }, { proj: true }); out.noMercyInvul = A.invul <= 0;
     return out;
@@ -160,6 +173,7 @@ async function open(q) {
   report('浮空保护（20% 后加速下落）', R.air.lv >= 2 && R.air.g2 > R.air.g1 * 1.5, R.air);
   report('倒地保护（20% 后强制起身 + 无敌）', R.down.st === 'getup' && R.down.invul >= 0.6 && R.down.ratio >= 0.2 && R.down.ratio < 0.35, R.down);
   report('抓取保护', R.grab.first === 'held' && R.grab.second !== 'held' && R.grab.prot > 1, R.grab);
+  report('平推保护（站立挨打 22% 后强制击倒）', R.stand.st === 'air' && R.stand.ratio >= 0.22 && R.stand.ratio < 0.3, R.stand);
   report('决斗场里挨打不给怜悯无敌', R.noMercyInvul, {});
   const errs = logs.filter(l => l.type !== 'warning'); report('无报错（决斗场）', errs.length === 0, errs.slice(0, 3));
   await browser.close();

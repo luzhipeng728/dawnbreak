@@ -3,7 +3,6 @@
    ===================================================================== */
 function artLab() {
   const models = {}; for (const k in CLASSES) models[k] = CLASSES[k].model ? CLASSES[k].model() : buildSwordsman();
-  for (const k in RIG_DATA) if (!models[k]) models[k] = new ImageModel(k);
   for (const k in SPR_DATA) if (!models[k]) models[k] = new SpriteModel(k, SPR_FALLBACK, SPR_ANIMS.monster);
   const list = (PARAMS.get('poses') || 'idle,idle2').split(',');
   const which = PARAMS.get('m') || 'sword';
@@ -21,7 +20,7 @@ function artLab() {
       window.__ART_READY = true; requestAnimationFrame(frame); return;
     }
     if (PARAMS.has('lineup')) {   // 全员列队：每个手绘角色摆一个姿势
-      const names = Object.keys(RIG_DATA), per = Math.ceil(names.length / 2), pose = POSE[PARAMS.get('lineup')] || POSE.idle;
+      const names = Object.keys(SPR_DATA), per = Math.ceil(names.length / 2), pose = POSE[PARAMS.get('lineup')] || POSE.idle;
       names.forEach((n, i) => { const x = 70 + (i % per) * (WW - 120) / Math.max(1, per - 1), y = i < per ? 240 : 500; c.save(); c.translate(x, y); models[n].draw(c, pose, t, {}); c.restore(); c.fillStyle = '#fff'; c.font = '10px sans-serif'; c.textAlign = 'center'; c.fillText(n, x, y + 14); });
       window.__ART_READY = true; requestAnimationFrame(frame); return;
     }

@@ -296,4 +296,6 @@ const MON_ART = {
   tauSoldier: ['tau'], tauBeast: ['tau', { weapon: false, hue: -10, bright: 0.78 }], tauSoldierBoss: ['tauArmored'], tauKing: ['tauKing'],
   zombie: ['zombie'], zombieRed: ['zombie', { hue: -85, sat: 1.8, only: [40, 140] }], boneLord: ['boneLord'],
 };
-for (const k in MON_ART) { const [r, o] = MON_ART[k]; if (RIG_DATA[r] && MON[k]) { const old = MON[k].model; MON[k].model = () => IMG[`${r}/torso`] ? new ImageModel(r, o) : old(); } }
+MON.goblinChief.summons = ['goblin', 'goblinThrower']; MON.flameMage.summons = ['goblinBomber'];
+// 怪物 → 所需美术分包（进地下城前按需加载）
+const monBundles = kinds => [...new Set(kinds.flatMap(k => [k, ...((MON[k] && MON[k].summons) || [])]).map(k => MON_ART[k] && 'spr:' + MON_ART[k][0]).filter(Boolean))];

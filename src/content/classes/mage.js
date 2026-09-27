@@ -132,7 +132,7 @@ function screenBlast(e, lv, kind) {
   if (kind === 'final') { cam.flash = 0.35; cam.flashCol = '#ffe8ff'; cam.shake = 12; sfx.boom(1.3); for (const t of onScreen) { meteorImpact(t, 0.4); applyHit(e, t, { dmg: skillDmg(5, 1.5, lv), down: true, knock: 240, hs: 0.15, big: 2, col: '#ffd0ff', critBonus: 0.2 }, { proj: true }); } }
 }
 CLASSES.mage = { name: '元素师', hp0: 1450, hpPer: 120, mp0: 1100, mpPer: 60, atk0: 500, atkPer: 60, str0: 5, strPer: 1.8, def0: 220, defPer: 22, crit: 0.07, speed: 160, runSpeed: 290,
-  desc: '操控火、冰、雷与虚空的法师，控场能力极强，身板脆弱但 MP 充沛。', model: () => RIG_DATA.mage ? new ImageModel('mage') : buildSwordsman(PAL_MAGE, { weapon: 'staff', hair: 'long', hat: 'wizard', scarf: false, pauldron: false, coatTail: true }),
+  desc: '操控火、冰、雷与虚空的法师，控场能力极强，身板脆弱但 MP 充沛。', model: () => buildSwordsman(PAL_MAGE, { weapon: 'staff', hair: 'long', hat: 'wizard', scarf: false, pauldron: false, coatTail: true }),
   acts: MAGE_ACTS, slashCol: '#e0a0ff',
   skills: ['mg_orb', 'mg_ice', 'mg_fire', 'mg_chain', 'mg_nova', 'mg_buff', 'mg_meteor', 'mg_tornado', 'mg_hole', 'mg_awaken'],
   start: ['mg_orb', 'mg_ice', 'mg_fire', 'mg_chain'], bar: ['mg_orb', 'mg_ice', 'mg_fire', 'mg_chain', null, null, null, null, null, null, null, null],

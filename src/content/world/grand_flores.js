@@ -14,7 +14,7 @@ const DUNGEONS = {
   abyss: { id: 'abyss', name: '亡者遗迹', lvl: [16, 22], theme: 'ruinsDark', rooms: 7, branches: 3, cols: 5, rows: 4, hidden: true, mobs: [['zombie', 3], ['zombieRed', 1], ['goblinBomber', 1], ['catVenom', 1]], elite: 'zombieRed', boss: { kind: 'boneLord', lvl: 22 }, bossAdds: 3, clearExp: 6000, bgm: 'abyss', bossBgm: 'boss', desc: '【隐藏地下城】阴森的亡者遗迹。骨狱领主会让地面结出白霜——几秒后白霜处会冻结，边打边跳吧。' },
 };
 Object.assign(CLASSES.sword, {
-  desc: '手持太刀的近战剑士，连段流畅、浮空强势，指令技能丰富。', model: () => RIG_DATA.sword ? new ImageModel('sword') : buildSwordsman(),
+  desc: '手持太刀的近战剑士，连段流畅、浮空强势，指令技能丰富。', model: () => buildSwordsman(),
   skills: ['upslash', 'triple', 'wave', 'slam', 'focus', 'iai', 'spin', 'flurry', 'rise', 'awaken'],
   start: ['upslash', 'triple', 'wave', 'spin'], bar: ['upslash', 'triple', 'wave', 'spin', null, null, null, null, null, null, null, null],
 });

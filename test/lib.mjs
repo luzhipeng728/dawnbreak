@@ -13,7 +13,21 @@ function loadPlaywright() {
 }
 export const { chromium } = loadPlaywright();
 
-export const URL_BASE = process.env.GAME_URL || new URL('../index.html', import.meta.url).href;   // 默认直接打开本地文件，无需起服务
+// 默认打开本地离线单文件；WEB=1 时起一个本地 HTTP 服务测网页版（dist/web，素材按需加载，和线上一样同源）；GAME_URL 可指向线上地址
+import http from 'http';
+import fsx from 'fs';
+import pathx from 'path';
+function serveWeb() {
+  const root = new URL('../dist/web/', import.meta.url).pathname;
+  const types = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.js': 'text/javascript' };
+  const srv = http.createServer((req, res) => {
+    const p = pathx.join(root, decodeURIComponent(req.url.split('?')[0]).replace(/\/$/, '/index.html'));
+    fsx.readFile(p, (err, buf) => { if (err) { res.writeHead(404); res.end(); return; } res.writeHead(200, { 'Content-Type': types[pathx.extname(p)] || 'application/octet-stream' }); res.end(buf); });
+  }).listen(0);
+  srv.unref();
+  return `http://127.0.0.1:${srv.address().port}/index.html`;
+}
+export const URL_BASE = process.env.GAME_URL || (process.env.WEB ? serveWeb() : new URL('../dist/dawnbreak.html', import.meta.url).href);
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 export async function launch({ width = 1280, height = 720, gpu = process.env.PELICAN_GPU || 'default' } = {}) {

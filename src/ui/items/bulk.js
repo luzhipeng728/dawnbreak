@@ -23,7 +23,7 @@ function bulkCandidates(mode, P = bulkPrefs()) {
     if (mode === 'sell' ? !canSell(it) : !canDisassemble(it)) return false;
     if (!P.rar.includes(it.rar || 0)) return false;
     if (P.keepSet && it.set) return false;
-    if (P.keepEnh && it.enh) return false;
+    if (P.keepEnh && (it.enh || it.dim || it.forge || it.orb)) return false;   // 强化 / 增幅 / 锻造 / 附魔过的都算
     if (P.worse && typeof equipCompare === 'function') { const c = equipCompare(it); if (c && !['down', 'na'].includes(c.v)) return false; }   // 只处理比身上差的（和别的职业用的）
     return true;
   });

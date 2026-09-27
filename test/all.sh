@@ -15,6 +15,8 @@ run ui        node test/ui.mjs
 run items     node test/items.mjs
 run compare   node test/compare.mjs
 run bulk      node test/bulk.mjs
+run gear      node test/gear.mjs
+run gearsim   node test/gear_sim.mjs 20
 run quests    node test/quests.mjs
 run guide     node test/guide.mjs
 run quickquest node test/quickquest.mjs

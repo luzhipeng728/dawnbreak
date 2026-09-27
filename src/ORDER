@@ -47,9 +47,14 @@ ui/settings.js
 ui/charselect.js
 ui/menubar.js
 game/items.js
+# 装备深化：绑定 / 增幅 / 锻造 / 附魔 / 图鉴 / 评分（规则）、装备特效与掉落光柱
+game/gear.js
+game/gear_fx.js
 content/items/gear.js
 content/items/misc.js
 content/items/epics.js
+content/items/epics2.js
+content/items/cards.js
 content/items/shops.js
 content/items/droptables.js
 ui/items/common.js
@@ -60,6 +65,10 @@ ui/items/shop.js
 ui/items/smith.js
 ui/items/storage.js
 ui/items/bulk.js
+ui/items/amplify.js
+ui/items/enchant.js
+ui/items/codex.js
+ui/items/abyss.js
 game/save.js
 content/world/towns.js
 content/world/grand_flores.js
@@ -75,6 +84,8 @@ content/quests/side.js
 content/quests/daily.js
 content/quests/job.js
 content/quests/sky.js
+# 装备深化：深渊派对（深渊地下城、封印之门与三波派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
+content/abyss.js
 ui/quest.js
 ui/quickquest.js
 ui/job.js

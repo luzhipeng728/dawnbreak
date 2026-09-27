@@ -6,7 +6,7 @@
    - 商城组旧成就 CASH_ACH：同 id 的成就读档时如果 save.data.shop.ach[id] 已有值 → 直接算达成且已领奖；本系统达成时也写 save.data.shop.ach[id]，两边都不会重复发点券
    - 成就点进排行榜（net/social.js 的 sxRankReport 上报 ach）
    ===================================================================== */
-const ACH = { dirty: true, timer: 0, queue: [], ctx: null, silent: true };
+const ACH = { dirty: true, timer: 0, silentPending: true };   // silentPending：刚进入角色、还没进城，这期间达成的不弹窗（老存档里已经满足的）
 function achData() {
   const d = save.data; if (!d) return null;
   const A = d.ach ??= {};
@@ -89,8 +89,7 @@ function achCheck() {
   }
   if (!got.length) return;
   save.write();
-  if (!ACH.silent) for (const A of got) achToast(A);
-  if (got.some(A => A.tier === 3) && !ACH.silent) for (const A of got.filter(x => x.tier === 3)) bus.emit('announce', { kind: 'ach', name: A.name });
+  if (!ACH.silentPending) { for (const A of got) achToast(A); for (const A of got.filter(x => x.tier === 3)) bus.emit('announce', { kind: 'ach', name: A.name }); }
   bus.emit('achDone', { list: got.map(A => A.id) });
   if (typeof sxRankSoon === 'function') sxRankSoon();
 }
@@ -170,7 +169,6 @@ bus.on('guildUpdate', e => {
 });
 bus.on('friendsList', e => achMax('friends', e.n | 0));
 // 进入角色（读档后第一次进城）：静默检查一次（老存档里已经满足的直接算达成，不弹窗）
-bus.on('sceneEnter', () => { if (ACH.silentPending) { ACH.silentPending = false; ACH.silent = true; achCheck(); ACH.silent = false; } });
+bus.on('sceneEnter', () => { if (ACH.silentPending) { achCheck(); ACH.silentPending = false; } });
 bus.on('charLeave', () => { ACH.silentPending = true; });
-ACH.silentPending = true;
-setInterval(() => { if (ACH.dirty && save.data && save.live) { if (ACH.silentPending) return; achCheck(); } }, 2000);
+setInterval(() => { if (ACH.dirty && save.data && save.live && !ACH.silentPending) achCheck(); }, 2000);

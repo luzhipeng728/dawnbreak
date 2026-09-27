@@ -127,8 +127,8 @@ defineAch('sky', { cat: 'collect', tier: 3, name: '天空之上', desc: '第一�
 defineAch('pet', { cat: 'collect', tier: 1, name: '形影不离', desc: '拥有宠物', val: X => X.own.pets, reward: R(80) });
 defineAch('aura', { cat: 'collect', tier: 1, name: '光芒四射', desc: '拥有光环', val: X => X.own.auras, reward: R(80) });
 defineAch('card10', { cat: 'collect', tier: 1, name: '卡片收集', desc: '拥有 10 种不同的怪物卡片', val: X => X.own.cards, n: 10, reward: R(80) });
-defineAch('score', { cat: 'collect', tier: 2, name: '全副武装', desc: '装备评分达到 3000', val: X => X.score, n: 3000, reward: R(200) });
-defineAch('score2', { cat: 'collect', tier: 3, name: '神装在身', desc: '装备评分达到 8000', val: X => X.score, n: 8000, reward: R(600) });
+defineAch('score', { cat: 'collect', tier: 2, name: '全副武装', desc: '装备评分达到 5000', val: X => X.score, n: 5000, reward: R(200) });
+defineAch('score2', { cat: 'collect', tier: 3, name: '神装在身', desc: '装备评分达到 15000', val: X => X.score, n: 15000, reward: R(600) });
 
 /* ================= 社交（登录后） ================= */
 defineAch('friend1', { cat: 'social', tier: 1, name: '结交好友', desc: '拥有 1 位好友', val: X => X.c.friends || 0, reward: R(50), online: true });

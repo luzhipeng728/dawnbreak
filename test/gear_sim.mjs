@@ -96,7 +96,7 @@ const res = await page.evaluate(({ N, TARGET, OFF }) => {
         if (elite) kill(def.elite || pickMob(), lv + 1, { elite: true });
         if (boss && def.abyss) {   // 深渊之间：封印之门 + 堕落守护者 + 三波 + 深渊领主
           kill('abyssSeal', def.lvl[1]); kill(def.elite, def.lvl[1] + 2, { elite: true, guardian: true });
-          for (let n = 1; n <= 3; n++) { for (let i = 0; i < 4 + n * 2; i++) kill(pickMob(), def.lvl[1] + 1); for (let i = 0; i < 1 + (n >> 1); i++) kill(def.elite, def.lvl[1] + 2, { elite: true }); }
+          for (let n = 1; n <= 3; n++) { for (let i = 0; i < 4 + n; i++) kill(pickMob(), def.lvl[1] + 1); for (let i = 0; i < (n === 3 ? 2 : 1); i++) kill(def.elite, def.lvl[1] + 2, { elite: true }); }
         }
         if (boss) kill(def.boss.kind, def.boss.lvl, { boss: true });
       }

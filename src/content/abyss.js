@@ -26,8 +26,6 @@ function abyssAmbient(c) {
   }
   c.restore();
 }
-abyssTheme('abyssGF', 'ruinsDark', 'rgba(70,10,110,0.34)');
-abyssTheme('abyssSky', 'skyDark', 'rgba(80,10,120,0.32)');
 
 /* ---------------- 封印之门（深渊之间的机关，打破后召唤深渊派对）：不动、不攻击，画成竖立旋转的紫色魔法阵 ---------------- */
 class AbyssSealModel {
@@ -47,38 +45,67 @@ class AbyssSealModel {
     c.fillStyle = `rgba(230,150,255,${0.5 + 0.4 * Math.sin(t * 4)})`; c.beginPath(); c.moveTo(0, -130); c.lineTo(9, -95); c.lineTo(0, -60); c.lineTo(-9, -95); c.closePath(); c.fill();
   }
 }
-MON.abyssSeal = { name: '封印之门', lvl: 1, hp: 26000, atk: 1, def: 200, w: 26, d: 16, h: 150, weight: 99, speed: 0, exp: 60, gold: [20, 40], shadowR: 40, pref: 0,
+MON.abyssSeal = { name: '封印之门', lvl: 1, hp: 16000, atk: 1, def: 200, w: 26, d: 16, h: 150, weight: 99, speed: 0, exp: 60, gold: [20, 40], shadowR: 40, pref: 0,
   model: () => new AbyssSealModel(), clips: typeof HUMAN_CLIPS !== 'undefined' ? HUMAN_CLIPS : GOB_CLIPS, attacks: [],
   onDamaged(t) { if (!t.guardSpawned && t.hp < t.hpMax * 0.5 && !t.dead) { t.guardSpawned = true; abyssGuardian(t); } } };
 
-/* ---------------- 深渊地下城 ---------------- */
-const ABYSS = {
-  abyss_gf: { scene: 'gf_graca', x: 300, lords: ['boneLord', 'flameMage', 'tauKing', 'catKing'], lordLvl: 21, quest: 'q_abyss_gf' },
-  abyss_sky: { scene: 'sky_castle', x: 3440, lords: ['sinEye', 'seghart', 'skyExpeller', 'platani'], lordLvl: 29, quest: 'q_abyss_sky' },
-};
+/* ---------------- 深渊地下城 ----------------
+   defineAbyss(id, { name, from?（复制这个地下城的怪物表 / 精英；没加载时整段跳过）, themeFrom（背景借用的主题）, tint, lvl, rooms, branches, rows, mobs?, elite?,
+                     lords: [深渊领主候选], lordLvl, scene（门所在的区域）, x, clearExp, desc, quest: { id, name, lvl, clear（要通关的地下城）, pre?, offer, done } }) */
+const ABYSS = {};
 function abyssBeforeEnter(id) {
   return diff => {
+    if (PARAMS.has('dungeon') && PARAMS.has('bot') && !inv.has('abyss_ticket', 1)) inv.add(makeItem('abyss_ticket', 1));   // 调试（?dungeon=abyss_gf&bot 机器人测试）：送一张票
     if (!inv.has('abyss_ticket', 1)) { toastMsg('需要「深渊派对邀请函」才能进入深渊派对（歌兰蒂斯处可以购买）', '#ff6a6a'); sfx.error(); return false; }
     inv.take('abyss_ticket', 1);
     const A = ABYSS[id], D = DUNGEONS[id];
-    D.boss = { kind: pick(A.lords), lvl: A.lordLvl };   // 深渊领主每次随机（dungeonBundles 按它加载素材）
+    D.boss = { kind: pick(A.lords.filter(k => MON[k])), lvl: A.lordLvl };   // 深渊领主每次随机（dungeonBundles 按它加载素材）
     const S = abyssData(); S.runs = (S.runs || 0) + 1; S.clears[id] = S.clears[id] || 0;
     toastMsg(`消耗 深渊派对邀请函 ×1（剩余 ${inv.count('abyss_ticket')}）`, '#e0a0ff'); gearSfx.abyssOpen();
     save.write();
     return true;
   };
 }
-defineDungeon('abyss_gf', { name: '格兰之森深渊', lvl: [16, 19], theme: 'abyssGF', rooms: 5, branches: 1, rows: 3, hidden: true, abyss: true, unlock: { quest: 'q_abyss_gf' },
-  mobs: [['zombieRed', 2], ['plague', 1.5], ['tauBeast', 1], ['goblinBomber', 1], ['catVenom', 1.5], ['zombie', 2]], elite: 'tauBeast', boss: { kind: 'boneLord', lvl: 21 }, bossAdds: 2, clearExp: 7000, bgm: 'abyss', bossBgm: 'boss',
+function defineAbyss(id, o) {
+  const B = o.from ? DUNGEONS[o.from] : null;
+  if (o.from && !B) return false;                                   // 基础地下城由别的内容包提供，还没加载
+  const lords = o.lords.filter(k => MON[k]); if (!lords.length) return false;
+  const theme = o.theme || 'abyss_' + id, from = o.themeFrom || (B && B.theme);
+  abyssTheme(theme, from, o.tint || 'rgba(80,10,120,0.32)');
+  ABYSS[id] = { scene: o.scene, x: o.x, lords, lordLvl: o.lordLvl, quest: o.quest.id };
+  defineDungeon(id, { name: o.name, lvl: o.lvl, theme, rooms: o.rooms || 5, branches: o.branches ?? 1, rows: o.rows || 3, hidden: true, abyss: true, unlock: { quest: o.quest.id },
+    mobs: o.mobs || B.mobs.filter(m => m[1] > 0), elite: o.elite || (B && B.elite), boss: { kind: lords[0], lvl: o.lordLvl }, bossAdds: o.bossAdds || 2, clearExp: o.clearExp, bgm: 'abyss', bossBgm: 'boss',
+    desc: o.desc, beforeEnter: abyssBeforeEnter(id) });
+  const S = SCENES[o.scene]; if (S && !S.gates.some(g => g.dungeon === id)) S.gates.push({ dungeon: id, x: o.x ?? S.width - 300 });   // 门：隐藏门的美术（紫色传送门）
+  if (typeof GATE_ART !== 'undefined') GATE_ART[id] = { art: 'world/b_gate_hidden', col: '200,90,255' };
+  const Q = o.quest;
+  if (typeof defineQuest === 'function') defineQuest(Q.id, { type: 'side', name: Q.name, npc: 'grandis', lvl: Q.lvl, pre: Q.pre || [], desc: Q.desc || `证明你的实力：通关${(DUNGEONS[Q.clear] || {}).name || Q.clear}，歌兰蒂斯就会告诉你${o.name}的入口。`,
+    goals: [{ type: 'clear', dungeon: Q.clear, n: 1 }], talk: { offer: Q.offer, done: Q.done }, reward: { expFrac: 0.2, gold: Q.gold || 3000, items: [{ key: 'abyss_ticket', n: 3 }] } });
+  return true;
+}
+defineAbyss('abyss_gf', { name: '格兰之森深渊', themeFrom: 'ruinsDark', theme: 'abyssGF', tint: 'rgba(70,10,110,0.34)', lvl: [16, 19], rooms: 5, branches: 1,
+  mobs: [['zombieRed', 2], ['plague', 1.5], ['tauBeast', 1], ['goblinBomber', 1], ['catVenom', 1.5], ['zombie', 2]], elite: 'tauBeast',
+  lords: ['boneLord', 'flameMage', 'tauKing', 'catKing'], lordLvl: 21, scene: 'gf_graca', x: 300, clearExp: 7000,
   desc: '【深渊派对】格拉卡最深处的裂缝通向深渊。需要消耗 1 张深渊派对邀请函。打破深渊之间的封印之门，击退三波深渊派对，深渊领主（每次随机）就会降临——它身上有史诗装备的气息。',
-  beforeEnter: abyssBeforeEnter('abyss_gf') });
-defineDungeon('abyss_sky', { name: '天空之城深渊', lvl: [24, 27], theme: 'abyssSky', rooms: 6, branches: 2, rows: 4, hidden: true, abyss: true, unlock: { quest: 'q_abyss_sky' },
-  mobs: [['knight', 2], ['expellerAxe', 2], ['golemBronze', 1.5], ['kargoGoggle', 1.5], ['puppeteerRock', 1]], elite: 'hughes', boss: { kind: 'sinEye', lvl: 29 }, bossAdds: 3, clearExp: 16000, bgm: 'abyss', bossBgm: 'boss',
-  desc: '【深渊派对】天空之城尽头的深渊裂缝，Lv28 以上的史诗套装只在这里出现。需要消耗 1 张深渊派对邀请函。打破封印之门，击退三波深渊派对，深渊领主（每次随机）降临。',
-  beforeEnter: abyssBeforeEnter('abyss_sky') });
-// 门：放进区域地图（格拉卡左端、天空之城右端），用隐藏门的美术（紫色传送门）
-for (const id in ABYSS) { const A = ABYSS[id], S = SCENES[A.scene]; if (S && !S.gates.some(g => g.dungeon === id)) S.gates.push({ dungeon: id, x: A.x }); }
-if (typeof GATE_ART !== 'undefined') for (const id in ABYSS) GATE_ART[id] = { art: 'world/b_gate_hidden', col: '200,90,255' };
+  quest: { id: 'q_abyss_gf', name: '深渊派对的资格', lvl: 15, clear: 'blazing_graca', gold: 2000, desc: '歌兰蒂斯感觉到格拉卡深处有深渊的气息。证明你的实力：通关烈焰格拉卡。',
+    offer: ['……孩子，你也感觉到了吧？格拉卡的最深处，有一道通往深渊的裂缝。', '那里的恶魔会开派对——我们叫它「深渊派对」。打倒深渊领主，就有机会得到传说中的史诗装备。', '但那里很危险。先去通关烈焰格拉卡，让我看看你的实力。'],
+    done: ['很好，你有资格了。这几张邀请函拿着——进入深渊派对，每次要消耗 1 张。', '格拉卡的左边，深渊的门已经为你打开。愿神的光辉与你同在。'] } });
+defineAbyss('abyss_sky', { name: '天空之城深渊', themeFrom: 'skyDark', theme: 'abyssSky', tint: 'rgba(80,10,120,0.32)', lvl: [23, 26], rooms: 5, branches: 1, rows: 4, bossAdds: 3,
+  mobs: [['knight', 2], ['expellerAxe', 2], ['golemBronze', 1.5], ['kargoGoggle', 1.5], ['puppeteerRock', 1]], elite: 'hughes',
+  lords: ['sinEye', 'seghart', 'skyExpeller', 'platani'], lordLvl: 28, scene: 'sky_castle', x: 3440, clearExp: 15000,
+  desc: '【深渊派对】天空之城尽头的深渊裂缝，Lv28 以上的史诗套装从这里开始出现。需要消耗 1 张深渊派对邀请函。打破封印之门，击退三波深渊派对，深渊领主（每次随机）降临。',
+  quest: { id: 'q_abyss_sky', name: '天空的深渊', lvl: 22, clear: 'lord_palace', pre: ['q_abyss_gf'], gold: 5000, desc: '天空之城的尽头也出现了深渊裂缝。通关城主宫殿，证明你能对付那里的深渊领主。',
+    offer: ['天空之城的尽头，也裂开了一道深渊。', '那里的恶魔比格兰之森的强得多，身上也带着更好的装备——传说中的史诗套装。', '去通关城主宫殿吧，回来我就把天空之城深渊的路指给你。'],
+    done: ['你果然做到了。天空之城最右边，深渊之门已经打开。', '记住：宇宙灵魂攒够了，就来我这里换你想要的装备。'] } });
+// 天帷巨兽（地下城内容组的区域，Lv24~30）：满级后最该刷的两张的深渊版；区域没加载时自动跳过
+defineAbyss('abyss_spine', { name: '第二脊椎深渊', from: 'second_spine', lvl: [29, 30], rooms: 5, lords: ['lotus', 'yakshaKing', 'donnierEX', 'rodin'], lordLvl: 31, scene: 'behemoth_spine', x: 2500, clearExp: 17000,
+  desc: '【深渊派对】天帷巨兽的第二脊椎深处，深渊的气息浓得化不开。需要消耗 1 张深渊派对邀请函。满级之后追求史诗套装的地方。',
+  quest: { id: 'q_abyss_spine', name: '巨兽体内的深渊', lvl: 29, clear: 'second_spine', pre: ['q_abyss_gf'], gold: 6000,
+    offer: ['天帷巨兽的身体里……也有深渊的裂缝。', '去通关第二脊椎，回来我告诉你入口。'], done: ['入口就在第二脊椎附近。小心，那里的深渊领主比天空之城的更强。'] } });
+defineAbyss('abyss_forbidden', { name: '天帷禁地深渊', from: 'forbidden_land', lvl: [30, 30], rooms: 5, lords: ['marcel', 'lotus', 'gblArchbishop'], lordLvl: 32, scene: 'behemoth_spine', x: 2900, clearExp: 18000,
+  desc: '【深渊派对】天帷禁地背后的深渊，是最危险、也是史诗气息最浓的地方。需要消耗 1 张深渊派对邀请函。',
+  quest: { id: 'q_abyss_forbidden', name: '禁地的深渊', lvl: 30, clear: 'forbidden_land', pre: ['q_abyss_spine'], gold: 8000,
+    offer: ['天帷禁地的背后还有一道深渊……据说连审判者都不敢靠近。', '通关天帷禁地，证明你已经是真正的强者。'], done: ['……你真的做到了。深渊之门为你打开了，去吧。'] } });
 
 /* ---------------- 深渊之间的流程（只在单机 / 主机上跑） ---------------- */
 function abyssData() { const d = save.data; d.abyss = d.abyss || { runs: 0, clears: {}, epics: 0, day: '', bought: 0 }; d.abyss.clears = d.abyss.clears || {}; return d.abyss; }
@@ -104,14 +131,14 @@ function abyssGuardian(seal) {
 function abyssWave(dg, n) {
   const def = dg.def, R = mulberry((Math.random() * 1e9) | 0), W = game.room.x1, lv = def.lvl[1] + 1;
   const tot = def.mobs.reduce((s, m) => s + m[1], 0), pickMob = () => { let r = R() * tot; for (const m of def.mobs) { r -= m[1]; if (r <= 0) return m[0]; } return def.mobs[0][0]; };
-  const cnt = 4 + n * 2, o = { lvl: lv, mul: dg.D.hp, atkMul: dg.D.atk, expMul: dg.D.exp, drop: true };
+  const cnt = 4 + n, o = { lvl: lv, mul: dg.D.hp, atkMul: dg.D.atk, expMul: dg.D.exp, drop: true };
   for (let i = 0; i < cnt; i++) spawnMonster(pickMob(), clamp(cam.x + 80 + R() * (WW - 160), 60, W - 60), 20 + R() * (DEPTH - 40), o).abyssMob = true;
-  for (let i = 0; i < 1 + (n >> 1); i++) { const m = spawnMonster(def.elite || pickMob(), clamp(cam.x + WW * (0.3 + R() * 0.4), 60, W - 60), DEPTH / 2, { ...o, lvl: lv + 1, elite: true }); m.abyssMob = true; }
+  for (let i = 0; i < (n === 3 ? 2 : 1); i++) { const m = spawnMonster(def.elite || pickMob(), clamp(cam.x + WW * (0.3 + R() * 0.4), 60, W - 60), DEPTH / 2, { ...o, lvl: lv + 1, elite: true }); m.abyssMob = true; }
   toastMsg(`深渊派对 第 ${n} 波！`, '#ff6ad8');
 }
 function abyssLord(dg) {
   const b = dg.abyssRun.boss, W = game.room.x1, p = game.player;
-  b.hpMax = b.hp = Math.round(b.hpMax * 1.6); b.atk *= 1.1; b.name = '深渊领主 · ' + b.name; b.scale = (b.scale || 1) * 1.1;
+  b.hpMax = b.hp = Math.round(b.hpMax * 1.35); b.atk *= 1.1; b.name = '深渊领主 · ' + b.name; b.scale = (b.scale || 1) * 1.1;
   b.x = clamp(p.x + (p.x < W / 2 ? 360 : -360), 120, W - 120); b.y = DEPTH / 2; b.z = 200; b.vz = -60; b.invul = 1.5; b.dead = false; b.setState('jump'); b.abyssLord = true;
   ents.push(b); game.lastTarget = b; game.lastTargetT = game.t;
   // 领主脚下的深渊光环（跟随，领主死后消失）
@@ -184,18 +211,6 @@ function abyssOtherworldPiece() {
 
 /* ---------------- 任务：资格任务（解锁深渊门）+ 每日（邀请函） ---------------- */
 if (typeof defineQuest === 'function') {
-  defineQuest('q_abyss_gf', { type: 'side', name: '深渊派对的资格', npc: 'grandis', lvl: 15,
-    desc: '歌兰蒂斯感觉到格拉卡深处有深渊的气息。证明你的实力：通关烈焰格拉卡。',
-    goals: [{ type: 'clear', dungeon: 'blazing_graca', n: 1 }],
-    talk: { offer: ['……孩子，你也感觉到了吧？格拉卡的最深处，有一道通往深渊的裂缝。', '那里的恶魔会开派对——我们叫它「深渊派对」。打倒深渊领主，就有机会得到传说中的史诗装备。', '但那里很危险。先去通关烈焰格拉卡，让我看看你的实力。'],
-      done: ['很好，你有资格了。这几张邀请函拿着——进入深渊派对，每次要消耗 1 张。', '格拉卡的左边，深渊的门已经为你打开。愿神的光辉与你同在。'] },
-    reward: { expFrac: 0.2, gold: 2000, items: [{ key: 'abyss_ticket', n: 3 }] } });
-  defineQuest('q_abyss_sky', { type: 'side', name: '天空的深渊', npc: 'grandis', lvl: 22, pre: ['q_abyss_gf'],
-    desc: '天空之城的尽头也出现了深渊裂缝。通关城主宫殿，证明你能对付那里的深渊领主。',
-    goals: [{ type: 'clear', dungeon: 'lord_palace', n: 1 }],
-    talk: { offer: ['天空之城的尽头，也裂开了一道深渊。', '那里的恶魔比格兰之森的强得多，身上也带着更好的装备——传说中的史诗套装。', '去通关城主宫殿吧，回来我就把天空之城深渊的路指给你。'],
-      done: ['你果然做到了。天空之城最右边，深渊之门已经打开。', '记住：宇宙灵魂攒够了，就来我这里换你想要的装备。'] },
-    reward: { expFrac: 0.2, gold: 5000, items: [{ key: 'abyss_ticket', n: 3 }] } });
   defineQuest('d_abyss', { type: 'daily', name: '深渊的呼唤', npc: 'grandis', lvl: 16, pre: ['q_abyss_gf'],
     desc: '【每日】通关任意地下城 3 次，歌兰蒂斯会送你深渊派对邀请函。',
     goals: [{ type: 'clear', dungeon: 'any', n: 3 }],

@@ -202,7 +202,7 @@ function otherSet(id, name, job, skill, names, sec, dmg, extra2, origin) {
   defineSet(id, { name, job, bonus: {
     2: { st: extra2, desc: Object.keys(extra2).map(k => statLine(k, extra2[k])).join('，') },
     3: { st: {}, get desc() { return `【${(CLASSES && Object.values(CLASSES).map(C => C.jobs && C.jobs[job]).find(Boolean) || {}).name || job}】${skName()} 冷却时间 -${sec} 秒，施放后 2 秒内伤害 +${Math.round(dmg * 100)}%`; }, proc: [{ on: 'skill', skill, act: 'skillcd', sec }, { on: 'skill', skill, act: 'buff', buff: { dmg }, dur: 2, key: id, name: skName(), col: '#ff9a4a' }] } } });
-  ACC_SLOTS.forEach((s, i) => defineGear(`${id}_${s}`, { slot: s, lvl: 22, rar: 4, fx: {}, named: true, set: id, name: names[i], abyss: true, src: '深渊派对掉落；歌兰蒂斯处用浓密的异界精髓兑换', desc: origin }) && SETS[id].pieces.push(`${id}_${s}`));
+  ACC_SLOTS.forEach((s, i) => defineGear(`${id}_${s}`, { slot: s, lvl: 22, rar: 4, fx: {}, named: true, noDrop: true, set: id, name: names[i], abyss: true, src: '深渊派对掉落；歌兰蒂斯处用浓密的异界精髓兑换', desc: origin }) && SETS[id].pieces.push(`${id}_${s}`));
 }
 otherSet('set_ow_blade', '秘技传授者', 'blade', 'rise', ['秘技传授者的项链', '秘技传授者的手镯', '秘技传授者的戒指'], 3, 0.12, { str: 25, crit: 0.03 }, '剑魂的秘技传承。官方异界套：破军升龙击冷却 -3 秒、攻击 +12%。');
 otherSet('set_ow_berserker', '终极鲁莽', 'berserker', 'outrage', ['终极鲁莽的项链', '终极鲁莽的手镯', '终极鲁莽的戒指'], 6, 0.15, { str: 25, hpPct: 0.05 }, '狂战士的鲁莽之力。官方异界套：怒气爆发冷却 -6 秒。');
@@ -210,4 +210,15 @@ otherSet('set_ow_ranger', '爆裂信徒', 'ranger', 'g_multi', ['爆裂信徒的
 otherSet('set_ow_launcher', '歼灭突击', 'launcher', 'gl_cannon', ['歼灭突击的项链', '歼灭突击的手镯', '歼灭突击的戒指'], 1.5, 0.3, { str: 25, stagger: 30 }, '枪炮师的歼灭火力。官方异界套：加农炮冷却 -1.5 秒、攻击 +30%。');
 otherSet('set_ow_elemental', '元素的低语', 'elemental', 'mg_hole', ['元素低语项链', '元素低语手镯', '元素低语戒指'], 4, 0.15, { int: 25, elemAll: 10 }, '元素师的元素之力。（本作原创：湮灭黑洞冷却 -4 秒）');
 otherSet('set_ow_battlemage', '炫纹大师', 'battlemage', 'bm_press', ['炫纹大师的项链', '炫纹大师的手镯', '炫纹大师的戒指'], 3, 0.15, { int: 20, str: 20, aspd: 0.03 }, '战斗法师的炫纹奥义。（本作原创：炫纹强压冷却 -3 秒）');
+/* ---------------- 天帷巨兽的名品（传说，Lv25~30）：只在对应领主的掉落表里（content/items/droptables.js），不随机掉落；分配按官方（地下城内容组确认） ---------------- */
+const LG = (key, def) => defineGear(key, { rar: 4, named: true, noDrop: true, fx: {}, ...def });
+LG('lg_sage_ring', { slot: 'ring', lvl: 29, name: '贤者之戒', fx: { cdr: 0.05, mpRegen: 0.5, crit: 0.03, mcrit: 0.03 }, st: { int: 20, str: 20 },
+  proc: { on: 'skill', chance: 0.1, act: 'heal', mp: 0.05, desc: '施放技能时 10% 几率恢复 5% MP。' }, desc: '一位不知名的贤者留下的戒指，戴上后思绪格外清明。' });
+LG('lg_karo_eye', { slot: 'stone', lvl: 30, name: '卡罗蛇眼', fx: { crit: 0.04, mcrit: 0.04, critDmg: 0.1, elemAll: 12 }, desc: '巨蛇卡罗的眼睛化成的宝石，能看穿敌人的破绽。' });
+LG('lg_fan_robe', { slot: 'top', atype: 'cloth', lvl: 25, name: '梵风衣', fx: { mspd: 0.08, cspd: 0.08, evade: 0.03 },
+  proc: { on: 'hurt', chance: 0.12, cd: 6, act: 'buff', buff: { mspd: 0.15, aspd: 0.05 }, dur: 5, key: 'fanrobe', name: '梵风', col: '#9affd8', desc: '被击时 12% 几率乘风：5 秒内移动速度 +15%、攻击速度 +5%（冷却 6 秒）。' }, desc: '随风飘扬的法衣，据说能让穿的人像风一样轻。' });
+LG('lg_light_dance', { slot: 'bracelet', lvl: 26, name: '光之舞手镯', fx: { light: 25, aspd: 0.05, cspd: 0.05 },
+  proc: { chance: 0.05, cd: 1, act: 'strike', mul: 1.2, elem: 'light', vis: 'holy', name: '光之舞', desc: '攻击时 5% 几率降下光之舞（120% 光属性伤害）。' }, desc: '手镯上的光点会随着主人的动作起舞。' });
+LG('lg_holy_pendant', { slot: 'neck', lvl: 28, name: '圣灵战士项坠', fx: { allStat: 25, dmgReduce: 0.05, dmgUp: 0.05 },
+  proc: { on: 'lowhp', cd: 60, act: 'shield', amt: 0.3, dur: 8, name: '圣灵守护', desc: 'HP 低于 30% 时获得圣灵守护：8 秒内吸收最多 30% HP 上限的伤害（冷却 60 秒）。' }, desc: '圣灵战士代代相传的项坠，危急时刻会发出光芒。' });
 }

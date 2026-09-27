@@ -19,6 +19,7 @@ run quests    node test/quests.mjs
 run guide     node test/guide.mjs
 run quickquest node test/quickquest.mjs
 run world     node test/world.mjs
+run polish    node test/polish.mjs
 run combat    node test/combat.mjs
 run skillsa   node test/skill_sa.mjs
 run avatar    node test/avatar.mjs

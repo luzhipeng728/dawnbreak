@@ -186,6 +186,7 @@ function resetSkills() {
 }
 addStyle(`
 .skwin{gap:.55em}
+.win.compact{width:30em!important}.win.compact .skdetail{display:none}
 .sktabs{display:flex;gap:.3em;align-items:flex-end;border-bottom:.1em solid #5a4a36}
 .sktab{padding:.35em 1em;border:.1em solid #5a4a36;border-bottom:0;border-radius:.3em .3em 0 0;background:#1a1420;color:#b8a888;cursor:pointer;font-weight:800;font-size:.95em}
 .sktab.on{background:linear-gradient(180deg,#5a4020,#2a1c10);color:#ffe8a8}

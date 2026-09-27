@@ -239,9 +239,8 @@ class Dungeon {
       uiText(`${Math.ceil(this.deadT)}`, 960, 540, { size: 120, align: 'center', color: '#fff', sw: 10, font: '"Arial Black",sans-serif' });
       uiText(save.data.coins > 0 ? `按 ${typeof keyName === 'function' ? keyName('attack') : 'X'} 使用复活币原地复活（剩余 ${save.data.coins} 枚）` : '没有复活币了，倒计时结束后返回城镇', 960, 630, { size: 30, align: 'center', color: '#ffe8a8', sw: 5 });
     }
-    // 提示消息
-    let ty = 360;
-    for (let i = toastList.length - 1; i >= 0; i--) { const m = toastList[i]; m.t += 1 / 60; if (m.t > 3) { toastList.splice(i, 1); continue; } c.globalAlpha = m.t > 2.4 ? (3 - m.t) / 0.6 : 1; uiText(m.msg, 960, ty, { size: 28, align: 'center', color: m.col, sw: 5 }); ty += 40; c.globalAlpha = 1; }
+    // 提示横幅（结算 / 倒地时先排队，不和结算画面、倒地倒计时叠在一起）
+    if (this.state !== 'dead' && !menus.isOpen('result')) drawToastBanner(c);
   }
 }
 // 左右两侧的门：石拱门 + 发光传送面（开门后）

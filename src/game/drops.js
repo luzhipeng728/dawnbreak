@@ -86,7 +86,7 @@ function tryPickup(p) {
   if (!best) return false;
   if (!inv.add(best.item)) { toastMsg('背包已满', '#ff6a6a'); return false; }
   drops.splice(drops.indexOf(best), 1); sfx.pickup(); bus.emit('pickup', { item: best.item });
-  toastMsg(`获得 ${best.item.name}${best.item.n > 1 ? ' ×' + best.item.n : ''}`, RARITY[best.item.rar || 0].col);
+  toastMsg(`获得 ${best.item.name}${best.item.n > 1 ? ' ×' + best.item.n : ''}`, RARITY[best.item.rar || 0].col, 'log');
   if ((best.item.rar || 0) >= 5) sfx.epic();
   return true;
 }
@@ -116,5 +116,30 @@ function drawDrop(c) {
     c.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = '#000'; c.strokeText(txt, X, Y - 20); c.fillStyle = R.col; c.fillText(txt, X, Y - 20);
   }
 }
-let toastList = [];
-function toastMsg(msg, col = '#fff') { toastList.push({ msg, col, t: 0 }); if (toastList.length > 5) toastList.shift(); }
+/* ---- 提示消息 toastMsg(msg, col, kind)：
+   - kind 'log'：任务 / 获得类，只进左下系统消息（标题、选角界面没有系统消息区时改走横幅）；不写 kind 时按开头的字自动归类（TOAST_LOG_RE）
+   - kind 'banner'（默认）：屏幕中间的横幅，一次只显示一条，其余排队；同样的消息不会重复排队
+   横幅画在区域名大字（y≈150~280）下面，互不重叠；地下城结算 / 倒地时先不显示，排着队等 ---- */
+let toastList = [];   // 横幅队列，[0] 是正在显示的
+const TOAST_LOG_RE = /^(获得 |自动拾取|接受任务|放弃了任务|新的主线任务|任务目标达成)/;
+function toastMsg(msg, col = '#fff', kind) {
+  if ((kind || (TOAST_LOG_RE.test(msg) ? 'log' : 'banner')) === 'log' && typeof ui !== 'undefined' && ui.inGame()) { ui.pushLog(msg, col); return; }
+  const same = toastList.find(m => m.msg === msg);
+  if (same) { if (same === toastList[0] && same.t > 0.3) { same.t = 0.3; same.end = Math.max(same.end, 2.6); } return; }
+  toastList.push({ msg, col, t: 0, end: 2.6 });
+  if (toastList.length > 4) toastList.splice(1, 1);   // 排得太多：丢掉最早排队的（正在显示的那条不动）
+}
+// 横幅用 DOM 画在所有窗口之上（画在画布上会被商店 / 背包等窗口挡住）；ui.draw 每帧开始时清标记，谁这一帧调用了就显示，没人调用就隐藏
+const toastBar = { el: null, shown: false, sig: '' };
+function drawToastBanner(c, y = 380) {
+  const now = performance.now(), dt = Math.min(0.1, (now - (drawToastBanner.last || now)) / 1000); drawToastBanner.last = now;
+  const m = toastList[0]; if (!m) return;
+  m.t += dt;
+  if (toastList.length > 1) m.end = Math.min(m.end, Math.max(1.2, m.t + 0.35));   // 后面有排队的：至少显示 1.2 秒就换下一条
+  if (m.t >= m.end) { toastList.shift(); return; }
+  const B = toastBar;
+  if (!B.el) { B.el = h('div', { id: 'toastbar' }, h('span')); dom.appendChild(B.el); }
+  const sig = m.msg + m.col + y; if (B.sig !== sig) { B.sig = sig; const sp = B.el.firstChild; sp.textContent = m.msg; sp.style.color = m.col; B.el.style.top = `calc(var(--u) * ${y - 30}px)`; }
+  B.el.style.opacity = Math.min(1, m.t / 0.15, (m.end - m.t) / 0.35).toFixed(2); B.el.hidden = false; B.shown = true;
+}
+function toastBarFrame(end) { const B = toastBar; if (!end) { B.shown = false; return; } if (B.el && !B.shown && !B.el.hidden) B.el.hidden = true; }

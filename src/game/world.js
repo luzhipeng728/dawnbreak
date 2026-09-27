@@ -124,7 +124,8 @@ function worldUpdate(dt) {
   world.near = near;
   world.exitLock = Math.max(0, world.exitLock - dt);
   // 隐藏地下城的门第一次出现：播放现身特效
-  for (const g of S.gates) { const D = DUNGEONS[g.dungeon]; if (D && D.hidden && gateVisible(g) && !(save.data.hiddenSeen ??= {})[D.id] && !world.revealing[D.id]) revealGate(g); }
+  // （门进入画面后才播：刚进场景时门常常在画面外，玩家走过去时特效早就播完了——试玩发现）
+  for (const g of S.gates) { const D = DUNGEONS[g.dungeon]; if (D && D.hidden && gateVisible(g) && !(save.data.hiddenSeen ??= {})[D.id] && !world.revealing[D.id] && Math.abs(g.x - (cam.x + WW / 2)) < WW / 2 - 80) revealGate(g); }
   if (menus.modal()) return;
   if (near && input.hit('attack')) { input.consume('attack'); openNpc(near.npc); return; }
   if (world.exitLock <= 0) for (const ex of S.exits) if (exitTouched(ex, p)) { useExit(ex); return; }
@@ -168,11 +169,26 @@ function revealGate(g) {
 /* =====================================================================
    NPC 立绘模型：脚底中心为原点；呼吸起伏、轻微摇摆、转身时的“翻面”、玩家走近时小跳一下打招呼
    ===================================================================== */
+// 眨眼：立绘里两只眼睛的位置（图片像素 [x0, y0, x1, y1]）和眼皮色，眨眼时用眼皮色盖住眼睛、画一道闭眼的睫毛线
+// 由 test/shots/eyes 的脚本从立绘自动找眼睛再人工修正；G.S.D（本来就闭着眼）、米内特（蒙面）、夏洛克（单片眼镜）、土罐（帽檐阴影）不眨眼
+const NPC_EYES = { albert: ['#ffdabe', [[63,70,81,88],[95,63,113,83]]], alice: ['#ffe9e1', [[101,64,119,84],[137,57,153,77]]], boken: ['#ffc39d', [[99,42,117,62],[129,37,148,57]]], daphne: ['#fdd9bc', [[68,76,86,97],[103,71,120,91]]], fengzhen: ['#f8c89d', [[83,78,101,97],[129,82,139,98]]], grandis: ['#fdf0e0', [[66,106,84,126],[107,103,123,123]]], kakun: ['#73676d', [[96,61,114,80],[131,72,148,92]]], kanina: ['#d49161', [[74,62,92,82],[102,60,120,80]]], kiri: ['#edbdad', [[104,78,122,98]]], lily: ['#fddbc0', [[61,71,80,92],[98,66,116,86]]], linus: ['#fcbe93', [[99,55,117,75],[131,53,149,73]]], lorian: ['#ffe9d9', [[90,76,108,96],[128,72,145,92]]], marin: ['#fee1c6', [[77,82,95,102],[115,79,130,99]]], norton: ['#fdceac', [[73,71,91,91],[107,67,125,87]]], nuoyu: ['#feebe2', [[91,90,109,113],[128,88,141,111]]], olan: ['#f5ccaf', [[66,75,84,95],[100,70,118,90]]], ophelia: ['#ffe7d4', [[78,76,95,95],[110,75,128,95]]], paris: ['#fed8b7', [[67,90,85,110],[105,87,117,107]]], ray: ['#f6d4ad', [[85,106,99,126],[116,102,134,122]]], roget: ['#ffc599', [[78,83,96,104],[109,79,127,99]]], seria: ['#feecde', [[105,73,123,93],[143,71,160,91]]], sharan: ['#bd8264', [[84,71,102,91],[122,70,139,90]]], sinda: ['#fbd2ab', [[58,73,76,93],[93,72,108,92]]], skadi: ['#fdebdd', [[95,83,113,101],[128,80,145,100]]], sosia: ['#fbdec1', [[73,68,89,85],[107,63,117,77]]], vier: ['#ffe1c9', [[70,75,88,96],[106,72,124,92]]] };
 class NpcModel {
-  constructor(key, h, still) { this.img = IMG[key]; this.h = h; this.still = still; this.skel = { map: {} }; this.turnT = 1; this.hopT = 1; this.seed = Math.random() * 9; }
+  constructor(key, h, still) { this.img = IMG[key]; this.h = h; this.still = still; this.skel = { map: {} }; this.turnT = 1; this.hopT = 1; this.seed = Math.random() * 9; this.eyes = NPC_EYES[key.replace('world/npc_', '')]; this.blinkIn = 1 + Math.random() * 4; this.blinkT = 0; }
   turn() { this.turnT = 0; }
   hop() { if (this.hopT >= 1 && !this.still) this.hopT = 0; }
-  tick(dt) { this.turnT = Math.min(1, this.turnT + dt / 0.2); this.hopT = Math.min(1, this.hopT + dt / 0.42); }
+  tick(dt) {
+    this.turnT = Math.min(1, this.turnT + dt / 0.2); this.hopT = Math.min(1, this.hopT + dt / 0.42);
+    if (this.blinkT > 0) this.blinkT -= dt;
+    else if ((this.blinkIn -= dt) <= 0) { this.blinkT = 0.13; this.blinkIn = Math.random() < 0.2 ? 0.25 : 2.5 + Math.random() * 4; }   // 偶尔连眨两下
+  }
+  drawBlink(c) {
+    const [lid, boxes] = this.eyes, im = this.img, ox = -im.width / 2, oy = -im.height;
+    c.fillStyle = lid; c.strokeStyle = '#2a1810'; c.lineWidth = 1.8; c.lineCap = 'round';
+    for (const [x0, y0, x1, y1] of boxes) {
+      c.beginPath(); c.ellipse(ox + (x0 + x1) / 2, oy + (y0 + y1) / 2 - 0.5, (x1 - x0) / 2 + 2, (y1 - y0) / 2 + 1.5, 0, 0, TAU); c.fill();
+      const yy = oy + y0 + (y1 - y0) * 0.62; c.beginPath(); c.moveTo(ox + x0, yy); c.quadraticCurveTo(ox + (x0 + x1) / 2, yy + 4.4, ox + x1, yy); c.stroke();
+    }
+  }
   draw(c, pose, t) {
     const im = this.img; if (!im) return;
     const k = this.h / im.height, s = this.seed, br = this.still ? 0 : Math.sin(t * 2.1 + s);
@@ -182,7 +198,9 @@ class NpcModel {
     c.save(); c.translate(0, -hp * 7);
     c.transform(1, 0, Math.sin(t * 0.8 + s * 2) * 0.012, 1, 0, 0);
     c.scale(k * turn * (1 - br * 0.005) * (2 - sq), k * (1 + br * 0.011) * sq);
-    c.drawImage(im, -im.width / 2, -im.height); c.restore();
+    c.drawImage(im, -im.width / 2, -im.height);
+    if (this.blinkT > 0 && this.eyes) this.drawBlink(c);
+    c.restore();
   }
 }
 /* =====================================================================
@@ -231,10 +249,25 @@ class Passerby {
   draw(c) {
     const X = sx(this.x), Y = sy(this.y); if (this.a <= 0 || X < -80 || X > WW + 80) return;
     c.save(); c.globalAlpha = this.a; c.translate(X, Y); c.scale(this.face, 1); this.model.draw(c, this.pose, game.t + this.seed, NO_OPTS); c.restore();
+  }
+  // 名牌（公会 + 名字）：所有角色画完后由 drawCrowdLabels 统一画，互相错开
+  drawLabel(c, X, ny) {
     c.save(); c.globalAlpha = this.a * 0.95; c.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.8)';
-    const ny = sy(this.y, 124);
     if (this.guild) { c.strokeText(`<${this.guild}>`, X, ny - 11); c.fillStyle = '#a8e6a0'; c.fillText(`<${this.guild}>`, X, ny - 11); }
     c.strokeText(this.name, X, ny); c.fillStyle = '#ffffff'; c.fillText(this.name, X, ny); c.restore();
+  }
+}
+// 路人名牌避让：NPC 名牌（含头顶任务标记）优先；路人从前排（y 大）往后排放，和已放好的名牌重叠就往上挪一行，挪两次还挡就不显示
+function drawCrowdLabels(c, npcRects) {
+  const taken = npcRects.slice(), hit = r => taken.some(o => r.x0 < o.x1 && r.x1 > o.x0 && r.y0 < o.y1 && r.y1 > o.y0);
+  c.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif';
+  for (const w of [...world.crowd].sort((a, b) => b.y - a.y)) {
+    const X = sx(w.x); if (w.a <= 0.05 || X < -80 || X > WW + 80) continue;
+    const half = Math.max(c.measureText(w.name).width, w.guild ? c.measureText(`<${w.guild}>`).width : 0) / 2 + 2, top = w.guild ? 20 : 10;
+    let ny = sy(w.y, 124), r = null;
+    for (let k = 0; k < 3; k++, ny -= top + 3) { const t = { x0: X - half, x1: X + half, y0: ny - top, y1: ny + 3 }; if (!hit(t)) { r = t; break; } }
+    if (!r) continue;
+    taken.push(r); w.drawLabel(c, X, ny);
   }
 }
 function crowdSize(S) { return S.crowd ?? (S.interior ? 0 : S.kind === 'field' ? 2 : Math.max(3, Math.round(S.width / 650))); }
@@ -364,11 +397,13 @@ function renderScene(c) {
   const ground = S.props.filter(pr => pr.y !== undefined).map(pr => ({ y: pr.y, draw: cc => { const r = propRect(pr); if (r && r.X < WW + 40 && r.X + r.w > -40) drawProp(cc, pr, r.X, r.Y, r.w, r.h, r.im); } }));
   const list = [...ents, ...fxList, ...world.crowd, ...ground].sort((a, b) => a.y - b.y);
   for (const o of list) o.draw(c);
-  // NPC 名牌 + 任务标记
+  // NPC 名牌 + 任务标记（记下占用的区域，路人名牌避开）
+  const npcRects = [];
   for (const e of world.npcs) {
     const N = e.npc, X = sx(e.x), Y = sy(e.y, N.h + 16), hot = world.near === e || world.hover === e;
     if (X < -100 || X > WW + 100) continue;
     c.font = `bold ${hot ? 11 : 10}px "PingFang SC","Microsoft YaHei",sans-serif`; c.textAlign = 'center';
+    { const half = Math.max(c.measureText(N.name).width, N.title ? c.measureText(`[${N.title}]`).width * 0.8 : 0) / 2 + 3; npcRects.push({ x0: X - half, x1: X + half, y0: Y - 46, y1: Y + 4 }); }
     c.lineWidth = 3; c.strokeStyle = '#000'; c.strokeText(N.name, X, Y); c.fillStyle = hot ? '#fff6c0' : '#ffe070'; c.fillText(N.name, X, Y);
     if (N.title) { c.font = 'bold 8px sans-serif'; c.strokeText(`[${N.title}]`, X, Y - 11); c.fillStyle = '#9fe0ff'; c.fillText(`[${N.title}]`, X, Y - 11); }
     if (typeof drawQuestMarker === 'function') drawQuestMarker(c, X, Y - 24, N.id);
@@ -377,6 +412,7 @@ function renderScene(c) {
       if (mk) { const bob = Math.sin(game.t * 4) * 2; c.font = '900 18px "Arial Black",sans-serif'; c.lineWidth = 4; c.strokeText(mk, X, Y - 24 + bob); c.fillStyle = mk === '?' ? '#6aff6a' : '#ffd23a'; c.fillText(mk, X, Y - 24 + bob); }
     }
   }
+  drawCrowdLabels(c, npcRects);
   // 左右出口：箭头 + 目的地名牌
   for (const ex of S.exits) {
     if (ex.side !== 'left' && ex.side !== 'right') continue;
@@ -472,7 +508,7 @@ function worldUI(c) {
   if (world.banner) drawAreaBanner(c, world.banner);
   if (world.near && !menus.modal()) uiText(`按 ${keyName('attack')} 或点击与 ${world.near.npc.name} 对话`, 960, 700, { size: 28, align: 'center', color: '#ffe8a8', sw: 5 });
   if (typeof drawQuestTracker === 'function') drawQuestTracker(c);
-  drawToasts(c);
+  drawToastBanner(c);
 }
 // 官方式的区域名：屏幕上方中间，金色大字 + 两侧饰线，淡入 0.5 秒、停留、淡出
 function drawAreaBanner(c, B) {
@@ -491,10 +527,6 @@ function drawAreaBanner(c, B) {
   uiText(B.big, 960, y + rise, { size: 64, weight: 900, align: 'center', color: '#ffe6a6', sw: 8, stroke: 'rgba(40,20,0,.9)' });
   if (B.small) uiText(B.small, 960, y + 50 + rise, { size: 30, align: 'center', color: '#f4ecd8', sw: 5 });
   c.restore();
-}
-function drawToasts(c) {
-  let ty = 360;
-  for (let i = toastList.length - 1; i >= 0; i--) { const m = toastList[i]; m.t += 1 / 60; if (m.t > 3) { toastList.splice(i, 1); continue; } c.globalAlpha = m.t > 2.4 ? (3 - m.t) / 0.6 : 1; uiText(m.msg, 960, ty, { size: 28, align: 'center', color: m.col, sw: 5 }); ty += 40; c.globalAlpha = 1; }
 }
 // 鼠标：悬停高亮 / 点击 NPC 对话
 function worldPointer(ev, click) {

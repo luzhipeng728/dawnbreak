@@ -263,12 +263,7 @@ const menus = {
   w_result(dg) {
     const R = dg.result, col = RANK_COL[R.rank];
     const lvCost = 400 + game.lvl * 150;
-    const reward = (gold) => {
-      const r = Math.random(), lv = dg.def.lvl[1];
-      if (r < 0.4) return { gold: Math.round((80 + lv * 45) * (1 + dg.diff * 0.5) * rnd(0.8, 1.6) * (gold ? 2.5 : 1)) };
-      if (r < 0.65) return { item: makeConsumable(pick(['hpM', 'mpM', 'crystal', 'elixir']), pick([1, 2, 3, 5])) };
-      const rar = Math.min(5, rollRarity(0.15 + dg.D.drop + (gold ? 0.25 : 0), gold)); return { item: rar === 5 ? (() => { const pool = EPICS.filter(e => !e.cls || e.cls === game.player.cls), E = pick(pool); return makeEquip(E.slot, Math.max(E.lvl, lv), 5, game.player.cls, E); })() : makeEquip(pick(SLOTS), lv, Math.max(1, rar)) };
-    };
+    const reward = gold => rollCardReward(dg, gold);   // 掉落表统一在 drops.js
     const rewards = [reward(false), reward(false), reward(true), reward(true)];
     let freePicked = false;
     const give = (rw) => { if (rw.gold) { game.gold += rw.gold; sfx.coin(); } else if (!giveItem(rw.item)) { /* 已自动出售 */ } else if ((rw.item.rar || 0) >= 5) sfx.epic(); save.write(); };
@@ -451,7 +446,7 @@ const menus = {
 const cmdText = seq => seq === '' ? '' : seq === 'hold' ? '按住→' : seq.split('').map(ch => ({ f: '→', b: '←', d: '↓', u: '↑' })[ch]).join('');
 const skillCost = (S, lv) => Math.round((S.spBase || (S.awaken ? 120 : 20)) * (1 + lv * 0.25));
 function applyVolumes() { if (!sfx.ctx) return; sfx.bus.gain.value = uiPref('sfx'); sfx.mus.gain.value = uiPref('music'); }
-function lootAll() { let n = 0; for (const d of drops) { if (d.kind === 'gold') { game.gold += d.amount; n++; } else if (inv.add(d.item)) n++; } drops.length = 0; if (n) toastMsg(`自动拾取了 ${n} 件掉落物`, '#ffe8a8'); }
+function lootAll() { let n = 0; for (const d of drops) { if (d.kind === 'gold') { game.gold += d.amount; n++; } else { giveItem(d.item); n++; } } drops.length = 0; if (n) toastMsg(`自动拾取了 ${n} 件掉落物`, '#ffe8a8'); }
 /* ---- 截图（F12）：把世界层和 HUD 层合成一张 PNG 下载 ---- */
 function takeScreenshot() {
   try {

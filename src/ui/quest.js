@@ -78,7 +78,7 @@ function drawQuestMarker(c, X, Y, npcId) {
 function qtFit(c, s, w) { if (c.measureText(s).width <= w) return s; while (s.length > 1 && c.measureText(s + '…').width > w) s = s.slice(0, -1); return s + '…'; }
 function drawQuestTracker(c) {
   questUI.drawn = true;
-  const d = qdata(); if (!d || !game.player) return;
+  const d = qdata(); if (!d || !game.player || game.duel) return;   // 决斗场用的是临时存档，不显示任务
   const dg = game.scene === 'dungeon' ? game.dungeon : null;
   if (dg && dg.state !== 'play') return;
   const ids = d.questTrack.filter(id => d.quests[id] && QUESTS[id]).slice(0, dg ? 4 : QUEST_TRACK_MAX);

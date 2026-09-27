@@ -248,6 +248,26 @@ async function duel() {
   await P.closeAll();
   check(await goScene('hendon_myre'), '走不到市政街'); check(await P.talk('vier'), '和维尔·克鲁对话失败'); await P.shot('vier');
   const sv = await page.evaluate(() => [...menus.wins.npc.querySelectorAll('.npcmenu .btn')].map(b => b.textContent)); step('维尔·克鲁菜单：' + sv.join(' '));
+  await P.npcService('决斗场'); await wait(400);
+  await page.click('.duelwin .btn.big'); await page.waitForFunction(() => window.__READY && game.duel, null, { timeout: 30000 }); await wait(1500);
+  await P.shot('duel-start');
+  // 用键盘打：靠近 → 普攻 / 技能，被打飞了按 C 受身
+  const t0 = Date.now(); let k = 0;
+  while (Date.now() - t0 < 200000) {
+    const s = await page.evaluate(() => { const D = game.duel, a = D.a, b = D.b; return { st: D.state, round: D.round, wins: D.wins, a: { x: a.x, y: a.y, face: a.face, st: a.st }, b: { x: b.x, y: b.y, hp: Math.round(b.hp / b.hpMax * 100) }, hp: Math.round(a.hp / a.hpMax * 100) }; });
+    if (s.st === 'result') break;
+    const dx = s.b.x - s.a.x, dy = s.b.y - s.a.y;
+    if (s.a.st === 'down') { await P.tap('KeyC'); continue; }
+    if (Math.abs(dx) < 70 && Math.abs(dy) < 14) { await P.release(); if ((dx > 0 ? 1 : -1) !== s.a.face) { await P.tap(dx > 0 ? 'ArrowRight' : 'ArrowLeft', 30); } await P.tap(++k % 5 === 0 ? ['KeyA', 'KeyS', 'KeyD', 'KeyF'][k % 4] : 'KeyX', 45); if (k === 20) await P.shot('duel-fight'); continue; }
+    await P.hold([Math.abs(dx) > 50 ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : null, Math.abs(dy) > 8 ? (dy > 0 ? 'ArrowDown' : 'ArrowUp') : null].filter(Boolean)); await wait(60);
+  }
+  await P.release(); await wait(800); await P.shot('duel-result');
+  step('决斗结果：' + JSON.stringify(await page.evaluate(() => game.duel.result)));
+  await P.tap('Escape'); await wait(500); await P.shot('duel-esc');
+  step('决斗后按 Esc：' + await page.evaluate(() => menus.stack.join(',') + ' | ' + [...document.querySelectorAll('[data-win] .btn')].map(b => b.textContent).join(' ')));
+  const leave = page.locator('.sysmenu .btn:has-text("离开决斗场")');
+  if (await leave.count()) { await leave.click(); await page.waitForFunction(() => window.__READY && game.scene === 'town', null, { timeout: 30000 }); await wait(800); await P.shot('back-from-duel'); step('离开决斗场后：' + await page.evaluate(() => `${world.S.id} ${save.data.name} Lv.${game.lvl}`)); }
+  else P.note('决斗结束后没有回城镇的入口');
 }
 
 // ---- 手机（触屏）：用 CDP 的多点触控，一根手指按摇杆，另一根手指点按钮 ----

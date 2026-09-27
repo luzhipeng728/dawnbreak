@@ -299,6 +299,7 @@ const menus = {
       B('全屏切换', '', () => { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); }),
       B('截图', '', () => { this.close('system'); setTimeout(takeScreenshot, 60); }, keyName('shot')),
       dg ? B('放弃并返回城镇', 'red', () => { this.close('system'); game.paused = false; if (game.dungeon && game.dungeon.state === 'dead') { game.dungeon.fail(); return; } lootAll(); goTown(); }) : null,
+      game.duel ? B('离开决斗场，回到城镇', 'blue', () => { this.close('system'); location.href = location.pathname + '?resume' + (PARAMS.has('mute') ? '&mute' : ''); }) : null,
       B('返回角色选择', 'blue' + (town ? '' : ' off'), () => backToCharSelect()),
       dg ? h('div', { class: 'small dim', style: 'text-align:center' }, '地下城里不能切换角色，请先返回城镇') : null,
       B('返回标题画面', '', () => { save.write(); this.close('system'); location.href = location.pathname + (PARAMS.has('mute') ? '?mute' : ''); }));

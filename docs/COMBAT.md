@@ -285,6 +285,10 @@ CLASSES.sword.cmds.push(['bff', 'nj_a'], ['uudd', 'nj_awaken']);
 5. 在 `src/content/sprites.js` 的 `SPR_ANIMS[<角色>]` 里加片段：`myClip: [['帧1', 0], ['帧2', 0.12]]`（一次性，按动作内时间切换）或 `{ fps, frames: [...] }`（循环）。动作里写 `clip: 'myClip'` 即可（骨骼兜底片段会自动补）。
 6. `node build.mjs`，`node test/motion.mjs <职业>`、`node test/skillshots.mjs <职业>:<转职>` 看连拍。
 
+觉醒插图：`combatgen.py` 的 `CUTIN` 里每个转职一张（`python3 art/tools/combatgen.py cutin`，`python3 art/tools/combatgen.py cutinprep` 输出 `art/final/cutin/<转职>.webp`）；觉醒技能里写 `game.cutin = { t: 0, dur: 1.0, name, who: cutinWho(e) }`，有转职插图时用转职的，否则用职业插图。
+
+外观层（外观与换装组）：`SpriteModel.draw` 里有钩子 `model.av = { frame(m, f), under(c, m, f, F), over(c, m, f, F) }`，用来换帧来源（时装）和叠加武器 / 配件；没有 `av` 时行为不变。
+
 特效：在 `combatgen.py` 的 `FX` 里加一项（发光类用黑底），`python3 art/tools/combatgen.py fx --only <名字>`，`python3 art/tools/fxprep.py --combat`；代码里 `fxSpr('<名字>', x, y, z, { w, dur, grow, col })`，需要换色时把原图色相写进 `fx.js` 的 `FX_BASE_HUE`。
 
 ## 12. 测试
@@ -296,5 +300,5 @@ CLASSES.sword.cmds.push(['bff', 'nj_a'], ['uudd', 'nj_awaken']);
 | `node test/duel.mjs sword:gun,gun:mage,mage:sword` | AI 对 AI 打完三局两胜，统计双方技能、伤害、受身、后跳、闪避、抓取、保护触发 |
 | `node test/perf.mjs sword,gun,mage` | 持续战斗与决斗场的帧率、逻辑 / 渲染耗时 |
 | `node test/motion.mjs <职业> [转职]` | 走跑、连段、浮空追击、受击（轻 / 重 / 浮空 / 倒地）、受身、被抓的连拍 |
-| `node test/classes.mjs sword,gun,mage` | 基础技能与指令冒烟测试 |
+| `node test/classes.mjs sword,gun,mage,sword:blade,...` | 在一群哥布林里依次施放技能栏上的全部技能（基础 / 转职），检查每个技能都放得出来、无报错 |
 | `SPEED=3 node test/botrun.mjs lorien:5:0:sword` | 机器人通关（PvE 回归） |

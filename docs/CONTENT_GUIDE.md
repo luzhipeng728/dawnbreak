@@ -248,3 +248,168 @@ python3 art/tools/bgs.py 主题名                             # 远景 / 地面
 - 隐藏门播放现身特效。
 - 从地下城回来站在门口，并且不弹窗。
 - 城镇曲目有声音。
+
+## 8. 如何新增一个地下城区域（以天空之城为例）
+
+这一节由地下城内容组编写，讲的是新增一整块地下城区域：区域地图、一组地下城、新怪物与领主、新背景。
+天空之城是格兰之森之后的区域，Lv14~25。官方经典版是 Lv17~30，本作压缩了等级。
+需要的代码都在三个新文件里，不用改别人的文件：
+
+| 文件 | 内容 |
+|---|---|
+| `src/content/monsters/sky_castle.js` | 怪物、领主、招式、房间机关、`MON_ART` 精灵映射 |
+| `src/content/themes/sky_castle.js` | 新主题 `THEMES.<主题>` 与色调 `BG_GRADE` |
+| `src/content/world/sky_castle.js` | 地下城 `defineDungeon`、区域地图 `defineScene`、门的美术 `GATE_ART` |
+
+`src/ORDER` 里这三个文件放在 `content/world/grand_flores.js` 之后、`content/sprites.js` 之前。
+- 要在 bestiary / room / themes / world 之后：因为要扩展它们定义的 `MON`、`MON_ART`、`THEMES`、`BG_GRADE`、`GATE_ART`。
+- 要在 sprites.js 之前：sprites.js 会按 `MON_ART` 给怪物换上逐帧精灵。
+
+### 8.1 先定表，再动手（协作）
+开工前在 `.team/board.md` 发一条“接口约定”，写清楚下面几项，其他组照着做：
+- 地下城 id、名称、等级、领主。
+- 怪物 id（任务组的击杀任务、装备组的掉落表都靠 id）。
+- 隐藏图的解锁任务 id。
+
+天空之城的分工：
+- 世界组：在西海岸加通往 `sky_castle` 的云梯出口（`minLv: 14`），并画 6 张门图 `world/g_<id>`。
+- 任务组：写天空之城篇任务，以及隐藏图的解锁任务 `q_hidden_floating`。
+- 装备组：写 6 张图的掉落表，并把新图加进 `test/econ.mjs` 的经验 / 金币模拟。经验数值按模拟结果定：Lv14→24 约 9 次地下城。
+
+### 8.2 地下城与区域地图
+
+```js
+defineDungeon('dragon_tower', { name: '龙人之塔', lvl: [14, 16], theme: 'skyTower', rooms: 6, branches: 2,
+  mobs: [['wyvern', 3], ['dragonman', 3]], elite: 'minius', boss: { kind: 'lucas', lvl: 17 }, bossAdds: 2, clearExp: 4800, bgm: 'dungeon', desc: '……' });
+defineScene('sky_castle', { name: '天空之城', area: '天空之城', kind: 'field', width: 3600, theme: 'skyTower', bgm: 'field', map: [30, 5],
+  exits: [{ side: 'left', to: 'west_coast' }], gates: [{ dungeon: 'dragon_tower', x: 480 }, /* …… */] });
+```
+
+写法要点：
+- **等级**
+  - 相邻地下城的 `lvl` 要有重叠，`boss.lvl` 比 `lvl[1]` 高 1。
+  - 普通难度的机器人要能在 `lvl[0]+1` 级稳定通关。
+  - 区域地图上的门从入口往里等级递增。
+- **每张图的特色**：每张图至少要有一种新怪或一种新机关，领主房用 `bossAdds` 带小怪。
+- **隐藏图**：写 `hidden: true, unlock: { quest: 'q_hidden_floating' }`，门会在任务完成后出现。
+- **门的美术**：写 `if (typeof GATE_ART !== 'undefined') Object.assign(GATE_ART, {...})`，用 typeof 保护，没加载世界组的文件时也不报错。
+
+### 8.3 怪物
+用 `Object.assign(MON, {...})` 加怪物。数值是 1 级的基数，实际值会随等级放大：
+- 血量 ×(1 + (等级−1)×0.15)
+- 攻击 ×(1 + (等级−1)×0.1)
+- 经验 ×(1 + (等级−1)×0.4)
+
+数值参照同等级的现有怪物：
+
+| 类型 | hp | atk | def | exp | gold |
+|---|---|---|---|---|---|
+| Lv14~22 普通怪 | 5000~13000 | 215~268 | 220~480 | 100~130 | [22,45]~[30,60] |
+| 领主 | 112000~175000 | 295~330 | 470~620 | 1600~3400 | [220,420]~[380,700] |
+
+- 普通怪：远程 / 脆的血少，近战 / 重甲的血多。
+- 领主要写 `bars`（血条数）和 `scale`。
+- 节奏目标：机器人按推荐等级打，每个房间 15~30 秒，领主战 1~2 分钟。
+  - 打得太久就降 hp，不要动 exp / gold，因为经验和金币由装备组的经济模拟来定。
+  - 被击次数太多就降远程怪的出手频率。
+
+招式 `attacks: [{ clip, range, dy, cd, w, cond, act }]`：
+- 片段 `clip` 只能用 `SPR_ANIMS.monster` 里有的：`club atk1 axe slam scratch bite throw cast roar pounce chargeW charge heal`。
+- 近战直接用 bestiary 的 `melee(clip, t0, t1, box, { range, cd, sa, hit, events })`。
+
+**让玩家躲得开（用户嫌难，这是硬性要求）**
+- 所有大招都要有预警，出手前要给够反应时间。
+  - `telegraph({ x, y, r, dur, col, follow, kind, fire })`：地面预警圈。`kind: 'line'` 是冲刺 / 激光路线，`'hex'` 是陨石，`'frost'` 是白霜。
+  - 霸体招式（`superArmor: true`）的头顶会自动弹出红色“!”。
+  - 预警时间：普通怪 0.5~1.1 秒，领主 0.9~1.6 秒。
+- 预警跟随玩家时只跟前 35% 的时间，之后锁定，跑出圈就能躲开。
+- 每个大招都要留一条生路：
+  - 天之驱逐者的落雷最多落 3 条（共 4 条纵深）。
+  - 罪恶之眼的眼球列总缺一个。
+  - 光之城主的雷电密布只落在一个圆环里，贴身或离远都安全。
+- 霸体领主要给反击窗口：普拉塔尼几乎一直霸体，但连续冲撞之后会“过热”2.4 秒（受到伤害 ×1.35，并且可以打出硬直）。
+
+可以复用的招式模板（`content/monsters/sky_castle.js`）：
+
+| 函数 | 作用 |
+|---|---|
+| `skySpikeAt` | 红圈地刺 |
+| `skyDischarge` | 放电圈 |
+| `skyCage` | 囚笼 |
+| `skyStrings` | 提线拉扯 |
+| `skyStoneShot` | 石化石弹 |
+| `skyDart` | 毒飞镖 |
+| `skySmokeBomb` | 致盲烟雾 |
+| `skyDashAct` | 短冲刺 |
+| `skyDashChain` | 连续冲撞 + 过热 |
+| `skyNova` | 自身周围的冲击波 |
+| `skyLaser` | 先细线后光束的激光 |
+| `skyThunderLanes` | 落雷列 |
+| `skyLightField` | 环形雷电 |
+| `skyTrackBeams` | 追踪光柱 |
+| `skyEyeRow` | 石化眼球列 |
+
+**召唤**
+- 在 `MON.<领主>.summons` 里列出被召唤的怪，`monBundles` 会提前加载它们的精灵。
+- 召唤时用 `spawnMonster(kind, x, y, { lvl, drop: true, ...skyMul() })`，这样难度倍率也会跟着生效。
+
+**房间机关**
+房间机关不改 dungeon.js，而是监听事件：
+- `bus.on('roomEnter', d => ...)`：`d.id` 是地下城、`d.type` 是房间类型（boss / elite / normal / start）。例如：
+  - 龙人之塔的领主房两侧放龙之雕像（自定义 `m.control`）。
+  - 悬空城的侍剑骑兵开局是石像（`skyMakeStatue`）。
+- `bus.on('kill', d => ...)`：例如打倒石巨人操纵师后，房间里的石巨人一起崩裂。
+
+### 8.4 美术：逐帧精灵
+流水线：参考立绘 → 3×3 动作表（walk / run / act / more 共 4 张）→ 切帧。
+所有命令都在 `art/tools/sky_art.py` 里，复用 jobs.py 的画风常量、sheets2.py 的提示词、frames2.py 的切帧规则，不改这些文件。
+
+```bash
+python3 art/tools/sky_art.py refs   --only lucas   # 1 张参考立绘，写到主仓库 art/src/sky/lucas_ref.png
+python3 art/tools/sky_art.py sheets --only lucas   # 4 张动作表，写到 art/src/sky/sheets2/
+python3 art/tools/sky_art.py cut    --only lucas   # 切帧，写到 art/final/spr/lucas/*.webp + spr.json；预览在 art/src/sky/cut/
+```
+
+- **新怪物**：在脚本的 `M` 表里加一项，写上外观、站立高度 `h`（世界单位，玩家约 115）、手持物 `hold`、攻击 / 施法 / 低姿态的描述。
+- **悬浮怪物**：写 `fly=True`，走 / 跑改用漂浮循环；再在 `HOVER` 里写悬浮高度，切帧时整体抬高，影子留在地上。
+- **切帧**：会去掉被身体包住的白底（武器和身体之间的缝）。白色系角色（全身白甲、白发）请写 `holes=False`，否则会把角色本身挖空。
+- **变种**：用 `MON_ART` 染色（`hue` 色相、`sat` 饱和度、`bright` 亮度），例如 `minius: ['dragonman', { hue: 95, sat: 1.1 }]`。
+- **规则**
+  - 新类型先做一个样例，自己逐帧看预览图，确认比例、朝向、手脚交替和白底都没问题，再批量。
+  - 生图全队共用一个账号：本组同时最多 2 个请求，脚本里的 `PAR = 2` 已经写好。
+
+### 8.5 美术：背景
+每个主题三层：远景 far、地面 floor、交界带 edge。
+
+```bash
+python3 art/tools/sky_art.py bg    --only skyHall   # 远景 + 地面
+python3 art/tools/sky_art.py edge  --only skyHall   # 交界带（以远景为参考图，要等远景出完）
+python3 art/tools/sky_art.py bgcut --only skyHall   # 裁切 → art/final/bg/skyHall_{far,floor,edge}.webp
+```
+
+主题代码写在 `content/themes/*.js`：
+- `THEMES.<主题>.far/mid/wall/floor/fore`：没有手绘背景时的程序化兜底。
+- `back(c, room)`：画在背景之上、角色之下。例如飘过的云、墙上的火把。
+- `ambient(c, room)`：画在最上层。例如花瓣、光点，黑暗玄廊的“只有玩家周围亮”也画在这里。
+- `BG_GRADE` 里写整体色调。
+
+### 8.6 测试
+
+```bash
+node build.mjs
+node test/sky.mjs                                    # 数据完整性 + 每种怪物生成 / 出手 / 击杀 + 每个领主的每一招强制放一遍
+node test/sky_route.mjs                              # 西海岸云梯（Lv.14 限制）→ 区域地图 → 每个门 → 进地下城 → 回到门口
+SPEED=3 node test/botrun.mjs dragon_tower:15:0:sword,puppet_hall:16:0:gun,golem_tower:17:0:mage   # 机器人按推荐等级通关（地下城:等级:难度:职业）
+node test/flow.mjs                                   # 必须继续通过
+```
+
+- 截图在 `test/shots/sky/` 和 `test/shots/bot/`，要亲自看：
+  - 怪物比例对不对、脚是不是踩在地上。
+  - 预警圈清不清楚。
+  - 背景有没有接缝。
+- `test/sky.mjs` 的检查项：
+  - 每个地下城的怪物、主题、色调、精灵分包、背景素材都存在。
+  - 区域地图的门都指向存在的地下城。
+  - 每种怪物都有逐帧精灵，会主动出手，能被打死。
+  - 每个领主的每一招都触发过，并且至少出过一次地面预警。
+  - 页面没有报错。

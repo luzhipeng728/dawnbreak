@@ -158,9 +158,11 @@ function playerControlTown(p, dt) {
 }
 function revealGate(g) {
   const D = DUNGEONS[g.dungeon]; world.revealing[D.id] = 1;
+  // 一开始播就记为已出现：特效途中进地下城会清空 game.timers，记录放在定时器里会丢，回来又重播一次
+  save.data.hiddenSeen[D.id] = 1; save.write();
   world.fx.push({ type: 'reveal', x: g.x, t: 0, dur: 2.4, col: gateArt(D).col });
   cam.shake = Math.max(cam.shake, 6); sfx.buff();
-  game.after(2.4, () => { if (world) { delete world.revealing[D.id]; save.data.hiddenSeen[D.id] = 1; save.write(); } });
+  game.after(2.4, () => { if (world) delete world.revealing[D.id]; });   // 门淡入完才能走进去（换场景时 world 重建，revealing 自然清空）
   toastMsg(`隐藏地下城「${D.name}」的入口出现了！`, '#e0a0ff');
 }
 /* =====================================================================

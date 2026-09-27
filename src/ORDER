@@ -60,6 +60,10 @@ ui/items/storage.js
 game/save.js
 content/world/towns.js
 content/world/grand_flores.js
+# 天空之城（地下城内容组）：怪物 / 主题 / 区域；需要在 bestiary、room、themes、world 之后，content/sprites.js 之前
+content/monsters/sky_castle.js
+content/themes/sky_castle.js
+content/world/sky_castle.js
 # 任务与转职（依赖 world / items / save / menus）
 game/quests.js
 content/quests/main.js

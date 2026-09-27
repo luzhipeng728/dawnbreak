@@ -148,6 +148,13 @@ ok(rv, '冰霜幽暗密林的门播放现身特效');
 await wait(2600);
 ok(await page.evaluate(() => !!save.data.hiddenSeen.frozen_woods), '现身后记录为已出现（只播一次）');
 await shot('hidden-after');
+// 现身特效还没播完就离开（进地下城会清空 game.timers）：回来时不能再播一次、再提示一次
+await page.evaluate(() => { save.data.hiddenSeen = {}; toastList.length = 0; });
+await enter('gf_forest', { x: 700, y: 90 }); await wait(300);
+await page.evaluate(() => { game.timers.length = 0; });   // 模拟 Dungeon.start()
+await enter('gf_thunder'); await wait(200); await enter('gf_forest', { x: 700, y: 90 }); await wait(300);
+const again = await page.evaluate(() => ({ fx: world.fx.some(f => f.type === 'reveal'), toasts: toastList.filter(m => m.msg.includes('冰霜幽暗密林')).length }));
+ok(!again.fx && again.toasts === 1, `现身途中离开再回来不会重播（重播 ${again.fx}，提示 ${again.toasts} 条）`);
 
 console.log('· 返回门口');
 await page.evaluate(() => { save.data.loc = { scene: 'gf_thunder', x: 1360, y: 34 }; });

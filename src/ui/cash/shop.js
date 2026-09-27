@@ -45,6 +45,7 @@ addStyle(`
 .cash-pv{position:relative;height:10.5em;flex:none;border-radius:.25em;background:radial-gradient(ellipse at 50% 70%,#3a2c48,#120d16 70%);display:grid;place-items:center;overflow:hidden}
 .cash-pv canvas{max-height:100%;max-width:100%}
 .cash-pv canvas.try{height:10.4em;width:8.32em;max-height:none}
+.cash-pv canvas.glow{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
 .cash-pv img.bigic{width:6.5em;height:6.5em}
 .cash-pv .cls{position:absolute;left:.3em;top:.25em;font-size:.65em;color:#9a8f7c}
 .cash-side .t{font-weight:900;font-size:1.02em;line-height:1.25}
@@ -90,6 +91,8 @@ addStyle(`
 .cavrow select{font-family:inherit;background:#0c0a10;color:#fff2d0;border:.08em solid #6a5436;border-radius:.2em;padding:.1em}
 #menubar button[title="商城"]{grid-column:1/-1;height:calc(var(--u) * 46px);flex-direction:row;gap:.5em;border-color:#c89a3a;background:linear-gradient(#8a3a5a,#3a1224);color:#ffe8f4}
 #menubar button[title="商城"]:hover{background:linear-gradient(#b04a76,#4a1a30)}
+#menubar button.cash-dot{position:relative}
+#menubar button.cash-dot::after{content:'领取';position:absolute;right:.35em;top:50%;transform:translateY(-50%);font-size:.62em;font-weight:900;color:#fff;background:#e8283a;border-radius:1em;padding:.05em .45em;box-shadow:0 0 .4em #ff3a3a}
 `);
 /* ---- 快捷键 ] = 商城（动作 cash，可在按键设置里改）；菜单按钮栏加“商城” ---- */
 KEYMAP_DEFAULT.cash = ['BracketRight'];
@@ -99,6 +102,10 @@ ACTION_NAME.cash = '商城';
 UI_WIN.cash = 'cash'; UI_ACTIONS.add('cash');
 if (typeof MB_WIN !== 'undefined') MB_WIN.cash = 'cash';
 if (typeof MENUBAR !== 'undefined' && !MENUBAR.some(b => b[0] === 'cash')) MENUBAR.push(['cash', '商城']);
+// 系统菜单（Esc，触屏也能打开）里加“破晓商城”：触屏模式没有菜单按钮栏，从这里进
+{ const ws0 = menus.w_system; menus.w_system = function () { const el = ws0.apply(this, arguments); const col = el && el.querySelector('.sysmenu'); if (col && game.player) col.insertBefore(h('button', { class: 'btn', onclick: () => { sfx.click(); this.close('system'); this.show('cash'); } }, '破晓商城', h('span', { class: 'kbd' }, keyName('cash'))), col.children[1] || null); return el; }; }
+// 有免费礼包可以领（新手 / 等级礼包）时，菜单按钮上显示“领取”
+setInterval(() => { const b = typeof menubar !== 'undefined' && menubar.btns && menubar.btns.cash; if (!b || !save.data || !game.player) return; b.classList.toggle('cash-dot', ['pkg_newbie', 'pkg_lv10', 'pkg_lv20', 'pkg_lv30'].some(p => !cashGoodsBlock(cashGoods(p)))); }, 2000);
 ITEM_WINS.push('cash', 'cashx', 'avopt', 'pet', 'synth', 'lotto', 'ticket', 'cashlog');
 menus.BLOCK.add('cash'); menus.BLOCK.add('boxopen');
 
@@ -291,7 +298,11 @@ function cashSkyDetail(set, el) {
   const items = AV_PIECE_SLOTS.map(s => makeItem(avKey(set, s)));
   const pv = cashTryOn(items);
   const tip = itemTip(items[4], { cmp: false }); tip.style.width = '100%'; tip.style.fontSize = '.78em';
-  return [h('div', { class: 'cash-pv' }, pv || h('img', { class: 'bigic', src: cashIconOf(avKey(set, 'av_top'), 128) }), pv ? h('span', { class: 'cls' }, '试穿（8 件）') : null),
+  // 8 件套光效叠在试穿小人上（动画画布，只在窗口开着时跑）
+  const C = { sky8: set, parts: [], spawn: 0 }; let last = 0;
+  const glow = pv ? cashAnimCanvas(200, 250, (x, t) => { const dt = last ? Math.min(0.05, t - last) : 0; last = t; cashGlowStep(C, dt); cashDrawGlowAt(x, C, 100, 244, 1.5); }) : null;
+  if (glow) glow.classList.add('try', 'glow');
+  return [h('div', { class: 'cash-pv' }, pv || h('img', { class: 'bigic', src: cashIconOf(avKey(set, 'av_top'), 128) }), glow, pv ? h('span', { class: 'cls' }, '试穿（8 件 · 套装光效）') : null),
     h('div', { class: 't q2' }, `${CASH_SETS[set].name}（稀有装扮）`), h('div', { class: 'ds' }, CASH_SETS[set].desc), tip,
     h('div', { class: 'cash-note' }, '获得方式：装扮合成器（2 件同部位高级装扮，20%）、黄金装扮合成器（30%）、梦想装扮合成器（任意 8 件，100% 指定部位）；天空套部件兑换券（魔盒大奖、破晓启示、兑换商店）。'),
     h('button', { class: 'btn buy', onclick: () => { sfx.click(); menus.show('synth', { set }); } }, '去合成')];
@@ -341,7 +352,7 @@ Object.assign(menus, {
   w_cashlog(arg = {}) {
     if (arg.tab) CW.logTab = arg.tab;
     const el = itemWin('cashlog', '点券与记录', el => {
-      const S = cashData(), tabs = h('div', { class: 'itabs' }, [['earn', '点券获取'], ['buys', '购买记录'], ['log', '点券流水'], ['ach', '成就']].map(([id, nm]) => h('div', { class: 'itab' + (CW.logTab === id ? ' on' : ''), onclick: () => { CW.logTab = id; sfx.click(); el._render(); } }, nm)));
+      const S = cashData(), tabs = h('div', { class: 'itabs' }, [['earn', '点券获取'], ['buys', '购买记录'], ['open', '开箱记录'], ['log', '点券流水'], ['ach', '成就']].map(([id, nm]) => h('div', { class: 'itab' + (CW.logTab === id ? ' on' : ''), onclick: () => { CW.logTab = id; sfx.click(); el._render(); } }, nm)));
       const out = [h('div', { class: 'cash-top' }, cashCurEl('cera'), cashCurEl('shard'), cashCurEl('gcoin')), tabs];
       if (CW.logTab === 'earn') {
         const E = CASH_EARN, T = S.today, left = E.exch.cap - T.exch;
@@ -359,6 +370,10 @@ Object.assign(menus, {
           h('div', { class: 'cash-note' }, '破晓地下城不涉及真钱，所有点券都靠游戏获得。认真玩一周大约能买一套节日时装。'));
       } else if (CW.logTab === 'buys') {
         out.push(h('div', { class: 'clog', 'data-sk': 'lb' }, S.buys.length ? S.buys.map(b => h('div', {}, h('span', { class: 'tm' }, cashTm(b.t)), h('span', {}, `${b.name}${b.n > 1 ? ' ×' + b.n : ''}`), h('span', { class: 'n neg' }, `-${fmtNum(b.cost)} ${CUR_NAME[b.cur] || ''}`))) : h('div', { class: 'dim' }, '还没有购买记录')));
+      } else if (CW.logTab === 'open') {
+        const L = S.openLog || [], by = S.openedBy || {};
+        out.push(h('div', { class: 'cash-note' }, `累计开箱 ${fmtNum(S.opened || 0)} 个：${Object.keys(by).filter(k => ITEMS[k]).map(k => `${ITEMS[k].name} ${by[k]}`).join('、') || '还没有开过箱子'}。魔盒保底进度 ${S.pity.box_magic || 0}/100。下面只记大奖和神器以上的物品。`),
+          h('div', { class: 'clog', 'data-sk': 'lo' }, L.length ? L.map(b => h('div', { style: b.jp ? 'background:#2a1a10' : '' }, h('span', { class: 'tm' }, cashTm(b.t)), h('span', {}, `${b.box} → `, h('b', { class: 'q' + Math.min(5, b.rar) }, b.name), b.forced ? h('span', { style: 'color:#ffd23a' }, '（保底）') : null), h('span', { class: 'n', style: 'color:#ffd23a' }, b.jp ? '大奖' : ''))) : h('div', { class: 'dim' }, '还没有开出过好东西，去试试魔盒吧！')));
       } else if (CW.logTab === 'log') {
         out.push(h('div', { class: 'clog', 'data-sk': 'll' }, S.log.length ? S.log.map(b => h('div', {}, h('span', { class: 'tm' }, cashTm(b.t)), h('span', {}, b.why), h('span', { class: 'n' + (b.n < 0 ? ' neg' : '') }, `${b.n > 0 ? '+' : ''}${fmtNum(b.n)}`))) : h('div', { class: 'dim' }, '还没有点券流水')));
       } else {

@@ -6,7 +6,7 @@
 const NET_INTERP_DELAY = 140;   // 插值延迟（毫秒）：位置 10Hz 更新，留 1.4 帧的缓冲，网络抖动时也平滑
 class NetPeer {
   constructor(p) {
-    Object.assign(this, { id: p.id, name: p.name, char: null, x: p.x || 0, y: p.y || 100, face: p.f || 1, st: p.s || 'idle', a: 0, fade: 1, buf: [], model: null, seed: Math.random() * 99, net: true, cls: null });
+    Object.assign(this, { id: p.id, name: p.name, char: null, x: p.x || 0, y: p.y || 100, z: 0, face: p.f || 1, st: p.s || 'idle', a: 0, fade: 1, buf: [], model: null, seed: Math.random() * 99, net: true, cls: null });
     this.pose = { __c: 'idle', __t: 0 };
     this.setChar(p.char); this.push(p.x, p.y, p.f, p.s);
   }
@@ -18,6 +18,7 @@ class NetPeer {
     this.lookSig = lookSig; this.cls = CLASSES[ch.cls] && SPR_DATA[ch.cls] ? ch.cls : 'sword';
     const cls = this.cls, look = ch.look || null;
     const make = () => { if (this.cls !== cls) return; this.model = new SpriteModel(cls, SPR_FALLBACK, SPR_ANIMS[cls]); if (typeof avatarSetLook === 'function' && look) avatarSetLook(this.model, look); };
+    if (typeof cashAttach === 'function') { try { cashAttach(this, look && look.cash || null); } catch (e) { /* 商城外观可选 */ } }
     if (IMG[`spr/${cls}/idle`] && IMG[`spr/${cls}/walk1`]) make(); else loadArtKeys(crowdFrames(cls)).then(make);
   }
   push(x, y, f, s) {
@@ -70,6 +71,7 @@ function netNamePlate(c, X, ny, ch, acct, id, a = 1, hot = false) {
 function netCharInfo() {
   const d = save.data, p = game.player; if (!d || !p || !save.live) return null;
   let look = null; try { look = typeof lookFromEquip === 'function' ? lookFromEquip(p.cls, inv.equip) : null; } catch (e) { look = null; }
+  if (look && typeof cashLook === 'function') { try { look = { ...look, cash: cashLook(inv.equip) }; } catch (e) { /* 商城外观可选 */ } }
   return { name: d.name || CLASSES[p.cls].name, cls: p.cls, job: game.job || null, lvl: game.lvl, look, title: null, hp: p.hpMax ? clamp(p.hp / p.hpMax, 0, 1) : 1 };
 }
 const netTown = {

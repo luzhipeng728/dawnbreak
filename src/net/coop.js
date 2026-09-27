@@ -182,6 +182,7 @@ const coop = {
     g.hp = g.hpMax = 1000; g.mp = g.mpMax = 1000; g.mpFrac = 1;
     g.update = coopGhostUpdate; g.draw = coopGhostDraw; g.drawShadow = function (c) { if (!this.away) Ent.prototype.drawShadow.call(this, c); };
     if (typeof avatarSetLook === 'function' && ch.look) avatarSetLook(g.model, ch.look);
+    if (typeof cashAttach === 'function' && ch.look) { try { cashAttach(g, ch.look.cash || null); } catch (e) { /* 商城外观可选 */ } }
     const p = game.player; g.x = p.x - 40 * (this.mates.size + 1); g.y = p.y; g.away = false;
     this.mates.set(uid, g); ents.push(g);
     return g;
@@ -298,7 +299,7 @@ const coop = {
   },
   onMonAct(d) {
     const m = this.puppets.get(d.id); if (!m || m.dead) return;
-    this.stats.monActs++; m.face = d.f; m.tgt = d.tg === this.me() ? game.player : (this.mates.get(d.tg) || game.player);
+    this.stats.monActs++; if (d.tg === this.me()) this.stats.monActsMe = (this.stats.monActsMe || 0) + 1; m.face = d.f; m.tgt = d.tg === this.me() ? game.player : (this.mates.get(d.tg) || game.player);
     const A = d.i >= 0 && m.def_ && m.def_.attacks ? m.def_.attacks[d.i] : null;
     const def = A ? { name: A.clip, clip: A.clip, ...A.act, hits: A.act.hits && A.act.hits.map(h => ({ ...h })) } : { name: d.c, clip: d.c, dur: d.du, superArmor: !!d.sa, noCounter: true };
     const P = game.player; game.player = m.tgt;

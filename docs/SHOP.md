@@ -168,7 +168,7 @@
   - 不分职业，一件覆盖 15 种武器类型。拿什么武器就换成对应装扮图，缺图时显示真实武器。
   - 画法由外观组接进 `lookFromEquip`。
   - 属性：攻击速度 +1%，施放速度 +1.5%。
-- 联机同屏：`cashLook(equip)` 返回 `{ pet, aura, sky8 }`。联机组把它塞进 look 同步，其他玩家的宠物和光环用 `cashDrawFor(ent, look)` 画。
+- 联机同屏：`cashLook(equip)` 返回 `{ pet, aura, sky8 }`。联机组把它塞进 look 同步，其他玩家的实体调 `cashAttach(ent, look)` 就会画出宠物、光环和光效（联机组已接入）。
 
 ## 6. 称号 / 宝珠
 
@@ -366,7 +366,7 @@
   - `ceraGain { n, why }`
 - **外观**：
   - `cashLook(equip)` → `{ pet, aura, sky8 }`
-  - `cashDrawFor(ent, look)`：给联机组画其他玩家的宠物和光环
+  - `cashAttach(ent, look)`：给联机组画其他玩家的宠物和光环（传 null 取消）
 - **窗口名**：`cash`（商城）、`cashx`（兑换商店）、`lotto`（抽奖）、`synth`（装扮合成）、`pet`（宠物）、`boxopen`（开箱演出，阻挡操作）、`cashlog`（记录）、`ticket`（券的使用）。
 - **快捷键**：`cash` = `]`。
 - **测试**：`test/shop.mjs`（购买、合成、开箱、十连、多买多送、抽奖、兑换、宠物、光环、刷新）、`test/shop_econ.mjs`（点券产出模拟）。

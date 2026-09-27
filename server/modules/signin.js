@@ -55,7 +55,8 @@ export default {
         return { count, streak, reward, bonus, mailId, day: s.today };
       });
       if (ctx.mods.gm && ctx.mods.gm.log) ctx.mods.gm.log('signin', req.user, { day: res.day, count: res.count, streak: res.streak });
-      return { ok: true, ...res, state: state(ctx, uid) };
+      const guild = ctx.mods.guild && ctx.mods.guild.gain ? ctx.mods.guild.gain(uid, 'signin') : 0;   // 公会成员签到：公会经验 + 个人贡献
+      return { ok: true, ...res, guild, state: state(ctx, uid) };
     });
   },
 };

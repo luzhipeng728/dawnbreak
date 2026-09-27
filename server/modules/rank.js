@@ -1,5 +1,5 @@
 // 排行榜（社交与经济服务）：按角色上榜（cid = 角色创建时间），全部玩家榜 / 好友榜
-// 榜单：lvl 等级、score 装备评分、duel 好友决斗胜场、clear 地下城最快通关时间（按地下城 + 难度）、epic 史诗收集数
+// 榜单：lvl 等级、score 装备评分、duel 好友决斗胜场、clear 地下城最快通关时间（按地下城 + 难度）、epic 史诗收集数、ach 成就点
 import { now } from './mail.js';
 const txt = (s, n) => String(s ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n);
 const int = (v, lo, hi) => { const n = Math.floor(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
@@ -10,6 +10,7 @@ const BOARDS = {
   score: { where: 'score > 0', order: 'score DESC, lvl DESC, updated ASC', val: r => r.score },
   duel: { where: 'duel_win + duel_lose + duel_draw > 0', order: 'duel_win DESC, duel_lose ASC, updated ASC', val: r => r.duel_win },
   epic: { where: 'epics > 0', order: 'epics DESC, lvl DESC, updated ASC', val: r => r.epics },
+  ach: { where: 'ach > 0', order: 'ach DESC, lvl DESC, updated ASC', val: r => r.ach },
 };
 function friendIds(ctx, uid) {
   const S = ctx.mods.social || {};
@@ -20,7 +21,7 @@ function friendIds(ctx, uid) {
 function ensureChar(ctx, uid, name, cid) {
   ctx.db.run(`INSERT INTO rank_char (user_id, cid, user_name, char_name, updated) VALUES (?,?,?,?,?) ON CONFLICT(user_id, cid) DO NOTHING`, uid, cid, name, '', now(ctx));
 }
-const entry = (r, i) => ({ rank: i + 1, user: r.user_name, uid: r.user_id, cid: r.cid, char: r.char_name, cls: r.cls, job: r.job, lvl: r.lvl, score: r.score, epics: r.epics,
+const entry = (r, i) => ({ rank: i + 1, user: r.user_name, uid: r.user_id, cid: r.cid, char: r.char_name, cls: r.cls, job: r.job, lvl: r.lvl, score: r.score, epics: r.epics, ach: r.ach,
   win: r.duel_win, lose: r.duel_lose, draw: r.duel_draw, time: r.time_ms, diff: r.diff, at: r.at });
 
 export default {
@@ -32,14 +33,15 @@ export default {
     `CREATE TABLE rank_clear (user_id INTEGER NOT NULL, cid TEXT NOT NULL, dungeon TEXT NOT NULL, diff INTEGER NOT NULL, time_ms INTEGER NOT NULL, at INTEGER NOT NULL,
       PRIMARY KEY (user_id, cid, dungeon, diff))`,
     `CREATE INDEX rank_clear_dg ON rank_clear (dungeon, diff, time_ms)`,
+    `ALTER TABLE rank_char ADD COLUMN ach INTEGER NOT NULL DEFAULT 0`,   // 成就点
   ],
   routes(r, ctx) {
     r.post('/api/rank/report', { auth: true, rate: [30, 60] }, req => {
       const b = req.body || {}, uid = req.user.id, cid = cidOf(b.cid), t = now(ctx);
-      ctx.db.run(`INSERT INTO rank_char (user_id, cid, user_name, char_name, cls, job, lvl, exp, score, epics, updated) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+      ctx.db.run(`INSERT INTO rank_char (user_id, cid, user_name, char_name, cls, job, lvl, exp, score, epics, ach, updated) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(user_id, cid) DO UPDATE SET user_name = excluded.user_name, char_name = excluded.char_name, cls = excluded.cls, job = excluded.job,
-          lvl = excluded.lvl, exp = excluded.exp, score = excluded.score, epics = excluded.epics, updated = excluded.updated`,
-        uid, cid, req.user.name, txt(b.char, 24), txt(b.cls, 12) || null, txt(b.job, 16) || null, int(b.lvl, 0, 999), int(b.exp, 0, 1e15), int(b.score, 0, 1e12), int(b.epics, 0, 1e6), t);
+          lvl = excluded.lvl, exp = excluded.exp, score = excluded.score, epics = excluded.epics, ach = excluded.ach, updated = excluded.updated`,
+        uid, cid, req.user.name, txt(b.char, 24), txt(b.cls, 12) || null, txt(b.job, 16) || null, int(b.lvl, 0, 999), int(b.exp, 0, 1e15), int(b.score, 0, 1e12), int(b.epics, 0, 1e6), int(b.ach, 0, 1e7), t);
       // 账号下已经删掉的角色：下榜
       if (Array.isArray(b.chars) && b.chars.length) {
         const keep = new Set(b.chars.slice(0, 20).map(cidOf)); keep.add(cid);

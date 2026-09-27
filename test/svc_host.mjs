@@ -15,7 +15,7 @@ export async function startHost({ admins = ['gm'], users = ['alice', 'bob', 'gm'
   const app = await start({ port: 0, db: path.join(dir, 'svc.db'), invites: [INVITE], admins, static: path.join(ROOT, 'dist/web'), httpRate: [100000, 10], graceMs: 3000 });
   app.ctx.log = () => {};
   const base = `http://127.0.0.1:${app.port}`;
-  const tokens = {}, U = [], sent = {}, socks = [];
+  const tokens = {}, U = [], sent = {}, socks = [], sockOf = {};
   const raw = async (tok, method, p, b) => {
     const res = await fetch(base + p, { method, headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: 'Bearer ' + tok } : {}) }, body: b ? JSON.stringify(b) : undefined });
     const data = await res.json().catch(() => ({}));
@@ -34,7 +34,7 @@ export async function startHost({ admins = ['gm'], users = ['alice', 'bob', 'gm'
     sent[u.name] = [];
     s.onopen = () => s.send(JSON.stringify({ t: 'auth', token: tokens[u.name], ver: 1, build: 'svc-test' }));
     s.onmessage = e => { try { const m = JSON.parse(e.data); if (m.t !== 'ping' && m.t !== 'pong') sent[u.name].push(m); } catch { /* 忽略 */ } };
-    socks.push(s);
+    socks.push(s); sockOf[u.name] = s;
   }
   if (ws) { const t0 = Date.now(); while (app.ctx.online().length < U.length && Date.now() - t0 < 5000) await new Promise(r => setTimeout(r, 50)); }
   const mods = [];
@@ -42,6 +42,7 @@ export async function startHost({ admins = ['gm'], users = ['alice', 'bob', 'gm'
   return {
     base, url: base + '/index.html', ctx: app.ctx, api, users: U, tokens,
     msgs: who => { const L = sent[who] || []; sent[who] = []; return L; },
+    say: (who, msg) => sockOf[who].send(JSON.stringify(msg)),
     tick: () => { for (const m of mods) if (m.tick) m.tick.fn(app.ctx); },
     close: async () => { for (const s of socks) try { s.close(); } catch { /* 已关 */ } await app.stop(); fs.rmSync(dir, { recursive: true, force: true }); },
   };

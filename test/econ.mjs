@@ -11,26 +11,12 @@ import { launch, URL_BASE } from './lib.mjs';
 const N = +(process.argv[2] || 20), DIFF = +(process.argv[3] || 0), EXPK = +(process.argv[4] || 1), QUEST = process.argv[5] === 'q';   // EXPK：把升级所需经验再放大几倍（评估等级曲线用）；q：算上任务奖励
 // 任务奖励（任务组分支 test/qbalance.mjs 生成的汇总：任务等级 → [该等级段所有任务经验合计占升级所需的比例, 金币合计]；每日任务未计入）
 const QUESTS = {"1":[0.41,600],"2":[0.5,1000],"3":[0.49,2450],"4":[0.4,1540],"5":[0.39,2150],"6":[0.49,2550],"7":[0.38,2670],"8":[0.5,5850],"9":[0.49,4640],"10":[0.34,5050],"11":[0.46,5760],"12":[0.34,5250],"13":[0.5,7230],"14":[0.3,2450],"15":[0.4,4200],"16":[0.29,5000],"17":[0.25,2000],"18":[0.5,10500]};
-// 环境变量：TARGET=24 模拟到几级（默认 20）；SKY=1 在页面里临时加上地下城内容组的天空之城 6 图（合并前用他们给的数值估算，怪物用数值接近的现有怪代替）
-const TARGET = +(process.env.TARGET || 20), SKY = !!process.env.SKY, SKY_BOSS = +(process.env.SKY_BOSS || 1);   // SKY_BOSS：领主经验倍率（调参用）
+const TARGET = +(process.env.TARGET || 20);   // 模拟到几级（默认 20）；地下城、怪物数值都直接读游戏里的 DUNGEONS / MON，新地下城合并后自动算进来
 const { browser, page, logs } = await launch({ width: 640, height: 360 });
 await page.goto(`${URL_BASE}?town&fresh&cls=sword&mute`);
 await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 30000 });
-const res = await page.evaluate(({ N, DIFF, EXPK, QUEST, QUESTS, TARGET, SKY, SKY_BOSS }) => {
-  if (SKY && !DUNGEONS.dragon_tower) {
-    // 地下城内容组 09-27 定稿的数值（分支 worktree-agent-ad901f306653d77bb 提交 6e75218，src/content/monsters/sky_castle.js）；合并后删掉这段也能直接跑
-    const mon = (id, exp, gold, base = MON.zombieRed) => { if (!MON[id]) MON[id] = { ...base, exp, gold }; };
-    for (const [id, e, g] of [['wyvern', 100, [22, 45]], ['wyvernBlue', 108, [24, 48]], ['dragonman', 112, [25, 50]], ['minius', 120, [26, 52]], ['puppeteer', 105, [22, 44]], ['puppeteerRock', 115, [24, 46]], ['puppeteerIce', 160, [40, 80]],
-      ['golem', 125, [28, 56]], ['golemBronze', 130, [30, 60]], ['golemMaster', 160, [40, 80]], ['kargo', 110, [26, 50]], ['kargoGoggle', 115, [28, 52]], ['expeller', 125, [28, 56]], ['expellerAxe', 130, [30, 58]], ['knight', 130, [30, 60]], ['hughes', 180, [40, 80]]]) mon(id, e, g);
-    for (const [id, e, g] of [['lucas', 1600, [220, 420]], ['dogrey', 1900, [240, 450]], ['platani', 2300, [280, 520]], ['skyExpeller', 2700, [320, 580]], ['seghart', 3200, [360, 660]], ['sinEye', 3400, [380, 700]]]) mon(id, e * SKY_BOSS, g, MON.boneLord);
-    const D6 = (id, name, lvl, bl, rooms, branches, bossAdds, clearExp, mobs, boss, o = {}) => defineDungeon(id, { name, lvl, rooms, branches, bossAdds, clearExp, mobs, boss: { kind: boss, lvl: bl }, ...o });
-    D6('dragon_tower', '龙人之塔', [14, 16], 17, 6, 2, 2, 4800, [['wyvern', 3], ['wyvernBlue', 2], ['dragonman', 3], ['minius', 1]], 'lucas');
-    D6('puppet_hall', '人偶玄关', [15, 17], 18, 6, 2, 2, 5400, [['puppeteer', 3], ['puppeteerRock', 2], ['dragonman', 2], ['minius', 1], ['puppeteerIce', 0.4]], 'dogrey');
-    D6('golem_tower', '石巨人塔', [16, 19], 20, 7, 3, 2, 6400, [['golem', 3], ['golemBronze', 2], ['puppeteer', 2], ['puppeteerRock', 1]], 'platani', { elite: 'golemMaster' });
-    D6('dark_corridor', '黑暗玄廊', [18, 21], 22, 7, 3, 3, 7600, [['kargo', 3], ['kargoGoggle', 1.5], ['expeller', 3], ['expellerAxe', 1.5]], 'skyExpeller', { elite: 'hughes' });
-    D6('lord_palace', '城主宫殿', [20, 23], 24, 8, 3, 3, 10800, [['minius', 2], ['puppeteerRock', 2], ['golemBronze', 2], ['expeller', 2], ['expellerAxe', 1], ['kargoGoggle', 1]], 'seghart', { elite: 'knight' });
-    D6('floating_castle', '悬空城', [21, 24], 25, 7, 3, 3, 11500, [['expeller', 2], ['knight', 2], ['golemBronze', 2]], 'sinEye', { hidden: true });
-  }
+const res = await page.evaluate(({ N, DIFF, EXPK, QUEST, QUESTS, TARGET }) => {
+
 
   const toastMsg0 = window.toastMsg; window.toastMsg = () => {};
   const D = DIFFS[DIFF], dgs = Object.values(DUNGEONS).filter(d => !d.hidden).sort((a, b) => a.lvl[0] - b.lvl[0]);
@@ -102,7 +88,7 @@ const res = await page.evaluate(({ N, DIFF, EXPK, QUEST, QUESTS, TARGET, SKY, SK
   const perDg = {}; for (const l of all) for (const k in l.perDg) perDg[k] = (perDg[k] || 0) + l.perDg[k] / all.length;
   for (const k in perDg) perDg[k] = +perDg[k].toFixed(1);
   return { N, diff: D.name, quests: QUEST, target: TARGET, run14: avg(l => l.run14 || 0), perDg, runs: avg(l => l.runs), days: +(all.reduce((s, l) => s + l.days, 0) / all.length).toFixed(1), inc: { mob: avg(l => l.inc.mob), card: avg(l => l.inc.card), sell: avg(l => l.inc.sell), quest: avg(l => l.inc.quest) }, out: { pot: avg(l => l.out.pot), repair: avg(l => l.out.repair), gear: avg(l => l.out.gear), enh: avg(l => l.out.enh) }, final: avg(l => l.final), minGold: avg(l => l.minGold), maxEnh: avg(l => l.maxEnh), broke: avg(l => l.broke * 100) / 100, lv, bought: all[0].bought };
-}, { N, DIFF, EXPK, QUEST, QUESTS, TARGET, SKY, SKY_BOSS });
+}, { N, DIFF, EXPK, QUEST, QUESTS, TARGET });
 console.log(JSON.stringify(res, null, 1));
 const tot = res.inc.mob + res.inc.card + res.inc.sell + res.inc.quest, spend = res.out.pot + res.out.repair + res.out.gear + res.out.enh;
 console.log(`${res.runs} 次地下城到 Lv${res.target}（${res.days} 天疲劳，Lv14 时已打 ${res.run14} 次）；每个地下城次数 ${JSON.stringify(res.perDg)}`);

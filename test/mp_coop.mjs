@@ -45,6 +45,10 @@ try {
   const hpA = await A.evaluate(() => ents.filter(e => e.nid).map(e => [e.nid, Math.round(e.hpMax)]));
   const hpB = await pages[1].evaluate(() => ents.filter(e => e.nid).map(e => [e.nid, Math.round(e.hpMax)]));
   ok(JSON.stringify(hpA.sort()) === JSON.stringify(hpB.sort()), '怪物编号和最大血量一致');
+  // 主机上把第一个房间的怪固定盯住队员（测试用：保证能测到“怪物打队员 → 队员自己判定”这条路）
+  await A.evaluate(() => { const mates = [...coop.mates.values()]; let i = 0; for (const m of ents) if (m.nid && !m.dead && m.team === 'e') { m.tgt = mates[i++ % mates.length]; m.tgtT = game.t + 1e6; } });
+  const aimed = await Promise.all(pages.slice(1).map(P => until(P, () => (coop.stats.monActsMe || 0) > 0, null, 15000)));
+  ok(aimed.every(Boolean), '怪物会去打队员（被盯住的队员客户端收到以自己为目标的出招）', aimed);
   // 机器人一起打（2 倍速）
   const exp0 = await Promise.all(pages.map(P => P.evaluate(() => ({ exp: game.exp, lvl: game.lvl, items: inv.items.length }))));
   await Promise.all(pages.map(P => P.evaluate(() => { bot.on = true; game.speedMul = 2; window.__botDone = null; })));
@@ -63,7 +67,6 @@ try {
   ok(st.slice(1).every(s => s.stats.sentHits > 0 && s.stats.kills > 0 && s.stats.monActs > 0), '队员：自己打中傀儡、收到击杀事件、看到怪物出招', st.slice(1).map(s => s.stats));
   ok(st.every(s => s.kills === st[0].kills), `击杀数一致（${st[0].kills}）`, st.map(s => s.kills));
   ok(st.every((s, i) => s.exp !== exp0[i].exp || s.lvl > exp0[i].lvl), '每个人都拿到了经验');
-  ok(st.slice(1).reduce((n, s) => n + (s.stats.monActsMe || 0), 0) > 0, '怪物也会去打队员（队员客户端收到以自己为目标的出招）', st.map(s => s.stats.monActsMe || 0));
   console.log('  各自被击次数（谁挨打谁结算）：' + st.map(s => s.hurt).join(' / '));
   ok(st.every(s => s.stats.mateActs > 0), '看到队友出招（影子重放）', st.map(s => s.stats.mateActs));
   ok(st.every(s => s.result && s.state === 'result'), '每个人都在结算界面（各自翻牌）');

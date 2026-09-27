@@ -71,6 +71,8 @@ const coop = {
     net.send({ t: 'room:open', kind: 'dungeon', meta: { id, diff } });
     this.waitDialog();
     this.waitT = setTimeout(() => this.goNow(), 25000);
+    // 服务端没有建好房间（例如刚好不再是队长 / 网络断了）：别一直卡在等待框
+    this.roomT = setTimeout(() => { if (this.state === 'prep' && !this.room) this.abort('组队房间没有建好（网络不稳定，或者你已经不是队长），请再试一次'); }, 6000);
     return true;
   },
   waitDialog() {
@@ -497,7 +499,7 @@ const coop = {
   },
   abort(msg) { if (msg) chatSys(msg); this.end('abort'); },
   reset() {
-    clearTimeout(this.waitT); clearTimeout(this.resumeT);
+    clearTimeout(this.waitT); clearTimeout(this.resumeT); clearTimeout(this.roomT);
     Object.assign(this, { role: null, room: null, state: 'none', dg: null, def: null, prep: null, hostLag: false, nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, mem: null });
     this.mates.clear(); this.puppets.clear(); this.spawnInfo.clear();
   },

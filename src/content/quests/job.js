@@ -8,7 +8,7 @@ defineQuest('q_job_kill', { type: 'job', name: '格兰之森 - 杀手', npc: 'li
   desc: '林纳斯的考验：被击不超过 12 次通关洛兰深处。通过了，他就把你介绍给职业导师。',
   goals: [{ type: 'clear', dungeon: 'lorien_deep', hurt: 12 }],
   talk: { offer: ['想变得更强，光靠蛮力是不够的。', '真正的强者，是不会被敌人轻易碰到的。——被击不超过 12 次，通关洛兰深处。做到了，我就把你介绍给你的导师。'], doing: ['被打中 12 次以上就不算。挨打之前，先想想怎么躲。'], done: ['哼，有点样子了。', '去见见你的导师吧。他们会带你走上真正属于你的道路。'] },
-  reward: QR(2, 0.4, 600, { items: [QI('hpM', 3)] }) });
+  reward: QR(2, 0.12, 300, { items: [QI('hpM', 3)] }) });
 
 const JOB_CHAINS = {
   sword: { mentor: 'gsd', visit: 'G.S.D的传说', path: '鬼剑士之路', step: n => `第${n}次修炼`, last: '最后的修炼',
@@ -43,34 +43,34 @@ for (const [cls, C] of Object.entries(JOB_CHAINS)) {
   const M = C.mentor;
   defineQuest(`q_job_visit_${cls}`, { type: 'job', cls, name: C.visit, npc: 'linus', to: M, lvl: 3, pre: 'q_job_kill',
     desc: `去拜访${npcName(M)}，开始${CLASSES[cls] ? CLASSES[cls].name : ''}的修炼。`,
-    talk: { offer: C.visitOffer, done: C.visitDone }, reward: QR(3, 0.25, 500) });
+    talk: { offer: C.visitOffer, done: C.visitDone }, reward: QR(3, 0.04, 250) });
   let prev = `q_job_visit_${cls}`;
   JOB_STEPS.forEach((S, i) => {
     const id = `q_job_${cls}_${i + 1}`;
     defineQuest(id, { type: 'job', cls, name: `${C.path} - ${C.step(i + 1)}`, npc: M, lvl: S.lvl, pre: [prev].concat(S.pre || []), desc: S.desc,
       goals: S.goals.map(g => ({ ...g, key: g.key && g.key + '_' + cls })),
       talk: { offer: [`${C.path}，${C.step(i + 1)}。`, S.desc, S.line], doing: [S.line], done: [i < 5 ? '很好，继续保持。' : '……你离转职只差最后一步了。'] },
-      reward: QR(S.lvl, 0.3, 400 + S.lvl * 120, { items: [QI(i % 2 ? 'mpM' : 'hpM', 3)] }) });
+      reward: QR(S.lvl, 0.08, 200 + S.lvl * 60, { items: [QI(i % 2 ? 'mpM' : 'hpM', 3)] }) });
     prev = id;
   });
   defineQuest(`q_job_${cls}_final`, { type: 'job', cls, name: `${C.path} - ${C.last}`, npc: M, lvl: 15, pre: prev,
     desc: '最后的试炼：被击不超过 15 次，通关烈焰格拉卡。',
     goals: [{ type: 'clear', dungeon: 'blazing_graca', hurt: 15 }],
     talk: { offer: [`${C.path}——${C.last}。`, '烈焰格拉卡。被击不超过 15 次，活着走出来。', '做到了，你就有资格选择自己的道路。'], doing: ['15 次。多一次都不行。'], done: C.finalDone },
-    reward: QR(15, 0.4, 3000, { sp: 20 }) });
+    reward: QR(15, 0.12, 1500, { sp: 20 }) });
   defineQuest(`q_job_${cls}_change`, { type: 'job', cls, name: C.change, npc: M, lvl: 15, pre: `q_job_${cls}_final`,
     desc: `在${npcName(M)}处完成转职（对话里选择「转职」）。`,
     goals: [{ type: 'job', text: `在${npcName(M)}处完成转职` }],
     talk: { offer: C.changeOffer, accept: '准备好了，就选择右边的「转职」吧。', doing: ['选好你的道路了吗？（在对话菜单里选择「转职」）'], done: C.changeDone },
-    reward: QR(15, 0.3, 3000, { items: [QI('elixir', 2)] }) });
+    reward: QR(15, 0.08, 1500, { items: [QI('elixir', 2)] }) });
   defineQuest(`q_awaken_${cls}_1`, { type: 'job', cls, job: true, name: C.aw1, npc: M, lvl: 18, pre: [`q_job_${cls}_change`, 'q_hidden_dark'],
     desc: '在暗黑雷鸣废墟磨砺自己，通关 3 次。',
     goals: [{ type: 'clear', dungeon: 'dark_thunder', n: 3 }],
     talk: { offer: C.awOffer, doing: ['还不够。'], done: ['……瓶颈，已经出现裂缝了。'] },
-    reward: QR(18, 0.35, 5000) });
+    reward: QR(18, 0.12, 2500) });
   defineQuest(`q_awaken_${cls}_2`, { type: 'job', cls, job: true, name: C.aw2, npc: M, lvl: 18, pre: `q_awaken_${cls}_1`,
     desc: '以 S 以上的评价通关勇士级烈焰格拉卡，并带来 30 个无色小晶块。完成后解锁觉醒技能。',
     goals: [{ type: 'clear', dungeon: 'blazing_graca', diff: 2, rank: 'S' }, { type: 'item', key: 'crystal', n: 30 }],
     talk: { offer: C.aw2Offer, doing: ['勇士级，S 以上。还有 30 块无色小晶块。'], done: C.awDone },
-    reward: QR(18, 0.5, 8000, { flag: 'awaken', title: '觉醒者', titleKey: 'title_awaken' }) });
+    reward: QR(18, 0.17, 4000, { flag: 'awaken', title: '觉醒者', titleKey: 'title_awaken' }) });
 }

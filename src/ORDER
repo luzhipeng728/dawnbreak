@@ -45,6 +45,7 @@ content/quests/hidden.js
 content/quests/side.js
 content/quests/daily.js
 content/quests/job.js
+content/quests/sky.js
 ui/quest.js
 ui/job.js
 content/sprites.js

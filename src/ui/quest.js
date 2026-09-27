@@ -83,7 +83,7 @@ function drawQuestTracker(c) {
   if (dg && dg.state !== 'play') return;
   const ids = d.questTrack.filter(id => d.quests[id] && QUESTS[id]).slice(0, dg ? 4 : QUEST_TRACK_MAX);
   const hint = !dg && questNextMain();
-  if (!ids.length && !hint) return;
+  if (!ids.length && !hint) { questUI.trackRect = null; return; }
   const W = 420, x1 = 1900, x0 = x1 - W, y0 = dg ? 330 : 128, font = '"PingFang SC","Microsoft YaHei",sans-serif';
   // 先量高度
   const rows = [];
@@ -95,6 +95,7 @@ function drawQuestTracker(c) {
   }
   if (hint) { rows.push({ q: hint, head: true, hint: true }); rows.push({ q: hint, txt: hint.lvl > game.lvl ? `Lv.${hint.lvl} 后可接取` : `去找 ${npcWhere(hint.npc)} 接取`, hintRow: true }); }
   const H = 40 + rows.reduce((s, r) => s + (r.head ? 36 : 28), 0) + 6;
+  questUI.trackRect = { x: x0 - 30, y: y0, w: W + 30, h: H };
   c.save();
   const bg = c.createLinearGradient(x0, 0, x1, 0); bg.addColorStop(0, 'rgba(10,8,14,0)'); bg.addColorStop(0.18, 'rgba(10,8,14,.55)'); bg.addColorStop(1, 'rgba(10,8,14,.7)');
   c.fillStyle = bg; c.fillRect(x0 - 30, y0, W + 30, H);
@@ -125,6 +126,12 @@ function drawQuestTracker(c) {
   }
   c.restore();
 }
+// 点击追踪栏 → 打开任务日志（手机上没有 F1 / L 键时也能打开）
+wcan.addEventListener('click', ev => {
+  const R = questUI.trackRect; if (!R || !game.player || !['town', 'dungeon'].includes(game.scene) || menus.modal()) return;
+  const r = wcan.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * 1920, y = (ev.clientY - r.top) / r.height * 1080;
+  if (x >= R.x && x <= R.x + R.w && y >= R.y && y <= R.y + R.h) { menus.open('quests'); sfx.open(); }
+});
 // 兜底：界面组在 hud.js 接上调用之前，地下城里也画追踪栏（同一帧已经画过就跳过）
 { const orig = ui.draw; ui.draw = function () { questUI.drawn = false; orig.apply(this, arguments); if (!questUI.drawn && game.scene === 'dungeon' && game.player) { uctx.setTransform(uiScale, 0, 0, uiScale, 0, 0); drawQuestTracker(uctx); } }; }
 
@@ -199,7 +206,9 @@ Object.assign(menus, {
     } else det.append(h('div', { class: 'dim' }, '选择左侧的任务查看详情'));
     const nAct = Object.keys(d.quests).length;
     const body = h('div', { class: 'qlog' }, tabs, h('div', { class: 'qbody' }, list, det),
-      h('div', { class: 'qfoot' }, `进行中的任务 ${nAct}/${QUEST_MAX_ACTIVE}`, h('span', { class: 'sp' }), TAB.id === 'daily' ? '每日任务每天 06:00 重置' : '追踪中的任务会显示在画面右侧'));
+      h('div', { class: 'qfoot' }, `进行中的任务 ${nAct}/${QUEST_MAX_ACTIVE}`,
+        TAB.id === 'main' ? h('span', { style: 'color:#ffd23a;margin-left:1em' }, `主线进度 ${questList(x => x.type === 'main' && questState(x.id) === 'done').length}/${questList(x => x.type === 'main').length}`) : null,
+        h('span', { class: 'sp' }), TAB.id === 'daily' ? '每日任务每天 06:00 重置' : '追踪中的任务会显示在画面右侧（点击可打开任务日志）'));
     const el = this.win('任务', body, { w: 50, at: 'center' }); el._arg = {}; return el;
   },
   // 任务完成奖励弹窗

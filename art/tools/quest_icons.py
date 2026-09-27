@@ -13,6 +13,9 @@ SHEETS = {
     'sheetA.png': [['q_poison_sac'], ['q_frost_crystal', 'q_glue_frost'], ['q_grey_shard'], ['q_cursed_tooth'], ['q_karua_hammer'], ['q_magic_crystal'], ['q_seria_ring'], ['q_captain_mark'], ['q_wild_grape']],
     'sheetB.png': [['q_herb'], ['q_goblin_fur'], ['q_venom_gland'], ['q_tau_horn', 'q_glue_horn'], ['q_kaino_fur'], ['q_glue'], ['q_glow_powder'], ['q_cat_paw'], ['q_goblin_beard']],
     'sheetC.png': [['q_tau_hair'], ['q_tau_spine'], ['q_rusty_iron'], ['q_rojing'], ['q_cat_nail_sword', 'q_cat_nail_gun', 'q_cat_nail_mage'], [], ['q_magic_stone'], ['q_scroll'], []],
+    # 天空之城
+    'sheetD.png': [['q_golem_heart'], ['q_spinel'], ['q_fluorite'], ['q_zircon'], ['q_dragon_ornament'], ['q_crystal_ball'], ['q_pure_water'], ['q_charcoal'], ['q_golem_shard']],
+    'sheetE.png': [['q_org_seal'], ['q_money_bag'], ['q_eye_herb'], ['q_drake_heart'], ['q_wyvern_feather'], ['q_dragon_eye'], [], [], ['q_zero_g_shard']],
 }
 
 def bands(profile, n, thresh):

@@ -52,7 +52,8 @@ await closeAll();
 const g0 = await ev(() => ({ gold: game.gold, hpS: inv.count('hpS'), exp: game.exp, lvl: game.lvl }));
 check(await npcQuest('linus', '铁匠林纳斯', '完成任务'), '在林纳斯处点「完成任务」');
 const g1 = await ev(() => ({ gold: game.gold, hpS: inv.count('hpS'), exp: game.exp, lvl: game.lvl, pop: menus.isOpen('npcquest'), next: npcUI.qid, mode: npcUI.mode }));
-check(g1.gold - g0.gold === 300, `金币 +300（${g0.gold} → ${g1.gold}）`); check(g1.hpS - g0.hpS === 5, '小型生命药剂 +5');
+const rw1 = await ev(() => QUESTS.q_m01.reward);
+check(g1.gold - g0.gold === rw1.gold, `金币 +${rw1.gold}（${g0.gold} → ${g1.gold}）`); check(g1.hpS - g0.hpS === 5, '小型生命药剂 +5');
 check(g1.exp > g0.exp || g1.lvl > g0.lvl, '经验到账'); check(g1.pop, '弹出任务完成奖励窗口');
 check(g1.next === 'q_m02' && g1.mode === 'offer', '交付后林纳斯接着说下一个主线「开始冒险」');
 await wait(500); await shot('02-reward-popup');
@@ -208,6 +209,28 @@ await closeAll();
 await page.keyboard.press('KeyL'); await wait(300);
 check(await ev(() => menus.isOpen('quests')), 'L 也能打开任务日志');
 await closeAll();
+
+step('10. NPC 头顶标记（模拟世界组在 world.js 里调用 drawQuestMarker 的钩子）');
+await ev(() => {
+  // 赛丽亚：可接主线（金色大 !）；林纳斯：进行中（灰色 ?）；设置好状态后在 world.js 名牌同样的位置画标记
+  // 测试用 NPC：只有一个进行中的任务 → 灰色 ?
+  defineNpc('t_npc', { name: '测试员', art: 'world/npc_paris', h: 114 }); defineQuest('t_grey', { name: '测试：进行中', npc: 't_npc', goals: [{ type: 'kill', n: 99 }] }); questAccept('t_grey');
+  SCENES.elvenguard.npcs.push({ npc: 't_npc', x: 1700, y: 44 });
+  const orig = renderScene; window.__mkDrawn = 0;
+  renderScene = function (c) { orig(c); for (const e of world.npcs) { const N = e.npc; if (drawQuestMarker(c, sx(e.x), sy(e.y, N.h + 16) - 24, N.id)) window.__mkDrawn++; } };
+  window.questMarker = () => null;   // 关掉 world.js 旧的文字标记，只看新钩子
+  return enterScene('elvenguard');
+});
+await wait(900); await closeAll(); await wait(200);
+const mk2 = await ev(() => ({ grey: questMarkerInfo('t_npc'), linus: questMarkerInfo('linus'), drawn: window.__mkDrawn }));
+check(mk2.drawn > 0, `drawQuestMarker 能正常绘制（${mk2.drawn} 次）`);
+check(mk2.grey && mk2.grey.ch === '?' && mk2.grey.col === '#9a9a9a', '只有进行中任务的 NPC → 灰色 ?', JSON.stringify(mk2.grey));
+check(mk2.linus && mk2.linus.ch === '!' && mk2.linus.main, '有可接主线的林纳斯 → 金色 !（主线加大光芒）', JSON.stringify(mk2.linus));
+await ev(() => { game.player.x = 1260; }); await wait(600);
+await shot('13-npc-markers');
+const clickRect = await ev(() => questUI.trackRect);
+check(!!clickRect, '追踪栏记录了点击区域');
+if (clickRect) { const box = await page.locator('#world').boundingBox(); await page.mouse.click(box.x + (clickRect.x + clickRect.w / 2) / 1920 * box.width, box.y + (clickRect.y + 20) / 1080 * box.height); await wait(300); check(await ev(() => menus.isOpen('quests')), '点击追踪栏打开任务日志'); await closeAll(); }
 
 console.log('LOGS', JSON.stringify(logs.filter(l => l.type !== 'warning'), null, 1));
 check(logs.filter(l => l.type === 'pageerror' || (l.type === 'error' && !/Failed to load resource/.test(l.text))).length === 0, '没有页面错误');

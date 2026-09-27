@@ -18,7 +18,7 @@ defineQuest('q_m01', { type: 'main', chapter: CH1, name: '铁匠林纳斯', npc:
     accept: '出了旅馆就是集市，林纳斯大叔的铁匠铺在左边。路上小心哦！',
     done: ['哦？赛丽亚让你来的？……嗯，眼神不错，是个有胆量的家伙。', '我是林纳斯，这里的铁匠。武器坏了就拿来修——别拿命开玩笑。'],
   },
-  reward: QR(1, 0.3, 300, { items: [QI('hpS', 5), QI('mpS', 5)] }) });
+  reward: QR(1, 0.12, 150, { items: [QI('hpS', 5), QI('mpS', 5)] }) });
 
 defineQuest('q_m02', { type: 'main', chapter: CH1, name: '开始冒险', npc: 'linus', lvl: 1, pre: 'q_m01',
   desc: '林纳斯想看看你的本事：去艾尔文防线右边的洛兰，打败那里的哥布林。',
@@ -28,7 +28,7 @@ defineQuest('q_m02', { type: 'main', chapter: CH1, name: '开始冒险', npc: 'l
     doing: ['洛兰就在防线右边。哥布林虽然弱，一窝蜂上来也够你受的。'],
     done: ['回来了？看你的样子，打得还挺顺手嘛。', '这把武器你拿着——比你手里那根烧火棍强多了。'],
   },
-  reward: QR(1, 0.5, 500, { items: [QE('weapon', 2, 1)] }) });
+  reward: QR(1, 0.19, 250, { items: [QE('weapon', 2, 1)] }) });
 
 defineQuest('q_m03', { type: 'main', chapter: CH1, name: '噪音公害', npc: 'linus', lvl: 2, pre: 'q_m02',
   desc: '洛兰深处的哥布林仗着牛头怪撑腰整夜吵闹，还跑来骚扰防线的居民。去收拾掉 12 只哥布林。',
@@ -38,7 +38,7 @@ defineQuest('q_m03', { type: 'main', chapter: CH1, name: '噪音公害', npc: 'l
     doing: ['还没清干净吗？我的耳朵都要起茧了。'],
     done: ['安静多了……总算能睡个好觉了。', '不过，牛头兵跑到洛兰深处来，可不是什么好兆头。格兰之森的深处一定出了什么事。'],
   },
-  reward: QR(2, 0.45, 700, { items: [QI('hpM', 3)] }) });
+  reward: QR(2, 0.17, 350, { items: [QI('hpM', 3)] }) });
 
 defineQuest('q_m04', { type: 'main', chapter: CH1, name: '与赛丽亚的缘分', npc: 'linus', to: 'seria', lvl: 2, pre: 'q_m03',
   desc: '林纳斯说赛丽亚一直惦记着你，回旅馆看看她吧。',
@@ -46,7 +46,7 @@ defineQuest('q_m04', { type: 'main', chapter: CH1, name: '与赛丽亚的缘分'
     offer: ['对了，赛丽亚那丫头一直惦记着你。', '她……是个不可思议的孩子。明明没去过什么地方，却好像什么都知道。回去看看她吧。'],
     done: ['你回来啦！林纳斯大叔没有为难你吧？', '我……常常梦到很久以前的森林，梦里的精灵们在唱歌。很奇怪吧？明明我是人类。', '我：一点也不奇怪。', '嘻嘻，谢谢你。这些药你带着，愿你每次都能平安回来。'],
   },
-  reward: QR(2, 0.3, 400, { items: [QI('hpM', 3), QI('mpM', 3)] }) });
+  reward: QR(2, 0.12, 200, { items: [QI('hpM', 3), QI('mpM', 3)] }) });
 
 defineQuest('q_m05', { type: 'main', chapter: CH1, name: '流动的丛林', npc: 'linus', to: 'fengzhen', lvl: 3, pre: 'q_m04',
   desc: '“格兰之森”在精灵语里是“流动的森林”。去赫顿玛尔找熟悉森林的格斗家风振。',
@@ -56,7 +56,7 @@ defineQuest('q_m05', { type: 'main', chapter: CH1, name: '流动的丛林', npc:
     doing: ['林纳斯让你来的？先把路走熟了再说。'],
     done: ['林纳斯让你来的？那个老家伙还是那么爱操心。', '我是风振。想进格兰之森深处？先让我看看你的身手。'],
   },
-  reward: QR(3, 0.4, 800, { items: [QI('hpS', 10)] }) });
+  reward: QR(3, 0.09, 400, { items: [QI('hpS', 10)] }) });
 
 /* ---------------- 第二章 · 流动的丛林 ---------------- */
 const CH2 = '第二章 · 流动的丛林';
@@ -68,7 +68,7 @@ defineQuest('q_m06', { type: 'main', chapter: CH2, name: '狂暴的牛头巨兽'
     doing: ['牛头巨兽还在幽暗密林里撒野吗？'],
     done: ['干得漂亮。能打倒那头巨兽，说明你有资格往森林深处走了。'],
   },
-  reward: QR(3, 0.6, 900, { items: [QI('hpM', 5)] }) });
+  reward: QR(3, 0.18, 450, { items: [QI('hpM', 5)] }) });
 
 defineQuest('q_m07', { type: 'main', chapter: CH2, name: '令人头痛的猫妖', npc: 'fengzhen', lvl: 4, pre: 'q_m06',
   desc: '幽暗密林深处的猫妖成群结队、异常狂躁。消灭 10 只猫妖。',
@@ -78,7 +78,7 @@ defineQuest('q_m07', { type: 'main', chapter: CH2, name: '令人头痛的猫妖'
     doing: ['猫妖的动作很快，但跳起来之后就是破绽。'],
     done: ['身手越来越利落了。……不过，这些猫妖本不该这么狂躁。森林里有什么东西在刺激它们。'],
   },
-  reward: QR(4, 0.45, 1000, { items: [QE('rand', 5, 1)] }) });
+  reward: QR(4, 0.17, 500, { items: [QE('rand', 5, 1)] }) });
 
 defineQuest('q_m08', { type: 'main', chapter: CH2, name: '呼唤闪电的哥布林', npc: 'fengzhen', to: ['sherlock', 'fengzhen'], lvl: 5, pre: 'q_m07',
   desc: '雷鸣废墟有只会呼唤闪电的哥布林。去赫顿玛尔后街找哥布林商人夏洛克打听。',
@@ -86,7 +86,7 @@ defineQuest('q_m08', { type: 'main', chapter: CH2, name: '呼唤闪电的哥布�
     offer: ['雷鸣废墟那边，据说有只会呼唤闪电的哥布林。', '哥布林的事，问哥布林最清楚。赫顿玛尔后街有个哥布林商人叫夏洛克，去问问他吧。', '别看他是哥布林，他可是正经做生意的——在族里受尽了欺负，才跑出来当了商人。'],
     done: ['嘿嘿，客人要买点什么？……什么，打听“落雷凯诺”？', '嘘——小声点！那家伙可是我们部族传说里的怪物。'],
   },
-  reward: QR(5, 0.25, 600) });
+  reward: QR(5, 0.09, 300) });
 
 defineQuest('q_m09', { type: 'main', chapter: CH2, name: '落雷凯诺的传说', npc: ['sherlock', 'fengzhen'], lvl: 6, pre: 'q_m08',
   desc: '落雷凯诺在雷鸣废墟得到了呼唤雷电的力量，把废墟变成了自己的地盘。打倒他。',
@@ -96,7 +96,7 @@ defineQuest('q_m09', { type: 'main', chapter: CH2, name: '落雷凯诺的传说'
     doing: ['凯诺的雷……光是想想我的耳朵就嗡嗡响。'],
     done: ['凯诺……真的被打倒了？！呜呜，我终于可以挺起胸膛走路了！', '这是我压箱底的好货，送给你！以后来买东西，给你打折！'],
   },
-  reward: QR(6, 0.5, 1500, { items: [QE('rand', 7, 1), QI('hpM', 5)] }) });
+  reward: QR(6, 0.19, 750, { items: [QE('rand', 7, 1), QI('hpM', 5)] }) });
 
 defineQuest('q_m10', { type: 'main', chapter: CH2, name: '突变', npc: ['sherlock', 'fengzhen'], to: 'seria', lvl: 6, pre: 'q_m09',
   desc: '凯诺是在森林异变之后才突然变强的。回艾尔文防线问问什么都知道的赛丽亚。',
@@ -104,7 +104,7 @@ defineQuest('q_m10', { type: 'main', chapter: CH2, name: '突变', npc: ['sherlo
     offer: ['说起来……凯诺以前没这么强。好像是森林发生异变之后，他才突然变成那样的。', '森林在变，怪物也在变。你要不要回艾尔文防线，问问那个什么都知道的小姑娘？'],
     done: ['欢迎回来……你身上有雷电的味道。', '森林里的“异变”，正在一点一点改变所有的生物。我能感觉到——森林在哭泣。'],
   },
-  reward: QR(6, 0.3, 800, { items: [QI('hpM', 5), QI('mpM', 5)] }) });
+  reward: QR(6, 0.12, 400, { items: [QI('hpM', 5), QI('mpM', 5)] }) });
 
 defineQuest('q_m11', { type: 'main', chapter: CH2, name: '去过丛林深处的人', npc: 'seria', to: 'gsd', lvl: 7, pre: 'q_m10',
   desc: '能从猛毒雷鸣废墟活着回来的人不多。去赫顿玛尔旧城区拜访盲眼剑士 G.S.D。',
@@ -112,7 +112,7 @@ defineQuest('q_m11', { type: 'main', chapter: CH2, name: '去过丛林深处的�
     offer: ['雷鸣废墟再往里，就是被毒雾笼罩的猛毒雷鸣废墟了。', '能从那种地方活着出来的人不多……赫顿玛尔旧城区有位盲眼的剑士，G.S.D 老先生，他年轻时去过森林的最深处。', '去拜访他吧。他看不见，却比谁都看得清楚。'],
     done: ['……你的脚步声，我记得。赛丽亚那孩子让你来的吧。', '想进猛毒雷鸣废墟？先让我看看，你有没有闻得出毒香的鼻子。'],
   },
-  reward: QR(7, 0.3, 900) });
+  reward: QR(7, 0.12, 450) });
 
 defineQuest('q_m12', { type: 'main', chapter: CH2, name: '毒香', npc: 'gsd', lvl: 8, pre: 'q_m11',
   desc: 'G.S.D 的考验：从猛毒雷鸣废墟的毒猫王身上取回它的毒药袋。',
@@ -122,7 +122,7 @@ defineQuest('q_m12', { type: 'main', chapter: CH2, name: '毒香', npc: 'gsd', l
     doing: ['毒香……还没有闻到。'],
     done: ['……就是这个味道。你做到了。', '你的剑里多了一分沉稳。很好。'],
   },
-  reward: QR(8, 0.5, 1800, { items: [QI('hpL', 3)] }) });
+  reward: QR(8, 0.19, 900, { items: [QI('hpL', 3)] }) });
 
 defineQuest('q_m13', { type: 'main', chapter: CH2, name: '疯掉的魔法师克拉赫', npc: 'gsd', lvl: 9, pre: ['q_m12', 'q_hidden_frozen'],
   desc: '冰霜幽暗密林里被困的人类魔法师克拉赫，心已经和冰雪一样冷了。去结束她的痛苦。',
@@ -132,7 +132,7 @@ defineQuest('q_m13', { type: 'main', chapter: CH2, name: '疯掉的魔法师克�
     doing: ['冰霜幽暗密林的门，就在幽暗密林那一带。'],
     done: ['……她解脱了吗。', '可惜。如果她姐姐彼诺修也还在森林里，恐怕情况也好不到哪里去。'],
   },
-  reward: QR(9, 0.55, 2200, { items: [QE('rand', 10, 2)] }) });
+  reward: QR(9, 0.18, 1100, { items: [QE('rand', 10, 2)] }) });
 
 /* ---------------- 第三章 · 牛头王与灰色结晶 ---------------- */
 const CH3 = '第三章 · 灰色结晶';
@@ -144,7 +144,7 @@ defineQuest('q_m14', { type: 'main', chapter: CH3, name: '牛头王萨乌塔', n
     doing: ['萨乌塔的蓄力，就是你的机会。'],
     done: ['……你带回了这个。', '灰色的结晶。上面缠绕着一股令人作呕的邪气——就是它让牛头怪们发了疯。'],
   },
-  reward: QR(11, 0.5, 3000, { items: [QI('crystal', 20)] }) });
+  reward: QR(11, 0.19, 1500, { items: [QI('crystal', 20)] }) });
 
 defineQuest('q_m15', { type: 'main', chapter: CH3, name: '邪恶气息的前兆', npc: 'gsd', to: ['sosia', 'grandis'], lvl: 12, pre: 'q_m14',
   desc: '把灰色结晶拿给赫顿玛尔中央广场见多识广的索西雅看看。',
@@ -152,7 +152,7 @@ defineQuest('q_m15', { type: 'main', chapter: CH3, name: '邪恶气息的前兆'
     offer: ['这块灰色结晶，我这双瞎眼都能“看”到它的邪气。', '赫顿玛尔中央广场的索西雅见多识广，把结晶拿给她看看吧。……那丫头嘴上不饶人，心肠却不坏。'],
     done: ['欢迎光临～要买药吗？……呃！快把那个东西拿开！', '好恶心的气息……这种结晶，我以前只在一本古书里见过。'],
   },
-  reward: QR(12, 0.3, 1500, { items: [QI('hpL', 5)] }) });
+  reward: QR(12, 0.12, 750, { items: [QI('hpL', 5)] }) });
 
 defineQuest('q_m16', { type: 'main', chapter: CH3, name: '灰色结晶', npc: ['sosia', 'grandis'], lvl: 13, pre: 'q_m15',
   desc: '结晶会互相吸引。烈焰格拉卡的魔法师彼诺修身上，一定有另一块碎片。',
@@ -162,7 +162,7 @@ defineQuest('q_m16', { type: 'main', chapter: CH3, name: '灰色结晶', npc: ['
     doing: ['烈焰格拉卡……记得多带点药。'],
     done: ['果然……两块结晶的碎口完全吻合。', '彼诺修和克拉赫都是被这股邪气侵蚀的。这背后，一定藏着更大的东西。'],
   },
-  reward: QR(13, 0.5, 3500, { items: [QE('rand', 14, 2)] }) });
+  reward: QR(13, 0.16, 1750, { items: [QE('rand', 14, 2)] }) });
 
 defineQuest('q_m17', { type: 'main', chapter: CH3, name: '邪恶气息的真正身份', npc: ['sosia', 'grandis'], to: 'seria', lvl: 13, pre: 'q_m16',
   desc: '艾尔文防线的赛丽亚，好像知道一些普通人不知道的事情。',
@@ -170,7 +170,7 @@ defineQuest('q_m17', { type: 'main', chapter: CH3, name: '邪恶气息的真正�
     offer: ['我能打听到的就这么多了。', '不过……艾尔文防线的赛丽亚，好像知道一些普通人不知道的事情。把结晶给她看看吧。'],
     done: ['……这是……我记得这个气息。', '在梦里，在很久很久以前——天空之上，有一座城。城的深处，沉睡着和这一模一样的邪恶。', '我一直没说，是因为我自己也不明白，为什么会记得这些……对不起。', '我：没关系，赛丽亚。我会弄清楚的。'],
   },
-  reward: QR(13, 0.35, 2000, { items: [QI('elixir', 2)] }) });
+  reward: QR(13, 0.09, 1000, { items: [QI('elixir', 2)] }) });
 
 /* ---------------- 第四章 · 暗黑雷鸣废墟 ---------------- */
 const CH4 = '第四章 · 暗黑雷鸣废墟';
@@ -180,7 +180,7 @@ defineQuest('q_m18', { type: 'main', chapter: CH4, name: '沉睡在废墟下的�
     offer: ['这几天，我总梦到雷鸣废墟的地下，有无数不安的灵魂在哀嚎。', '赫顿玛尔旧城区的矮人铁匠辛达，前几天刚从雷鸣废墟逃回来，听说他把什么重要的东西落在那里了。去问问他吧。'],
     done: ['唉……别提了。我在雷鸣废墟采矿，结果挖穿了一条通往地下的路。', '下面全是会走路的死人！我拼命跑了出来，可我家传的锤子……'],
   },
-  reward: QR(14, 0.25, 1500) });
+  reward: QR(14, 0.08, 750) });
 
 defineQuest('q_m19', { type: 'main', chapter: CH4, name: '卡露亚的铁匠锤', npc: ['sinda', 'linus'], lvl: 16, pre: ['q_m18', 'q_hidden_dark'],
   desc: '辛达家传的“卡露亚的铁匠锤”落在了暗黑雷鸣废墟，八成被盗尸者骨狱息捡走了。',
@@ -190,22 +190,22 @@ defineQuest('q_m19', { type: 'main', chapter: CH4, name: '卡露亚的铁匠锤'
     doing: ['我的锤子……呜呜……'],
     done: ['我的锤子！！谢谢你，谢谢你！', '作为谢礼，我用这把锤子给你打一件好东西！'],
   },
-  reward: QR(16, 0.5, 5000, { items: [QE('weapon', 18, 3)] }) });
+  reward: QR(16, 0.15, 2500, { items: [QE('weapon', 18, 3)] }) });
 
 defineQuest('q_m20', { type: 'main', chapter: CH4, name: '黑暗中的低语', npc: ['sinda', 'linus'], to: 'seria', lvl: 17, pre: 'q_m19',   // 自创
   desc: '骨狱息倒下时念叨着“天空”“使者”。把这件事告诉赛丽亚。',
   talk: {
     offer: ['对了，骨狱息倒下的时候，嘴里一直念叨着什么“天空”“使者”……', '这些事我这个打铁的弄不懂，你还是去告诉旅馆的那个小姑娘吧。'],
-    done: ['……天空的使者。', '那个邪恶，比我想象的更近了。格兰之森的异变，也许只是一个开始。', '谢谢你一直以来的守护。无论接下来发生什么，我都会在这里等你回来。'],
+    done: ['……天空的使者。', '那个邪恶，比我想象的更近了。格兰之森的异变，也许只是一个开始。', '谢谢你一直以来的守护。无论接下来发生什么，我都会在这里等你回来。', '——格兰之森篇 · 完——'],
   },
-  reward: QR(17, 0.4, 4000, { title: '格兰之森的守护者', titleKey: 'title_grandflores' }) });
+  reward: QR(17, 0.12, 2000, { title: '格兰之森的守护者', titleKey: 'title_grandflores' }) });
 
-defineQuest('q_m21', { type: 'main', chapter: CH4, name: '前往天空之城', npc: 'seria', lvl: 18, pre: 'q_m20',
-  desc: '要唤醒精灵的魔法阵前往天空之城，需要烈焰格拉卡的魔法结晶（冒险级以上）。',
-  goals: [{ type: 'collect', key: 'q_magic_crystal', item: '魔法结晶', from: 'flameMage', boss: true, dungeon: 'blazing_graca', diff: 1, rate: 1, n: 3, text: '收集魔法结晶（烈焰格拉卡 冒险级以上）', desc: '蕴含精纯魔力的结晶，能唤醒衰弱的魔法阵。' }],
+defineQuest('q_m21', { type: 'main', chapter: '第五章 · 天空之城', name: '前往天空之城', npc: 'seria', lvl: 13, pre: 'q_m17',
+  desc: '要借精灵的魔法阵前往天空之城，需要蕴含魔力的魔法结晶。烈焰格拉卡的彼诺修身上就有。',
+  goals: [{ type: 'collect', key: 'q_magic_crystal', item: '魔法结晶', from: 'flameMage', boss: true, dungeon: 'blazing_graca', rate: 1, desc: '蕴含精纯魔力的结晶，能唤醒衰弱的魔法阵。' }],
   talk: {
-    offer: ['传说要去天空之城，需要借助精灵留下的魔法阵。', '可是魔法阵的力量已经衰弱了……需要蕴含魔力的“魔法结晶”来唤醒它。', '烈焰格拉卡的魔力最强。在冒险级以上的难度，从彼诺修身上取回 3 块魔法结晶吧。'],
-    doing: ['魔法结晶……一定要在冒险级以上的烈焰格拉卡才找得到。'],
-    done: ['魔法阵……亮起来了！', '天空之城的故事，就要开始了。谢谢你，{name}。', '——格兰之森篇 · 完——'],
+    offer: ['那座城……我在梦里见过很多次。天空之上的城，城的深处沉睡着邪恶。', '传说精灵留下的魔法阵能把人送上天空。可是魔法阵的力量已经衰弱了，需要蕴含魔力的“魔法结晶”来唤醒它。', '烈焰格拉卡的魔力最强。从彼诺修身上取回一块魔法结晶吧。'],
+    doing: ['魔法结晶……彼诺修身上一定有。'],
+    done: ['就是它！魔法结晶在发光……', '西海岸魔法师公会的莎兰小姐一直在研究精灵的魔法阵。带上结晶去找她吧——天空之城的故事，就要开始了。'],
   },
-  reward: QR(18, 0.5, 8000, { items: [QI('elixir', 3)], coins: 3 }) });
+  reward: QR(13, 0.06, 2000, { items: [QI('elixir', 1)] }) });

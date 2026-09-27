@@ -16,7 +16,7 @@ for (const item of list) {
     const ids = classSkills(cls, job).filter(id => SKILLS[id].act && !SKILLS[id].passive);
     for (const id of classSkills(cls, job)) game.skillLv[id] = 5;
     p.mpMax = p.mp = 99999; setInterval(() => { p.mp = p.mpMax; p.hp = p.hpMax; }, 200);
-    window.__dummy = () => { for (const e of ents) if (e.team === 'e') e.remove = true; const m = spawnMonster('goblin', p.x + 110, p.y); m.control = null; m.hp = m.hpMax = 1e9; m.invul = 0; return m; };
+    window.__dummy = () => { for (const e of ents) if (e.team === 'e') e.remove = true; const m = spawnMonster('goblin', p.x + 72, p.y); m.control = null; m.hp = m.hpMax = 1e9; m.invul = 0; return m; };
     return ids;
   }, { cls, job });
   const res = [];

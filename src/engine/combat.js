@@ -25,6 +25,7 @@ const PVP = {
   stun: 0.85,                // 硬直修正
   airProt: 0.2, airStep: 0.05,     // 浮空保护：本轮浮空累计伤害 ≥20% 最大 HP 开始加速下落，之后每 +5% 加重一级
   downProt: 0.2,             // 倒地保护：倒地后累计伤害 ≥20% → 强制起身
+  standProt: 0.22,           // 平推保护：站立挨打累计伤害 ≥22% → 强制击倒
   getupInvul: 0.7, techInvul: 0.6,
   grabProt: 1.5,             // 被抓取释放后这段时间不能再被抓
   downTime: 0.7,
@@ -34,7 +35,7 @@ const hasSA = e => e.superArmor > 0 || !!(e.st === 'act' && e.act && e.act.super
 const isCounter = t => t.st === 'act' && !!t.act && !t.act.noCounter && t.actT < t.act.counterEnd;
 const foe = (e, t) => t !== e && t.team !== e.team && t.team !== 'n' && !t.dead && !t.remove;
 const hittable = (e, t) => foe(e, t) && t.invul <= 0;
-function resetCmb(e) { const c = e.cmb; c.air = 0; c.airDmg = 0; c.down = 0; c.downDmg = 0; c.hits = 0; c.dmg = 0; c.bounce = 0; e.juggle = 0; e.downHits = 0; }
+function resetCmb(e) { const c = e.cmb; c.air = 0; c.airDmg = 0; c.down = 0; c.downDmg = 0; c.standDmg = 0; c.hits = 0; c.dmg = 0; c.bounce = 0; e.juggle = 0; e.downHits = 0; }
 // 决斗场浮空保护等级（0 = 未触发）
 function airProtLv(e) {
   if (!e.fighter || !game.pvp) return 0;
@@ -136,6 +137,7 @@ function applyHit(a, t, h, opt = {}) {
   const c = t.cmb; c.hits++; c.dmg += dmg;
   if (t.st === 'air' || t.z > 2) c.airDmg += dmg;
   if (t.st === 'down') c.downDmg += dmg;
+  else if (t.st !== 'air' && t.z <= 2) c.standDmg = (c.standDmg || 0) + dmg;
   // ---- 表现 ----
   const hx = (Math.max(Math.min(t.x + t.w, src.x + (h.box ? h.box[1] : 20) * src.face), t.x - t.w) + t.x) / 2;
   const hz = clamp(src.z + (h.box ? (h.box[3] + h.box[4]) / 2 : 40), t.z + 10, t.z + t.hurtH() - 8);
@@ -189,7 +191,7 @@ function react(a, t, h, src, counter, pvp) {
     let vz = (h.launch || (airborne ? h.airLift ?? 180 : 160)) * decay * pk / sw;
     if (airborne && !h.launch) vz = Math.max(t.vz * 0.3, vz);
     if (h.spike) vz = -h.spike;                                       // 向下砸地
-    t.vz = vz; t.z = Math.max(t.z, 1); t.vx = dir * kb * (airborne ? 0.6 : 0.8); c.air++; t.juggle++;
+    t.vz = vz; t.z = Math.max(t.z, 1); t.vx = dir * kb * (airborne ? 0.6 : 0.8); c.air++; t.juggle++; t.bouncing = false;
     if (!airborne) t.bounced = false;
     if (h.bounce) t.bounceNext = h.bounce;
     t.setState('air'); t.play(t.clipOr(vz > 80 ? 'airUp' : 'air', 'air'), true);
@@ -197,6 +199,9 @@ function react(a, t, h, src, counter, pvp) {
     t.vz = (h.downLift ?? 230) / sw; t.z = 1; t.vx = dir * kb; t.setState('air'); t.bounced = false; c.air++; t.juggle++;
     if (h.bounce) t.bounceNext = h.bounce;
     t.play(t.clipOr('airUp', 'air'), true);
+  } else if (pvp && (c.standDmg || 0) >= t.hpMax * PVP.standProt) {   // 平推保护：强制击倒
+    c.standDmg = 0; t.vz = 200; t.z = 1; t.vx = dir * 160; t.setState('air'); t.bounced = true; c.air++;
+    fxText('平推保护', t.x, t.y, t.z, { col: '#ff9a9a', size: 10 });
   } else {
     const stun = (h.stun ?? 0.32) * stunMul(a, t) * (counter ? COMBAT.counterStun : 1) * (pvp ? PVP.stun : 1) / sw;
     t.setState('hit'); t.stun = stun; t.vx = dir * kb;

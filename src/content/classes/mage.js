@@ -107,7 +107,7 @@ defSkill('mg_snowman', { name: '冰霜雪人', cls: 'mage', lvReq: 10, mp: 20, c
 defSkill('mg_palm', { name: '落花掌', cls: 'mage', lvReq: 15, mp: 25, cd: 6, type: 'phys', col: '#e07ab0',
   desc: '一掌把敌人击飞，被击飞的敌人撞到其他敌人时也会造成伤害。', pow: lv => skillDmg(3.0, 0.3, lv), ai: { kind: 'poke', r: [0, 60], dy: 20 },
   act: (lv) => ({ name: 'mg_palm', clip: 'palm', dur: 0.5, cancelFrom: 0.32,
-    hits: [HB(0.1, 0.16, [0, 60, 26, 20, 110], skillDmg(3.0, 0.3, lv), { down: true, downLift: 150, knock: 520, hs: 0.1, snd: 'blunt', shake: 3, big: 1.4, chaser: 'fire',
+    hits: [HB(0.1, 0.16, [0, 68, 26, 20, 110], skillDmg(3.0, 0.3, lv), { down: true, downLift: 150, knock: 520, hs: 0.1, snd: 'blunt', shake: 3, big: 1.4, chaser: 'fire',
       onHit: (a, t) => { fxSpr('petal', t.x, t.y, t.z + 50, { w: 120, dur: 0.5, flip: a.face < 0, grow: [0.5, 1.2] }); const pr = spawnProj({ owner: a, x: t.x, y: t.y, z: t.z, face: a.face, life: 0.5, w: 20, d: 16, h: 60, pierce: true,
         hit: { dmg: skillDmg(1.5, 0.15, lv), knock: 260, down: true, downLift: 120, hs: 0.06, snd: 'blunt', type: 'phys' }, update(p) { p.x = t.x; p.y = t.y; p.z = t.z; }, draw() { } }); pr.hitMap.set(t.id, 0); pr.hitMap.set(-t.id, 99); pr.hit.max = 1; } })],
     events: [evAt(0.09, e => sfx.swing(true))] }) });

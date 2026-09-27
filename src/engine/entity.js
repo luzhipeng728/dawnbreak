@@ -152,9 +152,9 @@ class Ent {
       // 落地反弹一次（重击砸地 bounceNext 会弹得更高）
       if (!this.dead && ((!this.bounced && imp > 330) || this.bounceNext)) {
         const forced = this.bounceNext || 0; this.bounced = true; this.bounceNext = 0; this.vz = forced ? Math.max(imp * forced, 260) : imp * 0.32; this.z = 0.01;
-        fxDust(this.x, this.y, 5, 14); sfx.thud(0.6); this.cmb.bounce = (this.cmb.bounce || 0) + 1; return;
+        fxDust(this.x, this.y, 5, 14); sfx.thud(0.6); this.cmb.bounce = (this.cmb.bounce || 0) + 1; this.bouncing = true; this.play(this.clipOr('bounceUp', 'air'), true); return;
       }
-      this.vz = 0; this.setState('down'); this.downTime = this.dead ? 99 : downTimeOf(this); fxDust(this.x, this.y, 6, 18); sfx.thud(0.8);
+      this.vz = 0; this.bouncing = false; this.setState('down'); this.downTime = this.dead ? 99 : downTimeOf(this); fxDust(this.x, this.y, 6, 18); sfx.thud(0.8);
       this.play(this.clipOr('down'), true);
       return;
     }
@@ -176,7 +176,7 @@ class Ent {
     else if (s === 'run') clip = 'run';
     else if (s === 'jump') clip = this.vz > 60 ? 'jumpUp' : 'jumpFall';
     else if (s === 'hit') clip = this.hitHeavy ? this.clipOr('hit2', 'hit') : 'hit';
-    else if (s === 'air') clip = this.vz > 80 ? this.clipOr('airUp', 'air') : this.clipOr('air');
+    else if (s === 'air') clip = this.bouncing ? this.clipOr('bounceUp', 'air') : this.vz > 80 ? this.clipOr('airUp', 'air') : this.clipOr('air');
     else if (s === 'down' || (s === 'dead' && this.z <= 0)) clip = this.clipOr('down');
     else if (s === 'dead') clip = 'air';
     else if (s === 'held') clip = this.heldClip && this.clips[this.heldClip] ? this.heldClip : this.clipOr('held', 'hit2', 'hit');

@@ -67,7 +67,7 @@ const GUN_ACTS = {
 defSkill('g_knee', { name: '后撩踢', cls: 'gun', lvReq: 1, mp: 10, cd: 2, type: 'phys', col: '#3a7fd0',
   desc: '抬腿向上猛踢，把敌人踢到空中。发动瞬间霸体，接射击可以持续浮空。', pow: lv => skillDmg(1.7, 0.17, lv), ai: { kind: 'launch', r: [0, 60], dy: 20 },
   act: (lv) => ({ name: 'g_knee', clip: 'kick', dur: 0.45, cancelFrom: 0.24, superArmor: [0, 0.1],
-    hits: [HB(0.08, 0.18, [0, 58, 26, 20, 135], skillDmg(1.7, 0.17, lv), { launch: 560 + lv * 6, knock: 30, hs: 0.08, snd: 'blunt', shake: 2, big: 1.2 })],
+    hits: [HB(0.08, 0.18, [0, 68, 26, 20, 135], skillDmg(1.7, 0.17, lv), { launch: 560 + lv * 6, knock: 30, hs: 0.08, snd: 'blunt', shake: 2, big: 1.2 })],
     events: [evAt(0.06, () => sfx.swing(true))] }) });
 defSkill('g_launch', { name: '浮空弹', cls: 'gun', lvReq: 1, mp: 12, cd: 4, type: 'phys', col: '#4a90d8',
   desc: '射出一发特制子弹，命中的敌人被高高打上天。', pow: lv => skillDmg(1.8, 0.18, lv), ai: { kind: 'launch', r: [0, 380], dy: 14 },
@@ -121,7 +121,7 @@ defSkill('g_flash', { name: '刺踢', cls: 'gun', lvReq: 15, mp: 18, cd: 4, type
 defSkill('g_bbq', { name: 'BBQ', cls: 'gun', lvReq: 15, mp: 45, cd: 9, type: 'phys', col: '#c8502a',
   desc: '后撩踢把敌人踢起并抓住（霸体 / 格挡中的敌人只会挨一脚），随即架起格林机枪向空中猛烈扫射，最后把敌人打飞。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'grab', r: [0, 60], dy: 20 },
   act: (lv) => ({ name: 'g_bbq', clip: 'kick', dur: 0.5, noCounter: true, superArmor: [0, 0.12],
-    hits: [HB(0.08, 0.18, [0, 58, 26, 20, 135], skillDmg(1.2, 0.12, lv), { grab: true, launch: 420, knock: 30, hs: 0.08, snd: 'blunt' })],
+    hits: [HB(0.08, 0.18, [0, 68, 26, 20, 135], skillDmg(1.2, 0.12, lv), { grab: true, launch: 420, knock: 30, hs: 0.08, snd: 'blunt' })],
     onGrab: (e, t) => { const a = e.act; a.gT = e.actT; a.dur = e.actT + 1.35; t.heldClip = 'air';
       a.update = e2 => { const k = e2.actT - a.gT; if (k > 0.25 && !a.fire) { a.fire = true; e2.play('bbq', true); }
         if (a.fire && k < 1.1 && Math.floor(k / 0.06) !== a.n) { a.n = Math.floor(k / 0.06); fireBullet(e2, { up: true, dmg: skillDmg(0.18, 0.018, lv), lift: 120, knock: 5, vol: 0.5, quiet: a.n % 2 === 1 });

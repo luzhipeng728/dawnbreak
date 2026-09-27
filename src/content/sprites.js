@@ -9,7 +9,7 @@ const BASE_ANIMS = {
   idle: [['idle', 0]], walk: seq('walk', 8, 10), run: seq('run', 8, 16.7),
   jumpUp: [['jump2', 0]], jumpFall: [['jump3', 0], ['jump4', 0.12]], land: [['jump5', 0]], back: [['jump4', 0]],
   hit: [['hit1', 0], ['hit2', 0.1]], hit2: [['hit2', 0], ['hit3', 0.05]],
-  airUp: [['airUp', 0]], air: [['tumble', 0], ['air', 0.14]], down: [['bounce', 0], ['down', 0.1]],
+  airUp: [['airUp', 0]], air: [['tumble', 0], ['air', 0.14]], bounceUp: [['bounce', 0], ['air', 0.12]], down: [['bounce', 0], ['down', 0.1]],
   getup: [['down', 0], ['getup', 0.15]], tech: [['tech', 0]], held: [['held', 0]], charge: [['charge', 0]], roll: [['roll', 0]],
 };
 const SPR_ANIMS = {
@@ -46,7 +46,7 @@ const SPR_ANIMS = {
     chaser: [['chaser', 0]], smash: [['smash1', 0]], smashDown: [['smash2', 0]], fangRush: { fps: 12, frames: ['fang2', 'fang1'] },
     raid: [['bmLeap2', 0]], bmLeap: [['bmLeap1', 0]], bmAwk: [['bmAwk', 0]] },
   monster: { ...BASE_ANIMS, run: seq('run', 8, 15), jumpUp: [['jump', 0]], jumpFall: [['jump', 0]], land: [['low1', 0]], back: [['jump', 0]],
-    hit2: [['hit2', 0]], airUp: [['air', 0]], air: [['air', 0]], down: [['down', 0]], held: [['hit2', 0]], tech: [['getup', 0]],
+    hit2: [['hit2', 0]], airUp: [['air', 0]], air: [['air', 0]], bounceUp: [['down', 0], ['air', 0.1]], down: [['down', 0]], held: [['hit2', 0]], tech: [['getup', 0]],
     club: [['atk1', 0], ['atk2', 0.15], ['atk3', 0.42], ['atk4', 0.6]], throw: [['atk1', 0], ['atk2', 0.15], ['atk3', 0.45], ['atk4', 0.6]],
     atk1: [['atk2', 0], ['atk3', 0.08], ['atk4', 0.18]], atk2: [['atk2', 0], ['atk3', 0.08], ['atk4', 0.18]],
     axe: [['atk1', 0], ['atk2', 0.2], ['atk3', 0.62], ['atk4', 0.85]], scratch: [['atk2', 0], ['atk3', 0.3], ['atk4', 0.45]], bite: [['atk2', 0], ['atk3', 0.3], ['atk4', 0.5]],
@@ -64,7 +64,7 @@ for (const c of ['sword', 'gun', 'mage']) {
   }
 }
 // 怪物：重受击 / 被抓 / 上升浮空沿用已有的受击片段
-for (const S of [GOB_CLIPS, BEAST_CLIPS]) { S.hit2 = S.hit2 || { ...S.hit }; S.held = S.held || { ...S.hit, dur: 9 }; S.airUp = S.airUp || { ...S.air }; }
+for (const S of [GOB_CLIPS, BEAST_CLIPS]) { S.hit2 = S.hit2 || { ...S.hit }; S.held = S.held || { ...S.hit, dur: 9 }; S.airUp = S.airUp || { ...S.air }; S.bounceUp = S.bounceUp || { ...S.air }; }
 // 兜底：姿势名 → 帧（没有列进动画表的片段用）
 const SPR_FALLBACK = { idle: 'idle', idle2: 'idle', mIdle: 'idle', mIdle2: 'idle', hit: 'hit1', hit2: 'hit2', air: 'air', air2: 'air', down: 'down', getup: 'getup', tuck: 'roll', _: 'idle' };
 for (const c of ['sword', 'gun', 'mage']) {

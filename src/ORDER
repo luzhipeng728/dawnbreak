@@ -47,9 +47,14 @@ ui/settings.js
 ui/charselect.js
 ui/menubar.js
 game/items.js
+# 装备深化：绑定 / 增幅 / 锻造 / 附魔 / 图鉴 / 评分（规则）、装备特效与掉落光柱
+game/gear.js
+game/gear_fx.js
 content/items/gear.js
 content/items/misc.js
 content/items/epics.js
+content/items/epics2.js
+content/items/cards.js
 content/items/shops.js
 content/items/droptables.js
 ui/items/common.js
@@ -60,6 +65,10 @@ ui/items/shop.js
 ui/items/smith.js
 ui/items/storage.js
 ui/items/bulk.js
+ui/items/amplify.js
+ui/items/enchant.js
+ui/items/codex.js
+ui/items/abyss.js
 game/save.js
 content/world/towns.js
 content/world/grand_flores.js
@@ -75,6 +84,8 @@ content/quests/side.js
 content/quests/daily.js
 content/quests/job.js
 content/quests/sky.js
+# 装备深化：深渊派对（深渊地下城、封印之门与三波派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
+content/abyss.js
 ui/quest.js
 ui/quickquest.js
 ui/job.js
@@ -86,9 +97,36 @@ content/sprites.js
 content/avatar/weapon_art.js
 content/avatar/looks.js
 models/avatar.js
+# 商城与礼包（商城组）：点券、商城、时装 / 天空套、宠物 / 光环、礼包、魔盒与箱子（依赖物品系统、外观、菜单栏）
+content/cash/items.js
+content/cash/catalog.js
+game/shop.js
+game/shop_box.js
+game/shop_pet.js
+ui/cash/shop.js
+ui/cash/box.js
 game/flow.js
 ui/artlab.js
 game/bot.js
 game/fighter_ai.js
 game/duel.js
+# 联机（账号 / 云存档 / 同屏 / 聊天 / 好友 / 组队 / 好友决斗）：放在所有玩法之后、boot.js 之前（启动时要先读登录状态、切到账号存档）
+net/net.js
+net/account.js
+ui/login.js
+net/town.js
+ui/chat.js
+ui/friends.js
+ui/party.js
+net/pvp.js
+net/coop.js
+# 社交与经济服务（拍卖行 / 邮件 / 排行榜 / 全服公告 / 签到 / 管理员后台；依赖 net/net.js、物品窗口、npc.js，窗口在 ui/social/*）
+net/social.js
+ui/social/common.js
+ui/social/notice.js
+ui/social/mail.js
+ui/social/auction.js
+ui/social/rank.js
+ui/social/signin.js
+ui/social/gm.js
 boot.js

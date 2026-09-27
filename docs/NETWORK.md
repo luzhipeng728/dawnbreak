@@ -86,3 +86,74 @@
 - 数据归属：
   - 角色存档（含背包、点券）存在云存档里。
   - 拍卖行、邮件、排行榜、公告这类跨玩家的数据存在服务端数据表里。
+
+## 实现记录（联机组，分支 worktree-agent-a88ded703a4bf2b36）
+
+### 服务端（M1）
+- 运行环境：便携版 Node 22 + 内置 `node:sqlite`（理由：零原生依赖，不用在服务器上编译或下载与 Node 18 ABI 对应的 better-sqlite3；系统 Node 18 不动）。唯一依赖 `ws`。部署见 `server/deploy/DEPLOY.md`。
+- 结构：`server/index.js`（入口、模块加载）、`server/lib/`（数据库、HTTP 路由、WS 连接中心、限流）、`server/core/`（account / saves / social / party / room，和扩展模块用同一套接口）、`server/modules/`（其他组的扩展模块，自动加载）。扩展点接口见协作板“服务端模块扩展点”一条。
+- 账号：scrypt 哈希；token 32 字节随机数，数据库只存 sha256；30 天有效、使用中每天续期；邀请码 = `DNF_INVITE`（可重复用）或管理员生成的一次性码（invites 表）；`DNF_ADMIN` 指定管理员。
+- 云存档：`PUT /api/saves {data, baseUpdatedAt, force?}`，版本不一致返回 409。每个账号保留最近 20 份历史（最多 10 分钟一份）。存档里多存了两个字段：`bank`（账号金库，登录后按账号同步）和 `_rev`（客户端内容编号）。
+- 安全：每 IP 10 秒 120 个请求；登录 10 分钟 20 次（按 IP）/ 10 次（按用户名）；注册 1 小时 6 次；请求体默认 64 KB（存档 4 MB）；WS 单条 64 KB、每连接 3 秒 300 条（持续超出断开）、每 IP 每分钟最多新建 20 条连接；5 秒内不鉴权就断开；同一账号新连接顶掉旧连接；房间转发只在成员之间。
+- 掉线宽限：`DNF_GRACE_MS`（默认 20 秒）内重连，队伍和房间都保留（决斗 10 秒）。
+
+### 客户端（M1）
+- `src/net/net.js`：`net.api / net.on / net.send`、自动重连（0.8 秒起指数退避，最多 10 秒；浏览器 online 事件立即重连）、每 2 秒 ping 测延迟（9 秒没回音当作断线）。页面加载时先请求 `/api/health`，通了才显示登录入口（离线单文件、没有服务端的静态托管保持原样）。
+- `src/net/account.js`：云存档。登录后存档键换成 `dawnbreak_cloud_<uid>`（金库 `dawnbreak_bank_cloud_<uid>`），`save.persist()` 通知改动，防抖 2 秒上传；断网写本地，恢复后退避重试补传；409 时先看云端的 `_rev` 是不是自己早先传的（关页面时回应丢失的情况），是就继续传，不是才弹“使用云端存档 / 用本机覆盖云端”。第一次登录时提示把本机角色上传到账号（名字重复自动加后缀，超出角色位的不传）。`netSaveFlush()` 立即上传。
+- `src/ui/login.js`：标题的“登录 / 注册 / 不登录直接玩”、登录注册窗口、账号窗口（同步状态、立即同步、导入本机角色、改密码、登出）、系统菜单里的账号信息与登出。
+- `save.js` 改动：写 localStorage 的两处合并成 `save.persist()`，末尾调用 `cloudSave.changed()`。
+
+### 组队刷图（M3，`src/net/coop.js`）
+- **和原设计的差别（联机组优化，已说明理由）**：怪物打队员改成**挨打的人自己判定**（原设计是主机按队员上报的位置判定）。主机仍然是怪物的唯一权威（AI、位置、血量、死亡、清房、开门），但主机上怪物出招时会广播“出招事件”，队员那边的傀儡怪播放同一个招式（预警、特效、投射物都一样），命中只对“我自己”生效。理由：延迟 100ms 时，按上报位置判定会出现“我明明躲开了还挨打”；自己判定则躲闪 / 无敌帧的手感和单机一样。信任模型是朋友之间，不做反作弊。
+- 打怪：谁打谁判定（打的是自己屏幕上看到的位置），队员把伤害、暴击 / 破招、受击反应参数（浮空 / 击退 / 硬直 / 倒地追击等）和异常状态发给主机；主机扣血、做受击反应，并把伤害数字随快照转给其他人。傀儡不会在队员本地死亡，等主机的击杀事件。
+- 队友：每人 20Hz 广播自己的位置 / 状态 / 动画片段 / 血蓝；其他人用“影子”显示，出招时影子重放同一个技能（只有特效，不造成也不承受伤害，`combat.js` 的 applyHit 开头判断 ghost）。队友的觉醒不会冻结别人的画面。
+- 怪物的目标：主机上每只怪在活着的玩家里选最近的（2.2 秒内不换，带一点随机），AI 和出招期间 `game.player` 临时换成它的目标，所以现有怪物代码不用改。
+- 奖励：主机广播击杀事件，每个人各自走 `dungeon.onKill`（经验、金币、`rollDrop`、任务计数），翻牌各翻各的。组队时结算界面没有“再次挑战”。
+- 断线：主机的生成 / 击杀 / 换房间 / 清房事件带序号并保留最近 600 条；队员重连后要一次补发（奖励不丢）并对齐房间和怪物；主机自己断线期间这些事件先排队、重连后补发；快照显示主机在别的房间超过 1.5 秒时队员自动跟过去。队员掉线超过宽限期 → 离开房间（主机继续）；队长掉线超过宽限期 → 房间关闭，队员回城（奖励保留）。
+- 主机页面切到后台时浏览器不画帧：收到队友消息时补跑逻辑（`coop.bgStep`），怪物照常动。
+- 改动的主线程文件：`game/dungeon.js`（构造参数 seed / roomSeeds / guest / hpMul，队员不刷怪、不判定清房）、`engine/combat.js`（applyHit 第一行 ghost 判断）。
+- 其他组的约定：`netIsGuest()`（装备深化的深渊波次）、`DUNGEONS[id].beforeEnter(diff)` 各自扣票、`cashLook` / `cashAttach`（商城外观）。
+
+### 好友决斗（M4，`src/net/pvp.js`）
+- 发起方当主机，直接复用 `game/duel.js`（三局两胜、每局 60 秒、天平属性、PvP 伤害修正和保护机制、燃斗模式）。
+- 对方每个逻辑帧记录手柄输入（按住 + 按下，21 个动作的位掩码），每 2 帧打包发一次（30Hz）；主机每帧从队列取一帧塞进对方角色的 `Pad`，按键顺序不丢（↓→Z 这类指令照样能搓）。队列超过 8 帧时先丢掉只有“按住”的帧追上。
+- 主机 30Hz 下发快照（双方位置 / 状态 / 动画片段和时间 / 血蓝 / 霸体 / 保护条 / 燃斗 / 回合 / 计时 / 提示文字）+ 出招事件；对方那边两个角色都是影子，重放招式特效（觉醒的定格和插图两边都能看到）。自己的角色：可自由移动时先按本地方向键走，再向主机位置（按延迟外推）平滑校正；对手按快照插值。
+- 决斗不碰存档：开始前存一次档并停写（`save.live = false`），消耗品快捷栏临时清空；结束 3.5 秒后双方按存档重新进城（`startGameNow`）。
+- 结束时两边都 `bus.emit('pvpResult', { win, vs: 对方用户名, wins: [我, 对方], draw })`。
+- 掉线：宽限期 10 秒，超时算“对方掉线，决斗结束（不计胜负）”，不发 pvpResult。
+- 入口：城镇里点其他玩家 / 好友窗口的“决斗” / 决斗场窗口（维尔·克鲁、P 键）里的“好友决斗”一栏。
+
+## 消息表（WS，JSON `{ t, ... }`；`r` 是房间转发，里面的 `d.k` 是玩法消息）
+| 方向 | t | 字段 | 说明 |
+|---|---|---|---|
+| 客户端→服务端 | `auth` | token, ver, build | 连上后第一条（5 秒内），ver 不一致 → 4002 断开 |
+| 服务端→客户端 | `welcome` / `error` / `kicked` | user, serverTime / code, msg / msg | 鉴权结果；被顶号 4003、被停用 4004 |
+| 双向 | `ping` / `pong` | ts | 客户端每 2 秒一次测延迟，9 秒没回音当断线重连 |
+| C→S | `hello` | char { name, cls, job, lvl, look { wpn, set, acc, cash }, hp } | 当前角色信息 |
+| C→S | `scene` / `pos` | id\|null, x, y, f / x, y, f, s | 城镇场景频道与 10Hz 位置 |
+| S→C | `peers` / `penter` / `pleave` / `pos` / `pchar` | | 同场景其他玩家 |
+| 双向 | `chat` | ch: world\|party\|whisper\|sys, text, to, from { id, name, cname } | 聊天；`chatlog` 是上线时补的世界频道记录 |
+| S→C | `friend:req` / `friend:ok` / `friend:del` / `friend:on` | | 好友（增删改走 HTTP `/api/friends`） |
+| C→S | `party:invite` / `party:accept` / `party:decline` / `party:leave` / `party:kick` / `party:lead` | to / from / from / – / id / id | 队伍 |
+| S→C | `party` / `party:invited` / `party:declined` / `party:note` | party\|null, why / from, size / by, why / text | 队伍状态以服务端为准 |
+| C→S | `room:open` / `room:leave` / `room:close` / `r` | kind:'dungeon', meta / – / why / d, to? | 实例房间；`r` 不写 to：房主→全体、成员→房主；to:'all' / userId |
+| S→C | `room` / `room:closed` / `room:left` / `room:lag` / `r` | room, resume? / why / user / user, on / f, d | resume = 宽限期内重连回来 |
+| C→S | `duel:ask` / `duel:accept` / `duel:decline` / `duel:cancel` | to / from / from, why / to | 好友决斗邀请（20 秒过期） |
+| S→C | `duel:asked` / `duel:declined` / `duel:cancelled` / `duel:note` | | |
+
+### 组队刷图（`r` 里的 d.k）
+| 谁发 | k | 内容 |
+|---|---|---|
+| 队长 | `prep` / `go` / `drop` | 准备（地下城、难度）/ 开始（成员、地图种子、房间种子、血量倍率）/ 没跟上的队员 |
+| 队员 | `ready` / `nope` | 加载好了 / 进不了（原因：疲劳、没有入场道具、不在城镇……） |
+| 队长 | `s`（20Hz） | rk 房间、m [[id, x, y, z, 朝向, 状态, 血, 出招序号]]、d 伤害数字 |
+| 队长 | `spawn` / `ma` / `kill` / `room` / `clear` | 生成 / 怪物出招（招式下标、目标）/ 击杀（击杀者、最后一击）/ 换房间 / 清房（前后 4 种带序号 sq） |
+| 队长 | `sync` / `replay` | 重连对齐（当前房间、清过的房间、活着的怪）/ 补发错过的生成和击杀 |
+| 队员 | `hb` / `st` / `door` / `resync` | 命中打包（伤害、暴击、破招、受击反应）/ 异常状态 / 请求进门 / 请求补发 |
+| 所有人 | `p`（20Hz）/ `a` | 自己的位置 / 状态 / 动画 / 血蓝 / 房间 / 出招（技能 id + 等级、普攻名、闪避……） |
+
+### 好友决斗（`r` 里的 d.k）
+| 谁发 | k | 内容 |
+|---|---|---|
+| 对方 | `dk` / `dready` / `in` | 自己的职业、转职、技能等级、技能栏、外观 / 加载好了 / 输入帧 [[按住位掩码, 按下位掩码], …] |
+| 主机 | `dstart` / `ds`（30Hz）/ `da` / `dend` | 双方配置 / 快照 / 出招 / 结果（winner 0=主机 1=对方 -1=平局, wins） |

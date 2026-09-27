@@ -42,12 +42,15 @@ const OPP = { left: 'right', right: 'left', up: 'down', down: 'up' };
 function dirTo(a, b) { return b.gx > a.gx ? 'right' : b.gx < a.gx ? 'left' : b.gy < a.gy ? 'up' : 'down'; }
 
 class Dungeon {
-  constructor(def, diff = 0) {
+  // o（组队刷图，net/coop.js）：seed / roomSeeds = 队长发来的地图种子（全队同一张图）；guest = 队员（怪物由队长模拟，本地不刷怪、不判定清房）；hpMul = 怪物血量倍率（按人数）
+  constructor(def, diff = 0, o = {}) {
     this.def = def; this.diff = diff; this.D = DIFFS[diff];
-    this.layout = genLayout(def, (Math.random() * 1e9) | 0);
+    this.seed = o.seed ?? ((Math.random() * 1e9) | 0);
+    this.layout = genLayout(def, this.seed);
     this.t = 0; this.kills = 0; this.hurt = 0; this.combos5 = 0; this.aerial = 0; this.back = 0; this.counter = 0; this.overkill = 0; this.expGot = 0;
     this.roomsEntered = 0; this.transition = null; this.state = 'play'; this.lastComboCounted = 0; this.usedCoins = 0;
-    for (const r of this.layout.rooms) { r.visited = false; r.cleared = false; r.seed = (Math.random() * 1e9) | 0; }
+    this.guest = !!o.guest; this.hpMul = o.hpMul || 1;
+    this.layout.rooms.forEach((r, i) => { r.visited = false; r.cleared = false; r.seed = o.roomSeeds ? o.roomSeeds[i] : (Math.random() * 1e9) | 0; });
   }
   start() {
     game.dungeon = this; game.scene = 'dungeon';
@@ -82,9 +85,10 @@ class Dungeon {
     if (room.type === 'boss' && !room.cleared) { music.play(this.def.bossBgm || 'boss'); toastMsg(`领主房 · ${MON[this.def.boss.kind].name}`, '#ff6a4a'); }
   }
   spawnRoom(room, W, first) {
+    if (this.guest) { this.waves = []; return; }   // 组队的队员：怪物由队长那边生成后同步过来
     const def = this.def, D = this.D, R = mulberry(room.seed);
     const lv = def.lvl[0] + Math.floor(R() * (def.lvl[1] - def.lvl[0] + 1));
-    const o = { lvl: lv, mul: D.hp, atkMul: D.atk, expMul: D.exp };
+    const o = { lvl: lv, mul: D.hp * this.hpMul, atkMul: D.atk, expMul: D.exp };
     const pick = () => { const tot = def.mobs.reduce((s, m) => s + m[1], 0); let r = R() * tot; for (const m of def.mobs) { r -= m[1]; if (r <= 0) return m[0]; } return def.mobs[0][0]; };
     const count = room.type === 'start' ? 3 + Math.floor(R() * 2) : room.type === 'boss' ? def.bossAdds || 2 : 4 + Math.floor(R() * 4);
     for (let i = 0; i < count; i++) spawnMonster(pick(), 380 + R() * (W - 480), 20 + R() * (DEPTH - 40), o);
@@ -111,7 +115,7 @@ class Dungeon {
     if (game.combo === 0 && this.pendingCombo) { this.combos5++; this.pendingCombo = 0; }
     this.lastComboCounted = game.combo;
     const alive = ents.filter(e => e.team === 'e' && !e.dead).length;
-    if (!this.room.cleared && alive === 0) {
+    if (!this.guest && !this.room.cleared && alive === 0) {
       if (this.waves && this.waves.length) { const w = this.waves.shift(); for (let i = 0; i < w.n; i++) spawnMonster(pick(this.def.mobs)[0], cam.x + rnd(80, WW - 80), rnd(20, DEPTH - 20), { ...w.o, drop: true }); }
       else if (this.room.type !== 'boss') { this.room.cleared = true; this.onCleared(false); }
     }
@@ -239,9 +243,8 @@ class Dungeon {
       uiText(`${Math.ceil(this.deadT)}`, 960, 540, { size: 120, align: 'center', color: '#fff', sw: 10, font: '"Arial Black",sans-serif' });
       uiText(save.data.coins > 0 ? `按 ${typeof keyName === 'function' ? keyName('attack') : 'X'} 使用复活币原地复活（剩余 ${save.data.coins} 枚）` : '没有复活币了，倒计时结束后返回城镇', 960, 630, { size: 30, align: 'center', color: '#ffe8a8', sw: 5 });
     }
-    // 提示消息
-    let ty = 360;
-    for (let i = toastList.length - 1; i >= 0; i--) { const m = toastList[i]; m.t += 1 / 60; if (m.t > 3) { toastList.splice(i, 1); continue; } c.globalAlpha = m.t > 2.4 ? (3 - m.t) / 0.6 : 1; uiText(m.msg, 960, ty, { size: 28, align: 'center', color: m.col, sw: 5 }); ty += 40; c.globalAlpha = 1; }
+    // 提示横幅（结算 / 倒地时先排队，不和结算画面、倒地倒计时叠在一起）
+    if (this.state !== 'dead' && !menus.isOpen('result')) drawToastBanner(c);
   }
 }
 // 左右两侧的门：石拱门 + 发光传送面（开门后）

@@ -17,7 +17,9 @@ const talk = async (n, name) => {
 await page.goto(`${URL_BASE}?mute`);
 await page.waitForFunction(() => window.__READY);
 await wait(800); await shot('01-title'); step('标题');
-await page.click('text=进入游戏'); await wait(500); await shot('02-charselect'); step('角色选择');
+// 连得上联机服务端时（线上），标题是“登录 / 注册 / 不登录直接玩”：走不登录的单机路线
+await wait(1500); if (await page.locator('text=不登录直接玩').count()) { await page.click('text=不登录直接玩'); await wait(500); step('不登录直接玩'); }
+if (await page.locator('text=进入游戏').count()) await page.click('text=进入游戏'); await wait(500); await shot('02-charselect'); step('角色选择');
 await page.click('#charsel button:has-text("创建角色")'); await wait(500);
 await page.click('.clscard >> nth=0'); await wait(300); await shot('02-newgame'); step('创建角色：' + await page.inputValue('#newgame input.txt'));
 await page.click('text=创建并开始'); await wait(1200); await shot('03-town-help'); step('进入城镇（操作说明）');
@@ -56,7 +58,8 @@ step(`回城后能移动：${mv1.x - mv0 > 30 ? '是' : '否！'}（Δx=${Math.r
 const before = await page.evaluate(() => ({ lvl: game.lvl, gold: game.gold, exp: game.exp, items: inv.items.length, fatigue: save.data.fatigue, best: save.data.best, unlocked: save.data.unlocked }));
 step('回城存档：' + JSON.stringify(before));
 await page.reload(); await page.waitForFunction(() => window.__READY); await wait(600); await shot('11-title-continue');
-await page.click('text=进入游戏'); await wait(400); await page.click('#charsel button:has-text("开始游戏")'); await wait(1200);
+await wait(1500); if (await page.locator('text=不登录直接玩').count()) { await page.click('text=不登录直接玩'); await wait(500); }
+if (await page.locator('text=进入游戏').count()) await page.click('text=进入游戏'); await wait(400); await page.click('#charsel button:has-text("开始游戏")'); await wait(1200);
 const after = await page.evaluate(() => ({ at: world && world.S.id + ':' + Math.round(game.player.x), lvl: game.lvl, gold: game.gold, exp: game.exp, items: inv.items.length, fatigue: save.data.fatigue, scene: game.scene }));
 step('读档：' + JSON.stringify(after)); await shot('12-continued');
 console.log('LOGS', JSON.stringify(logs.filter(l => l.type !== 'warning'), null, 1));

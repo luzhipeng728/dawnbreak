@@ -72,6 +72,7 @@ function equipTotals(cls = game.player ? game.player.cls : 'sword', job = game.j
     const it = inv.equip[s]; if (!it || it.slot !== s || !itemActive(it)) continue;   // 部位不对的（别的代码直接往 equip 里塞的）不算
     for (const k in it.st) add(k, it.st[k]);
     const e = enhStats(it); for (const k in e) add(k, e[k]);
+    const x = gearExtraStats(it); for (const k in x) add(k, x[k]);   // 锻造 + 宝珠（game/gear.js）
     if (it.fx) for (const k in it.fx) if (typeof it.fx[k] === 'number') add(k, it.fx[k]);
     if (it.fx && it.fx.atkElem) t.atkElem = it.fx.atkElem;
     if (it.atype && ARMOR_SLOTS.includes(s)) {
@@ -87,6 +88,7 @@ function equipTotals(cls = game.player ? game.player.cls : 'sword', job = game.j
     for (const n in S.bonus) if (sets[id] >= +n) { on.push(+n); const B = S.bonus[n]; for (const k in B.st || {}) add(k, B.st[k]); }
     activeSets.push({ id, n: sets[id], on });
   }
+  const cb = codexBonusStats(); for (const k in cb) add(k, cb[k]);   // 装备图鉴的收集加成
   if (t.allStat) for (const k of ['str', 'int', 'vit', 'spr']) add(k, t.allStat);
   return { t, mastery, masteryN, sets: activeSets };
 }
@@ -129,7 +131,7 @@ function recalcStats(p) {
   p.dmgUp = g('dmgUp'); p.dmgTaken = 1 - Math.min(0.5, g('dmgReduce'));
   p.cdMul = 1 - Math.min(0.4, g('cdr')); p.mpRegen = 1 + g('mpRegen');
   p.killHeal = g('killHeal'); p.killMp = g('killMp'); p.goldUp = g('goldUp'); p.expUp = g('expUp');
-  p.mastery = E.mastery; p.masteryN = E.masteryN; p.sets = E.sets;
+  p.mastery = E.mastery; p.masteryN = E.masteryN; p.sets = E.sets; p.gearProcs = gearProcList(E);   // 装备特效（game/gear_fx.js）
   // 冒险失败后的虚弱：攻击 / 防御 / HP 上限 -25%
   p.weak = !!(save.data && save.data.weak > Date.now());
   if (p.weak) { for (const k of ['atk', 'matk', 'indep']) p.baseStats[k] *= 0.75; p.matk *= 0.75; p.indep *= 0.75; p.def *= 0.75; p.mdef *= 0.75; p.hpMax = Math.round(p.hpMax * 0.75); p.hp = Math.min(p.hp, p.hpMax); }

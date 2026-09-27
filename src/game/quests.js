@@ -239,7 +239,7 @@ function questProgress(id, i, add = 1, at) {
     if (g.key) inv.add(makeItem(g.key, 1));   // 背包“任务”页里的展示用道具（进度以任务记录为准）
     sfx.pickup();
   }
-  if (rec.p[i] >= g.n && goalCounted(g)) toastMsg(`${q.name}：${goalText(g)}（${g.n}/${g.n}）`, '#e8f0c0');
+  if (rec.p[i] >= g.n && goalCounted(g)) toastMsg(`${q.name}：${goalText(g)}（${g.n}/${g.n}）`, '#e8f0c0', 'log');
   questCheck(id);
 }
 function questItemsTake(q) { for (const g of q.goals) if (g.type === 'collect' && g.key && inv.count(g.key)) inv.take(g.key, inv.count(g.key)); }

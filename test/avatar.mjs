@@ -172,13 +172,15 @@ for (const cls of ['sword', 'gun', 'mage']) {
   const types = await page.evaluate(cls => Object.keys(WEAPON_IMG).filter(k => k === WEAPON_IMG[k].type && WTYPES[k].cls === cls), cls);
   const seen = {};
   for (const t of types) {
-    const err = await page.evaluate(([EQ, t, cls]) => (0, eval)(EQ)([{ slot: 'weapon', wtype: t, lvl: 10, cls }]), [`(${EQUIP})`, t, cls]);
+    const err = await page.evaluate(([EQ, t, cls]) => (0, eval)(EQ)([{ slot: 'weapon', wtype: t, lvl: 10, cls, rar: 2 }]   /* 固定稀有品级：不指定时可能随机出史诗（史诗有专属外观 ep_*） */), [`(${EQUIP})`, t, cls]);
     const L = await look(); seen[t] = L.hash;
     ok(!err && L.wpn === t, `装备${t} → 手里的武器图 ${L.wpn}${err ? ' ' + err : ''}`);
   }
   ok(new Set(Object.values(seen)).size === types.length, `${types.length} 种武器外观互不相同`);
   const ep = await page.evaluate(cls => Object.keys(WEAPON_IMG).find(k => k.startsWith('ep_') && ITEMS[k] && WTYPES[WEAPON_IMG[k].type].cls === cls), cls);   // 只挑物品库里已有的史诗（别的组的新史诗合并前不存在）
   if (ep) { await page.evaluate(([EQ, ep]) => (0, eval)(EQ)([ep]), [`(${EQUIP})`, ep]); const L = await look(); ok(L.wpn === ep, `史诗武器 ${ep} 有专属外观`); }
+  // 换回普通武器再测时装：史诗武器图本身可能是绿色（幸运草扫把等），会被误算进绿色残留
+  await page.evaluate(([EQ, t, cls]) => (0, eval)(EQ)([{ slot: 'weapon', wtype: t, lvl: 10, cls, rar: 2 }]), [`(${EQUIP})`, types[0], cls]);
   const before = await look();
   const hasSet = await page.evaluate(cls => !!SPR_DATA[`${cls}@festival`], cls);
   if (hasSet) {
@@ -187,7 +189,7 @@ for (const cls of ['sword', 'gun', 'mage']) {
     await page.evaluate(([EQ]) => (0, eval)(EQ)(['av_bottom_festival', 'av_hat_festival', 'av_face_festival', 'av_hair_festival']), [`(${EQUIP})`]);
     await page.waitForFunction(() => __G.player.model.av.S2, null, { timeout: 10000 });
     L = await look(); ok(L.set === 'festival' && L.S2 && L.hash !== before.hash, `上衣 + 下装 → 换成庆典时装（配件 ${L.acc.length} 件）`);
-    ok(L.green === 0, '穿时装后没有绿色残留');
+    ok(L.green === 0, '穿时装后没有绿色残留', `（武器外观 ${L.wpn}，绿色像素 ${L.green}）`);
     const worn = L.hash;
     await page.evaluate(() => { save.write(); });
     await page.goto(`${URL_BASE}?town&cls=${cls}&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 }); await page.evaluate(HELPERS);

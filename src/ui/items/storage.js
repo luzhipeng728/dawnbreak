@@ -15,6 +15,7 @@ function storagePut(it, which = IW.stTab, n) {
   if (!it || !inv.items.includes(it)) return;
   if (which === 'bank') bankFresh();
   if (it.kind === 'quest') { toastMsg('任务道具不能放进仓库', '#ff6a6a'); sfx.error(); return; }
+  if (which === 'bank' && itemBind(it) === 'char') { toastMsg('角色绑定的物品不能放进账号金库', '#ff6a6a'); sfx.error(); return; }
   const list = storageList(which), part = n && it.kind !== 'equip' && n < it.n ? { ...it, id: itemSeq++, n } : it;
   if (!storageAdd(list, part === it ? it : { ...part })) { toastMsg('仓库已满', '#ff6a6a'); sfx.error(); return; }
   if (part === it) inv.remove(it); else it.n -= n;

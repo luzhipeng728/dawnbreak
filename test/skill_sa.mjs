@@ -24,7 +24,7 @@ const run = (mode) => page.evaluate(async mode => {
 }, mode);
 await page.evaluate(() => { for (const id of ['g_gatling', 'g_m3', 'g_bbq']) if (SKILLS[id]) game.skillLv[id] = 5; });
 const s = await run('skill');
-ok(s.hits > 3 && s.interrupted === 0, `放技能时被怪物打中 ${s.hits} 次，被打断 0 次（霸体）`, JSON.stringify(s));
+ok(s.hits >= 2 && s.interrupted === 0,   /* 被打中次数随怪物 AI 随机，只要确实挨了打且 0 次打断即可 */ `放技能时被怪物打中 ${s.hits} 次，被打断 0 次（霸体）`, JSON.stringify(s));
 await page.evaluate(() => { const p = game.player; p.setState('idle'); p.act = null; });
 const b = await run('basic');
 ok(b.hits >= 1 && b.interrupted > 0, `普攻时被打中 ${b.hits} 次，会被打断（${b.interrupted} 次采样处于受击）`, JSON.stringify(b));

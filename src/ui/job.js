@@ -137,7 +137,7 @@ function jobCeremony(jobId) {
     cam.flash = 0.2; cam.flashCol = '#fff';
     [0, 4, 7, 12, 16, 19, 24].forEach((s, i) => sfx.tone('triangle', 392 * Math.pow(2, s / 12), 0, 0.5, 0.1, { delay: i * 0.07 }));
     [0, 7, 12].forEach(s => sfx.tone('sawtooth', 98 * Math.pow(2, s / 12), 0, 1.6, 0.04, { attack: 0.05, delay: 0.1 }));
-    toastMsg(`转职成功！你成为了「${J.name}」`, '#ffd23a');
+    toastMsg(`转职成功！你成为了「${J.name}」`, '#ffd23a', 'log');   // 转职演出本身就会大字展示，横幅会叠在演出上，只记到系统消息
   }, 900);
   // 粒子：金色光点从下往上飘，白闪时向外炸开
   const c = cv.getContext('2d'), P = [];

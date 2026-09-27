@@ -7,6 +7,7 @@
    ===================================================================== */
 addStyle(`
 #qguide{position:absolute;left:calc(var(--u) * 14px);top:calc(var(--u) * 14px);max-width:calc(var(--u) * 560px);background:linear-gradient(90deg,rgba(20,14,8,.86),rgba(20,14,8,.55));border:.08em solid rgba(232,194,106,.55);border-left:.25em solid #ffd23a;border-radius:.3em;padding:.35em .6em;color:#f0dcb0;font-size:.92em;line-height:1.45;z-index:1;box-shadow:0 .2em .6em rgba(0,0,0,.5)}
+body.touchui #qguide{top:12vh}
 #qguide .t{color:#ffd23a;font-weight:900;margin-right:.4em}
 #qguide .tgt{font-weight:800;color:#fff2d0}
 #qguide .rt{font-size:.86em;color:#c8b890}

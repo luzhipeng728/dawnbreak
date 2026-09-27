@@ -20,7 +20,8 @@ defineShop('linus', { name: '林纳斯的铁匠铺', greet: '看看吧，都是�
   { name: '防具', goods: gearGoods({ slots: ARMOR_SLOTS }) },
   { name: '材料', goods: ['crystal'] }] });
 defineShop('kiri', { name: '凯丽的枪械', greet: '天界的枪械技术，要不要试试？', tabs: [
-  { name: '神枪手武器', goods: gearGoods({ slots: ['weapon'], wtypes: CLASS_WTYPES('gun'), rars: [0, 1, 2] }) }] });
+  { name: '神枪手武器', goods: gearGoods({ slots: ['weapon'], wtypes: CLASS_WTYPES('gun'), rars: [0, 1, 2] }) },
+  { name: '增幅材料', goods: ['m_contra', 'amp_purify', 'amp_guard'] }] });
 defineShop('lorian', { name: '罗莉安的魔法用品', markup: 1.1, greet: '魔法师的东西，这里都有。', tabs: [
   { name: '魔法师武器', goods: gearGoods({ slots: ['weapon'], wtypes: CLASS_WTYPES('mage'), rars: [0, 1, 2] }) },
   { name: '首饰', goods: gearGoods({ slots: ACC_SLOTS, rars: [1, 2] }) },

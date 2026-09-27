@@ -109,6 +109,7 @@ function instantHit(e, h) {
 
 /* ---- 伤害与受击反应 ---- */
 function applyHit(a, t, h, opt = {}) {
+  if (a.ghost || t.ghost) return false;   // 组队刷图：队友的影子（net/coop.js）只做表现，不造成也不承受伤害（伤害由各自的客户端结算）
   const src = opt.src || a, act = a.act;
   const type = h.type || opt.type || (act && act.type) || a.dmgType || 'phys';
   const elem = h.elem || opt.elem || (act && act.elem) || a.atkElem || null;   // 没有指定属性时用武器附带属性

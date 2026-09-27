@@ -42,7 +42,7 @@ const ui = {
     if (game.scene === 'dungeon' || game.scene === 'test' || game.scene === 'town') this.drawPanel(c);
     if (game.scene === 'dungeon' || game.scene === 'test') { this.drawCombo(c); this.drawTarget(c); if (game.dungeon) game.dungeon.drawUI(c); }
     if (game.cutin) this.drawCutin(c);
-    if (game.scene === 'town' && window.townUI) townUI(c);
+    if (game.scene === 'town' && world) worldUI(c);
     if (PARAMS.has('fps')) uiText(`${fps.toFixed(0)} fps · ents ${ents.length} fx ${fxList.length}`, 1900, 30, { size: 20, align: 'right' });
     menus.drawUI(c);
   },

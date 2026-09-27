@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from prep import remove_bg
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 地面贴图的缩放：源图缩到多宽（越窄 = 纹理越小）；交界带同理
-FLOOR_W = {'forest': 2400, 'forestDark': 2000, 'ruins': 1700, 'ruinsPoison': 1800, 'camp': 1700, 'campFire': 1900, 'ruinsDark': 1500, 'town': 1500}
+FLOOR_W = {'elvenguard': 1800, 'westcoast': 1700, 'frozenWoods': 2200, 'forest': 2400, 'forestDark': 2000, 'ruins': 1700, 'ruinsPoison': 1800, 'camp': 1700, 'campFire': 1900, 'ruinsDark': 1500, 'town': 1500}
 EDGE_W = {'town': 1800}
 out = os.path.join(ROOT, 'final', 'bg'); os.makedirs(out, exist_ok=True)
 for t, fw in FLOOR_W.items():

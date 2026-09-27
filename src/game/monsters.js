@@ -14,7 +14,7 @@ const MON = {
   goblin: { name: '哥布林', lvl: 1, hp: 2600, atk: 190, def: 120, w: 11, d: 11, h: 72, weight: 0.8, speed: 95, exp: 28, gold: [6, 18], shadowR: 15,
     model: () => buildGoblin(), clips: GOB_CLIPS, pref: 40,
     attacks: [{ clip: 'club', range: [0, 58], dy: 16, cd: [1.6, 2.8], act: { dur: 0.95, hits: [{ t0: 0.44, t1: 0.52, box: [0, 58, 20, 0, 70], dmg: 1, stun: 0.4, knock: 120, hs: 0.07, snd: 'blunt', shake: 2 }], events: [evAt(0.4, e => sfx.swing(true))] } }] },
-  goblinThrower: { name: '哥布林投石手', lvl: 2, hp: 2000, atk: 160, def: 80, w: 11, d: 11, h: 72, weight: 0.8, speed: 80, exp: 32, gold: [8, 20], shadowR: 15,
+  goblinThrower: { name: '投掷哥布林', lvl: 2, hp: 2000, atk: 160, def: 80, w: 11, d: 11, h: 72, weight: 0.8, speed: 80, exp: 32, gold: [8, 20], shadowR: 15,
     model: () => buildGoblin({ ...PAL_GOB, skin: '#8aa84a', skin2: '#6a8434', band: '#3a7ac8' }, 'none'), clips: GOB_CLIPS, pref: 190,
     attacks: [{ clip: 'throw', range: [110, 320], dy: 40, cd: [2.2, 3.4], act: { dur: 0.9, events: [evAt(0.45, e => throwRock(e))] } }] },
 };

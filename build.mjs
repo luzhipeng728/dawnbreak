@@ -20,6 +20,7 @@ function bundleOf(key) {
   if (a === 'spr') return 'spr:' + b;                                  // 角色 / 怪物逐帧精灵：spr:sword、spr:goblin……
   if (a === 'bg') return 'bg:' + b.replace(/_(far|floor|edge|mid|fore)$/, '');   // 场景背景：bg:forest……
   if (a === 'npc') return 'npc';
+  if (a === 'world') return 'world';                                   // 城镇建筑、地下城门、NPC 立绘
   if (a === 'scene') return 'scene:' + b;                              // 城镇 / 区域场景的专用美术
   return 'core';                                                       // 图标、特效、标题、职业立绘、觉醒立绘
 }

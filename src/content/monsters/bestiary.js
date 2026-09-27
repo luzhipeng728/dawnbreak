@@ -168,7 +168,7 @@ Object.assign(MON, {
     model: () => buildGoblinVariant({ ...PAL_GOB, skin: '#6a5a4a', skin2: '#4a3a2a', band: '#ff6a2a' }, { weapon: 'bomb' }),
     attacks: [{ clip: 'throw', range: [0, 40], dy: 20, cd: [0.2, 0.4], act: { dur: 1.05, superArmor: true, update: e => { e.flash = Math.floor(e.actT * (8 + e.actT * 14)) % 2 ? 0.05 : 0; }, events: [evAt(0.02, e => { telegraph({ x: e.x, y: e.y, r: 56, dur: 0.88, col: '#ff5a2a' }); }), evAt(0.9, e => { areaHit(e, e.x, e.y, 56, 0, { dmg: 1.6, down: true, knock: 220, hs: 0.1, snd: 'fire', shake: 5 }, { status: 'burn', sdur: 3, dps: 0.1 }); meteorImpact({ x: e.x, y: e.y }, 0.7); e.hp = 0; e.noLoot = true; killEnt(e, e, {}); })] } },
       { clip: 'throw', range: [120, 300], dy: 30, cd: [3, 4.5], act: { dur: 0.9, events: [evAt(0.45, e => { const p = game.player; if (!p) return; const T = 0.9; spawnProj({ owner: e, x: e.x, y: e.y, z: 60, vx: (p.x - e.x) / T, vy: (p.y - e.y) / T, vz: 200, grav: (60 + 200 * T) * 2 / (T * T), life: 3, w: 8, d: 10, h: 12, face: e.face, pierce: false, shadow: 6, hit: { dmg: 0.5, stun: 0.2, knock: 40, hs: 0.03 }, onEnd(pr) { areaHit(e, pr.x, pr.y, 40, 0, { dmg: 1.4, down: true, knock: 160, hs: 0.07, snd: 'fire', shake: 4 }, { status: 'burn', sdur: 2, dps: 0.1 }); meteorImpact(pr, 0.5); }, draw(c, pr) { drawSpr(c, 'bomb', sx(pr.x), sy(pr.y, pr.z), 0, 18, { add: false, rot: pr.t * 8 }); } }); })] } }] },
-  goblinChief: { name: '投石首领·哥鲁姆', lvl: 3, hp: 30000, atk: 260, def: 200, w: 16, d: 14, h: 100, weight: 2.5, speed: 90, exp: 400, gold: [60, 120], shadowR: 24, pref: 160, clips: BEAST_CLIPS, scale: 1.45, bars: 8,
+  goblinChief: { name: '投掷哥布林首领', lvl: 3, hp: 30000, atk: 260, def: 200, w: 16, d: 14, h: 100, weight: 2.5, speed: 90, exp: 400, gold: [60, 120], shadowR: 24, pref: 160, clips: BEAST_CLIPS, scale: 1.45, bars: 8,
     model: () => buildGoblinVariant({ ...PAL_GOB, skin: '#5a7a3a', skin2: '#3a5a2a', band: '#ffd23a' }, { weapon: 'none', helmet: true }),
     attacks: [
       { clip: 'throw', range: [60, 380], dy: 60, cd: [2.4, 3.4], w: 2, act: { dur: 1.1, events: [0.45, 0.75].map(t => evAt(t, e => throwRock(e)))} },
@@ -179,7 +179,7 @@ Object.assign(MON, {
     attacks: [
       melee('axe', 0.62, 0.72, [0, 92, 30, 0, 120], { range: [0, 85], cd: [2, 3.2], sa: true, hit: { dmg: 1.4, knock: 180, stun: 0.5, shake: 4 } }),
       { clip: 'chargeW', range: [150, 420], dy: 20, cd: [5, 8], w: 0.8, act: tauCharge(1.2) }] },
-  tauSoldierBoss: { name: '牛头兵统领·巴洛克', lvl: 5, hp: 42000, atk: 270, def: 300, w: 18, d: 14, h: 128, weight: 3, speed: 95, exp: 700, gold: [90, 160], shadowR: 26, pref: 70, clips: BEAST_CLIPS, scale: 1.15, bars: 10,
+  tauSoldierBoss: { name: '牛头兵首领', lvl: 5, hp: 42000, atk: 270, def: 300, w: 18, d: 14, h: 128, weight: 3, speed: 95, exp: 700, gold: [90, 160], shadowR: 26, pref: 70, clips: BEAST_CLIPS, scale: 1.15, bars: 10,
     model: () => buildTau({ fur: '#6a3a24', muzzle: '#c8a080', horn: '#fff4e0', eye: '#ff2a1a', cloth: '#3a2a4a' }, { armor: '#8a8e96' }),
     attacks: [
       melee('axe', 0.62, 0.72, [0, 100, 32, 0, 130], { range: [0, 90], cd: [1.8, 2.8], sa: true, w: 2, hit: { dmg: 1.5, knock: 200, stun: 0.5, shake: 5 } }),
@@ -190,7 +190,7 @@ Object.assign(MON, {
     attacks: [
       melee('slam', 0.7, 0.8, [-30, 110, 40, 0, 90], { range: [0, 95], cd: [2.4, 3.6], sa: true, hit: { dmg: 1.8, down: true, knock: 220, shake: 6 }, events: [evAt(0.7, e => { fxDust(e.x + e.face * 50, e.y, 12, 36); sfx.boom(0.7); })] }),
       melee('roar', 0.5, 0.6, [-100, 100, 80, 0, 150], { range: [0, 160], cd: [8, 12], sa: true, w: 0.6, noSwing: true, hit: { dmg: 0.3, stun: 0, knock: 40 }, events: [evAt(0.5, e => { sfx.boom(0.5); cam.shake = 5; for (const t of ents) if (t.team === 'p' && Math.abs(t.x - e.x) < 140 && Math.abs(t.y - e.y) < 80) addStatus(t, 'stun', 0.9); })] })] },
-  tauKing: { name: '牛头王·萨图恩', lvl: 16, hp: 120000, atk: 300, def: 520, w: 22, d: 16, h: 150, weight: 4, speed: 100, exp: 2400, gold: [200, 400], shadowR: 30, pref: 80, clips: BEAST_CLIPS, scale: 1.4, bars: 22,
+  tauKing: { name: '牛头王 萨乌塔', lvl: 16, hp: 120000, atk: 300, def: 520, w: 22, d: 16, h: 150, weight: 4, speed: 100, exp: 2400, gold: [200, 400], shadowR: 30, pref: 80, clips: BEAST_CLIPS, scale: 1.4, bars: 22,
     model: () => buildTau({ fur: '#4a2a1a', muzzle: '#b89a80', horn: '#fff8e8', eye: '#ff2a1a', cloth: '#6a1a1a' }, { armor: '#c8a040', crown: true, big: true }),
     attacks: [
       melee('axe', 0.62, 0.72, [0, 120, 34, 0, 140], { range: [0, 110], cd: [1.8, 2.8], sa: true, w: 2, hit: { dmg: 1.6, knock: 220, stun: 0.55, shake: 6 } }),
@@ -213,32 +213,32 @@ Object.assign(MON, {
     model: () => buildCat({ fur: '#6a4a8a', belly: '#c8a8e8', ear: '#d890ff', eye: '#c0ff60', cloth: '#2a1a3a' }),
     attacks: [melee('scratch', 0.3, 0.38, [0, 56, 22, 10, 80], { range: [0, 55], cd: [1.2, 2], hit: { dmg: 1, knock: 70, onHit: (a, t) => addStatus(t, 'poison', 4, { dps: a.atk * 0.08, src: a }) } }),
       { clip: 'pounce', range: [90, 260], dy: 30, cd: [2.2, 3.4], act: pounceAct(1.2, 'poison') }] },
-  catKing: { name: '毒猫王·萨芙拉', lvl: 13, hp: 90000, atk: 280, def: 380, w: 14, d: 12, h: 100, weight: 2, speed: 210, exp: 1800, gold: [160, 300], shadowR: 20, pref: 60, clips: BEAST_CLIPS, scale: 1.25, bars: 18,
+  catKing: { name: '毒猫王', lvl: 13, hp: 90000, atk: 280, def: 380, w: 14, d: 12, h: 100, weight: 2, speed: 210, exp: 1800, gold: [160, 300], shadowR: 20, pref: 60, clips: BEAST_CLIPS, scale: 1.25, bars: 18,
     model: () => buildCat({ fur: '#4a2a6a', belly: '#b890e0', ear: '#ff80ff', eye: '#c0ff40', cloth: '#1a0a2a', eyeGlow: true }),
     onDamaged: (m, a, dmg, crit) => { if (!crit || (m.lastCloud && game.t - m.lastCloud < 4)) return; m.lastCloud = game.t; poisonCloud(m, m.x, m.y); },
     attacks: [
       melee('scratch', 0.3, 0.38, [0, 64, 24, 10, 90], { range: [0, 60], cd: [0.8, 1.4], w: 2, hit: { dmg: 1.1, knock: 80, onHit: (a, t) => addStatus(t, 'poison', 5, { dps: a.atk * 0.1, src: a }) } }),
       { clip: 'pounce', range: [80, 400], dy: 50, cd: [1.8, 2.8], w: 1.5, act: pounceAct(1.5, 'poison') },
       { clip: 'roar', range: [0, 120], dy: 60, cd: [6, 9], w: 0.8, act: { dur: 1.2, superArmor: true, events: [evAt(0.5, e => poisonCloud(e, e.x, e.y))] } }] },
-  goblinShaman: { name: '落雷术士·凯诺', lvl: 11, hp: 70000, atk: 260, def: 300, w: 13, d: 12, h: 90, weight: 1.6, speed: 110, exp: 1500, gold: [150, 280], shadowR: 18, pref: 170, clips: BEAST_CLIPS, scale: 1.25, bars: 16,
+  goblinShaman: { name: '落雷 凯诺', lvl: 11, hp: 70000, atk: 260, def: 300, w: 13, d: 12, h: 90, weight: 1.6, speed: 110, exp: 1500, gold: [150, 280], shadowR: 18, pref: 170, clips: BEAST_CLIPS, scale: 1.25, bars: 16,
     model: () => buildGoblinVariant({ ...PAL_GOB, skin: '#e8e8e0', skin2: '#b8b8b0', eye: '#6ad0ff', band: null }, { weapon: 'scimitar', robe: '#3a3a7a' }),
     attacks: [
       melee('atk1', 0.08, 0.16, [0, 64, 24, 10, 80], { range: [0, 60], cd: [1.2, 2], w: 1.5, hit: { dmg: 1.1, knock: 90, onHit: (a, t) => { if (Math.random() < 0.2) addStatus(t, 'stun', 0.5); } }, events: [slashAt(0.07, { a0: -2.3, a1: 0.6, r: 44, w: 10, off: [10, 44], col: '#fff6a0' })] }),
       { clip: 'cast', range: [0, 700], dy: 700, cd: [3.5, 5], w: 2, act: { dur: 1.8, superArmor: true, events: [evAt(0.2, e => thunderPattern(e))] } }] },
-  flameMage: { name: '炎术士·伊格尼斯', lvl: 18, hp: 150000, atk: 300, def: 420, w: 13, d: 12, h: 92, weight: 1.6, speed: 100, exp: 3200, gold: [260, 480], shadowR: 18, pref: 200, clips: BEAST_CLIPS, scale: 1.3, bars: 24,
+  flameMage: { name: '烈焰 彼诺修', lvl: 18, hp: 150000, atk: 300, def: 420, w: 13, d: 12, h: 92, weight: 1.6, speed: 100, exp: 3200, gold: [260, 480], shadowR: 18, pref: 200, clips: BEAST_CLIPS, scale: 1.3, bars: 24,
     model: () => buildGoblinVariant({ ...PAL_GOB, skin: '#b86a4a', skin2: '#8a4a3a', eye: '#ffd23a', band: null }, { weapon: 'staff', orb: '#ff6a2a', robe: '#8a1a1a' }),
     attacks: [
       { clip: 'cast', range: [0, 260], dy: 60, cd: [1.6, 2.4], w: 2, act: { dur: 1.0, events: [evAt(0.4, e => shootStraight(e, { col: '#ff7a2a', dmg: 1.2, status: 'burn', speed: 330, explode: 30, trail: true, glow: true, z: 60 }))] } },
       { clip: 'cast', range: [0, 800], dy: 800, cd: [6, 8], w: 1.5, act: { dur: 2.2, superArmor: true, events: [evAt(0.3, e => meteorPattern(e))] } },
-      { clip: 'cast', range: [0, 800], dy: 800, cd: [14, 18], w: 0.6, act: { dur: 1.4, superArmor: true, events: [evAt(0.6, e => { fxText('出来吧，我的小爆弹们！', e.x, e.y, e.z + 30, { col: '#ff8a3a', size: 11 }); for (let i = 0; i < 3 && aliveAdds() < 5; i++) spawnMonster('goblinBomber', cam.x + rnd(80, WW - 80), rnd(20, DEPTH - 20), { lvl: e.lvl - 2, drop: true, mul: game.dungeon ? game.dungeon.D.hp : 1, atkMul: game.dungeon ? game.dungeon.D.atk : 1 }); })] } }] },
-  zombie: { name: '饥饿的亡者', lvl: 16, hp: 8000, atk: 220, def: 300, w: 13, d: 12, h: 100, weight: 1.2, speed: 60, exp: 140, gold: [25, 50], shadowR: 18, pref: 45, clips: BEAST_CLIPS,
+      { clip: 'cast', range: [0, 800], dy: 800, cd: [14, 18], w: 0.6, act: { dur: 1.4, superArmor: true, events: [evAt(0.6, e => { fxText('出来吧，我的爆弹们！', e.x, e.y, e.z + 30, { col: '#ff8a3a', size: 11 }); for (let i = 0; i < 3 && aliveAdds() < 5; i++) spawnMonster('goblinBomber', cam.x + rnd(80, WW - 80), rnd(20, DEPTH - 20), { lvl: e.lvl - 2, drop: true, mul: game.dungeon ? game.dungeon.D.hp : 1, atkMul: game.dungeon ? game.dungeon.D.atk : 1 }); })] } }] },
+  zombie: { name: '饥饿僵尸', lvl: 16, hp: 8000, atk: 220, def: 300, w: 13, d: 12, h: 100, weight: 1.2, speed: 60, exp: 140, gold: [25, 50], shadowR: 18, pref: 45, clips: BEAST_CLIPS,
     model: () => buildZombie({ skin: '#8a9a7a', hair: '#3a3a30', eye: '#ff3a2a', cloth: '#4a4a5a', pants: '#3a3a3a' }),
     attacks: [melee('bite', 0.3, 0.42, [0, 50, 20, 30, 90], { range: [0, 48], cd: [1.5, 2.5], hit: { dmg: 1.1, knock: 40, stun: 0.5, snd: 'stab' } }),
       { clip: 'throw', range: [100, 300], dy: 30, cd: [4, 6], w: 0.6, act: { dur: 0.9, events: [evAt(0.45, e => shootStraight(e, { col: '#2a1a3a', dmg: 0.8, status: 'blind', speed: 220, glow: true }))] } }] },
-  zombieRed: { name: '赤色亡者', lvl: 18, hp: 12000, atk: 240, def: 360, w: 13, d: 12, h: 104, weight: 1.4, speed: 110, exp: 200, gold: [30, 60], shadowR: 18, pref: 45, clips: BEAST_CLIPS, scale: 1.05,
+  zombieRed: { name: '卡尔扎克', lvl: 18, hp: 12000, atk: 240, def: 360, w: 13, d: 12, h: 104, weight: 1.4, speed: 110, exp: 200, gold: [30, 60], shadowR: 18, pref: 45, clips: BEAST_CLIPS, scale: 1.05,
     model: () => buildZombie({ skin: '#b86a5a', hair: '#1a1a1a', eye: '#ffd23a', cloth: '#5a2a2a', pants: '#2a1a1a' }),
     attacks: [melee('bite', 0.3, 0.42, [0, 54, 22, 30, 95], { range: [0, 50], cd: [1.2, 2], hit: { dmg: 1.2, knock: 50, stun: 0.5, snd: 'stab', onHit: (a, t) => addStatus(t, 'bleed', 3, { dps: a.atk * 0.08, src: a }) } })] },
-  boneLord: { name: '骨狱领主·莫尔格', lvl: 22, hp: 220000, atk: 320, def: 520, w: 16, d: 13, h: 120, weight: 3, speed: 90, exp: 5200, gold: [360, 640], shadowR: 24, pref: 60, clips: BEAST_CLIPS, scale: 1.35, bars: 30,
+  boneLord: { name: '盗尸者 骨狱息', lvl: 22, hp: 220000, atk: 320, def: 520, w: 16, d: 13, h: 120, weight: 3, speed: 90, exp: 5200, gold: [360, 640], shadowR: 24, pref: 60, clips: BEAST_CLIPS, scale: 1.35, bars: 30,
     model: () => buildZombie({ skin: '#c8c8d0', hair: '#e8e8f0', eye: '#6ad0ff', cloth: '#1a1a2a', pants: '#1a1a2a' }),
     attacks: [
       melee('bite', 0.3, 0.42, [0, 60, 24, 30, 110], { range: [0, 56], cd: [1.2, 2], w: 2, hit: { dmg: 1.3, knock: 50, stun: 0.5, snd: 'stab', onHit: (a, t) => { const h = Math.round(a.hpMax * 0.004); a.hp = Math.min(a.hpMax, a.hp + h); addNumber(h, a.x, a.y, a.z, { heal: true }); } } }),
@@ -287,6 +287,34 @@ function frostPattern(e) {
 }
 
 /* ---- 手绘美术：怪物 → 骨骼素材（变种用换色 / 去掉武器区分；有素材时替换程序化造型） ---- */
+/* ---- 格兰之森后续地下城的怪物（在已有怪物的基础上改数值 / 招式，美术用换色区分） ---- */
+// 冰霜克拉赫的冰箭：以玩家为中心四个方向落下冰柱封路，被砸中会冻结
+function iceArrowRing(e) {
+  const p = game.player; if (!p) return;
+  const pts = [[-110, 0], [110, 0], [0, -60], [0, 60]];
+  pts.forEach(([dx, dy], i) => telegraph({ x: p.x + dx, y: clamp(p.y + dy, 8, DEPTH - 8), r: 42, dur: 1.3 + i * 0.05, kind: 'frost', col: '#bfefff', fire: (g) => { sfx.ice(); fxShock(g.x, g.y, 60, '#bfefff'); areaHit(e, g.x, g.y, 42, 0, { dmg: 1.2, stun: 0.3, knock: 40, hs: 0.06, snd: 'stab', col: '#dff6ff' }, { status: 'freeze', sdur: 1.2 }); } }));
+}
+Object.assign(MON, {
+  catCurse: { ...MON.catKing, name: '暗咒猫妖', lvl: 9, hp: 52000, atk: 230, def: 260, speed: 230, exp: 1200, gold: [110, 220], scale: 1.2, bars: 12, onDamaged: null,
+    attacks: [
+      melee('scratch', 0.3, 0.38, [0, 64, 24, 10, 90], { range: [0, 60], cd: [0.7, 1.2], w: 2, hit: { dmg: 1.0, knock: 70 } }),
+      { clip: 'pounce', range: [80, 400], dy: 50, cd: [1.6, 2.4], w: 1.6, act: pounceAct(1.3) },
+      melee('bite', 0.3, 0.42, [0, 56, 22, 20, 90], { range: [0, 55], cd: [4, 6], w: 0.8, hit: { dmg: 1.3, stun: 0.5, snd: 'stab', onHit: (a, t) => { addStatus(t, 'slow', 3, { src: a }); addStatus(t, 'blind', 2.5, { src: a }); } } })] },
+  goblinFrost: { ...MON.goblinBlue, name: '冰霜哥布林', lvl: 7, hp: 2800, atk: 210, def: 130, exp: 55,
+    onDamaged: (m, a, dmg, crit, h) => { if (a.team === 'p' && h.box && Math.abs(a.x - m.x) < 70 && Math.random() < 0.12) { addStatus(a, 'freeze', 0.8, { src: m }); fxText('寒冰甲', m.x, m.y, m.z + 10, { col: '#bfefff', size: 10 }); } } },
+  tauVanguard: { ...MON.tauSoldier, name: '牛头先锋', lvl: 6, hp: 7800, atk: 230, speed: 105, exp: 105,
+    attacks: [MON.tauSoldier.attacks[0], { ...MON.tauSoldier.attacks[1], cd: [3.5, 5.5], w: 1.3 }] },
+  tauGuard: { ...MON.tauSoldierBoss, name: '牛头护卫', lvl: 10, hp: 16000, atk: 240, def: 360, exp: 190, gold: [30, 60], scale: 1.05, bars: undefined,
+    onDamaged: (m, a, dmg, crit, h) => { if (!h.box && !m.act) { m.superArmor = Math.max(m.superArmor, 1.2); } } },   // 被远程攻击时自动霸体
+  frostMage: { ...MON.flameMage, name: '冰霜 克拉赫', lvl: 12, hp: 82000, atk: 250, def: 320, exp: 1700, gold: [150, 300], bars: 16, summons: ['goblinFrost'],
+    attacks: [
+      melee('atk1', 0.08, 0.16, [0, 60, 24, 10, 80], { range: [0, 60], cd: [1.2, 2], w: 1.5, hit: { dmg: 1.0, knock: 90, onHit: (a, t) => addStatus(t, 'slow', 2, { src: a }) } }),
+      { clip: 'cast', range: [0, 300], dy: 60, cd: [1.8, 2.6], w: 1.6, act: { dur: 1.0, events: [evAt(0.4, e => shootStraight(e, { col: '#bfefff', dmg: 1.0, status: 'slow', speed: 320, pierce: true, glow: true, z: 60 }))] } },
+      { clip: 'cast', range: [0, 800], dy: 800, cd: [6, 8], w: 1.5, act: { dur: 1.8, superArmor: true, events: [evAt(0.3, e => iceArrowRing(e))] } },
+      { clip: 'cast', range: [0, 800], dy: 800, cd: [14, 18], w: 0.6, act: { dur: 1.4, superArmor: true, events: [evAt(0.6, e => { fxText('来吧，冰霜的仆从们！', e.x, e.y, e.z + 30, { col: '#bfefff', size: 11 }); for (let i = 0; i < 3 && aliveAdds() < 4; i++) spawnMonster('goblinFrost', cam.x + rnd(80, WW - 80), rnd(20, DEPTH - 20), { lvl: e.lvl - 3, drop: true, mul: game.dungeon ? game.dungeon.D.hp : 1, atkMul: game.dungeon ? game.dungeon.D.atk : 1 }); })] } }] },
+  plague: { ...MON.goblinThrower, name: '普拉格', lvl: 15, hp: 6000, atk: 230, def: 200, speed: 110, exp: 180, gold: [30, 60],
+    attacks: [{ clip: 'throw', range: [100, 340], dy: 40, cd: [1.1, 1.8], w: 2, act: { dur: 0.9, events: [0.35, 0.55].map(t => evAt(t, e => throwRock(e))) } }, MON.goblinBomber.attacks[1]] },
+});
 const G = [45, 160];   // 哥布林绿色皮肤的色相区间
 const MON_ART = {
   goblin: ['goblin'], goblinThrower: ['goblin', { weapon: false, hue: -25, only: G }], goblinBlue: ['goblin', { weapon: false, hue: 115, only: G }], goblinRed: ['goblin', { weapon: false, hue: -95, sat: 1.2, only: G }],
@@ -295,6 +323,8 @@ const MON_ART = {
   catDemon: ['cat'], catGlow: ['cat', { hue: -140, sat: 1.9, bright: 1.08 }], catVenom: ['cat', { hue: 25, sat: 2.2, bright: 0.72 }], catKing: ['catKing'],
   tauSoldier: ['tau'], tauBeast: ['tau', { weapon: false, hue: -10, bright: 0.78 }], tauSoldierBoss: ['tauArmored'], tauKing: ['tauKing'],
   zombie: ['zombie'], zombieRed: ['zombie', { hue: -85, sat: 1.8, only: [40, 140] }], boneLord: ['boneLord'],
+  catCurse: ['catKing', { hue: 150, sat: 1.1, bright: 0.9 }], goblinFrost: ['goblin', { hue: 150, sat: 0.6, bright: 1.15, only: G }], tauVanguard: ['tau', { hue: 20, sat: 1.2, bright: 0.95 }],
+  tauGuard: ['tauArmored', { hue: -150, sat: 0.8 }], frostMage: ['flameMage', { hue: 180, sat: 0.9, bright: 1.05 }], plague: ['goblin', { weapon: false, hue: 0, sat: 0.15, bright: 0.55, only: G }],
 };
 MON.goblinChief.summons = ['goblin', 'goblinThrower']; MON.flameMage.summons = ['goblinBomber'];
 // 怪物 → 所需美术分包（进地下城前按需加载）

@@ -9,6 +9,7 @@ function h(tag, attrs = {}, ...kids) {
 }
 const statTxt = { atk: '攻击力', def: '防御力', hp: 'HP', mp: 'MP', str: '力量', crit: '暴击率', critDmg: '暴击伤害', spd: '速度' };
 const fmtStat = (k, v) => (k === 'crit' || k === 'critDmg' || k === 'spd') ? `+${(v * 100).toFixed(1)}%` : `+${fmtNum(v)}`;
+const shopStock = {};
 const menus = {
   stack: [], wins: {}, tip: null, sel: null,
   modal() { return this.stack.length > 0 || game.scene === 'title'; },
@@ -107,33 +108,32 @@ const menus = {
   },
 
   /* ---------------- 地下城选择 ---------------- */
-  w_dungeon() {
-    const list = Object.values(DUNGEONS);
-    let sel = this.dgSel && DUNGEONS[this.dgSel] ? DUNGEONS[this.dgSel] : list.filter(d => d.lvl[0] <= game.lvl).pop() || list[0];
+  w_dungeon(arg = {}) {
+    // 从区域地图的门口进入：只显示这一个地下城（官方做法）；arg.dungeon 缺省时显示当前场景的全部门
+    const S = SCENES[arg.scene || (world && world.S.id)] || {}, ids = arg.dungeon ? [arg.dungeon] : (S.gates || []).filter(gateVisible).map(g => g.dungeon);
+    let sel = DUNGEONS[ids.includes(this.dgSel) ? this.dgSel : ids[0]];
+    if (!sel) return null;
     let diff = Math.min(this.dgDiff ?? 0, save.data.unlocked[sel.id] || 0);
     const body = h('div', { class: 'row', style: 'align-items:stretch;gap:1em' });
-    const detail = h('div', { class: 'col', style: 'width:24em' });
+    const detail = h('div', { class: 'col', style: 'width:26em' });
     const render = () => {
       this.dgSel = sel.id; this.dgDiff = diff;
-      listEl.querySelectorAll('.dgi').forEach(e => e.classList.toggle('sel', e.dataset.id === sel.id));
-      const un = save.data.unlocked[sel.id] || 0, best = save.data.best[sel.id + ':' + diff];
+      if (listEl) listEl.querySelectorAll('.dgi').forEach(e => e.classList.toggle('sel', e.dataset.id === sel.id));
+      const un = save.data.unlocked[sel.id] || 0, best = save.data.best[sel.id + ':' + diff], low = game.lvl < sel.lvl[0] - 2;
       detail.replaceChildren(
-        h('div', { style: 'font-size:1.5em;font-weight:900;color:#ffe8a8' }, sel.name),
-        h('div', { class: 'dim small' }, `推荐等级 Lv.${sel.lvl[0]}~${sel.lvl[1]} · 领主：${MON[sel.boss.kind].name}（Lv.${sel.boss.lvl}）`),
+        h('div', { style: 'font-size:1.6em;font-weight:900;color:#ffe8a8' }, sel.name, sel.hidden ? h('span', { class: 'small', style: 'color:#e0a0ff;margin-left:.6em' }, '隐藏地下城') : null),
+        h('div', { class: 'dim small' }, `推荐等级 Lv.${sel.lvl[0]}~${sel.lvl[1]} · 领主：${MON[sel.boss.kind].name}（Lv.${sel.boss.lvl}）· 房间 ${sel.rooms}（最少消耗疲劳 ${sel.rooms}）`),
         h('div', { style: 'line-height:1.6;min-height:4.5em' }, sel.desc),
-        h('div', { class: 'diffs' }, DIFFS.map((D, i) => h('div', { class: 'diff' + (i === diff ? ' sel' : '') + (i > un ? ' lock' : ''), style: `color:${D.col}`, onclick: () => { diff = i; sfx.click(); render(); } }, D.name, i > un ? h('div', { class: 'small dim' }, '🔒') : null))),
-        h('div', { class: 'small dim' }, un < 3 ? `解锁下一难度：${['通关普通', '冒险评价 B 以上', '勇士评价 S 以上'][un]}` : '已解锁全部难度'),
+        low ? h('div', { class: 'small', style: 'color:#ff9a8a' }, `等级偏低（当前 Lv.${game.lvl}），怪物会非常强，建议先去前面的地下城练级`) : null,
+        h('div', { class: 'diffs' }, DIFFS.map((D, i) => h('div', { class: 'diff' + (i === diff ? ' sel' : '') + (i > un ? ' lock' : ''), style: `color:${D.col}`, onclick: () => { if (i > un) { sfx.error(); return; } diff = i; sfx.click(); render(); } }, D.name, i > un ? h('div', { class: 'small dim' }, '🔒') : null))),
+        h('div', { class: 'small dim' }, un < 3 ? `解锁下一难度：${['通关普通', '冒险难度评价 B 以上', '勇士难度评价 S 以上'][un]}` : '已解锁全部难度'),
         h('div', { class: 'row' }, h('span', {}, '最佳评价：'), h('b', { style: `color:${best ? RANK_COL[best] : '#777'};font-size:1.4em` }, best || '—'), h('span', { class: 'sp' }), h('span', { class: 'small' }, `疲劳 ${save.data.fatigue}/${FATIGUE_MAX}`)),
-        h('button', { class: 'btn big' + (save.data.fatigue < sel.rooms ? ' off' : ''), onclick: () => { sfx.click(); if (enterDungeon(sel.id, diff)) this.close('dungeon'); } }, '进入地下城'),
+        h('div', { class: 'row' }, h('button', { class: 'btn big' + (save.data.fatigue < sel.rooms ? ' off' : ''), onclick: () => { sfx.click(); if (enterDungeon(sel.id, diff)) this.close('dungeon'); } }, '进入地下城'), h('button', { class: 'btn', onclick: () => { sfx.click(); this.close('dungeon'); } }, '取消')),
       );
     };
-    const listEl = h('div', { class: 'dglist' }, list.map(d => {
-      const lock = d.lvl[0] > game.lvl + 3;
-      return h('div', { class: 'dgi' + (lock ? ' lock' : ''), 'data-id': d.id, onclick: () => { if (lock) { toastMsg(`需要等级 ${d.lvl[0] - 3} 以上`, '#ff6a6a'); sfx.error(); return; } sel = d; diff = Math.min(diff, save.data.unlocked[d.id] || 0); sfx.click(); render(); } },
-        h('b', {}, d.name), h('small', {}, `Lv.${d.lvl[0]}~${d.lvl[1]}${d.hidden ? ' · 隐藏地下城' : ''}`));
-    }));
-    body.append(listEl, detail); render();
-    return this.win(`${AREA.name} · 地下城选择`, body, { w: 44 });
+    const listEl = ids.length > 1 ? h('div', { class: 'dglist' }, ids.map(id => { const d = DUNGEONS[id]; return h('div', { class: 'dgi', 'data-id': d.id, onclick: () => { sel = d; diff = Math.min(diff, save.data.unlocked[d.id] || 0); sfx.click(); render(); } }, h('b', {}, d.name), h('small', {}, `Lv.${d.lvl[0]}~${d.lvl[1]}`)); })) : null;
+    if (listEl) body.append(listEl); body.append(detail); render();
+    return this.win(`${S.area || S.name || ''} · ${sel.name}`, body, { w: listEl ? 44 : 32 });
   },
 
   /* ---------------- 结算 + 翻牌 ---------------- */
@@ -235,7 +235,8 @@ const menus = {
   },
 
   /* ---------------- 商店（药剂师） ---------------- */
-  w_shop(npc) {
+  w_shop(arg) {
+    const npc = arg && arg.npc; if (arg && arg.shop === 'linus') return this.w_gear(npc);
     const goods = ['hpS', 'hpM', 'hpL', 'mpS', 'mpM', 'elixir', 'crystal', 'guard', 'coin'];
     const body = h('div', { class: 'col' },
       h('div', { class: 'dim' }, npc ? `“${pick(npc.lines)}”` : ''),
@@ -246,15 +247,15 @@ const menus = {
           h('button', { class: 'btn', onclick: () => buy(1) }, '购买'), h('button', { class: 'btn', onclick: () => buy(10) }, '×10'));
       })),
       h('div', { class: 'row' }, h('b', { class: 'gold' }, `金币 ${fmtNum(game.gold)} G`), h('span', { class: 'sp' }), h('button', { class: 'btn blue', onclick: () => this.open('inv') }, '打开背包（出售物品）')));
-    const el = this.win(npc ? npc.name : '商店', body, { w: 30 }); el._arg = npc; return el;
+    const el = this.win(npc ? npc.name : '商店', body, { w: 30 }); el._arg = arg; return el;
   },
   /* ---------------- 行商（装备） ---------------- */
   w_gear(npc) {
-    if (!town.stock || town.stockLvl !== game.lvl) { town.stockLvl = game.lvl; town.stock = Array.from({ length: 6 }, (_, i) => { const it = makeEquip(i === 0 ? 'weapon' : pick(SLOTS), clamp(game.lvl + rndi(0, 2), 1, 30), i < 2 ? 2 : 1); it.price = Math.round(it.price * 1.6); return it; }); }
+    if (!shopStock.stock || shopStock.stockLvl !== game.lvl) { shopStock.stockLvl = game.lvl; shopStock.stock = Array.from({ length: 6 }, (_, i) => { const it = makeEquip(i === 0 ? 'weapon' : pick(SLOTS), clamp(game.lvl + rndi(0, 2), 1, 30), i < 2 ? 2 : 1); it.price = Math.round(it.price * 1.6); return it; }); }
     const body = h('div', { class: 'col' },
       h('div', { class: 'dim' }, `“${pick(npc.lines)}”`),
-      h('div', { class: 'col' }, town.stock.map(it => h('div', { class: 'shopi' }, this.slotEl(it), h('div', { class: 'sp' }, h('b', { class: `r${it.rar}` }, it.name), h('div', { class: 'small dim' }, `${SLOT_NAME[it.slot]} · Lv.${it.lvl}`), h('div', { class: 'small gold' }, `${fmtNum(it.price)} G`)),
-        h('button', { class: 'btn', onclick: (ev) => { if (ev.currentTarget.classList.contains('off')) return; if (game.gold < it.price) { toastMsg('金币不足'); sfx.error(); return; } if (!inv.add(it)) { toastMsg('背包已满'); return; } ev.currentTarget.classList.add('off'); game.gold -= it.price; town.stock.splice(town.stock.indexOf(it), 1); sfx.coin(); save.write(); this.refresh('gear', npc); this.refresh('inv'); } }, '购买')))),
+      h('div', { class: 'col' }, shopStock.stock.map(it => h('div', { class: 'shopi' }, this.slotEl(it), h('div', { class: 'sp' }, h('b', { class: `r${it.rar}` }, it.name), h('div', { class: 'small dim' }, `${SLOT_NAME[it.slot]} · Lv.${it.lvl}`), h('div', { class: 'small gold' }, `${fmtNum(it.price)} G`)),
+        h('button', { class: 'btn', onclick: (ev) => { if (ev.currentTarget.classList.contains('off')) return; if (game.gold < it.price) { toastMsg('金币不足'); sfx.error(); return; } if (!inv.add(it)) { toastMsg('背包已满'); return; } ev.currentTarget.classList.add('off'); game.gold -= it.price; shopStock.stock.splice(shopStock.stock.indexOf(it), 1); sfx.coin(); save.write(); this.refresh('gear', npc); this.refresh('inv'); } }, '购买')))),
       h('div', { class: 'row' }, h('b', { class: 'gold' }, `金币 ${fmtNum(game.gold)} G`), h('span', { class: 'sp' }), h('button', { class: 'btn blue', onclick: () => this.open('inv') }, '打开背包')));
     const el = this.win(npc.name, body, { w: 32 }); el._arg = npc; return el;
   },

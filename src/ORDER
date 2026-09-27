@@ -26,12 +26,14 @@ engine/touch.js
 game/drops.js
 game/progress.js
 game/dungeon.js
-game/town.js
+game/world.js
 game/game.js
 ui/hud.js
 ui/menus.js
 game/items.js
 game/save.js
+content/classes/swordsman.js
+content/world/towns.js
 content/world/grand_flores.js
 content/sprites.js
 game/flow.js

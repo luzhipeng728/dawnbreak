@@ -40,7 +40,7 @@ function step(dt) {
     updateGroundFx(dt);
     updateDrops(dt);
     if (game.dungeon) game.dungeon.update(dt);
-  } else if (game.scene === 'town') { townUpdate(dt); }
+  } else if (game.scene === 'town') { worldUpdate(dt); }
   for (let i = game.timers.length - 1; i >= 0; i--) { const T = game.timers[i]; T.t -= dt * (game.slowmo ? 1 / 0.35 : 1); if (T.t <= 0) { game.timers.splice(i, 1); T.fn(); } }
   updateFx(dt);
   if (game.comboT > 0) { game.comboT -= dt; if (game.comboT <= 0) { game.combo = 0; game.comboDmg = 0; } }
@@ -73,7 +73,7 @@ function renderWorld() {
     const im = IMG.title, z = 1.04 + Math.sin(performance.now() / 9000) * 0.03, w = WW * z, h = WH * z;
     c.drawImage(im, (WW - w) / 2, (WH - h) / 2, w, h); return;
   }
-  if (game.scene === 'town') { renderTown(c); return; }
+  if (game.scene === 'town') { renderScene(c); return; }
   const R = game.room; if (!R) { c.fillStyle = '#000'; c.fillRect(0, 0, WW, WH); return; }
   drawRoomBack(c, R);
   if (game.dungeon) game.dungeon.drawDoors(c);

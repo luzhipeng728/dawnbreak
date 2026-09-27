@@ -137,7 +137,7 @@ SKILLS.g_awaken = { name: '弹雨·终焉', cls: 'gun', lvReq: 8, maxLv: 3, mp: 
       cam.flash = 0.3; cam.flashCol = '#fff0c0'; cam.shake = 12; sfx.boom(1.3); e.drawOpts = {};
       for (const t of ents) if (hittable(e, t) && Math.abs(t.x - (cam.x + WW / 2)) < WW / 2 + 20) { meteorImpact(t, 0.5); applyHit(e, t, { dmg: skillDmg(6, 2, lv), down: true, knock: 240, hs: 0.15, big: 2, col: '#ffd070', critBonus: 0.2 }, { proj: true }); }
     })] }) };
-CLASSES.gun = { name: '枪手', hp0: 1650, hpPer: 135, mp0: 800, mpPer: 45, atk0: 470, atkPer: 56, str0: 6, strPer: 2, def0: 260, defPer: 25, crit: 0.1, speed: 172, runSpeed: 305,
+CLASSES.gun = { name: '神枪手', hp0: 1650, hpPer: 135, mp0: 800, mpPer: 45, atk0: 470, atkPer: 56, str0: 6, strPer: 2, def0: 260, defPer: 25, crit: 0.1, speed: 172, runSpeed: 305,
   desc: '手持双左轮的远程射手，子弹能把敌人一直托在空中，踢技与手雷补足近身。', model: () => buildSwordsman(PAL_GUN, { weapon: 'gun', hair: 'long', hat: 'cap', scarf: true, pauldron: false, coatTail: true }),
   acts: GUN_ACTS, slashCol: '#ffd070',
   skills: ['g_kick', 'g_spin', 'g_slide', 'g_rapid', 'g_grenade', 'g_buff', 'g_hawk', 'g_head', 'g_gatling', 'g_awaken'],

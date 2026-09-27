@@ -157,6 +157,62 @@ def jobs(phase):
                 'mage': 'raising the crystal staff high while fire, ice and lightning swirl around her in a magic circle'}
         for n, act in acts.items():
             L.append(J(f'src/cutin_{n}.png', f'Using this exact chibi character (same design, same colors, same cute art style), draw a dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {act}. Plain pure white background, no text.', '1536x1024', model='gpt-image-2.5-sunburst', ref=f'src/{n}_ref.png'))
+    if phase == 'world':
+        BLD = f'{STYLE}. Isolated single building seen from the front at a slight top-down angle like a building in a 2D side-scrolling RPG town, the whole building visible from the ground to the roof, flat ground line at the bottom. Plain pure white background, no people, no text, no signs with letters.'
+        for n, d in [
+            ('b_inn', 'Seria\'s cozy elven inn: a large two-storey wooden inn built around the trunk of a giant old tree, green leafy roof, warm lantern light in round windows, wooden porch and door, flower pots'),
+            ('b_forge', 'Linus\'s blacksmith forge: a sturdy stone and timber smithy with a glowing furnace, an anvil and hanging swords, axes and shields on the wall outside, a chimney with smoke, wooden awning'),
+            ('b_elfhouse', 'a small elven wooden cottage with a curved leafy green roof, round door and round windows, vines and flowers'),
+            ('b_cathedral', 'a grand white stone cathedral with tall spires, blue roofs, a big stained-glass rose window and golden cross ornaments, wide stone steps'),
+            ('b_workshop', 'Kiri\'s futuristic gunsmith and enhancement workshop: a metal and brick building with brass pipes, gears, a glowing blue enhancement machine visible through a big window, a sign shaped like a revolver'),
+            ('b_boutique', 'a fashionable costume boutique with a pink striped awning, big display windows with colorful dresses and hats on mannequins'),
+            ('b_palace', 'the gate of a royal palace: tall white stone walls, a huge ornate golden gate, blue banners with a crown emblem, two towers'),
+            ('b_dojo', 'a traditional eastern martial arts dojo with a curved dark tiled roof, red wooden pillars and paper sliding doors'),
+            ('b_academy', 'a dark elf magic academy: a tall slender violet stone tower with glowing purple crystals, floating runes and a pointed roof'),
+            ('b_harbor', 'a seaside harbor warehouse with wooden docks, crates, barrels, ropes and a small lighthouse beside it'),
+            ('b_gate', 'an ancient stone dungeon gate: a massive carved stone archway with moss and runes, a swirling glowing blue magic portal inside the arch, two stone pillars with small torches'),
+            ('b_gate_hidden', 'an ancient cursed stone dungeon gate: a cracked dark stone archway with skulls and chains, a swirling glowing purple magic portal inside the arch'),
+            ('b_signpost', 'a wooden direction signpost with two blank arrow-shaped boards pointing left and right, on a small grassy base'),
+        ]:
+            L.append(J(f'src/world/{n}.png', f'{d}. {BLD}', '1536x1024'))
+        NPC_TAIL2 = f'Art style: {CHIBI}. Standing in a relaxed pose in 3/4 view facing RIGHT. Plain pure white background, isolated single character, full body visible, no ground shadow, no text.'
+        for n, d in [
+            ('npc_seria', 'Seria Kirmin, a gentle young elf girl with very long flowing golden-blonde hair, pointed elf ears, big emerald eyes, a green and white elven dress with a leaf-shaped hair ornament, kind smile, hands clasped in front'),
+            ('npc_linus', 'Linus, a burly middle-aged blacksmith with short brown hair, thick mustache and beard, muscular arms, a brown leather apron over a white shirt, holding a big blacksmith hammer on his shoulder'),
+            ('npc_kiri', 'Kiri, a cheerful young woman gunsmith from the Sky Realm with short pink hair, big goggles on her forehead, a white and red futuristic coat, a tool belt, holding a wrench, playful wink'),
+            ('npc_gsd', 'G.S.D, an old blind sword master with long white hair and a long white beard, eyes closed, wearing a dark blue traditional robe, leaning calmly on a sheathed katana used like a cane'),
+            ('npc_sharan', 'Sharan, an elegant dark elf sorceress with dark tan skin, long silver hair, pointed ears, golden eyes, a deep purple and gold mage robe with a high collar, holding a glowing crystal staff'),
+            ('npc_grandis', 'Grandis, a serene high priestess with long light-blue hair, a white and gold holy robe with a tall mitre hat, holding a golden holy book'),
+            ('npc_fengzhen', 'Feng Zhen, an old martial arts grandmaster with a long white mustache and topknot, a simple grey kung-fu uniform with a black sash, arms crossed confidently'),
+            ('npc_paris', 'Paris, a stylish young fashion boutique owner with wavy brown hair in a bun, a chic purple dress with a measuring tape around her neck, holding a pair of scissors'),
+            ('npc_skadi', 'Queen Skadi of Hendon Myre, a graceful young queen with long silver-white hair, a small golden crown, an elegant white and blue royal gown with a cape'),
+            ('npc_roget', 'Roget, a friendly old harbor master with a white captain beard, a navy captain hat and coat, holding a pipe'),
+        ]:
+            L.append(J(f'src/world/{n}.png', f'Full-body NPC character illustration for a 2D side-scrolling fantasy RPG town. {d}. {NPC_TAIL2}', '1024x1536', model='gpt-image-2.5-sunburst'))
+        for n, d in [
+            ('elvenguard', ('A peaceful elven frontier village at the edge of an enchanted forest at morning: wooden elven houses with leafy roofs among giant ancient trees, rope bridges between the trees, soft golden sunlight, distant misty forest and mountains, flower fields.',
+                            'a village dirt road with neat stepping stones, short grass, small flowers and fallen leaves, bright morning light',
+                            'a low wooden fence with flower planters, bushes, barrels and wooden crates')),
+            ('westcoast', ('A bright seaside port town on the west coast: whitewashed stone houses with blue roofs on a hill, sailing ships in the harbor, seagulls, sparkling blue sea and sky with white clouds.',
+                           'a wooden harbor boardwalk made of long planks with some rope coils, a few seashells and small puddles, bright sunny light',
+                           'a low stone sea wall with wooden posts, ropes, barrels, fishing nets and potted plants')),
+        ]:
+            BG[n] = d
+            L.append(J(f'src/bg/{n}_far.png', far_prompt(n), '3840x2160'))
+            L.append(J(f'src/bg/{n}_floor.png', floor_prompt(n), '3840x2160'))
+    if phase == 'world3':
+        BG['frozenWoods'] = ('A frozen enchanted forest in deep winter: snow-covered ancient trees with icicles, frozen blue mist, pale blue light, ice crystals glowing faintly, a quiet cold atmosphere.',
+                             'a snowy forest floor: packed snow with footprints, patches of blue ice, frozen roots, small ice crystals and scattered pine needles, cold blue light',
+                             'snow-covered bushes, frozen rocks, icicle-covered roots and small glowing ice crystals')
+        L.append(J('src/bg/frozenWoods_far.png', far_prompt('frozenWoods'), '3840x2160'))
+        L.append(J('src/bg/frozenWoods_floor.png', floor_prompt('frozenWoods'), '3840x2160'))
+    if phase == 'world4':
+        BG['frozenWoods'] = ('', '', 'snow-covered bushes, frozen rocks, icicle-covered roots and small glowing ice crystals')
+        L.append(J('src/bg/frozenWoods_edge.png', edge_prompt('frozenWoods'), '3840x2160', ref='src/bg/frozenWoods_far.png'))
+    if phase == 'world2':   # 交界带要以远景为参考，等 world 阶段出完再跑
+        for n in ('elvenguard', 'westcoast'):
+            BG[n] = BG.get(n) or ('', '', {'elvenguard': 'a low wooden fence with flower planters, bushes, barrels and wooden crates', 'westcoast': 'a low stone sea wall with wooden posts, ropes, barrels, fishing nets and potted plants'}[n])
+            L.append(J(f'src/bg/{n}_edge.png', edge_prompt(n), '3840x2160', ref=f'src/bg/{n}_far.png'))
     if phase == 'fx':
         FXS = 'cute cartoon 2D mobile game VFX sprite, hand-painted, bold clean shapes, vibrant saturated colors, polished'
         GLOW = f'{FXS}. On a pure solid black background, a single isolated effect centered with empty black margin around it, nothing else, no text, no border.'

@@ -109,7 +109,7 @@ const duel = {
       const k = this.state === 'result' ? 1 : clamp(this.msgT / this.msgDur, 0, 1), pop = 1 + Math.max(0, k - 0.8) * 2;
       c.save(); c.globalAlpha = Math.min(1, k * 4); c.font = `italic 900 ${Math.round(56 * pop)}px "Arial Black",sans-serif`; c.lineWidth = 8; c.strokeStyle = '#1a0806';
       c.strokeText(this.msg, WW / 2, 230); const g = c.createLinearGradient(0, 190, 0, 240); g.addColorStop(0, '#fff6c0'); g.addColorStop(1, '#ff9a2a'); c.fillStyle = g; c.fillText(this.msg, WW / 2, 230);
-      if (this.state === 'result') { c.font = 'bold 16px "PingFang SC",sans-serif'; c.lineWidth = 4; const s = `${this.wins[0]} : ${this.wins[1]}　按 X 再来一局`; c.strokeText(s, WW / 2, 268); c.fillStyle = '#fff'; c.fillText(s, WW / 2, 268); }
+      if (this.state === 'result') { c.font = 'bold 16px "PingFang SC",sans-serif'; c.lineWidth = 4; const s = `${this.wins[0]} : ${this.wins[1]}　按 ${keyName('attack')} 再来一局 · Esc 离开决斗场`; c.strokeText(s, WW / 2, 268); c.fillStyle = '#fff'; c.fillText(s, WW / 2, 268); }
       c.restore();
     }
   },

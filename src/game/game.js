@@ -27,7 +27,7 @@ function step(dt) {
     if (!p.dead && !game.pvp && game.t - (p.lastHurtT || -99) > 4 && p.hp < p.hpMax) p.hp = Math.min(p.hpMax, p.hp + p.hpMax * 0.015 * dt);
     if (!p.dead) { p.mp = Math.min(p.mpMax, p.mp + p.mpMax * 0.02 * dt * (p.mpRegen || 1) * (1 + (p.buffMpr || 0)) * (game.scene === 'town' ? 5 : 1)); }
     if (inv.potCd > 0) inv.potCd -= dt;
-    if (p.weak && (game.weakChk = (game.weakChk || 0) + dt) > 1) { game.weakChk = 0; if (!(save.data.weak > Date.now())) { recalcStats(p); toastMsg('虚弱状态解除了', '#8aff9a'); } }
+    if (p.weak && (game.weakChk = (game.weakChk || 0) + dt) > 1) { game.weakChk = 0; if (!(save.data.weak > Date.now())) { recalcStats(p); toastMsg('虚弱状态解除了', '#8aff9a', 'log'); } }
     if (game.scene !== 'town' && !p.dead) for (let i = 0; i < 6; i++) if (input.hit('i' + i) && inv.quick[i]) inv.use(inv.quick[i]);
     if (p.buffs) for (const k in p.buffs) { p.buffs[k].t -= dt; if (p.buffs[k].t <= 0) delete p.buffs[k]; }
     applyBuffs(p);

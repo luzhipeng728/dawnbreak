@@ -20,6 +20,7 @@ PROP_NAMES = {
                     'p_crystal', 'p_books', 'p_cauldron', 'p_telescope', 'p_blackcat', 'p_magiclamp', 'p_blueflower', 'p_chest'],
 }
 PROP_H = 280   # 道具存图的最大高度（显示时一般只有 30~150 像素高）
+WHITE_OK = {'b_skystair', 'g_dragon_tower', 'g_lord_palace', 'g_floating_castle'}
 only = sys.argv[1:]
 
 def save(im, n):
@@ -51,7 +52,9 @@ for f in sorted(os.listdir(src)):
             if cell.height > PROP_H: cell = cell.resize((round(cell.width * PROP_H / cell.height), PROP_H), Image.LANCZOS)
             save(cell, pn)
         continue
-    im = fill_holes(remove_bg(im), min_area=400, thr=250)
+    # 自带大片白色的图（云朵、白金色传送门）：只去掉和边缘相连的纯白，不补洞，否则云和门芯会被挖空
+    if n in WHITE_OK: im = remove_bg(im, tol=6)
+    else: im = fill_holes(remove_bg(im), min_area=400, thr=250)
     if n == 'b_signpost': im = keep_largest_left(im)
     im = im.crop(im.getbbox())
     H = 560 if n.startswith(('b_', 'g_')) else 300

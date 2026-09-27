@@ -42,7 +42,7 @@ for (const id of info.scenes) {
 }
 
 console.log('· 走遍所有出口并走回来');
-const edges = await page.evaluate(() => { const L = []; for (const id in SCENES) for (const ex of SCENES[id].exits) L.push({ from: id, to: ex.to || null, side: ex.side, x: ex.x ?? null, locked: ex.locked || null, minLv: ex.minLv || 0 }); return L; });
+const edges = await page.evaluate(() => { const L = []; for (const id in SCENES) for (const ex of SCENES[id].exits) L.push({ from: id, to: ex.to || null, side: ex.side, x: ex.x ?? null, locked: ex.locked || (SCENES[ex.to] ? null : `${ex.to}（还没加载，按未开放处理）`), minLv: SCENES[ex.to] ? ex.minLv || 0 : 0 }); return L; });
 // 按出口的方向把玩家放到出口前，按住对应方向键走过去
 async function walkThrough(sceneId, ex) {
   await page.evaluate(([ex]) => {

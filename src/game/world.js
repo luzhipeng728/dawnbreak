@@ -12,6 +12,7 @@
        exits [{ side, to, x?, minLv?, label?, locked? }]：side = left / right（走到场景边缘）、up（走进后墙的门 / 路口）、down（走到场景下缘）
          双向连接：两边场景都要写一个指向对方的出口；从某个出口进来时，玩家站在“指回来源场景”的那个出口旁
          locked：写一句提示文字 = 还没开放的路（只提示，不切换场景）；minLv：等级不够时不让过
+         optional：目标场景由别的内容包提供，没加载时当作未开放（校验不报错；加载了就照常检查双向连接）
        gates [{ dungeon, x }]：地下城门（门的美术见 grand_flores.js 的 GATE_ART）
    - defineNpc(id, def)：NPC = { name, title, art, h, services, lines, greet? }（services 见 ui/npc.js 的 NPC_SERVICES）
    - defineDungeon(id, def)：地下城（见 grand_flores.js）
@@ -383,7 +384,7 @@ function renderScene(c) {
   drawRoomFore(c, R);
 }
 const exitLabel = (S, ex) => { const T = SCENES[ex.to]; if (ex.label) return ex.label; if (!T) return '？？？'; return T.name === S.name ? T.area || T.name : T.name; };
-const exitSub = ex => ex.locked ? '未开放' : ex.minLv && game.lvl < ex.minLv ? `Lv.${ex.minLv} 可进入` : '';
+const exitSub = ex => ex.locked || !SCENES[ex.to] ? '未开放' : ex.minLv && game.lvl < ex.minLv ? `Lv.${ex.minLv} 可进入` : '';
 // 后墙的门 / 路口（up）与场景下缘的路口（down）：地上的光圈 + 箭头 + 名牌
 function drawDoorExit(c, S, ex) {
   const X = sx(ex.x), up = ex.side === 'up', Y = sy(up ? 4 : DEPTH - 2, 0); if (X < -120 || X > WW + 120) return;
@@ -515,6 +516,7 @@ function validateWorld() {
       if ((ex.side === 'up' || ex.side === 'down') && typeof ex.x !== 'number') err(`${at} 的 ${ex.side} 出口缺少 x`);
       if (ex.locked) continue;
       const T = SCENES[ex.to];
+      if (!T && ex.optional) continue;   // 目标场景由别的内容包提供（还没合进来时当作未开放）
       if (!T) { err(`${at} 的出口指向不存在的场景 ${ex.to}`); continue; }
       if (!T.exits.some(e => e.to === id && !e.locked)) err(`${at} → ${ex.to} 是单向的：${ex.to} 没有回到 ${id} 的出口`);
     }

@@ -72,6 +72,7 @@ BLD2 = {
     'b_board': 'a wooden town notice board on two posts with a small shingled roof, several blank paper notices and a map pinned on it (no writing), a small lantern hanging on the side',
     'b_arena': 'the entrance of a fighting arena: a round white stone colosseum gate with red and gold banners, crossed swords emblem above the door, torches',
     'b_well': 'an old stone water well with a wooden roof, a rope and a bucket, flowers around the base',
+    'b_skystair': 'the entrance to the sky castle: a white marble archway at the bottom with two blue banners and glowing crystal lanterns, behind it a long white stone stairway winding upward into a pile of fluffy white clouds, a small silhouette of a floating castle on top of the clouds (the whole thing is one tall narrow structure, nothing else around it)',
 }
 # 各地下城的门（官方区域地图的门各有特色：洛兰是林间木门、幽暗密林是扭曲枯树门、雷鸣废墟是石门、格拉卡是牛头人营地木门……）
 GATES = {
@@ -85,6 +86,13 @@ GATES = {
     'g_dark_thunder': 'a cursed crypt gate: a gothic black stone arch with skulls and bones, iron chains, cold blue ghost flames in braziers, a pale ghostly blue-white portal',
     'g_graca': 'a minotaur war camp gate: a wooden palisade gate of sharpened log stakes with a huge bull skull with horns mounted on top, tribal red banners and torches, a warm orange portal',
     'g_blazing_graca': 'a burning minotaur camp gate: a scorched wooden palisade gate on fire with a charred bull skull on top, glowing embers and small flames, a fiery red portal',
+    # 天空之城（地下城内容组的 sky_castle 区域地图用）
+    'g_dragon_tower': 'a sky tower gate: a tall white stone tower doorway with two coiled teal-green wyvern statues on both sides, wisps of cloud wrapped around the top, a warm orange portal',
+    'g_puppet_hall': 'a palace entrance hall gate: a grand ornate palace doorway with a cold-faced puppet doll statue standing on each side, puppet strings hanging down from the lintel, a purple portal',
+    'g_golem_tower': 'a golem tower gate: a massive rough boulder tower doorway whose frame is held up by two huge stone golem arms, glowing golden runes carved into the stones, a golden yellow portal',
+    'g_dark_corridor': 'a dark corridor gate: a pitch-black gothic arched corridor entrance with an armored knight statue on each side, dark red light glowing from the gaps of their helmets, a dark crimson portal',
+    'g_lord_palace': 'a castle lord palace gate: a magnificent gold and white palace gate with a radiant halo and sun crest on top, a dazzling white-gold portal',
+    'g_floating_castle': 'a floating castle gate: a ruined broken castle gate floating on a small cloud island with chunks of rock drifting below it, a huge carved eye emblem above the door, a magenta portal',
 }
 # 小道具：一张 4×4 的道具表（切开后当城镇装饰）
 PROPS = {

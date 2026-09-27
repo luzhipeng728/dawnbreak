@@ -28,27 +28,27 @@ defineDungeon('dark_thunder', { name: '暗黑雷鸣废墟', lvl: [14, 20], theme
 
 /* ---- 各地下城的门（官方区域地图上每个门都有自己的样子）：art 美术、portal 传送门在图里的位置 [cx, cy, rx, ry]（0~1）、col 传送门光色、h 显示高度 ---- */
 const GATE_ART = {
-  lorien: { art: 'world/g_lorien', portal: [0.5, 0.55, 0.17, 0.3], col: '120,230,200' },
-  lorien_deep: { art: 'world/g_lorien_deep', portal: [0.5, 0.56, 0.17, 0.3], col: '100,220,220' },
-  dark_woods: { art: 'world/g_dark_woods', portal: [0.49, 0.55, 0.16, 0.33], col: '190,120,255' },
-  dark_woods_deep: { art: 'world/g_dark_woods_deep', portal: [0.5, 0.56, 0.16, 0.3], col: '255,110,220' },
-  frozen_woods: { art: 'world/g_frozen_woods', portal: [0.5, 0.56, 0.16, 0.3], col: '170,230,255' },
-  thunder_ruins: { art: 'world/g_thunder_ruins', portal: [0.5, 0.56, 0.16, 0.3], col: '140,200,255' },
-  venom_ruins: { art: 'world/g_venom_ruins', portal: [0.5, 0.56, 0.16, 0.3], col: '150,255,110' },
-  dark_thunder: { art: 'world/g_dark_thunder', portal: [0.5, 0.56, 0.16, 0.3], col: '180,220,255' },
-  graca: { art: 'world/g_graca', portal: [0.5, 0.6, 0.16, 0.28], col: '255,180,90' },
-  blazing_graca: { art: 'world/g_blazing_graca', portal: [0.5, 0.6, 0.16, 0.28], col: '255,110,60' },
+  lorien: { art: 'world/g_lorien', portal: [0.49, 0.56, 0.15, 0.28], col: '120,230,200' },
+  lorien_deep: { art: 'world/g_lorien_deep', portal: [0.52, 0.6, 0.15, 0.26], col: '100,220,220' },
+  dark_woods: { art: 'world/g_dark_woods', portal: [0.49, 0.56, 0.15, 0.3], col: '190,120,255' },
+  dark_woods_deep: { art: 'world/g_dark_woods_deep', portal: [0.5, 0.58, 0.14, 0.27], col: '255,110,220' },
+  frozen_woods: { art: 'world/g_frozen_woods', portal: [0.5, 0.55, 0.16, 0.3], col: '170,230,255' },
+  thunder_ruins: { art: 'world/g_thunder_ruins', portal: [0.5, 0.57, 0.17, 0.29], col: '140,200,255' },
+  venom_ruins: { art: 'world/g_venom_ruins', portal: [0.49, 0.57, 0.14, 0.3], col: '150,255,110' },
+  dark_thunder: { art: 'world/g_dark_thunder', portal: [0.5, 0.58, 0.16, 0.27], col: '180,220,255' },
+  graca: { art: 'world/g_graca', portal: [0.49, 0.64, 0.14, 0.24], col: '255,180,90' },
+  blazing_graca: { art: 'world/g_blazing_graca', portal: [0.49, 0.64, 0.14, 0.24], col: '255,110,60' },
 };
 /* ---- 区域地图：道路两旁是各个地下城的门；离城镇越近的门等级越低 ---- */
-defineScene('gf_lorien', { name: '洛兰', area: '洛兰', kind: 'field', width: 2200, theme: 'forest', bgm: 'field', ambient: 'leaves', map: [88, 34],
+defineScene('gf_lorien', { name: '洛兰', area: '洛兰', kind: 'field', width: 2200, theme: 'forest', bgm: 'field', ambient: 'leaves', map: [88, 40],
   exits: [{ side: 'left', to: 'elvenguard' }, { side: 'right', label: '比尔马克帝国试验场', locked: '比尔马克帝国试验场（Lv.50 隐藏地下城）还没有开放' }],
   gates: [{ dungeon: 'lorien', x: 640 }, { dungeon: 'lorien_deep', x: 1440 }] });
-defineScene('gf_forest', { name: '格兰之森', area: '幽暗密林', kind: 'field', width: 2700, theme: 'forestDark', bgm: 'field', map: [32, 34],
+defineScene('gf_forest', { name: '格兰之森', area: '幽暗密林', kind: 'field', width: 2700, theme: 'forestDark', bgm: 'field', map: [32, 40],
   exits: [{ side: 'right', to: 'hm_plaza' }, { side: 'left', to: 'gf_thunder' }],
   gates: [{ dungeon: 'dark_woods', x: 2060 }, { dungeon: 'dark_woods_deep', x: 1360 }, { dungeon: 'frozen_woods', x: 640 }] });
-defineScene('gf_thunder', { name: '格兰之森', area: '雷鸣废墟', kind: 'field', width: 2700, theme: 'ruins', bgm: 'field', map: [20, 44],
+defineScene('gf_thunder', { name: '格兰之森', area: '雷鸣废墟', kind: 'field', width: 2700, theme: 'ruins', bgm: 'field', map: [20, 50],
   exits: [{ side: 'right', to: 'gf_forest' }, { side: 'left', to: 'gf_graca' }],
   gates: [{ dungeon: 'thunder_ruins', x: 2060 }, { dungeon: 'venom_ruins', x: 1360 }, { dungeon: 'dark_thunder', x: 640 }] });
-defineScene('gf_graca', { name: '格兰之森', area: '格拉卡', kind: 'field', width: 2200, theme: 'camp', bgm: 'field', map: [8, 54],
+defineScene('gf_graca', { name: '格兰之森', area: '格拉卡', kind: 'field', width: 2200, theme: 'camp', bgm: 'field', map: [8, 60],
   exits: [{ side: 'right', to: 'gf_thunder' }],
   gates: [{ dungeon: 'graca', x: 1500 }, { dungeon: 'blazing_graca', x: 720 }] });

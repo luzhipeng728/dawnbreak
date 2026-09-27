@@ -6,8 +6,8 @@
        通过区域移动 NPC 打开（{ travel: true }）→ 任何地方都能传；按 N 打开 → 只有站在城镇里时能传
    ===================================================================== */
 NPC_SERVICES.travel ??= { label: '区域移动', run: N => menus.open('worldmap', { travel: true, npc: N }) };
-const WORLDMAP_H = 62;   // 地图坐标的纵向范围（横向 0~100）
-const REGION_COL = { 艾尔文防线: '#6fbf5a', 赫顿玛尔: '#e6c35c', 西海岸: '#5ab4e6', 洛兰: '#4fae8a', 格兰之森: '#8a6ad8' };
+const WORLDMAP_H = 68;   // 地图坐标的纵向范围（横向 0~100）
+const REGION_COL = { 艾尔文防线: '#6fbf5a', 赫顿玛尔: '#e6c35c', 西海岸: '#5ab4e6', 洛兰: '#4fae8a', 格兰之森: '#8a6ad8', 天空之城: '#8ad0ff' };
 // 从 from 出发，按出口的等级要求 / 是否开放，能走到的场景
 function reachableScenes(from) {
   const ok = new Set([from]), q = [from];
@@ -36,7 +36,8 @@ Object.assign(menus, {
     for (const id in SCENES) { const S = SCENES[id]; if (S.map) (groups[S.name] ??= []).push(S); }
     for (const name in groups) {
       const L = groups[name].map(P), x0 = Math.min(...L.map(p => p[0])), x1 = Math.max(...L.map(p => p[0])), y0 = Math.min(...L.map(p => p[1])), y1 = Math.max(...L.map(p => p[1]));
-      map.append(h('div', { class: 'wm-region', style: `left:${x0 - 6}%;top:${y0 - 11}%;width:${x1 - x0 + 12}%;height:${y1 - y0 + 22}%;--c:${REGION_COL[name] || '#c8b890'}` }, h('span', {}, name)));
+      const top = Math.max(0, y0 - 11);
+      map.append(h('div', { class: 'wm-region', style: `left:${x0 - 6}%;top:${top}%;width:${x1 - x0 + 12}%;height:${y1 + 11 - top}%;--c:${REGION_COL[name] || '#c8b890'}` }, h('span', {}, name)));
     }
     // 道路
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); svg.setAttribute('class', 'wm-roads'); svg.setAttribute('viewBox', '0 0 100 100'); svg.setAttribute('preserveAspectRatio', 'none');
@@ -88,7 +89,7 @@ Object.assign(menus, {
 });
 addStyle(`
 .wm{display:flex;gap:.8em;align-items:stretch}
-.wm-map{position:relative;flex:1;aspect-ratio:100/62;border-radius:.4em;overflow:hidden;border:.12em solid #8a6a3a;
+.wm-map{position:relative;flex:1;aspect-ratio:100/68;border-radius:.4em;overflow:hidden;border:.12em solid #8a6a3a;
   background:radial-gradient(ellipse at 30% 30%,#f6e8c4,#e4c98e 70%,#c9a868);box-shadow:inset 0 0 2.4em rgba(90,60,20,.55)}
 .wm-region{position:absolute;border-radius:50%;background:radial-gradient(ellipse,color-mix(in srgb,var(--c) 42%,transparent),transparent 72%)}
 .wm-region span{position:absolute;left:50%;top:.2em;transform:translateX(-50%);font-weight:900;font-size:.95em;color:#4a3214;letter-spacing:.2em;text-shadow:0 0 .3em #fff6d8;white-space:nowrap}

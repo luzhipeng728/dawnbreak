@@ -7,8 +7,8 @@ const game = {
   skillLv: { upslash: 1, triple: 1, wave: 1, slam: 1, focus: 1, iai: 1, spin: 1, awaken: 1, flurry: 1, rise: 1 },
   combo: 0, comboT: 0, maxCombo: 0, comboDmg: 0, timeStop: 0, cutin: null, maxAttackers: 2,
   gold: 0, exp: 0, lvl: 1,
-  onPlayerHit(t, dmg, crit, counter, back) { this.combo++; this.comboT = 1.6; this.comboDmg += dmg; this.maxCombo = Math.max(this.maxCombo, this.combo); if (this.dungeon) this.dungeon.onHit(t, dmg, counter, back); },
-  onPlayerHurt(p, dmg, a) { p.lastHurtT = this.t; if (!(a && a.fighter)) p.invul = Math.max(p.invul, 0.2); if (this.dungeon) this.dungeon.hurt++; },   // 被怪物打中给 0.2 秒保护；决斗场里不给（否则连不上招）
+  onPlayerHit(t, dmg, crit, counter, back) { this.combo++; this.comboT = 1.6; this.comboDmg += dmg; this.maxCombo = Math.max(this.maxCombo, this.combo); if (this.dungeon) this.dungeon.onHit(t, dmg, counter, back); bus.emit('playerHit', { target: t, dmg, crit, counter, back }); },
+  onPlayerHurt(p, dmg, a) { p.lastHurtT = this.t; if (!(a && a.fighter)) p.invul = Math.max(p.invul, 0.2); if (this.dungeon) this.dungeon.hurt++; bus.emit('playerHurt', { dmg }); },   // 被怪物打中给 0.2 秒保护；决斗场里不给（否则连不上招）
   onKill(t, a) { if (this.duel) { this.duel.onKill(t, a); return; } if (t.team === 'p') return; for (const e of ents) if (e !== t && !e.dead && e.def_ && e.def_.coward) cowardDrop(e); if (this.dungeon) this.dungeon.onKill(t, a); else { spawnCoins(t, rndi(t.gold ? t.gold[0] : 5, t.gold ? t.gold[1] : 15)); } },
   onSkill(id) { },
   timers: [],
@@ -67,6 +67,7 @@ function updateCamera(dt) {
     cam.x = clamp(cam.x, R.x0, Math.max(R.x0, R.x1 - WW));
   }
   if (cam.shake > 0) { cam.shx = Math.round(rnd(-1, 1) * cam.shake); cam.shy = Math.round(rnd(-1, 1) * cam.shake * 0.6); cam.shake = Math.max(0, cam.shake - dt * 40); } else { cam.shx = cam.shy = 0; }
+  if (typeof uiPref === 'function' && !uiPref('shake')) cam.shx = cam.shy = 0;   // 设置里关掉了屏幕震动
   if (cam.flash > 0) cam.flash -= dt;
 }
 function renderWorld() {

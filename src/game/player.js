@@ -191,7 +191,7 @@ function trySkill(p) {
       const ok = key === 'cmdB' ? kk === 'buff' : key === 'cmd' ? kk === 'cmd' || (kk === 'buff' && !hasCmdB) : kk === key;
       if (!ok || (seq === '' && key !== 'cmd') || !cmdMatch(I, seq, p.face)) continue;
       if (lvOf(p, id) <= 0 || (p.cool[id] || 0) > 0 || (SKILLS[id].job && SKILLS[id].job !== jobOf(p))) continue;
-      if (seq !== '' && isHuman(p) && cmdLocked(id)) continue;   // 技能窗口里锁定了指令：只能用快捷栏释放
+      if (seq !== '' && isHuman(p) && typeof cmdLocked === 'function' && cmdLocked(id)) continue;   // 技能窗口里锁定了指令（界面组 cmdLocked，读 save.data.opts.cmdLock）：只能用快捷栏释放
       I.consume(key); if (key === 'cmdB') I.consume('cmd');
       if (castSkill(p, id, seq !== '', key === 'cmdB' ? 'cmd' : key)) return true;
     }
@@ -200,8 +200,6 @@ function trySkill(p) {
   return false;
 }
 const CMD_KEYS = ['cmdB', 'cmd', 'attack', 'jump'];
-// 指令锁定（界面组在技能窗口右键设置）：save.data.opts.cmdLock[id] 为 true 时不能用指令释放
-const cmdLocked = id => !!(save.data && save.data.opts && save.data.opts.cmdLock && save.data.opts.cmdLock[id]);
 // 指令优先级：长指令 > 按住→ > 单方向 > 无方向
 const cmdRank = s => s === 'hold' ? 1.5 : s === '' ? 0 : s.length + (s.length === 1 ? 0.2 : 0);
 function cmdMatch(I, seq, face) {

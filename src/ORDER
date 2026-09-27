@@ -42,6 +42,9 @@ ui/hud.js
 ui/menus.js
 ui/npc.js
 ui/dnd.js
+ui/skillwin.js
+ui/settings.js
+ui/charselect.js
 game/items.js
 game/save.js
 content/world/towns.js

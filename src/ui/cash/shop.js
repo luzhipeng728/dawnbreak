@@ -376,6 +376,8 @@ Object.assign(menus, {
           h('div', { class: 'clog', 'data-sk': 'lo' }, L.length ? L.map(b => h('div', { style: b.jp ? 'background:#2a1a10' : '' }, h('span', { class: 'tm' }, cashTm(b.t)), h('span', {}, `${b.box} → `, h('b', { class: 'q' + Math.min(5, b.rar) }, b.name), b.forced ? h('span', { style: 'color:#ffd23a' }, '（保底）') : null), h('span', { class: 'n', style: 'color:#ffd23a' }, b.jp ? '大奖' : ''))) : h('div', { class: 'dim' }, '还没有开出过好东西，去试试魔盒吧！')));
       } else if (CW.logTab === 'log') {
         out.push(h('div', { class: 'clog', 'data-sk': 'll' }, S.log.length ? S.log.map(b => h('div', {}, h('span', { class: 'tm' }, cashTm(b.t)), h('span', {}, b.why), h('span', { class: 'n' + (b.n < 0 ? ' neg' : '') }, `${b.n > 0 ? '+' : ''}${fmtNum(b.n)}`))) : h('div', { class: 'dim' }, '还没有点券流水')));
+      } else if (typeof menus.w_achieve === 'function') {
+        out.push(h('div', { class: 'cash-note' }, '成就已经并入全新的成就系统（商城的 14 个点券成就都在里面，不会重复发奖）。'), h('button', { class: 'btn', onclick: () => { sfx.click(); menus.show('achieve'); } }, '打开成就窗口'));
       } else {
         out.push(h('div', { class: 'clog', 'data-sk': 'la' }, CASH_ACH.map(A => { const done = S.ach[A.id], v = S.stat[A.stat] || 0; return h('div', { style: done ? 'background:#1a2418' : '' }, h('span', { class: done ? '' : 'tm', style: done ? 'color:#6aff7a' : '' }, done ? '✔ 已达成' : `${fmtNum(Math.min(v, A.n))}/${fmtNum(A.n)}`), h('span', {}, h('b', {}, A.name), `　${A.desc}`), h('span', { class: 'n' }, `+${A.cera}`)); })));
       }

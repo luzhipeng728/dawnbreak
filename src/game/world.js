@@ -549,6 +549,7 @@ function validateWorld() {
     if (!placed.has(id)) err(`NPC ${id} 没有放进任何场景`);
     if (N.art && !has(N.art)) err(`NPC ${id} 缺少立绘 ${N.art}`);
     if (typeof NPC_SERVICES !== 'undefined') for (const s of N.services) { const k = s.split(':')[0]; if (!NPC_SERVICES[k] && !WORLD_LATE_SERVICES.includes(k)) err(`NPC ${id} 的功能 ${k} 没有在 NPC_SERVICES 注册`); }
+    if (typeof SHOPS !== 'undefined') for (const s of N.services) { const [k, a] = s.split(':'); if (k === 'shop' && !SHOPS[a]) err(`NPC ${id} 的商店 ${a} 没有在 SHOPS 里定义货架（会显示通用杂货）`); }
   }
   for (const id in DUNGEONS) if (!gated.has(id)) err(`地下城 ${id} 没有放在任何区域地图的门里`);
   // 从出生点出发，所有场景都能走到

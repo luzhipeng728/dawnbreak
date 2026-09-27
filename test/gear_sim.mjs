@@ -68,13 +68,14 @@ const res = await page.evaluate(({ N, TARGET, OFF }) => {
       // 邀请函：金币宽裕时每次买 1 张
       if (game.gold > game.lvl * 4000 + 20000 && abyssOpen()) { game.gold -= abyssTicketPrice(); inv.add(makeItem('abyss_ticket')); log.tickets++; }
     };
-    const abyssOpen = () => base ? null : game.lvl >= 22 && log.skyUnlocked ? DUNGEONS.abyss_sky : game.lvl >= 15 && log.gfUnlocked ? DUNGEONS.abyss_gf : null;
+    const abyssOpen = () => base ? null : game.lvl >= 29 && log.spineUnlocked ? DUNGEONS.abyss_spine : game.lvl >= 22 && log.skyUnlocked ? DUNGEONS.abyss_sky : game.lvl >= 15 && log.gfUnlocked ? DUNGEONS.abyss_gf : null;   // 天帷巨兽合并后有第二脊椎深渊
     const collect = () => { for (const d of drops) if (d.item) { if (d.item.rar >= 5) { log.epics++; if (game.dungeon && game.dungeon.def.abyss) log.epicsAbyss++; } giveItem(d.item); } drops.length = 0; };
     while (game.lvl < TARGET && log.runs < 500) {
       town(); snap();
       // 资格任务：Lv15 通关过烈焰格拉卡 → 格兰之森深渊；Lv22 通关过城主宫殿 → 天空之城深渊（各送 3 张邀请函）
       if (!base && !log.gfUnlocked && game.lvl >= 15 && log.seen && log.seen.blazing_graca) { log.gfUnlocked = true; inv.add(makeItem('abyss_ticket', 3)); }
       if (!base && !log.skyUnlocked && game.lvl >= 22 && log.seen && log.seen.lord_palace) { log.skyUnlocked = true; inv.add(makeItem('abyss_ticket', 3)); }
+      if (!base && !log.spineUnlocked && DUNGEONS.abyss_spine && game.lvl >= 29 && log.seen && log.seen.second_spine) { log.spineUnlocked = true; inv.add(makeItem('abyss_ticket', 3)); }
       const ab = abyssOpen() && inv.count('abyss_ticket') > 0 ? abyssOpen() : null;
       const def = ab || normalDgs.filter(d => d.lvl[0] <= game.lvl).pop();
       if (ab) { inv.take('abyss_ticket', 1); def.boss = { kind: pick(ABYSS[def.id].lords), lvl: ABYSS[def.id].lordLvl }; log.abyssRuns++; }

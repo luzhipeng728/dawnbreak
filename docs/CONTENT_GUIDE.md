@@ -414,3 +414,44 @@ node test/flow.mjs                                   # 必须继续通过
   - 每种怪物都有逐帧精灵，会主动出手，能被打死。
   - 每个领主的每一招都触发过，并且至少出过一次地面预警。
   - 页面没有报错。
+
+### 8.7 第二个区域：天帷巨兽（照着天空之城再做一遍）
+天帷巨兽（Lv24~30）完全按上面的步骤做，文件是：
+- `content/{monsters,themes,world,quests}/behemoth.js`
+- `art/tools/behemoth_art.py`
+- `test/behemoth.mjs`、`test/behemoth_route.mjs`
+
+这次多出来的做法，下一个区域可以直接用：
+- **复用招式模板**：behemoth 的文件排在 sky_castle 之后，天空之城的 `sky*` 模板直接拿来用，不用复制。新写的模板用 `bh*` 前缀：
+
+  | 函数 | 作用 |
+  |---|---|
+  | `bhLob` | 抛物线投弹 + 落点红圈 |
+  | `bhKnives` | 扇形飞刀 |
+  | `bhDash` | 可调预警时长的冲刺 |
+  | `bhRootWave` | 沿纵深推进的地刺 |
+  | `bhRoarWave` | 贴地扩散的冲击波，跳起来可以躲 |
+  | `bhCarpetBomb` / `bhMissiles` | 轰炸 / 追踪导弹 |
+  | `bhTentacleSweep` / `bhTentacleSlam` | 触手横扫 / 触手连砸 |
+  | `bhInk` | 墨汁致盲 |
+  | `bhBarrier` | 减伤护罩，把领主引出来 |
+  | `bhSummon` | 召唤 |
+  | `bhRegen` | 一段时间没挨打就回血 |
+
+- **一个区域多张区域地图**：`behemoth`（神殿之路）→ 右出口 `minLv: 27` → `behemoth_spine`（脊背）。两张图都要写 `map` 坐标，并且双向连接。
+- **从别人的场景接进来**：只改入口那一个出口，写 `{ side: 'up', x, to: '新区域', minLv, label, optional: true }`，并告诉场景主人（这次是西海岸的船，世界组的 towns.js）。
+- **双领主 / 保护机制**：
+  - 领主房的第二个怪，用 `bus.on('roomEnter')` 在 `d.type === 'boss'` 时刷出来。
+  - 保护用 `dmgTakenMul` 实现，并且要画出来、弹文字提示。例：大祭司活着时，大主教受到的伤害 ×0.5。
+  - 深渊（装备深化组）会单独刷领主，所以这类机关必须只挂在这个地下城的房间事件上，不要写进领主本身。
+- **保证精英出现**：精英房是随机的。任务要求打的精英，用 `roomEnter` 放进“通往领主房的前一个房间”。例：第二脊椎的巨型黑章鱼。
+- **没有腿的怪物**：
+  - 车辆 / 植物 / 飞行器：在 M 表里写 `cycle`（自定义走 / 跑循环）。
+  - 不需要的动作表用 `sheets` 去掉。
+  - 飞行器写 `fly` + `HOVER`。
+- **任务**：
+  - 写在 `content/quests/<区域>.js`，`pre` 接上一个区域的最后一个主线（天帷接的是 `q_c18`）。
+  - 任务道具用 `icon` 共用现有图标，不另外出图。
+  - 隐藏图的解锁任务 id 要和 `unlock: { quest }` 一致。
+- **测试**：`test/region_monsters.mjs` 是两个区域共用的怪物测试，新区域只要写一个小配置文件（参照 test/behemoth.mjs）。
+- **生图配额**：多组同时生图时，本组同时最多 1 个请求。在脚本里设 `A.PAR = 1`、`A.BACKOFF = 95`。

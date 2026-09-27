@@ -22,6 +22,7 @@ MAIN = '/Users/luzhipeng/projects/dawnbreak/art'                              # 
 SRC = os.path.join(MAIN, 'src', 'sky')
 GI = os.path.expanduser('~/.claude/skills/gpt-image/scripts/gpt_image.py')
 PAR = 2   # 生图并发上限
+BACKOFF = 65   # 遇到 429 的退避秒数（其他区域的脚本可以改这两个值，见 behemoth_art.py）
 
 # ---- 怪物设定：外观、站立高度（世界单位）、攻击 / 施法描述、手持物；fly = 悬浮（切帧后整体抬高） ----
 M = {
@@ -86,6 +87,7 @@ BG = {
                   'a low golden balustrade with white marble pillars, glowing light crystals and white flower planters'),
 }
 # 地面贴图缩放宽度（参照 bgs.py：越窄纹理越小）
+EDGE_HOLES = set()   # 需要去掉内部白底的交界带主题
 FLOOR_W = {'skyTower': 1800, 'skyHall': 1700, 'skyDark': 1600, 'skyPalace': 1800}
 
 
@@ -101,7 +103,7 @@ def gen(out, prompt, size, model=None, refs=()):
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode == 0 and os.path.exists(out): return f'ok   {os.path.basename(out)}  {time.time() - t:.0f}s'
         err = (r.stderr + r.stdout)[-300:]
-        time.sleep(65 if '429' in err else 8 + attempt * 6)
+        time.sleep(BACKOFF if '429' in err else 8 + attempt * 6)
     return f'FAIL {os.path.basename(out)}: {err}'
 
 
@@ -110,6 +112,7 @@ def sheet_job(name, sheet):
     import sheets2
     d = M[name]; ref = os.path.join(SRC, f'{name}_ref.png'); out = os.path.join(SRC, 'sheets2', f'{name}_{sheet}.png')
     if sheet in ('walk', 'run'):
+        if d.get('cycle'): return out, sheets2.prompt(d['cycle'][sheet], None), [ref]   # 车辆 / 植物等没有腿的：自定义循环
         if d.get('fly'): return out, sheets2.prompt(FLY[sheet], None), [ref]
         return out, sheets2.guide_prompt(sheet, d['hold']), [ref, os.path.join(MAIN, 'src', f'guide_{sheet}.png')]
     atk, cast, low = d['atk'], d['cast'], d['low']
@@ -229,7 +232,9 @@ def bgcut(t):
         fw = FLOOR_W[t]; fl = Image.open(s('floor')).convert('RGB'); fl = fl.resize((fw, round(fl.height * fw / fl.width)), Image.LANCZOS); h = 470; y0 = (fl.height - h) // 2
         fl.crop((0, y0, fw, y0 + h)).save(f'{out}/{t}_floor.webp', 'WEBP', quality=68, method=6)
     if os.path.exists(s('edge')):
-        e = remove_bg(Image.open(s('edge'))); ew = 1400; e = e.resize((ew, round(e.height * ew / e.width)), Image.LANCZOS)
+        e = remove_bg(Image.open(s('edge')))
+        if t in EDGE_HOLES: e = clear_holes(e, thr=228, min_area=200)   # 深色交界带：被包住的白底也去掉
+        ew = 1400; e = e.resize((ew, round(e.height * ew / e.width)), Image.LANCZOS)
         bb = e.getbbox(); e = e.crop((0, bb[1], ew, bb[3])); e = e.crop((0, 0, ew, round(e.height * 0.75)))
         a = np.array(e).astype(np.float32); h = a.shape[0]; f0 = round(h * 0.65)
         ramp = np.ones(h, np.float32); ramp[f0:] = np.linspace(1, 0, h - f0); a[..., 3] *= ramp[:, None]
@@ -248,6 +253,7 @@ def main():
         for n in M:
             if not n.startswith(a.only): continue
             for sh in a.sheets.split(','):
+                if sh not in M[n].get('sheets', ('walk', 'run', 'act', 'more')): continue
                 out, prompt, refs = sheet_job(n, sh); L.append((out, prompt, '2048x2048', 'gpt-image-2.5-sunburst', refs))
     elif a.phase in ('bg', 'edge'):
         for t, d in BG.items():

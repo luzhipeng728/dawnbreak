@@ -150,7 +150,7 @@ defineScene('hm_backstreet', { name: '赫顿玛尔', area: '后街', kind: 'town
     { art: 'world/p_blackcat', x: 1400, y: 8, h: 32, anim: 'breathe' }, { art: 'world/p_chest', x: 1880, h: 32 }, { art: 'world/p_crates', x: 620, y: 160, h: 50 }],
   npcs: [{ npc: 'paris', x: 560, y: 44 }, { npc: 'sherlock', x: 1720, y: 46 }, { npc: 'minette', x: 2230, y: 30 }],
   exits: [{ side: 'up', x: 1320, to: 'hm_plaza' }, { side: 'up', x: 960, label: '月光酒馆', locked: '月光酒馆（Lv.49 地下城区域）还没有开放', door: true }] });
-// 西海岸商贸区：港口（去天帷巨兽的船，未开放）、首饰店；东端是通往天空之城的云梯（官方：天空之城在西海岸东部）
+// 西海岸商贸区：港口（坐船去天帷巨兽，Lv.24）、首饰店；东端是通往天空之城的云梯（官方：天空之城在西海岸东部）
 // 天空之城区域地图 sky_castle 由地下城内容组提供（content/world/sky_castle.js），没合进来时这个出口显示“未开放”
 defineScene('west_coast', { name: '西海岸', area: '商贸区', kind: 'town', width: 2800, theme: 'westcoast', bgm: 'westcoast', ambient: 'gulls', map: [24, 20],
   props: [{ art: 'world/b_harbor', x: 420, h: 220 }, { art: 'world/b_ship', x: 1040, h: 240 }, { art: 'world/p_anchor', x: 1330, h: 66 }, { art: 'world/b_jewelry', x: 1640, h: 220 }, lamp(1900),
@@ -158,7 +158,7 @@ defineScene('west_coast', { name: '西海岸', area: '商贸区', kind: 'town', 
     { art: 'world/b_skystair', x: 2600, h: 310 }, { art: 'world/p_rope', x: 1240, y: 170, h: 26 }, { art: 'world/p_boat', x: 200, h: 40 }, { art: 'world/p_bollard', x: 1480, h: 30 }],
   npcs: [{ npc: 'roget', x: 470, y: 42 }, { npc: 'daphne', x: 1680, y: 44 }, { npc: 'lorian', x: 1960, y: 56 }, { npc: 'kakun', x: 2300, y: 44 }],
   exits: [{ side: 'right', to: 'hm_oldtown' }, { side: 'left', to: 'wc_guild' }, { side: 'up', x: 2600, to: 'sky_castle', minLv: 14, label: '天空之城', optional: true },
-    { side: 'up', x: 1040, label: '天帷巨兽', locked: '去天帷巨兽的船还没有起航（Lv.27 区域，暂未开放）' }] });
+    { side: 'up', x: 1040, to: 'behemoth', minLv: 24, label: '天帷巨兽', optional: true }] });   // 天帷巨兽区域由地下城内容组提供（content/world/behemoth.js）
 // 西海岸魔法师公会：莎兰的魔法学院
 defineScene('wc_guild', { name: '西海岸', area: '魔法师公会', kind: 'town', width: 2600, theme: 'magicGuild', bgm: 'guild', ambient: 'magic', map: [10, 20],
   props: [{ art: 'world/b_guildhall', x: 660, h: 300 }, { art: 'world/p_magiclamp', x: 1000, h: 130, glow: [0.5, 0.2, 36, '190,140,255'] }, { art: 'world/b_academy', x: 1380, h: 300 }, { art: 'world/p_crystal', x: 1620, h: 70, anim: 'bob', glow: [0.5, 0.35, 40, '190,140,255'] },

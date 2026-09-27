@@ -19,7 +19,7 @@ ok(problems.length === 0, `validateWorld 没有问题（${problems.length} 条�
 const info = await page.evaluate(() => ({ start: START_SCENE, at: world.S.id, scenes: Object.keys(SCENES), npcs: Object.keys(NPCS).length }));
 ok(info.at === info.start, `新角色出生在 ${info.start}（实际 ${info.at}）`);
 console.log(`  ${info.scenes.length} 个场景、${info.npcs} 个 NPC`);
-await page.evaluate(() => { game.lvl = 20; });
+await page.evaluate(() => { game.lvl = MAX_LVL; });   // 满级：天帷巨兽的出口要 Lv.24 / 27
 
 console.log('· 每个场景截图');
 for (const id of info.scenes) {
@@ -90,7 +90,7 @@ for (const e of edges.filter(e => e.minLv)) {
   await walkThrough(e.from, e); await wait(300);
   ok(await page.evaluate(() => world.S.id) === e.from, `${e.from} → ${e.to} 在 Lv.1 时被拦住（需要 Lv.${e.minLv}）`);
   await shot(`minlv-${e.from}`);
-  await page.evaluate(() => { game.lvl = 20; });
+  await page.evaluate(() => { game.lvl = MAX_LVL; });
 }
 
 console.log('· 所有 NPC 可对话');

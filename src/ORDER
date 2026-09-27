@@ -76,6 +76,10 @@ content/world/grand_flores.js
 content/monsters/sky_castle.js
 content/themes/sky_castle.js
 content/world/sky_castle.js
+# 天帷巨兽（地下城内容组）：同上，放在天空之城之后（复用天空之城的招式模板与主题点缀）
+content/monsters/behemoth.js
+content/themes/behemoth.js
+content/world/behemoth.js
 # 任务与转职（依赖 world / items / save / menus）
 game/quests.js
 content/quests/main.js
@@ -84,6 +88,7 @@ content/quests/side.js
 content/quests/daily.js
 content/quests/job.js
 content/quests/sky.js
+content/quests/behemoth.js
 # 装备深化：深渊派对（深渊地下城、封印之门与三波派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
 content/abyss.js
 ui/quest.js

@@ -45,6 +45,7 @@ addStyle(`
 .cash-pv{position:relative;height:10.5em;flex:none;border-radius:.25em;background:radial-gradient(ellipse at 50% 70%,#3a2c48,#120d16 70%);display:grid;place-items:center;overflow:hidden}
 .cash-pv canvas{max-height:100%;max-width:100%}
 .cash-pv canvas.try{height:10.4em;width:8.32em;max-height:none}
+.cash-pv canvas.glow{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
 .cash-pv img.bigic{width:6.5em;height:6.5em}
 .cash-pv .cls{position:absolute;left:.3em;top:.25em;font-size:.65em;color:#9a8f7c}
 .cash-side .t{font-weight:900;font-size:1.02em;line-height:1.25}
@@ -297,7 +298,11 @@ function cashSkyDetail(set, el) {
   const items = AV_PIECE_SLOTS.map(s => makeItem(avKey(set, s)));
   const pv = cashTryOn(items);
   const tip = itemTip(items[4], { cmp: false }); tip.style.width = '100%'; tip.style.fontSize = '.78em';
-  return [h('div', { class: 'cash-pv' }, pv || h('img', { class: 'bigic', src: cashIconOf(avKey(set, 'av_top'), 128) }), pv ? h('span', { class: 'cls' }, '试穿（8 件）') : null),
+  // 8 件套光效叠在试穿小人上（动画画布，只在窗口开着时跑）
+  const C = { sky8: set, parts: [], spawn: 0 }; let last = 0;
+  const glow = pv ? cashAnimCanvas(200, 250, (x, t) => { const dt = last ? Math.min(0.05, t - last) : 0; last = t; cashGlowStep(C, dt); cashDrawGlowAt(x, C, 100, 244, 1.5); }) : null;
+  if (glow) glow.classList.add('try', 'glow');
+  return [h('div', { class: 'cash-pv' }, pv || h('img', { class: 'bigic', src: cashIconOf(avKey(set, 'av_top'), 128) }), glow, pv ? h('span', { class: 'cls' }, '试穿（8 件 · 套装光效）') : null),
     h('div', { class: 't q2' }, `${CASH_SETS[set].name}（稀有装扮）`), h('div', { class: 'ds' }, CASH_SETS[set].desc), tip,
     h('div', { class: 'cash-note' }, '获得方式：装扮合成器（2 件同部位高级装扮，20%）、黄金装扮合成器（30%）、梦想装扮合成器（任意 8 件，100% 指定部位）；天空套部件兑换券（魔盒大奖、破晓启示、兑换商店）。'),
     h('button', { class: 'btn buy', onclick: () => { sfx.click(); menus.show('synth', { set }); } }, '去合成')];

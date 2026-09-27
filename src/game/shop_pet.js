@@ -54,18 +54,20 @@ function cashEntTick(e, L, dt) {
   if (L.aura) { C.aura = L.aura; C.auraFx.y = e.y - 0.5; }
   // 天空 8 件套：身上的光粒子
   keep('glowFx', L.sky8, () => ({ t: 0, dur: Infinity, y: e.y, draw(c) { cashDrawGlow(c, e); } }));
-  if (L.sky8) {
-    C.sky8 = L.sky8; C.glowFx.y = e.y + 0.5;
-    const sky2 = L.sky8 === 'av_sky2';
-    if ((C.spawn -= dt) <= 0 && C.parts.length < 22) {
-      C.spawn = sky2 ? 0.07 : 0.08;
-      const feather = !sky2 && Math.random() < 0.3;
-      C.parts.push(feather ? { x: rnd(-34, 34), z: rnd(100, 130), vx: rnd(-8, 8), vz: -rnd(14, 22), life: 2.4, t: 0, kind: 1, rot: rnd(0, TAU) }
-        : sky2 ? { x: rnd(-22, 22), z: rnd(0, 20), vx: rnd(-6, 6), vz: rnd(40, 70), life: rnd(1, 1.6), t: 0, kind: 2, g: rndi(60, 170) }
-          : { x: rnd(-26, 26), z: rnd(10, 110), vx: 0, vz: rnd(8, 18), life: rnd(0.8, 1.4), t: 0, kind: 0 });
-    }
-    for (let i = C.parts.length - 1; i >= 0; i--) { const q = C.parts[i]; q.t += dt; q.x += q.vx * dt + (q.kind === 1 ? Math.sin(q.t * 3) * 14 * dt : 0); q.z += q.vz * dt; if (q.t >= q.life) C.parts.splice(i, 1); }
-  } else if (C.parts.length) C.parts.length = 0;
+  if (L.sky8) { C.sky8 = L.sky8; C.glowFx.y = e.y + 0.5; cashGlowStep(C, dt); }
+  else if (C.parts.length) C.parts.length = 0;
+}
+// 天空 8 件套光效的粒子（C = { sky8, parts, spawn }；预览画布也用它）
+function cashGlowStep(C, dt) {
+  const sky2 = C.sky8 === 'av_sky2';
+  if ((C.spawn -= dt) <= 0 && C.parts.length < 22) {
+    C.spawn = sky2 ? 0.07 : 0.08;
+    const feather = !sky2 && Math.random() < 0.3;
+    C.parts.push(feather ? { x: rnd(-34, 34), z: rnd(100, 130), vx: rnd(-8, 8), vz: -rnd(14, 22), life: 2.4, t: 0, kind: 1, rot: rnd(0, TAU) }
+      : sky2 ? { x: rnd(-22, 22), z: rnd(0, 20), vx: rnd(-6, 6), vz: rnd(40, 70), life: rnd(1, 1.6), t: 0, kind: 2, g: rndi(60, 170) }
+        : { x: rnd(-26, 26), z: rnd(10, 110), vx: 0, vz: rnd(8, 18), life: rnd(0.8, 1.4), t: 0, kind: 0 });
+  }
+  for (let i = C.parts.length - 1; i >= 0; i--) { const q = C.parts[i]; q.t += dt; q.x += q.vx * dt + (q.kind === 1 ? Math.sin(q.t * 3) * 14 * dt : 0); q.z += q.vz * dt; if (q.t >= q.life) C.parts.splice(i, 1); }
 }
 /* ---- 绘制 ---- */
 // 宠物帧：0、1 待机（交替很慢，像呼吸眨眼），2、3 移动
@@ -118,15 +120,18 @@ function cashDrawAura(c, e, id) {
 function cashDrawGlow(c, e) {
   const C = e._cash; if (!C || !C.parts.length) return;
   const X = sx(e.x), Y = sy(e.y, e.z || 0); if (X < -80 || X > WW + 80) return;
+  cashDrawGlowAt(c, C, X, Y, 1);
+}
+function cashDrawGlowAt(c, C, X, Y, k = 1) {
   const sky2 = C.sky8 === 'av_sky2';
   c.save(); c.globalCompositeOperation = 'lighter';
   for (const q of C.parts) {
-    const k = q.t / q.life, a = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8;
-    if (q.kind === 1) { c.save(); c.globalCompositeOperation = 'source-over'; c.globalAlpha = a * 0.9; c.translate(X + q.x, Y - q.z); c.rotate(q.rot + Math.sin(q.t * 2) * 0.6); c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(0, 0, 7, 2.6, 0, 0, TAU); c.fill(); c.fillStyle = '#ffe9a0'; c.fillRect(-7, -0.5, 14, 1); c.restore(); continue; }
-    if (sky2) { c.fillStyle = `rgba(255,${q.g},40,${a * 0.95})`; c.beginPath(); c.arc(X + q.x, Y - q.z, 2.6, 0, TAU); c.fill(); c.fillStyle = `rgba(255,${q.g},40,${a * 0.35})`; c.beginPath(); c.arc(X + q.x - q.vx * 0.05, Y - q.z + 5, 1.8, 0, TAU); c.fill(); continue; }
-    const s = 2.6 + Math.sin(q.t * 9) * 1.2, px = X + q.x, py = Y - q.z;   // 四角星形的金色闪光
-    c.fillStyle = `rgba(255,226,120,${a * 0.9})`; c.fillRect(px - s * 1.6, py - 0.6, s * 3.2, 1.2); c.fillRect(px - 0.6, py - s * 1.6, 1.2, s * 3.2);
-    c.fillStyle = `rgba(255,250,210,${a})`; c.beginPath(); c.arc(px, py, 1.3, 0, TAU); c.fill();
+    const u = q.t / q.life, a = u < 0.2 ? u / 0.2 : 1 - (u - 0.2) / 0.8, px = X + q.x * k, py = Y - q.z * k;
+    if (q.kind === 1) { c.save(); c.globalCompositeOperation = 'source-over'; c.globalAlpha = a * 0.9; c.translate(px, py); c.rotate(q.rot + Math.sin(q.t * 2) * 0.6); c.scale(k, k); c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(0, 0, 7, 2.6, 0, 0, TAU); c.fill(); c.fillStyle = '#ffe9a0'; c.fillRect(-7, -0.5, 14, 1); c.restore(); continue; }
+    if (sky2) { c.fillStyle = `rgba(255,${q.g},40,${a * 0.95})`; c.beginPath(); c.arc(px, py, 2.6 * k, 0, TAU); c.fill(); c.fillStyle = `rgba(255,${q.g},40,${a * 0.35})`; c.beginPath(); c.arc(px - q.vx * 0.05 * k, py + 5 * k, 1.8 * k, 0, TAU); c.fill(); continue; }
+    const s = (2.6 + Math.sin(q.t * 9) * 1.2) * k;   // 四角星形的金色闪光
+    c.fillStyle = `rgba(255,226,120,${a * 0.9})`; c.fillRect(px - s * 1.6, py - 0.6 * k, s * 3.2, 1.2 * k); c.fillRect(px - 0.6 * k, py - s * 1.6, 1.2 * k, s * 3.2);
+    c.fillStyle = `rgba(255,250,210,${a})`; c.beginPath(); c.arc(px, py, 1.3 * k, 0, TAU); c.fill();
   }
   c.restore();
 }

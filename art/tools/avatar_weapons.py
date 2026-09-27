@@ -10,44 +10,67 @@ import os, sys, json
 import numpy as np
 from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(__file__))
-from prep import remove_bg, components
+from prep import remove_bg, components, fill_holes
 from avatar_gen import WEAPON_SHEETS, OUT
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(HERE)
 FIXF = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'avatar_weapons.json')
+LAST = {k: n for n, its in WEAPON_SHEETS.items() for k, _, _ in its}   # 同一把武器出现在多张表里时，用最后那张
 OVER = 1.25   # 图片比游戏里画出来的大一点，缩小绘制更清晰
 
 # 在角色帧里的长度（握点→尖端，帧像素）。太刀 ≈ 原来画死在帧里的太刀长度
 SIZE = {'shortsword': 72, 'katana': 100, 'club': 70, 'greatsword': 112, 'lightsaber': 98,
         'revolver': 40, 'autopistol': 38, 'rifle': 70, 'handcannon': 52, 'bowgun': 50,
-        'spear': 150, 'pole': 140, 'rod': 52, 'staff': 140, 'broom': 140}
+        'spear': 95, 'pole': 85, 'rod': 50, 'staff': 88, 'broom': 88}   # 长杆（握点在图里 35% 处）：全长 ≈ size / 0.65，画的时候再按占位棍截短
 # 握法：grip = 握点在握柄上（剑、枪、魔杖）；tip = 长杆按杖头对齐（魔法师的长武器，握在杆子中段哪里都行）
 KIND = {'shortsword': 'blade', 'katana': 'blade', 'greatsword': 'blade', 'lightsaber': 'saber', 'club': 'club',
         'revolver': 'gun', 'autopistol': 'gun', 'handcannon': 'gun', 'bowgun': 'gun', 'rifle': 'rifle',
         'spear': 'pole', 'pole': 'pole', 'staff': 'pole', 'broom': 'pole', 'rod': 'rod'}
+SINGLE = {'rifle', 'handcannon', 'bowgun'}   # 长枪 / 手炮 / 手弩不双持：双枪帧里只画主手那把
 EP_TYPE = {'ep_shortsword': 'shortsword', 'ep_katana': 'katana', 'ep_katana2': 'katana', 'ep_club': 'club', 'ep_greatsword': 'greatsword', 'ep_lightsaber': 'lightsaber',
            'ep_revolver': 'revolver', 'ep_autopistol': 'autopistol', 'ep_rifle': 'rifle', 'ep_handcannon': 'handcannon', 'ep_bowgun': 'bowgun',
            'ep_spear': 'spear', 'ep_pole': 'pole', 'ep_rod': 'rod', 'ep_staff': 'staff', 'ep_broom': 'broom'}
 
 def cut_rows(path, n):
-    im = remove_bg(Image.open(path)); a = np.array(im)
+    a = np.array(remove_bg(Image.open(path))); drop_holes(a)   # 扳机护圈、弩弦里围住的白底也去掉
     lab, comps = components(a[..., 3], min_cells=6)
     boxes = []
     for c, cells in comps:
         ys, xs = np.where(lab == c); boxes.append({'ids': [c], 'x0': xs.min(), 'x1': xs.max() + 1, 'y0': ys.min(), 'y1': ys.max() + 1, 'cells': cells})
     boxes.sort(key=lambda b: -b['cells']); big, small = boxes[:n], boxes[n:]
-    for s in small:   # 小碎块（火花、挂饰）并进最近的武器
-        cy = (s['y0'] + s['y1']) / 2
+    for s in small:   # 小碎块（挂饰、宝石）并进最近的武器；在武器外框左右两边以外的（枪口的光点）丢掉
+        cy, cx = (s['y0'] + s['y1']) / 2, (s['x0'] + s['x1']) / 2
         b = min(big, key=lambda b: 0 if b['y0'] <= cy <= b['y1'] else min(abs(cy - b['y0']), abs(cy - b['y1'])))
-        if not (b['y0'] - 40 <= cy <= b['y1'] + 40): continue
+        if not (b['y0'] - 10 <= cy <= b['y1'] + 10) or not (b['x0'] <= cx <= b['x1']): continue
         b['ids'].append(s['ids'][0]); b['x0'] = min(b['x0'], s['x0']); b['x1'] = max(b['x1'], s['x1']); b['y0'] = min(b['y0'], s['y0']); b['y1'] = max(b['y1'], s['y1'])
     big.sort(key=lambda b: b['y0'])
     out = []
     for b in big:
-        sub = a[b['y0']:b['y1'], b['x0']:b['x1']].copy()
-        sub[..., 3] = np.where(np.isin(lab[b['y0']:b['y1'], b['x0']:b['x1']], b['ids']), sub[..., 3], 0)
-        out.append(sub)
+        sub = a[b['y0']:b['y1'], b['x0']:b['x1']].copy(); L = lab[b['y0']:b['y1'], b['x0']:b['x1']]
+        solo = sub.copy(); solo[..., 3] = np.where(L == b['ids'][0], sub[..., 3], 0)   # 只要主体（手工修正 solo 用）
+        sub[..., 3] = np.where(np.isin(L, b['ids']), sub[..., 3], 0)
+        out.append((sub, solo))
     return out
+
+def dil(m, r=1):
+    o = m.copy()
+    for _ in range(r):
+        q = o.copy(); q[1:] |= o[:-1]; q[:-1] |= o[1:]; q[:, 1:] |= o[:, :-1]; q[:, :-1] |= o[:, 1:]; o = q
+    return o
+
+def drop_holes(a, min_area=40):
+    """被围住的白底（扳机护圈、弩弦里面）挖掉；外圈是深色描边才算，外圈浅色的是高光 / 白色羽毛，保留"""
+    rgb = a[..., :3].astype(np.int16); W = (rgb.min(-1) >= 240) & (rgb.max(-1) - rgb.min(-1) <= 14) & (a[..., 3] > 0)
+    lab, comps = components((W * 255).astype(np.uint8), f=1, min_cells=min_area)
+    lum = rgb @ np.array([0.3, 0.59, 0.11])
+    for c, _ in comps:
+        reg = lab == c; ring = dil(reg, 4) & ~dil(reg, 1) & (a[..., 3] > 0) & ~W
+        if ring.sum() < 10: continue
+        dark, light = (lum[ring] < 90).mean(), (lum[ring] > 150).mean()
+        if dark > 0.3 and light < 0.5:
+            grow = reg.copy(); L = (rgb.min(-1) >= 210) & (a[..., 3] > 0)
+            for _ in range(2): grow |= dil(grow) & L
+            a[..., 3] = np.where(grow, 0, a[..., 3])
 
 def profile(al):
     """每列的上下边界（没有像素的列为 nan）"""
@@ -107,10 +130,15 @@ def main():
         subs = cut_rows(path, len(items))
         if len(subs) != len(items): print(f'{name}: 切出 {len(subs)} 把，应为 {len(items)}  <-- CHECK')
         tiles = []
-        for (key, _, _), sub in zip(items, subs):
+        for (key, _, _), (sub, solo) in zip(items, subs):
+            if LAST[key] != name: continue   # 后面的表重画过这把（巨剑加厚），以后面的为准
+            f = fixes.get(key, {})
+            if f.get('solo'):   # 去掉并进来的小碎块（别的武器的火焰碎片等）
+                sub = solo; ys, xs = np.where(sub[..., 3] > 40); sub = sub[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+            if 'cut' in f:   # 只保留左边这么多（去掉枪口的火焰等特效）
+                sub = sub[:, :int(sub.shape[1] * f['cut'])]; cols = np.where((sub[..., 3] > 40).any(0))[0]; sub = sub[:, :cols.max() + 1]
             wt = EP_TYPE.get(key, key); kind = KIND[wt]; H, W = sub.shape[:2]
             gx, gy = auto_grip(sub, kind)
-            f = fixes.get(key, {})
             if 'gx' in f: gx = f['gx'] * W
             if 'gy' in f: gy = f['gy'] * H
             tx = W - 1.0   # 尖端：最右边
@@ -121,6 +149,7 @@ def main():
             sm.save(os.path.join(outd, f'{key}.webp'), 'WEBP', quality=88, method=6)
             data[key] = {'w': sm.width, 'h': sm.height, 'gx': round(gx * k, 1), 'gy': round(gy * k, 1), 'tx': round(tx * k, 1), 'ty': round(gy * k, 1),
                          'size': round(size, 1), 'kind': kind, 'type': wt}
+            if wt in SINGLE: data[key]['dual'] = 0
             tiles.append((key, sm, data[key]))
             print(f'  {key:14s} {sm.width}x{sm.height} 握点 ({gx * k:.0f},{gy * k:.0f}) {kind}')
         # 预览
@@ -134,7 +163,7 @@ def main():
     os.makedirs(os.path.dirname(jsf), exist_ok=True)
     body = ',\n'.join(f'  {json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}' for k, v in sorted(data.items()))
     open(jsf, 'w').write('/* 由 art/tools/avatar_weapons.py 生成，请勿手改（握点微调写在 art/tools/avatar_weapons.json 后重跑）\n'
-                         '   武器图 IMG[\'weapon/<key>\']：w h 图片尺寸；gx gy 握点；tx ty 尖端；size 在角色帧里握点→尖端的长度（帧像素）；kind 握法；type 武器类型 */\n'
+                         '   武器图 IMG[\'weapon/<key>\']：w h 图片尺寸；gx gy 握点；tx ty 尖端；size 在角色帧里握点→尖端的长度（帧像素）；kind 握法；type 武器类型；dual 0 = 不双持 */\n'
                          'const WEAPON_IMG = {\n' + body + '\n};\n')
     print('->', jsf)
 

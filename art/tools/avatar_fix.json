@@ -1,0 +1,6 @@
+{
+ "blade/atk4": {"grip": 0.73, "tipx": -1, "front": 0},
+ "skillA/spin2": {"grip": 0.52, "tipx": 1, "front": 1},
+ "sk1/guard": {"grip": 0.23, "tipx": 1, "front": 1},
+ "skillB/slam1": {"one": 1}
+}

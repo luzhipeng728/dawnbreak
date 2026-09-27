@@ -36,9 +36,17 @@ def source_sheets():
             if cls in WEAPON_WORD: L[name] = os.path.join(d, f)
     return L
 
-EXTRA = {'sword': 'IMPORTANT: also erase the round golden sword guard (tsuba) that sat next to the fist, so that nothing gold or round remains next to the fist; only the bare green stick passes through the fist. '}
+EXTRA = {'sword': 'IMPORTANT: also erase the round golden sword guard (tsuba) that sat next to the fist, so that nothing gold or round remains next to the fist; only the bare green stick passes through the fist. ',
+         'mage': 'IMPORTANT: at the end of the stick where the crystal orb of the staff was, put one small flat pure magenta (#FF00FF) ball (no outline, no shading) instead of the orb; the rest of the stick stays flat pure green. Erase the crystal orb and the wooden staff completely. ',
+         'gun': 'IMPORTANT: erase the whole revolver (barrel, cylinder, grip and trigger); nothing silver or metal remains in the hand, only the green stick sticking out of the fist. If a frame shows two revolvers, replace BOTH with green sticks. '}
 
-def wpn_prompt(cls):
+# 个别表里的技能道具（不是角色的武器），改图时保持原样
+NOTES = {'gun_skillA': 'The grenade and the huge gatling gun are NOT the revolver: keep them exactly as they are. ',
+         'gun_skillB': 'Revolvers flying in the air (thrown, not held in a hand) stay exactly as they are. ',
+         'gun_sk1': 'The heavy gatling gun is NOT the revolver: keep it exactly as it is. ',
+         'mage_sk1': 'The jack-o-lantern pumpkin bomb is NOT the staff: keep it exactly as it is. '}
+
+def wpn_prompt(cls, name=''):
     w = WEAPON_WORD[cls]
     grip = {
         'sword': 'The fist grips the stick close to one end, exactly where the katana hilt was: a short stub of the stick (about one fist long) sticks out on the other side of the fist like a sword hilt, and the long part extends straight out along the line where the blade was.',
@@ -49,7 +57,7 @@ def wpn_prompt(cls):
             f'in EVERY frame, completely remove the {w} and replace it with a plain, perfectly straight, rigid stick held by the same hand at the same position and the same angle. '
             f'The stick is painted in ONE flat pure green color ({GREEN}): no outline, no shading, no highlight, no texture, no guard, no decoration, uniform thickness about as wide as two fingers. '
             f'{grip} The fingers wrap around the stick and are drawn in front of it. '
-            f'{EXTRA.get(cls, "")}'
+            f'{EXTRA.get(cls, "")}{NOTES.get(name, "")}'
             'If a frame shows the weapon held in both hands, the stick is held in both hands the same way. If a frame shows no weapon, draw no stick. '
             'Keep EVERYTHING else exactly the same: the character design, every pose, arms, legs, clothing, colors, the position of each frame in the grid, and the plain white background. Do not add anything else.')
 
@@ -77,7 +85,7 @@ def jobs_wpn(only, tag=''):
     for name, path in source_sheets().items():
         if not name.startswith(only) or name in NO_WPN: continue
         cls = name.split('_')[0]
-        L.append({'out': os.path.join(OUT, 'sheets' + tag, f'{name}.png'), 'refs': [path], 'prompt': wpn_prompt(cls)})
+        L.append({'out': os.path.join(OUT, 'sheets' + tag, f'{name}.png'), 'refs': [path], 'prompt': wpn_prompt(cls, name)})
     return L
 
 # ---- 单帧返修：把 3×3 表里的某一格放大后单独改图，再按身体外框对齐贴回原位 ----
@@ -93,7 +101,8 @@ def body_box(arr):
     if not len(xs): return None
     return xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
 
-def touch(sheet_png, cells, prompt, base, key):
+def touch(sheet_png, cells, prompt, base, key, src_png=None):
+    """src_png：从另一张表（通常是战斗组的原表）取这一格来改，结果贴回 sheet_png（改图把武器弄丢了的格子用）"""
     """sheet_png 就地修改（原图备份成 *_pre<n>.png）"""
     import numpy as np
     from PIL import Image
@@ -104,7 +113,7 @@ def touch(sheet_png, cells, prompt, base, key):
     tmp = os.path.join(OUT, 'touch'); os.makedirs(tmp, exist_ok=True)
     stem = os.path.basename(sheet_png)[:-4]
     def one(i):
-        bx = cell_box(i, W, H); cell = sh.crop(bx); cw, ch = cell.size
+        bx = cell_box(i, W, H); cell = (Image.open(src_png).convert('RGB') if src_png else sh).crop(bx); cw, ch = cell.size
         src = os.path.join(tmp, f'{stem}_c{i}.png'); out = os.path.join(tmp, f'{stem}_c{i}_fix.png')
         cell.resize((1024, 1024), Image.LANCZOS).save(src)
         job = {'out': out, 'refs': [src], 'prompt': prompt, 'size': '1024x1024'}
@@ -163,6 +172,11 @@ WEAPON_SHEETS = {   # 表名 → [(武器图 key, 图标 key, 描述)]
                ('ep_rod', 'ep_rod', 'Sage Astra: a short golden wand with a big shining golden star with small leaves on the right tip and a red gem'),
                ('ep_staff', 'ep_staff', 'Starry Sea Staff: a long navy staff with gold rings and a glowing galaxy orb circled by gold rings and little stars on the right end'),
                ('ep_broom', 'ep_broom', 'Night Witch Broom: a dark purple broom with a curved handle on the left ending in a hanging gold crescent-moon charm, and a purple feather-like brush on the right end')],
+    # 用户确认样例时要求“巨剑再加厚”：单独一张表重画巨剑（和史诗巨剑），切图时覆盖前面表里的同名武器
+    'w_heavy': [('greatsword', 'w_greatsword', 'a massive heavy two-handed greatsword: an extremely broad and thick straight steel blade (the blade is about as wide as a third of its length, like a huge slab of iron), '
+                 'a heavy iron crossguard, a long leather-wrapped grip and a round iron pommel; it looks very heavy'),
+                ('ep_greatsword', 'ep_greatsword', 'Slaughter Blade, a massive heavy greatsword: an extremely broad and thick jagged blood-red serrated blade (about as wide as a third of its length), '
+                 'a dark gold demonic crossguard with a red gem, a long dark-red wrapped grip; it looks very heavy')],
 }
 
 def weapon_ref(name, items):
@@ -216,17 +230,27 @@ def jobs_ref(only):
             L.append({'out': os.path.join(OUT, 'refs', f'{name}.png'), 'refs': [os.path.join(SRC, f'{cls}_ref.png')], 'prompt': ref_prompt(cls, outfit), 'size': '1024x1536'})
     return L
 
+def set_prompt_plain(cls, outfit):
+    """没有占位棍的表（枪炮师的重武器等技能道具）：只换衣服"""
+    return ('The FIRST image is a 2D game sprite animation sheet (3x3 grid, 9 frames) of a chibi character. The SECOND image shows the same character in a new outfit. '
+            'Redraw the FIRST image exactly: the same 3x3 layout, the same poses, the same positions and sizes of every frame, the same props, weapons and effects, '
+            f'but dress the character in EVERY frame in the outfit of the second image: {outfit} '
+            'Keep the face, the hair and the art style. No hat, no glasses, no hair ornament. Plain pure white background, no text.')
+
 def jobs_set(only):
+    """每张动作表都要有时装版（缺帧会在两套衣服之间闪）：有占位表用占位表，没有（技能道具表）用原表"""
     L = []
     sd = os.path.join(OUT, 'sheets')
     for sid, per in SETS.items():
-        for f in sorted(os.listdir(sd)) if os.path.isdir(sd) else []:
-            if not f.endswith('.png'): continue
-            name = f[:-4]; cls = name.split('_')[0]
+        for name, src in source_sheets().items():
+            cls = name.split('_')[0]
             if cls not in per or not f'{sid}/{name}'.startswith(only): continue
             ref = os.path.join(OUT, 'refs', f'{cls}@{sid}.png')
             if not os.path.exists(ref): print('缺时装参考图，先跑 ref：', ref); continue
-            L.append({'out': os.path.join(OUT, 'sets', sid, f'{name}.png'), 'refs': [os.path.join(sd, f), ref], 'prompt': set_prompt(cls, per[cls])})
+            ph = os.path.join(sd, f'{name}.png')
+            if os.path.exists(ph): L.append({'out': os.path.join(OUT, 'sets', sid, f'{name}.png'), 'refs': [ph, ref], 'prompt': set_prompt(cls, per[cls])})
+            elif name in NO_WPN: L.append({'out': os.path.join(OUT, 'sets', sid, f'{name}.png'), 'refs': [src, ref], 'prompt': set_prompt_plain(cls, per[cls])})
+            else: print('缺占位表，先跑 wpn：', ph)
     return L
 
 # ---- 头部配件：侧面（朝右）画，一张表一行 3 个：帽子、发饰、眼镜 ----
@@ -252,20 +276,28 @@ def jobs_weapons(only):
     L = []
     for name, items in WEAPON_SHEETS.items():
         if not name.startswith(only): continue
-        cls = {'sword': 'sword', 'gun': 'gun', 'mage': 'mage'}[name.split('_')[1]]
+        cls = {'sword': 'sword', 'gun': 'gun', 'mage': 'mage', 'heavy': 'sword'}[name.split('_')[1]]
         L.append({'out': os.path.join(OUT, 'weapons', f'{name}.png'), 'refs': [os.path.join(SRC, f'{cls}_ref.png'), weapon_ref(name, items)],
                   'prompt': weapon_prompt(items), 'size': '2048x2048'})
     return L
 
+# 单格重做占位棍（从原表取格子）：武器类型 → 提示词
+CELL = {k: (f'This is a chibi game character sprite (one frame of an animation) holding a {w.split(" (")[0]}. Replace the {w} completely with a plain, perfectly straight, rigid stick held by the same hand at the same position and the same angle, '
+            f'painted in ONE flat pure green color (#00FF00): no outline, no shading, no guard, uniform thickness about as wide as two fingers. {g} The fingers wrap around the stick and are drawn in front of it. {EXTRA.get(k, "")}'
+            'Keep EVERYTHING else exactly the same: the same character, pose, framing and size, and the plain white background.')
+        for k, w, g in [('sword', WEAPON_WORD['sword'], 'The stick extends straight out of the fist along the line where the blade was.'),
+                        ('gun', WEAPON_WORD['gun'], 'The stick sticks straight out of the fist along the line where the barrel pointed, about as long as the forearm.'),
+                        ('mage', WEAPON_WORD['mage'], 'The stick runs straight through the fist along the line of the staff, keeping the same length on both sides as the staff had.')]}
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('cmd'); ap.add_argument('--only', default=''); ap.add_argument('-j', type=int, default=2)
     ap.add_argument('--force', action='store_true'); ap.add_argument('--tag', default='')
-    ap.add_argument('--sheet', default=''); ap.add_argument('--cells', default=''); ap.add_argument('--prompt', default='')
+    ap.add_argument('--sheet', default=''); ap.add_argument('--cells', default=''); ap.add_argument('--prompt', default=''); ap.add_argument('--from', dest='src', default='')
     a = ap.parse_args()
     base, key, _ = gi.load_cfg()
     if a.cmd == 'touch':   # avatar_gen.py touch --sheet art/src/avatar/sheets/sword_walk.png --cells 0,3,7 [--prompt ring|文字]
-        p = RING if a.prompt in ('', 'ring') else a.prompt
-        return touch(a.sheet, [int(x) for x in a.cells.split(',')], p, base, key)
+        p = RING if a.prompt in ('', 'ring') else CELL.get(a.prompt, a.prompt)
+        return touch(a.sheet, [int(x) for x in a.cells.split(',')], p, base, key, a.src or None)
     if a.cmd == 'wpn': L = jobs_wpn(a.only, a.tag)
     elif a.cmd == 'weapons': L = jobs_weapons(a.only)
     elif a.cmd == 'ref': L = jobs_ref(a.only)

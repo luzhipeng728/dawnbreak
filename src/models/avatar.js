@@ -57,7 +57,7 @@ class AvatarLayer {
   // 钩子：帧之前（身后的武器、后脑的发饰）
   under(c, m, f, F) {
     const w = F.wpn, w2 = F.wpn2;
-    if (w2 && !w2.front) this.weapon(c, w2, F);
+    if (w2 && !w2.front && this.dual()) this.weapon(c, w2, F);
     if (w && !w.front) this.weapon(c, w, F);
     if (F.head && this.acc.length) this.accessories(c, F, true);
   }
@@ -65,14 +65,19 @@ class AvatarLayer {
   over(c, m, f, F) {
     const w = F.wpn, w2 = F.wpn2;
     if (w && w.front) { this.weapon(c, w, F); if (w.hand && this.wim) this.hand(c, m, f, F, w, 0); }
-    if (w2 && w2.front) { this.weapon(c, w2, F); if (w2.hand && this.wim) this.hand(c, m, f, F, w2, 1); }
+    if (w2 && w2.front && this.dual()) { this.weapon(c, w2, F); if (w2.hand && this.wim) this.hand(c, m, f, F, w2, 1); }
     if (F.head && this.acc.length) this.accessories(c, F, false);
   }
+  dual() { return !!this.A && this.A.dual !== 0; }   // 双枪帧的副手：长枪 / 手炮 / 手弩不画（副手空着）
   weapon(c, w, F) {
     const A = this.A, im = this.wim; if (!A || !im) return;
     const s = A.size / (A.tx - A.gx), fy = Math.cos(w.ang) < -0.05 ? -s : s;   // 朝左时上下翻转，武器的“上面”保持朝上
     c.save(); c.translate(w.gx - F.ax, w.gy - F.ay); c.rotate(w.ang);
-    if (A.kind === 'pole') { c.translate(w.len, 0); c.scale(s, fy); c.drawImage(im, -A.tx, -A.ty); }   // 长杆：杖头对准棍子的尖端
+    if (A.kind === 'pole') {   // 长杆：杖头对准棍子的尖端；只画到占位棍在握点另一侧露出的长度（被身体挡住 / 画师本来就没画出来的那截不画）
+      c.translate(w.len, 0); c.scale(s, fy);
+      const x0 = w.bk === undefined ? 0 : Math.max(0, A.tx - (w.len + w.bk + 6) / s);
+      if (x0 > 0) c.drawImage(im, x0, 0, A.w - x0, A.h, x0 - A.tx, -A.ty, A.w - x0, A.h); else c.drawImage(im, -A.tx, -A.ty);
+    }
     else { c.scale(s, fy); c.drawImage(im, -A.gx, -A.gy); }
     c.restore();
   }

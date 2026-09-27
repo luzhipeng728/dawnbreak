@@ -17,7 +17,22 @@ from collections import deque
 import numpy as np
 from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(__file__))
-from prep import remove_bg, fill_holes, components
+from prep import remove_bg, fill_holes as _fill_holes, components
+
+def fill_holes(im, min_area=90, thr=251):
+    """prep.fill_holes 之后，被围住的白底洞边上残留的浅色像素（中性浅灰 / 白）再多吃几圈（原版只吃 3 圈，
+    鬼剑士围巾和手臂之间会剩一圈白边）；有颜色的浅色（肤色等）不吃。"""
+    a0 = np.array(im.convert('RGBA')); out = np.array(_fill_holes(im, min_area=min_area, thr=thr))
+    hole = (out[..., 3] == 0) & (a0[..., 3] > 0)          # fill_holes 新挖掉的洞
+    if not hole.any(): return Image.fromarray(out, 'RGBA')
+    rgb = out[..., :3].astype(np.int16); L = (rgb.min(-1) >= 222) & (rgb.max(-1) - rgb.min(-1) <= 22) & (out[..., 3] > 0)
+    cur = hole.copy()
+    for _ in range(10):
+        nx = dil(cur) & L & ~cur
+        if not nx.any(): break
+        cur |= nx
+    out[..., 3] = np.where(cur, 0, out[..., 3])
+    return Image.fromarray(out, 'RGBA')
 from frames import HEIGHT
 import frames2
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -132,7 +147,9 @@ def analyze(P, a, g, m, body, fist, cls, fix):
         if len(mx) > 15:
             mt = float(((np.stack([mx, my], 1) - c) @ d).mean()); tip = 1 if mt > (t0 + t1) / 2 else -1; why = '品红标记'
     cand = [(gs, ge) for gs, ge in gaps if 0.35 * fist <= ge - gs <= 2.2 * fist and opaque_frac(gs, ge) > 0.5]
-    if cand:
+    if cand and tip is not None:   # 有品红标记（魔法师的杖）：握在杆子中段哪里都行，取最像拳头的缝
+        gs, ge = min(cand, key=lambda q: abs((q[1] - q[0]) - fist) - 0.3 * opaque_frac(*q) * fist); grip = (gs + ge) / 2
+    elif cand:
         gs, ge = min(cand, key=lambda q: min(q[0] - t0, t1 - q[1]))
         short = min(gs - t0, t1 - ge)
         if short < 0.42 * L:
@@ -142,7 +159,12 @@ def analyze(P, a, g, m, body, fist, cls, fix):
         fa, fb = opaque_frac(t0 - fist, t0 - 3), opaque_frac(t1 + 3, t1 + fist)
         tip = 1 if fa >= fb else -1; why = f'端点外侧 {fa:.2f}/{fb:.2f}'
     if fix.get('flip'): tip = -tip; why += ' 手工翻转'
-    if grip is None: grip = (t0 - fist * 0.5) if tip == 1 else (t1 + fist * 0.5)
+    if grip is None: grip = (t0 - fist * 0.5) if tip == 1 else (t1 + fist * 0.5)   # 棍子从拳头里伸出来：握点在近端外侧半个拳头
+    if 'grip' in fix or 'tipx' in fix:   # 手工：握点在棍子上的位置（从左端量起的比例），尖端朝右 1 / 朝左 -1
+        tl, tr = (t0, t1) if d[0] >= 0 else (t1, t0)
+        if 'grip' in fix: grip = tl + fix['grip'] * (tr - tl)
+        if 'tipx' in fix: tip = 1 if (d[0] >= 0) == (fix['tipx'] > 0) else -1
+        why = '手工'
     tipT = t1 if tip == 1 else t0
     # 身前 / 身后：除了拳头缝（≤1.6 个拳头、离握点不远），棍子中段还被挡住的就是在身后
     hands, block = [grip], 0.0
@@ -154,8 +176,22 @@ def analyze(P, a, g, m, body, fist, cls, fix):
     front = 1 if block < 0.1 * L else 0
     if 'front' in fix: front = int(fix['front'])
     gx, gy = c + d * grip; ang = math.atan2(d[1] * tip, d[0] * tip)
+    back = max(0.0, (grip - t0) if tip == 1 else (t1 - grip))   # 握点另一侧还露出来的长度（长杆只画到这里）
     return {'c': c, 'd': d, 'nrm': nrm, 'hw': hw, 't0': t0, 't1': t1, 'grip': grip, 'tip': tip, 'tipT': tipT, 'gx': float(gx), 'gy': float(gy), 'ang': ang,
-            'len': abs(tipT - grip), 'front': front, 'hands': hands, 'why': why, 'gaps': gaps}
+            'len': abs(tipT - grip), 'back': back, 'front': front, 'hands': hands, 'why': why, 'gaps': gaps}
+
+def simplify(pts, eps=1.6):
+    """闭合多边形化简（Douglas-Peucker，eps 为 2048 原图像素）"""
+    if len(pts) < 8: return pts
+    def dp(P):
+        if len(P) < 3: return P
+        a, b = np.array(P[0], float), np.array(P[-1], float); ab = b - a; n = np.hypot(*ab) or 1
+        d = [abs(ab[0] * (p[1] - a[1]) - ab[1] * (p[0] - a[0])) / n for p in P[1:-1]]
+        i = int(np.argmax(d)) + 1
+        if d[i - 1] > eps: return dp(P[:i + 1])[:-1] + dp(P[i:])
+        return [P[0], P[-1]]
+    k = len(pts) // 2
+    return dp(pts[:k + 1])[:-1] + dp(pts[k:] + [pts[0]])[:-1]
 
 def fist_poly(W, a, g, body, fist):
     """握点附近的拳头：从棍子被挡住的那一段取色，向外扩到颜色相近（或深色描边）的像素，取凸包"""
@@ -179,7 +215,7 @@ def fist_poly(W, a, g, body, fist):
         acc = dil(acc, 2) & body
         ys, xs = np.where(acc)
         if len(xs) < 20: continue
-        out.append(hull(np.stack([xs, ys], 1).tolist()))
+        out.append(simplify(hull(np.stack([xs, ys], 1).tolist())))
     return out
 
 def bg_white(a):
@@ -297,6 +333,7 @@ def process_sheet(char, sheet, path, names, res, fixes, pv_path):
                 sticks.append(analyze(P, la, lg, lm, body, fist, char, fix))
             sticks.sort(key=lambda s: -(s['t1'] - s['t0']))
             for st in sticks[1:]: st['minor'] = (st['t1'] - st['t0']) < 0.5 * (sticks[0]['t1'] - sticks[0]['t0'])
+            if fix.get('one'): sticks = sticks[:1]   # 手工：只有一把（另一段是改图留下的碎块）
         hole = stickreg & ((lg > 0.07) | ((lm > 0.1) if use_m else False))
         white = bg_white(la)
         inside = inside_mask(hole, la[..., 3], sticks, white)
@@ -335,8 +372,10 @@ def finish(char, sheet, frames, base, k, res, meta, out_dir, pv_path, dry):
         fr = Image.fromarray(sub, 'RGBA'); sm = fr.resize((max(1, round(fr.width * k)), max(1, round(fr.height * k))), Image.LANCZOS)
         ent = {'w': sm.width, 'h': sm.height, 'ax': round(ax * k, 1), 'ay': round(ay * k, 1)}
         ox, oy = F['org_l']
-        for j, st in enumerate([st for st in F['sticks'] if not st.get('minor')][:2]):
-            wp = {'gx': round((st['gx'] - ox) * k, 1), 'gy': round((st['gy'] - oy) * k, 1), 'ang': round(st['ang'], 3), 'len': round(st['len'] * k, 1), 'front': st['front']}
+        main = [st for st in F['sticks'] if not st.get('minor')][:2]
+        main.sort(key=lambda st: (-st['front'], -math.cos(st['ang'])))   # 双持：身前、朝前的那把当主手（单持的武器类型只画主手）
+        for j, st in enumerate(main):
+            wp = {'gx': round((st['gx'] - ox) * k, 1), 'gy': round((st['gy'] - oy) * k, 1), 'ang': round(st['ang'], 3), 'len': round(st['len'] * k, 1), 'bk': round(st['back'] * k, 1), 'front': st['front']}
             if st['polys']: wp['hand'] = [[round(v, 1) for p in poly for v in ((p[0] - ox) * k, (p[1] - oy) * k)] for poly in st['polys']]
             ent['wpn' if j == 0 else 'wpn2'] = wp
         meta['frames'][fn] = ent

@@ -67,7 +67,24 @@ def find_head(frame, tpl, tc, ctr_in_tpl):
     search([d0 + k for k in np.arange(-10, 10.1, 2.5)], F, 1)
     v, deg, cx, cy = best
     q = math.sqrt(max(v, 0) / 4)
-    return {'x': round(cx, 1), 'y': round(cy, 1), 'a': round(math.radians(((deg + 180) % 360) - 180), 3), 'q': round(q, 1)}
+    return {'x': round(cx, 1), 'y': round(cy, 1), 'a': round(math.radians(((deg + 180) % 360) - 180), 3), 'q': round(q, 1), 'fq': round(face_err(F, tpl, deg, cx, cy), 1)}
+
+FACE_BOX = (0.52, 0.5, 1.0, 1.0)   # 模板里脸所在的区域（相对宽高；角色朝右，脸在头部右下）
+FACE_MAX = 60.0                   # 脸部色差超过这个、且比整个头的色差明显大（脸那块特别不像）= 脸被挡住，不画眼镜
+face_hidden = lambda H: H['fq'] > FACE_MAX and H['fq'] - H['q'] > 18
+
+def face_err(F, tpl, deg, cx, cy):
+    """把模板按找到的位置 / 转角贴回去，只比较脸那一块"""
+    th, tw = tpl.shape[:2]; m = np.zeros((th, tw), np.uint8)
+    x0, y0, x1, y1 = FACE_BOX; m[int(y0 * th):int(y1 * th), int(x0 * tw):int(x1 * tw)] = 255
+    T = _rot(tpl, deg); M = np.array(Image.fromarray(m, 'L').rotate(-deg, resample=Image.NEAREST, expand=True)) > 0
+    M &= T[..., 3] > 128
+    oy, ox = int(round(cy - T.shape[0] / 2)), int(round(cx - T.shape[1] / 2))
+    H, W = F.shape[:2]; P = premul(T); ys, xs = np.where(M)
+    fy, fx = ys + oy, xs + ox; ok = (fy >= 0) & (fy < H) & (fx >= 0) & (fx < W)
+    if ok.sum() < 20: return 999.0
+    d = F[fy[ok], fx[ok]] - P[ys[ok], xs[ok]]
+    return float(np.sqrt((d ** 2).mean()))
 
 def heads_for_dir(key, frames=None, preview=True):
     d = os.path.join(HERE, 'final', 'spr', key); meta = json.load(open(os.path.join(d, 'spr.json')))
@@ -93,7 +110,8 @@ def preview(d, out, path):
         dr = ImageDraw.Draw(bg); x, y = H['x'] + 20, H['y'] + 20; ok = H['q'] <= Q_MAX
         dr.ellipse([x - 5, y - 5, x + 5, y + 5], outline=(0, 255, 120) if ok else (255, 60, 60), width=2)
         ux, uy = math.sin(H['a']), -math.cos(H['a']); dr.line([x, y, x + ux * 40, y + uy * 40], fill=(0, 255, 120) if ok else (255, 60, 60), width=2)
-        dr.text((4, 2), f"{fn} q{H['q']:.0f} {math.degrees(H['a']):.0f}°", fill=(255, 230, 120)); tiles.append(bg)
+        tag = 'X' if face_hidden(H) else ''
+        dr.text((4, 2), f"{fn} q{H['q']:.0f} f{H['fq']:.0f}{tag} {math.degrees(H['a']):.0f}°", fill=(255, 230, 120)); tiles.append(bg)
     per = 8; cw = max(t.width for t in tiles); ch = max(t.height for t in tiles); nr = (len(tiles) + per - 1) // per
     M = Image.new('RGBA', (cw * min(per, len(tiles)), ch * nr), (70, 74, 84, 255))
     for i, t in enumerate(tiles): M.alpha_composite(t, ((i % per) * cw, (i // per) * ch))
@@ -103,7 +121,9 @@ def main():
     for key in sys.argv[1:]:
         meta, out, d = heads_for_dir(key)
         for fn, H in out.items():
-            if H['q'] <= Q_MAX: meta['frames'][fn]['head'] = {k: H[k] for k in ('x', 'y', 'a')}
+            if H['q'] <= Q_MAX:
+                meta['frames'][fn]['head'] = {k: H[k] for k in ('x', 'y', 'a')}
+                if face_hidden(H): meta['frames'][fn]['head']['f'] = 0
             else: meta['frames'][fn].pop('head', None)
         json.dump(meta, open(os.path.join(d, 'spr.json'), 'w'), indent=1)
         pv = os.path.join(MAIN, 'src', 'avatar', 'cut', f'head_{key}.png'); preview(d, out, pv)

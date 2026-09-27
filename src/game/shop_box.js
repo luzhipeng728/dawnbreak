@@ -53,6 +53,10 @@ function cashOpenBoxes(key, count = 1) {
     bus.emit('announce', { kind: 'box', box: D.name, item: it });
     toastMsg(`【公告】勇士 ${save.data.name} 从${D.name}中开出了 ${it.name}！`, '#ffd23a');
   }
+  // 开箱记录：大奖和神器以上的好东西
+  S.openLog ??= [];
+  for (const R of results) for (const it of R.items) if (R.jackpot || (it.rar || 0) >= 3) S.openLog.unshift({ t: Date.now(), box: D.name, name: it.name + (it.n > 1 ? ' ×' + it.n : ''), rar: it.rar || 0, jp: R.jackpot ? 1 : 0, forced: R.forced ? 1 : 0 });
+  if (S.openLog.length > 60) S.openLog.length = 60;
   bus.emit('boxOpen', { key, items: all, jackpot: results.some(R => R.jackpot) });
   save.write();
   return { results, best: all.reduce((m, it) => Math.max(m, it.rar || 0), 0), shards };

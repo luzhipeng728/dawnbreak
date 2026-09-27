@@ -345,7 +345,7 @@ Object.assign(menus, {
   w_cashlog(arg = {}) {
     if (arg.tab) CW.logTab = arg.tab;
     const el = itemWin('cashlog', '点券与记录', el => {
-      const S = cashData(), tabs = h('div', { class: 'itabs' }, [['earn', '点券获取'], ['buys', '购买记录'], ['log', '点券流水'], ['ach', '成就']].map(([id, nm]) => h('div', { class: 'itab' + (CW.logTab === id ? ' on' : ''), onclick: () => { CW.logTab = id; sfx.click(); el._render(); } }, nm)));
+      const S = cashData(), tabs = h('div', { class: 'itabs' }, [['earn', '点券获取'], ['buys', '购买记录'], ['open', '开箱记录'], ['log', '点券流水'], ['ach', '成就']].map(([id, nm]) => h('div', { class: 'itab' + (CW.logTab === id ? ' on' : ''), onclick: () => { CW.logTab = id; sfx.click(); el._render(); } }, nm)));
       const out = [h('div', { class: 'cash-top' }, cashCurEl('cera'), cashCurEl('shard'), cashCurEl('gcoin')), tabs];
       if (CW.logTab === 'earn') {
         const E = CASH_EARN, T = S.today, left = E.exch.cap - T.exch;
@@ -363,6 +363,10 @@ Object.assign(menus, {
           h('div', { class: 'cash-note' }, '破晓地下城不涉及真钱，所有点券都靠游戏获得。认真玩一周大约能买一套节日时装。'));
       } else if (CW.logTab === 'buys') {
         out.push(h('div', { class: 'clog', 'data-sk': 'lb' }, S.buys.length ? S.buys.map(b => h('div', {}, h('span', { class: 'tm' }, cashTm(b.t)), h('span', {}, `${b.name}${b.n > 1 ? ' ×' + b.n : ''}`), h('span', { class: 'n neg' }, `-${fmtNum(b.cost)} ${CUR_NAME[b.cur] || ''}`))) : h('div', { class: 'dim' }, '还没有购买记录')));
+      } else if (CW.logTab === 'open') {
+        const L = S.openLog || [], by = S.openedBy || {};
+        out.push(h('div', { class: 'cash-note' }, `累计开箱 ${fmtNum(S.opened || 0)} 个：${Object.keys(by).filter(k => ITEMS[k]).map(k => `${ITEMS[k].name} ${by[k]}`).join('、') || '还没有开过箱子'}。魔盒保底进度 ${S.pity.box_magic || 0}/100。下面只记大奖和神器以上的物品。`),
+          h('div', { class: 'clog', 'data-sk': 'lo' }, L.length ? L.map(b => h('div', { style: b.jp ? 'background:#2a1a10' : '' }, h('span', { class: 'tm' }, cashTm(b.t)), h('span', {}, `${b.box} → `, h('b', { class: 'q' + Math.min(5, b.rar) }, b.name), b.forced ? h('span', { style: 'color:#ffd23a' }, '（保底）') : null), h('span', { class: 'n', style: 'color:#ffd23a' }, b.jp ? '大奖' : ''))) : h('div', { class: 'dim' }, '还没有开出过好东西，去试试魔盒吧！')));
       } else if (CW.logTab === 'log') {
         out.push(h('div', { class: 'clog', 'data-sk': 'll' }, S.log.length ? S.log.map(b => h('div', {}, h('span', { class: 'tm' }, cashTm(b.t)), h('span', {}, b.why), h('span', { class: 'n' + (b.n < 0 ? ' neg' : '') }, `${b.n > 0 ? '+' : ''}${fmtNum(b.n)}`))) : h('div', { class: 'dim' }, '还没有点券流水')));
       } else {

@@ -309,7 +309,7 @@ SETS = {
     'sky2': {   # 天空套二「炎龙之魂」：黑 / 暗红 / 金，炎龙；背后一对黑红小龙翼（画进帧里）
         'sword': 'a black long coat with a dragon-scale pattern, a red lining and gold dragon embroidery, a dragon-head pauldron on one shoulder, and a pair of small black-and-red dragon wings on the back; '
                  'wide black trousers with red leg guards; black-and-gold battle boots; a red waist sash with a gold dragon-head buckle; a dragon-claw necklace holding a red gem on the chest. The red scarf is removed.',
-        'gun': 'a short black leather jacket with red flame patterns and gold dragon patterns, a pair of small black-and-red dragon wings on the back; a black-and-red mini skirt; black long boots with red laces; '
+        'gun': 'a short black leather jacket with red flame patterns and gold dragon patterns worn over a modest black high-neck top that covers the chest and belly, a pair of small black-and-red dragon wings on the back; a black-and-red mini skirt; black long boots with red laces; '
                'a red belt with a gold dragon-head buckle; a dragon-claw necklace on the chest. The blue neckerchief and the brown cap are removed (hair uncovered).',
         'mage': 'a black-and-red high-collared long robe with a dark gold dragon-scale pattern, the skirt hem shaped like flames, a pair of small black-and-red dragon wings on the back; black short boots; '
                 'a gold dragon-head waist buckle; a dragon-claw necklace on the chest. The witch hat and the cape are removed (hair uncovered).',

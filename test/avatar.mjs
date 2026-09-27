@@ -47,8 +47,12 @@ const HELPERS = () => {
                      ...sets.map(id => ({ wpn: defaultLook(cls).wpn, set: id, acc: Object.keys(AVATAR_ACC) }))];
       for (const f of frames) if (S.frames[f].wpn) wpn++;
       for (const look of looks) for (const f of frames) {
-        try { const cv = __av.drawFrame(cls, f, look); draws++; const F = (look.set && SPR_DATA[`${cls}@${look.set}`].frames[f]) || S.frames[f]; if (F.wpn) { const g = __av.green(cv); if (g) green[f + (look.set ? '@' + look.set : '')] = g; } }
-        catch (e) { bad.push(f + ':' + e.message); }
+        try { __av.drawFrame(cls, f, look); draws++; } catch (e) { bad.push(f + ':' + e.message); }
+      }
+      // 绿色占位残留：只看帧本身（空手画；有些武器图本身就是绿色的，比如椰子杖、蝮蛇手枪）
+      for (const set of [null, ...sets]) for (const f of frames) {
+        const F = (set && SPR_DATA[`${cls}@${set}`].frames[f]) || S.frames[f]; if (!F.wpn) continue;
+        const g = __av.green(__av.drawFrame(cls, f, { wpn: null, set, acc: [] })); if (g) green[f + (set ? '@' + set : '')] = g;
       }
       // 动画表里的每个片段按时间走一遍（用游戏里的选帧逻辑）
       let clips = 0;
@@ -88,6 +92,25 @@ const HELPERS = () => {
   });
   console.log(`    每次绘制：原帧 ${perf.base} ms，+武器 ${perf.wpn} ms，+时装 + 3 件配件 ${perf.all} ms`);
   ok(perf.all - perf.base < 0.25, `外观层每个角色每帧多花 ${(perf.all - perf.base).toFixed(3)} ms（< 0.25 ms，远小于 16.7 ms 的帧预算）`);
+  console.log('武器装扮（时装栏 av_weapon）');
+  const sk = await page.evaluate(() => {
+    const W = (wtype, cls) => ({ key: `${wtype}_1_0`, wtype, cls }), skin = s => ({ key: 'av_weapon_' + s, skin: s });
+    const r = {};
+    for (const s of Object.values(WEAPON_SKINS)) {
+      const types = Object.keys(WTYPES), have = types.filter(t => WEAPON_IMG[`${s}_${t}`]);
+      r[s] = { n: have.length, ok: have.every(t => lookFromEquip(WTYPES[t].cls, { weapon: W(t, WTYPES[t].cls), av_weapon: skin(s) }).wpn === `${s}_${t}`) };
+    }
+    r.noWeapon = lookFromEquip('sword', { av_weapon: skin('spring') }).wpn;
+    r.overEpic = lookFromEquip('sword', { weapon: { key: 'ep_katana', wtype: 'katana' }, av_weapon: skin('spring') }).wpn;
+    r.byKey = lookFromEquip('gun', { weapon: W('rifle', 'gun'), av_weapon: { key: 'av_weapon_summer' } }).wpn;
+    r.dual = WEAPON_IMG.summer_rifle && WEAPON_IMG.summer_rifle.dual === 0 && WEAPON_IMG.spring_revolver.dual !== 0;
+    return r;
+  });
+  for (const s of ['spring', 'summer']) if (sk[s]) ok(sk[s].n === 15 && sk[s].ok, `${s} 装扮覆盖 ${sk[s].n}/15 种武器类型，装上后换成对应的图`);
+  ok(sk.noWeapon === null, '只装武器装扮、没装武器：空手');
+  ok(sk.overEpic === 'spring_katana', '装扮优先于史诗专属外观');
+  ok(sk.byKey === 'summer_rifle', '物品没有 skin 字段时按 key 查表');
+  ok(sk.dual, '步枪装扮不双持，左轮装扮双持');
   console.log('换武器 / 换时装 → 外观改变');
   const d = await page.evaluate(() => {
     const cls = 'sword', f = Object.keys(SPR_DATA.sword.frames).find(k => SPR_DATA.sword.frames[k].wpn) || 'idle';
@@ -154,8 +177,10 @@ for (const cls of ['sword', 'gun', 'mage']) {
     ok(!err && L.wpn === t, `装备${t} → 手里的武器图 ${L.wpn}${err ? ' ' + err : ''}`);
   }
   ok(new Set(Object.values(seen)).size === types.length, `${types.length} 种武器外观互不相同`);
-  const ep = await page.evaluate(cls => Object.keys(WEAPON_IMG).find(k => k.startsWith('ep_') && WTYPES[WEAPON_IMG[k].type].cls === cls), cls);
+  const ep = await page.evaluate(cls => Object.keys(WEAPON_IMG).find(k => k.startsWith('ep_') && ITEMS[k] && WTYPES[WEAPON_IMG[k].type].cls === cls), cls);   // 只挑物品库里已有的史诗（别的组的新史诗合并前不存在）
   if (ep) { await page.evaluate(([EQ, ep]) => (0, eval)(EQ)([ep]), [`(${EQUIP})`, ep]); const L = await look(); ok(L.wpn === ep, `史诗武器 ${ep} 有专属外观`); }
+  // 换回普通武器再测时装：史诗武器图本身可能是绿色（幸运草扫把等），会被误算进绿色残留
+  await page.evaluate(([EQ, t, cls]) => (0, eval)(EQ)([{ slot: 'weapon', wtype: t, lvl: 10, cls, rar: 2 }]), [`(${EQUIP})`, types[0], cls]);
   const before = await look();
   const hasSet = await page.evaluate(cls => !!SPR_DATA[`${cls}@festival`], cls);
   if (hasSet) {
@@ -164,7 +189,7 @@ for (const cls of ['sword', 'gun', 'mage']) {
     await page.evaluate(([EQ]) => (0, eval)(EQ)(['av_bottom_festival', 'av_hat_festival', 'av_face_festival', 'av_hair_festival']), [`(${EQUIP})`]);
     await page.waitForFunction(() => __G.player.model.av.S2, null, { timeout: 10000 });
     L = await look(); ok(L.set === 'festival' && L.S2 && L.hash !== before.hash, `上衣 + 下装 → 换成庆典时装（配件 ${L.acc.length} 件）`);
-    ok(L.green === 0, '穿时装后没有绿色残留');
+    ok(L.green === 0, '穿时装后没有绿色残留', `（武器外观 ${L.wpn}，绿色像素 ${L.green}）`);
     const worn = L.hash;
     await page.evaluate(() => { save.write(); });
     await page.goto(`${URL_BASE}?town&cls=${cls}&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 }); await page.evaluate(HELPERS);

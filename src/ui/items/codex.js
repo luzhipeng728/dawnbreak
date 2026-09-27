@@ -60,6 +60,7 @@ Object.assign(menus, {
         : h('span', { class: 'dim' }, '点击图标查看获得记录；把鼠标放在图标上看属性。'));
       return [sum, tabs, grid, det];
     }, { w: 38 });
+    el.classList.add('codexwin');
     return el;
   },
 });

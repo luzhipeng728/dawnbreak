@@ -58,7 +58,7 @@ const STAT_INFO = {
 const FLAT_STATS = ['atk', 'matk', 'indep', 'def', 'mdef', 'str', 'int', 'vit', 'spr', 'hp', 'mp'];
 function fmtStatVal(k, v) {
   const I = STAT_INFO[k] || [k], neg = I[2] === -1;
-  const s = I[1] ? `${(Math.abs(v) * 100).toFixed(Math.abs(v * 100) % 1 ? 1 : 0)}%` : fmtNum(Math.abs(v));
+  const pv = Math.round(Math.abs(v) * 1000) / 10, s = I[1] ? `${pv.toFixed(pv % 1 ? 1 : 0)}%` : fmtNum(Math.abs(v));   // 先取整到 0.1%，避免 7.000001 显示成 7.0%
   return `${(neg ? v < 0 : v >= 0) ? '+' : '-'}${s}`;
 }
 const statLine = (k, v) => `${(STAT_INFO[k] || [k])[0]} ${fmtStatVal(k, v)}`;

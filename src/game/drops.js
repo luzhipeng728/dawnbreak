@@ -64,7 +64,7 @@ function rollCardReward(dg, gold) {
   if (r < 0.4) return { gold: Math.round((80 + lv * 45) * (1 + dg.diff * 0.5) * rnd(0.8, 1.6) * (gold ? 2.5 : 1)) };
   if (r < 0.65) return { item: makeItem(pick(['hpM', 'mpM', 'crystal', 'crystal', 'elixir', 'fatigue']), pick([1, 2, 3, 5])) };
   const rar = Math.max(1, Math.min(5, rollRarity(0.15 + dg.D.drop + (gold ? 0.25 : 0), gold)));
-  return { item: (rar === 5 && rollEpic(lv)) || rollEquip({ lvl: rndi(dg.def.lvl[0], lv), rar: Math.min(rar, 4) }) || makeItem('crystal', 5) };
+  return { item: (rar === 5 && rollEpic(lv, dg.def.abyss ? { abyss: true, lo: dg.def.lvl[0] - 6 } : {})) || rollEquip({ lvl: rndi(dg.def.lvl[0], lv), rar: Math.min(rar, 4) }) || makeItem('crystal', 5) };
 }
 function spawnCoins(e, amount) {
   const p = game.player; amount = Math.round(amount * (1 + (p && p.goldUp || 0)));

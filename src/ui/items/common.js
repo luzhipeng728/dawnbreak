@@ -18,6 +18,7 @@ addStyle(`
 .islot:hover{border-color:#e8c26a;z-index:1}
 .islot .n{position:absolute;right:.12em;bottom:0;font-size:.68em;font-weight:900;color:#fff;text-shadow:0 0 .2em #000,0 0 .2em #000,0 0 .2em #000;pointer-events:none}
 .islot .e{position:absolute;left:.12em;top:0;font-size:.64em;font-weight:900;color:#8fe8ff;text-shadow:0 0 .2em #000,0 0 .2em #000;pointer-events:none}
+.islot .e.amp{color:#ff6a9a}
 .islot .qk{position:absolute;right:.1em;top:0;font-size:.58em;font-weight:900;color:#ffe070;text-shadow:0 0 .2em #000;pointer-events:none}
 .islot .lbl{position:absolute;inset:0;display:grid;place-items:center;font-size:.66em;color:#6a5a4a;font-weight:800;pointer-events:none;text-align:center;line-height:1.1}
 .islot.q5{box-shadow:0 0 .45em rgba(255,180,0,.7);animation:iepic 1.6s ease-in-out infinite}
@@ -227,7 +228,7 @@ function itemSlot(it, opt = {}) {
   if (it) {
     el.append(h('img', { src: itemIconSrc(it, 64), draggable: 'false' }));
     if (it.n > 1) el.append(h('span', { class: 'n' }, it.n > 9999 ? '9999+' : String(it.n)));
-    if (it.enh) el.append(h('span', { class: 'e' }, '+' + it.enh));
+    if (it.enh) el.append(h('span', { class: 'e' + (it.dim ? ' amp' : '') }, '+' + it.enh));   // 增幅（红字）显示成红色
     if (opt.quick && it.kind === 'use') { const qi = inv.quick.indexOf(it.key); if (qi >= 0) el.append(h('span', { class: 'qk' }, String(qi + 1))); }
     if (it.kind === 'equip' && typeof setSlotDecor === 'function') setSlotDecor(el, it, opt.worn);   // 套装：绿框 + 件数角标
     if ((opt.quick || opt.cmp === true) && it.kind === 'equip' && typeof equipCompareBadge === 'function') { const b = equipCompareBadge(it); if (b) { el.append(b); if (b.classList.contains('up')) el.classList.add('better'); } }   // ▲▼ 比身上的好 / 差

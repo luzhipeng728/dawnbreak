@@ -33,11 +33,11 @@ if (typeof GATE_ART !== 'undefined') Object.assign(GATE_ART, {
 
 /* ---- 区域地图 ---- */
 // 神殿之路：从西海岸坐船上来，站在最左边的码头；越往右等级越高，最右边通往脊背
-defineScene('behemoth', { name: '天帷巨兽', area: '神殿之路', kind: 'field', width: 2900, theme: 'bhTemple', bgm: 'sky', map: [12, 6],
+defineScene('behemoth', { name: '天帷巨兽', area: '神殿之路', kind: 'field', width: 2900, theme: 'bhTemple', bgm: 'sky', map: [14, -1],
   props: [{ art: 'world/b_ship', x: 200, h: 230 }],
   exits: [{ side: 'left', to: 'west_coast' }, { side: 'right', to: 'behemoth_spine', minLv: 27, label: '天帷巨兽 · 脊背' }],
   gates: [{ dungeon: 'temple_outskirts', x: 650 }, { dungeon: 'treant_jungle', x: 1350 }, { dungeon: 'purgatory', x: 2050 }] });
 // 脊背：极昼、第二脊椎、天帷禁地（隐藏）；x 2500 / 2900 留给装备深化组的深渊门
-defineScene('behemoth_spine', { name: '天帷巨兽', area: '脊背', kind: 'field', width: 3200, theme: 'bhSpine', bgm: 'sky', map: [4, 12],
+defineScene('behemoth_spine', { name: '天帷巨兽', area: '脊背', kind: 'field', width: 3200, theme: 'bhSpine', bgm: 'sky', map: [4, 7],
   exits: [{ side: 'left', to: 'behemoth' }],
   gates: [{ dungeon: 'polar_day', x: 600 }, { dungeon: 'second_spine', x: 1250 }, { dungeon: 'forbidden_land', x: 1900 }] });

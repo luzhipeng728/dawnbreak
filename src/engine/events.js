@@ -6,6 +6,7 @@
      dungeonClear { id, diff, rank, time, hurt, maxCombo }  地下城通关（结算时）
      dungeonEnter { id, diff }                             进入地下城
      roomEnter    { id, room, type }                       进入地下城房间（type: normal/elite/boss）
+     playerHit    { target, dmg, crit, counter, back }   玩家的攻击命中（史诗武器特效等；监听里造成伤害请直接改 hp，别再走 dealDamage 以免递归）
      playerHurt   { dmg }                                  玩家受到伤害
      playerDeath  { dungeon }                              玩家在地下城里倒下（进入复活倒计时）
      levelUp      { lvl }                                  升级

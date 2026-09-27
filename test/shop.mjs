@@ -182,6 +182,16 @@ await shot('17-dungeon');
 const perf = await ev(async () => { const t0 = performance.now(); for (let i = 0; i < 300; i++) renderWorld(); return (performance.now() - t0) / 300; });
 console.log(`  · 每帧 renderWorld 平均 ${perf.toFixed(2)} ms（含宠物 / 光环 / 光效）`);
 
+// 外观组登记的时装帧集：上衣 + 下装同套时整套换装；武器装扮换武器图（外观组分支合并后才有，没合并时只打印）
+const looks = await ev(() => {
+  const cls = game.player.cls, reg = [], miss = [];
+  for (const set in CASH_SETS) { const eq = { av_top: makeItem(avKey(set, 'av_top')), av_bottom: makeItem(avKey(set, 'av_bottom')) }; const L = lookFromEquip(cls, eq); (L.set ? reg : miss).push(set); }
+  const w = lookFromEquip(cls, { weapon: inv.equip.weapon, av_weapon: makeItem('av_weapon_spring') }).wpn;
+  return { reg, miss, wskin: w, sets: Object.keys(AVATAR_SETS || {}) };
+});
+console.log(`  · 已登记整套帧集：${looks.reg.join(' ') || '无'}；还没有：${looks.miss.join(' ') || '无'}；武器装扮 → ${looks.wskin}`);
+check(looks.reg.every(set => looks.sets.includes(set)), '登记了帧集的时装，穿上衣 + 下装会整套换装');
+
 /* ---------- 11. 点券产出 ---------- */
 step('点券产出');
 const earn = await ev(() => {

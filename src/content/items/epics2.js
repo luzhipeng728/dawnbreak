@@ -210,6 +210,18 @@ otherSet('set_ow_ranger', '爆裂信徒', 'ranger', 'g_multi', ['爆裂信徒的
 otherSet('set_ow_launcher', '歼灭突击', 'launcher', 'gl_cannon', ['歼灭突击的项链', '歼灭突击的手镯', '歼灭突击的戒指'], 1.5, 0.3, { str: 25, stagger: 30 }, '枪炮师的歼灭火力。官方异界套：加农炮冷却 -1.5 秒、攻击 +30%。');
 otherSet('set_ow_elemental', '元素的低语', 'elemental', 'mg_hole', ['元素低语项链', '元素低语手镯', '元素低语戒指'], 4, 0.15, { int: 25, elemAll: 10 }, '元素师的元素之力。（本作原创：湮灭黑洞冷却 -4 秒）');
 otherSet('set_ow_battlemage', '炫纹大师', 'battlemage', 'bm_press', ['炫纹大师的项链', '炫纹大师的手镯', '炫纹大师的戒指'], 3, 0.15, { int: 20, str: 20, aspd: 0.03 }, '战斗法师的炫纹奥义。（本作原创：炫纹强压冷却 -3 秒）');
+/* ---------------- 原有神器套装的 5 件特效（本作追加：让神器套装也有自己的玩法，数值比史诗套装低一档） ---------------- */
+const artifactProc = (id, P) => { const B = SETS[id] && SETS[id].bonus[5]; if (B) B.proc = P; };
+artifactProc('set_knight', { on: 'hurt', chance: 0.1, cd: 20, act: 'shield', amt: 0.12, dur: 6, name: '骑士之盾', desc: '被击时 10% 几率举起骑士之盾：6 秒内吸收最多 12% HP 上限的伤害（冷却 20 秒）' });
+artifactProc('set_sage', { on: 'skill', chance: 0.1, act: 'heal', mp: 0.05, desc: '施放技能时 10% 几率恢复 5% MP' });
+artifactProc('set_hunter', { on: 'crit', chance: 0.1, cd: 0.8, act: 'strike', mul: 0.8, vis: 'slash', name: '追击', desc: '暴击时 10% 几率追击一次（80% 伤害）' });
+artifactProc('set_balk', { act: 'buff', buff: { aspd: 0.01, cspd: 0.01 }, dur: 3, stack: 5, key: 'balk', name: '巴尔克之风', col: '#8affc8', desc: '命中时叠加巴尔克之风：攻击 / 施放速度 +1%，最多 5 层' });
+artifactProc('set_gabis', { chance: 0.04, cd: 1, act: 'strike', mul: 1.2, aoe: 110, elem: 'fire', vis: 'fire', name: '元素爆发', desc: '攻击时 4% 几率元素爆发（周围 120% 火属性伤害）' });
+artifactProc('set_rex', { on: 'kill', chance: 0.2, act: 'buff', buff: { atk: 0.05 }, dur: 8, key: 'rex', name: '暴龙之怒', col: '#ff8a4a', desc: '击杀敌人时 20% 几率暴龙之怒：8 秒内攻击力 +5%' });
+artifactProc('set_titan', { on: 'lowhp', cd: 45, act: 'shield', amt: 0.2, dur: 8, name: '要塞壁垒', desc: 'HP 低于 30% 时获得吸收 20% HP 上限伤害的护盾（冷却 45 秒）' });
+artifactProc('set_sky', { on: 'hurt', chance: 0.15, cd: 2, act: 'strike', mul: 1.2, aoe: 120, vis: 'nova', name: '守卫反击', desc: '被击时 15% 几率反击（周围 120% 伤害，冷却 2 秒）' });
+artifactProc('set_dragonkin', { chance: 0.05, cd: 1, act: 'strike', mul: 1.3, elem: 'fire', vis: 'fire', name: '龙息', desc: '攻击时 5% 几率喷出龙息（130% 火属性伤害）' });
+artifactProc('set_skyranger', { on: 'crit', chance: 0.2, cd: 5, act: 'buff', buff: { aspd: 0.06 }, dur: 5, key: 'skyranger', name: '游侠之风', col: '#8ad8ff', desc: '暴击时 20% 几率攻击速度 +6%，持续 5 秒（冷却 5 秒）' });
 /* ---------------- 天帷巨兽的名品（传说，Lv25~30）：只在对应领主的掉落表里（content/items/droptables.js），不随机掉落；分配按官方（地下城内容组确认） ---------------- */
 const LG = (key, def) => defineGear(key, { rar: 4, named: true, noDrop: true, fx: {}, ...def });
 LG('lg_sage_ring', { slot: 'ring', lvl: 29, name: '贤者之戒', fx: { cdr: 0.05, mpRegen: 0.5, crit: 0.03, mcrit: 0.03 }, st: { int: 20, str: 20 },

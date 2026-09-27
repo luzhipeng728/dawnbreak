@@ -77,7 +77,7 @@ Object.assign(menus, {
         h('div', { class: 'hd' }, '属性强化 / 抗性'),
         ...row('火 / 冰', `${S.elem.fire} / ${S.elem.ice}`), ...row('光 / 暗', `${S.elem.light} / ${S.elem.dark}`),
         ...row('火抗 / 冰抗', `${S.res.fire} / ${S.res.ice}`), ...row('光抗 / 暗抗', `${S.res.light} / ${S.res.dark}`));
-      const sets = (p.sets || []).map(x => { const Sd = SETS[x.id]; return Sd ? h('div', {}, h('b', { style: 'color:var(--qset)' }, `${Sd.name}（${x.n}/${Sd.pieces.length}）`), ' ', x.on.length ? x.on.map(n => `${n} 件：${Sd.bonus[n].desc || ''}`).join('；') : h('span', { class: 'dim' }, '未激活')) : null; }).filter(Boolean);
+      const sets = (p.sets || []).map(x => { const Sd = SETS[x.id]; return Sd ? h('div', {}, h('b', { style: 'color:var(--qset)' }, `${Sd.name}（${x.n}/${Sd.pieces.length}）`), ' ', x.on.length ? x.on.map(n => { const B = Sd.bonus[n], P = B.proc && [].concat(B.proc).find(q => q && q.desc); return `${n} 件：${B.desc || ''}${P && !(B.desc || '').includes(P.desc) ? '；' + P.desc : ''}`; }).join('；') : h('span', { class: 'dim' }, '未激活')) : null; }).filter(Boolean);
       const broken = durItems().filter(x => x.dur <= 0);
       const info = h('div', { class: 'stsets' },
         h('div', {}, '防具精通：', h('b', { class: 'gold' }, (ATYPES[p.mastery] || {}).name || '-'), ` ${p.masteryN || 0}/5 件`, h('span', { class: 'dim' }, p.masteryN ? '（每件都有额外加成）' : '（穿上精通类型的防具有额外加成）')),

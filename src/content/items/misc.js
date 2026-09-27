@@ -47,7 +47,7 @@ defineItem('amp_purify', { kind: 'mat', name: '异界气息净化书', rar: 3, p
 defineItem('amp_guard', { kind: 'mat', name: '增幅保护券', rar: 3, price: 20000, sellMul: 0.05, col: '#ff8ab0', icon: 'item_amp_guard', src: '凯丽处购买；商城', desc: '在增幅界面勾选使用：增幅失败时装备不会破碎、不会归零，只降 1 级（券被消耗）。' });
 defineItem('amp_book', { kind: 'mat', name: '黄金增幅书', rar: 4, price: 30000, sellMul: 0.05, col: '#ffd23a', icon: 'item_amp_book', src: '商城；深渊派对', desc: '在增幅界面勾选使用：本次增幅成功率 +15%（最高 100%）。' });
 defineItem('m_aura', { kind: 'mat', name: '强烈的气息', rar: 2, price: 600, sellMul: 0.2, col: '#ffb24a', icon: 'item_m_aura', src: 'Lv10 以上地下城的领主和精英；深渊派对', desc: '锻造武器用的材料，从强大的敌人身上散逸出来的气息。' });
-defineItem('abyss_ticket', { kind: 'mat', name: '深渊派对邀请函', rar: 2, price: 4000, sellMul: 0.1, col: '#c05aff', icon: 'item_abyss_ticket', src: 'Lv12 以上地下城掉落（领主为主）；歌兰蒂斯处购买 / 兑换；每日任务「深渊的呼唤」', desc: '进入深渊派对（格兰之森深渊、天空之城深渊）需要消耗 1 张。' });
+defineItem('abyss_ticket', { kind: 'mat', name: '深渊派对邀请函', rar: 2, price: 4000, sellMul: 0.1, col: '#c05aff', icon: 'item_abyss_ticket', src: 'Lv12 以上地下城掉落（领主为主）；歌兰蒂斯处购买 / 兑换；每天第 3 次通关地下城时歌兰蒂斯赠送', desc: '进入深渊派对（格兰之森深渊、天空之城深渊）需要消耗 1 张。' });
 defineItem('m_cosmos', { kind: 'mat', name: '宇宙灵魂', rar: 4, price: 5000, sellMul: 0.05, col: '#8ae0ff', icon: 'item_m_cosmos', src: '深渊派对（通关必得）', desc: '深渊派对里收集到的灵魂结晶。可以在歌兰蒂斯处兑换史诗装备。' });
 defineItem('m_otherworld', { kind: 'mat', name: '浓密的异界精髓', rar: 3, price: 3000, sellMul: 0.1, col: '#6ad0a0', icon: 'item_m_otherworld', src: '深渊派对的深渊领主、堕落守护者', desc: '异界气息浓缩成的精髓。可以在歌兰蒂斯处兑换异界套装。' });
 defineItem('m_diamond', { kind: 'mat', name: '金刚石', rar: 3, price: 2500, col: '#bfefff', icon: 'item_mat_diamond', desc: '分解传说以上的装备得到的宝石，价值不菲。' });

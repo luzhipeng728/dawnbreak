@@ -209,14 +209,16 @@ function abyssOtherworldPiece() {
   return S ? pick(S.pieces) : null;
 }
 
-/* ---------------- 任务：资格任务（解锁深渊门）+ 每日（邀请函） ---------------- */
-if (typeof defineQuest === 'function') {
-  defineQuest('d_abyss', { type: 'daily', name: '深渊的呼唤', npc: 'grandis', lvl: 16, pre: ['q_abyss_gf'],
-    desc: '【每日】通关任意地下城 3 次，歌兰蒂斯会送你深渊派对邀请函。',
-    goals: [{ type: 'clear', dungeon: 'any', n: 3 }],
-    talk: { offer: ['深渊的气息每天都在变浓。', '通关 3 次地下城回来，我给你准备邀请函。'], done: ['辛苦了。这些邀请函，好好用。'] },
-    reward: { expFrac: 0.05, gold: 1000, items: [{ key: 'abyss_ticket', n: 2 }] } });
-}
+/* ---------------- 每日的邀请函：完成资格任务后，每天第 3 次通关地下城（不限哪张）时，歌兰蒂斯送来 2 张邀请函 ----------------
+   （原先打算做成每日任务，但任务组的每日任务总数有上限（3~5 个），改成通关计数奖励，效果一样） */
+const ABYSS_DAILY_N = 3, ABYSS_DAILY_TICKETS = 2;
+bus.on('dungeonClear', () => {
+  const d = save.data; if (!d || !(d.questDone || {}).q_abyss_gf) return;
+  const S = abyssData(), day = dayKey();
+  if (S.dailyDay !== day) { S.dailyDay = day; S.dailyN = 0; }
+  if (S.dailyN >= ABYSS_DAILY_N) return;
+  if (++S.dailyN === ABYSS_DAILY_N) { giveItem(makeItem('abyss_ticket', ABYSS_DAILY_TICKETS)); toastMsg(`歌兰蒂斯送来了今天的深渊派对邀请函 ×${ABYSS_DAILY_TICKETS}`, '#e0a0ff'); }
+});
 
 /* ---------------- NPC 功能入口（NPC 定义在 content/world/towns.js，这里追加功能按钮） ----------------
    歌兰蒂斯：深渊派对（官方：资格任务、邀请函、宇宙灵魂兑换史诗都在她这里）；凯丽：增幅（官方后期凯丽也能增幅）；林纳斯：锻造；罗莉安：附魔；赛丽亚：装备图鉴 */

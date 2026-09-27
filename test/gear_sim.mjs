@@ -107,7 +107,7 @@ const res = await page.evaluate(({ N, TARGET, OFF }) => {
       log.runs++; log.rooms += rooms;
       for (const s of SLOTS) if (inv.equip[s] && inv.equip[s].durMax) inv.equip[s].dur = inv.equip[s].durMax;
       game.gold -= 3 * 200;   // 药剂与修理（粗略）
-      if (!base && log.runs % 6 === 0 && abyssOpen()) inv.add(makeItem('abyss_ticket', 2));   // 每日任务「深渊的呼唤」（约 6 次地下城 = 1 天）
+      if (!base && log.runs % 6 === 0 && abyssOpen()) inv.add(makeItem('abyss_ticket', 2));   // 每天第 3 次通关送 2 张邀请函（按约 6 次地下城 = 1 天算）
     }
     town(); snap();
     log.codex = codexStats().epic;

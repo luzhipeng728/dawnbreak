@@ -56,8 +56,10 @@ function gearFire(on, ctx = {}) {
     if (P.cd) gearRt.cd[P.id] = game.t + P.cd;
   }
 }
+// 被击 / 击杀这类没有目标的触发：找离玩家最近的敌人（250 像素内）
+function gearNearFoe(p) { let best = null, bd = 250; for (const e of ents) if (e.team === 'e' && !e.dead && e.hp > 0) { const d = Math.abs(e.x - p.x) + Math.abs(e.y - p.y) * 1.5; if (d < bd) { bd = d; best = e; } } return best; }
 function gearAct(p, P, ctx) {
-  const t = ctx.target, alive = t && !t.dead && t.hp > 0 && t.team === 'e';
+  const t = ctx.target && ctx.target.team === 'e' ? ctx.target : (P.act === 'strike' || P.act === 'debuff') && (P.on === 'hurt' || P.on === 'lowhp' || P.on === 'kill' || P.on === 'skill') ? gearNearFoe(p) : ctx.target, alive = t && !t.dead && t.hp > 0 && t.team === 'e';
   const act = P.act || (P.cut ? 'cut' : P.burn ? 'status' : 'strike');
   if (act === 'strike') {
     if (!alive) return false;

@@ -31,7 +31,7 @@ const data = await page.evaluate((ids) => {
     for (const k of ['far', 'floor', 'edge']) if (!ASSET_SRC[`bg/${D.theme}_${k}`]) errs.push(`${id}: 缺少背景 bg/${D.theme}_${k}`);
   }
   const S = SCENES.sky_castle; if (!S) errs.push('缺少区域 sky_castle');
-  else { for (const g of S.gates) if (!DUNGEONS[g.dungeon]) errs.push('区域里的门指向不存在的地下城 ' + g.dungeon); if (S.gates.length !== ids.length) errs.push('区域的门数量不对'); }
+  else { for (const g of S.gates) if (!DUNGEONS[g.dungeon]) errs.push('区域里的门指向不存在的地下城 ' + g.dungeon); if (S.gates.filter(g => !(DUNGEONS[g.dungeon] || {}).abyss).length !== ids.length) errs.push('区域的门数量不对'); }   // 深渊派对的门（装备深化，content/abyss.js）不算
   const lv = ids.map(id => DUNGEONS[id]).filter(D => !D.hidden).map(D => D.lvl[0]);
   if (lv.some((v, i) => i && v < lv[i - 1])) errs.push('地下城等级没有从左到右递增');
   return errs;

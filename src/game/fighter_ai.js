@@ -21,6 +21,7 @@ function aiKit(cls, job, lv = 30) {
 const AI_CHARGE = new Set(['iai', 'gl_cannon', 'bm_raid', 'gl_x1', 'mg_jack', 'mg_snowman', 'mg_orb', 'mg_vortex', 'slam']);   // 可以按住蓄力的技能
 class FighterBrain {
   constructor(p, level = 2) { this.p = p; this.L = AI_LEVELS[level] || AI_LEVELS[2]; this.t = 0; this.nextThink = 0; this.seenAct = null; this.seenT = 0; this.hold = null; this.holdUntil = 0; this.follow = null; this.yWob = 0; this.techRoll = null; }
+  reset() { this.t = 0; this.nextThink = 0; this.seenAct = null; this.seenT = 0; this.hold = null; this.holdUntil = 0; this.follow = null; this.techRoll = null; }   // 新回合
   target() { let best = null, bd = 1e9; for (const o of ents) if (foe(this.p, o)) { const d = Math.abs(o.x - this.p.x) + Math.abs(o.y - this.p.y) * 2 + (o.fighter ? -300 : 0); if (d < bd) { bd = d; best = o; } } return best; }
   ready(id) { const p = this.p, S = SKILLS[id]; return S && lvOf(p, id) > 0 && !(p.cool[id] > 0) && p.mp >= S.mp && (!S.job || S.job === jobOf(p)) && barOf(p).indexOf(id) >= 0; }
   // 从技能栏里挑一个满足条件的技能

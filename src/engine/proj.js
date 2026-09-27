@@ -16,7 +16,7 @@ function spawnProj(o) {
 }
 function updateProjs(dt) {
   for (let i = projs.length - 1; i >= 0; i--) {
-    const p = projs[i];
+    const p = projs[i]; if (!p) continue;   // 回调在遍历中删掉了投射物（例如领主死亡清场）
     if (p.owner.hitstop > 0 && p.freezeWithOwner) continue;
     p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.grav) p.vz -= p.grav * dt;
     if (p.update) p.update(p, dt);
@@ -37,7 +37,7 @@ function updateProjs(dt) {
         if (!p.pierce) { dead = true; break; }
       }
     }
-    if (dead) { if (p.onEnd && !p.culled) p.onEnd(p); projs.splice(i, 1); }
+    if (dead) { if (p.onEnd && !p.culled) p.onEnd(p); const j = projs.indexOf(p); if (j >= 0) projs.splice(j, 1); }
   }
 }
 function drawProjShadows(c) { for (const p of projs) if (p.shadow) { c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(sx(p.x), sy(p.y, 0), p.shadow, p.shadow * 0.35, 0, 0, TAU); c.fill(); } }

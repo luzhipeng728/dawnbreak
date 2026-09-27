@@ -43,7 +43,7 @@ const duel = {
     projs.length = 0; groundFx.length = 0; game.timeStop = 0; game.cutin = null; game.slowmo = false;
     [[this.a, 330, 1], [this.b, 790, -1]].forEach(([p, x, f]) => {
       Object.assign(p, { x, y: DEPTH / 2, z: 0, vx: 0, vy: 0, vz: 0, face: f, dead: false, hp: p.hpMax, mp: p.mpMax, invul: 0, superArmor: 0, stun: 0, hitstop: 0, act: null, status: {}, buffs: {}, cool: {}, chasers: [], rot: 0, reboundCd: 0, dodgeCd: 0, breakCd: 0, burning: false });
-      if (p.brain) p.brain.t = 0;
+      if (p.brain) p.brain.reset();
       p.grabbed = null; p.heldBy = null; p.deadT = 0; p.remove = false; if (!ents.includes(p)) ents.push(p); p.setState('idle'); p.play('idle', true); resetCmb(p); applyBuffs(p);
     });
     this.state = 'intro'; this.t = 0; this.timer = DUEL_CFG.time; this.say(`ROUND ${this.round}`, 1.1);

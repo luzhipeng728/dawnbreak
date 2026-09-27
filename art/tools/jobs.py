@@ -20,6 +20,91 @@ POSE = ('Strict side view profile facing RIGHT, neutral relaxed standing pose, a
         'and legs slightly apart so every limb is clearly separated and visible.')
 REF_TAIL = f'Art style: {CHIBI}. Plain pure white background, isolated single character, full body visible, no ground shadow, no text.'
 NPC_TAIL = f'Art style: {CHIBI}. Plain pure white background, isolated single character, full body visible, no ground shadow, no text.'
+# 城镇 NPC 立绘 / 建筑（world 阶段起沿用）
+NPC_TAIL2 = f'Art style: {CHIBI}. Standing in a relaxed pose in 3/4 view facing RIGHT. Plain pure white background, isolated single character, full body visible, no ground shadow, no text.'
+BLD = f'{STYLE}. Isolated single building seen from the front at a slight top-down angle like a building in a 2D side-scrolling RPG town, the whole building visible from the ground to the roof, flat ground line at the bottom. Plain pure white background, no people, no text, no signs with letters.'
+GATE = (f'{STYLE}. A dungeon entrance gate standing on an area map of a 2D side-scrolling fantasy action RPG, seen from the front at a slight top-down angle, '
+        'the whole gate visible from the ground to the top, a flat ground line at the bottom, the arch opening filled with a swirling glowing magic portal. '
+        'Plain pure white background, isolated single object, no people, no text, no letters, no signboard.')
+# AI 原图目录（art/src 不进仓库）：在 worktree 里跑时设 ART_SRC_ROOT=<主仓库>/art，原图才不会随 worktree 一起丢
+SRC_ROOT = os.environ.get('ART_SRC_ROOT') or ROOT
+# 第二批城镇 NPC（官方经典版的赫顿玛尔 / 西海岸 / 艾尔文防线 NPC，外观为原创 Q 版设计）
+NPCS2 = {
+    'npc_tuguan': 'Tuguan the Clay Pot, a hot-blooded young street peddler who always wears a big brown clay pot upside-down on his head like a helmet (his eyes peek out under the rim), a tan sleeveless vest, an orange scarf, baggy brown pants and sandals, proudly holding up a small round clay jar with both hands, shouting cheerfully',
+    'npc_ray': 'Ray, a young frontier sentry guard of an elven border town, short brown hair, a round steel helmet with a green feather, light green and brown leather armor with a leaf emblem, a short green cape, holding a long spear upright beside him, friendly but alert',
+    'npc_lily': 'Lily, a little girl about ten years old with short orange-red twin braids and freckles, wearing a headband with fake pointy elf ears, a green hooded cape over a yellow dress, hugging a big picture book about elves, sparkling excited eyes',
+    'npc_albert': 'Albert Bernstein, a scholarly middle-aged skill researcher with neat grey-blond hair and a monocle, a long dark green coat with many pockets stuffed with scrolls and notes, holding an open thick book in one hand and a quill in the other',
+    'npc_boken': 'Boken, a stout jovial middle-aged guild manager with a round belly, short black beard and a bald head, a red and gold officer uniform with a sash covered in guild badges, holding a big ledger book under his arm',
+    'npc_vier': 'Vier Crew, an energetic young arena tournament announcer with spiky blond hair, a white and red jacket with gold epaulettes and a bow tie, holding a brass megaphone, one fist raised with excitement',
+    'npc_norton': 'Norton, a sly but friendly middle-aged merchant with slicked-back brown hair and a thin curled mustache, a purple vest over a white shirt, a gold pocket-watch chain, holding a magnifying glass up to a sparkling gem',
+    'npc_sosia': 'Sosia, a warm young potion seller woman with long wavy wine-red hair, a white blouse, a dark red corset vest and a long brown skirt, holding a wooden tray with red and blue potion bottles',
+    'npc_nuoyu': 'Nuoyu, a young girl teleport guide with a short silver-blue bob haircut, a navy and white travel guide uniform with a small cape and a feathered beret, holding a glowing blue magic compass in her hand',
+    'npc_olan': 'Grandma Olan, a kind short old lady with white hair in a bun and round glasses, a brown knitted shawl over a plum dress and a white apron, holding a wicker basket of bread and apples',
+    'npc_kanina': 'Kanina, a tough young woman armor merchant with a short black ponytail and tanned skin, a sleeveless leather top with one steel shoulder guard, leather gloves, holding a small round shield and a helmet',
+    'npc_sinda': 'Sinda, a quiet young man material merchant with messy brown hair and a red bandana, a canvas work apron over a green shirt, carrying a small wooden crate filled with ore chunks, leather and cloth',
+    'npc_sherlock': 'Sherlock, a friendly little goblin traveling merchant with green skin and big pointy ears, a monocle, a brown deerstalker detective hat and a checkered brown cape, carrying a huge backpack stacked with goods, holding up a shiny gold coin with a grin',
+    'npc_minette': 'Minette, a mysterious young woman rogue guild master with long dark purple hair in a high ponytail, a black and purple assassin outfit with a long scarf covering her mouth, arms crossed, a curved dagger at her hip',
+    'npc_lorian': 'Lorian, the prettiest girl of the harbor town, a lovely young woman with long wavy pink-blonde hair and a flower hairpin, a light blue sailor-style dress with a white collar, holding a small magic wand and a little jewelry box',
+    'npc_kakun': 'Kakun, a calm dark elf merchant man with dark grey skin, long pointed ears and white hair tied back, a hooded brown and purple travel robe, a large war hammer resting on his shoulder',
+    'npc_daphne': 'Daphne, an elegant young woman jeweler with short curly teal hair, a jeweler loupe pushed up on her head, a white blouse and a navy vest with gold buttons, holding up a sparkling gem necklace',
+    'npc_alice': 'Alice the bard, a mysterious gentle young woman with very long flowing silver-lavender hair, a deep blue and white dress with little star patterns, holding a small golden harp and playing it',
+    'npc_ophelia': 'Ophelia Beylance, a young scholarly priestess of an ancient sea-goddess cult with long straight blue hair and round glasses, a white and teal robe with gold wave patterns, holding an old rolled scroll',
+    'npc_marin': 'Marin, a cheerful young sailor girl ferry guide with short brown hair under a white sailor cap, a blue and white sailor uniform with a red neckerchief, holding a glowing teleport lantern',
+}
+# 第二批城镇建筑 / 设施（560 高）
+BLD2 = {
+    'b_townhall': 'the city hall of a white magic capital city: an elegant white marble civic building with a tall clock tower, blue slate roofs with gold trim, columns, blue banners with a star emblem, wide stone steps',
+    'b_fountain': 'ONLY a round white marble plaza fountain standing alone with NOTHING behind it (no buildings, no walls, no trees): a wide round basin with blue water, a central pedestal with a small statue of an old wizard holding up a glowing crystal orb, water spraying from the rim, a few flowers at its base',
+    'b_teleporter': 'a magic teleport platform: a round raised stone dais with a glowing blue magic circle on top, four small crystal pillars with floating blue crystals, glowing runes',
+    'b_potion': 'a cozy potion shop: a small white stone and timber shop with a red awning, a big round window full of colorful potion bottles, a hanging sign shaped like a potion bottle, flower boxes',
+    'b_merchant': 'a merchant trading house: a two-storey timber shop with a purple striped awning, shelves of goods and gems in the window, crates and sacks piled in front, a hanging scale sign',
+    'b_armorshop': 'an armor shop: a sturdy stone shop with a dark red awning, shields, helmets and chest armor displayed on racks in front, a hanging shield-shaped sign',
+    'b_grocery': 'an old grocery house in an old town: a weathered cream stone and dark timber house with a green awning, baskets of fruit, vegetables and bread on wooden tables in front',
+    'b_oldhouse': 'an old town house: a tall narrow weathered white stone house with a crooked dark timber frame, a slanted old tiled roof with moss, small balcony with plants, cracked plaster',
+    'b_tavern': 'a back-alley tavern: a dim cozy wooden pub with a crescent-moon shaped hanging sign (no letters), warm yellow light from the windows, barrels stacked by the door, hanging lanterns',
+    'b_alley': 'a shabby back-alley building: a narrow brick house with patched walls, laundry hanging on a line between windows, wooden crates and a trash barrel, a small stair to a basement door',
+    'b_goblinstall': 'a cluttered goblin merchant stall: a patched colorful tent stall stacked with strange goods, pots, lanterns, maps and trinkets, a big wooden cart wheel, a small goblin-face flag',
+    'b_jewelry': 'a seaside jewelry shop: a white stone shop with a blue and white striped awning, a big display window full of sparkling rings and necklaces, seashell decorations, a lantern',
+    'b_ship': 'ONLY a single large wooden sailing ship alone with NOTHING next to it (no buildings, no houses, no dock), seen from the side, white sails furled on three masts, blue and white hull with gold trim, small flags, a gangplank hanging down on the right',
+    'b_guildhall': 'the grand hall of a magic guild: a tall violet and white stone building with a big pointed dome, glowing purple stained-glass windows, floating runes and small floating crystals around the spire, grand stairs',
+    'b_library': 'a magic library tower: a round dark blue stone tower full of bookshelves visible through tall arched windows, floating books around it, a telescope on the balcony',
+    'b_potstall': 'a clay pot seller stall: a small wooden stall with a straw roof stacked high with many round clay jars and pots of different sizes and colors, a pot-shaped lantern',
+    'b_board': 'a wooden town notice board on two posts with a small shingled roof, several blank paper notices and a map pinned on it (no writing), a small lantern hanging on the side',
+    'b_arena': 'the entrance of a fighting arena: a round white stone colosseum gate with red and gold banners, crossed swords emblem above the door, torches',
+    'b_well': 'an old stone water well with a wooden roof, a rope and a bucket, flowers around the base',
+    'b_skystair': 'the entrance to the sky castle: a white marble archway at the bottom with two blue banners and glowing crystal lanterns, behind it a long white stone stairway winding upward into a pile of fluffy white clouds, a small silhouette of a floating castle on top of the clouds (the whole thing is one tall narrow structure, nothing else around it)',
+}
+# 各地下城的门（官方区域地图的门各有特色：洛兰是林间木门、幽暗密林是扭曲枯树门、雷鸣废墟是石门、格拉卡是牛头人营地木门……）
+GATES = {
+    'g_lorien': 'a cute forest gate: two thick tree-trunk pillars joined by an arch of leafy vines and little flowers, small hanging lanterns, a bright blue-green portal',
+    'g_lorien_deep': 'a deeper forest gate: a huge old mossy tree root arch with glowing mushrooms and hanging moss, a goblin-made wooden warning plank with scratches (no letters), a teal portal',
+    'g_dark_woods': 'a haunted forest gate: two twisted black dead trees bending together into an arch, thorny branches, purple fog around the base, a dark violet portal',
+    'g_dark_woods_deep': 'a cat-demon forest gate: a twisted dark tree arch decorated with cat-eared stone totems, claw marks, hanging purple cloth charms, a magenta portal',
+    'g_frozen_woods': 'a frozen forest gate: an arch of snow-covered dead trees and huge ice crystals with icicles, snow piled at the base, a pale icy blue portal',
+    'g_thunder_ruins': 'a thunder ruins gate: an ancient broken marble stone archway with carved runes, a cracked column on each side topped with glowing yellow lightning crystals, a stormy blue portal crackling with electricity',
+    'g_venom_ruins': 'a poisoned ruins gate: a crumbling purple stone archway strangled by poisonous green vines, bubbling toxic puddles at its base, a sickly acid green portal',
+    'g_dark_thunder': 'a cursed crypt gate: a gothic black stone arch with skulls and bones, iron chains, cold blue ghost flames in braziers, a pale ghostly blue-white portal',
+    'g_graca': 'a minotaur war camp gate: a wooden palisade gate of sharpened log stakes with a huge bull skull with horns mounted on top, tribal red banners and torches, a warm orange portal',
+    'g_blazing_graca': 'a burning minotaur camp gate: a scorched wooden palisade gate on fire with a charred bull skull on top, glowing embers and small flames, a fiery red portal',
+    # 天空之城（地下城内容组的 sky_castle 区域地图用）
+    'g_dragon_tower': 'a sky tower gate: a tall white stone tower doorway with two coiled teal-green wyvern statues on both sides, wisps of cloud wrapped around the top, a warm orange portal',
+    'g_puppet_hall': 'a palace entrance hall gate: a grand ornate palace doorway with a cold-faced puppet doll statue standing on each side, puppet strings hanging down from the lintel, a purple portal',
+    'g_golem_tower': 'a golem tower gate: a massive rough boulder tower doorway whose frame is held up by two huge stone golem arms, glowing golden runes carved into the stones, a golden yellow portal',
+    'g_dark_corridor': 'a dark corridor gate: a pitch-black gothic arched corridor entrance with an armored knight statue on each side, dark red light glowing from the gaps of their helmets, a dark crimson portal',
+    'g_lord_palace': 'a castle lord palace gate: a magnificent gold and white palace gate with a radiant halo and sun crest on top, a dazzling white-gold portal',
+    'g_floating_castle': 'a floating castle gate: a ruined broken castle gate floating on a small cloud island with chunks of rock drifting below it, a huge carved eye emblem above the door, a magenta portal',
+}
+# 小道具：一张 4×4 的道具表（切开后当城镇装饰）
+PROPS = {
+    'props_town': ['an iron street lamp post with a glowing lantern', 'a tall pole with a long blue banner flag with a gold star emblem', 'a stack of three wooden crates', 'two wooden barrels',
+                   'a wooden park bench', 'a stone flower planter box full of colorful flowers', 'a small merchant hand cart with sacks and apples', 'a sitting orange tabby cat, side view',
+                   'a white chicken, side view', 'a small brown puppy sitting, side view', 'a hay bale with a pitchfork', 'a pile of grain sacks',
+                   'a potted small round tree', 'a wooden signpost with blank boards', 'a stack of firewood logs', 'a wooden bucket of water'],
+    'props_coast': ['a big iron ship anchor', 'a coil of thick rope', 'a fishing net hanging on two posts', 'a white seagull standing on a wooden post, side view',
+                    'a red and white lifebuoy ring', 'a stack of fish crates', 'a wooden rowing boat upside down', 'a harbor bollard with rope',
+                    'a floating violet magic crystal on a small stone pedestal', 'a tall stack of old magic books', 'a bubbling magic cauldron with purple smoke', 'a brass telescope on a tripod',
+                    'a black cat with a tiny witch hat sitting, side view', 'a street lamp with a purple magic flame', 'a potted blue glowing flower', 'a wooden treasure chest'],
+}
 
 # ---- 角色立绘（要拆件做骨骼动画的） ----
 CHARS = {
@@ -73,6 +158,27 @@ BG = {
              'a low wooden fence with flower planters, crates, barrels and small bushes'),
 }
 
+# 第二批城镇场景：赛丽亚的房间、赫顿玛尔市政街 / 旧城区 / 后街、西海岸魔法师公会（中央广场沿用 town）
+TOWN_BG = {
+    'seriaRoom': ('The inside of a cozy elven girl bedroom built inside a giant hollow tree: warm honey-colored wooden walls with natural wood grain, a round window with two fresh green leaves on the frame and white lace curtains swaying, '
+                  'a soft bed with a green quilt, a bookshelf, a small table with a tray of milk, strawberries and bread, potted plants, hanging lanterns, warm morning sunbeams. Interior view of the back wall of the room.',
+                  'a polished warm wooden plank floor of a cozy room with a round green woven rug, soft morning light',
+                  'a row of low potted plants, a small wooden stool, stacked books and a basket'),
+    'civic': ('The grand main boulevard of a white magic capital city: elegant white marble buildings with blue slate roofs and gold trim, a distant white royal palace with towers and a cathedral spire, blue banners with star emblems, '
+              'magic street lamps with floating crystals, neat trees, a bright clear blue sky with soft clouds.',
+              'a wide boulevard paved with large clean white and pale grey marble tiles in a neat pattern with thin gold lines, a few petals, bright daylight',
+              'a low white marble balustrade with blue flower planters and small trimmed bushes'),
+    'oldtown': ('The old quarter of a fantasy capital city in the late afternoon: tall narrow weathered houses of cream stone and dark timber leaning together, crooked tiled roofs, stone arches, ivy, laundry lines, a small old church bell tower, warm golden light.',
+                'an old worn cobblestone street with uneven brown and grey stones, cracks with little weeds, a few fallen leaves, warm afternoon light',
+                'an old low stone wall with ivy, wooden crates, clay pots and a broken cart wheel'),
+    'backstreet': ('A narrow back alley of a fantasy city at dusk: shabby brick and timber buildings close together, patched awnings, hanging laundry, tangled wooden balconies, glowing paper lanterns and warm windows, a purple dusk sky, a little mysterious but cozy.',
+                   'a dim back alley ground of dark worn bricks and cobblestones with puddles reflecting lantern light, scattered straw and paper scraps',
+                   'a row of wooden crates, trash barrels, sacks, a broken fence and a sleeping stray cat'),
+    'magicGuild': ('The courtyard of a grand magic academy guild by the sea: violet and white stone towers with pointed roofs and glowing purple windows, floating crystals and runes in the air, a big magic observatory dome, '
+                   'the sparkling blue sea and sailing ships in the distance, twilight sky with stars appearing.',
+                   'an elegant courtyard floor of dark violet and white stone tiles with faintly glowing blue rune circles inlaid, soft magical light',
+                   'a low violet stone balustrade with glowing crystal lamps, potted blue flowers and stacked books'),
+}
 def far_prompt(t): return (f'Side-scrolling game stage background, {STYLE}. {BG[t][0]} Only the scenery behind the play area: the bottom 12 percent of the image '
                            'is dark foreground ground detail where the walkable floor begins. Wide horizontal composition, detail spread evenly across the whole width, no single focal point, no characters, no text, no UI.')
 def floor_prompt(t): return (f'Floor texture for the walkable ground of a 2D side-scrolling beat-em-up stage, seen from the side at a shallow top-down angle like the floor of a classic belt-scrolling brawler: {BG[t][1]}. '
@@ -158,7 +264,6 @@ def jobs(phase):
         for n, act in acts.items():
             L.append(J(f'src/cutin_{n}.png', f'Using this exact chibi character (same design, same colors, same cute art style), draw a dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {act}. Plain pure white background, no text.', '1536x1024', model='gpt-image-2.5-sunburst', ref=f'src/{n}_ref.png'))
     if phase == 'world':
-        BLD = f'{STYLE}. Isolated single building seen from the front at a slight top-down angle like a building in a 2D side-scrolling RPG town, the whole building visible from the ground to the roof, flat ground line at the bottom. Plain pure white background, no people, no text, no signs with letters.'
         for n, d in [
             ('b_inn', 'Seria\'s cozy elven inn: a large two-storey wooden inn built around the trunk of a giant old tree, green leafy roof, warm lantern light in round windows, wooden porch and door, flower pots'),
             ('b_forge', 'Linus\'s blacksmith forge: a sturdy stone and timber smithy with a glowing furnace, an anvil and hanging swords, axes and shields on the wall outside, a chimney with smoke, wooden awning'),
@@ -175,7 +280,6 @@ def jobs(phase):
             ('b_signpost', 'a wooden direction signpost with two blank arrow-shaped boards pointing left and right, on a small grassy base'),
         ]:
             L.append(J(f'src/world/{n}.png', f'{d}. {BLD}', '1536x1024'))
-        NPC_TAIL2 = f'Art style: {CHIBI}. Standing in a relaxed pose in 3/4 view facing RIGHT. Plain pure white background, isolated single character, full body visible, no ground shadow, no text.'
         for n, d in [
             ('npc_seria', 'Seria Kirmin, a gentle young elf girl with very long flowing golden-blonde hair, pointed elf ears, big emerald eyes, a green and white elven dress with a leaf-shaped hair ornament, kind smile, hands clasped in front'),
             ('npc_linus', 'Linus, a burly middle-aged blacksmith with short brown hair, thick mustache and beard, muscular arms, a brown leather apron over a white shirt, holding a big blacksmith hammer on his shoulder'),
@@ -200,6 +304,26 @@ def jobs(phase):
             BG[n] = d
             L.append(J(f'src/bg/{n}_far.png', far_prompt(n), '3840x2160'))
             L.append(J(f'src/bg/{n}_floor.png', floor_prompt(n), '3840x2160'))
+    # ---- 第二批城镇：新 NPC、建筑、各地下城的门、道具表、新场景背景（town2 = 除交界带外的全部；town2e = 交界带，要以远景为参考） ----
+    if phase == 'town2':
+        for n, d in NPCS2.items():
+            L.append(J(f'src/world/{n}.png', f'Full-body NPC character illustration for a 2D side-scrolling fantasy RPG town. {d}. {NPC_TAIL2}', '1024x1536', model='gpt-image-2.5-sunburst'))
+        for n, d in BLD2.items():
+            L.append(J(f'src/world/{n}.png', f'{d}. {BLD}', '1536x1024'))
+        for n, d in GATES.items():
+            L.append(J(f'src/world/{n}.png', f'{d}. {GATE}', '1536x1024'))
+        for n, items in PROPS.items():
+            L.append(J(f'src/world/{n}.png', f'A sprite sheet of {len(items)} separate small decoration props for a 2D side-scrolling RPG town, arranged in a grid of 4 columns and 4 rows on a plain pure white background, '
+                       f'evenly spaced with generous white gaps, no prop touching another, each prop seen from the front-side at a slight top-down angle, {STYLE}. In reading order: '
+                       + '; '.join(f'({i + 1}) {t}' for i, t in enumerate(items)) + '. No text, no numbers, no labels, no ground shadows.', '2048x2048'))
+        for t in TOWN_BG:
+            BG[t] = TOWN_BG[t]
+            L.append(J(f'src/bg/{t}_far.png', far_prompt(t), '3840x2160'))
+            L.append(J(f'src/bg/{t}_floor.png', floor_prompt(t), '3840x2160'))
+    if phase == 'town2e':
+        for t in TOWN_BG:
+            BG[t] = TOWN_BG[t]
+            L.append(J(f'src/bg/{t}_edge.png', edge_prompt(t), '3840x2160', ref=f'src/bg/{t}_far.png'))
     if phase == 'world3':
         BG['frozenWoods'] = ('A frozen enchanted forest in deep winter: snow-covered ancient trees with icicles, frozen blue mist, pale blue light, ice crystals glowing faintly, a quiet cold atmosphere.',
                              'a snowy forest floor: packed snow with footprints, patches of blue ice, frozen roots, small ice crystals and scattered pine needles, cold blue light',
@@ -261,11 +385,11 @@ def jobs(phase):
     return L
 
 def run(job, i, n):
-    out = os.path.join(ROOT, job['out'])
+    out = os.path.join(SRC_ROOT, job['out'])
     if os.path.exists(out): return f'skip {job["out"]}'
     os.makedirs(os.path.dirname(out), exist_ok=True)
     if job['ref']:
-        cmd = ['python3', S, 'edit', job['prompt'], '-i', os.path.join(ROOT, job['ref']), '-o', out, '-s', job['size'], '-q', job['q']]
+        cmd = ['python3', S, 'edit', job['prompt'], '-i', os.path.join(SRC_ROOT, job['ref']), '-o', out, '-s', job['size'], '-q', job['q']]
     else:
         cmd = ['python3', S, 'gen', job['prompt'], '-o', out, '-s', job['size'], '-q', job['q']]
     if job['model']: cmd += ['-m', job['model']]

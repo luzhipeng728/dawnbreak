@@ -5,15 +5,21 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(__file__))
 from prep import remove_bg
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC = os.environ.get('ART_SRC_ROOT') or ROOT   # AI 原图所在的 art 目录（在 worktree 里跑时指向主仓库）
 # 地面贴图的缩放：源图缩到多宽（越窄 = 纹理越小）；交界带同理
-FLOOR_W = {'elvenguard': 1800, 'westcoast': 1700, 'frozenWoods': 2200, 'forest': 2400, 'forestDark': 2000, 'ruins': 1700, 'ruinsPoison': 1800, 'camp': 1700, 'campFire': 1900, 'ruinsDark': 1500, 'town': 1500}
+FLOOR_W = {'elvenguard': 1800, 'westcoast': 1700, 'frozenWoods': 2200, 'forest': 2400, 'forestDark': 2000, 'ruins': 1700, 'ruinsPoison': 1800, 'camp': 1700, 'campFire': 1900, 'ruinsDark': 1500, 'town': 1500,
+           'seriaRoom': 1500, 'civic': 1600, 'oldtown': 1500, 'backstreet': 1500, 'magicGuild': 1500}
 EDGE_W = {'town': 1800}
+FAR_CROP = {'seriaRoom': (0.08, 0.78)}   # 远景截取的纵向范围（默认 22%~92%）；室内的地板线更高
+only = set(sys.argv[1:])                  # bgs.py [主题 ...]：只处理这些主题
 out = os.path.join(ROOT, 'final', 'bg'); os.makedirs(out, exist_ok=True)
 for t, fw in FLOOR_W.items():
-    s = lambda k: os.path.join(ROOT, 'src', 'bg', f'{t}_{k}.png')
+    if only and t not in only: continue
+    s = lambda k: os.path.join(SRC, 'src', 'bg', f'{t}_{k}.png')
     if os.path.exists(s('far')):
         im = Image.open(s('far')).convert('RGB'); W = 1650; im = im.resize((W, round(im.height * W / im.width)), Image.LANCZOS); H = im.height
-        im.crop((0, round(H * 0.22), W, round(H * 0.92))).save(f'{out}/{t}_far.webp', 'WEBP', quality=70, method=6)
+        y0, y1 = FAR_CROP.get(t, (0.22, 0.92))
+        im.crop((0, round(H * y0), W, round(H * y1))).save(f'{out}/{t}_far.webp', 'WEBP', quality=70, method=6)
     if os.path.exists(s('floor')):
         fl = Image.open(s('floor')).convert('RGB'); fl = fl.resize((fw, round(fl.height * fw / fl.width)), Image.LANCZOS); h = 470; y0 = (fl.height - h) // 2
         fl.crop((0, y0, fw, y0 + h)).save(f'{out}/{t}_floor.webp', 'WEBP', quality=68, method=6)

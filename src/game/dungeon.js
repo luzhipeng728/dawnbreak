@@ -225,11 +225,12 @@ class Dungeon {
     // 实时评价（右下）
     if (!(typeof uiPref === 'function' && uiPref('hideRank'))) {   // End 键 / 设置里可以隐藏
       const S = this.score(), rk = rankOf(S.total);
-      c.fillStyle = 'rgba(8,6,10,.6)'; c.fillRect(1640, 840, 260, 96);
-      uiText(rk[0], 1890, 912, { size: 62, align: 'right', color: RANK_COL[rk[0]], sw: 7, font: '"Arial Black",sans-serif', weight: 900, stroke: '#1a0a00' });
-      uiText(`操作 ${S.ops}`, 1652, 870, { size: 18, color: '#ffe8c0', sw: 3 });
-      uiText(`技巧 ${S.tech}`, 1652, 896, { size: 18, color: '#ffe8c0', sw: 3 });
-      uiText(`被击 ${this.hurt}`, 1652, 922, { size: 18, color: '#ff9a9a', sw: 3 });
+      const ry = 700;   // 右下角留给菜单按钮栏，评价面板放在它上方
+      c.fillStyle = 'rgba(8,6,10,.6)'; c.fillRect(1640, ry, 260, 96);
+      uiText(rk[0], 1890, ry + 72, { size: 62, align: 'right', color: RANK_COL[rk[0]], sw: 7, font: '"Arial Black",sans-serif', weight: 900, stroke: '#1a0a00' });
+      uiText(`操作 ${S.ops}`, 1652, ry + 30, { size: 18, color: '#ffe8c0', sw: 3 });
+      uiText(`技巧 ${S.tech}`, 1652, ry + 56, { size: 18, color: '#ffe8c0', sw: 3 });
+      uiText(`被击 ${this.hurt}`, 1652, ry + 82, { size: 18, color: '#ff9a9a', sw: 3 });
     }
     uiText(`${Math.floor(this.t / 60)}:${String(Math.floor(this.t % 60)).padStart(2, '0')}`, 1880, 58, { size: 18, align: 'right', color: '#ccc', sw: 3 });
     if (this.state === 'dead') {

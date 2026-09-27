@@ -79,6 +79,7 @@ ui/quickquest.js
 ui/job.js
 ui/worldmap.js
 ui/guide.js
+ui/minimap.js
 content/sprites.js
 # 外观与换装：武器图数据、外观规则、外观合成（给职业精灵模型挂外观层）
 content/avatar/weapon_art.js

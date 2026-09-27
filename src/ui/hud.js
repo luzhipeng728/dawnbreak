@@ -1,14 +1,17 @@
 /* =====================================================================
-   21. HUD（UI 层，逻辑 1920×1080）：底部面板（HP/MP 球、两排技能栏、物品栏、经验/疲劳条）、
-   右上连击数、目标血条 / 领主多管血条、觉醒插图
+   21. HUD（UI 层，逻辑 1920×1080）：底部面板（HP/MP 球、经验条、消耗品栏 1~6、两排技能栏、疲劳条、金币、闪避）、
+   Buff 图标、左下系统消息、右上连击数、目标血条 / 领主多管血条、觉醒插图、任务追踪（任务组 drawQuestTracker）
+   - 技能栏 / 消耗品栏支持拖入（dnd.canvas）、拖出清空、右键清空；悬停显示提示框
+   - hudSkillSlotAt(x, y) / hudQuickSlotAt(x, y)：UW×UH 逻辑坐标 → 格子下标或 -1（布局可能会变，别写死坐标）
+   - uiPref('hudMode')：'full' 完整 / 'lite' 简洁（Tab 切换）
    ===================================================================== */
-const SKILL_KEYS = ['A', 'S', 'D', 'F', 'G', 'H', 'Q', 'W', 'E', 'R', 'T', 'Y'];
+const SKILL_KEYS = ['A', 'S', 'D', 'F', 'G', 'H', 'Q', 'W', 'E', 'R', 'T', 'Y'];   // 旧常量（默认键位），显示请用 keyName('s' + i)
 const iconCache = {};
 function skillIcon(id, size = 64) {
   const key = id + size; if (iconCache[key]) return iconCache[key];
-  const S = SKILLS[id], [cv, c] = offCanvas(size, size), s = size / 64;
+  const S = SKILLS[id] || { col: '#5a5a6a', name: '?' }, [cv, c] = offCanvas(size, size), s = size / 64;
   c.scale(s, s);
-  const g = c.createLinearGradient(0, 0, 64, 64); g.addColorStop(0, shade(S.col, 0.35)); g.addColorStop(0.5, S.col); g.addColorStop(1, shade(S.col, -0.55));
+  const g = c.createLinearGradient(0, 0, 64, 64); g.addColorStop(0, shade(S.col || '#5a5a6a', 0.35)); g.addColorStop(0.5, S.col || '#5a5a6a'); g.addColorStop(1, shade(S.col || '#5a5a6a', -0.55));
   c.fillStyle = g; c.fillRect(0, 0, 64, 64);
   c.strokeStyle = 'rgba(255,255,255,.95)'; c.fillStyle = '#fff'; c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = 5;
   const arc = (x, y, r, a0, a1, w = 6) => { c.lineWidth = w; c.beginPath(); c.arc(x, y, r, a0, a1); c.stroke(); };
@@ -26,34 +29,93 @@ function skillIcon(id, size = 64) {
     case 'rise': c.beginPath(); c.moveTo(32, 56); c.lineTo(32, 10); c.stroke(); c.beginPath(); c.moveTo(20, 22); c.lineTo(32, 8); c.lineTo(44, 22); c.stroke(); arc(32, 40, 14, Math.PI * 0.2, Math.PI * 0.8, 3); break;
     case 'focus': c.beginPath(); c.arc(32, 32, 16, 0, TAU); c.stroke(); c.beginPath(); c.moveTo(32, 6); c.lineTo(32, 58); c.moveTo(6, 32); c.lineTo(58, 32); c.lineWidth = 2; c.stroke(); break;
     case 'awaken': c.fillStyle = '#fff6c0'; c.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 11 : 26, a = i / 10 * TAU - Math.PI / 2; c.lineTo(32 + Math.cos(a) * r, 32 + Math.sin(a) * r); } c.closePath(); c.fill(); break;
-    default: c.font = '900 34px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(S.name[0], 32, 34);
+    default: c.font = '900 34px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText((S.name || '?')[0], 32, 34);
   }
   c.shadowBlur = 0;
   c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = 2; c.strokeRect(1, 1, 62, 62);
   iconCache[key] = cv; return cv;
 }
+/* ---- 底栏布局（逻辑坐标） ---- */
+const HUD = {
+  y0: 940, x0: 452, x1: 1468,                      // 面板上沿 / 左右边
+  hp: { x: 372, y: 994, r: 78 }, mp: { x: 1548, y: 994, r: 78 },
+  quick: { x: 478, y: 962, s: 52, gap: 58 },       // 消耗品栏 1~6：一排
+  skill: { x: 1076, y: 962, s: 52, gap: 60, row: 58 },   // 技能栏 2×6
+  dodge: { x: 912, y: 1018, r: 30 },
+};
+const hudQuickRect = i => ({ x: HUD.quick.x + i * HUD.quick.gap, y: HUD.quick.y, s: HUD.quick.s });
+const hudSkillRect = i => ({ x: HUD.skill.x + (i % 6) * HUD.skill.gap, y: HUD.skill.y + Math.floor(i / 6) * HUD.skill.row, s: HUD.skill.s });
+const hudInRect = (R, x, y, pad = 3) => x >= R.x - pad && x <= R.x + R.s + pad && y >= R.y - pad && y <= R.y + R.s + pad;
+function hudSkillSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < 12; i++) if (hudInRect(hudSkillRect(i), x, y)) return i; return -1; }
+function hudQuickSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < 6; i++) if (hudInRect(hudQuickRect(i), x, y)) return i; return -1; }
+/* ---- 技能栏 / 消耗品栏的写入（窗口和 HUD 共用） ---- */
+function skillBarPut(i, id, from) {
+  const B = game.skillBar; if (i < 0 || i >= B.length || !id) return;
+  if (from !== undefined && from !== null && from >= 0) { B[from] = B[i] ?? null; B[i] = id; }
+  else { const j = B.indexOf(id); if (j >= 0 && j !== i) B[j] = B[i] ?? null; B[i] = id; }
+  if (save.data) save.write();
+}
+function skillBarClear(i) { if (game.skillBar[i] !== undefined) { game.skillBar[i] = null; if (save.data) save.write(); } }
+function quickPut(i, key, from) {
+  const Q = inv.quick; if (i < 0 || i >= 6 || !key) return;
+  if (from !== undefined && from !== null && from >= 0) { Q[from] = Q[i] ?? null; Q[i] = key; }
+  else { const j = Q.indexOf(key); if (j >= 0 && j !== i) Q[j] = Q[i] ?? null; Q[i] = key; }
+  if (save.data) save.write();
+}
+function quickClear(i) { if (inv.quick[i] !== undefined) { inv.quick[i] = null; if (save.data) save.write(); } }
+const quickIconSrc = key => { try { if (typeof itemIconSrc === 'function') return itemIconSrc(key); } catch (e) { /* 回退 */ } return itemIconURL({ kind: 'use', key }); };
+/* ---- 伤害数字开关（设置 → 画面）：包一层兜底，战斗组在 fx.js 原生支持后这层不冲突；屏幕震动由主线程在 game.js 的 updateCamera 里原生判断 uiPref('shake') ---- */
+{ const dn = drawNumbers; drawNumbers = function (c) { if (uiPref('dmgNum')) return dn.apply(this, arguments); }; }
 const ui = {
-  slotMsg: [], combo: { shown: 0, t: 0 },
+  slotMsg: [], combo: { shown: 0, t: 0 }, log: [], seen: new WeakSet(), lastNow: 0,
   flashSlot(i, msg) { this.slotMsg[i] = { msg, t: 0.8 }; sfx.error(); },
+  inGame() { return !!game.player && (game.scene === 'dungeon' || game.scene === 'test' || game.scene === 'town'); },
+  panelOn() { return this.inGame() && !menus.hudHidden(); },
   draw() {
-    const c = uctx;
+    const c = uctx, now = performance.now(), rdt = Math.min(0.1, (now - (this.lastNow || now)) / 1000); this.lastNow = now;
+    if (!this.inputReady) this.initInput();
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, ucan.width, ucan.height);
     c.setTransform(uiScale, 0, 0, uiScale, 0, 0);
-    if (game.scene === 'dungeon' || game.scene === 'test' || game.scene === 'town') this.drawPanel(c);
-    if (game.scene === 'dungeon' || game.scene === 'test') { this.drawCombo(c); this.drawTarget(c); if (game.dungeon) game.dungeon.drawUI(c); }
-    if (game.cutin) this.drawCutin(c);
+    if (save.data && game.player && game.scene !== 'title' && !game.paused) save.data.playTime = (save.data.playTime || 0) + rdt;   // 角色选择界面显示的游戏时间
+    if (this.inGame()) this.collectLog(); else for (const m of toastList) this.seen.add(m);
+    const fight = game.scene === 'dungeon' || game.scene === 'test';
+    if (this.panelOn()) { this.drawLog(c, rdt); this.drawPanel(c); }
+    if (fight) { this.drawCombo(c); this.drawTarget(c); if (game.dungeon) game.dungeon.drawUI(c); if (typeof drawQuestTracker === 'function') drawQuestTracker(c); }
     if (game.scene === 'town' && world) worldUI(c);
-    if (PARAMS.has('fps')) uiText(`${fps.toFixed(0)} fps · ents ${ents.length} fx ${fxList.length}`, 1900, 30, { size: 20, align: 'right' });
+    if (game.cutin && uiPref('cutin')) this.drawCutin(c);
+    if (game.scene === 'title') this.drawToasts(c);
+    if (PARAMS.has('fps') || uiPref('fps')) uiText(`${fps.toFixed(0)} fps · ents ${ents.length} fx ${fxList.length}`, 1900, 30, { size: 20, align: 'right' });
     menus.drawUI(c);
+  },
+  // 标题 / 选角界面上的提示（城镇和地下城的提示由 worldUI / dungeon.drawUI 画）
+  drawToasts(c) {
+    let ty = 120;
+    for (let i = toastList.length - 1; i >= 0; i--) { const m = toastList[i]; m.t += 1 / 60; if (m.t > 3) { toastList.splice(i, 1); continue; } c.globalAlpha = m.t > 2.4 ? (3 - m.t) / 0.6 : 1; uiText(m.msg, 960, ty, { size: 30, align: 'center', color: m.col, sw: 5 }); ty += 42; c.globalAlpha = 1; }
+  },
+  /* ---- 左下系统消息（获得物品 / 金币 / 升级 / 系统提示的滚动记录） ---- */
+  collectLog() {
+    for (const m of toastList) if (!this.seen.has(m)) { this.seen.add(m); this.pushLog(m.msg, m.col); }
+  },
+  pushLog(msg, col = '#e8e0d0') { this.log.push({ msg, col, t: 0 }); if (this.log.length > 30) this.log.shift(); },
+  // 连续捡到的金币合并成一条
+  logGold(n) { const L = this.log[this.log.length - 1]; if (L && L.gold && L.t < 2) { L.gold += n; L.msg = `获得 ${fmtNum(L.gold)} G`; L.t = 0; } else { this.pushLog(`获得 ${fmtNum(n)} G`, '#ffd24a'); this.log[this.log.length - 1].gold = n; } },
+  drawLog(c, dt) {
+    const N = 6, list = this.log.slice(-N), lite = uiPref('hudMode') === 'lite';
+    let y = 842;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const m = list[i]; m.t += dt; const a = m.t > 10 ? Math.max(0, 1 - (m.t - 10) / 2) : 1; if (a <= 0) continue;
+      c.globalAlpha = a * (lite ? 0.7 : 1);
+      c.fillStyle = 'rgba(8,6,10,.45)'; c.font = '700 19px "PingFang SC","Microsoft YaHei",sans-serif'; const w = Math.min(600, c.measureText(m.msg).width + 20); c.fillRect(20, y - 21, w, 27);
+      uiText(m.msg, 30, y, { size: 19, color: m.col, sw: 3 }); y -= 30; c.globalAlpha = 1;
+    }
   },
   drawOrb(c, x, y, r, frac, colA, colB, label, val) {
     c.save();
-    // 外框
     const rim = c.createLinearGradient(x - r, y - r, x + r, y + r); rim.addColorStop(0, '#d8b870'); rim.addColorStop(0.5, '#6a4a22'); rim.addColorStop(1, '#e8cf8a');
     c.fillStyle = rim; c.beginPath(); c.arc(x, y, r + 9, 0, TAU); c.fill();
     c.fillStyle = '#0a0608'; c.beginPath(); c.arc(x, y, r + 2, 0, TAU); c.fill();
     c.beginPath(); c.arc(x, y, r, 0, TAU); c.clip();
-    const top = y + r - frac * 2 * r;
+    const top = y + r - clamp(frac, 0, 1) * 2 * r;
     const g = c.createLinearGradient(0, y - r, 0, y + r); g.addColorStop(0, colA); g.addColorStop(1, colB);
     c.fillStyle = g; c.beginPath(); c.moveTo(x - r, y + r);
     for (let i = 0; i <= 20; i++) { const xx = x - r + i * r / 10; c.lineTo(xx, top + Math.sin(game.t * 3 + i * 0.7) * 2.5); }
@@ -64,61 +126,71 @@ const ui = {
     uiText(val, x, y + 8, { size: 22, align: 'center', color: '#fff', sw: 5 });
     uiText(label, x, y - r * 0.35, { size: 16, align: 'center', color: 'rgba(255,255,255,.8)', sw: 4 });
   },
+  slotBox(c, x, y, s, hot) {
+    c.fillStyle = '#0c0908'; c.fillRect(x - 3, y - 3, s + 6, s + 6);
+    c.strokeStyle = hot ? '#ffd23a' : '#6a5436'; c.lineWidth = hot ? 3 : 2; c.strokeRect(x - 3, y - 3, s + 6, s + 6);
+  },
   drawPanel(c) {
     const p = game.player; if (!p) return;
-    const y0 = 952;
-    // 面板底
-    const g = c.createLinearGradient(0, y0, 0, 1080); g.addColorStop(0, 'rgba(34,26,22,.96)'); g.addColorStop(1, 'rgba(12,9,8,.98)');
-    c.fillStyle = g; c.beginPath(); c.moveTo(430, 1080); c.lineTo(450, y0); c.lineTo(1470, y0); c.lineTo(1490, 1080); c.closePath(); c.fill();
-    c.strokeStyle = '#b89450'; c.lineWidth = 3; c.beginPath(); c.moveTo(450, y0); c.lineTo(1470, y0); c.stroke();
-    // 经验条
-    const need = expNeed(game.lvl), ef = clamp(game.exp / need, 0, 1);
-    c.fillStyle = '#1a1210'; c.fillRect(470, y0 + 8, 980, 10); c.fillStyle = '#ffd24a'; c.fillRect(470, y0 + 8, 980 * ef, 10);
-    c.strokeStyle = '#5a4630'; c.lineWidth = 1.5; c.strokeRect(470, y0 + 8, 980, 10);
-    for (let i = 1; i < 10; i++) { c.fillStyle = 'rgba(0,0,0,.5)'; c.fillRect(470 + 98 * i, y0 + 8, 2, 10); }
-    // 等级 / 疲劳
-    uiText(`Lv.${game.lvl}`, 480, y0 - 10, { size: 26, color: '#ffe8a8' });
-    uiText(`${(ef * 100).toFixed(1)}%`, 1440, y0 - 10, { size: 20, align: 'right', color: '#ffe8a8' });
-    { const F = save.data.fatigue; c.fillStyle = '#1a1210'; c.fillRect(1500, 1060, 220, 10); c.fillStyle = '#6ad06a'; c.fillRect(1500, 1060, 220 * F / FATIGUE_MAX, 10); uiText(`疲劳 ${F}/${FATIGUE_MAX}`, 1720, 1052, { size: 16, align: 'right', color: '#bfe8bf', sw: 3 }); }
+    const { y0, x0, x1 } = HUD, lite = uiPref('hudMode') === 'lite', hot = this.hot || {};
+    if (!lite) {
+      const g = c.createLinearGradient(0, y0, 0, 1080); g.addColorStop(0, 'rgba(34,26,22,.96)'); g.addColorStop(1, 'rgba(12,9,8,.98)');
+      c.fillStyle = g; c.beginPath(); c.moveTo(x0 - 22, 1080); c.lineTo(x0, y0); c.lineTo(x1, y0); c.lineTo(x1 + 22, 1080); c.closePath(); c.fill();
+      c.strokeStyle = '#b89450'; c.lineWidth = 3; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+    }
+    // 经验条（10 格）
+    const need = expNeed(game.lvl), ef = clamp(game.exp / need, 0, 1), ey = lite ? 1070 : y0 + 6, ew = x1 - x0 - 36;
+    c.fillStyle = '#1a1210'; c.fillRect(x0 + 18, ey, ew, 9); c.fillStyle = '#ffd24a'; c.fillRect(x0 + 18, ey, ew * ef, 9);
+    c.strokeStyle = '#5a4630'; c.lineWidth = 1.5; c.strokeRect(x0 + 18, ey, ew, 9);
+    for (let i = 1; i < 10; i++) { c.fillStyle = 'rgba(0,0,0,.5)'; c.fillRect(x0 + 18 + ew / 10 * i, ey, 2, 9); }
+    uiText(`Lv.${game.lvl}`, x0 + 22, y0 - 12, { size: 26, color: '#ffe8a8' });
+    uiText(`EXP ${(ef * 100).toFixed(1)}%`, x1 - 20, y0 - 12, { size: 18, align: 'right', color: '#ffe8a8', sw: 4 });
     // HP / MP 球
-    this.drawOrb(c, 380, 990, 78, p.hp / p.hpMax, '#ff5a5a', '#8a0a14', 'HP', `${fmtNum(p.hp)}`);
-    this.drawOrb(c, 1540, 990, 78, p.mp / p.mpMax, '#5ab0ff', '#0a2a8a', 'MP', `${fmtNum(p.mp)}`);
+    this.drawOrb(c, HUD.hp.x, HUD.hp.y, HUD.hp.r, p.hp / p.hpMax, '#ff5a5a', '#8a0a14', 'HP', `${fmtNum(Math.max(0, p.hp))}`);
+    this.drawOrb(c, HUD.mp.x, HUD.mp.y, HUD.mp.r, p.mp / p.mpMax, '#5ab0ff', '#0a2a8a', 'MP', `${fmtNum(Math.max(0, p.mp))}`);
+    // 消耗品栏 1~6
+    for (let i = 0; i < 6; i++) {
+      const R = hudQuickRect(i); this.slotBox(c, R.x, R.y, R.s, hot.kind === 'quick' && hot.i === i);
+      if (typeof drawQuickItem === 'function') drawQuickItem(c, i, R.x, R.y, R.s);
+      uiText(keyName('i' + i), R.x + 2, R.y + 14, { size: 13, color: '#fff', sw: 3 });
+    }
     // 技能栏 2×6
     for (let i = 0; i < 12; i++) {
-      const row = Math.floor(i / 6), col = i % 6, x = 900 + col * 70, y = y0 + 26 + row * 64, id = game.skillBar[i];
-      c.fillStyle = '#0c0908'; c.fillRect(x - 3, y - 3, 64, 64); c.strokeStyle = '#6a5436'; c.lineWidth = 2; c.strokeRect(x - 3, y - 3, 64, 64);
+      const R = hudSkillRect(i), x = R.x, y = R.y, s = R.s, id = game.skillBar[i];
+      this.slotBox(c, x, y, s, hot.kind === 'skill' && hot.i === i);
       if (id && SKILLS[id]) {
-        const S = SKILLS[id], lv = game.skillLv[id] || 0;
-        c.globalAlpha = lv > 0 ? 1 : 0.3; c.drawImage(skillIcon(id), x, y, 58, 58); c.globalAlpha = 1;
-        const cd = (p.cool[id] || 0), cdMax = S.cd * (p.cdMul || 1);
+        const S = SKILLS[id], lv = game.skillLv[id] || 0, jobOk = !S.job || S.job === game.job;
+        c.globalAlpha = lv > 0 && jobOk ? 1 : 0.3; c.drawImage(skillIcon(id), x, y, s, s); c.globalAlpha = 1;
+        const cd = (p.cool[id] || 0), cdMax = (S.cd || 1) * (p.cdMul || 1);
         if (cd > 0) {
-          c.fillStyle = 'rgba(0,0,0,.62)'; c.beginPath(); c.moveTo(x + 29, y + 29); c.arc(x + 29, y + 29, 42, -Math.PI / 2, -Math.PI / 2 + TAU * (cd / cdMax)); c.closePath();
-          c.save(); c.beginPath(); c.rect(x, y, 58, 58); c.clip(); c.beginPath(); c.moveTo(x + 29, y + 29); c.arc(x + 29, y + 29, 42, -Math.PI / 2, -Math.PI / 2 + TAU * (cd / cdMax)); c.closePath(); c.fill(); c.restore();
-          uiText(cd >= 1 ? Math.ceil(cd) + '' : cd.toFixed(1), x + 29, y + 38, { size: 22, align: 'center', color: '#fff', sw: 4 });
-        } else if (p.mp < S.mp) { c.fillStyle = 'rgba(40,60,200,.45)'; c.fillRect(x, y, 58, 58); }
-        const m = this.slotMsg[i]; if (m && m.t > 0) { m.t -= 1 / 60; c.fillStyle = `rgba(200,30,30,${m.t})`; c.fillRect(x, y, 58, 58); }
+          const cx = x + s / 2, cy = y + s / 2;
+          c.save(); c.beginPath(); c.rect(x, y, s, s); c.clip(); c.fillStyle = 'rgba(0,0,0,.62)'; c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, s, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(cd / cdMax, 0, 1)); c.closePath(); c.fill(); c.restore();
+          uiText(cd >= 1 ? Math.ceil(cd) + '' : cd.toFixed(1), cx, cy + 8, { size: 20, align: 'center', color: '#fff', sw: 4 });
+        } else if (p.mp < (S.mp || 0)) { c.fillStyle = 'rgba(40,60,200,.45)'; c.fillRect(x, y, s, s); }
+        if (typeof cmdLocked === 'function' && cmdLocked(id)) { c.fillStyle = '#a02020'; c.fillRect(x + s - 14, y, 14, 14); uiText('锁', x + s - 7, y + 12, { size: 11, align: 'center', color: '#fff', sw: 0 }); }
+        const m = this.slotMsg[i]; if (m && m.t > 0) { m.t -= 1 / 60; c.fillStyle = `rgba(200,30,30,${m.t})`; c.fillRect(x, y, s, s); if (m.msg) uiText(m.msg, x + s / 2, y - 6, { size: 15, align: 'center', color: '#ffb0a0', sw: 3 }); }
       }
-      uiText(SKILL_KEYS[i], x + 3, y + 16, { size: 15, color: '#fff', sw: 3 });
+      uiText(keyName('s' + i), x + 2, y + 14, { size: 13, color: '#fff', sw: 3 });
     }
-    // 物品栏 1–6
-    for (let i = 0; i < 6; i++) {
-      const x = 480 + (i % 3) * 64, y = y0 + 26 + Math.floor(i / 3) * 64;
-      c.fillStyle = '#0c0908'; c.fillRect(x - 3, y - 3, 60, 60); c.strokeStyle = '#6a5436'; c.lineWidth = 2; c.strokeRect(x - 3, y - 3, 60, 60);
-      if (window.drawQuickItem) drawQuickItem(c, i, x, y, 54);
-      uiText(String(i + 1), x + 2, y + 15, { size: 14, color: '#fff', sw: 3 });
-    }
-    // 金币
-    uiText(`${fmtNum(game.gold)} G`, 680 + 20, y0 + 70, { size: 20, color: '#ffd24a', sw: 4 });
-    uiText(`复活币 ×${save.data.coins}`, 700, y0 + 100, { size: 16, color: '#ffe8c0', sw: 3 });
-    // 闪避（Shift）：冷却转圈
-    { const x = 848, y = y0 + 64, r = 30, cd = Math.max(0, p.dodgeCd || 0) / DODGE_CD, br = Math.max(0, p.breakCd || 0);
+    // 闪避（冷却转圈）
+    { const { x, y, r } = HUD.dodge, cd = Math.max(0, p.dodgeCd || 0) / (typeof DODGE_CD !== 'undefined' ? DODGE_CD : 5), br = Math.max(0, p.breakCd || 0);
       c.fillStyle = '#0c0908'; c.beginPath(); c.arc(x, y, r + 3, 0, TAU); c.fill();
       const g2 = c.createRadialGradient(x - 8, y - 10, 2, x, y, r); g2.addColorStop(0, '#9fe8ff'); g2.addColorStop(1, '#1a6aa8'); c.fillStyle = g2; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
-      if (cd > 0) { c.fillStyle = 'rgba(0,0,0,.6)'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + TAU * cd); c.closePath(); c.fill(); }
+      if (cd > 0) { c.fillStyle = 'rgba(0,0,0,.6)'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(cd, 0, 1)); c.closePath(); c.fill(); }
       c.strokeStyle = br > 0 ? '#6a5436' : '#ffe070'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r + 1, 0, TAU); c.stroke();
-      uiText('闪避', x, y + 7, { size: 18, align: 'center', color: '#fff', sw: 4 }); uiText('Shift', x, y - r - 6, { size: 13, align: 'center', color: '#d8d0c0', sw: 3 }); }
-    // BUFF 图标
-    if (p.buffs) { let bx = 460; for (const k in p.buffs) { if (SKILLS[k]) { c.drawImage(skillIcon(k, 32), bx, y0 - 70, 32, 32); uiText(Math.ceil(p.buffs[k].t) + '', bx + 16, y0 - 30, { size: 14, align: 'center' }); bx += 38; } } }
+      uiText('闪避', x, y + 7, { size: 18, align: 'center', color: '#fff', sw: 4 }); uiText(keyName('dodge'), x, y - r - 6, { size: 13, align: 'center', color: '#d8d0c0', sw: 3 }); }
+    if (!lite) {
+      // 疲劳条 + 金币 / 复活币 / SP
+      const F = save.data.fatigue, fx = HUD.quick.x, fy = 1030, fw = HUD.quick.gap * 5 + HUD.quick.s;
+      c.fillStyle = '#1a1210'; c.fillRect(fx, fy, fw, 10); c.fillStyle = '#6ad06a'; c.fillRect(fx, fy, fw * clamp(F / FATIGUE_MAX, 0, 1), 10);
+      c.strokeStyle = '#3a4a30'; c.lineWidth = 1.5; c.strokeRect(fx, fy, fw, 10);
+      uiText(`疲劳 ${F}/${FATIGUE_MAX}`, fx, fy - 4, { size: 15, color: '#bfe8bf', sw: 3 });
+      uiText(`${fmtNum(game.gold)} G`, fx, 1068, { size: 20, color: '#ffd24a', sw: 4 });
+      uiText(`复活币 ×${save.data.coins}`, fx + fw, 1068, { size: 16, align: 'right', color: '#ffe8c0', sw: 3 });
+      uiText(`SP ${fmtNum(game.sp || 0)}`, HUD.dodge.x, 1072, { size: 16, align: 'center', color: (game.sp || 0) > 0 ? '#8aff9a' : '#c8c0b0', sw: 3 });
+    }
+    // BUFF 图标（剩余秒数）
+    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b) continue; const src = SKILLS[k] ? skillIcon(k, 32) : null; if (src) c.drawImage(src, bx, y0 - 84, 34, 34); else { c.fillStyle = b.col || '#6a8aff'; c.fillRect(bx, y0 - 84, 34, 34); } c.strokeStyle = '#ffd23a'; c.lineWidth = 1.5; c.strokeRect(bx, y0 - 84, 34, 34); uiText(Math.ceil(b.t) + '', bx + 17, y0 - 38, { size: 14, align: 'center', sw: 3 }); bx += 40; } }
   },
   drawCombo(c) {
     const n = game.combo;
@@ -131,26 +203,29 @@ const ui = {
     uiText('Hit Combo!', 1790, 290, { size: 28, align: 'right', color: col, sw: 5, font: '"Arial Black",sans-serif', weight: 900 });
     c.restore();
   },
-  // 目标血条：最近被玩家打中的怪物（领主多管血条颜色循环 紫→蓝→绿→黄→红）
+  // 目标血条：最近被玩家打中的怪物（领主多管血条颜色循环 紫→蓝→绿→黄→红，旁边显示剩余管数 ×N）
   drawTarget(c) {
     const t = game.lastTarget; if (!t || (t.dead && t.deadT > 1.0) || game.t - (game.lastTargetT || 0) > 6) return;
-    const x = 560, y = 24, w = 800, h = 26, boss = t.boss;
+    const x = 560, y = 24, w = 800, hh = 26, boss = t.boss;
     const bars = boss ? t.bars || 10 : 1, per = t.hpMax / bars, idx = Math.min(bars - 1, Math.floor(Math.max(0, t.hp - 1) / per)), frac = t.hp <= 0 ? 0 : ((t.hp - idx * per) / per);
     const cols = ['#b050e0', '#3a78ff', '#3ac060', '#f0c030', '#e83a3a'];
-    c.fillStyle = 'rgba(10,8,12,.8)'; c.fillRect(x - 70, y - 6, w + 80, h + 32);
+    c.fillStyle = 'rgba(10,8,12,.8)'; c.fillRect(x - 70, y - 6, w + 80, hh + 32);
     c.fillStyle = '#2a2024'; c.fillRect(x - 64, y, 54, 54); c.strokeStyle = boss ? '#ffd23a' : '#8a7a6a'; c.lineWidth = 2; c.strokeRect(x - 64, y, 54, 54);
-    uiText(boss ? '领' : t.elite ? '精' : '怪', x - 37, y + 38, { size: 28, align: 'center', color: boss ? '#ffd23a' : '#ddd' });
-    if (boss && idx > 0) { c.fillStyle = cols[(idx - 1) % 5]; c.fillRect(x, y, w, h); }
-    else { c.fillStyle = '#300'; c.fillRect(x, y, w, h); }
-    c.fillStyle = boss ? cols[idx % 5] : '#e83a3a'; c.fillRect(x, y, w * frac, h);
-    c.strokeStyle = '#000'; c.lineWidth = 2; c.strokeRect(x, y, w, h);
-    uiText(`Lv.${t.lvl} ${t.name}`, x + 6, y + h + 22, { size: 20, color: boss ? '#ffd23a' : '#fff', sw: 4 });
-    if (boss) uiText(`×${idx + 1}`, x + w - 4, y + h + 24, { size: 24, align: 'right', color: '#fff', sw: 5 });
+    uiText(boss ? '领' : t.elite ? '精' : game.pvp ? '敌' : '怪', x - 37, y + 38, { size: 28, align: 'center', color: boss ? '#ffd23a' : '#ddd' });
+    if (boss && idx > 0) { c.fillStyle = cols[(idx - 1) % 5]; c.fillRect(x, y, w, hh); }
+    else { c.fillStyle = '#300'; c.fillRect(x, y, w, hh); }
+    // 掉血拖尾（白色）
+    const tf = this.trail && this.trail.t === t && this.trail.idx === idx ? this.trail.f : frac;
+    this.trail = { t, idx, f: Math.max(frac, tf - 0.012) };
+    if (tf > frac) { c.fillStyle = 'rgba(255,255,255,.75)'; c.fillRect(x + w * frac, y, w * (tf - frac), hh); }
+    c.fillStyle = boss ? cols[idx % 5] : '#e83a3a'; c.fillRect(x, y, w * frac, hh);
+    c.strokeStyle = '#000'; c.lineWidth = 2; c.strokeRect(x, y, w, hh);
+    uiText(`Lv.${t.lvl ?? ''} ${t.name || ''}`, x + 6, y + hh + 22, { size: 20, color: boss ? '#ffd23a' : '#fff', sw: 4 });
+    if (boss) uiText(`×${idx + 1}`, x + w - 4, y + hh + 24, { size: 24, align: 'right', color: '#fff', sw: 5 });
   },
   drawCutin(c) {
     const k = game.cutin.t / game.cutin.dur, a = k < 0.12 ? k / 0.12 : k > 0.85 ? (1 - k) / 0.15 : 1;
     c.save(); c.globalAlpha = a;
-    // 斜向色带 + 速度线
     c.save(); c.translate(0, 540); c.transform(1, -0.08, 0, 1, 0, 0);
     const band = c.createLinearGradient(0, 0, 1920, 0); band.addColorStop(0, 'rgba(255,190,60,.95)'); band.addColorStop(0.35, 'rgba(120,40,10,.92)'); band.addColorStop(1, 'rgba(20,6,2,.9)');
     c.fillStyle = band; c.fillRect(-40, -150, 2000, 300);
@@ -158,14 +233,85 @@ const ui = {
     for (let i = 0; i < 26; i++) { const y = ((i * 97 + game.t * 900 * (i % 3 + 1)) % 300) - 150, x = (i * 331 + game.t * 2600) % 2400 - 300; c.fillStyle = `rgba(255,230,160,${0.08 + (i % 4) * 0.05})`; c.fillRect(x, y, 260 + (i % 5) * 80, 2 + (i % 3)); }
     c.globalCompositeOperation = 'source-over';
     c.fillStyle = '#ffe070'; c.fillRect(-40, -152, 2000, 4); c.fillRect(-40, 148, 2000, 4);
-    // 立绘：放大的角色上半身（从左侧滑入）
     c.beginPath(); c.rect(-40, -150, 2000, 300); c.clip();
     const who = game.cutin.who, ease = easeOutBack(Math.min(1, k / 0.25)), art = who && IMG[`cutin/${who.cls}`];
-    if (art) { const h = 520, w = art.width * h / art.height; c.drawImage(art, -260 + ease * 520 - w * 0.1, -h / 2 - 20, w, h); }   // 手绘觉醒立绘
-    else { c.translate(-200 + ease * 620, 98 * 8 + 40); c.scale(8, 8); who.model.draw(c, P(POSE.idle, { uaF: 150, faF: 40, wF: 25, head: 2, torso: -4 }), game.t, { glow: 1 }); }
+    if (art) { const hh = 520, w = art.width * hh / art.height; c.drawImage(art, -260 + ease * 520 - w * 0.1, -hh / 2 - 20, w, hh); }   // 手绘觉醒立绘
+    else if (who) { c.translate(-200 + ease * 620, 98 * 8 + 40); c.scale(8, 8); who.model.draw(c, P(POSE.idle, { uaF: 150, faF: 40, wF: 25, head: 2, torso: -4 }), game.t, { glow: 1 }); }
     c.restore();
     uiText(game.cutin.name, 1420 - (1 - ease) * 200, 575, { size: 104, align: 'center', color: '#fff4c0', sw: 12, stroke: '#3a1400', font: '"PingFang SC","Microsoft YaHei",serif', weight: 900 });
     uiText('AWAKENING', 1420, 625, { size: 30, align: 'center', color: '#ffd23a', sw: 5, font: '"Arial Black",sans-serif', weight: 900 });
     c.restore();
   },
+  /* ---- HUD 的鼠标操作：悬停提示、拖出、右键清空、拖入（dnd.canvas）；城镇里右键 / 双击 NPC 对话 ---- */
+  infoAt(x, y) {
+    const p = game.player; if (!p || !this.panelOn()) return null;
+    const inOrb = O => Math.hypot(x - O.x, y - O.y) < O.r + 6;
+    if (inOrb(HUD.hp)) return `<b style="color:#ff8a8a">HP</b> ${fmtNum(p.hp)} / ${fmtNum(p.hpMax)}<br><span class="small dim">4 秒没受伤会自动回复</span>`;
+    if (inOrb(HUD.mp)) return `<b style="color:#8ac8ff">MP</b> ${fmtNum(p.mp)} / ${fmtNum(p.mpMax)}<br><span class="small dim">释放技能消耗 MP，会随时间回复</span>`;
+    const { y0, x0, x1 } = HUD, lite = uiPref('hudMode') === 'lite', ey = lite ? 1070 : y0 + 6;
+    if (x > x0 + 18 && x < x1 - 18 && y > ey - 6 && y < ey + 15) { const need = expNeed(game.lvl); return `<b>Lv.${game.lvl}</b> 经验 ${fmtNum(game.exp)} / ${fmtNum(need)}（${(game.exp / need * 100).toFixed(2)}%）`; }
+    const fw = HUD.quick.gap * 5 + HUD.quick.s;
+    if (!lite && save.data && x > HUD.quick.x && x < HUD.quick.x + fw && y > 1016 && y < 1044) return `<b>疲劳值</b> ${save.data.fatigue} / ${FATIGUE_MAX}<br><span class="small dim">进入新房间消耗 1 点，每天 06:00 恢复</span>`;
+    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b) continue; if (x >= bx && x <= bx + 34 && y >= y0 - 84 && y <= y0 - 50) return `<b>${SKILLS[k] ? SKILLS[k].name : (b.name || k)}</b><br>剩余 ${Math.ceil(b.t)} 秒`; bx += 40; } }
+    return null;
+  },
+  toUI(ev) { const r = stage.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * UW, (ev.clientY - r.top) / r.height * UH]; },
+  slotAt(ev) {
+    const [x, y] = this.toUI(ev); let i = hudSkillSlotAt(x, y); if (i >= 0) return { kind: 'skill', i, id: game.skillBar[i] };
+    i = hudQuickSlotAt(x, y); if (i >= 0) return { kind: 'quick', i, id: inv.quick[i] };
+    return null;
+  },
+  initInput() {
+    this.inputReady = true;
+    const payloadOf = s => s.kind === 'skill' ? { type: 'skill', id: s.id, from: 'bar', slot: s.i, onVoid: () => { skillBarClear(s.i); menus.refresh('skills'); } }
+      : { type: 'item', key: s.id, item: inv.items.find(it => it.key === s.id) || null, from: 'quick', slot: s.i, onVoid: () => quickClear(s.i) };
+    const iconOf = s => s.kind === 'skill' ? skillIcon(s.id, 64).toDataURL() : quickIconSrc(s.id);
+    wcan.addEventListener('pointerdown', ev => {
+      if (ev.button !== 0) return;
+      const s = this.slotAt(ev); if (!s || !s.id) return;
+      ev.preventDefault(); ev.stopPropagation();
+      const x0 = ev.clientX, y0 = ev.clientY; let on = false;
+      const mv = e => { if (!on && Math.hypot(e.clientX - x0, e.clientY - y0) > 6) { on = true; dnd.begin(payloadOf(s), e, iconOf(s)); } if (on) dnd.moveTo(e); };
+      const up = e => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); if (on) dnd.end(e); };
+      addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+    });
+    wcan.addEventListener('click', ev => { const [x, y] = this.toUI(ev); if (this.panelOn() && y > HUD.y0 - 20 && x > HUD.hp.x - 100 && x < HUD.mp.x + 100) ev.stopImmediatePropagation(); }, true);   // 点在底栏上不算点世界（NPC）
+    wcan.addEventListener('contextmenu', ev => {
+      ev.preventDefault();
+      const s = this.slotAt(ev);
+      if (s) { if (s.kind === 'skill') { skillBarClear(s.i); menus.refresh('skills'); } else quickClear(s.i); sfx.click(); return; }
+      if (game.scene === 'town' && typeof worldPointer === 'function') worldPointer(ev, true);   // 右键 NPC 对话
+    });
+    wcan.addEventListener('dblclick', ev => { if (game.scene === 'town' && !this.slotAt(ev) && typeof worldPointer === 'function' && !menus.isOpen('npc')) worldPointer(ev, true); });
+    const itemName = key => (typeof ITEMS !== 'undefined' && ITEMS[key] && ITEMS[key].name) || (typeof CONSUMABLES !== 'undefined' && CONSUMABLES[key] && CONSUMABLES[key].name) || key;
+    wcan.addEventListener('pointermove', ev => {
+      if (dnd.cur) return;
+      const s = this.slotAt(ev), prev = this.hot; this.hot = s;
+      if (s && s.id) {
+        if (s.kind === 'skill' && SKILLS[s.id] && typeof skillTipHtml === 'function') menus.showTip(skillTipHtml(s.id), ev);
+        else if (s.kind === 'quick') { const it = inv.items.find(x => x.key === s.id); menus.showTip(it && typeof itemTip === 'function' ? itemTip(it) : it ? menus.itemTip(it) : `<b>${itemName(s.id)}</b><br><span class="small dim">背包里没有了</span>`, ev); }
+        wcan.style.cursor = 'grab'; this.infoHot = false; return;
+      }
+      if (prev && prev.id) { menus.hideTip(); wcan.style.cursor = ''; }
+      const info = this.infoAt(...this.toUI(ev));   // HP / MP 球、经验条、疲劳条、Buff 图标的说明
+      if (info) { menus.showTip(info, ev); this.infoHot = true; } else if (this.infoHot) { menus.hideTip(); this.infoHot = false; }
+    });
+    wcan.addEventListener('pointerleave', () => { this.hot = null; });
+    dnd.canvas((p, x, y) => {
+      const si = hudSkillSlotAt(x, y);
+      if (si >= 0 && p.type === 'skill') {
+        const S = SKILLS[p.id]; if (!S) return false;
+        if (S.passive) { toastMsg('被动技能不用放进技能栏', '#ffd0a0'); return true; }
+        skillBarPut(si, p.id, p.from === 'bar' ? p.slot : undefined); sfx.click(); menus.refresh('skills'); return true;
+      }
+      const qi = hudQuickSlotAt(x, y);
+      if (qi >= 0 && p.type === 'item') {
+        const key = p.key || (p.item && p.item.key), kind = p.item ? p.item.kind : 'use';
+        if (!key || kind !== 'use') { toastMsg('只有消耗品可以放进快捷栏', '#ffd0a0'); sfx.error(); return true; }
+        quickPut(qi, key, p.from === 'quick' ? p.slot : undefined); sfx.click(); return true;
+      }
+      return false;
+    });
+  },
 };
+bus.on('gold', e => { if (e && e.n > 0) ui.logGold(e.n); });

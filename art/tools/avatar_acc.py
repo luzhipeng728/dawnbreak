@@ -25,11 +25,19 @@ def main():
         boxes = []
         for c, cells in comps:
             ys, xs = np.where(lab == c); boxes.append({'ids': [c], 'x0': xs.min(), 'x1': xs.max() + 1, 'y0': ys.min(), 'y1': ys.max() + 1, 'cells': cells})
-        boxes.sort(key=lambda b: -b['cells']); big, small = boxes[:len(items)], boxes[len(items):]
-        for s in small:
-            cx = (s['x0'] + s['x1']) / 2; b = min(big, key=lambda b: abs((b['x0'] + b['x1']) / 2 - cx))
-            if b['x0'] - 30 <= cx <= b['x1'] + 30: b['ids'].append(s['ids'][0]); b['x0'] = min(b['x0'], s['x0']); b['x1'] = max(b['x1'], s['x1']); b['y0'] = min(b['y0'], s['y0']); b['y1'] = max(b['y1'], s['y1'])
-        big.sort(key=lambda b: b['x0'])
+        # 按横向位置分组：一行里从左到右摆着 N 件，同一件可能是好几块（一对龙角、光环和小翅膀），组间空隙最大的 N-1 处断开
+        boxes = [b for b in boxes if b['cells'] >= 40]
+        boxes.sort(key=lambda b: b['x0'])
+        groups = [[boxes[0]]]; ends = [boxes[0]['x1']]
+        for b in boxes[1:]:
+            if b['x0'] < ends[-1] + 20: groups[-1].append(b); ends[-1] = max(ends[-1], b['x1'])
+            else: groups.append([b]); ends.append(b['x1'])
+        while len(groups) > len(items):   # 合并最近的两组
+            gaps = [groups[i + 1][0]['x0'] - ends[i] for i in range(len(groups) - 1)]; i = int(np.argmin(gaps))
+            groups[i] += groups.pop(i + 1); ends[i] = max(ends[i], ends.pop(i + 1))
+        big = [{'ids': [c for b in g for c in b['ids']], 'x0': min(b['x0'] for b in g), 'x1': max(b['x1'] for b in g),
+                'y0': min(b['y0'] for b in g), 'y1': max(b['y1'] for b in g)} for g in groups]
+        if len(big) != len(items): print(f'{sid}: 切出 {len(big)} 件，应为 {len(items)}  <-- CHECK')
         for (part, _), b in zip(items, big):
             sub = a[b['y0']:b['y1'], b['x0']:b['x1']].copy(); sub[..., 3] = np.where(np.isin(lab[b['y0']:b['y1'], b['x0']:b['x1']], b['ids']), sub[..., 3], 0)
             im = Image.fromarray(sub, 'RGBA'); k = WIDTH_SET.get(sid, {}).get(part, WIDTH[part]) * OVER / im.width

@@ -324,7 +324,9 @@ def remove_bg_tight(im, f=8):
     rgb = np.where(band[..., None], np.clip((a[..., :3] - (1 - alpha[..., None]) * 255) / safe, 0, 255), a[..., :3])
     return Image.fromarray(np.dstack([rgb, alpha * 255]).astype(np.uint8), 'RGBA')
 
-def keep_clothes_holes(rb, a, ref_path):
+NO_WHITE = {'sky2'}   # 这些时装身上没有白色衣物：被围住的纯白一律当白底
+
+def keep_clothes_holes(rb, a, ref_path, no_white=False):
     """时装表：被围住的纯白块，可能是透出来的白底，也可能是白色衣物（毛边、袜子、翅膀）。
     对照占位表（同一套姿势，逐格对齐）：只有占位表同一位置也是“被围住的白底”（去白底后仍不透明的纯白）才算白底；
     占位表那里是身体（白色衣物）或者是敞开的背景（时装多出来的翅膀、宽袖）都保留。
@@ -352,11 +354,23 @@ def keep_clothes_holes(rb, a, ref_path):
         ya, xa = y0 + oy, x0 + ox
         if ya >= 0 and xa >= 0 and ya + (y1 - y0) <= H and xa + (x1 - x0) <= W:
             pocket[y0:y1, x0:x1] = dil(ref_pocket[ya:ya + (y1 - y0), xa:xa + (x1 - x0)], 4)
-    # fill_holes 挖掉的块：不在占位表的白底口袋里就还原
+    # fill_holes 挖掉的块：
+    #   在占位表的白底口袋里 → 白底，挖掉；
+    #   占位表这里是身体 → 白色衣物，还原；
+    #   占位表这里是敞开的背景（时装多出来的翅膀、宽袖围出来的）→ 看外圈：黑色描边围着的是白底（挖掉），浅灰阴影围着的是白色衣物（还原）
+    if no_white: return a, pocket | hole
     lab, comps = components((hole * 255).astype(np.uint8), f=1, min_cells=1)
+    lum = rb[..., :3].astype(np.float32) @ np.array([0.3, 0.59, 0.11], np.float32)
     for c, _ in comps:
         reg = lab == c
-        if pocket[reg].mean() < 0.4: a[reg] = rb[reg]
+        if pocket[reg].mean() >= 0.4: continue
+        ys, xs = np.where(reg); y0, y1, x0, x1 = max(0, ys.min() - 6), ys.max() + 7, max(0, xs.min() - 6), xs.max() + 7
+        sub = reg[y0:y1, x0:x1]; ring = dil(sub, 6) & ~dil(sub, 1) & (rb[y0:y1, x0:x1, 3] > 40) & ~hole[y0:y1, x0:x1]
+        ref_open = (~dil(R[..., 3] > 40, 2))[ys, xs].mean() > 0.5
+        # 外圈亮度中位数：白底口袋四周是黑色描边 / 深色衣物（实测 < 50），白色翅膀 / 毛边里的白块四周是浅灰（实测 > 120）
+        if ref_open and ring.sum() >= 12 and float(np.median(lum[y0:y1, x0:x1][ring])) < 80:
+            pocket[reg] = True; continue        # 新衣物围出来的白底：挖掉，也让后面的补色 / 清白边把它当白底
+        a[reg] = rb[reg]
     return a, pocket
 
 
@@ -371,13 +385,13 @@ def follow_base(st, bw, P, la, lg, lm, body, fist, char, fix):
         st = analyze(P, la, lg, lm, body, fist, char, f2); st['why'] += ' 跟原装'
     return st
 
-def process_sheet(char, sheet, path, names, res, fixes, pv_path, ref_h=None, ref_path=None, base_frames=None):
+def process_sheet(char, sheet, path, names, res, fixes, pv_path, ref_h=None, ref_path=None, base_frames=None, no_white=False):
     """ref_h：按这个参考高度定缩放（时装表用对应占位表的站姿高度：时装去掉了帽子，按自己的站姿量会把人放大）
     ref_path：时装表对照的占位表（区分透出来的白底和白色衣物）"""
     img = Image.open(path)
     rb = np.array(remove_bg_tight(img) if ref_path else remove_bg(img)); im = fill_holes(Image.fromarray(rb, 'RGBA'), min_area=90, thr=251); a = np.array(im)
     pocket = None
-    if ref_path: a, pocket = keep_clothes_holes(rb, a, ref_path)
+    if ref_path: a, pocket = keep_clothes_holes(rb, a, ref_path, no_white)
     g, m = key_maps(a)
     use_m = char == 'mage'
     solid = g > 0.5
@@ -489,6 +503,7 @@ def finish(char, sheet, frames, base, k, res, meta, out_dir, pv_path, dry, base_
             wp.update({k: round(W[k], 1) for k in ('gx', 'gy', 'len', 'front') if k in W})
             if 'ang' in W: wp['ang'] = round(math.radians(W['ang']), 3)
             if 'hr' in W: wp['hand'] = [[round(v, 1) for i in range(10) for v in (W['gx'] + W['hr'] * math.cos(i * math.pi / 5), W['gy'] + W['hr'] * math.sin(i * math.pi / 5))]]
+        if base_frames and fn in base_frames and 'wpn2' not in base_frames[fn]: ent.pop('wpn2', None)   # 时装帧：原装不是双持就不画第二把（改图多出来的绿色碎块）
         meta['frames'][fn] = ent
         if not dry: sm.save(os.path.join(out_dir, f'{fn}.webp'), 'WEBP', quality=Q, method=6)
         tiles.append((fn, sm, ent))
@@ -540,7 +555,7 @@ def main():
                     from avatar_gen import source_sheets
                     bp = source_sheets().get(f'{char}_{sheet}')
                 ref_h = ref_height(bp) if bp else None
-            frames, base, k, _ = process_sheet(char, sheet, path, names, res, fixes, None, ref_h, bp if A.set else None, base_meta['frames'] if A.set else None)
+            frames, base, k, _ = process_sheet(char, sheet, path, names, res, fixes, None, ref_h, bp if A.set else None, base_meta['frames'] if A.set else None, A.set in NO_WHITE)
             finish(char, sheet, frames, base, k, res, meta, out_dir, os.path.join(pv_dir, f'{char}_{sheet}.png'), A.dry, base_meta['frames'] if A.set else None)
         if not A.dry:
             meta['frames'] = dict(sorted(meta['frames'].items()))

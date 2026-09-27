@@ -1,6 +1,7 @@
 /* =====================================================================
-   区域：格兰之森（官方经典版，大转移前）
-   新增地下城：defineDungeon(id, {...})，再在某个区域场景的 gates 里放一个门即可
+   区域：洛兰 / 格兰之森（官方经典版，大转移前）
+   官方：洛兰（洛兰、洛兰深处）在艾尔文防线右边；格兰之森（幽暗密林 ~ 暗黑雷鸣废墟）在赫顿玛尔左手边
+   新增地下城：defineDungeon(id, {...})，再在某个区域场景的 gates 里放一个门，并在 GATE_ART 里登记门的美术
      mobs：[怪物, 权重]；boss：{ kind, lvl }；elite：精英房的怪；rooms：直达路线房间数（= 最少消耗的疲劳）
      hidden：隐藏地下城，满足 unlock（{ quest } 或 { clear }）后门才会出现
    ===================================================================== */
@@ -25,13 +26,29 @@ defineDungeon('blazing_graca', { name: '烈焰格拉卡', lvl: [12, 16], theme: 
 defineDungeon('dark_thunder', { name: '暗黑雷鸣废墟', lvl: [14, 20], theme: 'ruinsDark', rooms: 7, branches: 3, rows: 4, hidden: true, unlock: { quest: 'q_hidden_dark' }, mobs: [['zombie', 3], ['zombieRed', 1], ['plague', 1], ['catVenom', 1]], elite: 'zombieRed', boss: { kind: 'boneLord', lvl: 19 }, bossAdds: 3, clearExp: 6000, bgm: 'abyss', bossBgm: 'boss',
   desc: '【隐藏地下城】阴森的僵尸废墟。盗尸者骨狱息会让地面结出白霜，几秒后白霜处会冻结——边打边跳吧。' });
 
-/* ---- 区域地图：林间道路两旁是各个地下城的门 ---- */
-defineScene('gf_lorien', { name: '格兰之森', area: '格兰之森 · 洛兰', kind: 'field', width: 2900, theme: 'forest', bgm: 'field',
-  exits: [{ side: 'left', to: 'elvenguard' }, { side: 'right', to: 'gf_thunder' }],
-  gates: [{ dungeon: 'lorien', x: 520 }, { dungeon: 'lorien_deep', x: 1120 }, { dungeon: 'dark_woods', x: 1720 }, { dungeon: 'dark_woods_deep', x: 2320 }] });
-defineScene('gf_thunder', { name: '格兰之森', area: '格兰之森 · 雷鸣废墟', kind: 'field', width: 2500, theme: 'ruins', bgm: 'field',
-  exits: [{ side: 'left', to: 'gf_lorien' }, { side: 'right', to: 'gf_graca' }],
-  gates: [{ dungeon: 'thunder_ruins', x: 520 }, { dungeon: 'venom_ruins', x: 1200 }, { dungeon: 'frozen_woods', x: 1880 }] });
-defineScene('gf_graca', { name: '格兰之森', area: '格兰之森 · 格拉卡', kind: 'field', width: 2500, theme: 'camp', bgm: 'field',
-  exits: [{ side: 'left', to: 'gf_thunder' }],
-  gates: [{ dungeon: 'graca', x: 520 }, { dungeon: 'blazing_graca', x: 1200 }, { dungeon: 'dark_thunder', x: 1880 }] });
+/* ---- 各地下城的门（官方区域地图上每个门都有自己的样子）：art 美术、portal 传送门在图里的位置 [cx, cy, rx, ry]（0~1）、col 传送门光色、h 显示高度 ---- */
+const GATE_ART = {
+  lorien: { art: 'world/g_lorien', portal: [0.5, 0.55, 0.17, 0.3], col: '120,230,200' },
+  lorien_deep: { art: 'world/g_lorien_deep', portal: [0.5, 0.56, 0.17, 0.3], col: '100,220,220' },
+  dark_woods: { art: 'world/g_dark_woods', portal: [0.49, 0.55, 0.16, 0.33], col: '190,120,255' },
+  dark_woods_deep: { art: 'world/g_dark_woods_deep', portal: [0.5, 0.56, 0.16, 0.3], col: '255,110,220' },
+  frozen_woods: { art: 'world/g_frozen_woods', portal: [0.5, 0.56, 0.16, 0.3], col: '170,230,255' },
+  thunder_ruins: { art: 'world/g_thunder_ruins', portal: [0.5, 0.56, 0.16, 0.3], col: '140,200,255' },
+  venom_ruins: { art: 'world/g_venom_ruins', portal: [0.5, 0.56, 0.16, 0.3], col: '150,255,110' },
+  dark_thunder: { art: 'world/g_dark_thunder', portal: [0.5, 0.56, 0.16, 0.3], col: '180,220,255' },
+  graca: { art: 'world/g_graca', portal: [0.5, 0.6, 0.16, 0.28], col: '255,180,90' },
+  blazing_graca: { art: 'world/g_blazing_graca', portal: [0.5, 0.6, 0.16, 0.28], col: '255,110,60' },
+};
+/* ---- 区域地图：道路两旁是各个地下城的门；离城镇越近的门等级越低 ---- */
+defineScene('gf_lorien', { name: '洛兰', area: '洛兰', kind: 'field', width: 2200, theme: 'forest', bgm: 'field', ambient: 'leaves', map: [88, 34],
+  exits: [{ side: 'left', to: 'elvenguard' }, { side: 'right', label: '比尔马克帝国试验场', locked: '比尔马克帝国试验场（Lv.50 隐藏地下城）还没有开放' }],
+  gates: [{ dungeon: 'lorien', x: 640 }, { dungeon: 'lorien_deep', x: 1440 }] });
+defineScene('gf_forest', { name: '格兰之森', area: '幽暗密林', kind: 'field', width: 2700, theme: 'forestDark', bgm: 'field', map: [32, 34],
+  exits: [{ side: 'right', to: 'hm_plaza' }, { side: 'left', to: 'gf_thunder' }],
+  gates: [{ dungeon: 'dark_woods', x: 2060 }, { dungeon: 'dark_woods_deep', x: 1360 }, { dungeon: 'frozen_woods', x: 640 }] });
+defineScene('gf_thunder', { name: '格兰之森', area: '雷鸣废墟', kind: 'field', width: 2700, theme: 'ruins', bgm: 'field', map: [20, 44],
+  exits: [{ side: 'right', to: 'gf_forest' }, { side: 'left', to: 'gf_graca' }],
+  gates: [{ dungeon: 'thunder_ruins', x: 2060 }, { dungeon: 'venom_ruins', x: 1360 }, { dungeon: 'dark_thunder', x: 640 }] });
+defineScene('gf_graca', { name: '格兰之森', area: '格拉卡', kind: 'field', width: 2200, theme: 'camp', bgm: 'field', map: [8, 54],
+  exits: [{ side: 'right', to: 'gf_thunder' }],
+  gates: [{ dungeon: 'graca', x: 1500 }, { dungeon: 'blazing_graca', x: 720 }] });

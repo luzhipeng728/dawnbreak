@@ -38,6 +38,7 @@ game/save.js
 content/classes/swordsman.js
 content/world/towns.js
 content/world/grand_flores.js
+ui/worldmap.js
 content/sprites.js
 game/flow.js
 ui/artlab.js

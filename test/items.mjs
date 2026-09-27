@@ -41,6 +41,20 @@ check(await page.isVisible('.idlg:has-text("确认购买")'), '贵重物品（3 
 await shot('03-shop-confirm');
 await page.click('.idlg button:has-text("购买")'); await wait(200);
 check(await ev(() => inv.count('title_hero') === 1), '确认后买到称号');
+// 时装：多选买 3 件，用背包操作栏的“穿戴”按钮穿上（触屏也能用），3 件套生效
+await page.click('.shopwin .shopcats .cat:has-text("时装")'); await wait(150);
+for (const n of ['庆典小礼帽', '庆典外套', '庆典小皮鞋']) await page.click(`.shopwin .srow:has-text("${n}")`);
+await page.click('.shopwin .shopfoot button:has-text("购买选中")'); await wait(250);
+if (await page.isVisible('.idlg')) await page.click('.idlg button:has-text("购买")');
+await wait(200);
+await closeAll(); await ev(() => { IW.invTab = 'avatar'; IW.dollPage = 'avatar'; menus.open('status'); menus.open('inv'); }); await wait(250);
+const sp0 = await ev(() => ({ str: game.player.stats.str, mspd: game.player.stats.mspd }));
+for (let i = 0; i < 3; i++) { await page.click('[data-win=inv] .igrid .islot >> nth=0'); await wait(100); await page.click('[data-win=inv] .ibar button:has-text("穿戴")'); await wait(150); }
+const sp1 = await ev(() => ({ str: game.player.stats.str, mspd: game.player.stats.mspd, n: AV_SLOTS.filter(s => inv.equip[s]).length, set: (game.player.sets || []).find(x => x.id === 'av_festival') }));
+check(sp1.n === 3 && sp1.set && sp1.set.on.includes(3), '时装 3 件穿上，3 件套生效', JSON.stringify(sp1.set));
+check(sp1.str >= sp0.str + 18 && sp1.mspd > sp0.mspd, `时装属性：力量 ${sp0.str}→${sp1.str}，移速 ${sp0.mspd}→${sp1.mspd}`);
+await shot('03b-avatar');
+await ev(() => { IW.dollPage = 'gear'; });
 
 /* ---------- 2. 林纳斯：买武器 + 防具，右键穿戴，属性变化 ---------- */
 step('林纳斯商店 → 穿戴 → 属性变化');

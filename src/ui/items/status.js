@@ -21,6 +21,7 @@ addStyle(`
 .stsets{font-size:.8em;line-height:1.5;background:#0c0a10;border:.1em solid #3a3040;border-radius:.25em;padding:.35em .6em;max-height:7em;overflow:auto}
 `);
 const DOLL_LEFT = ['head', 'top', 'bottom', 'belt', 'shoes'], DOLL_RIGHT = ['weapon', 'title', 'bracelet', 'neck', 'ring'], DOLL_BOTTOM = ['support', 'stone'];
+const AV_LEFT = ['av_hair', 'av_hat', 'av_face', 'av_chest'], AV_RIGHT = ['av_top', 'av_bottom', 'av_belt', 'av_shoes'];
 function equipSlotEl(slot, win) {
   const it = inv.equip[slot];
   return itemSlot(it, {
@@ -40,15 +41,16 @@ Object.assign(menus, {
       recalcStats(p);
       const S = p.stats || {}, pct = v => Math.abs(v) < 1e-4 ? '0%' : (v * 100).toFixed(1) + '%', mul = v => Math.abs(v - 1) < 1e-4 ? '0%' : `${v >= 1 ? '+' : ''}${((v - 1) * 100).toFixed(1)}%`;
       // 纸娃娃
-      const doll = h('div', { class: 'doll' });
-      DOLL_LEFT.forEach((s, i) => { const e = equipSlotEl(s, el); e.style.gridColumn = 1; e.style.gridRow = i + 1; doll.append(e); });
-      DOLL_RIGHT.forEach((s, i) => { const e = equipSlotEl(s, el); e.style.gridColumn = 3; e.style.gridRow = i + 1; doll.append(e); });
+      const av = IW.dollPage === 'avatar', doll = h('div', { class: 'doll' });
+      (av ? AV_LEFT : DOLL_LEFT).forEach((s, i) => { const e = equipSlotEl(s, el); e.style.gridColumn = 1; e.style.gridRow = i + 1; doll.append(e); });
+      (av ? AV_RIGHT : DOLL_RIGHT).forEach((s, i) => { const e = equipSlotEl(s, el); e.style.gridColumn = 3; e.style.gridRow = i + 1; doll.append(e); });
+      const pages = h('div', { class: 'itabs', style: 'margin-bottom:.3em' }, [['gear', '装备'], ['avatar', '时装']].map(([id, nm]) => h('div', { class: 'itab' + ((IW.dollPage || 'gear') === id ? ' on' : ''), onclick: () => { IW.dollPage = id; sfx.click(); el._render(); } }, nm)));
       const t = inv.equip.title;
       const pt = h('div', { class: 'pt' }, t ? h('div', { class: `ttl q${t.rar}` }, `【${t.name}】`) : null);
       const art = IMG[`class/${p.cls}`];
       if (art) pt.append(h('img', { src: art.src }));
       else { const cv = h('canvas', { width: 110, height: 134 }); requestAnimationFrame(() => { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.translate(55, 128); p.model.draw(x, (p.clips && p.clips.idle && p.clips.idle.keys) ? p.clips.idle.keys[0][1] : POSE.idle, game.t, {}); }); pt.append(cv); }
-      doll.append(pt, h('div', { class: 'sp2' }, DOLL_BOTTOM.map(s => equipSlotEl(s, el))));
+      doll.append(pt, h('div', { class: 'sp2' }, av ? [] : DOLL_BOTTOM.map(s => equipSlotEl(s, el))));
       // 属性表
       const row = (a, b, cls = '') => [h('span', {}, a), h('b', { class: cls }, b)];
       const tbl = h('div', { class: 'sttbl' },
@@ -79,7 +81,7 @@ Object.assign(menus, {
       const panel = h('div', { class: 'stpanel col', style: 'gap:.35em' },
         h('div', { class: 'stname' }, `${save.data ? save.data.name : ''}`, h('small', {}, `Lv.${game.lvl} ${statusJobName()}`)),
         tbl, info);
-      return [h('div', { class: 'stwrap' }, doll, panel), h('div', { class: 'ihint' }, '把背包里的装备拖到对应的格子上穿戴；右键装备栏卸下。')];
+      return [h('div', { class: 'stwrap' }, h('div', {}, pages, doll), panel), h('div', { class: 'ihint' }, '把背包里的装备拖到对应的格子上穿戴；右键装备栏卸下。')];
     }, { w: 42, at: 'left' });
     return el;
   },

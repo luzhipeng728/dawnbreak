@@ -54,7 +54,7 @@ const res = await page.evaluate(({ N, DIFF, EXPK, QUEST, QUESTS }) => {
         const g = Math.round(rndi(M.gold ? M.gold[0] : 5, M.gold ? M.gold[1] : 15) * (1 + lv * 0.15) * (o.elite ? 3 : 1) * (o.boss ? 8 : 1)); game.gold += g; log.inc.mob += g;
         const n = o.boss ? 2 + (Math.random() < 0.5 ? 1 : 0) : o.elite ? (Math.random() < 0.6 ? 1 : 0) : (Math.random() < 0.07 ? 1 : 0);
         for (let i = 0; i < n; i++) { const rar = rollRarity(D.drop, o.boss), l = clamp(rndi(dg.lvl[0], dg.lvl[1] + (o.boss ? 1 : 0)), 1, Math.max(dg.lvl[1] + 1, game.lvl + 2)); const it = rar === 5 ? rollEpic(l) || rollEquip({ lvl: l, rar: 4 }) : rollEquip({ lvl: l, rar }); if (it) take(it); }
-        const TB = DROP_TABLES[dg.id]; if (o.boss && TB) for (const [key, p] of TB.boss) if (Math.random() < p * (1 + D.drop * 2)) take(makeItem(key));
+        const TB = autoDropTable(dg); if (o.boss && TB) for (const [key, p] of TB.boss) if (Math.random() < p * (1 + D.drop * 2)) take(makeItem(key));
       };
       const pickMob = () => { const tot = dg.mobs.reduce((s, m) => s + m[1], 0); let r = Math.random() * tot; for (const m of dg.mobs) { r -= m[1]; if (r <= 0) return m[0]; } return dg.mobs[0][0]; };
       for (let r = 0; r < rooms; r++) {

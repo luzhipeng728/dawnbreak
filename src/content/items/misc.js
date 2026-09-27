@@ -66,3 +66,8 @@ defineTitle('title_kanina', { name: '卡妮娜的希望☆', lvl: 10, rar: 3, no
 defineTitle('title_hunter', { name: '怪兽猎杀者', lvl: 12, rar: 3, noDrop: true, st: { str: 12, int: 12 }, fx: { dmgUp: 0.03 }, desc: '讨伐了无数怪物的猎手。' });
 defineTitle('title_basic', { name: '基础精通者', lvl: 5, rar: 2, noDrop: true, st: { str: 5, int: 5, vit: 5, spr: 5 }, fx: { cdr: 0.02 }, desc: '掌握了战斗的基础。' });
 defineTitle('title_awaken', { name: '觉醒者', lvl: 18, rar: 4, noDrop: true, st: { str: 16, int: 16, vit: 16, spr: 16 }, fx: { cdr: 0.04 }, desc: '跨越了极限的勇士。' });
+/* ---- 时装（帕丽丝）：官方 8 部位，同一套集齐有套装效果 ---- */
+const AV_STAT = { av_hair: { cspd: 0.02 }, av_hat: { cspd: 0.02 }, av_face: { aspd: 0.02 }, av_chest: { aspd: 0.02 }, av_top: { str: 10, int: 10, vit: 10, spr: 10 }, av_bottom: { hp: 250, mp: 150 }, av_belt: { evade: 0.02 }, av_shoes: { mspd: 0.04 } };
+const AV_NAME = { av_hair: '庆典发饰', av_hat: '庆典小礼帽', av_face: '庆典圆框眼镜', av_chest: '庆典领结', av_top: '庆典外套', av_bottom: '庆典短裙', av_belt: '庆典缎带腰带', av_shoes: '庆典小皮鞋' };
+defineSet('av_festival', { name: '庆典时装套装', bonus: { 3: { st: { str: 8, int: 8, vit: 8, spr: 8 }, desc: '四维 +8' }, 5: { st: { mspd: 0.03, hp: 300 }, desc: '移动速度 +3%，HP 上限 +300' }, 8: { st: { aspd: 0.03, cspd: 0.03, dmgUp: 0.03 }, desc: '攻击 / 施放速度 +3%，伤害增加 3%' } } });
+for (const s of AV_SLOTS) { defineItem(`${s}_festival`, { kind: 'equip', slot: s, lvl: 1, rar: 2, price: s === 'av_top' || s === 'av_bottom' ? 6000 : 3500, name: AV_NAME[s], set: 'av_festival', st: AV_STAT[s], icon: 'item_' + s, durMax: 0, noEnhance: true, noDisassemble: true, noDrop: true, desc: '帕丽丝精心设计的节日时装。' }); SETS.av_festival.pieces.push(`${s}_festival`); }

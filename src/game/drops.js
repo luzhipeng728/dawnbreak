@@ -23,8 +23,17 @@ function rollEpic(lvl) {
   const E = pool.length ? pick(pool) : null;
   return E ? makeItem(E.key) : null;
 }
+// 没配掉落表的地下城（新加的地下城）：按推荐等级自动生成——等级段内的套装部件和史诗，领主小几率掉落
+function autoDropTable(def) {
+  if (DROP_TABLES[def.id]) return DROP_TABLES[def.id];
+  const lo = def.lvl[0] - 2, hi = def.lvl[1] + 3, boss = [];
+  for (const D of GEAR) if (D.lvl >= lo && D.lvl <= hi && !D.noDrop && (D.set || D.rar === 5)) boss.push([D.key, D.rar === 5 ? 0.008 : 0.025]);
+  const lv = def.lvl[1];
+  defineDropTable(def.id, { boss, mats: [['crystal', 0.07, 3 + Math.floor(lv / 5)], [lv >= 12 ? 'm_elem' : 'm_iron', 0.015, 1], [pick(['c_red', 'c_blue', 'c_white', 'c_black']), 0.02, 1]], auto: true });
+  return DROP_TABLES[def.id];
+}
 function rollDrop(t, dg) {
-  const bonus = dg ? dg.D.drop : 0, T = dg && DROP_TABLES[dg.def.id];
+  const bonus = dg ? dg.D.drop : 0, T = dg && autoDropTable(dg.def);
   const n = t.boss ? 2 + (Math.random() < 0.5 ? 1 : 0) : t.elite ? (Math.random() < 0.6 ? 1 : 0) : (Math.random() < 0.07 ? 1 : 0);
   for (let i = 0; i < n; i++) {
     const rar = rollRarity(bonus, t.boss), lvl = dropLvl(t, dg);

@@ -5,8 +5,11 @@
    - 耐久（受伤 / 死亡掉耐久，0 时属性失效）、修理、强化（官方成功率与失败惩罚）、分解、出售与回购
    - 图标：itemIconSrc(it) 给 <img>，drawItemIcon(c, it, s) 画在画布上
    ===================================================================== */
-const SLOTS = ['weapon', 'title', 'top', 'head', 'bottom', 'belt', 'shoes', 'neck', 'bracelet', 'ring', 'support', 'stone'];
-const SLOT_NAME = { weapon: '武器', title: '称号', top: '上衣', head: '头肩', bottom: '下装', belt: '腰带', shoes: '鞋', neck: '项链', bracelet: '手镯', ring: '戒指', support: '辅助装备', stone: '魔法石' };
+// 时装（官方 8 个部位）：没有耐久，不能强化 / 分解；属性按官方（头部 / 帽子 施放速度、脸部 / 胸部 攻击速度、上衣 四维、下装 HP / MP、腰带 回避、鞋 移动速度）
+const AV_SLOTS = ['av_hair', 'av_hat', 'av_face', 'av_chest', 'av_top', 'av_bottom', 'av_belt', 'av_shoes'];
+const SLOTS = ['weapon', 'title', 'top', 'head', 'bottom', 'belt', 'shoes', 'neck', 'bracelet', 'ring', 'support', 'stone', ...AV_SLOTS];
+const SLOT_NAME = { weapon: '武器', title: '称号', top: '上衣', head: '头肩', bottom: '下装', belt: '腰带', shoes: '鞋', neck: '项链', bracelet: '手镯', ring: '戒指', support: '辅助装备', stone: '魔法石',
+  av_hair: '头部', av_hat: '帽子', av_face: '脸部', av_chest: '胸部', av_top: '上衣', av_bottom: '下装', av_belt: '腰带', av_shoes: '鞋' };
 const ARMOR_SLOTS = ['top', 'head', 'bottom', 'belt', 'shoes'], ACC_SLOTS = ['neck', 'bracelet', 'ring'], SPECIAL_SLOTS = ['support', 'stone'];
 const GRADES = ['最下级', '下级', '中级', '上级', '最上级'];
 const RAR_MUL = [1, 1.25, 1.55, 1.85, 2.2, 2.8];
@@ -65,13 +68,14 @@ const ITEMS = {};
 const CONSUMABLES = {};   // 旧接口：非装备物品的定义（key → def）
 const GEAR = [];          // 可以随机掉落的装备定义
 const EPICS = [];         // 史诗（旧接口：{ slot, cls, lvl, key, name }）
-const TAB_OF = it => it.kind === 'equip' ? (it.slot === 'title' ? 'title' : 'equip') : it.kind === 'use' ? 'use' : it.kind === 'quest' ? 'quest' : 'mat';
+const isAvatar = it => !!it && typeof it.slot === 'string' && it.slot.startsWith('av_');
+const TAB_OF = it => it.kind === 'equip' ? (it.slot === 'title' ? 'title' : isAvatar(it) ? 'avatar' : 'equip') : it.kind === 'use' ? 'use' : it.kind === 'quest' ? 'quest' : 'mat';
 function defineItem(key, def) {
   const D = { key, kind: 'mat', rar: 0, price: 10, ...def };
   if (D.kind === 'equip') {
     D.lvl = D.lvl || 1;
     if (D.slot === 'weapon' && D.wtype) D.cls = D.cls || WTYPES[D.wtype].cls;
-    if (D.durMax === undefined) D.durMax = D.slot === 'title' ? 0 : D.slot === 'weapon' ? (WTYPES[D.wtype] || {}).dur || 30 : D.atype ? Math.round(ATYPES[D.atype].dur * (D.slot === 'top' ? 1 : 0.85)) : 24;
+    if (D.durMax === undefined) D.durMax = D.slot === 'title' || D.slot.startsWith('av_') ? 0 : D.slot === 'weapon' ? (WTYPES[D.wtype] || {}).dur || 30 : D.atype ? Math.round(ATYPES[D.atype].dur * (D.slot === 'top' ? 1 : 0.85)) : 24;
     if (!def.price) D.price = Math.round((40 + D.lvl * 25) * Math.pow(2.2, D.rar) * (D.slot === 'weapon' ? 1.2 : 1) * 1.6);   // 经济模拟（test/econ.mjs）校准过
     if (!D.noDrop && !D.quest) GEAR.push(D);
     if (D.rar === 5) EPICS.push({ slot: D.slot, cls: D.cls || null, lvl: D.lvl, key, name: D.name, fx: D.fx, desc: D.desc });
@@ -215,7 +219,7 @@ function makeEquip(slot, lvl, rar, cls, epic = null) {
 function makeConsumable(key, n = 1) { return makeItem(key, n); }
 
 /* ---------------- 背包 / 装备栏 / 仓库 ---------------- */
-const INV_TABS = [['equip', '装备'], ['use', '消耗品'], ['mat', '材料'], ['quest', '任务'], ['title', '称号']];
+const INV_TABS = [['equip', '装备'], ['use', '消耗品'], ['mat', '材料'], ['quest', '任务'], ['title', '称号'], ['avatar', '时装']];
 const inv = {
   items: [], equip: {}, quick: ['hpS', 'mpS', null, null, null, null], storage: [], cap: 48, storageCap: 48, potCd: 0, _norm: null,
   // 读档后第一次用到时补全旧物品（save.apply 直接替换了数组，这里按数组身份判断）
@@ -405,7 +409,7 @@ function repairAll(verbose, list = repairList()) {
 const ENH_MAX = 16;
 const ENH_RATE = [1, 1, 1, 0.95, 0.9, 0.8, 0.75, 0.621, 0.537, 0.414, 0.339, 0.28, 0.207, 0.173, 0.136, 0.101];
 const enhBonus = e => e <= 0 ? 0 : [0, 0.03, 0.06, 0.1, 0.14, 0.19, 0.25, 0.32, 0.4, 0.5, 0.62, 0.8, 1.0, 1.25, 1.55, 1.9, 2.3][Math.min(ENH_MAX, e)];
-const canEnhance = it => it && it.kind === 'equip' && it.slot !== 'title' && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);
+const canEnhance = it => it && it.kind === 'equip' && it.slot !== 'title' && !isAvatar(it) && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);
 const enhCost = it => ({ gold: Math.round((it.lvl * 24 + 60) * Math.pow(1.42, it.enh) * (1 + it.rar * 0.3)), crystal: Math.max(1, Math.round((it.lvl + 4) * 0.35 * Math.pow(1.25, it.enh))) });
 // 失败后的结果：{ lvl（失败后的强化等级）, broken }
 function enhFailResult(it) {
@@ -469,7 +473,7 @@ function disassembleYield(it) {
   if (it.enh) add('crystal', it.enh * 3);
   return out;
 }
-const canDisassemble = it => it && it.kind === 'equip' && it.slot !== 'title' && !(ITEMS[it.key] && ITEMS[it.key].noDisassemble) && !it.locked;
+const canDisassemble = it => it && it.kind === 'equip' && it.slot !== 'title' && !isAvatar(it) && !(ITEMS[it.key] && ITEMS[it.key].noDisassemble) && !it.locked;
 const disassembleFee = it => Math.ceil(it.lvl * (it.rar + 1) * 2.5);
 function disassemble(list) {
   list = list.filter(it => canDisassemble(it) && inv.items.includes(it));
@@ -493,7 +497,7 @@ function itemArtKey(it) {
     if (it.slot === 'weapon') cands.push(`icon/item_w_${it.wtype || CLASS_START_WEAPON[it.cls] || 'katana'}`, `icon/w_${it.cls || 'sword'}`);
     else if (ARMOR_SLOTS.includes(it.slot)) cands.push(`icon/item_a_${it.atype || 'light'}_${it.slot}`, `icon/${it.slot}`);
     else if (ACC_SLOTS.includes(it.slot)) cands.push(`icon/item_${it.slot}${it.rar >= 3 ? '2' : ''}`, `icon/item_${it.slot}`, `icon/${it.slot}`);
-    else cands.push(`icon/item_${it.slot}`);
+    else cands.push(`icon/item_${it.slot}`, isAvatar(it) ? 'icon/item_title' : null);
   } else cands.push(`icon/item_${it.key}`, `icon/${it.key}`, it.kind === 'quest' ? 'icon/item_quest' : null);
   for (const k of cands) if (k && IMG[k]) return k;
   return cands.find(k => k && typeof ASSET_SRC !== 'undefined' && ASSET_SRC[k]) || null;

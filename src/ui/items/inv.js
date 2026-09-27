@@ -35,6 +35,24 @@ function invDropTarget(target) {
     },
   };
 }
+// 选中物品后的操作栏（鼠标用右键 / 拖放也行；触屏只能点，所以这里给按钮）
+function invActions(it, el) {
+  if (!it) return null;
+  const b = (txt, fn, cls = '') => h('button', { class: 'btn sm ' + cls, onclick: () => { sfx.click(); fn(); } }, txt);
+  const row = h('div', { class: 'ibar', style: 'margin-top:.3em;padding:.3em .45em;background:#0c0a10;border:.08em solid #3a3040;border-radius:.25em' }, h('span', { class: `q${it.rar || 0}`, style: 'font-weight:800;font-size:.85em;max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' }, it.name), h('span', { class: 'sp' }));
+  if (it.kind === 'equip') row.append(b('穿戴', () => invPrimaryPlain(it)));
+  if (it.kind === 'use' && ITEMS[it.key] && ITEMS[it.key].use) row.append(b(ITEMS[it.key].use.open ? '打开' : '使用', () => invPrimaryPlain(it)));
+  if (it.kind === 'use') row.append(h('span', { class: 'small dim' }, '快捷栏'), ...[0, 1, 2, 3, 4, 5].map(i => h('button', { class: 'btn sm' + (inv.quick[i] === it.key ? ' blue' : ''), style: 'padding:.2em .45em', onclick: () => { inv.quick[i] = inv.quick[i] === it.key ? null : it.key; sfx.click(); save.write(); el._render(); } }, String(i + 1))));
+  if (menus.isOpen('shop') && canSell(it)) row.append(b('出售', () => shopSellAsk([it], menus.wins.shop), 'red'));
+  if (menus.isOpen('storage') && it.kind !== 'quest') row.append(b('存入', () => storagePut(it)));
+  if (it.kind !== 'quest') row.append(b('丢弃', () => invDiscard(it, el), 'red'));
+  return row;
+}
+// 不管有没有开商店 / 仓库，直接穿戴 / 使用
+function invPrimaryPlain(it) {
+  if (it.kind === 'equip') { if (inv.wear(it)) { save.write(); itemsRefresh(); } }
+  else if (it.kind === 'use' && inv.useItem(it)) itemsRefresh();
+}
 Object.assign(menus, {
   w_inv() {
     inv.ensure();
@@ -42,10 +60,12 @@ Object.assign(menus, {
       const tab = IW.invTab, cnt = tabCounts(inv.items), list = inv.items.filter(x => TAB_OF(x) === tab);
       const tabs = h('div', { class: 'itabs' }, INV_TABS.map(([id, nm]) => h('div', { class: 'itab' + (id === tab ? ' on' : ''), onclick: () => { IW.invTab = id; sfx.click(); el._render(); } }, nm, h('span', { class: 'cnt' }, cnt[id] || 0))));
       const grid = h('div', { class: 'igrid', 'data-sk': 'inv' });
+      if (IW.invSel && !inv.items.includes(IW.invSel)) IW.invSel = null;
       for (let i = 0; i < inv.cap; i++) {
         const it = list[i];
         grid.append(itemSlot(it, {
-          quick: true, onRight: () => invPrimary(it, el), onDbl: () => invPrimary(it, el),
+          quick: true, sel: it && it === IW.invSel, onRight: () => invPrimary(it, el), onDbl: () => invPrimary(it, el),
+          onClick: () => { IW.invSel = it && IW.invSel !== it ? it : null; el._render(); },
           drag: it ? () => ({ type: 'item', item: it, key: it.key, from: 'inv', onVoid: () => invDiscard(it, el) }) : null,
           drop: invDropTarget(it),
         }));
@@ -58,8 +78,9 @@ Object.assign(menus, {
         h('span', { class: 'small dim' }, `${list.length}/${inv.cap}`),
         h('button', { class: 'btn sm', onclick: () => { inv.sort(); sfx.click(); itemsRefresh(); } }, '整理'),
         menus.w_status ? h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('status')) menus.open('status'); } }, '个人信息') : null);
+      const acts = invActions(IW.invSel, el);
       const hint = h('div', { class: 'ihint' }, menus.isOpen('shop') ? '右键 / 拖进商店：出售' : menus.isOpen('storage') ? '右键：存入仓库' : '右键：穿戴 / 使用 · 拖动：换位置、放进快捷栏 · 拖到窗外：丢弃');
-      return [tabs, grid, quests, bar, hint];
+      return [tabs, grid, quests, bar, acts, hint];
     }, { w: 29, at: 'right' });
     return el;
   },

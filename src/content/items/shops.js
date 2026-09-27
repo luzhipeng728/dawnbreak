@@ -54,8 +54,9 @@ defineShop('olan', { name: '奥兰奶奶的杂货', greet: '孩子，饿了吧�
   { name: '杂货', goods: ['hpS', 'mpS', 'crystal', 'coin'] }] });
 defineShop('tuguan', { name: '土罐的罐子', greet: '罐子里装着什么，打开才知道！', tabs: [
   { name: '罐子', goods: ['pot', 'potGold'] }] });
-defineShop('paris', { name: '帕丽丝的称号', greet: '勇士也要有个响亮的名号才行！', tabs: [
-  { name: '称号', goods: ['title_novice', 'title_learner', 'title_forest', 'title_rich', 'title_brave', 'title_iron', 'title_wind', 'title_flame', 'title_hero', 'title_star'] }] });
+defineShop('paris', { name: '帕丽丝的时装店', greet: '勇士也要穿得漂亮才行！', tabs: [
+  { name: '称号', goods: ['title_novice', 'title_learner', 'title_forest', 'title_rich', 'title_brave', 'title_iron', 'title_sea', 'title_wind', 'title_flame', 'title_hero', 'title_tiger', 'title_king', 'title_star'] },
+  { name: '时装', goods: () => AV_SLOTS.map(s => `${s}_festival`) }] });
 defineShop('roget', { name: '罗杰的港口货栈', markup: 1.1, greet: '船上刚到的稀罕货，要不要看看？', tabs: [
   { name: '稀有物资', goods: ['elixir', 'fatigue', 'guard', 'potCrit', 'potStr', 'potGold'] },
   { name: '稀有材料', goods: ['m_elem', 'c_red', 'c_blue', 'c_white', 'c_black', 'm_diamond'] }] });

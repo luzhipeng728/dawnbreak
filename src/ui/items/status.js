@@ -9,6 +9,7 @@ addStyle(`
 .doll .pt{grid-column:2;grid-row:1 / span 5;display:grid;place-items:end center;position:relative;overflow:hidden}
 .doll .pt img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 .3em .5em #000)}
 .doll .pt canvas{width:9em;height:11em;image-rendering:pixelated}
+.doll .pt canvas.avcv{width:10.4em;height:13em;image-rendering:auto;filter:drop-shadow(0 .3em .5em #000)}
 .doll .pt .ttl{position:absolute;top:.1em;left:0;right:0;text-align:center;font-size:.72em;font-weight:900;text-shadow:0 0 .3em #000,0 0 .3em #000}
 .doll .sp2{grid-column:2;grid-row:6;display:flex;gap:.4em;justify-content:center}
 .stpanel{width:21em}
@@ -48,7 +49,10 @@ Object.assign(menus, {
       const t = inv.equip.title;
       const pt = h('div', { class: 'pt' }, t ? h('div', { class: `ttl q${t.rar}` }, `【${t.name}】`) : null);
       const art = IMG[`class/${p.cls}`];
-      if (art) pt.append(h('img', { src: art.src }));
+      // 外观与换装组的接口：按当前武器 / 时装画站姿小人（没有这个模块时用职业立绘）
+      if (typeof avatarCanvas === 'function' && typeof lookFromEquip === 'function' && SPR_DATA[p.cls]) {
+        const cv = avatarCanvas(p.cls, lookFromEquip(p.cls, inv.equip), 200, 250, 1.75); cv.classList.add('avcv'); pt.append(cv);
+      } else if (art) pt.append(h('img', { src: art.src }));
       else { const cv = h('canvas', { width: 110, height: 134 }); requestAnimationFrame(() => { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.translate(55, 128); p.model.draw(x, (p.clips && p.clips.idle && p.clips.idle.keys) ? p.clips.idle.keys[0][1] : POSE.idle, game.t, {}); }); pt.append(cv); }
       doll.append(pt, h('div', { class: 'sp2' }, av ? [] : DOLL_BOTTOM.map(s => equipSlotEl(s, el))));
       // 属性表

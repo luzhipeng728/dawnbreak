@@ -97,9 +97,21 @@ content/sprites.js
 content/avatar/weapon_art.js
 content/avatar/looks.js
 models/avatar.js
+# 商城与礼包（商城组）：点券、商城、时装 / 天空套、宠物 / 光环、礼包、魔盒与箱子（依赖物品系统、外观、菜单栏）
+content/cash/items.js
+content/cash/catalog.js
+game/shop.js
+game/shop_box.js
+game/shop_pet.js
+ui/cash/shop.js
+ui/cash/box.js
 game/flow.js
 ui/artlab.js
 game/bot.js
 game/fighter_ai.js
 game/duel.js
+# 联机（账号 / 云存档 / 同屏 / 聊天 / 好友 / 组队 / 好友决斗）：放在所有玩法之后、boot.js 之前（启动时要先读登录状态、切到账号存档）
+net/net.js
+net/account.js
+ui/login.js
 boot.js

@@ -95,4 +95,9 @@ game/duel.js
 net/net.js
 net/account.js
 ui/login.js
+net/town.js
+ui/chat.js
+ui/friends.js
+ui/party.js
+net/pvp.js
 boot.js

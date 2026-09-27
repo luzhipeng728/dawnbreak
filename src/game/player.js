@@ -157,6 +157,7 @@ function castSkill(p, id, viaCmd, key) {
   if (S.elem) extra.elem = S.elem;
   if (S.pvp) extra.pvp = S.pvp;
   if (S.speed || S.cast) extra.speed = S.speed || 'cspd';
+  else if (!S.awaken && extra.type !== 'mag') extra.speed = 1 + (aspdOf(p) - 1) * 0.5;   // 物理技能：攻速一半生效（施法类技能看施放速度）
   p.doAct(S.act(lv, p), extra);
   if (human) { game.onSkill(id); bus.emit('skillUse', { id }); }
   return true;

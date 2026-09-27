@@ -55,7 +55,7 @@ function hawkThrow(lv, n) {
 defSkill('g_awaken', { name: '血腥狂欢', cls: 'gun', job: 'ranger', lvReq: 18, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'phys', awaken: true, col: '#c0102a',
   desc: '【觉醒】重踏大地把周围敌人震上天，跃起在空中旋转扫射，落地后双枪乱射，最后以一朵血色蔷薇的爆炸收尾。', pow: lv => skillDmg(20, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
   act: (lv) => ({ name: 'g_awaken', clip: 'crazy', dur: 2.9, superArmor: true, noCounter: true, invul: [0, 2.9],
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '血腥狂欢', who: e }; game.timeStop = 0.9; sfx.awaken(); },
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '血腥狂欢', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); },
     update: e => {
       const a = e.act, pool = () => ents.filter(t => hittable(e, t) && Math.abs(t.x - e.x) < 420);
       if (e.actT > 1.25 && e.actT < 2.45 && Math.floor(e.actT / 0.05) !== a.n) { a.n = Math.floor(e.actT / 0.05); const L = pool(); sfx.gun(0.5); muzzle(e);

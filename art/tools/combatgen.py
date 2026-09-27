@@ -205,6 +205,30 @@ FX = {   # 名字: (描述, 尺寸, 发光?)
     'elemmeteor': ('A single flaming meteor with a swirling rainbow of fire, ice, lightning and dark energy trail, falling diagonally from the top-left toward the bottom-right', Sq, True),
 }
 
+# 转职觉醒插图（HUD 的觉醒 cut-in）：和职业插图同一画风，按转职区分
+CUTIN = {
+    'blade': ('sword', 'summoning a storm of glowing spectral swords around him, katana raised, cyan sword light, determined expression'),
+    'berserker': ('sword', 'eyes glowing red with a fierce berserk grin, the katana blazing with blood-red energy, crimson aura and blood sparks'),
+    'ranger': ('gun', 'twin silver revolvers crossed in front of her face with a confident smirk, red rose petals and flying bullets around'),
+    'launcher': ('gun', 'shouldering an enormous glowing golden ancient particle cannon, fierce grin, hair blown back by the blast'),
+    'elemental': ('mage', 'arms raised summoning meteors of fire, ice, lightning and darkness from a huge glowing magic circle'),
+    'battlemage': ('mage', 'fierce battle stance swinging the staff, a golden dragon aura and small glowing orbs circling her'),
+}
+def cutin_jobs():
+    return [{'out': os.path.join(OUT, 'cutin', f'{j}.png'), 'ref': os.path.join(SRC, f'{c}_ref.png'), 'size': '1536x1024', 'model': 'gpt-image-2.5-sunburst',
+             'prompt': f'Using this exact chibi character (same design, same colors, same cute art style), draw a dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Plain pure white background, no text.'}
+            for j, (c, d) in CUTIN.items()]
+def cutin_prep():
+    """觉醒插图：去白底 → 720×480 → art/final/cutin/<转职>.webp"""
+    from prep import remove_bg
+    from PIL import Image
+    out = os.path.join(HERE, 'final', 'cutin'); os.makedirs(out, exist_ok=True)
+    for j in CUTIN:
+        p = os.path.join(OUT, 'cutin', f'{j}.png')
+        if not os.path.exists(p): print('missing', j); continue
+        im = remove_bg(Image.open(p)).resize((720, 480), Image.LANCZOS); f = os.path.join(out, f'{j}.webp')
+        im.save(f, 'WEBP', quality=82, method=6); print(j, os.path.getsize(f) // 1024, 'KB')
+
 def run(job):
     out = job['out']
     if os.path.exists(out): return f'skip {os.path.basename(out)}'
@@ -233,7 +257,9 @@ def main():
         L = [{'out': os.path.join(OUT, 'icons', f'{n}.png'), 'prompt': icon_prompt([d for _, d in items]), 'size': '2048x2048' if len(items) > 12 else '2048x1536'} for n, items in ICON_SHEETS.items()]
     elif a.phase == 'fx':
         L = [{'out': os.path.join(OUT, 'fx', f'{n}.png'), 'prompt': f'{d}. {GLOW if g else SOLID}', 'size': sz} for n, (d, sz, g) in FX.items()]
-    else: raise SystemExit('phase: sheets | icons | fx')
+    elif a.phase == 'cutin': L = cutin_jobs()
+    elif a.phase == 'cutinprep': cutin_prep(); return
+    else: raise SystemExit('phase: sheets | icons | fx | cutin | cutinprep')
     L = [j for j in L if os.path.basename(j['out']).startswith(a.only)]
     print(f'{len(L)} jobs', flush=True)
     with ThreadPoolExecutor(min(3, a.j)) as ex:

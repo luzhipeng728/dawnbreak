@@ -55,6 +55,8 @@ function setPassive(p, id, on, fx) { if (on) p.buffs[id] = { t: 0.4, passive: tr
 // BUFF 切换（再按一次关闭，例如血之狂暴）
 function toggleBuff(p, id, dur, fx) { if (p.buffs[id]) { delete p.buffs[id]; fxText('解除', p.x, p.y, p.z + 10, { col: '#ccc', size: 10 }); return false; } p.buffs[id] = { t: dur, ...fx }; return true; }
 
+// 觉醒插图：有转职插图（art/final/cutin/<转职>.webp）时用转职的，否则用职业的（HUD 按 who.cls 取 IMG['cutin/…']）
+const cutinWho = e => { const j = jobOf(e); return j && IMG['cutin/' + j] ? { cls: j, model: e.model, x: e.x } : e; };
 /* ---- 常用构件 ---- */
 // 攻击判定：box = [前沿0, 前沿1, 纵深半宽, z0, z1]
 const HB = (t0, t1, box, dmg, o) => ({ t0, t1, box, dmg, ...o });

@@ -104,7 +104,9 @@ class FighterBrain {
     // BUFF：开局 / 过期后补上
     if (p.free && Math.random() < 0.5) { const b = this.pickSkill(['buff'], adx, ady, false); if (b && !p.buffs[b]) { this.cast(b, dir); return; } }
     // 觉醒：对手在范围内、血量不低
-    if (!inAir && o.hp > o.hpMax * 0.25 && Math.random() < L.awaken * 0.15) { const a = this.pickSkill(['awaken'], adx, ady, false); if (a && this.cast(a, dir)) return; }
+    // 觉醒：开局一段时间后，对手被打中（硬直 / 浮空 / 被抓）或就在身边出招时才放；对手血量太低不浪费
+    const openAwk = o.st === 'hit' || o.st === 'air' || o.st === 'held' || (adx < 140 && o.st === 'act');
+    if (!inAir && this.t > 6 && openAwk && o.hp > o.hpMax * 0.2 && Math.random() < L.awaken * 0.5) { const a = this.pickSkill(['awaken'], adx, ady, false); if (a && this.cast(a, dir)) return; }
     const oAir = o.st === 'air' || o.z > 6, oStun = o.st === 'hit' || o.st === 'held', oDown = o.st === 'down' || o.st === 'getup';
     const melee = adx < 90 && ady < 22;
     // ---- 浮空追击 ----

@@ -53,7 +53,7 @@ defSkill('quake', { name: '崩山裂地斩', cls: 'sword', job: 'berserker', lvR
 defSkill('bz_awaken', { name: '魔狱血刹', cls: 'sword', job: 'berserker', lvReq: 18, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'phys', awaken: true, col: '#8a0010',
   desc: '【觉醒】魔剑吸收周围的血气不断变大，最后砸向大地，血气柱贯穿整个画面。', pow: lv => skillDmg(24, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
   act: (lv) => ({ name: 'bz_awaken', clip: 'bzAwk', dur: 2.6, superArmor: true, noCounter: true, invul: [0, 2.0],
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '魔狱血刹', who: e }; game.timeStop = 0.9; sfx.awaken(); },
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '魔狱血刹', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); },
     update: e => { if (e.actT > 0.95 && e.actT < 1.7) { e.drawOpts = { glow: (e.actT - 0.95) * 1.3 }; if (Math.random() < 0.7) fxCharge(e, '#ff3040', 2); } },
     onEnd: e => { e.drawOpts = {}; },
     events: [evAt(0.95, e => { sfx.charge(); fxAura(e, '#ff2030', 1.2); for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < WW) applyHit(e, t, { dmg: skillDmg(1.5, 0.5, lv), stun: 0.8, hs: 0.05, sure: true, col: '#ff4a5a' }, { proj: true }); }),
@@ -72,4 +72,9 @@ CLASSES.sword.passives.push(p => {
   setPassive(p, 'bloodwake', st > 0, { dmg: [0, 0.04 + 0.006 * lv, 0.08 + 0.008 * lv, 0.12 + 0.01 * lv][st], aspd: 0.05 * st, mspd: 0.05 * st });
 });
 // 血之狂暴中普攻附带出血
-CLASSES.sword.onHit = (p, t, h, dmg, act) => { if (act && act.basic && p.buffs.frenzy && !t.dead) addStatus(t, 'bleed', 2, { dps: p.atk * 0.06, src: p }); };
+// 普攻命中：血之狂暴出血；钝器普攻有几率眩晕（原作钝器特性）
+CLASSES.sword.onHit = (p, t, h, dmg, act) => {
+  if (!act || !act.basic || t.dead) return;
+  if (p.buffs.frenzy) addStatus(t, 'bleed', 2, { dps: p.atk * 0.06, src: p });
+  if (weaponType(p) === 'club' && Math.random() < 0.08) addStatus(t, 'stun', 0.8, { src: p });
+};

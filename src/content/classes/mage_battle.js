@@ -85,7 +85,7 @@ defSkill('bm_awaken', { name: '变身贝亚娜', cls: 'mage', job: 'battlemage',
   desc: '【觉醒】唤醒斗神之力变身为贝亚娜：30 秒内攻击力、攻击速度、施放速度大幅提升，炫纹上限 +2 并自动生成。变身时释放斗气冲击。', pow: lv => skillDmg(8, 3, lv), ai: { kind: 'awaken', r: [0, 200], dy: 80 },
   infoExtra: lv => [['攻击力', '+' + pct(0.2 + 0.05 * lv)], ['持续', '30 秒']],
   act: (lv) => ({ name: 'bm_awaken', clip: 'bmAwk', dur: 1.6, superArmor: true, noCounter: true, invul: [0, 1.6],
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '变身贝亚娜', who: e }; game.timeStop = 0.9; sfx.awaken(); },
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '变身贝亚娜', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); },
     events: [evAt(0.95, e => { e.buffs.bm_awaken = { t: 30, atk: 0.2 + 0.05 * lv, aspd: 0.2, cspd: 0.2, mspd: 0.1 }; cam.flash = 0.3; cam.flashCol = '#fff0b0'; cam.shake = 10; sfx.boom(1.2);
       fxAura(e, '#ffd23a', 1.5); fxShock(e.x, e.y, 320, '#ffd070'); fxBurst(e.x, e.y, 60, 320, '#ffe070');
       blast(e, e.x, e.y, 220, { dmg: skillDmg(8, 3, lv), launch: 480, knock: 180, hs: 0.15, big: 2, sure: true, downHit: true, col: '#ffe070' }, { zMax: 240 });

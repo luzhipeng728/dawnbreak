@@ -60,7 +60,7 @@ defSkill('gl_x1', { name: 'X-1 压缩量子炮', cls: 'gun', job: 'launcher', lv
 defSkill('gl_awaken', { name: '远古粒子炮', cls: 'gun', job: 'launcher', lvReq: 18, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'indep', awaken: true, col: '#e0a02a',
   desc: '【觉醒】架起远古巨炮，蓄能后向前方发射贯穿整个画面的粒子光束，连续命中后引发大爆炸。', pow: lv => skillDmg(22, 6, lv), ai: { kind: 'awaken', r: [0, 700], dy: 50 },
   act: (lv) => ({ name: 'gl_awaken', clip: 'lAwk', dur: 2.8, superArmor: true, noCounter: true, invul: [0, 1.2],
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '远古粒子炮', who: e }; game.timeStop = 0.9; sfx.awaken(); },
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '远古粒子炮', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); },
     update: e => { if (e.actT > 0.95 && e.actT < 1.35 && Math.random() < 0.8) fxCharge(e, '#ffd070', 2); },
     events: [evAt(1.35, e => { e.play('lAwkFire', true); cam.flash = 0.25; cam.flashCol = '#fff0c0'; sfx.cannon(1.5); sfx.iai(); fxBeam(e.x + e.face * 70, e.y, e.z + 48, 1000, e.face, { w: 110, dur: 1.2, col: '#ffe090' }); }),
       ...Array.from({ length: 10 }, (_, i) => evAt(1.4 + i * 0.1, e => { cam.shake = Math.max(cam.shake, 6); instantHit(e, { box: [40, 1000, 40, 0, 120], dmg: skillDmg(1.4, 0.4, lv), stun: 0.5, knock: 30, airLift: 140, hs: 0.03, col: '#ffe0a0', sure: true, downHit: true }); })),

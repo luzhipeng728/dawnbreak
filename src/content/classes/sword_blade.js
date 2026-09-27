@@ -105,7 +105,7 @@ defSkill('phantom', { name: '幻影剑舞', cls: 'sword', job: 'blade', lvReq: 2
 defSkill('awaken', { name: '极·鬼剑术（暴风式）', cls: 'sword', job: 'blade', lvReq: 18, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'phys', awaken: true, icon: 'awaken', col: '#ffd23a',
   desc: '【觉醒】唤出 24 把鬼剑组成剑阵，把周围的敌人吸到中心反复斩击，最后引爆剑阵。剑阵展开后无敌。', pow: lv => skillDmg(22, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
   act: (lv) => ({ name: 'awaken', clip: 'awkB', dur: 2.9, superArmor: true, noCounter: true, invul: [0.1, 2.9],
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '极·鬼剑术', who: e }; game.timeStop = 0.9; sfx.awaken(); e.act.cx = e.x + e.face * 130; e.act.cy = e.y; },
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '极·鬼剑术', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.act.cx = e.x + e.face * 130; e.act.cy = e.y; },
     update: (e, dt) => {
       const a = e.act; if (e.actT < 0.95) return;
       for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.5) < 280 && !(t.boss && hasSA(t))) { t.x = damp(t.x, a.cx, 4, dt); t.y = damp(t.y, a.cy, 4, dt); }

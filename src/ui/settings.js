@@ -30,6 +30,7 @@ Object.assign(menus, {
       toggle('屏幕震动', 'shake', '重击、爆炸时的镜头震动'),
       toggle('技能插图特效', 'cutin', '觉醒技能的角色插图'),
       toggle('掉落物名称', 'dropNames', `快捷键 ${keyName('dropNames')}`),
+      toggle('任务指引', 'questGuide', '左上角的任务路线、头顶的指引箭头和“自动前往”'),
       toggle('实时评价', 'hideRank', `右下角的操作 / 技巧评价，快捷键 ${keyName('hideRank')}`, true),
       toggle('详细说明', 'tipDetail', `技能 / 装备提示框显示详细数值，快捷键 ${keyName('tipDetail')}`),
       toggle('显示帧率', 'fps', '右上角显示 FPS'),

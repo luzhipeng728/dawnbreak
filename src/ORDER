@@ -45,6 +45,7 @@ ui/dnd.js
 ui/skillwin.js
 ui/settings.js
 ui/charselect.js
+ui/menubar.js
 game/items.js
 content/items/gear.js
 content/items/misc.js
@@ -76,6 +77,7 @@ content/quests/sky.js
 ui/quest.js
 ui/job.js
 ui/worldmap.js
+ui/guide.js
 content/sprites.js
 # 外观与换装：武器图数据、外观规则、外观合成（给职业精灵模型挂外观层）
 content/avatar/weapon_art.js

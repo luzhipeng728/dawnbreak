@@ -595,5 +595,5 @@ function validateWorld() {
   for (const m of P) (dev ? console.error : console.warn)('[内容校验] ' + m);
   return P;
 }
-// 由其他模块稍后注册的 NPC 功能（校验时不算错）：arena = 决斗场（战斗组）
-const WORLD_LATE_SERVICES = ['arena'];
+// 由其他模块稍后注册的 NPC 功能（校验时不算错）：arena 决斗场（战斗组）；auction 拍卖行、mail 邮箱（社交组，在线功能，单机不显示）
+const WORLD_LATE_SERVICES = ['arena', 'auction', 'mail'];

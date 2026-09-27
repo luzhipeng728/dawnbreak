@@ -205,7 +205,7 @@ python3 art/tools/bgs.py 主题名                             # 远景 / 地面
 
 | 路径 | 分包 | 何时加载 |
 |---|---|---|
-| `art/final/world/*`（建筑、门、NPC、道具） | `world` | 进入任何城镇 / 区域场景时 |
+| `art/final/world/*`（建筑、门、NPC、道具） | `world` | 进场景时只等这个场景用到的那几张（`sceneArtKeys`，按键零散加载）；进场景 3 秒后，整个包（约 4 MB）在后台加载 |
 | `art/final/bg/<主题>_*` | `bg:<主题>` | 进入用这个主题的场景 / 地下城时 |
 | `art/final/scene/<id>/*` | `scene:<id>` | 预留给单个场景的专用大图 |
 | `art/final/spr/<职业>/*` | `spr:<职业>` | 城镇路人只按需加载站立 / 走 / 跑三组帧（`loadArtKeys`） |

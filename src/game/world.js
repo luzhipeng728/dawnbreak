@@ -40,9 +40,16 @@ function loadArtKeys(keys) {
 }
 /* ---- 进入场景 ----
    spawn：{ from: 来源场景 id }（站到指回来源的出口旁）| 'left' | 'right' | { x, y, face } | 'gate:<地下城 id>' | 省略（场景的 spawn 或正中） */
+// 进场景只等这个场景自己用到的素材（背景 + 建筑道具 + NPC + 门，约几百 KB），整个 world 包（约 4 MB）进场景后再在后台慢慢加载
+const sceneArtKeys = S => [...S.props.map(p => p.art), ...S.npcs.map(n => NPCS[n.npc] && NPCS[n.npc].art), ...S.gates.map(g => DUNGEONS[g.dungeon] && gateArt(DUNGEONS[g.dungeon]).art)].filter(Boolean);
 function enterScene(id, spawn) {
   const S = SCENES[id]; if (!S) { console.error('未知场景', id); return Promise.resolve(); }
-  return withLoading(worldBundles(S), () => setupScene(S, spawn));
+  let el = null; const t = setTimeout(() => { el = document.createElement('div'); el.id = 'loading'; el.textContent = '加载中…'; document.getElementById('stage').appendChild(el); }, 150);
+  return Promise.all([loadBundles(['bg:' + S.theme]), loadArtKeys(sceneArtKeys(S))]).then(() => {
+    clearTimeout(t); if (el) el.remove();
+    setupScene(S, spawn);
+    setTimeout(() => loadBundles(worldBundles(S)), 3000);
+  });
 }
 function exitSpawn(S, ex) {
   const face = (ex.x ?? S.width / 2) < S.width / 2 ? 1 : -1;
@@ -399,7 +406,7 @@ function drawDoorExit(c, S, ex) {
   if (near || !ex.door) plate(c, X, up ? Y - 14 : Y - 22, exitLabel(S, ex), exitSub(ex), off ? '#b8b0a0' : '#fff0c0', near);
 }
 /* ---- 地下城门：各地下城自己的门（GATE_ART）+ 旋转的传送门光 + 门牌（名字、等级，按玩家等级着色） ---- */
-function gateArt(D) { const A = (typeof GATE_ART !== 'undefined' && GATE_ART[D.id]) || {}; return { art: A.art || (IMG['world/g_' + D.id] ? 'world/g_' + D.id : D.hidden ? 'world/b_gate_hidden' : 'world/b_gate'), portal: A.portal || [0.5, 0.52, 0.2, 0.3], col: A.col || (D.hidden ? '220,120,255' : '140,220,255'), h: A.h || 200 }; }
+function gateArt(D) { const A = (typeof GATE_ART !== 'undefined' && GATE_ART[D.id]) || {}; return { art: A.art || (ASSET_SRC['world/g_' + D.id] ? 'world/g_' + D.id : D.hidden ? 'world/b_gate_hidden' : 'world/b_gate'), portal: A.portal || [0.5, 0.52, 0.2, 0.3], col: A.col || (D.hidden ? '220,120,255' : '140,220,255'), h: A.h || 200 }; }
 function drawGate(c, g) {
   if (!gateVisible(g)) return;
   const D = DUNGEONS[g.dungeon], A = gateArt(D), im = IMG[A.art], h = A.h, X = sx(g.x), Y = sy(-12, 0);

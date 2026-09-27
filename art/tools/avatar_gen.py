@@ -74,7 +74,7 @@ def run(job, base, key, force):
         try:
             resp = gi.post_json(f'{base}/images/generations', key, payload, 900); gi.save_images(resp, out, False, False)
             return f'ok   {os.path.relpath(out, OUT)}  {time.time() - t:.0f}s'
-        except SystemExit as e:
+        except (SystemExit, OSError) as e:   # OSError：读超时 / 连接断开，重试
             err = str(e)
             if 'Invalid image data' in err and i == 0:   # 缓存的上传地址失效了：清掉缓存重新上传一次
                 forget_uploads(job['refs']); payload['image'] = [SH.upload(base, key, p) for p in job['refs']]; continue
@@ -189,6 +189,53 @@ WEAPON_SHEETS = {   # 表名 → [(武器图 key, 图标 key, 描述)]
                  'a dark gold demonic crossguard with a red gem, a long dark-red wrapped grip; it looks very heavy')],
 }
 
+# ---- 装备深化组的第二批史诗武器（src/content/items/epics2.js）：设计照各自的物品图标 ----
+_E2 = {
+    'e2a_sword': [('ep_ss_kanya', 'a short sword with an icy-blue blade crackling with lightning, a dark blue-and-gold ornate guard with blue gems'),
+                  ('ep_ss_fate', 'a short sword with a pale golden glowing blade, a gold cross-shaped guard with a round white gem and a brown grip'),
+                  ('ep_ss_shura', 'a short sword with a dark crimson blade wreathed in purple flames, a black-and-silver guard with a purple gem'),
+                  ('ep_kt_slaughter', 'a slim curved katana with a blood-red blade, a dark red wrapped hilt and a red tassel'),
+                  ('ep_kt_andra', 'a slim curved katana with a pale ice-blue glowing blade and a silver-and-white hilt with a white flower-shaped guard'),
+                  ('ep_kt_ninedragon', 'a katana with a jade-green glowing blade, a gold dragon-head guard and a green wrapped hilt')],
+    'e2b_sword': [('ep_cb_devour', 'a mace with a dark purple spiked head holding a glowing purple eye, wisps of purple smoke, a black-and-gold handle'),
+                  ('ep_cb_soulmate', 'a white-and-gold war hammer with a big white stone head and a small yellow thunder sprite sitting on top, gold handle'),
+                  ('ep_cb_kirin', 'a mace whose head is a blue-and-gold qilin (kirin) head crackling with lightning, gold handle'),
+                  ('ep_cb_heart', 'a dark spiked club with a glowing red heart-shaped crystal in the middle, a black-and-red handle')],
+    'e2c_sword': [('ep_gs_earth', 'a huge broad greatsword made of mossy olive-green stone with glowing yellow runes and a bronze hilt'),
+                  ('ep_gs_evildragon', 'a huge jagged dark purple-black demonic greatsword with spikes and a glowing red gem'),
+                  ('ep_gs_guardian', 'a huge greatsword with a broad silver-blue blade, white angel wings on the guard and a blue gem'),
+                  ('ep_ls_sun', 'a lightsaber with a blazing golden-orange energy blade and an ornate gold hilt'),
+                  ('ep_ls_millennium', 'a lightsaber with a soft cream-white glowing energy blade and a white-and-gold hilt'),
+                  ('ep_ls_elegy', 'a lightsaber with a blood-red energy blade and a black thorny hilt decorated with a red rose')],
+    'e2a_gun': [('ep_rv_sunset', 'an orange-and-gold revolver with a brown wooden grip with a star; muzzle pointing right, grip hanging down at the left end'),
+                ('ep_rv_bone', 'a white bone revolver decorated with icy blue gems and crystals; muzzle pointing right, grip hanging down at the left end'),
+                ('ep_rv_python', 'a gold revolver with a golden python snake coiled around the barrel and green gems; muzzle pointing right, grip hanging down at the left end'),
+                ('ep_ap_viper', 'a black-and-green pistol with a green snake-scale pattern and a snake head at the muzzle; muzzle pointing right, grip hanging down at the left end'),
+                ('ep_ap_heckler', 'a red-and-orange pistol covered in flame patterns with gold trim; muzzle pointing right, grip hanging down at the left end')],
+    'e2b_gun': [('ep_rf_death', 'a long black sniper rifle with a scope and a small white skull emblem; stock on the left, barrel pointing right'),
+                ('ep_rf_zombie', 'a long icy-blue rifle covered with frost crystals, silver body; stock on the left, barrel pointing right'),
+                ('ep_hc_breaker', 'a stubby orange-and-gold hand cannon with a striped drill-like muzzle; grip hanging down at the left end'),
+                ('ep_hc_aqua', 'a blue-and-gold hand cannon shaped like a water vase, a little glowing water pouring from the muzzle; grip hanging down at the left end'),
+                ('ep_hc_wing', 'a white-and-gold hand cannon with small white angel wings on its sides; grip hanging down at the left end')],
+    'e2c_gun': [('ep_bg_red', 'a red-and-gold hand crossbow with ornate golden limbs and a red dragon motif, a loaded bolt pointing right, stock on the left'),
+                ('ep_bg_satan', 'a purple-and-black hand crossbow whose limbs are bat-like demon wings, a loaded purple flaming bolt pointing right, stock on the left')],
+    'e2a_mage': [('ep_sp_evil', 'a long spear with a silver spearhead on the right, gold bells and red tassels hanging below the head, a dark shaft'),
+                 ('ep_sp_lava', 'a long spear with a molten lava-cracked red-orange spearhead on the right and a dark lava-veined shaft'),
+                 ('ep_pl_grian', 'a long plain red-lacquered fighting staff with silver steel caps on both ends and a red cord wrapping'),
+                 ('ep_pl_breaker', 'a long dark staff with silver blades on both ends and blue gems'),
+                 ('ep_pl_phantom', 'a long spectral cyan translucent staff with a ghostly swirl and a small skull motif at the right end')],
+    'e2b_mage': [('ep_rd_cheshire', 'a short purple wand topped on the right with a grinning purple cat head'),
+                 ('ep_rd_meow', 'a short pink wand topped on the right with a big pink cat paw with little white wings'),
+                 ('ep_st_willy', 'a long golden staff wrapped with scrolls and prayer beads, a glowing gold tip on the right'),
+                 ('ep_st_sage', 'a long gold staff with a glowing blue orb held in gold prongs on the right end and small blue crystals'),
+                 ('ep_st_moon', 'a long silver-blue staff topped on the right with a silver crescent moon and a glowing blue orb, icy crystals')],
+    'e2c_mage': [('ep_br_scribble', 'a giant paintbrush broom with a rainbow-colored brush head on the right and a gold handle with gems'),
+                 ('ep_br_lucky', 'a straw broom decorated with four-leaf clovers and a gold lucky charm, gold handle, the straw brush on the right end')],
+}
+for _n, _its in _E2.items(): WEAPON_SHEETS[_n] = [(k, k, d) for k, d in _its]
+ICON_DIRS = [os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'final', 'icon'),
+             '/Users/luzhipeng/projects/dawnbreak/.claude/worktrees/agent-af38854d2f08ec079/art/final/icon']   # 装备深化组的新图标还在它的分支里（只读）
+
 # ---- 武器装扮（商城组 av_weapon_<skin>）：一件覆盖三职业 15 种武器类型，图 key = <skin>_<武器类型>；形状照该类型的图标，只换主题 ----
 SPRING_W = 'red and gold Chinese New Year style, a gold dragon-head guard / ornament, gold dragon-scale patterns on the blade or body, and a red tassel hanging from it'
 WEAPON_SKINS = {
@@ -224,10 +271,10 @@ def weapon_ref(name, items):
     """把对应的物品图标拼成一张参考条（设计照图标来）"""
     from PIL import Image
     out = os.path.join(OUT, 'weapons', f'ref_{name}.png')
-    icon = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'final', 'icon')
     M = Image.new('RGB', (256 * len(items), 256), (255, 255, 255))
     for i, (_, ik, _) in enumerate(items):
-        im = Image.open(os.path.join(icon, f'item_{ik}.webp')).convert('RGBA').resize((256, 256), Image.LANCZOS); M.paste(im, (i * 256, 0), im)
+        ip = next(p for p in (os.path.join(d, f'item_{ik}.webp') for d in ICON_DIRS) if os.path.exists(p))
+        im = Image.open(ip).convert('RGBA').resize((256, 256), Image.LANCZOS); M.paste(im, (i * 256, 0), im)
     os.makedirs(os.path.dirname(out), exist_ok=True); M.save(out); return out
 
 def weapon_prompt(items, skin=False):

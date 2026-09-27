@@ -72,7 +72,7 @@ const save = {
     inv.starter(cls);
     this.write();
   },
-  remove(i) { this.chars.splice(i, 1); this.cur = Math.min(this.cur, this.chars.length - 1); this.data = null; try { localStorage.setItem(this.key, JSON.stringify({ v: SAVE_V, cur: this.cur, chars: this.chars })); } catch (e) { /* */ } },
+  remove(i) { this.chars.splice(i, 1); if (i < this.cur) this.cur--; this.cur = Math.min(this.cur, this.chars.length - 1); this.data = null; try { localStorage.setItem(this.key, JSON.stringify({ v: SAVE_V, cur: this.cur, chars: this.chars })); } catch (e) { /* */ } },
   useFatigue(n) { this.data.fatigue = Math.max(0, this.data.fatigue - n); },
   onClear(id, diff, rank) {
     const d = this.data; d.clears++;

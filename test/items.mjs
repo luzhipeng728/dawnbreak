@@ -200,7 +200,7 @@ const lg = await ev(() => {
   const c = normalizeItem({ id: 4, kind: 'use', key: 'hpS', name: '小型生命药剂', n: 5, rar: 0, price: 60 });
   return { w: [w.wtype, w.st.matk > 0, w.durMax, w.enh], a: [a.atype, a.st.mdef > 0], e: [e.fx.mspd, e.fx.spd], c: [c.name === ITEMS.hpS.name, c.n], tip: !!itemTip(w) };
 });
-check(lg.w[0] === 'staff' && lg.w[1] && lg.w[2] === 30 && lg.w[3] === 3, '旧武器补全武器类型 / 魔攻 / 耐久，保留强化', JSON.stringify(lg.w));
+check(lg.w[0] === 'rod' && lg.w[1] && lg.w[2] === 30 && lg.w[3] === 3, '旧武器补全武器类型 / 魔攻 / 耐久，保留强化', JSON.stringify(lg.w));
 check(lg.a[0] && lg.a[1], '旧防具补全防具类型 / 魔防');
 check(lg.e[0] === 0.18 && lg.e[1] === undefined, '旧史诗的速度特效换算成移速');
 check(lg.c[0] && lg.c[1] === 5, '旧药剂名字更新、数量保留');

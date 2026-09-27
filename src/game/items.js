@@ -33,7 +33,7 @@ const WTYPES = {
   broom: { name: '扫把', cls: 'mage', phys: 0.8, mag: 1.0, aspd: 0.06, mspd: 0.03, spd: '快速', dur: 28, desc: '移动速度 +3%' },
 };
 const CLASS_WTYPES = cls => Object.keys(WTYPES).filter(k => WTYPES[k].cls === cls);
-const CLASS_START_WEAPON = { sword: 'katana', gun: 'revolver', mage: 'staff' };
+const CLASS_START_WEAPON = { sword: 'katana', gun: 'revolver', mage: 'rod' };   // 初始武器选攻速不慢的类型
 // 防具类型：def / mdef / hp / mp 系数，dur 上衣耐久（官方：布 28、皮 33、轻 38、重 40、板 60；其他部位 ×0.85）
 const ATYPES = {
   cloth: { name: '布甲', def: 0.94, mdef: 1.3, hp: 0.95, mp: 1.4, dur: 28 },

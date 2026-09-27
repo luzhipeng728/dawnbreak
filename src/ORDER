@@ -56,6 +56,16 @@ content/world/grand_flores.js
 content/monsters/sky_castle.js
 content/themes/sky_castle.js
 content/world/sky_castle.js
+# 任务与转职（依赖 world / items / save / menus）
+game/quests.js
+content/quests/main.js
+content/quests/hidden.js
+content/quests/side.js
+content/quests/daily.js
+content/quests/job.js
+content/quests/sky.js
+ui/quest.js
+ui/job.js
 ui/worldmap.js
 content/sprites.js
 game/flow.js

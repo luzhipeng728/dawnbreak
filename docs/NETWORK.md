@@ -122,3 +122,38 @@
 - 结束时两边都 `bus.emit('pvpResult', { win, vs: 对方用户名, wins: [我, 对方], draw })`。
 - 掉线：宽限期 10 秒，超时算“对方掉线，决斗结束（不计胜负）”，不发 pvpResult。
 - 入口：城镇里点其他玩家 / 好友窗口的“决斗” / 决斗场窗口（维尔·克鲁、P 键）里的“好友决斗”一栏。
+
+## 消息表（WS，JSON `{ t, ... }`；`r` 是房间转发，里面的 `d.k` 是玩法消息）
+| 方向 | t | 字段 | 说明 |
+|---|---|---|---|
+| 客户端→服务端 | `auth` | token, ver, build | 连上后第一条（5 秒内），ver 不一致 → 4002 断开 |
+| 服务端→客户端 | `welcome` / `error` / `kicked` | user, serverTime / code, msg / msg | 鉴权结果；被顶号 4003、被停用 4004 |
+| 双向 | `ping` / `pong` | ts | 客户端每 2 秒一次测延迟，9 秒没回音当断线重连 |
+| C→S | `hello` | char { name, cls, job, lvl, look { wpn, set, acc, cash }, hp } | 当前角色信息 |
+| C→S | `scene` / `pos` | id\|null, x, y, f / x, y, f, s | 城镇场景频道与 10Hz 位置 |
+| S→C | `peers` / `penter` / `pleave` / `pos` / `pchar` | | 同场景其他玩家 |
+| 双向 | `chat` | ch: world\|party\|whisper\|sys, text, to, from { id, name, cname } | 聊天；`chatlog` 是上线时补的世界频道记录 |
+| S→C | `friend:req` / `friend:ok` / `friend:del` / `friend:on` | | 好友（增删改走 HTTP `/api/friends`） |
+| C→S | `party:invite` / `party:accept` / `party:decline` / `party:leave` / `party:kick` / `party:lead` | to / from / from / – / id / id | 队伍 |
+| S→C | `party` / `party:invited` / `party:declined` / `party:note` | party\|null, why / from, size / by, why / text | 队伍状态以服务端为准 |
+| C→S | `room:open` / `room:leave` / `room:close` / `r` | kind:'dungeon', meta / – / why / d, to? | 实例房间；`r` 不写 to：房主→全体、成员→房主；to:'all' / userId |
+| S→C | `room` / `room:closed` / `room:left` / `room:lag` / `r` | room, resume? / why / user / user, on / f, d | resume = 宽限期内重连回来 |
+| C→S | `duel:ask` / `duel:accept` / `duel:decline` / `duel:cancel` | to / from / from, why / to | 好友决斗邀请（20 秒过期） |
+| S→C | `duel:asked` / `duel:declined` / `duel:cancelled` / `duel:note` | | |
+
+### 组队刷图（`r` 里的 d.k）
+| 谁发 | k | 内容 |
+|---|---|---|
+| 队长 | `prep` / `go` / `drop` | 准备（地下城、难度）/ 开始（成员、地图种子、房间种子、血量倍率）/ 没跟上的队员 |
+| 队员 | `ready` / `nope` | 加载好了 / 进不了（原因：疲劳、没有入场道具、不在城镇……） |
+| 队长 | `s`（20Hz） | rk 房间、m [[id, x, y, z, 朝向, 状态, 血, 出招序号]]、d 伤害数字 |
+| 队长 | `spawn` / `ma` / `kill` / `room` / `clear` | 生成 / 怪物出招（招式下标、目标）/ 击杀（击杀者、最后一击）/ 换房间 / 清房（前后 4 种带序号 sq） |
+| 队长 | `sync` / `replay` | 重连对齐（当前房间、清过的房间、活着的怪）/ 补发错过的生成和击杀 |
+| 队员 | `hb` / `st` / `door` / `resync` | 命中打包（伤害、暴击、破招、受击反应）/ 异常状态 / 请求进门 / 请求补发 |
+| 所有人 | `p`（20Hz）/ `a` | 自己的位置 / 状态 / 动画 / 血蓝 / 房间 / 出招（技能 id + 等级、普攻名、闪避……） |
+
+### 好友决斗（`r` 里的 d.k）
+| 谁发 | k | 内容 |
+|---|---|---|
+| 对方 | `dk` / `dready` / `in` | 自己的职业、转职、技能等级、技能栏、外观 / 加载好了 / 输入帧 [[按住位掩码, 按下位掩码], …] |
+| 主机 | `dstart` / `ds`（30Hz）/ `da` / `dend` | 双方配置 / 快照 / 出招 / 结果（winner 0=主机 1=对方 -1=平局, wins） |

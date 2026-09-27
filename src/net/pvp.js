@@ -303,3 +303,9 @@ menus.w_duel = function (arg) {
   bd.append(box);
   return el;
 };
+// 决斗中聊天框是隐藏的：在右下角显示到服务器的延迟
+netUiHooks.push(c => {
+  if (!netDuel.active() || !game.duel) return;
+  const r = net.connected ? Math.round(net.rtt) : -1;
+  uiText(r < 0 ? '● 连接中断' : `● 延迟 ${r} ms`, 1900, 1066, { size: 18, align: 'right', color: r < 0 ? '#ff6a5a' : r < 100 ? '#6aff8a' : r < 300 ? '#ffd24a' : '#ff8a4a', sw: 3 });
+});

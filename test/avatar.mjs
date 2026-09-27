@@ -47,7 +47,7 @@ const HELPERS = () => {
                      ...sets.map(id => ({ wpn: defaultLook(cls).wpn, set: id, acc: Object.keys(AVATAR_ACC) }))];
       for (const f of frames) if (S.frames[f].wpn) wpn++;
       for (const look of looks) for (const f of frames) {
-        try { const cv = __av.drawFrame(cls, f, look); draws++; const F = (look.set && SPR_DATA[`${cls}@${look.set}`].frames[f]) || S.frames[f]; if (F.wpn) { const g = __av.green(cv); if (g) green[f + (look.set ? '@' + look.set : '')] = g; } }
+        try { const cv = __av.drawFrame(cls, f, look); draws++; const F = (look.set && SPR_DATA[`${cls}@${look.set}`].frames[f]) || S.frames[f]; if (F.wpn && !(look.wpn && look.wpn.startsWith('ep_'))) { const g = __av.green(cv);   /* 史诗武器图本身可以是绿色（毒蛇、幸运草……），只检查角色帧和普通武器 */ if (g) green[f + (look.set ? '@' + look.set : '')] = g; } }
         catch (e) { bad.push(f + ':' + e.message); }
       }
       // 动画表里的每个片段按时间走一遍（用游戏里的选帧逻辑）
@@ -156,6 +156,8 @@ for (const cls of ['sword', 'gun', 'mage']) {
   ok(new Set(Object.values(seen)).size === types.length, `${types.length} 种武器外观互不相同`);
   const ep = await page.evaluate(cls => Object.keys(WEAPON_IMG).find(k => k.startsWith('ep_') && WTYPES[WEAPON_IMG[k].type].cls === cls), cls);
   if (ep) { await page.evaluate(([EQ, ep]) => (0, eval)(EQ)([ep]), [`(${EQUIP})`, ep]); const L = await look(); ok(L.wpn === ep, `史诗武器 ${ep} 有专属外观`); }
+  // 换回普通武器再测时装：史诗武器图本身可能是绿色（幸运草扫把等），会被误算进绿色残留
+  await page.evaluate(([EQ, t, cls]) => (0, eval)(EQ)([{ slot: 'weapon', wtype: t, lvl: 10, cls, rar: 2 }]), [`(${EQUIP})`, types[0], cls]);
   const before = await look();
   const hasSet = await page.evaluate(cls => !!SPR_DATA[`${cls}@festival`], cls);
   if (hasSet) {
@@ -164,7 +166,7 @@ for (const cls of ['sword', 'gun', 'mage']) {
     await page.evaluate(([EQ]) => (0, eval)(EQ)(['av_bottom_festival', 'av_hat_festival', 'av_face_festival', 'av_hair_festival']), [`(${EQUIP})`]);
     await page.waitForFunction(() => __G.player.model.av.S2, null, { timeout: 10000 });
     L = await look(); ok(L.set === 'festival' && L.S2 && L.hash !== before.hash, `上衣 + 下装 → 换成庆典时装（配件 ${L.acc.length} 件）`);
-    ok(L.green === 0, '穿时装后没有绿色残留');
+    ok(L.green === 0, '穿时装后没有绿色残留', `（武器外观 ${L.wpn}，绿色像素 ${L.green}）`);
     const worn = L.hash;
     await page.evaluate(() => { save.write(); });
     await page.goto(`${URL_BASE}?town&cls=${cls}&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 }); await page.evaluate(HELPERS);

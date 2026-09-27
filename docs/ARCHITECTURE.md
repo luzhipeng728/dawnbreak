@@ -63,19 +63,33 @@
   - `{ type: 'skill', id, from: 'skills'|'bar', slot? }`
 
 ### 快捷键
-- 由界面负责人统一在 KEYMAP 里分配。其他人只需实现对应的窗口：
+- 由界面负责人统一在 KEYMAP 里分配（官方键位），玩家可在 O → 按键设置里改键。
+- 显示按键名用 `keyName(动作)`，不要写死字母。
 
-  | 键 | 窗口 |
-  |---|---|
-  | I | `inv` |
-  | M | `status` |
-  | K | `skills` |
-  | O | `settings` |
-  | N | `worldmap` |
-  | F1 / L | `quests` |
-  | Esc | `system` |
+| 类别 | 按键 | 作用 |
+|---|---|---|
+| 战斗 | X | 攻击 |
+| | C | 跳跃 |
+| | Z / Space | 指令键（Space 也是 Buff 指令键 `cmdB`） |
+| | Shift / V | 闪避 |
+| 技能栏 | ASDFGH / QWERTY | 技能栏两排 |
+| | 1~6 | 消耗品 |
+| 窗口 | I | 物品 `inv` |
+| | M | 个人信息 `status` |
+| | K | 技能 `skills` |
+| | L / F1 | 任务 `quests` |
+| | N | 地图 `worldmap` |
+| | O | 设置 `settings` |
+| | P | 决斗场 `duel` |
+| | Esc | 关闭最上层窗口，没有窗口时打开系统菜单 |
+| 杂项 | Tab | 切换界面模式 |
+| | Ctrl | 显示掉落物名称 |
+| | End | 隐藏实时评价 |
+| | ` | 说明详略 |
+| | F12 | 截图 |
 
-- 窗口还没实现时，用 `menus['w_x']` 判断存在后再打开。
+- 界面偏好用 `uiPref(名字)` 读取，例如 `shake`、`hideRank`、`dropNames`。
+- 窗口还没实现时，按快捷键会提示“暂未开放”。
 
 ### 属性（`recalcStats(p)` 写到玩家实体上，战斗结算读取）
 - 字段：`atk` `matk` `indep` `def` `mdef` `crit` `mcrit` `critDmg` `aspd` `cspd` `mspd` `hitRate` `evade` `elem{fire,ice,light,dark}` `res{...}` `hardness` `stagger` `hpMax` `mpMax`。

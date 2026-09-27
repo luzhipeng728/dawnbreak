@@ -22,6 +22,7 @@ function bundleOf(key) {
   if (a === 'npc') return 'npc';
   if (a === 'world') return 'world';                                   // 城镇建筑、地下城门、NPC 立绘
   if (a === 'scene') return 'scene:' + b;                              // 城镇 / 区域场景的专用美术
+  if (a === 'job') return 'job';                                       // 转职立绘（和导师对话 / 打开转职窗口时才加载）
   return 'core';                                                       // 图标、特效、标题、职业立绘、觉醒立绘
 }
 function collectArt() {

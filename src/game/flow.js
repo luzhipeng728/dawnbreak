@@ -36,6 +36,7 @@ function boot() {
   const devSave = () => { save.loadAll(); const i = PARAMS.has('cls') ? save.chars.findIndex(c => c.cls === tcls) : save.chars.length - 1; if (i >= 0) save.select(i); else save.newGame(tcls); save.apply(); };
   if (PARAMS.has('dungeon')) { devSave(); return startGame(save.data.cls).then(() => { if (menus.isOpen('help')) menus.close('help'); if (PARAMS.has('lv')) testLoadout(+PARAMS.get('lv')); const id = PARAMS.get('dungeon') || 'lorien'; return enterDungeon(alias[id] || id, +(PARAMS.get('diff') || 0)); }); }
   if (PARAMS.has('town')) { devSave(); return startGame(save.data.cls); }
+  if (PARAMS.has('resume') && save.load()) { save.apply(); return startGame(save.data.cls); }   // 从决斗场回来：直接接着玩上次的角色（不用再经过标题和选角）
   // 标题画面背后是暮色林地的风景
   game.room = { x0: 0, x1: 1600, theme: 'forest', seed: 3 }; buildRoomArt(game.room); cam.x = 200;
   menus.open('title'); music.play('title');

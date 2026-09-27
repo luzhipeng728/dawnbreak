@@ -133,7 +133,7 @@ Object.assign(menus, {
         if (left > 0) foot.append(h('button', { class: 'btn buy', onclick: () => { sfx.click(); cashBoxUI(o.key, 1); } }, `再开 1 个（剩 ${left}）`));
         if (left >= 10 && !CASH_BOXES[o.key].rolls) foot.append(h('button', { class: 'btn buy', onclick: () => { sfx.click(); cashBoxUI(o.key, 10); } }, '十连'));
         if (o.key === 'box_magic') { const pg = cashGoods('box_magic'); if (left === 0 && cashBal('cera') >= pg.price) foot.append(h('button', { class: 'btn buy', onclick: () => { sfx.click(); const r = cashBuy('box_magic', 1); if (r.err) { toastMsg(r.err, '#ff6a6a'); return; } cashBoxUI('box_magic', 1); } }, `买 1 个再开（${pg.price} 点券）`)); }
-        const S = cashData(); if (o.key === 'box_magic' || o.key === 'box_magic2') sub.textContent = `魔盒碎片 +${o.res.shards}（共 ${S.shard}）· 保底进度 ${S.pity.box_magic || 0}/100`;
+        const S = cashData(); if (o.key === 'box_magic' || o.key === 'box_magic2') sub.textContent = `${o.res.results.some(R => R.forced) ? '保底触发！第 100 次必出大奖 · ' : ''}魔盒碎片 +${o.res.shards}（共 ${S.shard}）· 保底进度 ${S.pity.box_magic || 0}/100`;
       }
       el._onConfirm = () => menus.close('boxopen');
     };

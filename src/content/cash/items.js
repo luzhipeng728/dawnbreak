@@ -70,12 +70,16 @@ const PETS = {
   lion: { name: '福瑞小醒狮', h: 44, fly: 0, col: '#ff5a3a' },
   seal: { name: '冲浪小海豹', h: 40, fly: 0, col: '#6ac8ff' },
   owl: { name: '学院小猫头鹰', h: 42, fly: 1, col: '#c89a60' },
+  panda: { name: '团团熊猫', h: 44, fly: 0, col: '#f0f0f0' },
+  fox: { name: '幻彩星狐', h: 44, fly: 0, col: '#c8a0ff' },
   pegasus: { name: '至尊·金翼天马', h: 58, fly: 1, col: '#ffd86a' },
 };
 const defPet = (key, def) => defineItem(key, { kind: 'equip', slot: 'av_pet', lvl: 1, price: 1000, cash: true, cashIcon: key, durMax: 0, noEnhance: true, noDisassemble: true, noDrop: true, ...def });
 defPet('pet_lion', { name: '福瑞小醒狮', rar: 2, pet: 'lion', st: { str: 8, int: 8, vit: 8, spr: 8, aspd: 0.015 }, desc: '舞狮队里最小的一只，跟着你到处讨红包。' });
 defPet('pet_seal', { name: '冲浪小海豹', rar: 2, pet: 'seal', st: { str: 8, int: 8, vit: 8, spr: 8, mspd: 0.03 }, desc: '抱着冲浪板的小海豹，走路一扭一扭的。' });
 defPet('pet_owl', { name: '学院小猫头鹰', rar: 2, pet: 'owl', st: { str: 8, int: 8, vit: 8, spr: 8, cspd: 0.02 }, desc: '星辉学院的吉祥物，戴着小小的学士帽。' });
+defPet('pet_panda', { name: '团团熊猫', rar: 2, pet: 'panda', st: { str: 8, int: 8, vit: 8, spr: 8, hpPct: 0.03 }, desc: '抱着竹笋的小熊猫，吃饱了就跟着你慢慢走。HP 上限 +3%。' });
+defPet('pet_fox', { name: '幻彩星狐', rar: 3, pet: 'fox', st: { str: 10, int: 10, vit: 10, spr: 10, crit: 0.01, mcrit: 0.01, mspd: 0.02 }, desc: '魔盒 / 宠物蛋限定。尾巴上的星星会随着心情变色。' });
 defPet('pet_pegasus', { name: '至尊·金翼天马', rar: 4, pet: 'pegasus', st: { str: 15, int: 15, vit: 15, spr: 15, dmgUp: 0.02, aspd: 0.02, cspd: 0.02, mspd: 0.02 }, desc: '至尊宠物。披着金色羽翼的小天马，据说能把主人带到天空之上。' });
 // 宠物装备（红 攻击 / 蓝 速度 / 绿 属性）
 const defPetGear = (key, def) => defineItem(key, { kind: 'equip', lvl: 1, price: 800, cash: true, cashIcon: key, durMax: 0, noEnhance: true, noDisassemble: true, noDrop: true, ...def });
@@ -132,8 +136,8 @@ const defCashUse = (key, def) => defineItem(key, { kind: 'use', price: 10, noSel
 // 券
 defCashUse('tk_enh7', { name: '+7 装备强化券', rar: 2, cashUse: 'ticket', ticket: { kind: 'enh', lvl: 7 }, desc: '选择一件装备，把强化等级直接变为 +7（已经 +7 以上的不能用；增幅过的装备不能用）。' });
 defCashUse('tk_enh10', { name: '+10 装备强化券', rar: 4, cashUse: 'ticket', ticket: { kind: 'enh', lvl: 10 }, desc: '选择一件装备，把强化等级直接变为 +10（已经 +10 以上的不能用；增幅过的装备不能用）。' });
-defCashUse('tk_amp7', { name: '+7 装备增幅券', rar: 3, cashUse: 'ticket', ticket: { kind: 'amp', lvl: 7 }, desc: '选择一件装备，把增幅等级直接变为 +7（没有异次元属性时按职业主属性赋予）。' });
-defCashUse('tk_amp10', { name: '+10 装备增幅券', rar: 5, cashUse: 'ticket', ticket: { kind: 'amp', lvl: 10 }, desc: '选择一件装备，把增幅等级直接变为 +10（没有异次元属性时按职业主属性赋予）。' });
+defCashUse('tk_amp7', { name: '+7 装备增幅券', rar: 3, cashUse: 'ticket', ticket: { kind: 'amp', lvl: 7 }, desc: '选择一件装备，把增幅等级直接变为 +7（没有异次元属性时按选择赋予；强化过的装备会转为增幅）。' });
+defCashUse('tk_amp10', { name: '+10 装备增幅券', rar: 5, cashUse: 'ticket', ticket: { kind: 'amp', lvl: 10 }, desc: '选择一件装备，把增幅等级直接变为 +10（没有异次元属性时按选择赋予；强化过的装备会转为增幅）。' });
 defCashUse('tk_avatar', { name: '高级装扮兑换券', rar: 2, cashUse: 'ticket', ticket: { kind: 'avatar' }, desc: '自选套装、部位和属性，兑换 1 件高级装扮（锦鲤贺岁 / 晴空海滩 / 星辉学院）。' });
 defCashUse('tk_sky', { name: '天空套部件兑换券', rar: 4, cashUse: 'ticket', ticket: { kind: 'sky' }, desc: '自选天空套、部位和属性，兑换 1 件稀有装扮（天穹圣翼 / 炎龙之魂）。' });
 defCashUse('tk_avopt', { name: '装扮属性变更券', rar: 1, cashUse: 'ticket', ticket: { kind: 'avopt' }, desc: '更换 1 次时装的自选属性（在商城“属性选择”里使用）。每件时装第一次选择属性免费。' });
@@ -152,7 +156,7 @@ defCashUse('box_magic2', { name: '黄金魔盒', rar: 4, cashUse: 'box', desc: '
 defCashUse('box_equip', { name: '装备礼盒', rar: 2, cashUse: 'box', desc: '打开获得 1 件与等级相符的随机装备：高级 50% / 稀有 30% / 神器 14% / 传说 5% / 史诗 1%。' });
 defCashUse('box_epic', { name: '史诗自选礼盒', rar: 5, cashUse: 'box', desc: '从适合自己等级与职业的单件史诗装备中自选 1 件。' });
 defCashUse('box_orb', { name: '宝珠礼盒', rar: 2, cashUse: 'box', desc: '打开获得 1 颗随机宝珠：稀有 70% / 神器 27% / 至尊 3%。' });
-defCashUse('egg_pet', { name: '宠物蛋', rar: 3, cashUse: 'box', desc: '孵出一只宠物：福瑞小醒狮 / 冲浪小海豹 / 学院小猫头鹰，极低几率孵出至尊·金翼天马！' });
+defCashUse('egg_pet', { name: '宠物蛋', rar: 3, cashUse: 'box', desc: '孵出一只宠物：福瑞小醒狮 / 冲浪小海豹 / 学院小猫头鹰 / 团团熊猫，低几率孵出幻彩星狐，极低几率孵出至尊·金翼天马！' });
 defCashUse('box_petgear', { name: '宠物装备礼盒', rar: 2, cashUse: 'box', desc: '打开获得 1 件随机宠物装备（红 / 蓝 / 绿），有几率是神器品级。' });
 defCashUse('box_petgear2', { name: '神器宠物装备礼盒', rar: 3, cashUse: 'box', desc: '打开获得 1 件神器宠物装备（红 / 蓝 / 绿随机）。' });
 defCashUse('sel_petgear2', { name: '神器宠物装备自选礼盒', rar: 4, cashUse: 'box', desc: '从 3 件神器宠物装备（炎龙之心 / 天穹之羽 / 世界树之叶）中自选 1 件。' });

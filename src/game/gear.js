@@ -252,7 +252,7 @@ function codexRecord(it, src) {
   d.codex[it.key] = rec;
   d.codexLog.unshift({ key: it.key, t: rec.t, src: rec.src }); if (d.codexLog.length > 60) d.codexLog.length = 60;
   codexBonusCache = null;
-  toastMsg(`装备图鉴：登记了 ${it.name}`, RARITY[it.rar || 0].col);
+  toastMsg(`装备图鉴：登记了 ${it.name}`, RARITY[it.rar || 0].col, 'log');
   bus.emit('codex', { key: it.key, item: it });
   if (game.player) recalcStats(game.player);
   return true;

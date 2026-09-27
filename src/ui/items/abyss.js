@@ -90,7 +90,7 @@ function abyssTrade(el, payKey, payN, getKey, getN, confirm) {
     const it = makeItem(getKey, getN); if (!it) return;
     if (!inv.add(it)) { toastMsg('背包已满', '#ff6a6a'); sfx.error(); return; }
     inv.take(payKey, payN); sfx.coin(); if ((it.rar || 0) >= 5) sfx.epic();
-    toastMsg(`兑换获得 ${it.name}${getN > 1 ? ' ×' + getN : ''}`, RARITY[it.rar || 0].col); save.write(); itemsRefresh();
+    toastMsg(`兑换获得 ${it.name}${getN > 1 ? ' ×' + getN : ''}`, RARITY[it.rar || 0].col, 'log'); save.write(); itemsRefresh();
   };
   if (confirm) itemDialog(el, { title: '兑换史诗', msg: `用 <b style="color:#8ae0ff">宇宙灵魂 ×${payN}</b> 兑换 ${itemNameHtml(codexItemOf(getKey))}？`, okText: '兑换', onOk: go });
   else go();

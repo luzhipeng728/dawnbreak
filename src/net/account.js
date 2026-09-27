@@ -126,8 +126,8 @@ const cloudSave = {
     save.live = false;   // 先停写，避免当前游戏状态把刚拿到的云端存档覆盖掉
     this.adopt(r.data, r.updatedAt); this.checked = true;
     toastMsg('已切换到云端存档', '#8aff9a');
-    if (inGame && typeof backToCharSelect === 'function' && game.scene !== 'dungeon') { save.data = null; backToCharSelect(); }
-    else if (inGame) { save.data = null; location.reload(); }
+    if (inGame && typeof backToCharSelect === 'function' && game.scene !== 'dungeon') backToCharSelect();   // save.live 已关：不会把当前状态写回去
+    else if (inGame) location.reload();
     else if (menus.isOpen('charselect')) menus.refresh('charselect');
     else if (menus.isOpen('title')) menus.refresh('title');
   },
@@ -205,7 +205,7 @@ const account = {
   },
   logoutNow() {
     if (save.data && save.live) save.write();
-    save.live = false; save.data = null;   // 之后（包括关页面时的自动保存）不再写存档：下面要切回本机存档键，不能把账号角色写进本机存档
+    save.live = false;   // 之后（包括关页面时的自动保存）不再写存档：下面要切回本机存档键，不能把账号角色写进本机存档（save.data 留着：跳转前 HUD 还会画几帧）
     net.api('POST', '/api/logout', {}, { noAuthReset: true }).catch(() => {});
     net.logoutLocal(); cloudSave.leave();
     location.href = location.pathname + location.search.replace(/[?&](town|dungeon)[^&]*/g, '');

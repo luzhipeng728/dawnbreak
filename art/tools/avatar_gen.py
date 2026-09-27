@@ -76,9 +76,19 @@ def run(job, base, key, force):
             return f'ok   {os.path.relpath(out, OUT)}  {time.time() - t:.0f}s'
         except SystemExit as e:
             err = str(e)
+            if 'Invalid image data' in err and i == 0:   # 缓存的上传地址失效了：清掉缓存重新上传一次
+                forget_uploads(job['refs']); payload['image'] = [SH.upload(base, key, p) for p in job['refs']]; continue
             if 'HTTP 400' in err: break   # 参数错误：重试也没用
             time.sleep(70 if '429' in err else 10)
     return f'FAIL {os.path.relpath(out, OUT)}: {err[:200]}'
+
+def forget_uploads(paths):
+    import json
+    if not os.path.exists(SH.CACHE): return
+    cache = json.load(open(SH.CACHE))
+    for p in paths:
+        for k in [k for k in cache if k.startswith(p + '|')]: cache.pop(k)
+    json.dump(cache, open(SH.CACHE, 'w'), indent=1)
 
 def jobs_wpn(only, tag=''):
     L = []
@@ -179,6 +189,37 @@ WEAPON_SHEETS = {   # 表名 → [(武器图 key, 图标 key, 描述)]
                  'a dark gold demonic crossguard with a red gem, a long dark-red wrapped grip; it looks very heavy')],
 }
 
+# ---- 武器装扮（商城组 av_weapon_<skin>）：一件覆盖三职业 15 种武器类型，图 key = <skin>_<武器类型>；形状照该类型的图标，只换主题 ----
+SPRING_W = 'red and gold Chinese New Year style, a gold dragon-head guard / ornament, gold dragon-scale patterns on the blade or body, and a red tassel hanging from it'
+WEAPON_SKINS = {
+    'spring': {
+        'sword': [('shortsword', f'a short straight sword, {SPRING_W}'), ('katana', f'a slim curved katana, {SPRING_W}'), ('club', f'a mace with a round head, {SPRING_W}'),
+                  ('greatsword', f'a massive broad heavy greatsword, {SPRING_W}'), ('lightsaber', 'a lightsaber with a red-and-gold dragon-head hilt, a glowing golden-red energy blade and a red tassel')],
+        'gun': [('revolver', f'a revolver, {SPRING_W}; muzzle pointing right, grip hanging down at the left end'), ('autopistol', f'a semi-automatic pistol, {SPRING_W}; muzzle pointing right, grip hanging down at the left end'),
+                ('rifle', f'a long rifle, {SPRING_W}; stock on the left, barrel pointing right'), ('handcannon', f'a stubby hand cannon whose muzzle is a gold dragon head, red body; grip hanging down at the left end'),
+                ('bowgun', f'a hand crossbow, {SPRING_W}; stock on the left, a loaded bolt pointing right')],
+        'mage': [('spear', f'a long spear with a gold dragon-shaped spearhead on the right and a red shaft, red tassel'), ('pole', f'a long red-lacquered fighting staff with gold dragon caps on both ends and a red tassel'),
+                 ('rod', 'a short wand topped on the right with a small gold dragon coiled around a red pearl, red tassel'), ('staff', 'a long staff topped on the right with a gold dragon coiled around a big glowing red pearl, red tassel'),
+                 ('broom', 'a broom with a red-lacquered handle with gold dragon patterns and a golden straw brush on the right end, red tassel')],
+    },
+    'summer': {   # 搞怪夏日风：天蓝 / 白 / 西瓜红
+        'sword': [('shortsword', 'a short sword made of a sky-blue ice popsicle with a wooden popsicle stick as the handle'), ('katana', 'a curved blade made of a long watermelon slice (red flesh, black seeds, green rind edge) with a white handle'),
+                  ('club', 'a mace made of a colorful inflatable beach ball on a white handle'), ('greatsword', 'a sky-blue-and-white surfboard used as a huge sword, with a handle at the left end'),
+                  ('lightsaber', 'a lightsaber whose blade is a long glowing sky-blue freeze-pop ice tube, white hilt')],
+        'gun': [('revolver', 'a transparent colorful toy water pistol shaped like a revolver, water inside; muzzle pointing right, grip hanging down at the left end'),
+                ('autopistol', 'a transparent colorful toy water pistol, water inside; muzzle pointing right, grip hanging down at the left end'),
+                ('rifle', 'a long transparent colorful super-soaker water gun with a water tank on top; stock on the left, nozzle pointing right'),
+                ('handcannon', 'a big stubby transparent colorful water cannon with a wide nozzle; grip hanging down at the left end'),
+                ('bowgun', 'a transparent colorful toy crossbow loaded with a water balloon; stock on the left pointing right')],
+        'mage': [('spear', 'a long spear made of a closed beach umbrella with a sky-blue-and-white striped canopy as the head on the right'), ('pole', 'a long colorful pinwheel staff: a white stick with a big rainbow pinwheel on the right end'),
+                 ('rod', 'a short wand topped on the right with a green coconut with a straw and a little umbrella stuck in it'), ('staff', 'a long staff topped on the right with a big ice cream cone with pink and blue scoops'),
+                 ('broom', 'a broom made of a white stick with a big green palm-leaf brush on the right end')],
+    },
+}
+for _sk, _per in WEAPON_SKINS.items():
+    for _cls, _items in _per.items():
+        WEAPON_SHEETS[f'k_{_sk}_{_cls}'] = [(f'{_sk}_{t}', f'w_{t}', d) for t, d in _items]
+
 def weapon_ref(name, items):
     """把对应的物品图标拼成一张参考条（设计照图标来）"""
     from PIL import Image
@@ -189,8 +230,9 @@ def weapon_ref(name, items):
         im = Image.open(os.path.join(icon, f'item_{ik}.webp')).convert('RGBA').resize((256, 256), Image.LANCZOS); M.paste(im, (i * 256, 0), im)
     os.makedirs(os.path.dirname(out), exist_ok=True); M.save(out); return out
 
-def weapon_prompt(items):
-    rows = '; '.join(f'row {i + 1}: {d} (design like icon {i + 1} of the second image)' for i, (_, _, d) in enumerate(items))
+def weapon_prompt(items, skin=False):
+    like = 'the same kind of weapon and overall silhouette as icon {n} of the second image, but restyled as described' if skin else 'design like icon {n} of the second image'
+    rows = '; '.join(f'row {i + 1}: {d} (' + like.format(n=i + 1) + ')' for i, (_, _, d) in enumerate(items))
     return ('2D game weapon sprite sheet for a cute chibi action RPG. Draw exactly ' + str(len(items)) + ' weapons stacked in one column, one weapon per row, '
             'each weapon lying perfectly HORIZONTAL in strict side view (flat profile, not diagonal, not in perspective), with the handle / grip / stock at the LEFT and the blade tip / muzzle / head pointing to the RIGHT. '
             f'{rows}. '
@@ -201,6 +243,44 @@ def weapon_prompt(items):
 WHO = {'sword': 'boy swordsman (same face, same spiky silver hair, red eyes)', 'gun': 'girl gunner (same face, same long brown ponytail, blue eyes)',
        'mage': 'girl mage (same face, same long lavender hair, golden eyes)'}
 SETS = {
+    'sky1': {   # 天空套一「天穹圣翼」：白 / 金 / 天蓝，天使与骑士；背后一对白色小羽翼（画进帧里）
+        'sword': 'a white knight long coat with gold trim and gilded shoulder armor, a sky-blue lining, and a pair of small white angel wings on the back; white long trousers with gold knee guards; '
+                 'white-and-gold long boots; a wide gold belt with a blue sapphire in the middle; a gold cross brooch on the chest. The red scarf is removed.',
+        'gun': 'a short white military-style jacket with gold trim and a pair of small white angel wings on the back; a fluffy sky-blue puffy mini skirt; white over-knee long boots with gold buckles; a thin gold belt; '
+               'a gold cross brooch on the chest. The blue neckerchief and the brown cap are removed (hair uncovered).',
+        'mage': 'a white angel robe with wide sleeves and gold embroidery, a pair of small white angel wings on the back; a sky-blue skirt with a feather-trimmed hem; white short boots with gold trim; a gold waist chain; '
+                'a gold cross brooch on the chest. The witch hat and the cape are removed (hair uncovered).',
+    },
+    'summer': {   # 夏日「晴空海滩」：天蓝 / 白 / 椰绿，点缀扶桑花粉
+        'sword': 'an open blue-and-white Hawaiian short-sleeve shirt with a hibiscus flower pattern over a white tank top; sky-blue knee-length beach shorts printed with palm trees; brown sandals; '
+                 'a woven straw belt with small seashells; a seashell necklace on the chest. The red scarf and the long coat are removed.',
+        'gun': 'a white sailor-style crop top with a blue sailor collar scarf, showing the belly; light-blue denim shorts; white lace-up sandals; a colorful braided belt; a seashell necklace on the chest. '
+               'The brown jacket, the blue neckerchief and the brown cap are removed (hair uncovered).',
+        'mage': 'a white sundress with thin straps and a sky-blue ruffled hem, with a sheer see-through light cardigan over it; white sandals; a woven straw belt with a pink hibiscus flower pinned on it; '
+                'a seashell necklace on the chest. The witch hat and the cape are removed (hair uncovered).',
+    },
+    'sky2': {   # 天空套二「炎龙之魂」：黑 / 暗红 / 金，炎龙；背后一对黑红小龙翼（画进帧里）
+        'sword': 'a black long coat with a dragon-scale pattern, a red lining and gold dragon embroidery, a dragon-head pauldron on one shoulder, and a pair of small black-and-red dragon wings on the back; '
+                 'wide black trousers with red leg guards; black-and-gold battle boots; a red waist sash with a gold dragon-head buckle; a dragon-claw necklace holding a red gem on the chest. The red scarf is removed.',
+        'gun': 'a short black leather jacket with red flame patterns and gold dragon patterns, a pair of small black-and-red dragon wings on the back; a black-and-red mini skirt; black long boots with red laces; '
+               'a red belt with a gold dragon-head buckle; a dragon-claw necklace on the chest. The blue neckerchief and the brown cap are removed (hair uncovered).',
+        'mage': 'a black-and-red high-collared long robe with a dark gold dragon-scale pattern, the skirt hem shaped like flames, a pair of small black-and-red dragon wings on the back; black short boots; '
+                'a gold dragon-head waist buckle; a dragon-claw necklace on the chest. The witch hat and the cape are removed (hair uncovered).',
+    },
+    'academy': {   # 学院「星辉学院」：藏青 / 白 / 红，校徽、格纹、领结
+        'sword': 'a navy blue school blazer with gold buttons and a school crest on the chest over a white shirt; grey plaid long trousers; brown leather shoes; a black leather belt; a red necktie. The red scarf is removed.',
+        'gun': 'a short navy blue school jacket over a white shirt; a red-and-black plaid pleated mini skirt; black over-knee socks with brown loafers; a thin leather belt; a red bow tie at the collar. '
+               'The blue neckerchief and the brown cap are removed (hair uncovered).',
+        'mage': 'a navy blue school cape over a white shirt; a long plaid pleated skirt; black stockings with Mary-Jane shoes; a thin leather belt; a red bow tie at the collar. The witch hat and the old cape are removed (hair uncovered).',
+    },
+    'spring': {   # 春节「锦鲤贺岁」：中国红 + 金，祥云、盘扣、福字纹、锦鲤、白色毛绒滚边、中国结（商城组设计）
+        'sword': 'a red Chinese Tang-style short jacket with a mandarin stand-up collar, gold frog-knot buttons, auspicious cloud trim along the edges, a koi fish embroidered on the hem and a ring of white fluffy fur around the collar; '
+                 'loose black lantern trousers with gold leg wraps at the shins; red embroidered cloth shoes; a wide gold waist sash with a red Chinese knot tassel hanging at the side; a gold longevity-lock pendant necklace on the chest. The red scarf is removed.',
+        'gun': 'a short red qipao-style top with a mandarin stand-up collar, gold frog-knot buttons, a koi fish embroidery and white fluffy fur cuffs; a red-and-gold pleated mini skirt; white over-knee socks with red round-toe embroidered shoes; '
+               'a red satin ribbon belt tied into a Chinese knot; a gold longevity-lock pendant necklace on the chest. The blue neckerchief and the brown cap are removed (hair uncovered).',
+        'mage': 'a red Chinese ruqun-style long robe with wide sleeves, gold peony and auspicious cloud patterns and a white fluffy fur collar; the skirt reaches the ankles with a red-to-gold gradient; red embroidered shoes; '
+                'a gold belt with a hanging jade pendant tassel; a gold longevity-lock pendant necklace on the chest. The witch hat and the cape are removed (hair uncovered).',
+    },
     'festival': {   # 庆典时装：红色节日礼服，白毛边 + 金色星星（和帕丽丝卖的图标一致）
         'sword': 'a red double-breasted festive coat with thick white fluffy fur trim on the collar, cuffs and hem, gold buttons and small gold star ornaments; a red bow tie with a gold-framed ruby gem at the collar; '
                  'a red satin sash belt with a gold square buckle; red knee-length shorts with gold trim and white knee socks; glossy red shoes with gold buckles. The red scarf is removed.',
@@ -213,7 +293,7 @@ SETS = {
 
 def ref_prompt(cls, outfit):
     return (f'Edit this chibi {WHO[cls]} character sheet art: keep exactly the same character, the same face and hair, the same standing pose, the same proportions and the same cute art style with thick outlines, '
-            f'but change the clothes to this festive outfit: {outfit} The hands are empty (no weapon). No hat, no glasses, no hair ornament. Plain pure white background.')
+            f'but change the clothes to this outfit: {outfit} The hands are empty (no weapon). No hat, no glasses, no hair ornament. Plain pure white background.')
 
 def set_prompt(cls, outfit):
     return ('The FIRST image is a 2D game sprite animation sheet (3x3 grid, 9 frames) of a chibi character holding a flat pure green stick. The SECOND image shows the same character in a new outfit. '
@@ -244,7 +324,7 @@ def jobs_set(only):
     for sid, per in SETS.items():
         for name, src in source_sheets().items():
             cls = name.split('_')[0]
-            if cls not in per or not f'{sid}/{name}'.startswith(only): continue
+            if cls not in per or not any(f'{sid}/{name}'.startswith(o) for o in only.split(',')): continue   # --only 可以逗号分隔多个前缀
             ref = os.path.join(OUT, 'refs', f'{cls}@{sid}.png')
             if not os.path.exists(ref): print('缺时装参考图，先跑 ref：', ref); continue
             ph = os.path.join(sd, f'{name}.png')
@@ -255,20 +335,36 @@ def jobs_set(only):
 
 # ---- 头部配件：侧面（朝右）画，一张表一行 3 个：帽子、发饰、眼镜 ----
 ACC = {
+    'sky1': [('hat', 'a floating golden angel halo ring with a small golden wing on each side, seen from the side and slightly above, tilted, glowing softly'),
+             ('hair', 'a pair of white feathers hair ornament, seen from the side, worn on the side of the head')],
+    'summer': [('hat', 'a wide-brimmed woven straw sun hat with a blue ribbon band, seen in strict side view facing right'),
+               ('hair', 'a big pink hibiscus flower hair clip, seen from the side'),
+               ('face', 'a pair of pink heart-shaped sunglasses seen in strict side view (profile) for a character facing right: one heart-shaped pink lens in front and one thin temple arm going back to the left')],
+    'sky2': [('hat', 'a pair of curved black-and-red dragon horns (both horns together as one piece, as worn on top of a head), seen in side view facing right'),
+             ('hair', 'a small red flame-shaped hair ornament like a little fire, seen from the side')],
+    'academy': [('hat', 'a navy blue beret with a small gold school crest badge, seen in strict side view facing right, tilted'),
+                ('hair', 'a big red plaid ribbon bow hair ornament, seen from the side'),
+                ('face', 'a pair of black square-framed glasses seen in strict side view (profile) for a character facing right: one square lens in front and one thin temple arm going back to the left')],
+    'spring': [('hat', 'a small cute Chinese lion-dance head hat: a red lion head with gold eyebrows, big round eyes and fluffy fur edges, seen in strict side view facing right, worn on top of a head'),
+               ('hair', 'a red fluffy pompom hair ornament with a gold tassel hairpin stuck beside it, seen from the side, worn on the side of the head'),
+               ('face', 'a pair of round sunglasses with thin gold frames and red lenses, seen in strict side view (profile) for a character facing right: one round lens in front and one thin temple arm going back to the left')],
     'festival': [('hat', 'a small red top hat with a white band, a gold star-shaped emblem with a ruby and two white feathers on the side, seen in strict side view facing right, tilted slightly'),
                  ('hair', 'a red satin ribbon bow with gold trim and a small gold star in the knot, seen from the side, as a hair ornament worn at the back of the head'),
                  ('face', 'a pair of round red-and-gold glasses seen in strict side view (profile) for a character facing right: one round lens rim in front and one thin temple arm going back to the left, with small gold flower rivets')],
 }
+
+ACC_ICONS = {'festival': os.path.join(SRC, 'items', 'sheet_avatar.png')}
 
 def jobs_acc(only):
     L = []
     for sid, items in ACC.items():
         if not sid.startswith(only): continue
         rows = '; '.join(f'({i + 1}) {d}' for i, (_, d) in enumerate(items))
-        L.append({'out': os.path.join(OUT, 'acc', f'{sid}.png'), 'refs': [os.path.join(OUT, 'refs', f'sword@{sid}.png'), os.path.join(SRC, 'items', 'sheet_avatar.png')],
+        icons = ACC_ICONS.get(sid)   # 有物品图标表就一起参考（庆典时装）
+        L.append({'out': os.path.join(OUT, 'acc', f'{sid}.png'), 'refs': [os.path.join(OUT, 'refs', f'sword@{sid}.png')] + ([icons] if icons else []),
                   'size': '2048x1152',
-                  'prompt': ('2D game costume accessory sprites for a cute chibi action RPG, matching the art style of the character in the first image (bold dark outlines, clean cel shading, bright colors) '
-                             f'and the designs of the matching icons in the second image. Draw exactly {len(items)} separate accessories in one row from left to right, each isolated with wide white gaps: {rows}. '
+                  'prompt': ('2D game costume accessory sprites for a cute chibi action RPG, matching the art style of the character in the first image (bold dark outlines, clean cel shading, bright colors)'
+                             f'{" and the designs of the matching icons in the second image" if icons else ""}. Draw exactly {len(items)} separate accessories in one row from left to right, each isolated with wide white gaps: {rows}. '
                              'No character, no head, no hands, no text, no shadows. Plain pure white background.')})
     return L
 
@@ -276,9 +372,9 @@ def jobs_weapons(only):
     L = []
     for name, items in WEAPON_SHEETS.items():
         if not name.startswith(only): continue
-        cls = {'sword': 'sword', 'gun': 'gun', 'mage': 'mage', 'heavy': 'sword'}[name.split('_')[1]]
+        cls = {'sword': 'sword', 'gun': 'gun', 'mage': 'mage', 'heavy': 'sword'}[name.split('_')[-1]]
         L.append({'out': os.path.join(OUT, 'weapons', f'{name}.png'), 'refs': [os.path.join(SRC, f'{cls}_ref.png'), weapon_ref(name, items)],
-                  'prompt': weapon_prompt(items), 'size': '2048x2048'})
+                  'prompt': weapon_prompt(items, name.startswith('k_')), 'size': '2048x2048'})
     return L
 
 # 单格重做占位棍（从原表取格子）：武器类型 → 提示词

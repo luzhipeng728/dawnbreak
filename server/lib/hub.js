@@ -24,7 +24,15 @@ export function makeHub({ server, cfg, ctx, auth, handlers, hooks }) {
     const c = {
       cid: connSeq++, ws, ip, user: null, since: Date.now(), alive: true, ver: 0, build: '', char: null, scene: null, pos: null,
       rl: limiter(cfg.wsRate[0], cfg.wsRate[1]), dropped: 0,
-      send(msg) { if (ws.readyState !== 1) return false; try { ws.send(typeof msg === 'string' ? msg : JSON.stringify(msg)); return true; } catch { return false; } },
+      send(msg) {
+        if (ws.readyState !== 1) return false;
+        const s = typeof msg === 'string' ? msg : JSON.stringify(msg);
+        if (cfg.lagMs) {   // 测试用：模拟网络延迟（带抖动，但和 TCP 一样不乱序）
+          const at = Math.max(c.lagAt || 0, Date.now() + cfg.lagMs + Math.random() * (cfg.jitterMs || 0)); c.lagAt = at;
+          setTimeout(() => { if (ws.readyState === 1) try { ws.send(s); } catch { /* 已断开 */ } }, at - Date.now()); return true;
+        }
+        try { ws.send(s); return true; } catch { return false; }
+      },
       close(code = 1000, reason = '') { try { ws.close(code, reason); } catch { /* 已关闭 */ } },
     };
     ws._c = c;

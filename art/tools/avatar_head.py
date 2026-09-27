@@ -43,8 +43,9 @@ def _ssd(F, T):
     # 有效区：模板左上角放在 (y, x) 时，对应 ssd[y + th - 1, x + tw - 1]
     return ssd[th - 1:th - 1 + PH - th + 1, tw - 1:tw - 1 + PW - tw + 1], (th, tw)
 
-def find_head(frame, tpl, tc, ctr_in_tpl):
-    """frame：RGBA；tpl：模板 RGBA；ctr_in_tpl：模板中心在模板里的坐标 → {x, y, a, q}"""
+def find_head(frame, tpl, tc, ctr_in_tpl, near=None):
+    """frame：RGBA；tpl：模板 RGBA；ctr_in_tpl：模板中心在模板里的坐标 → {x, y, a, q}
+    near = (px, py, 角度°, 半径, 角度范围°)：只在预测位置附近找（时装帧：按原装同帧的头部位置预测，防止翅膀 / 白毛边被当成白头发）"""
     F = premul(frame); best = None
     def search(angles, Fs, Ts_scale):
         nonlocal best
@@ -52,17 +53,25 @@ def find_head(frame, tpl, tc, ctr_in_tpl):
             T = _rot(tpl, deg)
             if Ts_scale != 1: T = np.array(Image.fromarray(T, 'RGBA').resize((max(1, round(T.shape[1] * Ts_scale)), max(1, round(T.shape[0] * Ts_scale))), Image.BILINEAR))
             S, (th, tw) = _ssd(Fs, premul(T))
-            i = np.unravel_index(np.argmin(S), S.shape); v = float(S[i])
-            # 模板左上角在 F 里的位置
-            y0, x0 = (i[0] - th) / Ts_scale, (i[1] - tw) / Ts_scale
             # 旋转后模板中心 = 旋转图中心（expand 旋转保持中心）；模板中心相对模板几何中心的偏移也要转
             Th, Tw = T.shape[0] / Ts_scale, T.shape[1] / Ts_scale
             ox, oy = ctr_in_tpl[0] - tpl.shape[1] / 2, ctr_in_tpl[1] - tpl.shape[0] / 2; r = math.radians(deg)
-            cx = x0 + Tw / 2 + ox * math.cos(r) - oy * math.sin(r); cy = y0 + Th / 2 + ox * math.sin(r) + oy * math.cos(r)
+            dxc, dyc = Tw / 2 + ox * math.cos(r) - oy * math.sin(r), Th / 2 + ox * math.sin(r) + oy * math.cos(r)
+            if near:   # 只看预测位置附近
+                yy, xx = np.mgrid[0:S.shape[0], 0:S.shape[1]]
+                cxs, cys = (xx - tw) / Ts_scale + dxc, (yy - th) / Ts_scale + dyc
+                S = np.where((cxs - near[0]) ** 2 + (cys - near[1]) ** 2 <= near[3] ** 2, S, np.inf)
+                if not np.isfinite(S).any(): continue
+            i = np.unravel_index(np.argmin(S), S.shape); v = float(S[i])
+            # 模板左上角在 F 里的位置
+            y0, x0 = (i[0] - th) / Ts_scale, (i[1] - tw) / Ts_scale
+            cx = x0 + dxc; cy = y0 + dyc
             if best is None or v < best[0]: best = (v, deg, cx, cy)
     small = 0.5
     Fs = np.array(Image.fromarray(frame, 'RGBA').resize((max(1, round(frame.shape[1] * small)), max(1, round(frame.shape[0] * small))), Image.BILINEAR))
-    search(range(-180, 180, 15), premul(Fs), small)
+    if near: search([near[2] + k for k in range(-int(near[4]), int(near[4]) + 1, 10)], premul(Fs), small)
+    else: search(range(-180, 180, 15), premul(Fs), small)
+    if best is None: return None
     d0 = best[1]; best = None
     search([d0 + k for k in np.arange(-10, 10.1, 2.5)], F, 1)
     v, deg, cx, cy = best
@@ -95,13 +104,40 @@ def heads_for_dir(key, frames=None, preview=True):
     y1 = int(top + (rows.max() - top) * HEAD_FRAC); cols = np.where((idle[top:y1, :, 3] > 40).any(0))[0]
     ctr_in_tpl = (tc[0] - cols.min(), tc[1] - top)
     out = {}
+    bmeta = json.load(open(os.path.join(HERE, 'final', 'spr', base, 'spr.json')))['frames'] if '@' in key else None
     for fn in (frames or list(meta['frames'])):
         p = os.path.join(d, f'{fn}.webp')
         if not os.path.exists(p): continue
         fr = np.array(Image.open(p).convert('RGBA'))
-        H = find_head(fr, tpl, tc, ctr_in_tpl)
+        near = predict_from_base(key, fn, fr, meta['frames'][fn], bmeta) if bmeta else None
+        H = (find_head(fr, tpl, tc, ctr_in_tpl, near) if near else None) or find_head(fr, tpl, tc, ctr_in_tpl)
+        if near: H['near'] = [round(near[0], 1), round(near[1], 1), round(math.radians(near[2]), 3)]   # 找不准时退回这个预测位置
         out[fn] = H
     return meta, out, d
+
+def predict_from_base(key, fn, fr, F, bmeta):
+    """时装帧：原装同帧（姿势一样）的头部位置 → 这一帧里的预测位置。两帧按脚底锚点放好后，用轮廓重合度再对齐一次平移。"""
+    G = bmeta.get(fn); H0 = G and G.get('head')
+    if not H0: return None
+    base = key.split('@')[0]
+    bf = np.array(Image.open(os.path.join(HERE, 'final', 'spr', base, f'{fn}.webp')).convert('RGBA'))
+    A = bf[..., 3] > 40; B = fr[..., 3] > 40
+    # 放到同一张画布：原点 = 脚底锚点
+    S = 2; pad = 60
+    W = max(A.shape[1], B.shape[1]) + 2 * pad + 200; Hh = max(A.shape[0], B.shape[0]) + 2 * pad + 200
+    ox, oy = W // 2, Hh - pad
+    def place(M, ax, ay):
+        C = np.zeros((Hh, W), bool); x0, y0 = int(round(ox - ax)), int(round(oy - ay))
+        C[y0:y0 + M.shape[0], x0:x0 + M.shape[1]] = M; return C[::S, ::S]
+    Ca, Cb = place(A, G['ax'], G['ay']), place(B, F['ax'], F['ay'])
+    best = (-1, 0, 0)
+    for dy in range(-20, 21, 2):
+        for dx in range(-20, 21, 2):
+            Cs = np.roll(np.roll(Ca, dy, 0), dx, 1); iou = (Cs & Cb).sum() / max(1, (Cs | Cb).sum())
+            if iou > best[0]: best = (iou, dx * S, dy * S)
+    _, sx, sy = best
+    px = H0['x'] - G['ax'] + F['ax'] + sx; py = H0['y'] - G['ay'] + F['ay'] + sy
+    return (px, py, math.degrees(H0.get('a', 0)), 26.0, 35.0)
 
 def preview(d, out, path):
     tiles = []
@@ -124,10 +160,12 @@ def main():
             if H['q'] <= Q_MAX:
                 meta['frames'][fn]['head'] = {k: H[k] for k in ('x', 'y', 'a')}
                 if face_hidden(H): meta['frames'][fn]['head']['f'] = 0
+            elif H.get('near'):   # 时装帧找不到：用原装同帧平移过来的位置（不画眼镜）
+                n = H['near']; meta['frames'][fn]['head'] = {'x': n[0], 'y': n[1], 'a': n[2], 'f': 0}
             else: meta['frames'][fn].pop('head', None)
         json.dump(meta, open(os.path.join(d, 'spr.json'), 'w'), indent=1)
         pv = os.path.join(MAIN, 'src', 'avatar', 'cut', f'head_{key}.png'); preview(d, out, pv)
-        bad = [f for f, H in out.items() if H['q'] > Q_MAX]
+        bad = [f for f, H in out.items() if H['q'] > Q_MAX and not H.get('near')]
         print(f'{key}: {len(out)} 帧，{len(out) - len(bad)} 帧有头部锚点；没找到：{" ".join(bad) or "无"}  预览 {pv}')
 
 if __name__ == '__main__':

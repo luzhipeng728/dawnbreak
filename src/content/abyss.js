@@ -61,7 +61,7 @@ function abyssBeforeEnter(id) {
     const A = ABYSS[id], D = DUNGEONS[id];
     D.boss = { kind: pick(A.lords.filter(k => MON[k])), lvl: A.lordLvl };   // 深渊领主每次随机（dungeonBundles 按它加载素材）
     const S = abyssData(); S.runs = (S.runs || 0) + 1; S.clears[id] = S.clears[id] || 0;
-    toastMsg(`消耗 深渊派对邀请函 ×1（剩余 ${inv.count('abyss_ticket')}）`, '#e0a0ff'); gearSfx.abyssOpen();
+    toastMsg(`消耗 深渊派对邀请函 ×1（剩余 ${inv.count('abyss_ticket')}）`, '#e0a0ff', 'log'); gearSfx.abyssOpen();
     save.write();
     return true;
   };
@@ -217,7 +217,7 @@ bus.on('dungeonClear', () => {
   const S = abyssData(), day = dayKey();
   if (S.dailyDay !== day) { S.dailyDay = day; S.dailyN = 0; }
   if (S.dailyN >= ABYSS_DAILY_N) return;
-  if (++S.dailyN === ABYSS_DAILY_N) { giveItem(makeItem('abyss_ticket', ABYSS_DAILY_TICKETS)); toastMsg(`歌兰蒂斯送来了今天的深渊派对邀请函 ×${ABYSS_DAILY_TICKETS}`, '#e0a0ff'); }
+  if (++S.dailyN === ABYSS_DAILY_N) { giveItem(makeItem('abyss_ticket', ABYSS_DAILY_TICKETS)); toastMsg(`歌兰蒂斯送来了今天的深渊派对邀请函 ×${ABYSS_DAILY_TICKETS}`, '#e0a0ff', 'log'); }
 });
 
 /* ---------------- NPC 功能入口（NPC 定义在 content/world/towns.js，这里追加功能按钮） ----------------

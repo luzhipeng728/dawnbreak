@@ -6,7 +6,7 @@
    - 全服公告：bus.emit('announce', { kind, ... })（格式见协作板），另外兜底监听 pickup / enhance / jobChange / 首次通关
    - 排行榜：进城、升级、换装、转职、通关、决斗后自动上报（防抖）
    ===================================================================== */
-const SX = { unread: 0, pending: 0, signed: true, annSeen: new Map(), firstClear: null, reconciling: false, rankTm: 0, rankAt: 0, rankCid: null, pollAt: 0 };
+const SX = { unread: 0, pending: 0, signed: true, inflight: new Set(), annSeen: new Map(), firstClear: null, reconciling: false, rankTm: 0, rankAt: 0, rankCid: null, pollAt: 0 };
 function socialOn() { return typeof netOn === 'function' && typeof net !== 'undefined' && !!netOn() && !!net.user; }
 const sxAdmin = () => socialOn() && !!net.user.admin;
 const sxRid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
@@ -75,6 +75,12 @@ function sxReq(p) {
 }
 // 执行一条待办；成功返回服务端结果。失败抛错：err.definite = true 表示已经退回（服务端明确拒绝），否则待办保留、稍后自动重试
 async function sxRun(p) {
+  // 同一条待办不会同时发两次（例如领取附件的请求还没回来时，进城触发了对账），否则附件可能入包两次
+  if (SX.inflight.has(p.rid)) throw Object.assign(new Error('正在处理，请稍候'), { definite: false, busy: true });
+  SX.inflight.add(p.rid);
+  try { return await sxRunOnce(p); } finally { SX.inflight.delete(p.rid); }
+}
+async function sxRunOnce(p) {
   let res;
   try { res = await sxApi(...sxReq(p)); }
   catch (e) {
@@ -93,7 +99,7 @@ async function sxReconcile() {
   const L = sxPend(); if (!L.length) return;
   SX.reconciling = true;
   let n = 0;
-  try { for (const p of L.slice()) { try { await sxRun(p); n++; } catch (e) { if (!e.definite) break; } } }
+  try { for (const p of L.slice()) { if (SX.inflight.has(p.rid)) continue; try { await sxRun(p); n++; } catch (e) { if (!e.definite) break; } } }
   finally { SX.reconciling = false; }
   if (n) toastMsg('上次没完成的交易已经处理好了', '#bfe8bf');
 }

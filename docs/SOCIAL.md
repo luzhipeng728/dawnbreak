@@ -17,8 +17,8 @@
 | `src/net/social.js` | 客户端逻辑：接口封装、待办对账（防复制 / 防丢失）、公告上报、排行榜上报、邮件领取入包 |
 | `src/ui/social/*.js` | 窗口：`auction` `mail` `rank` `signin` `gm`；顶部滚动公告条；社交按钮条和信封提示 |
 | `test/svc_api.mjs` | 接口测试（不开浏览器）：拍卖、邮件、签到、排行榜、公告、管理员，共 88 项 |
-| `test/svc_host.mjs` | 接口测试用的最小宿主（按联机组的模块扩展点约定加载 `server/modules/*.js`，node:sqlite 临时库） |
-| `test/svc_play.mjs` | 端到端测试：本机起服务端（临时数据库），2 个无头浏览器模拟两个玩家 |
+| `test/svc_host.mjs` | 测试用服务端：联机组的真实服务端（`server/index.js` 的 `start()`）+ 临时数据库，注册测试账号、加好友，打开 gm 的测试接口（`DNF_SVC_TEST=1`，可以平移服务端时间） |
+| `test/svc_play.mjs` | 端到端测试（40 项）：本机起服务端（临时数据库），1 个 Chrome 里同时最多 2 个玩家上下文，全部走真实界面 |
 
 窗口名：`auction`（拍卖行）、`mail`（邮件）、`rank`（排行榜）、`signin`（签到）、`gm`（管理员后台）。
 快捷键：拍卖行 `B`（可以在按键设置里改）；其他窗口从屏幕左侧（任务指引下方）的社交按钮条打开。
@@ -29,7 +29,7 @@
 mail(id PK, to_id, from_id, from_name, kind,        -- kind: sys 系统 / gm 管理员 / friend 好友 / auction 拍卖行
      title, body, gold, cera, items TEXT,           -- items: JSON 数组 [{ key, n, opt? } | { item: 完整物品对象 }]
      created, expires,                              -- expires 为 NULL 表示不过期（拍卖行邮件，官方做法）
-     read_at, claimed_at, claim_rid, deleted)
+     read_at, claimed_at, claim_rid, rid, deleted)  -- rid：好友寄信的请求 id（幂等）
 -- 拍卖行
 auction(id PK, rid UNIQUE,                          -- rid：客户端生成的请求 id（上架幂等）
         seller_id, seller_name, seller_char,
@@ -124,8 +124,9 @@ WS（服务端 → 客户端）：`mail:new { unread }`，`notice:show { kind, t
 - 过期时间：
   - 系统 / 管理员 / 好友邮件 30 天（管理员可以自己指定天数）。
   - 拍卖行邮件不过期。
-  - 过期邮件（包括其中未领取的附件）会被清除。
+  - 过期邮件会被清除。好友邮件里没领取的附件退回寄件人（系统邮件），其他邮件的附件一并消失。
 - 邮费：带附件 100 G，纯文字免费。
+- 写信：从背包点选或拖入附件，可以叠加的物品先问数量（可以只寄一部分）。
 - 领取：
   - 附件领到**当前角色**身上：金币 → `game.gold`，点券 → `addCera(n, '邮件')`（商城组提供），物品 → 背包。
   - 背包空间不够时整封不领，并提示“背包空间不足”。
@@ -167,7 +168,8 @@ WS（服务端 → 客户端）：`mail:new { unread }`，`notice:show { kind, t
   - 屏幕上方居中的官方式滚动公告条（DOM + CSS transform 动画，不占画布绘制）。
   - 多条排队，依次播放。
   - 同时写进左下角系统消息。
-- 管理员公告：`kind: 'custom'`，文字原样显示（转义后）。
+- 管理员公告：`kind: 'custom'`，文字原样显示（转义后）。玩家客户端不能发 custom。
+- 文案示例：勇士「A」将 [寒光太刀] 强化到了 +12！ / 勇士「A」在天空之城获得了史诗装备 [xx]！（名字里的方括号会被去掉，客户端按品级给 [物品名] 上色）
 
 ### 每日签到
 - 以服务器时间为准：北京时间 06:00 换日，和游戏里疲劳恢复一致。

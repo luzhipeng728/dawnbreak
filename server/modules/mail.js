@@ -95,7 +95,7 @@ export default {
       return { ok: true, ...counts(ctx, req.user.id) };
     });
     // 领取附件：同一个 rid 重复调用返回同样的附件（客户端断网重试 / 刷新后对账）
-    r.post('/api/mail/claim', { auth: true, rate: [60, 60] }, req => {
+    r.post('/api/mail/claim', { auth: true, rate: [200, 60] }, req => {
       const rid = txt(req.body.rid, 40);
       if (!rid) throw ctx.err(400, '缺少请求 id');
       const res = ctx.db.tx(() => {

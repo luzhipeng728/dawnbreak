@@ -21,7 +21,7 @@ function noticeHtml(m) {
 }
 function noticeShow(m) {
   if (!m || !m.text) return;
-  if (m.id != null) { if (sxNotice.seen.has(m.id)) return; sxNotice.seen.add(m.id); }
+  if (m.id != null) { if (sxNotice.seen.has(m.id)) return; if (sxNotice.seen.size > 500) sxNotice.seen.clear(); sxNotice.seen.add(m.id); }
   sxNotice.q.push(m);
   if (sxNotice.q.length > 12) sxNotice.q.shift();
   if (typeof ui !== 'undefined' && ui.pushLog) ui.pushLog(`【公告】${m.text}`, m.kind === 'custom' ? '#8fe8ff' : '#ffd23a');

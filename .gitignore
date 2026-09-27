@@ -22,3 +22,6 @@ __pycache__/
 .DS_Store
 /.team/
 /.claude/
+
+# 联机服务端本地数据库
+/server/data/

@@ -8,7 +8,7 @@ const SAVE_V = 3, MAX_CHARS = 6;
 const DUNGEON_ALIAS = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
 /* 存档结构：{ v, cur, chars: [角色数据...] }，每个角色独立保存等级 / 背包 / 任务 / 位置等（官方的角色选择） */
 const save = {
-  key: ['test', 'dungeon', 'town', 'bot', 'cls', 'duel'].some(k => PARAMS.has(k)) ? 'dawnbreak_dev' : 'dawnbreak_save_v1', data: null, chars: [], cur: -1,   // 调试参数用独立存档，不碰玩家的正式存档
+  key: ['test', 'dungeon', 'town', 'bot', 'cls', 'duel'].some(k => PARAMS.has(k)) ? 'dawnbreak_dev' : 'dawnbreak_save_v1', data: null, chars: [], cur: -1, live: false,   // 调试参数用独立存档，不碰玩家的正式存档
   defaults(cls = 'sword', name = '勇士') {
     return { v: SAVE_V, cls, name, job: null, lvl: 1, exp: 0, sp: 150, gold: 1500, skillLv: {}, skillBar: Array(12).fill(null), inv: [], equip: {}, quick: [null, null, null, null, null, null], storage: [],
       fatigue: FATIGUE_MAX, day: dayKey(), coins: 5, unlocked: {}, best: {}, weak: 0, clears: 0, created: Date.now(), playTime: 0, quests: {}, questDone: {}, loc: null, seen: {}, titles: [], buyback: [],
@@ -16,7 +16,7 @@ const save = {
   },
   // 读取全部角色；返回是否至少有一个角色
   loadAll() {
-    this.chars = []; this.cur = -1;
+    this.chars = []; this.cur = -1; this.live = false;
     if (PARAMS.has('fresh')) return false;
     try {
       const raw = localStorage.getItem(this.key); if (!raw) return false;
@@ -30,10 +30,10 @@ const save = {
   },
   // 兼容旧接口：读取并选中上次的角色
   load() { if (!this.loadAll()) { this.data = null; return false; } this.select(Math.max(0, this.cur)); return true; },
-  select(i) { this.cur = i; this.data = this.chars[i]; this.daily(); },
+  select(i) { this.cur = i; this.data = this.chars[i]; this.live = false; this.daily(); },
   daily() { const d = dayKey(); if (this.data.day !== d) { this.data.day = d; this.data.fatigue = FATIGUE_MAX; this.data.coins = Math.max(this.data.coins, 0) + 1; if (typeof questsDailyReset === 'function') questsDailyReset(this.data); toastMsg('新的一天：疲劳值已恢复，领取复活币 ×1', '#bfe8bf'); } },
   write() {
-    if (!this.data) return;
+    if (!this.data || !this.live) return;   // 只有 apply() 之后（游戏状态已对应这个角色）才写，避免在标题 / 选角界面把空状态写进角色
     const d = this.data;
     d.lvl = game.lvl; d.exp = game.exp; d.sp = game.sp || 0; d.gold = game.gold; d.skillLv = game.skillLv; d.skillBar = game.skillBar; d.job = game.job || null;
     d.inv = inv.items; d.equip = inv.equip; d.quick = inv.quick; d.storage = inv.storage || d.storage || [];
@@ -57,7 +57,7 @@ const save = {
     d.v = SAVE_V; return d;
   },
   apply() {
-    const d = this.data;
+    const d = this.data; this.live = true;
     game.lvl = d.lvl; game.exp = d.exp; game.sp = d.sp; game.gold = d.gold; game.skillLv = d.skillLv; game.skillBar = d.skillBar; game.job = d.job || null;
     inv.items = d.inv || []; inv.equip = d.equip || {}; inv.quick = d.quick || inv.quick; inv.storage = d.storage || [];
   },

@@ -72,7 +72,7 @@ function defineItem(key, def) {
     D.lvl = D.lvl || 1;
     if (D.slot === 'weapon' && D.wtype) D.cls = D.cls || WTYPES[D.wtype].cls;
     if (D.durMax === undefined) D.durMax = D.slot === 'title' ? 0 : D.slot === 'weapon' ? (WTYPES[D.wtype] || {}).dur || 30 : D.atype ? Math.round(ATYPES[D.atype].dur * (D.slot === 'top' ? 1 : 0.85)) : 24;
-    if (!def.price) D.price = Math.round((40 + D.lvl * 25) * Math.pow(2.2, D.rar) * (D.slot === 'weapon' ? 1.2 : D.slot === 'title' ? 1.5 : 1));
+    if (!def.price) D.price = Math.round((40 + D.lvl * 25) * Math.pow(2.2, D.rar) * (D.slot === 'weapon' ? 1.2 : 1) * 1.6);   // 经济模拟（test/econ.mjs）校准过
     if (!D.noDrop && !D.quest) GEAR.push(D);
     if (D.rar === 5) EPICS.push({ slot: D.slot, cls: D.cls || null, lvl: D.lvl, key, name: D.name, fx: D.fx, desc: D.desc });
   } else CONSUMABLES[key] = D;
@@ -351,7 +351,7 @@ const bank = {
   write() { try { localStorage.setItem(this.key(), JSON.stringify({ v: 1, items: this.items, gold: this.gold })); } catch (e) { /* 存储已满 */ } },
 };
 /* ---- 出售 / 回购 ---- */
-const sellPrice = it => { const D = ITEMS[it.key]; if (it.kind === 'quest' || (D && D.noSell)) return 0; return Math.max(1, Math.floor((it.price || 10) * (D && D.sellMul || 0.2))) * (it.kind === 'equip' ? 1 : it.n || 1); };
+const sellPrice = it => { const D = ITEMS[it.key]; if (it.kind === 'quest' || (D && D.noSell)) return 0; return Math.max(1, Math.floor((it.price || 10) * (D && D.sellMul || (it.kind === 'equip' ? 0.125 : 0.2)))) * (it.kind === 'equip' ? 1 : it.n || 1); };
 const canSell = it => it.kind !== 'quest' && !(ITEMS[it.key] && ITEMS[it.key].noSell) && !it.locked;
 function sellItems(list) {
   let g = 0; const sold = [];
@@ -382,12 +382,12 @@ function wearDurability(n, all) {
   if (broke) recalcStats(game.player);
 }
 let hurtCount = 0;
-bus.on('playerHurt', () => { if (game.scene !== 'dungeon') return; if (++hurtCount % 6 === 0) wearDurability(1, false); });
+bus.on('playerHurt', () => { if (game.scene !== 'dungeon') return; if (++hurtCount % 4 === 0) wearDurability(1, false); });   // 每被击 4 次随机一件装备 -1 耐久
 bus.on('playerDeath', () => { for (const it of durItems()) { const b = it.dur; it.dur = Math.max(0, it.dur - Math.ceil(it.durMax * 0.1)); if (b > 0 && it.dur === 0) toastMsg(`${it.name} 的耐久度为 0，属性失效了！`, '#ff6a6a'); } if (game.player) recalcStats(game.player); });
 bus.on('dungeonClear', () => { hurtCount = 0; });
 // 修理：身上 + 背包里的装备
 const repairList = () => [...SLOTS.map(s => inv.equip[s]), ...inv.items].filter(it => it && it.kind === 'equip' && it.durMax && it.dur < it.durMax);
-const repairCostOf = it => Math.ceil((it.durMax - it.dur) * (4 + it.lvl * 1.5) * (1 + it.rar * 0.35));
+const repairCostOf = it => Math.ceil((it.durMax - it.dur) * (5 + it.lvl * 2) * (1 + it.rar * 0.35));
 function repairCost(list = repairList()) { let c = 0; for (const it of list) c += repairCostOf(it); return c; }
 function repairAll(verbose, list = repairList()) {
   const c = repairCost(list);

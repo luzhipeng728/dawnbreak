@@ -177,7 +177,21 @@ await page.click('[data-win=repair] button:has-text("全部修理")'); await wai
 const g1 = await ev(() => ({ gold: game.gold, dur: inv.equip.weapon.dur, max: inv.equip.weapon.durMax, atk: game.player.stats.atk }));
 check(g1.dur === g1.max && g0.gold - g1.gold === g0.cost && g1.atk >= du.a0 - 1, `修理花费 ${g0.cost} G，耐久回满，属性恢复`);
 
-/* ---------- 8. 刷新后数据仍在 ---------- */
+/* ---------- 8. 旧存档物品自动补全 ---------- */
+step('旧存档物品补全');
+const lg = await ev(() => {
+  const w = normalizeItem({ id: 1, kind: 'equip', slot: 'weapon', cls: 'mage', name: '星辉法杖', rar: 2, grade: 3, lvl: 10, st: { atk: 500, str: 5 }, enh: 3, dur: 30, price: 900 });
+  const a = normalizeItem({ id: 2, kind: 'equip', slot: 'top', name: '钢铁胸甲', rar: 1, grade: 2, lvl: 8, st: { def: 120, hp: 200 }, enh: 0, dur: 30, price: 400 });
+  const e = normalizeItem({ id: 3, kind: 'equip', slot: 'shoes', name: '疾风行者', rar: 5, grade: 4, lvl: 6, st: { def: 80 }, fx: { spd: 0.18 }, desc: '移动速度 +18%', epic: true, enh: 0, dur: 30, price: 5000 });
+  const c = normalizeItem({ id: 4, kind: 'use', key: 'hpS', name: '小型生命药剂', n: 5, rar: 0, price: 60 });
+  return { w: [w.wtype, w.st.matk > 0, w.durMax, w.enh], a: [a.atype, a.st.mdef > 0], e: [e.fx.mspd, e.fx.spd], c: [c.name === ITEMS.hpS.name, c.n], tip: !!itemTip(w) };
+});
+check(lg.w[0] === 'staff' && lg.w[1] && lg.w[2] === 30 && lg.w[3] === 3, '旧武器补全武器类型 / 魔攻 / 耐久，保留强化', JSON.stringify(lg.w));
+check(lg.a[0] && lg.a[1], '旧防具补全防具类型 / 魔防');
+check(lg.e[0] === 0.18 && lg.e[1] === undefined, '旧史诗的速度特效换算成移速');
+check(lg.c[0] && lg.c[1] === 5, '旧药剂名字更新、数量保留');
+
+/* ---------- 9. 刷新后数据仍在 ---------- */
 step('刷新后数据仍在');
 await ev(() => { inv.equip.weapon.enh = 6; inv.storage.push(makeItem('elixir', 2)); save.write(); });
 const before = await ev(() => ({ gold: game.gold, lvl: game.lvl, weapon: inv.equip.weapon.name, enh: inv.equip.weapon.enh, title: inv.count('title_hero'), items: inv.items.length, storage: inv.storage.map(x => x.key + x.n).join(), bb: save.data.buyback.length }));

@@ -205,7 +205,7 @@ function itemSlot(it, opt = {}) {
   return el;
 }
 // 复选框（h() 用 setAttribute，checked / disabled 传 null 也会生效，所以单独做）
-function checkBox(on, onChange, disabled) { const i = h('input', { type: 'checkbox' }); i.checked = !!on; i.disabled = !!disabled; i.addEventListener('change', () => onChange(i.checked)); return i; }
+function itemCheckBox(on, onChange, disabled) { const i = h('input', { type: 'checkbox' }); i.checked = !!on; i.disabled = !!disabled; i.addEventListener('change', () => onChange(i.checked)); return i; }
 /* ---- 窗口内对话框（确认 / 数量） ---- */
 let idlgOpen = null;
 function itemDialog(win, { title = '确认', msg, body, okText = '确定', cancelText = '取消', onOk, danger }) {
@@ -246,3 +246,5 @@ addEventListener('keydown', ev => {
 const isValuable = (it, gold = 0) => (it.rar || 0) >= 3 || (it.enh || 0) > 0 || !!it.set || gold >= 10000;
 const itemNameHtml = it => `<span class="q${it.rar || 0}">${it.enh ? '+' + it.enh + ' ' : ''}${it.name}${it.n > 1 ? ' ×' + it.n : ''}</span>`;
 function tabCounts(list) { const o = {}; for (const x of list) { const t = TAB_OF(x); o[t] = (o[t] || 0) + 1; } return o; }
+// 升级后商店库存（按等级段）和“需要等级”标记要刷新
+bus.on('levelUp', () => { if (ITEM_WINS.some(n => menus.isOpen(n))) itemsRefresh(); });

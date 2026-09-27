@@ -31,7 +31,7 @@ function equipSlotEl(slot, win) {
     drop: { accept: p => p.type === 'item' && p.from === 'inv' && p.item.kind === 'equip' && p.item.slot === slot, drop: p => { if (inv.wear(p.item)) { save.write(); itemsRefresh(); } } },
   });
 }
-function jobName() { const C = CLASSES[game.player.cls]; const J = game.job && C.jobs && C.jobs[game.job]; return J ? J.name : C.name; }
+function statusJobName() { const C = CLASSES[game.player.cls]; const J = game.job && C.jobs && C.jobs[game.job]; return J ? J.name : C.name; }
 Object.assign(menus, {
   w_status() {
     inv.ensure();
@@ -77,7 +77,7 @@ Object.assign(menus, {
         broken.length ? h('div', { style: 'color:#ff6a6a' }, `耐久度为 0：${broken.map(x => x.name).join('、')}（属性失效，请修理）`) : null,
         p.weak ? h('div', { style: 'color:#ff9a8a' }, '虚弱中：攻击、防御、HP 上限 -25%') : null);
       const panel = h('div', { class: 'stpanel col', style: 'gap:.35em' },
-        h('div', { class: 'stname' }, `${save.data ? save.data.name : ''}`, h('small', {}, `Lv.${game.lvl} ${jobName()}`)),
+        h('div', { class: 'stname' }, `${save.data ? save.data.name : ''}`, h('small', {}, `Lv.${game.lvl} ${statusJobName()}`)),
         tbl, info);
       return [h('div', { class: 'stwrap' }, doll, panel), h('div', { class: 'ihint' }, '把背包里的装备拖到对应的格子上穿戴；右键装备栏卸下。')];
     }, { w: 42, at: 'left' });

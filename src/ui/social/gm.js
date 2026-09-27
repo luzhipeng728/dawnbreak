@@ -17,6 +17,7 @@ addStyle(`
 const SXG = { tab: 'give', g: { to: '', all: false, title: '', body: '', gold: '', cera: '', days: 30, items: [], q: '' }, logType: '', logUser: '', aucStatus: 'on' };
 const SXG_TABS = [['give', '发放'], ['invite', '邀请码'], ['online', '在线玩家'], ['notice', '全服公告'], ['logs', '日志'], ['auction', '拍卖行']];
 const SXG_LOGS = [['', '全部'], ['auction', '拍卖行'], ['mail', '邮件'], ['signin', '签到'], ['gm', '管理员']];
+const SXG_DETAIL = { kind: '类型', from: '来自', title: '标题', gold: '金币', cera: '点券', items: '物品', to: '收件人', item: '物品', price: '价格', hours: '时长', fee: '保管费', seller: '卖家', tax: '手续费', day: '日期', count: '本月第几次', streak: '连续天数', codes: '邀请码', code: '邀请码', note: '备注', text: '内容', why: '原因', n: '人数' };
 const SXG_LOGNAME = { 'auction.list': '上架', 'auction.buy': '成交', 'auction.expire': '到期退回', 'auction.cancel': '下架', 'mail.send': '寄信', 'mail.claim': '领取附件', signin: '签到', 'gm.mail': '发放', 'gm.invite': '生成邀请码', 'gm.invite.del': '删除邀请码', 'gm.notice': '公告' };
 const sxgLoad = () => {
   const t = SXG.tab;
@@ -129,7 +130,13 @@ function sxgLogs(el, d) {
   const sel = sxInput({ style: 'width:7em' }, 'select'); for (const [v, n] of SXG_LOGS) { const o = h('option', { value: v }, n); if (v === SXG.logType) o.selected = true; sel.append(o); }
   sel.addEventListener('change', () => { SXG.logType = sel.value; el._reload(); });
   const u = sxInput({ placeholder: '用户名', value: SXG.logUser, style: 'width:8em' }); u.addEventListener('keydown', ev => { if (ev.key === 'Enter') { SXG.logUser = u.value.trim(); el._reload(); } });
-  const det = x => { const o = x.detail || {}; if (typeof o !== 'object') return String(o); return Object.keys(o).map(k => `${k}: ${Array.isArray(o[k]) ? o[k].join('、') : typeof o[k] === 'object' ? JSON.stringify(o[k]) : o[k]}`).join('；'); };
+  const det = x => {
+    const o = x.detail || {}; if (typeof o !== 'object') return String(o);
+    return Object.keys(o).filter(k => o[k] !== 0 && o[k] !== '' && o[k] != null && !(Array.isArray(o[k]) && !o[k].length)).map(k => {
+      const v = o[k], t = Array.isArray(v) ? v.map(x => String(x).replace(/^(\w+)×/, (m, key) => ITEMS[key] ? ITEMS[key].name + '×' : m)).join('、') : typeof v === 'object' ? JSON.stringify(v) : typeof v === 'number' && ['gold', 'price', 'fee', 'tax', 'cera'].includes(k) ? fmtNum(v) : v;
+      return k === 'id' ? `#${t}` : `${SXG_DETAIL[k] || k}：${k === 'kind' ? SX_KIND[v] || v : k === 'hours' ? v + ' 小时' : t}`;
+    }).join('；');
+  };
   const L = d.list || [];
   return [h('div', { class: 'row' }, sel, u, h('button', { class: 'btn sm', onclick: () => { SXG.logUser = u.value.trim(); el._reload(); } }, '查询'), h('span', { class: 'sp' }), h('span', { class: 'small dim' }, `最近 ${L.length} 条`)),
     h('div', { class: 'sxscroll', style: 'max-height:22em' }, L.length ? h('table', { class: 'sxtbl' }, h('thead', {}, h('tr', {}, ['时间', '类型', '用户', '内容'].map(t => h('th', {}, t)))),

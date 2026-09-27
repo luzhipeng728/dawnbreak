@@ -8,32 +8,33 @@ addStyle(`
 .sxsign .scal .d{padding:.25em 0;border-radius:.2em;background:#16111b;color:#8a806e}
 .sxsign .scal .d.on{background:linear-gradient(#5a8a3a,#2a4a1a);color:#eaffd8;font-weight:900}
 .sxsign .scal .d.today{outline:.12em solid #ffd23a}
-.sxsign .rgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:.3em}
-.sxsign .rc{position:relative;display:flex;flex-direction:column;align-items:center;gap:.1em;padding:.25em .1em;border-radius:.3em;background:#16111b;border:.08em solid #2e2838;font-size:.72em}
+.sxsign .rgrid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:.3em}
+.sxsign .rc{position:relative;display:flex;flex-direction:column;align-items:center;gap:.15em;padding:.25em .2em;border-radius:.3em;background:#16111b;border:.08em solid #2e2838;font-size:.72em;min-width:0}
 .sxsign .rc .n{color:#9a8f7c;font-weight:900}
-.sxsign .rc .v{font-weight:900;white-space:nowrap}
-.sxsign .rc .islot{width:2.5em;height:2.5em}
+.sxsign .rc .ics{display:flex;gap:.15em;justify-content:center}
+.sxsign .rc .v{font-weight:900;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sxsign .rc .islot{width:2.4em;height:2.4em}
 .sxsign .rc.done{opacity:.5}.sxsign .rc.done::after{content:'✔';position:absolute;right:.2em;top:0;color:#6aff7a;font-size:1.3em;font-weight:900;text-shadow:0 0 .2em #000}
 .sxsign .rc.next{border-color:#ffd23a;box-shadow:0 0 .6em rgba(255,210,60,.45);background:#2a2010}
 .sxsign .stk{display:flex;gap:.4em;flex-wrap:wrap;align-items:center;font-size:.85em}
 .sxsign .stk .m{padding:.15em .5em;border-radius:1em;border:.08em solid #4a3c2c;background:#18121e}
 .sxsign .stk .m.ok{border-color:#6aa04a;color:#baff9a}
-.sxsign .coin{display:grid;place-items:center;width:2.5em;height:2.5em;border-radius:.2em;background:#1e1a24;font-weight:900}
+.sxsign .coin{display:grid;place-items:center;width:2.4em;height:2.4em;border-radius:.2em;background:#1e1a24;font-weight:900}
 `);
-// 奖励条目 → 小卡片内容
+// 奖励条目 → 小卡片内容：一排图标 + 一行名称（放不下时省略，悬停看全）
 function sxRewardEls(r) {
-  const out = [];
-  if (r.gold) out.push(h('div', { class: 'coin gold' }, 'G'), h('div', { class: 'v gold' }, fmtNum(r.gold)));
-  if (r.cera) out.push(ITEMS.cera ? sxEntrySlot({ key: 'cera', n: r.cera }) : h('div', { class: 'coin cera' }, '券'), h('div', { class: 'v cera' }, `点券 ${fmtNum(r.cera)}`));
-  for (const e of r.items || []) out.push(sxEntrySlot(e), h('div', { class: 'v' }, `${ITEMS[e.key] ? ITEMS[e.key].name : e.key}${e.n > 1 ? ' ×' + e.n : ''}`));
-  return out;
+  const icons = [], names = [];
+  if (r.gold) { icons.push(h('div', { class: 'coin gold' }, 'G')); names.push(`${fmtNum(r.gold)} G`); }
+  if (r.cera) { icons.push(ITEMS.cera ? sxEntrySlot({ key: 'cera', n: r.cera }) : h('div', { class: 'coin cera' }, '券')); names.push(`点券 ${fmtNum(r.cera)}`); }
+  for (const e of r.items || []) { icons.push(sxEntrySlot(e)); names.push(`${ITEMS[e.key] ? ITEMS[e.key].name : e.key}${e.n > 1 ? ' ×' + e.n : ''}`); }
+  return [h('div', { class: 'ics' }, icons), h('div', { class: 'v', title: names.join('、') }, names.join('、'))];
 }
 const sxRewardText = r => [r.gold ? `${fmtNum(r.gold)} G` : '', r.cera ? `点券 ${fmtNum(r.cera)}` : '', ...(r.items || []).map(e => `${ITEMS[e.key] ? ITEMS[e.key].name : e.key}${e.n > 1 ? ' ×' + e.n : ''}`)].filter(Boolean).join('、');
 Object.assign(menus, {
   w_signin() {
     if (!sxGate('每日签到')) return null;
     const el = sxWin('signin', '每日签到', {
-      w: 42,
+      w: 58,
       load: () => sxApi('GET', '/api/signin'),
       render: (el, s) => {
         SX.signed = s.signed; SX.signinState = s;

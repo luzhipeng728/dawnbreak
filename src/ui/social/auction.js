@@ -47,12 +47,12 @@ function sxaBuy(el, d) {
   const q = sxInput({ placeholder: '物品名称', value: f.q, style: 'width:10em' });
   q.addEventListener('keydown', ev => { if (ev.key === 'Enter') { f.q = q.value.trim(); go(); } });
   const sel = (opts, key, w) => { const s = sxInput({ style: `width:${w}em` }, 'select'); for (const [v, t] of opts) { const o = h('option', { value: v }, t); if (String(f[key]) === String(v)) o.selected = true; s.append(o); } s.addEventListener('change', () => { f[key] = s.value; go(); }); return s; };
-  const num = (key, ph) => { const i = sxInput({ type: 'number', min: 0, max: 99, placeholder: ph, value: f[key], style: 'width:3.6em' }); i.addEventListener('change', () => { f[key] = i.value; go(); }); return i; };
+  const num = (key, ph) => { const i = sxInput({ type: 'number', min: 0, max: 99, placeholder: ph, value: f[key], style: 'width:3.6em;text-align:right' }); i.addEventListener('change', () => { f[key] = i.value; go(); }); return i; };
   const clsOpts = [['', '全部职业'], ...Object.keys(CLASSES).filter(c => CLASS_WTYPES(c).length).map(c => [c, CLASSES[c].name])];
   const filters = h('div', { class: 'col', style: 'gap:.35em' },
     h('div', { class: 'afil' }, q, h('button', { class: 'btn sm', onclick: () => { f.q = q.value.trim(); go(); } }, '搜索'),
-      sel([['', '全部品级'], ...RARITY.map((R, i) => [i, R.name])], 'rar', 6), h('span', { class: 'small dim' }, '等级'), num('lvmin', '最低'), '~', num('lvmax', '最高'),
-      sel(clsOpts, 'cls', 6.5), h('span', { class: 'sp' }), sel(SXA_SORTS, 'sort', 8.5),
+      sel([['', '全部品级'], ...RARITY.map((R, i) => [i, R.name])], 'rar', 7.2), h('span', { class: 'small dim' }, '等级'), num('lvmin', '1'), '~', num('lvmax', '99'),
+      sel(clsOpts, 'cls', 7.2), h('span', { class: 'sp' }), sel(SXA_SORTS, 'sort', 10),
       h('button', { class: 'btn sm blue', onclick: () => { SXA.f = { q: '', cat: '', rar: '', lvmin: '', lvmax: '', cls: '', sort: 'unit', page: 0 }; el._reload(); } }, '重置')),
     h('div', { class: 'sxchips' }, SXA_CATS.map(([v, t]) => h('span', { class: 'sxchip' + (f.cat === v ? ' on' : ''), onclick: () => { f.cat = v; sfx.click(); go(); } }, t))));
   const rows = d.list.map(a => {

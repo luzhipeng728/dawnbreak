@@ -14,11 +14,16 @@ const AVATAR_SETS = {
   av_festival: { id: 'festival', name: '庆典时装' },
 };
 // 头部配件（帽子 / 头部 / 脸部）：按每帧的头部锚点（art/tools/avatar_head.py 求出的站姿头部中心 + 转角）叠加；图 IMG['avatar/<img>']
-//   pos[职业 或 职业@套装] = [dx, dy, 转角, 缩放]：配件图中心相对头部锚点的位置（帧像素，站姿朝右时；穿整套时装时优先用 职业@套装，因为摘了帽子头部锚点会变）；face：脸部配件（脸被挡住的帧不画）
+//   pos[职业 / 职业@ / 职业@套装] = [dx, dy, 转角, 缩放]：配件图中心相对头部锚点的位置（帧像素，站姿朝右时）。
+//   穿整套时装时依次找 职业@套装 → 职业@（任意时装：时装都摘了职业默认的帽子，头部锚点和原装不同）→ 职业；face：脸部配件（脸被挡住的帧不画）
 const AVATAR_ACC = {
   av_hat_festival: { img: 'festival_hat', pos: { sword: [8, -34, -0.1, 0.72], gun: [8, -34, -0.1, 0.72], mage: [8, -34, -0.1, 0.72] } },
   av_hair_festival: { img: 'festival_hair', pos: { sword: [-36, 16, 0.25, 0.5], gun: [-36, 16, 0.25, 0.5], mage: [-36, 16, 0.25, 0.5] } },
-  av_face_festival: { img: 'festival_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@festival': [14, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@festival': [17, 6, 0, 0.66] } },
+  av_face_festival: { img: 'festival_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66] } },
+  // 春节「锦鲤贺岁」（商城组设计）：醒狮头帽、红绒球流苏发簪、金框红片圆墨镜
+  av_hat_spring: { img: 'spring_hat', pos: { sword: [4, -36, -0.1, 0.56], gun: [4, -36, -0.1, 0.56], mage: [4, -36, -0.1, 0.56] } },
+  av_hair_spring: { img: 'spring_hair', pos: { sword: [-36, 10, 0, 0.7], gun: [-36, 10, 0, 0.7], mage: [-36, 10, 0, 0.7] } },
+  av_face_spring: { img: 'spring_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66] } },
 };
 const AVATAR_ACC_SCALE = 0.8;   // 配件图比游戏里画的大 1.25 倍（art/tools/avatar_acc.py）
 /* 外观规则（写给玩家看的说明也用这一段）：

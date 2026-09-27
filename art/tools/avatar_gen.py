@@ -201,6 +201,14 @@ def weapon_prompt(items):
 WHO = {'sword': 'boy swordsman (same face, same spiky silver hair, red eyes)', 'gun': 'girl gunner (same face, same long brown ponytail, blue eyes)',
        'mage': 'girl mage (same face, same long lavender hair, golden eyes)'}
 SETS = {
+    'spring': {   # 春节「锦鲤贺岁」：中国红 + 金，祥云、盘扣、福字纹、锦鲤、白色毛绒滚边、中国结（商城组设计）
+        'sword': 'a red Chinese Tang-style short jacket with a mandarin stand-up collar, gold frog-knot buttons, auspicious cloud trim along the edges, a koi fish embroidered on the hem and a ring of white fluffy fur around the collar; '
+                 'loose black lantern trousers with gold leg wraps at the shins; red embroidered cloth shoes; a wide gold waist sash with a red Chinese knot tassel hanging at the side; a gold longevity-lock pendant necklace on the chest. The red scarf is removed.',
+        'gun': 'a short red qipao-style top with a mandarin stand-up collar, gold frog-knot buttons, a koi fish embroidery and white fluffy fur cuffs; a red-and-gold pleated mini skirt; white over-knee socks with red round-toe embroidered shoes; '
+               'a red satin ribbon belt tied into a Chinese knot; a gold longevity-lock pendant necklace on the chest. The blue neckerchief and the brown cap are removed (hair uncovered).',
+        'mage': 'a red Chinese ruqun-style long robe with wide sleeves, gold peony and auspicious cloud patterns and a white fluffy fur collar; the skirt reaches the ankles with a red-to-gold gradient; red embroidered shoes; '
+                'a gold belt with a hanging jade pendant tassel; a gold longevity-lock pendant necklace on the chest. The witch hat and the cape are removed (hair uncovered).',
+    },
     'festival': {   # 庆典时装：红色节日礼服，白毛边 + 金色星星（和帕丽丝卖的图标一致）
         'sword': 'a red double-breasted festive coat with thick white fluffy fur trim on the collar, cuffs and hem, gold buttons and small gold star ornaments; a red bow tie with a gold-framed ruby gem at the collar; '
                  'a red satin sash belt with a gold square buckle; red knee-length shorts with gold trim and white knee socks; glossy red shoes with gold buckles. The red scarf is removed.',
@@ -213,7 +221,7 @@ SETS = {
 
 def ref_prompt(cls, outfit):
     return (f'Edit this chibi {WHO[cls]} character sheet art: keep exactly the same character, the same face and hair, the same standing pose, the same proportions and the same cute art style with thick outlines, '
-            f'but change the clothes to this festive outfit: {outfit} The hands are empty (no weapon). No hat, no glasses, no hair ornament. Plain pure white background.')
+            f'but change the clothes to this outfit: {outfit} The hands are empty (no weapon). No hat, no glasses, no hair ornament. Plain pure white background.')
 
 def set_prompt(cls, outfit):
     return ('The FIRST image is a 2D game sprite animation sheet (3x3 grid, 9 frames) of a chibi character holding a flat pure green stick. The SECOND image shows the same character in a new outfit. '
@@ -244,7 +252,7 @@ def jobs_set(only):
     for sid, per in SETS.items():
         for name, src in source_sheets().items():
             cls = name.split('_')[0]
-            if cls not in per or not f'{sid}/{name}'.startswith(only): continue
+            if cls not in per or not any(f'{sid}/{name}'.startswith(o) for o in only.split(',')): continue   # --only 可以逗号分隔多个前缀
             ref = os.path.join(OUT, 'refs', f'{cls}@{sid}.png')
             if not os.path.exists(ref): print('缺时装参考图，先跑 ref：', ref); continue
             ph = os.path.join(sd, f'{name}.png')
@@ -255,20 +263,26 @@ def jobs_set(only):
 
 # ---- 头部配件：侧面（朝右）画，一张表一行 3 个：帽子、发饰、眼镜 ----
 ACC = {
+    'spring': [('hat', 'a small cute Chinese lion-dance head hat: a red lion head with gold eyebrows, big round eyes and fluffy fur edges, seen in strict side view facing right, worn on top of a head'),
+               ('hair', 'a red fluffy pompom hair ornament with a gold tassel hairpin stuck beside it, seen from the side, worn on the side of the head'),
+               ('face', 'a pair of round sunglasses with thin gold frames and red lenses, seen in strict side view (profile) for a character facing right: one round lens in front and one thin temple arm going back to the left')],
     'festival': [('hat', 'a small red top hat with a white band, a gold star-shaped emblem with a ruby and two white feathers on the side, seen in strict side view facing right, tilted slightly'),
                  ('hair', 'a red satin ribbon bow with gold trim and a small gold star in the knot, seen from the side, as a hair ornament worn at the back of the head'),
                  ('face', 'a pair of round red-and-gold glasses seen in strict side view (profile) for a character facing right: one round lens rim in front and one thin temple arm going back to the left, with small gold flower rivets')],
 }
+
+ACC_ICONS = {'festival': os.path.join(SRC, 'items', 'sheet_avatar.png')}
 
 def jobs_acc(only):
     L = []
     for sid, items in ACC.items():
         if not sid.startswith(only): continue
         rows = '; '.join(f'({i + 1}) {d}' for i, (_, d) in enumerate(items))
-        L.append({'out': os.path.join(OUT, 'acc', f'{sid}.png'), 'refs': [os.path.join(OUT, 'refs', f'sword@{sid}.png'), os.path.join(SRC, 'items', 'sheet_avatar.png')],
+        icons = ACC_ICONS.get(sid)   # 有物品图标表就一起参考（庆典时装）
+        L.append({'out': os.path.join(OUT, 'acc', f'{sid}.png'), 'refs': [os.path.join(OUT, 'refs', f'sword@{sid}.png')] + ([icons] if icons else []),
                   'size': '2048x1152',
-                  'prompt': ('2D game costume accessory sprites for a cute chibi action RPG, matching the art style of the character in the first image (bold dark outlines, clean cel shading, bright colors) '
-                             f'and the designs of the matching icons in the second image. Draw exactly {len(items)} separate accessories in one row from left to right, each isolated with wide white gaps: {rows}. '
+                  'prompt': ('2D game costume accessory sprites for a cute chibi action RPG, matching the art style of the character in the first image (bold dark outlines, clean cel shading, bright colors)'
+                             f'{" and the designs of the matching icons in the second image" if icons else ""}. Draw exactly {len(items)} separate accessories in one row from left to right, each isolated with wide white gaps: {rows}. '
                              'No character, no head, no hands, no text, no shadows. Plain pure white background.')})
     return L
 

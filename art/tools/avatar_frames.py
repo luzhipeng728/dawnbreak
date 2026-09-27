@@ -222,7 +222,7 @@ def bg_white(a):
     rgb = a[..., :3].astype(np.int16)
     return (rgb.min(-1) >= 243) & (rgb.max(-1) - rgb.min(-1) <= 12) & (a[..., 3] > 0)
 
-def clear_white(out, seed):
+def clear_white(out, seed, allow=None):
     """棍子原来围住的白底（remove_bg 从图边泛洪不到）：从抠空的位置吃掉相连的纯白块。
     白色衣物（毛边、衬衫）的高光块四周是浅灰阴影，白底四周是深色描边：边界上浅色像素多的块不吃。"""
     W = bg_white(out); rgb = out[..., :3].astype(np.int16); H, Wd = W.shape
@@ -238,6 +238,7 @@ def clear_white(out, seed):
         if edge.sum() > 10:
             lum = rgb[edge] @ np.array([0.3, 0.59, 0.11]); dark, light = (lum < 90).mean(), (lum > 150).mean()
             if light > 0.5 and dark < 0.3: continue          # 白色衣物（外圈是浅灰阴影）：保留；白底外圈是深色描边
+        if allow is not None and allow[reg].mean() < 0.4: continue   # 时装表：占位表这里不是被围住的白底 → 是衣物（翅膀等），保留
         kill |= reg
     L = (rgb.min(-1) >= 215) & (rgb.max(-1) - rgb.min(-1) <= 30) & (out[..., 3] > 0)
     grow = kill.copy()
@@ -270,7 +271,7 @@ def inside_mask(hole, al, sticks, white):
     ys, xs = np.where(hole)
     if not len(xs): return res
     for st in sticks:
-        if not st['front']: continue
+        if not st['front'] and not st.get('minor'): continue   # 握柄短截（minor）不管判成前后都补：它在身体轮廓里
         n = st['nrm']; D = int(st['hw'] * 2 + 14)
         sel = np.abs((xs - st['c'][0]) * n[0] + (ys - st['c'][1]) * n[1]) <= st['hw'] * 2.2
         t = (xs - st['c'][0]) * st['d'][0] + (ys - st['c'][1]) * st['d'][1]
@@ -294,19 +295,49 @@ def ref_height(path):
     al = np.where((g > 0.35) | (m > 0.35), 0, a[..., 3]).astype(np.uint8)
     _, order = cut_boxes(al); r = order[0]; return r['y1'] - r['y0']
 
+def remove_bg_tight(im, f=8):
+    """时装表去白底：白色衣物（翅膀、毛边）描边有细缝时，prep.remove_bg（1/4 分辨率泛洪 + 向内推 8 圈）会从缝里漏进去把白色挖空。
+    这里用 1/8 分辨率泛洪（缝要宽过 8 像素才能漏进去），再只向内推 f 圈贴到真正的边缘；边缘去白边同 prep.remove_bg。"""
+    from prep import near_white
+    from collections import deque as dq
+    a = np.array(im.convert('RGBA')).astype(np.float32)
+    Wm = near_white(a.astype(np.uint8), 22); h, w = Wm.shape; hs, ws = h // f, w // f
+    Ws = Wm[:hs * f, :ws * f].reshape(hs, f, ws, f).all(axis=(1, 3)); seen = np.zeros_like(Ws); q = dq()
+    for x in range(ws):
+        for y in (0, hs - 1):
+            if Ws[y, x] and not seen[y, x]: seen[y, x] = True; q.append((y, x))
+    for y in range(hs):
+        for x in (0, ws - 1):
+            if Ws[y, x] and not seen[y, x]: seen[y, x] = True; q.append((y, x))
+    while q:
+        y, x = q.popleft()
+        for ny, nx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+            if 0 <= ny < hs and 0 <= nx < ws and Ws[ny, nx] and not seen[ny, nx]: seen[ny, nx] = True; q.append((ny, nx))
+    B = np.zeros_like(Wm); B[:hs * f, :ws * f] = np.repeat(np.repeat(seen, f, 0), f, 1); B &= Wm
+    for _ in range(f):
+        B2 = dil(B) & Wm
+        if (B2 == B).all(): break
+        B = B2
+    alpha = np.where(B, 0.0, 1.0); band = dil(B, 2) & ~B
+    mn = a[..., :3].min(-1); ea = np.clip((255 - mn) / 150.0, 0, 1); alpha = np.where(band, ea, alpha)
+    safe = np.maximum(alpha, 1e-3)[..., None]
+    rgb = np.where(band[..., None], np.clip((a[..., :3] - (1 - alpha[..., None]) * 255) / safe, 0, 255), a[..., :3])
+    return Image.fromarray(np.dstack([rgb, alpha * 255]).astype(np.uint8), 'RGBA')
+
 def keep_clothes_holes(rb, a, ref_path):
-    """时装表：fill_holes 会把被围住的纯白块当成透出来的白底挖掉，但时装的白毛边、白袜子也是纯白。
-    对照占位表（同一套姿势）：挖掉的块在占位表同一位置（逐格对齐后）大部分也是透明的才算真的白底，否则还原。"""
-    R = np.array(_fill_holes(remove_bg(Image.open(ref_path)), min_area=90, thr=251))
-    ref_opaque = R[..., 3] > 40; ref_bg = dil(~ref_opaque, 3)
+    """时装表：被围住的纯白块，可能是透出来的白底，也可能是白色衣物（毛边、袜子、翅膀）。
+    对照占位表（同一套姿势，逐格对齐）：只有占位表同一位置也是“被围住的白底”（去白底后仍不透明的纯白）才算白底；
+    占位表那里是身体（白色衣物）或者是敞开的背景（时装多出来的翅膀、宽袖）都保留。
+    返回 (a, pocket)：pocket = 对齐后的“占位表里被围住的白底”，给 clear_white 用。"""
+    R = np.array(remove_bg(Image.open(ref_path)))
+    rgb = R[..., :3].astype(np.int16)
+    ref_pocket = (R[..., 3] > 40) & (rgb.min(-1) >= 238) & (rgb.max(-1) - rgb.min(-1) <= 16)
+    ref_opaque = R[..., 3] > 40
     A0 = rb[..., 3] > 40; hole = A0 & (a[..., 3] == 0)
-    if not hole.any(): return a
     _, boxes = cut_boxes(rb[..., 3].astype(np.uint8))
-    H, W = A0.shape; restored = 0
+    H, W = A0.shape; pocket = np.zeros_like(A0)
     for b in boxes:
         y0, y1, x0, x1 = b['y0'], b['y1'], b['x0'], b['x1']
-        hb = hole[y0:y1, x0:x1]
-        if not hb.any(): continue
         # 逐格对齐：1/4 分辨率下搜 ±48 像素的平移，取重合度最高的
         cur = A0[y0:y1:4, x0:x1:4]; best = (-1, 0, 0)
         for dy in range(-12, 13):
@@ -318,13 +349,16 @@ def keep_clothes_holes(rb, a, ref_path):
                 iou = (rr & cur).sum() / max(1, (rr | cur).sum())
                 if iou > best[0]: best = (iou, dx * 4, dy * 4)
         _, ox, oy = best
-        lab, comps = components((hb * 255).astype(np.uint8), f=1, min_cells=1)
-        for c, _ in comps:
-            ys, xs = np.where(lab == c)
-            ry, rx = np.clip(ys + y0 + oy, 0, H - 1), np.clip(xs + x0 + ox, 0, W - 1)
-            if ref_bg[ry, rx].mean() < 0.5:   # 占位表这里是身体：是白色衣物，还原
-                a[ys + y0, xs + x0] = rb[ys + y0, xs + x0]; restored += len(ys)
-    return a
+        ya, xa = y0 + oy, x0 + ox
+        if ya >= 0 and xa >= 0 and ya + (y1 - y0) <= H and xa + (x1 - x0) <= W:
+            pocket[y0:y1, x0:x1] = dil(ref_pocket[ya:ya + (y1 - y0), xa:xa + (x1 - x0)], 4)
+    # fill_holes 挖掉的块：不在占位表的白底口袋里就还原
+    lab, comps = components((hole * 255).astype(np.uint8), f=1, min_cells=1)
+    for c, _ in comps:
+        reg = lab == c
+        if pocket[reg].mean() < 0.4: a[reg] = rb[reg]
+    return a, pocket
+
 
 def follow_base(st, bw, P, la, lg, lm, body, fist, char, fix):
     """时装帧：姿势和原装一样，武器的朝向 / 身前身后以原装（已人工验收）为准。
@@ -341,8 +375,9 @@ def process_sheet(char, sheet, path, names, res, fixes, pv_path, ref_h=None, ref
     """ref_h：按这个参考高度定缩放（时装表用对应占位表的站姿高度：时装去掉了帽子，按自己的站姿量会把人放大）
     ref_path：时装表对照的占位表（区分透出来的白底和白色衣物）"""
     img = Image.open(path)
-    rb = np.array(remove_bg(img)); im = fill_holes(Image.fromarray(rb, 'RGBA'), min_area=90, thr=251); a = np.array(im)
-    if ref_path: a = keep_clothes_holes(rb, a, ref_path)
+    rb = np.array(remove_bg_tight(img) if ref_path else remove_bg(img)); im = fill_holes(Image.fromarray(rb, 'RGBA'), min_area=90, thr=251); a = np.array(im)
+    pocket = None
+    if ref_path: a, pocket = keep_clothes_holes(rb, a, ref_path)
     g, m = key_maps(a)
     use_m = char == 'mage'
     solid = g > 0.5
@@ -396,6 +431,7 @@ def process_sheet(char, sheet, path, names, res, fixes, pv_path, ref_h=None, ref
         hole = stickreg & ((lg > 0.07) | ((lm > 0.1) if use_m else False))
         stray = (lg > 0.3) & (la[..., 3] > 0) & ~hole; hole |= stray; stickreg = stickreg | dil(stray, 2)   # 太小没进连通块的占位碎点（露出拳头的一点棍尖）
         white = bg_white(la)
+        if pocket is not None: white &= pocket[Y0:Y1, X0:X1]   # 时装表：只有占位表里也是白底口袋的纯白才当白底，其余纯白是衣物（参与补色 / 身前判断）
         inside = inside_mask(hole, la[..., 3], sticks, white)
         band = dil(hole, 4) & ~hole & (la[..., 3] > 0)
         fillset = (hole & inside) | (band & dil(hole & inside, 5))
@@ -407,7 +443,7 @@ def process_sheet(char, sheet, path, names, res, fixes, pv_path, ref_h=None, ref
         sp = stickreg & ~hole & ~fillset; rgb = out[..., :3].astype(np.int16); mx = np.maximum(rgb[..., 0], rgb[..., 2])
         out[..., 1] = np.where(sp & (rgb[..., 1] > mx), mx, rgb[..., 1]).astype(np.uint8)
         # 棍子原来围住的白底（remove_bg 泛洪不到的地方）：从抠空的位置向外吃掉相连的近白像素
-        clear_white(out, hole & ~fillset)
+        clear_white(out, hole & ~fillset, pocket[Y0:Y1, X0:X1] if pocket is not None else None)
         # 棍子附近残留的细白边（白底和棍子之间的抗锯齿）：挨着透明、又细（开运算去不掉）的浅色像素去掉
         # 以及棍子描边留下的细线（两边都透明）：对不透明区域做半径 3 的开运算，棍子附近被开运算去掉的细结构都删掉
         solid2 = out[..., 3] > 20

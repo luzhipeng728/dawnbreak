@@ -12,7 +12,7 @@ from prep import remove_bg, components
 from avatar_gen import ACC, OUT
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WIDTH = {'hat': 78, 'hair': 44, 'face': 44}   # 在角色帧里的宽度（帧像素）
-WIDTH_SET = {'spring': {'hat': 96, 'hair': 40}}   # 个别套装的配件更大 / 更小（春节的醒狮头帽）
+WIDTH_SET = {'spring': {'hat': 96, 'hair': 40}, 'sky1': {'hat': 80, 'hair': 42}, 'summer': {'hat': 100, 'hair': 40}, 'sky2': {'hat': 80, 'hair': 34}, 'academy': {'hat': 74, 'hair': 44}}   # 个别套装的配件更大 / 更小
 OVER = 1.25
 
 def main():

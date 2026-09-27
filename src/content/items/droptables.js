@@ -55,4 +55,7 @@ defineDropTable('forbidden_land', { boss: [['lg_karo_eye', 0.025], ['ep_hc_aqua'
 /* ---- 深渊派对的领主掉落表（专属史诗由 content/abyss.js 按几率另外掷；这里只放普通的套装部件） ---- */
 defineDropTable('abyss_gf', { boss: [...ADV18.map(([k, p]) => [k, p * 1.5]), ...ELF16, ...THRONE], mats: [['crystal', 0.1, 8], ['m_elem', 0.02, 1], ['m_elem2', 0.006, 1]] });
 defineDropTable('abyss_sky', { boss: [...SKY24.map(([k, p]) => [k, p * 1.5]), ...SEGHART.map(([k, p]) => [k, p * 1.5])], mats: [['crystal', 0.12, 10], ['m_elem2', 0.01, 1], ['m_diamond', 0.008, 1]] });
+// 天帷巨兽的深渊（区域没加载时这两张深渊不存在，表不会被用到）：城主秘宝首饰 + 天帷巨兽名品；专属史诗照常由 content/abyss.js 另外掷
+defineDropTable('abyss_spine', { boss: [...SEGHART.map(([k, p]) => [k, p * 1.5]), ['lg_sage_ring', 0.03], ['lg_holy_pendant', 0.02], ['lg_light_dance', 0.02]], mats: [['crystal', 0.12, 10], ['m_diamond', 0.01, 1], ['m_elem2', 0.012, 1]] });
+defineDropTable('abyss_forbidden', { boss: [...SEGHART.map(([k, p]) => [k, p * 1.5]), ['lg_karo_eye', 0.035], ['lg_fan_robe', 0.02], ['lg_sage_ring', 0.02]], mats: [['crystal', 0.12, 10], ['m_soul', 0.003, 1], ['m_diamond', 0.01, 1]] });
 }

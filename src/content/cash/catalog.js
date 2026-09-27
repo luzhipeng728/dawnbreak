@@ -41,7 +41,7 @@ defGoods('tk_enh7', { key: 'tk_enh7', price: 1500, tab: 'use', limit: { per: 'we
 defGoods('elixir3', { key: 'elixir', n: 3, price: 150, tab: 'use' });
 defGoods('box_supply', { key: 'box_supply', price: 300, tab: 'use' });
 defGoods('box_gold', { key: 'box_gold', price: 400, tab: 'use' });
-defGoods('abyss_ticket2', { key: 'abyss_ticket', n: 1, price: 150, tab: 'use', limit: { per: 'day', n: 2 } });   // 装备深化组：深渊派对邀请函
+defGoods('abyss_ticket', { key: 'abyss_ticket', n: 1, price: 150, tab: 'use', limit: { per: 'day', n: 1 } });   // 装备深化组：深渊派对邀请函
 defGoods('amp_guard', { key: 'amp_guard', price: 600, tab: 'use' });
 defGoods('amp_book', { key: 'amp_book', price: 800, tab: 'use' });
 // 礼包

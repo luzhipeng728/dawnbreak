@@ -59,6 +59,7 @@ ui/items/status.js
 ui/items/shop.js
 ui/items/smith.js
 ui/items/storage.js
+ui/items/bulk.js
 game/save.js
 content/world/towns.js
 content/world/grand_flores.js

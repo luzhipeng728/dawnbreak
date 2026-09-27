@@ -1,0 +1,27 @@
+# systemd 服务：破晓地下城联机服务端
+# 安装：sudo cp dawnbreak-server.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now dawnbreak-server
+[Unit]
+Description=Dawnbreak multiplayer server
+After=network.target
+
+[Service]
+Type=simple
+User=dawnbreak
+Group=dawnbreak
+WorkingDirectory=/opt/dawnbreak-server/app
+EnvironmentFile=/opt/dawnbreak-server/dawnbreak.env
+# 便携版 Node 22（内置 node:sqlite），系统自带的 Node 18 不动
+ExecStart=/opt/dawnbreak-server/runtime/bin/node --disable-warning=ExperimentalWarning index.js
+Restart=always
+RestartSec=3
+# 进程只监听 127.0.0.1:18790，由 Caddy 反代；数据库在 /opt/dawnbreak-server/data
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/dawnbreak-server/data
+LimitNOFILE=65536
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

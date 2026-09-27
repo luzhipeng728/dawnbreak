@@ -91,6 +91,10 @@ ui/artlab.js
 game/bot.js
 game/fighter_ai.js
 game/duel.js
+# 联机（账号 / 云存档 / 同屏 / 聊天 / 好友 / 组队 / 好友决斗）：放在所有玩法之后、boot.js 之前（启动时要先读登录状态、切到账号存档）
+net/net.js
+net/account.js
+ui/login.js
 # 社交与经济服务（拍卖行 / 邮件 / 排行榜 / 全服公告 / 签到 / 管理员后台；依赖 net/net.js、物品窗口、npc.js，窗口在 ui/social/*）
 net/social.js
 ui/social/common.js

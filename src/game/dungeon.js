@@ -68,6 +68,7 @@ class Dungeon {
     game.room = { x0: 0, x1: W, theme: this.def.theme, seed: room.seed, doors: room.doors, type: room.type };
     buildRoomArt(game.room);
     for (let i = ents.length - 1; i >= 0; i--) if (ents[i].team !== 'p') ents.splice(i, 1);
+    game.lastTarget = null;   // 换房间 / 换地下城：清掉上一个目标的血条
     projs.length = 0; drops.length = 0; fxList.length = 0; groundFx.length = 0;
     const p = game.player;
     const pos = { left: [60, DEPTH / 2], right: [W - 60, DEPTH / 2], up: [W / 2, 20], down: [W / 2, DEPTH - 16] };

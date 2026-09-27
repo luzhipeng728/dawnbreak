@@ -1,194 +1,545 @@
 /* =====================================================================
-   23. 物品：装备生成（部位 / 品级 / 品质 / 强化）、消耗品、背包与装备栏、掉落、强化规则、图标
+   23. 物品系统（规则与通用函数；物品库内容在 content/items/*，窗口在 ui/items/*）
+   - 物品库：defineItem(key, def) 注册，makeItem(key, n, opt) 生成实例，rollEquip({...}) 按条件随机装备
+   - 背包 inv（分页签：装备 / 消耗品 / 材料 / 任务 / 称号）、装备栏（12 格）、角色仓库、账号金库 bank
+   - 耐久（受伤 / 死亡掉耐久，0 时属性失效）、修理、强化（官方成功率与失败惩罚）、分解、出售与回购
+   - 图标：itemIconSrc(it) 给 <img>，drawItemIcon(c, it, s) 画在画布上
    ===================================================================== */
-const SLOTS = ['weapon', 'head', 'top', 'bottom', 'belt', 'shoes', 'neck', 'bracelet', 'ring'];
-const SLOT_NAME = { weapon: '武器', head: '头肩', top: '上衣', bottom: '下装', belt: '腰带', shoes: '鞋', neck: '项链', bracelet: '手镯', ring: '戒指' };
+const SLOTS = ['weapon', 'title', 'top', 'head', 'bottom', 'belt', 'shoes', 'neck', 'bracelet', 'ring', 'support', 'stone'];
+const SLOT_NAME = { weapon: '武器', title: '称号', top: '上衣', head: '头肩', bottom: '下装', belt: '腰带', shoes: '鞋', neck: '项链', bracelet: '手镯', ring: '戒指', support: '辅助装备', stone: '魔法石' };
+const ARMOR_SLOTS = ['top', 'head', 'bottom', 'belt', 'shoes'], ACC_SLOTS = ['neck', 'bracelet', 'ring'], SPECIAL_SLOTS = ['support', 'stone'];
 const GRADES = ['最下级', '下级', '中级', '上级', '最上级'];
 const RAR_MUL = [1, 1.25, 1.55, 1.85, 2.2, 2.8];
-const BASE_NAMES = {
-  weapon: { sword: ['铁制太刀', '钢制太刀', '寒光太刀', '白鞘太刀', '赤锋太刀', '月影太刀', '雷纹太刀'], gun: ['旧式左轮', '钢制左轮', '夜鹰左轮', '赤铜左轮', '银翼左轮'], mage: ['橡木法杖', '水晶法杖', '星辉法杖', '炎心法杖', '霜语法杖'] },
-  head: ['皮质护肩', '锁甲护肩', '钢铁护肩', '骑士护肩', '龙鳞护肩'], top: ['粗布上衣', '皮质上衣', '锁甲上衣', '钢铁胸甲', '骑士胸甲'],
-  bottom: ['粗布长裤', '皮质护腿', '锁甲护腿', '钢铁护腿', '骑士护腿'], belt: ['麻绳腰带', '皮质腰带', '铆钉腰带', '钢扣腰带', '骑士腰带'],
-  shoes: ['草鞋', '皮靴', '铁头靴', '钢铁战靴', '骑士战靴'], neck: ['骨质项链', '铜质项链', '银质项链', '翡翠项链', '星辰项链'],
-  bracelet: ['木质手镯', '铜质手镯', '银质手镯', '红玉手镯', '星辰手镯'], ring: ['铁指环', '铜指环', '银指环', '蓝宝石戒指', '星辰戒指'],
+const gradeMul = g => g == null ? 1 : 0.9 + g * 0.05;
+// 武器类型（官方 15 种）：phys / mag 物攻 / 魔攻系数，aspd / cspd 攻速 / 施放速度加成，spd 为说明里的“攻击速度”
+const WTYPES = {
+  shortsword: { name: '短剑', cls: 'sword', phys: 1.0, mag: 0.9, aspd: 0, cspd: 0.05, spd: '普通', dur: 30, desc: '攻击力均衡，魔法攻击力也不错' },
+  katana: { name: '太刀', cls: 'sword', phys: 1.0, mag: 0.6, aspd: 0.08, crit: 0.02, spd: '快速', dur: 30, desc: '出手快，暴击率高' },
+  club: { name: '钝器', cls: 'sword', phys: 1.1, mag: 0.55, aspd: -0.06, stagger: 30, spd: '慢速', dur: 34, desc: '沉重的打击，让敌人僵直更久' },
+  greatsword: { name: '巨剑', cls: 'sword', phys: 1.2, mag: 0.45, aspd: -0.1, hardness: 20, spd: '慢速', dur: 36, desc: '攻击力最高，挥动缓慢' },
+  lightsaber: { name: '光剑', cls: 'sword', phys: 0.92, mag: 0.85, aspd: 0.12, elem: 'light', spd: '非常快', dur: 26, desc: '极快的光刃，附带光属性攻击' },
+  revolver: { name: '左轮枪', cls: 'gun', phys: 1.0, mag: 0.5, aspd: 0.02, crit: 0.02, spd: '普通', dur: 30, desc: '每轮连射 4 发，暴击率高' },
+  autopistol: { name: '自动手枪', cls: 'gun', phys: 0.9, mag: 0.95, aspd: 0.1, cspd: 0.05, spd: '快速', dur: 28, desc: '每轮连射 6 发，魔法攻击力高' },
+  rifle: { name: '步枪', cls: 'gun', phys: 1.08, mag: 0.55, aspd: -0.04, hit: 0.03, spd: '普通', dur: 32, desc: '每轮连射 3 发，射程远、命中高' },
+  handcannon: { name: '手炮', cls: 'gun', phys: 1.2, mag: 0.45, aspd: -0.12, stagger: 35, spd: '慢速', dur: 36, desc: '每轮连射 2 发，威力巨大' },
+  bowgun: { name: '手弩', cls: 'gun', phys: 0.92, mag: 0.6, aspd: 0.14, spd: '非常快', dur: 26, desc: '每轮连射 7 发，射速最快' },
+  spear: { name: '矛', cls: 'mage', phys: 1.05, mag: 0.95, aspd: -0.06, stagger: 20, spd: '慢速', dur: 34, desc: '物理攻击力高的魔法武器' },
+  pole: { name: '棍棒', cls: 'mage', phys: 0.9, mag: 1.0, aspd: 0, spd: '普通', dur: 30, desc: '物理与魔法兼顾' },
+  rod: { name: '魔杖', cls: 'mage', phys: 0.55, mag: 1.02, aspd: 0.05, cspd: 0.1, spd: '快速', dur: 26, desc: '施放速度快' },
+  staff: { name: '法杖', cls: 'mage', phys: 0.5, mag: 1.12, cspd: -0.04, mcrit: 0.02, spd: '慢速', dur: 30, desc: '魔法攻击力最高' },
+  broom: { name: '扫把', cls: 'mage', phys: 0.75, mag: 1.0, aspd: 0.08, cspd: 0.04, mspd: 0.03, spd: '快速', dur: 28, desc: '轻快灵巧，移动速度提升' },
 };
-const RAR_PREFIX = [[''], ['精良的', '坚固的', '锐利的'], ['秘银', '符文', '深蓝'], ['幻影', '血月', '星陨'], ['传说·', '英雄·', '远古·'], ['']];
-// 史诗装备（固定名称 + 特效）
-const EPICS = [
-  { slot: 'weapon', cls: 'sword', name: '破晓之刃·晨星', lvl: 5, fx: { critDmg: 0.35, crit: 0.08 }, desc: '暴击伤害 +35%，暴击率 +8%' },
-  { slot: 'weapon', cls: 'gun', name: '沙漠之鹰·黄昏', lvl: 5, fx: { critDmg: 0.3, crit: 0.1 }, desc: '暴击伤害 +30%，暴击率 +10%' },
-  { slot: 'weapon', cls: 'mage', name: '星海之杖·永夜', lvl: 5, fx: { critDmg: 0.25, mpRegen: 1.0 }, desc: '暴击伤害 +25%，MP 恢复 +100%' },
-  { slot: 'top', name: '不灭者战甲', lvl: 8, fx: { hpPct: 0.25 }, desc: 'HP 上限 +25%' },
-  { slot: 'neck', name: '渊洋之心', lvl: 10, fx: { cdr: 0.12 }, desc: '所有技能冷却时间 -12%' },
-  { slot: 'ring', name: '时光之戒', lvl: 12, fx: { spd: 0.12, crit: 0.05 }, desc: '移动与攻击速度 +12%，暴击率 +5%' },
-  { slot: 'shoes', name: '疾风行者', lvl: 6, fx: { spd: 0.18 }, desc: '移动速度 +18%' },
-  { slot: 'bracelet', name: '炎龙之怒', lvl: 14, fx: { atkPct: 0.12 }, desc: '攻击力 +12%' },
+const CLASS_WTYPES = cls => Object.keys(WTYPES).filter(k => WTYPES[k].cls === cls);
+const CLASS_START_WEAPON = { sword: 'katana', gun: 'revolver', mage: 'staff' };
+// 防具类型：def / mdef / hp / mp 系数，dur 耐久
+const ATYPES = {
+  cloth: { name: '布甲', def: 0.82, mdef: 1.3, hp: 0.9, mp: 1.4, dur: 26 },
+  leather: { name: '皮甲', def: 0.92, mdef: 1.0, hp: 0.95, mp: 1.1, dur: 30 },
+  light: { name: '轻甲', def: 0.96, mdef: 0.96, hp: 1.0, mp: 1.0, dur: 30 },
+  heavy: { name: '重甲', def: 1.1, mdef: 0.85, hp: 1.12, mp: 0.9, dur: 36 },
+  plate: { name: '板甲', def: 1.25, mdef: 0.75, hp: 1.15, mp: 0.8, dur: 40 },
+};
+const ARMOR_W = { top: 1.2, bottom: 1.1, head: 1.0, shoes: 0.85, belt: 0.85 };
+// 属性名（tooltip / 面板）；pct 表示百分比显示
+const STAT_INFO = {
+  atk: ['物理攻击力'], matk: ['魔法攻击力'], indep: ['独立攻击力'], def: ['物理防御力'], mdef: ['魔法防御力'],
+  str: ['力量'], int: ['智力'], vit: ['体力'], spr: ['精神'], hp: ['HP 上限'], mp: ['MP 上限'],
+  crit: ['物理暴击率', 1], mcrit: ['魔法暴击率', 1], critDmg: ['暴击伤害', 1], aspd: ['攻击速度', 1], cspd: ['施放速度', 1], mspd: ['移动速度', 1],
+  hit: ['命中率', 1], evade: ['回避率', 1], hardness: ['硬直'], stagger: ['僵直度'],
+  fire: ['火属性强化'], ice: ['冰属性强化'], light: ['光属性强化'], dark: ['暗属性强化'], elemAll: ['所有属性强化'],
+  rfire: ['火属性抗性'], rice: ['冰属性抗性'], rlight: ['光属性抗性'], rdark: ['暗属性抗性'], resAll: ['所有属性抗性'],
+  allStat: ['四维'], hpPct: ['HP 上限', 1], mpPct: ['MP 上限', 1], atkPct: ['攻击力', 1], defPct: ['防御力', 1],
+  cdr: ['技能冷却时间', 1, -1], dmgUp: ['伤害增加', 1], dmgReduce: ['受到的伤害', 1, -1], mpRegen: ['MP 恢复速度', 1],
+  killHeal: ['击杀敌人时恢复 HP', 1], killMp: ['击杀敌人时恢复 MP', 1], goldUp: ['金币获得量', 1], expUp: ['经验获得量', 1],
+};
+const FLAT_STATS = ['atk', 'matk', 'indep', 'def', 'mdef', 'str', 'int', 'vit', 'spr', 'hp', 'mp'];
+function fmtStatVal(k, v) {
+  const I = STAT_INFO[k] || [k], neg = I[2] === -1;
+  const s = I[1] ? `${(Math.abs(v) * 100).toFixed(Math.abs(v * 100) % 1 ? 1 : 0)}%` : fmtNum(Math.abs(v));
+  return `${(neg ? v < 0 : v >= 0) ? '+' : '-'}${s}`;
+}
+const statLine = (k, v) => `${(STAT_INFO[k] || [k])[0]} ${fmtStatVal(k, (STAT_INFO[k] || [])[2] === -1 ? -v : v)}`;
+
+/* ---------------- 物品库 ---------------- */
+const ITEMS = {};
+const CONSUMABLES = {};   // 旧接口：非装备物品的定义（key → def）
+const GEAR = [];          // 可以随机掉落的装备定义
+const EPICS = [];         // 史诗（旧接口：{ slot, cls, lvl, key, name }）
+const TAB_OF = it => it.kind === 'equip' ? (it.slot === 'title' ? 'title' : 'equip') : it.kind === 'use' ? 'use' : it.kind === 'quest' ? 'quest' : 'mat';
+function defineItem(key, def) {
+  const D = { key, kind: 'mat', rar: 0, price: 10, ...def };
+  if (D.kind === 'equip') {
+    D.lvl = D.lvl || 1;
+    if (D.slot === 'weapon' && D.wtype) D.cls = D.cls || WTYPES[D.wtype].cls;
+    if (D.durMax === undefined) D.durMax = D.slot === 'title' ? 0 : D.slot === 'weapon' ? (WTYPES[D.wtype] || {}).dur || 30 : D.atype ? ATYPES[D.atype].dur : 24;
+    if (!def.price) D.price = Math.round((40 + D.lvl * 25) * Math.pow(2.2, D.rar) * (D.slot === 'weapon' ? 1.2 : D.slot === 'title' ? 1.5 : 1));
+    if (!D.noDrop && !D.quest) GEAR.push(D);
+    if (D.rar === 5) EPICS.push({ slot: D.slot, cls: D.cls || null, lvl: D.lvl, key, name: D.name, fx: D.fx, desc: D.desc });
+  } else CONSUMABLES[key] = D;
+  ITEMS[key] = D;
+  return D;
+}
+// 种子随机（同一个 key 生成的装备属性固定）
+const keySeed = key => { let h = 2166136261; for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619); return h >>> 0; };
+// 高品级的特殊词条（神器 1 条、传说 2 条；史诗的特效在物品库里手写）
+const AFFIXES = [
+  { k: 'cdr', v: [0.03, 0.07] }, { k: 'critDmg', v: [0.08, 0.16] }, { k: 'dmgUp', v: [0.03, 0.07] }, { k: 'aspd', v: [0.03, 0.06], also: 'cspd' },
+  { k: 'mspd', v: [0.04, 0.08] }, { k: 'elemAll', v: [8, 18], int: 1 }, { k: 'killHeal', v: [0.01, 0.025] }, { k: 'dmgReduce', v: [0.03, 0.06] },
+  { k: 'hpPct', v: [0.04, 0.08] }, { k: 'crit', v: [0.02, 0.04], also: 'mcrit' }, { k: 'goldUp', v: [0.05, 0.12] }, { k: 'killMp', v: [0.01, 0.025] },
+  { k: 'hardness', v: [20, 40], int: 1 }, { k: 'stagger', v: [20, 40], int: 1 },
 ];
-let itemSeq = Date.now() % 100000;
-function makeEquip(slot, lvl, rar, cls = game.player ? game.player.cls : 'sword', epic = null) {
-  const grade = rar === 5 ? 4 : Math.floor(Math.random() * 5), gm = 0.9 + grade * 0.05, m = RAR_MUL[rar] * gm;
-  const tier = clamp(Math.floor((lvl - 1) / 5) + (rar >= 3 ? 1 : 0), 0, 4);
-  let name;
-  if (epic) name = epic.name;
-  else if (slot === 'weapon') { const arr = BASE_NAMES.weapon[cls] || BASE_NAMES.weapon.sword; name = pick(RAR_PREFIX[rar]) + arr[Math.min(arr.length - 1, tier + (rar >= 4 ? 1 : 0))]; }
-  else name = pick(RAR_PREFIX[rar]) + BASE_NAMES[slot][Math.min(4, tier)];
-  const st = {};
-  if (slot === 'weapon') st.atk = Math.round((60 + 26 * lvl) * m);
-  else if (['head', 'top', 'bottom', 'belt', 'shoes'].includes(slot)) { st.def = Math.round((14 + 7 * lvl) * m); st.hp = Math.round((20 + 12 * lvl) * m * (slot === 'top' ? 1.4 : 1)); }
-  else { st.str = Math.round((2 + lvl * 0.9) * m); if (slot === 'ring') st.crit = +(0.01 + 0.004 * lvl * m / 2).toFixed(3); if (slot === 'neck') st.mp = Math.round((15 + 8 * lvl) * m); if (slot === 'bracelet') st.atk = Math.round((8 + 5 * lvl) * m); }
-  if (rar >= 2) { const extra = pick(['str', 'crit', 'hp', 'mp']); if (extra === 'str') st.str = (st.str || 0) + Math.round(lvl * 0.6 * m); else if (extra === 'crit') st.crit = +((st.crit || 0) + 0.01 * rar).toFixed(3); else if (extra === 'hp') st.hp = (st.hp || 0) + Math.round(lvl * 10 * m); else st.mp = (st.mp || 0) + Math.round(lvl * 6 * m); }
-  const it = { id: itemSeq++, kind: 'equip', slot, cls: slot === 'weapon' ? cls : null, name, rar, grade, lvl: Math.max(1, lvl), st, enh: 0, dur: 30 };
-  if (epic) { it.fx = epic.fx; it.desc = epic.desc; it.epic = true; }
-  it.price = Math.round((40 + lvl * 25) * Math.pow(2.2, rar));
+// 按部位 / 类型 / 等级 / 品级生成装备的基础属性（物品库里 defineGear 调用）
+function gearStats(D, R) {
+  const L = D.lvl, m = RAR_MUL[D.rar], st = {};
+  const add = (k, v) => { st[k] = +((st[k] || 0) + v).toFixed(k in STAT_INFO && STAT_INFO[k][1] ? 3 : 0); };
+  if (D.slot === 'weapon') {
+    const T = WTYPES[D.wtype], base = (60 + 26 * L) * m;
+    add('atk', Math.round(base * T.phys)); add('matk', Math.round(base * T.mag)); add('indep', Math.round(base * Math.max(T.phys, T.mag) * 0.9));
+  } else if (ARMOR_SLOTS.includes(D.slot)) {
+    const A = ATYPES[D.atype], w = ARMOR_W[D.slot], base = (14 + 7 * L) * m * w;
+    add('def', Math.round(base * A.def)); add('mdef', Math.round(base * A.mdef * 0.9));
+    add('hp', Math.round((20 + 12 * L) * m * (D.slot === 'top' ? 1.4 : 1) * A.hp));
+    if (D.atype === 'cloth') add('mp', Math.round((10 + 6 * L) * m));
+  } else if (D.slot === 'neck') { add('str', Math.round((2 + L * 0.9) * m)); add('int', Math.round((2 + L * 0.9) * m)); add('mp', Math.round((15 + 8 * L) * m)); add('mdef', Math.round((6 + 3 * L) * m)); }
+  else if (D.slot === 'bracelet') { add('str', Math.round((2 + L * 0.8) * m)); add('int', Math.round((2 + L * 0.8) * m)); add('atk', Math.round((8 + 5 * L) * m)); add('matk', Math.round((8 + 5 * L) * m)); add('mdef', Math.round((5 + 2.5 * L) * m)); }
+  else if (D.slot === 'ring') { add('str', Math.round((2 + L * 0.8) * m)); add('int', Math.round((2 + L * 0.8) * m)); add('crit', 0.01 + 0.002 * L * m); add('mcrit', 0.01 + 0.002 * L * m); add('mdef', Math.round((5 + 2.5 * L) * m)); }
+  else if (D.slot === 'support') { for (const k of ['str', 'int', 'vit', 'spr']) add(k, Math.round((1 + L * 0.45) * m)); add('hp', Math.round((10 + 6 * L) * m)); }
+  else if (D.slot === 'stone') { add('str', Math.round((1 + L * 0.5) * m)); add('int', Math.round((1 + L * 0.5) * m)); add('elemAll', Math.round((2 + L * 0.35) * m)); add('mp', Math.round((8 + 5 * L) * m)); }
+  // 稀有以上附加 1~2 条随机属性（按 key 固定）
+  if (D.rar >= 1 && D.slot !== 'title') {
+    const pool = ['str', 'int', 'vit', 'spr', 'hp', 'mp', 'crit', 'hit', 'evade'], n = D.rar >= 3 ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const k = pool[Math.floor(R() * pool.length)];
+      if (k === 'hp') add(k, Math.round(L * 8 * m)); else if (k === 'mp') add(k, Math.round(L * 5 * m));
+      else if (k === 'crit') { add('crit', 0.01 * D.rar); add('mcrit', 0.01 * D.rar); } else if (k === 'hit' || k === 'evade') add(k, 0.01 + 0.005 * D.rar);
+      else add(k, Math.round((2 + L * 0.5) * m));
+    }
+  }
+  return st;
+}
+function gearAffixes(D, R) {
+  const n = D.rar === 3 ? 1 : D.rar === 4 ? 2 : 0, fx = {};
+  const pool = AFFIXES.slice();
+  for (let i = 0; i < n && pool.length; i++) {
+    const A = pool.splice(Math.floor(R() * pool.length), 1)[0];
+    const t = clamp(D.lvl / 30, 0, 1) * 0.6 + R() * 0.4, v = A.v[0] + (A.v[1] - A.v[0]) * t;
+    fx[A.k] = A.int ? Math.round(v) : +v.toFixed(3); if (A.also) fx[A.also] = fx[A.k];
+  }
+  return fx;
+}
+// 装备注册的便捷写法：物品库只需要写名字 / 类型 / 等级 / 品级，属性自动生成（也可以用 st / fx 覆盖或追加）
+function defineGear(key, def) {
+  const R = mulberry(keySeed(key));
+  const D = { kind: 'equip', ...def };
+  const st = def.st && def.stOnly ? {} : gearStats(D, R);
+  if (def.st) for (const k in def.st) st[k] = +((st[k] || 0) + def.st[k]).toFixed(3);
+  const fx = def.fx ? { ...def.fx } : gearAffixes(D, R);
+  return defineItem(key, { ...def, kind: 'equip', st, fx: Object.keys(fx).length ? fx : undefined });
+}
+/* ---- 套装 ---- */
+const SETS = {};
+function defineSet(id, def) { SETS[id] = { id, pieces: [], bonus: {}, ...def }; return SETS[id]; }
+
+/* ---------------- 物品实例 ---------------- */
+let itemSeq = (Date.now() % 1e8) * 10;
+const randGrade = () => { const r = Math.random(); return r < 0.12 ? 0 : r < 0.37 ? 1 : r < 0.72 ? 2 : r < 0.93 ? 3 : 4; };
+function makeItem(key, n = 1, opt = {}) {
+  const D = ITEMS[key];
+  if (!D) { console.warn('makeItem：物品库里没有', key); return null; }
+  if (D.kind !== 'equip') return { id: itemSeq++, key, kind: D.kind, name: D.name, rar: D.rar, n: Math.max(1, n | 0), price: D.price };
+  const grade = D.slot === 'title' ? null : opt.grade ?? D.grade ?? randGrade();
+  const it = { id: itemSeq++, key, kind: 'equip', slot: D.slot, name: D.name, rar: opt.rar ?? D.rar, lvl: D.lvl, grade, st: {}, enh: opt.enh || 0, durMax: D.durMax, dur: D.durMax, price: D.price };
+  applyDef(it, D);
   return it;
 }
-const CONSUMABLES = {
-  hpS: { name: '小型生命药剂', kind: 'use', hp: 0.25, price: 60, col: '#e83a3a', size: 0.8 },
-  hpM: { name: '中型生命药剂', kind: 'use', hp: 0.45, price: 160, col: '#e83a3a', size: 1 },
-  hpL: { name: '大型生命药剂', kind: 'use', hp: 0.7, price: 400, col: '#e83a3a', size: 1.2 },
-  mpS: { name: '小型魔力药剂', kind: 'use', mp: 0.25, price: 60, col: '#3a78ff', size: 0.8 },
-  mpM: { name: '中型魔力药剂', kind: 'use', mp: 0.45, price: 160, col: '#3a78ff', size: 1 },
-  elixir: { name: '精灵之泪', kind: 'use', hp: 1, mp: 1, price: 1500, col: '#ffd23a', size: 1.1 },
-  crystal: { name: '无色晶块', kind: 'mat', price: 30, col: '#dfe8f0' },
-  guard: { name: '强化保护券', kind: 'mat', price: 12000, col: '#6ad0ff' },
-  coin: { name: '复活币', kind: 'mat', price: 3000, col: '#ffd23a' },
-};
-function makeConsumable(key, n = 1) { const C = CONSUMABLES[key]; return { id: itemSeq++, kind: C.kind, key, name: C.name, n, rar: key === 'elixir' ? 3 : key === 'guard' ? 2 : 0, price: C.price }; }
-/* ---- 背包 ---- */
+// 用物品库定义刷新实例的固定部分（改平衡后旧存档里的装备自动跟着变）
+function applyDef(it, D) {
+  it.name = D.name; it.slot = D.slot; it.lvl = D.lvl; it.price = D.price; it.rar = D.rar;
+  it.wtype = D.wtype || null; it.atype = D.atype || null; it.cls = D.cls || null; it.set = D.set || null;
+  it.fx = D.fx ? { ...D.fx } : undefined; it.desc = D.desc || undefined; it.epic = D.rar === 5 || undefined;
+  const g = gradeMul(it.grade); it.st = {};
+  for (const k in D.st) it.st[k] = FLAT_STATS.includes(k) ? Math.round(D.st[k] * g) : D.st[k];
+  if (it.durMax !== D.durMax) { it.durMax = D.durMax; it.dur = Math.min(it.dur ?? D.durMax, D.durMax); }
+  if (it.dur === undefined) it.dur = it.durMax;
+}
+// 旧存档里的物品：补全 key / 类型 / 新属性
+function normalizeItem(it) {
+  if (!it || typeof it !== 'object') return it;
+  if (it.kind === 'equip') {
+    const D = ITEMS[it.key];
+    if (D && D.kind === 'equip') { applyDef(it, D); return it; }
+    if (!it.legacy) {   // 旧版随机装备：保留名字和数值，换算成新属性
+      it.legacy = true; it.key = it.key || 'legacy_' + it.slot; const st = it.st || {};
+      if (it.slot === 'weapon') { const cls = it.cls || 'sword'; it.wtype = CLASS_START_WEAPON[cls] || 'katana'; const T = WTYPES[it.wtype]; const a = st.atk || 100; st.atk = Math.round(a * T.phys); st.matk = Math.round(a * T.mag); st.indep = Math.round(a * Math.max(T.phys, T.mag) * 0.9); }
+      else if (ARMOR_SLOTS.includes(it.slot)) { it.atype = it.atype || 'light'; st.mdef = Math.round((st.def || 0) * 0.86); }
+      else if (ACC_SLOTS.includes(it.slot)) { if (st.str) st.int = st.str; st.mdef = Math.round(6 + it.lvl * 3); if (st.crit) st.mcrit = st.crit; }
+      if (it.fx) { const f = it.fx; if (f.spd) { f.mspd = f.spd; f.aspd = f.spd; f.cspd = f.spd; delete f.spd; } if (f.crit) f.mcrit = f.crit; }
+      it.st = st; it.durMax = it.durMax || 30; it.dur = Math.min(it.dur ?? 30, it.durMax);
+    }
+    return it;
+  }
+  if (!it.key) return it;
+  const D = ITEMS[it.key]; if (D) { it.name = D.name; it.rar = D.rar; it.price = D.price; it.kind = D.kind; }
+  it.n = Math.max(1, it.n | 0 || 1);
+  return it;
+}
+// 按条件随机一件装备：{ slot?, lvl, rar?, cls?, wtype?, atype?, bonus?, boss?, grade? }
+const SLOT_WEIGHT = { weapon: 16, top: 9, head: 9, bottom: 9, belt: 8, shoes: 8, neck: 8, bracelet: 8, ring: 8, support: 4, stone: 4 };
+function pickSlot() { let r = Math.random() * 91; for (const s in SLOT_WEIGHT) { r -= SLOT_WEIGHT[s]; if (r <= 0) return s; } return 'top'; }
+function rollEquip(o = {}) {
+  const lvl = clamp(Math.round(o.lvl || game.lvl || 1), 1, 60);
+  let rar = o.rar ?? rollRarity(o.bonus || 0, o.boss);
+  const cls = o.cls || (game.player ? game.player.cls : 'sword');
+  const slot = o.slot || pickSlot();
+  const mastery = typeof masteryOf === 'function' ? masteryOf(cls, game.job) : 'heavy';
+  for (let tries = 0; tries < 8; tries++) {
+    const lo = lvl - 6 - tries * 4, hi = lvl + 1 + Math.floor(tries / 2);
+    let pool = GEAR.filter(D => D.slot === slot && D.rar === rar && D.lvl >= lo && D.lvl <= hi && !D.shopOnly && (!o.wtype || D.wtype === o.wtype) && (!o.atype || D.atype === o.atype));
+    if (slot === 'weapon' && !o.wtype) { const own = pool.filter(D => D.cls === cls); if (own.length && Math.random() < 0.8) pool = own; }
+    if (ARMOR_SLOTS.includes(slot) && !o.atype) { const m = pool.filter(D => D.atype === mastery); if (m.length && Math.random() < 0.6) pool = m; }
+    if (pool.length) {
+      // 等级越接近越容易出（不出比目标高很多的）
+      const w = pool.map(D => (D.set ? 0.3 : 1) / (1 + Math.abs(lvl - D.lvl) * 0.35)); let r = Math.random() * w.reduce((a, b) => a + b, 0);
+      for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return makeItem(pool[i].key, 1, { grade: o.grade }); }
+      return makeItem(pool[0].key, 1, { grade: o.grade });
+    }
+    if (tries >= 3 && rar > 0) rar--;   // 这个等级段没有这个品级：降一级再找
+  }
+  return null;
+}
+// 旧接口
+function makeEquip(slot, lvl, rar, cls, epic = null) {
+  if (epic && epic.key) return makeItem(epic.key);
+  return rollEquip({ slot, lvl, rar, cls }) || rollEquip({ lvl, rar: 0, cls });
+}
+function makeConsumable(key, n = 1) { return makeItem(key, n); }
+
+/* ---------------- 背包 / 装备栏 / 仓库 ---------------- */
+const INV_TABS = [['equip', '装备'], ['use', '消耗品'], ['mat', '材料'], ['quest', '任务'], ['title', '称号']];
 const inv = {
-  items: [], equip: {}, quick: ['hpS', 'mpS', null, null, null, null], cap: 48, potCd: 0,
-  add(it) {
-    if (it.kind !== 'equip') { const ex = this.items.find(x => x.key === it.key); if (ex) { ex.n += it.n; return true; } }
-    if (this.items.length >= this.cap) return false;
-    this.items.push(it); return true;
+  items: [], equip: {}, quick: ['hpS', 'mpS', null, null, null, null], storage: [], cap: 48, storageCap: 48, potCd: 0, _norm: null,
+  // 读档后第一次用到时补全旧物品（save.apply 直接替换了数组，这里按数组身份判断）
+  ensure() {
+    if (this._norm === this.items && this._normSt === this.storage && this._normEq === this.equip) return;
+    this.items = (this.items || []).filter(Boolean).map(normalizeItem);
+    this.storage = (this.storage || []).filter(Boolean).map(normalizeItem);
+    for (const s in this.equip) { if (!this.equip[s]) delete this.equip[s]; else normalizeItem(this.equip[s]); }
+    // 旧存档：equip 里的键名一致，无需迁移；背包 / 仓库里的复活币物品换成计数
+    for (const L of [this.items, this.storage]) for (let i = L.length - 1; i >= 0; i--) if (L[i].key === 'coin') { if (save.data) save.data.coins += L[i].n || 1; L.splice(i, 1); }
+    this._norm = this.items; this._normSt = this.storage; this._normEq = this.equip;
+    if (save.data) save.data.storage = this.storage;
   },
-  count(key) { const x = this.items.find(i => i.key === key); return x ? x.n : 0; },
-  take(key, n = 1) { const x = this.items.find(i => i.key === key); if (!x || x.n < n) return false; x.n -= n; if (x.n <= 0) this.items.splice(this.items.indexOf(x), 1); return true; },
-  remove(it) { const i = this.items.indexOf(it); if (i >= 0) this.items.splice(i, 1); },
+  tabCount(tab, list = this.items) { let n = 0; for (const x of list) if (TAB_OF(x) === tab) n++; return n; },
+  free(tab, list = this.items, cap = this.cap) { return cap - this.tabCount(tab, list); },
+  add(it, list = this.items, cap = this.cap) {
+    if (!it) return false;
+    normalizeItem(it);
+    if (it.key === 'coin' && list === this.items) { if (save.data) save.data.coins += it.n || 1; return true; }
+    if (it.kind !== 'equip') { const ex = list.find(x => x.key === it.key && x.kind !== 'equip'); if (ex) { ex.n += it.n || 1; return true; } }
+    if (it.kind !== 'quest' && this.tabCount(TAB_OF(it), list) >= cap) return false;   // 任务道具不占格子上限（不能丢，也不能因为满了消失）
+    list.push(it); return true;
+  },
+  count(key, list = this.items) { let n = 0; for (const x of list) if (x.key === key) n += x.kind === 'equip' ? 1 : x.n || 1; return n; },
+  has(key, n = 1) { return this.count(key) >= n; },
+  take(key, n = 1, list = this.items) {
+    if (this.count(key, list) < n) return false;
+    for (let i = list.length - 1; i >= 0 && n > 0; i--) { const x = list[i]; if (x.key !== key) continue; if (x.kind === 'equip') { list.splice(i, 1); n--; } else { const t = Math.min(n, x.n); x.n -= t; n -= t; if (x.n <= 0) list.splice(i, 1); } }
+    return true;
+  },
+  remove(it, list = this.items) { const i = list.indexOf(it); if (i >= 0) list.splice(i, 1); return i >= 0; },
+  // 拆出 n 个（出售 / 存仓库部分数量时用）
+  split(it, n, list = this.items) { if (it.kind === 'equip' || n >= it.n) { this.remove(it, list); return it; } it.n -= n; return { ...it, id: itemSeq++, n }; },
   starter(cls) {
-    this.items = []; this.equip = {}; this.quick = ['hpS', 'mpS', null, null, null, null];
-    this.equip.weapon = makeEquip('weapon', 1, 0, cls); this.equip.top = makeEquip('top', 1, 0); this.equip.bottom = makeEquip('bottom', 1, 0);
-    this.add(makeConsumable('hpS', 15)); this.add(makeConsumable('mpS', 15)); this.add(makeConsumable('hpM', 5)); this.add(makeConsumable('crystal', 30));
+    this.items = []; this.equip = {}; this.storage = []; this.quick = ['hpS', 'mpS', null, null, null, null];
+    const w = CLASS_START_WEAPON[cls] || 'katana', m = masteryOf(cls, null);
+    this.equip.weapon = makeItem(`${w}_1_0`, 1, { grade: 2 }) || rollEquip({ slot: 'weapon', lvl: 1, rar: 0, cls });
+    this.equip.top = makeItem(`${m}_top_1_0`, 1, { grade: 2 }) || rollEquip({ slot: 'top', lvl: 1, rar: 0 });
+    this.equip.bottom = makeItem(`${m}_bottom_1_0`, 1, { grade: 2 }) || rollEquip({ slot: 'bottom', lvl: 1, rar: 0 });
+    for (const [k, n] of [['hpS', 15], ['mpS', 15], ['hpM', 5], ['crystal', 30]]) this.add(makeItem(k, n));
+    this._norm = this.items; this._normSt = this.storage; this._normEq = this.equip;
+  },
+  canWear(it, quiet) {
+    const fail = msg => { if (!quiet) { toastMsg(msg, '#ff6a6a'); sfx.error(); } return false; };
+    if (!it || it.kind !== 'equip') return fail('不能装备');
+    if (it.lvl > game.lvl) return fail(`需要等级 ${it.lvl}`);
+    if (it.slot === 'weapon' && it.cls && game.player && it.cls !== game.player.cls) return fail(`${CLASSES[it.cls] ? CLASSES[it.cls].name : ''}专用武器，无法装备`);
+    return true;
   },
   wear(it) {
-    if (it.lvl > game.lvl) { toastMsg(`需要等级 ${it.lvl}`, '#ff6a6a'); sfx.error(); return false; }
-    if (it.slot === 'weapon' && it.cls && it.cls !== game.player.cls) { toastMsg('职业无法使用这件武器', '#ff6a6a'); sfx.error(); return false; }
-    const old = this.equip[it.slot]; this.remove(it); this.equip[it.slot] = it; if (old) this.items.push(old);
-    recalcStats(game.player); sfx.pickup(); bus.emit('equip', { item: it, slot: it.slot }); return true;
-  },
-  unwear(slot) { const it = this.equip[slot]; if (!it) return; if (this.items.length >= this.cap) { toastMsg('背包已满'); return; } delete this.equip[slot]; this.items.push(it); recalcStats(game.player); },
-  // 装备总属性：基础 + 强化（武器加攻击，防具加防御，首饰加力量）+ 史诗特效
-  equipStats() {
-    const s = { atk: 0, def: 0, hp: 0, mp: 0, str: 0, crit: 0, critDmg: 0, spd: 0, cdr: 0, hpPct: 0, atkPct: 0, mpRegen: 0 };
-    for (const k of SLOTS) {
-      const it = this.equip[k]; if (!it) continue;
-      for (const a in it.st) s[a] += it.st[a];
-      const e = it.enh || 0;
-      if (k === 'weapon') s.atk += Math.round((it.st.atk || 0) * enhBonus(e));
-      else if (it.st.def) s.def += Math.round(it.st.def * enhBonus(e) * 0.8);
-      else s.str += Math.round(e * e * 0.6);
-      if (it.fx) for (const a in it.fx) s[a] = (s[a] || 0) + it.fx[a];
-    }
-    s.atk = Math.round(s.atk * (1 + s.atkPct)); s.hp = Math.round(s.hp * (1 + s.hpPct)) + 0;
-    return s;
-  },
-  use(key) {
-    const p = game.player; if (!p || p.dead) return false;
-    const C = CONSUMABLES[key]; if (!C || C.kind !== 'use') return false;
-    if (this.potCd > 0) return false;
-    if (!this.take(key)) { toastMsg('没有这个物品了'); return false; }
-    if (C.hp) { const h = Math.round(p.hpMax * C.hp); p.hp = Math.min(p.hpMax, p.hp + h); addNumber(h, p.x, p.y, p.z, { heal: true }); }
-    if (C.mp) { const m = Math.round(p.mpMax * C.mp); p.mp = Math.min(p.mpMax, p.mp + m); addNumber(m, p.x, p.y, p.z + 12, { col: '#6ab8ff' }); }
-    this.potCd = 1; sfx.pickup(); bus.emit('itemUse', { item: C, key });
-    addFx({ x: p.x, y: p.y + 1, z: 0, dur: 0.5, add: true, col: C.col, draw(c) { const k = this.t / this.dur; c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = shade(this.col, 0.3, 0.5 * (1 - k)); for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + k * 3; c.beginPath(); c.arc(sx(game.player.x) + Math.cos(a) * 16, sy(game.player.y, 20 + k * 70), 2.5, 0, TAU); c.fill(); } c.restore(); } });
+    this.ensure();
+    if (!this.canWear(it)) return false;
+    const i = this.items.indexOf(it), old = this.equip[it.slot];
+    if (i >= 0) { if (old) this.items[i] = old; else this.items.splice(i, 1); }
+    else if (old && !this.add(old)) { toastMsg('背包已满', '#ff6a6a'); return false; }
+    this.equip[it.slot] = it;
+    recalcStats(game.player); sfx.pickup(); bus.emit('equip', { item: it, slot: it.slot });
     return true;
+  },
+  unwear(slot) {
+    this.ensure();
+    const it = this.equip[slot]; if (!it) return false;
+    if (this.free(TAB_OF(it)) <= 0) { toastMsg('背包已满', '#ff6a6a'); sfx.error(); return false; }
+    delete this.equip[slot]; this.items.push(it); recalcStats(game.player); sfx.click(); bus.emit('unequip', { item: it, slot });
+    return true;
+  },
+  // 整理：按页签内的 种类 → 部位 → 品级（高在前）→ 等级 排序，同 key 的消耗品合并
+  sort() {
+    const merged = [];
+    for (const x of this.items) { if (x.kind !== 'equip') { const ex = merged.find(y => y.key === x.key && y.kind !== 'equip'); if (ex) { ex.n += x.n; continue; } } merged.push(x); }
+    const so = s => SLOTS.indexOf(s), keyOrder = Object.keys(ITEMS);
+    merged.sort((a, b) => (TAB_OF(a) > TAB_OF(b) ? 1 : TAB_OF(a) < TAB_OF(b) ? -1 : 0) || (a.kind === 'equip' ? so(a.slot) - so(b.slot) || b.rar - a.rar || b.lvl - a.lvl || (b.enh || 0) - (a.enh || 0) : b.rar - a.rar || keyOrder.indexOf(a.key) - keyOrder.indexOf(b.key)));
+    this.items.length = 0; this.items.push(...merged); this._norm = this.items;
+  },
+  // 使用消耗品（快捷栏 1~6 调用的是 use(key)，背包右键调用 useItem(it)）
+  use(key) {
+    const it = this.items.find(x => x.key === key); if (!it) { toastMsg('没有这个物品了'); return false; }
+    return this.useItem(it);
+  },
+  useItem(it) {
+    const p = game.player; if (!p || p.dead) return false;
+    const D = ITEMS[it.key]; if (!D || D.kind !== 'use' || !D.use) { toastMsg('这个物品不能直接使用'); return false; }
+    const U = D.use;
+    if (U.dungeonOnly && game.scene !== 'dungeon' && game.scene !== 'test') { toastMsg('只能在地下城里使用', '#ffb0a0'); sfx.error(); return false; }
+    if ((U.hp || U.mp) && this.potCd > 0) return false;
+    if (U.fatigue && save.data.fatigue >= FATIGUE_MAX) { toastMsg('疲劳值已满', '#ffb0a0'); sfx.error(); return false; }
+    if (U.open && !this.canOpen(U)) return false;
+    if (!this.take(it.key, 1)) return false;
+    if (U.hp) { const hh = Math.round(p.hpMax * U.hp); p.hp = Math.min(p.hpMax, p.hp + hh); if (game.scene !== 'town') addNumber(hh, p.x, p.y, p.z, { heal: true }); }
+    if (U.mp) { const mm = Math.round(p.mpMax * U.mp); p.mp = Math.min(p.mpMax, p.mp + mm); if (game.scene !== 'town') addNumber(mm, p.x, p.y, p.z + 12, { col: '#6ab8ff' }); }
+    if (U.hp || U.mp) this.potCd = U.cd ?? 1;
+    if (U.fatigue) { const f = Math.min(FATIGUE_MAX - save.data.fatigue, U.fatigue); save.data.fatigue += f; toastMsg(`疲劳值恢复了 ${f} 点`, '#8aff9a'); }
+    if (U.buff) { p.buffs = p.buffs || {}; p.buffs['item_' + it.key] = { ...U.buff, t: U.buff.t }; toastMsg(`${D.name}：${D.desc || '效果发动'}`, '#ffe8a8'); }
+    if (U.open) this.openBox(D);
+    sfx.pickup(); bus.emit('itemUse', { item: D, key: it.key });
+    if ((U.hp || U.mp) && game.scene !== 'town') addFx({ x: p.x, y: p.y + 1, z: 0, dur: 0.5, add: true, col: U.hp ? '#e83a3a' : '#3a78ff', draw(c) { const k = this.t / this.dur, P = game.player; if (!P) return; c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = shade(this.col, 0.3, 0.5 * (1 - k)); for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + k * 3; c.beginPath(); c.arc(sx(P.x) + Math.cos(a) * 16, sy(P.y, 20 + k * 70), 2.5, 0, TAU); c.fill(); } c.restore(); } });
+    if (typeof save !== 'undefined' && game.scene === 'town') save.write();
+    return true;
+  },
+  canOpen(U) { const need = U.slots || 2; if (this.free('equip') < 1 || this.free('use') < 1 || this.free('mat') < 1) { toastMsg(`背包空间不足（至少各留 ${Math.min(need, 1)} 格）`, '#ff6a6a'); sfx.error(); return false; } return true; },
+  // 罐子 / 礼盒：按表随机开出物品
+  openBox(D) {
+    const got = [], U = D.use, lv = game.lvl;
+    const rolls = U.open(lv) || [];
+    for (const r of rolls) {
+      let it = null;
+      if (r.gold) { game.gold += r.gold; got.push(`${fmtNum(r.gold)} G`); bus.emit('gold', { n: r.gold }); continue; }
+      if (r.equip) it = rollEquip({ lvl: r.lvl || lv, rar: r.rar, slot: r.slot }); else if (r.key) it = makeItem(r.key, r.n || 1);
+      if (it) { giveItem(it); got.push(`<span class="q${it.rar || 0}">${it.name}${it.n > 1 ? ' ×' + it.n : ''}</span>`); if (it.rar >= 5) sfx.epic(); }
+    }
+    toastMsg(`打开了${D.name}：${got.map(s => s.replace(/<[^>]+>/g, '')).join('、') || '什么都没有……'}`, '#ffe8a8');
+    this.lastOpened = got;
   },
 };
 // 放进背包；背包满了就按出售价自动换成金币（避免奖励凭空消失）
 function giveItem(it) {
+  if (!it) return false;
   if (inv.add(it)) return true;
-  const g = Math.max(1, Math.round((it.price || 10) * 0.2 * (it.kind === 'equip' ? 1 : it.n || 1)));
+  const g = Math.max(1, sellPrice(it));
   game.gold += g; toastMsg(`背包已满，${it.name} 已自动出售（+${fmtNum(g)} G）`, '#ffd070'); return false;
 }
-const enhBonus = e => e <= 0 ? 0 : [0, 0.03, 0.06, 0.1, 0.14, 0.19, 0.25, 0.32, 0.4, 0.5, 0.62, 0.8, 1.0, 1.25, 1.55, 1.9][Math.min(15, e)];
-// 强化成功率（经典流传表）与失败惩罚（+3~+10 降 1 级；武器 +10→11 降为 +7、+11→12 降为 +8；+12 以上碎；防具首饰 +10 以上碎）
-const ENH_RATE = [1, 1, 1, 0.95, 0.9, 0.8, 0.75, 0.621, 0.537, 0.414, 0.339, 0.28, 0.207, 0.173, 0.136];
-const enhCost = (it) => ({ gold: Math.round((it.lvl * 30 + 80) * Math.pow(1.45, it.enh) * (1 + it.rar * 0.3)), crystal: Math.max(1, Math.round((it.lvl + 5) * 0.5 * Math.pow(1.25, it.enh))) });
-function tryEnhance(it, useGuard) {
-  const cost = enhCost(it);
-  if (game.gold < cost.gold || inv.count('crystal') < cost.crystal) return { err: '材料或金币不足' };
-  if (it.enh >= 15) return { err: '已经强化到最高等级' };
-  game.gold -= cost.gold; inv.take('crystal', cost.crystal);
-  const ok = Math.random() < ENH_RATE[it.enh];
-  if (ok) { it.enh++; return { ok: true, lvl: it.enh }; }
-  let res = { ok: false, from: it.enh };
-  if (useGuard && it.enh >= 10 && inv.take('guard')) { res.guard = true; if (it.enh >= 10) it.enh = 10; else it.enh = Math.max(0, it.enh - 1); }
-  else if (it.enh < 3) { /* +1~+3 失败不掉级 */ }
-  else if (it.enh < 10) it.enh--;
-  else if (it.slot === 'weapon' && it.enh === 10) it.enh = 7;
-  else if (it.slot === 'weapon' && it.enh === 11) it.enh = 8;
-  else res.broken = true;
-  res.lvl = it.enh; return res;
-}
-/* ---- 掉落 ---- */
-function rollRarity(bonus = 0, boss = false) {
-  const w = [50, 30, 13 + bonus * 20, 4.5 + bonus * 10, 1.2 + bonus * 4 + (boss ? 1.5 : 0), 0.25 + bonus * 1.5 + (boss ? 0.8 : 0)];
-  let r = Math.random() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < w.length; i++) { r -= w[i]; if (r <= 0) return i; } return 0;
-}
-function rollDrop(t, dg) {
-  const bonus = dg ? dg.D.drop : 0;
-  const n = t.boss ? 2 + (Math.random() < 0.5 ? 1 : 0) : t.elite ? (Math.random() < 0.6 ? 1 : 0) : (Math.random() < 0.07 ? 1 : 0);
-  for (let i = 0; i < n; i++) {
-    const rar = rollRarity(bonus, t.boss);
-    let it;
-    if (rar === 5) { const pool = EPICS.filter(e => !e.cls || e.cls === game.player.cls); const E = pick(pool); it = makeEquip(E.slot, Math.max(E.lvl, t.lvl), 5, game.player.cls, E); }
-    else it = makeEquip(pick(SLOTS), clamp(t.lvl + rndi(-1, 1), 1, 30), rar);
-    spawnDrop({ kind: 'item', item: it, x: t.x, y: t.y, z: Math.max(t.z, 20) });
+/* ---- 账号金库（多个角色共享，独立的 localStorage key） ---- */
+const bank = {
+  items: [], gold: 0, cap: 48, loadedKey: null,
+  key() { return save.key === 'dawnbreak_dev' ? 'dawnbreak_bank_dev' : 'dawnbreak_bank'; },
+  load() {
+    const k = this.key(); if (this.loadedKey === k) return this;
+    this.items = []; this.gold = 0;
+    try { const d = JSON.parse(localStorage.getItem(k) || 'null'); if (d) { this.items = (d.items || []).filter(Boolean).map(normalizeItem); this.gold = Math.max(0, d.gold | 0); } } catch (e) { /* 损坏就当空的 */ }
+    this.loadedKey = k; return this;
+  },
+  write() { try { localStorage.setItem(this.key(), JSON.stringify({ v: 1, items: this.items, gold: this.gold })); } catch (e) { /* 存储已满 */ } },
+};
+/* ---- 出售 / 回购 ---- */
+const sellPrice = it => { const D = ITEMS[it.key]; if (it.kind === 'quest' || (D && D.noSell)) return 0; return Math.max(1, Math.floor((it.price || 10) * (D && D.sellMul || 0.2))) * (it.kind === 'equip' ? 1 : it.n || 1); };
+const canSell = it => it.kind !== 'quest' && !(ITEMS[it.key] && ITEMS[it.key].noSell) && !it.locked;
+function sellItems(list) {
+  let g = 0; const sold = [];
+  for (const it of list) {
+    if (!canSell(it) || !inv.remove(it)) continue;
+    const p = sellPrice(it); g += p; sold.push(it);
+    const bb = save.data.buyback || (save.data.buyback = []); bb.unshift({ item: it, price: p }); if (bb.length > 12) bb.length = 12;
+    for (let i = 0; i < 6; i++) if (inv.quick[i] === it.key && !inv.count(it.key)) inv.quick[i] = null;
   }
-  if (Math.random() < (t.boss ? 1 : 0.06)) spawnDrop({ kind: 'item', item: makeConsumable(pick(['hpS', 'mpS', 'hpM', 'crystal']), t.boss ? 3 : 1), x: t.x, y: t.y, z: 20 });
+  if (!sold.length) return 0;
+  game.gold += g; sfx.coin(); bus.emit('sell', { items: sold, gold: g }); save.write();
+  return g;
 }
-/* ---- 图标（世界层与 DOM 共用） ---- */
+function buyBack(i) {
+  const bb = save.data.buyback || [], e = bb[i]; if (!e) return false;
+  if (game.gold < e.price) { toastMsg('金币不足', '#ff6a6a'); sfx.error(); return false; }
+  if (!inv.add(e.item)) { toastMsg('背包已满', '#ff6a6a'); sfx.error(); return false; }
+  game.gold -= e.price; bb.splice(i, 1); sfx.coin(); save.write(); return true;
+}
+/* ---- 耐久：地下城里受伤 / 倒下会掉耐久，0 时这件装备的属性失效（林纳斯 / 卡坤处修理） ---- */
+const itemActive = it => !it.durMax || it.dur > 0;
+const durItems = () => SLOTS.map(s => inv.equip[s]).filter(it => it && it.durMax);
+function wearDurability(n, all) {
+  const list = durItems(); if (!list.length) return;
+  let broke = false;
+  const hit = it => { if (it.dur <= 0) return; const before = it.dur; it.dur = Math.max(0, it.dur - n); if (it.dur === 0) { broke = true; toastMsg(`${it.name} 的耐久度为 0，属性失效了！请找林纳斯修理`, '#ff6a6a'); } else if (before > it.durMax * 0.2 && it.dur <= it.durMax * 0.2) toastMsg(`${it.name} 的耐久度快用完了`, '#ffb070'); };
+  if (all) list.forEach(hit); else hit(pick(list));
+  if (broke) recalcStats(game.player);
+}
+let hurtCount = 0;
+bus.on('playerHurt', () => { if (game.scene !== 'dungeon') return; if (++hurtCount % 6 === 0) wearDurability(1, false); });
+bus.on('playerDeath', () => { for (const it of durItems()) { const b = it.dur; it.dur = Math.max(0, it.dur - Math.ceil(it.durMax * 0.1)); if (b > 0 && it.dur === 0) toastMsg(`${it.name} 的耐久度为 0，属性失效了！`, '#ff6a6a'); } if (game.player) recalcStats(game.player); });
+bus.on('dungeonClear', () => { hurtCount = 0; });
+// 修理：身上 + 背包里的装备
+const repairList = () => [...SLOTS.map(s => inv.equip[s]), ...inv.items].filter(it => it && it.kind === 'equip' && it.durMax && it.dur < it.durMax);
+const repairCostOf = it => Math.ceil((it.durMax - it.dur) * (4 + it.lvl * 1.5) * (1 + it.rar * 0.35));
+function repairCost(list = repairList()) { let c = 0; for (const it of list) c += repairCostOf(it); return c; }
+function repairAll(verbose, list = repairList()) {
+  const c = repairCost(list);
+  if (!c) { if (verbose) toastMsg('装备都很完好，不需要修理', '#bfe8bf'); return false; }
+  if (game.gold < c) { toastMsg(`金币不足，修理需要 ${fmtNum(c)} G`, '#ff6a6a'); sfx.error(); return false; }
+  game.gold -= c; for (const it of list) it.dur = it.durMax;
+  recalcStats(game.player); sfx.coin(); save.write(); toastMsg(`修理完成，花费 ${fmtNum(c)} G`, '#ffd23a'); bus.emit('repair', { cost: c });
+  return true;
+}
+/* ---- 强化（官方经典规则） ----
+   成功率：+1~+3 100%、→+4 95%、→+5 90%、→+6 80%、→+7 75%、→+8 62.1%、→+9 53.7%、→+10 41.4%、→+11 33.9%、→+12 28%、→+13 20.7%、→+14 17.3%、→+15 13.6%、→+16 10.1%
+   失败：+3~+9 失败降 1 级；武器 +10 失败降为 +7、+11 失败降为 +8、+12 以上失败破碎；防具 / 首饰 / 特殊装备 +10 以上失败破碎
+   强化保护券：本来会破碎时装备不碎，但强化等级归零（券被消耗）
+   加成：武器 → 攻击力、防具 → 物理防御、首饰 → 魔法防御、特殊装备 → 四维 */
+const ENH_MAX = 16;
+const ENH_RATE = [1, 1, 1, 0.95, 0.9, 0.8, 0.75, 0.621, 0.537, 0.414, 0.339, 0.28, 0.207, 0.173, 0.136, 0.101];
+const enhBonus = e => e <= 0 ? 0 : [0, 0.03, 0.06, 0.1, 0.14, 0.19, 0.25, 0.32, 0.4, 0.5, 0.62, 0.8, 1.0, 1.25, 1.55, 1.9, 2.3][Math.min(ENH_MAX, e)];
+const canEnhance = it => it && it.kind === 'equip' && it.slot !== 'title' && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);
+const enhCost = it => ({ gold: Math.round((it.lvl * 24 + 60) * Math.pow(1.42, it.enh) * (1 + it.rar * 0.3)), crystal: Math.max(1, Math.round((it.lvl + 4) * 0.35 * Math.pow(1.25, it.enh))) });
+// 失败后的结果：{ lvl（失败后的强化等级）, broken }
+function enhFailResult(it) {
+  const e = it.enh;
+  if (e < 3) return { lvl: e, broken: false };
+  if (e < 10) return { lvl: e - 1, broken: false };
+  if (it.slot === 'weapon') { if (e === 10) return { lvl: 7, broken: false }; if (e === 11) return { lvl: 8, broken: false }; }
+  return { lvl: 0, broken: true };
+}
+// 强化加成的数值（tooltip 与属性计算共用）
+function enhStats(it) {
+  const e = it.enh || 0, o = {}; if (!e) return o;
+  const b = enhBonus(e), st = it.st || {};
+  if (it.slot === 'weapon') { for (const k of ['atk', 'matk', 'indep']) if (st[k]) o[k] = Math.round(st[k] * b); }
+  else if (ARMOR_SLOTS.includes(it.slot)) o.def = Math.round((st.def || 10) * b * 0.8);
+  else if (ACC_SLOTS.includes(it.slot)) o.mdef = Math.round((st.mdef || 10) * b * 0.9 + e * 4);
+  else if (SPECIAL_SLOTS.includes(it.slot)) o.allStat = Math.round(e * e * 0.35 + e);
+  return o;
+}
+function tryEnhance(it, useGuard, rnd01 = Math.random()) {
+  if (!canEnhance(it)) return { err: '这件物品不能强化' };
+  if (it.enh >= ENH_MAX) return { err: '已经强化到最高等级' };
+  const cost = enhCost(it);
+  if (game.gold < cost.gold) return { err: '金币不足' };
+  if (inv.count('crystal') < cost.crystal) return { err: '无色小晶块不足' };
+  game.gold -= cost.gold; inv.take('crystal', cost.crystal);
+  const from = it.enh;
+  let res;
+  if (rnd01 < ENH_RATE[it.enh]) { it.enh++; res = { ok: true, from, lvl: it.enh }; }
+  else {
+    const f = enhFailResult(it);
+    if (f.broken && useGuard && inv.take('guard', 1)) { it.enh = 0; res = { ok: false, from, lvl: 0, guard: true }; }
+    else if (f.broken) res = { ok: false, from, lvl: from, broken: true };
+    else { it.enh = f.lvl; res = { ok: false, from, lvl: it.enh }; }
+  }
+  if (res.broken) {   // 装备破碎：从身上 / 背包里移除，返还一点无色小晶块
+    for (const s of SLOTS) if (inv.equip[s] === it) delete inv.equip[s];
+    inv.remove(it); res.refund = Math.max(1, Math.round(it.lvl * 2 + cost.crystal * 0.5)); giveItem(makeItem('crystal', res.refund));
+  }
+  if (game.player) recalcStats(game.player);
+  bus.emit('enhance', { item: it, ok: res.ok, lvl: res.lvl, broken: !!res.broken });
+  if (res.ok && res.lvl >= 10) toastMsg(`【公告】勇士 ${save.data ? save.data.name : ''} 将 ${it.name} 强化到了 +${res.lvl}！`, '#ffd23a');
+  save.write();
+  return res;
+}
+/* ---- 分解：装备 → 材料（诺顿 / 林纳斯） ---- */
+function disassembleYield(it) {
+  const L = it.lvl, r = it.rar, out = {};
+  const add = (k, n) => { if (n > 0 && ITEMS[k]) out[k] = (out[k] || 0) + n; };
+  const metal = it.slot === 'weapon' || it.atype === 'heavy' || it.atype === 'plate';
+  const basic = ACC_SLOTS.includes(it.slot) || SPECIAL_SLOTS.includes(it.slot) ? 'm_bone' : metal ? 'm_iron' : it.atype === 'leather' || it.atype === 'light' ? 'm_leather' : 'm_cloth';
+  const seed = mulberry(it.id || 1), R = () => seed();
+  add('crystal', Math.round([1.5, 3, 6, 10, 14, 18][r] + L * [0.15, 0.25, 0.35, 0.45, 0.5, 0.6][r]));
+  if (r <= 1) add(basic, 1 + Math.floor(R() * 2) + Math.floor(L / 12));
+  if (r >= 2) add('m_elem', r - 1 + Math.floor(R() * 2) + Math.floor(L / 15));
+  if (r >= 2 && R() < 0.4) add(pick(['c_red', 'c_blue', 'c_white', 'c_black']), 1 + Math.floor(L / 10));
+  if (r >= 3) add('m_diamond', r === 3 ? (R() < 0.5 ? 1 : 0) : r - 2);
+  if (r >= 5) add('m_soul', 1);
+  if (it.enh) add('crystal', it.enh * 3);
+  return out;
+}
+const canDisassemble = it => it && it.kind === 'equip' && it.slot !== 'title' && !(ITEMS[it.key] && ITEMS[it.key].noDisassemble) && !it.locked;
+const disassembleFee = it => Math.ceil(it.lvl * (it.rar + 1) * 2.5);
+function disassemble(list) {
+  list = list.filter(it => canDisassemble(it) && inv.items.includes(it));
+  const fee = list.reduce((s, it) => s + disassembleFee(it), 0);
+  if (!list.length) return null;
+  if (game.gold < fee) { toastMsg(`金币不足，分解手续费 ${fmtNum(fee)} G`, '#ff6a6a'); sfx.error(); return null; }
+  const total = {};
+  for (const it of list) { const y = disassembleYield(it); for (const k in y) total[k] = (total[k] || 0) + y[k]; inv.remove(it); bus.emit('disassemble', { item: it, mats: y }); }
+  game.gold -= fee;
+  for (const k in total) giveItem(makeItem(k, total[k]));
+  sfx.coin(); save.write();
+  return { mats: total, fee, n: list.length };
+}
+/* ---------------- 图标 ---------------- */
+// 图标美术 key：物品库的 icon 字段 > 按类型的通用图 > 旧图标 > 代码绘制
+function itemArtKey(it) {
+  const D = ITEMS[it.key] || {};
+  const cands = [];
+  if (D.icon) cands.push('icon/' + D.icon);
+  if (it.kind === 'equip') {
+    if (it.slot === 'weapon') cands.push(`icon/item_w_${it.wtype || CLASS_START_WEAPON[it.cls] || 'katana'}`, `icon/w_${it.cls || 'sword'}`);
+    else if (ARMOR_SLOTS.includes(it.slot)) cands.push(`icon/item_a_${it.atype || 'light'}_${it.slot}`, `icon/${it.slot}`);
+    else if (ACC_SLOTS.includes(it.slot)) cands.push(`icon/item_${it.slot}${it.rar >= 3 ? '2' : ''}`, `icon/item_${it.slot}`, `icon/${it.slot}`);
+    else cands.push(`icon/item_${it.slot}`);
+  } else cands.push(`icon/item_${it.key}`, `icon/${it.key}`, it.kind === 'quest' ? 'icon/item_quest' : null);
+  for (const k of cands) if (k && IMG[k]) return k;
+  return cands.find(k => k && typeof ASSET_SRC !== 'undefined' && ASSET_SRC[k]) || null;
+}
+// 旧图标（带彩色方块底）要画大一点把底色裁掉；新图标是透明底的物体
+const isOldIcon = k => k && !k.startsWith('icon/item_');
 function drawItemIcon(c, it, s = 16) {
-  const art = IMG[itemArtKey(it)]; if (art) { c.drawImage(art, -s * 0.62, -s * 0.62, s * 1.24, s * 1.24); return; }   // 手绘图标
+  const k = itemArtKey(it), art = k && IMG[k];
+  if (art) { const z = isOldIcon(k) ? 1.24 : 1.12; c.drawImage(art, -s * z / 2, -s * z / 2, s * z, s * z); return; }
+  drawItemVector(c, it, s);
+}
+// 没有美术时的代码绘制（兜底）
+function drawItemVector(c, it, s) {
   c.save(); c.scale(s / 32, s / 32); c.lineJoin = 'round';
-  const R = RARITY[it.rar || 0].col;
-  const metal = it.rar >= 5 ? '#ffe070' : it.rar >= 3 ? '#e8c0ff' : '#c8d0dc';
+  const R = RARITY[it.rar || 0].col, metal = it.rar >= 5 ? '#ffe070' : it.rar >= 3 ? '#e8c0ff' : '#c8d0dc';
   const ol = () => { c.lineWidth = 2; c.strokeStyle = OUTLINE; c.stroke(); };
   if (it.kind === 'equip') {
     switch (it.slot) {
-      case 'weapon':
-        if (it.cls === 'gun') { c.fillStyle = metal; c.fillRect(-10, -8, 22, 7); ol(); c.fillStyle = '#6a4a2a'; c.beginPath(); c.moveTo(-10, -2); c.lineTo(-4, -2); c.lineTo(-7, 10); c.lineTo(-13, 10); c.closePath(); c.fill(); ol(); }
-        else if (it.cls === 'mage') { c.fillStyle = '#7a5030'; c.fillRect(-2, -6, 4, 22); ol(); c.fillStyle = it.rar >= 3 ? '#ff6ad0' : '#6ad0ff'; c.beginPath(); c.arc(0, -10, 6, 0, TAU); c.fill(); ol(); }
-        else { c.rotate(-0.7); c.fillStyle = metal; c.beginPath(); c.moveTo(-2, -16); c.lineTo(2, -16); c.lineTo(2.5, 8); c.lineTo(-2.5, 8); c.closePath(); c.fill(); ol(); c.fillStyle = '#d9b25a'; c.fillRect(-6, 8, 12, 3); c.fillStyle = '#3a2a20'; c.fillRect(-1.5, 11, 3, 7); }
-        break;
-      case 'head': c.fillStyle = metal; c.beginPath(); c.ellipse(-7, 0, 8, 6, -0.3, 0, TAU); c.fill(); ol(); c.beginPath(); c.ellipse(7, 0, 8, 6, 0.3, 0, TAU); c.fill(); ol(); break;
-      case 'top': c.fillStyle = metal; c.beginPath(); c.moveTo(-12, -10); c.lineTo(12, -10); c.lineTo(9, 12); c.lineTo(-9, 12); c.closePath(); c.fill(); ol(); c.fillStyle = R; c.fillRect(-2, -8, 4, 18); break;
-      case 'bottom': c.fillStyle = metal; c.beginPath(); c.moveTo(-9, -10); c.lineTo(9, -10); c.lineTo(10, 13); c.lineTo(2, 13); c.lineTo(0, 0); c.lineTo(-2, 13); c.lineTo(-10, 13); c.closePath(); c.fill(); ol(); break;
-      case 'belt': c.fillStyle = '#7a5030'; c.fillRect(-13, -4, 26, 8); ol(); c.fillStyle = metal; c.fillRect(-4, -5, 8, 10); ol(); break;
-      case 'shoes': c.fillStyle = '#6a4a30'; c.beginPath(); c.moveTo(-8, -12); c.lineTo(0, -12); c.lineTo(1, 4); c.lineTo(12, 6); c.lineTo(12, 12); c.lineTo(-8, 12); c.closePath(); c.fill(); ol(); c.fillStyle = metal; c.fillRect(-8, 8, 20, 3); break;
-      case 'neck': c.strokeStyle = metal; c.lineWidth = 2.5; c.beginPath(); c.arc(0, -4, 10, 0.2, Math.PI - 0.2); c.stroke(); c.fillStyle = R; c.beginPath(); c.moveTo(0, 6); c.lineTo(5, 11); c.lineTo(0, 16); c.lineTo(-5, 11); c.closePath(); c.fill(); ol(); break;
-      case 'bracelet': c.strokeStyle = OUTLINE; c.lineWidth = 7; c.beginPath(); c.ellipse(0, 0, 11, 8, 0, 0, TAU); c.stroke(); c.strokeStyle = metal; c.lineWidth = 4; c.stroke(); c.fillStyle = R; c.beginPath(); c.arc(0, -8, 3, 0, TAU); c.fill(); break;
-      case 'ring': c.strokeStyle = OUTLINE; c.lineWidth = 6; c.beginPath(); c.arc(0, 3, 8, 0, TAU); c.stroke(); c.strokeStyle = metal; c.lineWidth = 3; c.stroke(); c.fillStyle = R; c.beginPath(); c.arc(0, -6, 4.5, 0, TAU); c.fill(); ol(); break;
+      case 'weapon': c.rotate(-0.7); c.fillStyle = metal; c.beginPath(); c.moveTo(-2, -16); c.lineTo(2, -16); c.lineTo(2.5, 8); c.lineTo(-2.5, 8); c.closePath(); c.fill(); ol(); c.fillStyle = '#d9b25a'; c.fillRect(-6, 8, 12, 3); c.fillStyle = '#3a2a20'; c.fillRect(-1.5, 11, 3, 7); break;
+      case 'title': c.fillStyle = '#ffd23a'; c.beginPath(); c.arc(0, 2, 10, 0, TAU); c.fill(); ol(); c.fillStyle = R; c.fillRect(-4, -14, 8, 8); break;
+      case 'neck': case 'bracelet': case 'ring': case 'stone': case 'support': c.strokeStyle = OUTLINE; c.lineWidth = 6; c.beginPath(); c.arc(0, 3, 8, 0, TAU); c.stroke(); c.strokeStyle = metal; c.lineWidth = 3; c.stroke(); c.fillStyle = R; c.beginPath(); c.arc(0, -6, 4.5, 0, TAU); c.fill(); ol(); break;
+      default: c.fillStyle = metal; c.beginPath(); c.moveTo(-12, -10); c.lineTo(12, -10); c.lineTo(9, 12); c.lineTo(-9, 12); c.closePath(); c.fill(); ol(); c.fillStyle = R; c.fillRect(-2, -8, 4, 18);
     }
+  } else if (it.kind === 'mat' || it.kind === 'quest') {
+    c.fillStyle = (ITEMS[it.key] || {}).col || '#dfe8f0'; c.beginPath(); c.moveTo(0, -12); c.lineTo(9, -2); c.lineTo(4, 12); c.lineTo(-6, 10); c.lineTo(-9, -3); c.closePath(); c.fill(); ol();
   } else {
-    const C = CONSUMABLES[it.key] || {};
-    if (it.key === 'crystal') { c.fillStyle = '#dfe8f0'; c.beginPath(); c.moveTo(0, -12); c.lineTo(9, -2); c.lineTo(4, 12); c.lineTo(-6, 10); c.lineTo(-9, -3); c.closePath(); c.fill(); ol(); c.fillStyle = '#fff'; c.fillRect(-3, -6, 3, 6); }
-    else if (it.key === 'guard') { c.fillStyle = '#e8e0c8'; c.fillRect(-10, -12, 20, 24); ol(); c.fillStyle = '#6ad0ff'; c.beginPath(); c.moveTo(0, -7); c.lineTo(7, -3); c.lineTo(5, 6); c.lineTo(0, 9); c.lineTo(-5, 6); c.lineTo(-7, -3); c.closePath(); c.fill(); ol(); }
-    else if (it.key === 'coin') { c.fillStyle = '#ffd23a'; c.beginPath(); c.arc(0, 0, 11, 0, TAU); c.fill(); ol(); c.fillStyle = '#a07010'; c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.fillText('复', 0, 5); }
-    else { const z = C.size || 1; c.scale(z, z); c.fillStyle = 'rgba(220,230,240,.6)'; c.beginPath(); c.moveTo(-3, -12); c.lineTo(3, -12); c.lineTo(3, -6); c.quadraticCurveTo(10, -3, 9, 5); c.quadraticCurveTo(8, 12, 0, 12); c.quadraticCurveTo(-8, 12, -9, 5); c.quadraticCurveTo(-10, -3, -3, -6); c.closePath(); c.fill(); ol(); c.fillStyle = C.col || '#f33'; c.beginPath(); c.moveTo(-8, 2); c.quadraticCurveTo(0, -1, 8, 2); c.quadraticCurveTo(8, 11, 0, 11); c.quadraticCurveTo(-8, 11, -8, 2); c.fill(); c.fillStyle = '#8a5a30'; c.fillRect(-3, -15, 6, 4); c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(-5, -2, 2, 6); }
+    const col = (ITEMS[it.key] || {}).col || '#f33';
+    c.fillStyle = 'rgba(220,230,240,.6)'; c.beginPath(); c.arc(0, 3, 10, 0, TAU); c.fill(); ol(); c.fillStyle = col; c.beginPath(); c.arc(0, 5, 7, 0, TAU); c.fill(); c.fillStyle = '#8a5a30'; c.fillRect(-3, -11, 6, 5);
   }
   c.restore();
 }
-const itemArtKey = it => it.kind === 'equip' ? (it.slot === 'weapon' ? `icon/w_${it.cls || 'sword'}` : `icon/${it.slot}`) : `icon/${it.key}`;
+// 带底色和品级边框的图标 URL（<img src> 用）
 const iconUrlCache = new Map();
-function itemIconURL(it, size = 96) {
-  const key = (it.kind === 'equip' ? it.slot + (it.cls || '') + it.rar : it.key) + size;
-  if (iconUrlCache.has(key)) return iconUrlCache.get(key);
-  const [cv, c] = offCanvas(size, size);
-  const g = c.createLinearGradient(0, 0, 0, size); g.addColorStop(0, '#2a2230'); g.addColorStop(1, '#140f18'); c.fillStyle = g; c.fillRect(0, 0, size, size);
-  c.translate(size / 2, size / 2); drawItemIcon(c, it, size * 0.8);
-  const url = cv.toDataURL(); iconUrlCache.set(key, url); return url;
+function itemIconSrc(it, size = 64) {
+  if (typeof it === 'string') it = ITEMS[it] ? { ...ITEMS[it], key: it } : { key: it, kind: 'use', rar: 0 };
+  if (!it) return '';
+  const k = itemArtKey(it), ck = `${k || it.slot || it.key}|${it.rar || 0}|${size}`;
+  if (iconUrlCache.has(ck)) return iconUrlCache.get(ck);
+  const [cv, c] = offCanvas(size, size), r = it.rar || 0, col = RARITY[r].col;
+  const g = c.createLinearGradient(0, 0, 0, size); g.addColorStop(0, r >= 5 ? '#3a2c10' : '#2a2430'); g.addColorStop(1, r >= 5 ? '#1a1206' : '#120e16');
+  c.fillStyle = g; c.fillRect(0, 0, size, size);
+  if (r >= 2) { const rg = c.createRadialGradient(size / 2, size / 2, 2, size / 2, size / 2, size * 0.62); rg.addColorStop(0, shade(col, 0, r >= 4 ? 0.38 : 0.22)); rg.addColorStop(1, shade(col, 0, 0)); c.fillStyle = rg; c.fillRect(0, 0, size, size); }
+  c.save(); c.translate(size / 2, size / 2); drawItemIcon(c, it, size * 0.8); c.restore();
+  c.strokeStyle = r ? col : '#5a5060'; c.lineWidth = Math.max(1.5, size / 28); c.strokeRect(c.lineWidth / 2, c.lineWidth / 2, size - c.lineWidth, size - c.lineWidth);
+  const url = cv.toDataURL();
+  if (!k || IMG[k]) iconUrlCache.set(ck, url);   // 美术还没加载完时不缓存
+  return url;
 }
+const itemIconURL = (it, size = 96) => itemIconSrc(it, size);   // 旧名字
 function drawQuickItem(c, i, x, y, s) {
   const key = inv.quick[i]; if (!key) return;
   const n = inv.count(key);

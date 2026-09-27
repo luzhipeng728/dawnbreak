@@ -34,6 +34,17 @@ ui/menus.js
 ui/npc.js
 ui/dnd.js
 game/items.js
+content/items/gear.js
+content/items/misc.js
+content/items/epics.js
+content/items/shops.js
+content/items/droptables.js
+ui/items/common.js
+ui/items/inv.js
+ui/items/status.js
+ui/items/shop.js
+ui/items/smith.js
+ui/items/storage.js
 game/save.js
 content/classes/swordsman.js
 content/world/towns.js

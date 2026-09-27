@@ -126,6 +126,7 @@ menus.drawUI = function (c) {
   for (const f of netUiHooks) { try { f(c, dt); } catch (e) { console.error('联机界面绘制出错', e); } }
 };
 addStyle(`
+#chatbox[hidden]{display:none}
 #chatbox{position:absolute;left:.8%;bottom:39.5%;width:27%;max-width:30em;pointer-events:auto;display:flex;flex-direction:column;gap:.2em;font-size:.82em;z-index:2;transition:opacity .4s}
 #chatbox.quiet:not(.hover):not(.open){opacity:.45}
 #chatbox.quiet:not(.hover):not(.open) .chatlog{max-height:4.4em}

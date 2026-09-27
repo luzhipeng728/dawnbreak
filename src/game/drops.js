@@ -1,12 +1,61 @@
 /* =====================================================================
    16. 掉落物：金币（自动拾取）、装备 / 消耗品（站上去按 X 拾取，头顶显示品级颜色的名字，史诗有金色光柱）
+   掉落表：按地下城等级与难度随机；领主有专属掉落（content/items/droptables.js 的 defineDropTable）
    ===================================================================== */
 const drops = [];
+// 品级颜色（官方）：普通白、高级蓝、稀有紫、神器粉、传说橙、史诗金
 const RARITY = [
-  { name: '普通', col: '#e8e8e8' }, { name: '高级', col: '#68b8ff' }, { name: '稀有', col: '#b36bff' },
-  { name: '神器', col: '#ff6bd0' }, { name: '传说', col: '#ff9a2a' }, { name: '史诗', col: '#ffd23a' },
+  { name: '普通', col: '#ffffff' }, { name: '高级', col: '#68d5ed' }, { name: '稀有', col: '#b36bff' },
+  { name: '神器', col: '#ff55ff' }, { name: '传说', col: '#ff7800' }, { name: '史诗', col: '#ffb400' },
 ];
+const DROP_TABLES = {};
+// defineDropTable(地下城 id, { boss: [[物品 key, 几率, 数量?]...], mats: [[key, 几率, 数量]...], epics: [key...] })
+function defineDropTable(id, def) { DROP_TABLES[id] = { boss: [], mats: [], ...def }; }
+function rollRarity(bonus = 0, boss = false) {
+  const w = [50, 30, 13 + bonus * 20, 4.5 + bonus * 10, 1.2 + bonus * 4 + (boss ? 1.5 : 0), 0.25 + bonus * 1.5 + (boss ? 0.8 : 0)];
+  let r = Math.random() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < w.length; i++) { r -= w[i]; if (r <= 0) return i; } return 0;
+}
+// 掉落装备的等级：地下城推荐等级段内随机（不会高于玩家太多，否则穿不上）
+const dropLvl = (t, dg) => { const L = dg ? dg.def.lvl : [t.lvl, t.lvl]; return clamp(rndi(L[0], L[1] + (t.boss ? 1 : 0)), 1, Math.max(L[1] + 1, game.lvl + 2)); };
+function rollEpic(lvl) {
+  const cls = game.player ? game.player.cls : 'sword';
+  const pool = EPICS.filter(E => E.lvl <= lvl + 3 && (!E.cls || E.cls === cls) && !(ITEMS[E.key] && ITEMS[E.key].noDrop));
+  const E = pool.length ? pick(pool) : null;
+  return E ? makeItem(E.key) : null;
+}
+// 没配掉落表的地下城（新加的地下城）：按推荐等级自动生成——等级段内的套装部件和史诗，领主小几率掉落
+function autoDropTable(def) {
+  if (DROP_TABLES[def.id]) return DROP_TABLES[def.id];
+  const lo = def.lvl[0] - 2, hi = def.lvl[1] + 3, boss = [];
+  for (const D of GEAR) if (D.lvl >= lo && D.lvl <= hi && !D.noDrop && (D.set || D.rar === 5)) boss.push([D.key, D.rar === 5 ? 0.008 : 0.025]);
+  const lv = def.lvl[1];
+  defineDropTable(def.id, { boss, mats: [['crystal', 0.07, 3 + Math.floor(lv / 5)], [lv >= 12 ? 'm_elem' : 'm_iron', 0.015, 1], [pick(['c_red', 'c_blue', 'c_white', 'c_black']), 0.02, 1]], auto: true });
+  return DROP_TABLES[def.id];
+}
+function rollDrop(t, dg) {
+  const bonus = dg ? dg.D.drop : 0, T = dg && autoDropTable(dg.def);
+  const n = t.boss ? 2 + (Math.random() < 0.5 ? 1 : 0) : t.elite ? (Math.random() < 0.6 ? 1 : 0) : (Math.random() < 0.07 ? 1 : 0);
+  for (let i = 0; i < n; i++) {
+    const rar = rollRarity(bonus, t.boss), lvl = dropLvl(t, dg);
+    const it = rar === 5 ? rollEpic(lvl) || rollEquip({ lvl, rar: 4 }) : rollEquip({ lvl, rar });
+    if (it) spawnDrop({ kind: 'item', item: it, x: t.x, y: t.y, z: Math.max(t.z, 20) });
+  }
+  // 领主专属掉落（套装部件、专属首饰、史诗等）
+  if (t.boss && T) for (const [key, p, cnt] of T.boss) if (Math.random() < p * (1 + bonus * 2)) { const it = makeItem(key, cnt || 1); if (it) spawnDrop({ kind: 'item', item: it, x: t.x + rnd(-20, 20), y: t.y, z: 30 }); }
+  // 材料 / 消耗品
+  if (Math.random() < (t.boss ? 1 : t.elite ? 0.3 : 0.06)) spawnDrop({ kind: 'item', item: makeItem(pick(['hpS', 'mpS', 'hpM', 'crystal']), t.boss ? 3 : 1), x: t.x, y: t.y, z: 20 });
+  if (T) for (const [key, p, cnt] of T.mats) if (Math.random() < p * (t.boss ? 4 : t.elite ? 2 : 1)) { const it = makeItem(key, cnt || 1); if (it) spawnDrop({ kind: 'item', item: it, x: t.x, y: t.y, z: 20 }); }
+}
+// 翻牌奖励（结算界面）：gold = 黄金卡牌。返回 { gold } 或 { item }
+function rollCardReward(dg, gold) {
+  const r = Math.random(), lv = dg.def.lvl[1];
+  if (r < 0.4) return { gold: Math.round((80 + lv * 45) * (1 + dg.diff * 0.5) * rnd(0.8, 1.6) * (gold ? 2.5 : 1)) };
+  if (r < 0.65) return { item: makeItem(pick(['hpM', 'mpM', 'crystal', 'crystal', 'elixir', 'fatigue']), pick([1, 2, 3, 5])) };
+  const rar = Math.max(1, Math.min(5, rollRarity(0.15 + dg.D.drop + (gold ? 0.25 : 0), gold)));
+  return { item: (rar === 5 && rollEpic(lv)) || rollEquip({ lvl: rndi(dg.def.lvl[0], lv), rar: Math.min(rar, 4) }) || makeItem('crystal', 5) };
+}
 function spawnCoins(e, amount) {
+  const p = game.player; amount = Math.round(amount * (1 + (p && p.goldUp || 0)));
   const n = clamp(Math.ceil(amount / 40), 1, 6);
   for (let i = 0; i < n; i++) spawnDrop({ kind: 'gold', amount: Math.ceil(amount / n), x: e.x, y: e.y, z: Math.max(e.z, 20) });
 }
@@ -35,9 +84,10 @@ function tryPickup(p) {
   let best = null, bd = 99;
   for (const d of drops) if (d.kind !== 'gold' && d.t > 0.45) { const dd = Math.abs(p.x - d.x) + Math.abs(p.y - d.y); if (dd < 30 && dd < bd) { bd = dd; best = d; } }
   if (!best) return false;
-  if (!inv.add(best.item)) { toastMsg('背包已满'); return false; }
+  if (!inv.add(best.item)) { toastMsg('背包已满', '#ff6a6a'); return false; }
   drops.splice(drops.indexOf(best), 1); sfx.pickup(); bus.emit('pickup', { item: best.item });
-  toastMsg(`获得 ${best.item.name}`, RARITY[best.item.rar || 0].col);
+  toastMsg(`获得 ${best.item.name}${best.item.n > 1 ? ' ×' + best.item.n : ''}`, RARITY[best.item.rar || 0].col);
+  if ((best.item.rar || 0) >= 5) sfx.epic();
   return true;
 }
 function drawDropShadows(c) { for (const d of drops) { c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(sx(d.x), sy(d.y, 0), 7, 2.5, 0, 0, TAU); c.fill(); } }
@@ -53,15 +103,17 @@ function drawDrop(c) {
   const it = d.item, R = RARITY[it.rar || 0];
   if ((it.rar || 0) >= 5) {   // 史诗光柱
     c.save(); c.globalCompositeOperation = 'lighter';
-    const g = c.createLinearGradient(0, Y - 220, 0, Y); g.addColorStop(0, 'rgba(255,210,60,0)'); g.addColorStop(0.7, 'rgba(255,210,60,.35)'); g.addColorStop(1, 'rgba(255,240,160,.8)');
+    const g = c.createLinearGradient(0, Y - 220, 0, Y); g.addColorStop(0, 'rgba(255,190,40,0)'); g.addColorStop(0.7, 'rgba(255,190,40,.35)'); g.addColorStop(1, 'rgba(255,236,150,.8)');
     c.fillStyle = g; const w = 10 + Math.sin(d.t * 4) * 2; c.fillRect(X - w / 2, Y - 220, w, 220);
     c.restore();
   } else if ((it.rar || 0) >= 2) {
     c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = shade(R.col, 0, 0.25 + 0.1 * Math.sin(d.t * 5)); c.beginPath(); c.ellipse(X, Y - 2, 12, 4, 0, 0, TAU); c.fill(); c.restore();
   }
   c.save(); c.translate(X, Y - 6 - Math.abs(Math.sin(d.t * 3)) * 2); drawItemIcon(c, it, 14); c.restore();
-  if (d.near || (it.rar || 0) >= 3 || input.is('confirm')) {
-    c.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = '#000'; c.strokeText(it.name, X, Y - 20); c.fillStyle = R.col; c.fillText(it.name, X, Y - 20);
+  const showNames = typeof uiPref === 'function' ? uiPref('dropNames') : false;
+  if (d.near || (it.rar || 0) >= 3 || showNames || input.is('confirm')) {
+    const txt = it.name + (it.n > 1 ? ` ×${it.n}` : '');
+    c.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = '#000'; c.strokeText(txt, X, Y - 20); c.fillStyle = R.col; c.fillText(txt, X, Y - 20);
   }
 }
 let toastList = [];

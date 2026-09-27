@@ -7,6 +7,8 @@ function h(tag, attrs = {}, ...kids) {
   for (const c of kids.flat()) if (c != null) e.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(String(c)) : c);
   return e;
 }
+// 各模块自带样式：addStyle(css)（新窗口的 CSS 写在自己的 JS 文件里，不用都挤进 shell_top.html）
+function addStyle(css) { document.head.appendChild(h('style', {}, css)); }
 const statTxt = { atk: '攻击力', def: '防御力', hp: 'HP', mp: 'MP', str: '力量', crit: '暴击率', critDmg: '暴击伤害', spd: '速度' };
 const fmtStat = (k, v) => (k === 'crit' || k === 'critDmg' || k === 'spd') ? `+${(v * 100).toFixed(1)}%` : `+${fmtNum(v)}`;
 const shopStock = {};
@@ -92,10 +94,8 @@ const menus = {
       const start = () => { this.close('newgame'); save.newGame(id); startGame(id); };
       const card = h('div', { class: 'clscard' + (C.ready === false ? ' off' : ''), onclick: () => {
         sfx.click();
-        if (!save.data) { start(); return; }
-        // 已有存档：先确认，避免一次点击就覆盖掉全部进度
-        confirmBox.replaceChildren(h('div', { style: 'color:#ffb0a0;font-weight:800' }, `开始新冒险会覆盖当前存档（Lv.${save.data.lvl} ${CLASSES[save.data.cls] ? CLASSES[save.data.cls].name : ''}），且无法恢复。`),
-          h('div', { class: 'row', style: 'justify-content:center;margin-top:.6em' }, h('button', { class: 'btn red', onclick: start }, `确定，以${C.name}重新开始`), h('button', { class: 'btn', onclick: () => confirmBox.replaceChildren() }, '取消')));
+        if (save.chars.length >= MAX_CHARS) { confirmBox.replaceChildren(h('div', { style: 'color:#ffb0a0;font-weight:800' }, `角色栏已满（最多 ${MAX_CHARS} 个角色）`)); return; }
+        start();
       } },
         cv, h('h3', {}, C.name), h('p', {}, C.desc), C.ready === false ? h('p', { class: 'gold' }, '即将开放') : null);
       if (IMG[`class/${id}`]) cv.replaceWith(Object.assign(new Image(), { src: IMG[`class/${id}`].src, className: 'clsart' }));   // 手绘立绘
@@ -120,7 +120,7 @@ const menus = {
       this.dgSel = sel.id; this.dgDiff = diff;
       if (listEl) listEl.querySelectorAll('.dgi').forEach(e => e.classList.toggle('sel', e.dataset.id === sel.id));
       const un = save.data.unlocked[sel.id] || 0, best = save.data.best[sel.id + ':' + diff], low = game.lvl < sel.lvl[0] - 2;
-      detail.replaceChildren(
+      detail.replaceChildren(...[
         h('div', { style: 'font-size:1.6em;font-weight:900;color:#ffe8a8' }, sel.name, sel.hidden ? h('span', { class: 'small', style: 'color:#e0a0ff;margin-left:.6em' }, '隐藏地下城') : null),
         h('div', { class: 'dim small' }, `推荐等级 Lv.${sel.lvl[0]}~${sel.lvl[1]} · 领主：${MON[sel.boss.kind].name}（Lv.${sel.boss.lvl}）· 房间 ${sel.rooms}（最少消耗疲劳 ${sel.rooms}）`),
         h('div', { style: 'line-height:1.6;min-height:4.5em' }, sel.desc),
@@ -129,11 +129,11 @@ const menus = {
         h('div', { class: 'small dim' }, un < 3 ? `解锁下一难度：${['通关普通', '冒险难度评价 B 以上', '勇士难度评价 S 以上'][un]}` : '已解锁全部难度'),
         h('div', { class: 'row' }, h('span', {}, '最佳评价：'), h('b', { style: `color:${best ? RANK_COL[best] : '#777'};font-size:1.4em` }, best || '—'), h('span', { class: 'sp' }), h('span', { class: 'small' }, `疲劳 ${save.data.fatigue}/${FATIGUE_MAX}`)),
         h('div', { class: 'row' }, h('button', { class: 'btn big' + (save.data.fatigue < sel.rooms ? ' off' : ''), onclick: () => { sfx.click(); if (enterDungeon(sel.id, diff)) this.close('dungeon'); } }, '进入地下城'), h('button', { class: 'btn', onclick: () => { sfx.click(); this.close('dungeon'); } }, '取消')),
-      );
+      ].filter(Boolean));
     };
     const listEl = ids.length > 1 ? h('div', { class: 'dglist' }, ids.map(id => { const d = DUNGEONS[id]; return h('div', { class: 'dgi', 'data-id': d.id, onclick: () => { sel = d; diff = Math.min(diff, save.data.unlocked[d.id] || 0); sfx.click(); render(); } }, h('b', {}, d.name), h('small', {}, `Lv.${d.lvl[0]}~${d.lvl[1]}`)); })) : null;
     if (listEl) body.append(listEl); body.append(detail); render();
-    return this.win(`${S.area || S.name || ''} · ${sel.name}`, body, { w: listEl ? 44 : 32 });
+    return this.win(`${S.name || ''} · ${sel.name}`, body, { w: listEl ? 44 : 32 });
   },
 
   /* ---------------- 结算 + 翻牌 ---------------- */

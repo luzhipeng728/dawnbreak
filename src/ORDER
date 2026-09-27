@@ -1,6 +1,7 @@
 # 构建顺序（所有文件共享同一个作用域，后面的文件可以使用前面定义的全局函数 / 常量）
 # engine：引擎层（数学、输入、画布、骨骼、特效、音频、实体与战斗结算、投射物）
 engine/core.js
+engine/events.js
 engine/gfx.js
 engine/rig.js
 models/humanoid.js
@@ -32,6 +33,8 @@ game/world.js
 game/game.js
 ui/hud.js
 ui/menus.js
+ui/npc.js
+ui/dnd.js
 game/items.js
 game/save.js
 content/classes/swordsman.js

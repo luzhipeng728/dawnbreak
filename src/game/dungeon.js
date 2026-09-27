@@ -57,6 +57,7 @@ class Dungeon {
     ents.push(p);
     this.enter(this.layout.start, null);
     music.play(this.def.bgm || 'dungeon');
+    bus.emit('dungeonEnter', { id: this.def.id, diff: this.diff });
   }
   // 进入房间：from 为进来的方向（'left' 表示从本房间左门进来）
   enter(room, fromDir) {
@@ -76,6 +77,7 @@ class Dungeon {
     cam.x = clamp(p.x - WW / 2, 0, W - WW);
     if (!room.cleared) this.spawnRoom(room, W, first); else this.onCleared(true);
     this.doorsOpen = room.cleared;
+    if (first) bus.emit('roomEnter', { id: this.def.id, room, type: room.type });
     if (room.type === 'boss' && !room.cleared) { music.play(this.def.bossBgm || 'boss'); toastMsg(`领主房 · ${MON[this.def.boss.kind].name}`, '#ff6a4a'); }
   }
   spawnRoom(room, W, first) {
@@ -135,6 +137,7 @@ class Dungeon {
   onHit(t, dmg, counter, back) { if (t.st === 'air' || t.z > 4) this.aerial++; if (counter) this.counter++; if (back) this.back++; game.lastTarget = t; game.lastTargetT = game.t; }
   onKill(t, a) {
     this.kills++;
+    bus.emit('kill', { kind: t.kind, lvl: t.lvl, boss: !!t.boss, elite: !!t.elite, dungeon: this.def.id });
     if (t.noLoot) return;
     const over = a.team === 'p' && t.lastDmg > t.hpMax * 0.3;
     if (over) { this.overkill++; fxText('OVER KILL', t.x, t.y, t.z + 14, { col: '#ff4aa0', size: 12 }); }
@@ -169,6 +172,7 @@ class Dungeon {
     gainExp(clearExp + bonus);
     this.result = { S, rank: rk[0], clearExp, bonus, time: this.t };
     save.onClear(this.def.id, this.diff, rk[0]);
+    bus.emit('dungeonClear', { id: this.def.id, diff: this.diff, rank: rk[0], time: this.t, hurt: this.hurt, maxCombo: game.maxCombo });
     menus.open('result', this);
   }
   revive() {

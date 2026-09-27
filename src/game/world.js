@@ -46,6 +46,7 @@ function setupScene(S, spawn) {
   (save.data.seen = save.data.seen || {})[S.id] = 1;
   music.play(S.bgm || 'town'); save.write();
   if (typeof questsOnEnterScene === 'function') questsOnEnterScene(S.id);
+  bus.emit('sceneEnter', { id: S.id, kind: S.kind });
 }
 function goTown() { const loc = save.data.loc; return enterScene(loc && SCENES[loc.scene] ? loc.scene : START_SCENE, loc); }
 // 当前可见的地下城门（隐藏地下城满足条件后才出现）

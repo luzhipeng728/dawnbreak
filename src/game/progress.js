@@ -38,19 +38,22 @@ const JOB_GROWTH = {
 };
 /* ---- 防具精通（官方）：转职前 鬼剑士重甲 / 神枪手皮甲 / 魔法师布甲 / 格斗家轻甲 / 圣职者重甲 ---- */
 const CLASS_ARMOR = { sword: 'heavy', gun: 'leather', mage: 'cloth', fighter: 'light', priest: 'heavy' };
-const JOB_ARMOR = { blade: 'light', berserker: 'heavy', soulbender: 'cloth', asura: 'plate', ranger: 'leather', launcher: 'plate', mechanic: 'cloth', spitfire: 'light', elemental: 'cloth', summoner: 'leather', battlemage: 'light', witch: 'plate' };
+// 官方资料站：剑魂轻甲、狂战士重甲、鬼泣布甲、阿修罗板甲；漫游枪手皮甲、枪炮师重甲、机械师布甲、弹药专家皮甲；元素师 / 召唤师布甲、战斗法师 / 魔道学者皮甲
+const JOB_ARMOR = { blade: 'light', berserker: 'heavy', soulbender: 'cloth', asura: 'plate', ranger: 'leather', launcher: 'heavy', mechanic: 'cloth', spitfire: 'leather', elemental: 'cloth', summoner: 'cloth', battlemage: 'leather', witch: 'leather' };
 function masteryOf(cls, job) {
   const J = job && CLASSES[cls] && CLASSES[cls].jobs && CLASSES[cls].jobs[job];
   return (J && J.armor) || (job && JOB_ARMOR[job]) || CLASS_ARMOR[cls] || 'light';
 }
-// 每件精通防具的加成（L = 这件防具的等级）
+// 每件精通防具的加成（官方精通：布甲 MP / 智力 / 施放，皮甲 攻速 / 物暴，轻甲 力量 / 硬直，重甲 力量 / 物防，板甲 物防 / HP；L = 这件防具的等级）
 const MASTERY_BONUS = {
-  cloth: L => ({ int: Math.round(2 + L * 0.3), mcrit: 0.006, cspd: 0.01 }),
-  leather: L => ({ crit: 0.008, mcrit: 0.008, str: Math.round(1 + L * 0.2), int: Math.round(1 + L * 0.2) }),
-  light: () => ({ aspd: 0.012, cspd: 0.012, mspd: 0.008, crit: 0.004 }),
-  heavy: L => ({ hpPct: 0.02, str: Math.round(2 + L * 0.3) }),
-  plate: () => ({ defPct: 0.03, hpPct: 0.015, hardness: 6 }),
+  cloth: L => ({ int: Math.round(2 + L * 0.3), mpPct: 0.02, cspd: 0.012, mcrit: 0.004 }),
+  leather: L => ({ aspd: 0.012, crit: 0.008, mcrit: 0.008, str: Math.round(1 + L * 0.2), int: Math.round(1 + L * 0.2) }),
+  light: L => ({ str: Math.round(2 + L * 0.3), int: Math.round(1 + L * 0.2), hardness: 6, aspd: 0.006, mspd: 0.006 }),
+  heavy: L => ({ str: Math.round(2 + L * 0.3), defPct: 0.02, hpPct: 0.01 }),
+  plate: L => ({ defPct: 0.03, hpPct: 0.015, hardness: 6, str: Math.round(1 + L * 0.2) }),
 };
+// 官方：不精通的职业穿重甲 / 板甲，攻速、施放速度、MP 恢复会降低（每件）
+const HEAVY_PENALTY = { aspd: -0.01, cspd: -0.01, mpRegen: -0.03 };
 function classBase4(cls, L, job) {
   const B = CLASS_BASE4[cls] || CLASS_BASE4.sword, J = job && CLASSES[cls] && CLASSES[cls].jobs && CLASSES[cls].jobs[job];
   const G = (J && J.growth) || (job && JOB_GROWTH[job]) || {}, o = {};
@@ -69,7 +72,10 @@ function equipTotals(cls = game.player ? game.player.cls : 'sword', job = game.j
     const e = enhStats(it); for (const k in e) add(k, e[k]);
     if (it.fx) for (const k in it.fx) if (typeof it.fx[k] === 'number') add(k, it.fx[k]);
     if (it.fx && it.fx.atkElem) t.atkElem = it.fx.atkElem;
-    if (it.atype && ARMOR_SLOTS.includes(s) && it.atype === mastery) { masteryN++; const M = MASTERY_BONUS[mastery](it.lvl); for (const k in M) add(k, M[k]); }
+    if (it.atype && ARMOR_SLOTS.includes(s)) {
+      if (it.atype === mastery) { masteryN++; const M = MASTERY_BONUS[mastery](it.lvl); for (const k in M) add(k, M[k]); }
+      else if (it.atype === 'heavy' || it.atype === 'plate') for (const k in HEAVY_PENALTY) add(k, HEAVY_PENALTY[k]);
+    }
     if (it.set) sets[it.set] = (sets[it.set] || 0) + 1;
   }
   const activeSets = [];

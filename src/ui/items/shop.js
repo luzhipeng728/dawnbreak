@@ -104,8 +104,7 @@ Object.assign(menus, {
 function shopBuyView(S, el) {
   const sid = S.id, cat = clamp(IW.shopCat[sid] || 0, 0, S.tabs.length - 1), sel = IW.shopSel;
   const cats = h('div', { class: 'shopcats' }, S.tabs.length > 1 ? S.tabs.map((T, i) => h('span', { class: 'cat' + (i === cat ? ' on' : ''), onclick: () => { IW.shopCat[sid] = i; sfx.click(); el._render(); } }, T.name)) : null,
-    S.tabs[cat].cls ? h('label', {}, h('input', { type: 'checkbox', checked: IW.shopOwnCls !== false ? '' : null, onchange: e => { IW.shopOwnCls = e.target.checked; el._render(); } }), '只看本职业') : null);
-  if (S.tabs[cat].cls && IW.shopOwnCls === false) cats.querySelector('input').checked = false;
+    S.tabs[cat].cls ? h('label', {}, checkBox(IW.shopOwnCls !== false, v => { IW.shopOwnCls = v; el._render(); }), '只看本职业') : null);
   const keys = shopGoods(S, cat);
   const list = h('div', { class: 'ilist', 'data-sk': 'goods' });
   for (const key of keys) {

@@ -4,13 +4,14 @@
    open(lv)（罐子 / 礼盒：返回 [{ key, n } | { equip: true, rar, slot? } | { gold }]）、dungeonOnly、cd
    ===================================================================== */
 /* ---- 药剂（旧 key 保留：hpS hpM hpL mpS mpM elixir） ---- */
-defineItem('hpS', { kind: 'use', name: 'HP 药剂（小）', rar: 0, price: 60, col: '#e83a3a', icon: 'item_hp_s', use: { hp: 0.25 }, desc: '立即恢复 25% 的 HP。' });
-defineItem('hpM', { kind: 'use', name: 'HP 药剂（中）', rar: 0, price: 160, col: '#e83a3a', icon: 'item_hp_m', use: { hp: 0.45 }, desc: '立即恢复 45% 的 HP。' });
-defineItem('hpL', { kind: 'use', name: 'HP 药剂（大）', rar: 1, price: 400, col: '#e83a3a', icon: 'item_hp_l', use: { hp: 0.7 }, desc: '立即恢复 70% 的 HP。' });
-defineItem('mpS', { kind: 'use', name: 'MP 药剂（小）', rar: 0, price: 60, col: '#3a78ff', icon: 'item_mp_s', use: { mp: 0.25 }, desc: '立即恢复 25% 的 MP。' });
-defineItem('mpM', { kind: 'use', name: 'MP 药剂（中）', rar: 0, price: 160, col: '#3a78ff', icon: 'item_mp_m', use: { mp: 0.45 }, desc: '立即恢复 45% 的 MP。' });
-defineItem('mpL', { kind: 'use', name: 'MP 药剂（大）', rar: 1, price: 400, col: '#3a78ff', icon: 'item_mp_l', use: { mp: 0.7 }, desc: '立即恢复 70% 的 MP。' });
-defineItem('elixir', { kind: 'use', name: '精灵香精', rar: 3, price: 1500, col: '#ffd23a', icon: 'item_elixir', use: { hp: 1, mp: 1 }, desc: '精灵们珍藏的香精，HP 和 MP 全部恢复。' });
+defineItem('hpS', { kind: 'use', name: '新手 HP 药剂', rar: 0, price: 60, col: '#e83a3a', icon: 'item_hp_s', use: { hp: 0.25 }, desc: '立即恢复 25% 的 HP。' });
+defineItem('hpM', { kind: 'use', name: '普通 HP 药剂', rar: 0, price: 160, col: '#e83a3a', icon: 'item_hp_m', use: { hp: 0.45 }, desc: '立即恢复 45% 的 HP。' });
+defineItem('hpL', { kind: 'use', name: '熟练 HP 药剂', rar: 1, price: 400, col: '#e83a3a', icon: 'item_hp_l', use: { hp: 0.7 }, desc: '立即恢复 70% 的 HP。' });
+defineItem('mpS', { kind: 'use', name: '新手 MP 药剂', rar: 0, price: 60, col: '#3a78ff', icon: 'item_mp_s', use: { mp: 0.25 }, desc: '立即恢复 25% 的 MP。' });
+defineItem('mpM', { kind: 'use', name: '普通 MP 药剂', rar: 0, price: 160, col: '#3a78ff', icon: 'item_mp_m', use: { mp: 0.45 }, desc: '立即恢复 45% 的 MP。' });
+defineItem('mpL', { kind: 'use', name: '熟练 MP 药剂', rar: 1, price: 400, col: '#3a78ff', icon: 'item_mp_l', use: { mp: 0.7 }, desc: '立即恢复 70% 的 MP。' });
+defineItem('elixir', { kind: 'use', name: '天堂的痊愈药剂', rar: 3, price: 1500, col: '#ffd23a', icon: 'item_elixir', use: { hp: 1, mp: 1 }, desc: '来自天界的灵药，HP 和 MP 全部恢复。' });
+defineItem('essence', { kind: 'use', name: '精灵香精', rar: 2, price: 700, col: '#9ae8ff', icon: 'item_mp_l', use: { mp: 1 }, desc: '精灵们珍藏的香精，MP 全部恢复。' });
 defineItem('bread', { kind: 'use', name: '香喷喷的面包', rar: 0, price: 90, col: '#e8b060', icon: 'item_bread', use: { hp: 0.3, mp: 0.15 }, desc: '奥兰奶奶亲手烤的面包。恢复 30% HP、15% MP。' });
 defineItem('meat', { kind: 'use', name: '烤肉串', rar: 1, price: 260, col: '#c86a3a', icon: 'item_meat', use: { hp: 0.55 }, desc: '外焦里嫩，吃完浑身是劲。恢复 55% HP。' });
 /* ---- 地下城 BUFF 药剂（进地下城后使用） ---- */
@@ -18,9 +19,9 @@ defineItem('potStr', { kind: 'use', name: '力量秘药', rar: 1, price: 900, co
 defineItem('potSpd', { kind: 'use', name: '疾风秘药', rar: 1, price: 700, col: '#6aff9a', icon: 'item_fatigue', use: { buff: { spd: 0.1, t: 300 }, dungeonOnly: true }, desc: '5 分钟内移动速度 +10%。（地下城内使用）' });
 defineItem('potCrit', { kind: 'use', name: '鹰眼秘药', rar: 2, price: 1600, col: '#ffd23a', icon: 'item_elixir', use: { buff: { crit: 0.05, t: 300 }, dungeonOnly: true }, desc: '5 分钟内暴击率 +5%。（地下城内使用）' });
 /* ---- 疲劳 / 复活 / 强化 ---- */
-defineItem('fatigue', { kind: 'use', name: '疲劳恢复药剂', rar: 2, price: 5000, col: '#6ad06a', icon: 'item_fatigue', use: { fatigue: 30 }, desc: '恢复 30 点疲劳值（不会超过上限）。' });
+defineItem('fatigue', { kind: 'use', name: '抗疲劳秘药', rar: 2, price: 6000, col: '#6ad06a', icon: 'item_fatigue', use: { fatigue: 50, fatigueBelow: 50, perDay: 3 }, desc: '疲劳值低于 50 时可以使用，恢复 50 点疲劳值。每天最多使用 3 次。' });
 defineItem('coin', { kind: 'use', name: '复活币', rar: 2, price: 3000, col: '#ffd23a', icon: 'item_coin', desc: '在地下城里倒下时，可以原地满状态复活。获得后自动放进复活币栏。' });
-defineItem('guard', { kind: 'use', name: '强化保护券', rar: 3, price: 12000, col: '#6ad0ff', icon: 'item_guard', desc: '在强化界面勾选使用：强化失败本应破碎时，装备不会破碎，但强化等级归零。' });
+defineItem('guard', { kind: 'use', name: '装备强化保护券', rar: 3, price: 12000, col: '#6ad0ff', icon: 'item_guard', desc: '在强化界面勾选使用：强化失败本应破碎时，装备不会破碎，但强化等级归零。' });
 /* ---- 罐子（土罐） ---- */
 const potRoll = (lv, W) => { let r = Math.random() * W.reduce((a, b) => a + b[0], 0); for (const [w, f] of W) { r -= w; if (r <= 0) return f(lv); } return W[0][1](lv); };
 defineItem('pot', { kind: 'use', name: '袖珍罐', rar: 1, price: 800, icon: 'item_pot', desc: '土罐亲手烧制的小罐子，打开能得到与自己等级相符的随机物品。',
@@ -35,10 +36,12 @@ defineItem('c_white', { kind: 'mat', name: '白色小晶块', rar: 1, price: 120
 defineItem('c_black', { kind: 'mat', name: '黑色小晶块', rar: 1, price: 120, col: '#6a3a8a', icon: 'item_crystal_black', desc: '蕴含暗之力的晶块。' });
 defineItem('m_cloth', { kind: 'mat', name: '碎布片', rar: 0, price: 30, col: '#c8b090', icon: 'item_mat_cloth', desc: '分解布甲得到的碎布。' });
 defineItem('m_leather', { kind: 'mat', name: '破旧的皮革', rar: 0, price: 30, col: '#8a5a30', icon: 'item_mat_leather', desc: '分解皮甲、轻甲得到的皮革。' });
-defineItem('m_iron', { kind: 'mat', name: '生锈的铁片', rar: 0, price: 30, col: '#9a8a7a', icon: 'item_mat_iron', desc: '分解武器、重甲、板甲得到的铁片。' });
+defineItem('m_iron', { kind: 'mat', name: '生锈的铁片', rar: 0, price: 30, col: '#9a8a7a', icon: 'item_mat_iron', desc: '从武器、重甲、板甲上拆下来的铁片。' });
 defineItem('m_bone', { kind: 'mat', name: '风化的碎骨', rar: 0, price: 30, col: '#e8e0c8', icon: 'item_mat_bone', desc: '分解首饰得到的碎骨。' });
-defineItem('m_elem', { kind: 'mat', name: '下级元素结晶', rar: 2, price: 400, col: '#b36bff', icon: 'item_mat_elem', desc: '分解稀有以上的装备得到的元素结晶。' });
-defineItem('m_diamond', { kind: 'mat', name: '金刚石', rar: 3, price: 2500, col: '#bfefff', icon: 'item_mat_diamond', desc: '分解神器以上的装备得到的宝石，价值不菲。' });
+defineItem('m_elem', { kind: 'mat', name: '下级元素结晶', rar: 2, price: 400, col: '#b36bff', icon: 'item_mat_elem', desc: '分解稀有、套装装备得到的元素结晶。' });
+defineItem('m_elem2', { kind: 'mat', name: '上级元素结晶', rar: 3, price: 1600, col: '#ff6bd0', icon: 'item_mat_elem', desc: '分解神器以上的装备得到的高纯度元素结晶。' });
+defineItem('m_obsidian', { kind: 'mat', name: '黑曜石', rar: 3, price: 2000, col: '#3a2a4a', icon: 'item_crystal_black', desc: '暗黑雷鸣废墟深处偶尔能找到的黑色宝石。' });
+defineItem('m_diamond', { kind: 'mat', name: '金刚石', rar: 3, price: 2500, col: '#bfefff', icon: 'item_mat_diamond', desc: '分解传说以上的装备得到的宝石，价值不菲。' });
 defineItem('m_soul', { kind: 'mat', name: '灵魂之石', rar: 5, price: 15000, col: '#e080ff', icon: 'item_mat_soul', desc: '分解史诗装备得到的结晶，寄宿着装备的灵魂。' });
 /* ---- 称号（帕丽丝出售 / 任务奖励）：slot 'title'，没有耐久，不能强化 ----
    任务组发称号：giveItem(makeItem('title_xxx')) */
@@ -52,8 +55,14 @@ defineTitle('title_iron', { name: '钢铁意志', lvl: 10, rar: 2, price: 12000,
 defineTitle('title_wind', { name: '疾风之影', lvl: 12, rar: 3, price: 22000, st: { str: 8, int: 8, vit: 8, spr: 8 }, fx: { mspd: 0.05, aspd: 0.02, cspd: 0.02 }, desc: '快如疾风。' });
 defineTitle('title_flame', { name: '炎之意志', lvl: 15, rar: 3, price: 28000, st: { str: 12, int: 12, vit: 12, spr: 12, fire: 12 }, fx: { dmgUp: 0.02 }, desc: '心中燃烧着不灭的火焰。' });
 defineTitle('title_hero', { name: '赫顿玛尔的英雄', lvl: 15, rar: 3, price: 30000, st: { str: 15, int: 15, vit: 15, spr: 15 }, fx: { aspd: 0.02, cspd: 0.02 }, desc: '全城都在传颂你的名字。' });
+defineTitle('title_sea', { name: '海之勇者', lvl: 10, rar: 3, price: 18000, st: { str: 10, int: 10, vit: 10, spr: 10, ice: 10 }, fx: { mspd: 0.02 }, desc: '乘风破浪的勇者。' });
+defineTitle('title_tiger', { name: '白虎之魂', lvl: 15, rar: 3, price: 32000, st: { str: 14, int: 14, vit: 8, spr: 8 }, fx: { aspd: 0.025, cspd: 0.025, mspd: 0.025 }, desc: '攻击速度、施放速度、移动速度 +2.5%。' });
+defineTitle('title_king', { name: '王之守护·风', lvl: 18, rar: 4, price: 45000, st: { str: 16, int: 16, vit: 16, spr: 16 }, fx: { aspd: 0.02, cspd: 0.02, mspd: 0.03 }, desc: '攻击速度 +2%，移动速度 +3%。' });
 defineTitle('title_star', { name: '闪耀之星', lvl: 20, rar: 4, price: 60000, st: { str: 20, int: 20, vit: 20, spr: 20, crit: 0.02, mcrit: 0.02 }, fx: { mspd: 0.03, dmgUp: 0.03 }, desc: '帕丽丝的镇店之宝。' });
 // 任务奖励专用称号（商店不卖）
 defineTitle('title_goblin', { name: '哥布林克星', lvl: 3, rar: 2, noSell: false, shopOnly: true, noDrop: true, st: { str: 5, int: 5 }, fx: { dmgUp: 0.02 }, desc: '哥布林们听到你的名字就发抖。' });
 defineTitle('title_slayer', { name: '格兰之森的解放者', lvl: 18, rar: 4, noDrop: true, st: { str: 18, int: 18, vit: 18, spr: 18 }, fx: { dmgUp: 0.04, critDmg: 0.05 }, desc: '将格兰之森从黑暗中解放的英雄。' });
+defineTitle('title_kanina', { name: '卡妮娜的希望☆', lvl: 10, rar: 3, noDrop: true, st: { str: 8, int: 8, vit: 8, spr: 8 }, fx: { mspd: 0.02 }, desc: '收集了四色小晶块送给卡妮娜的冒险家。移动速度 +2%。' });
+defineTitle('title_hunter', { name: '怪兽猎杀者', lvl: 12, rar: 3, noDrop: true, st: { str: 12, int: 12 }, fx: { dmgUp: 0.03 }, desc: '讨伐了无数怪物的猎手。' });
+defineTitle('title_basic', { name: '基础精通者', lvl: 5, rar: 2, noDrop: true, st: { str: 5, int: 5, vit: 5, spr: 5 }, fx: { cdr: 0.02 }, desc: '掌握了战斗的基础。' });
 defineTitle('title_awaken', { name: '觉醒者', lvl: 18, rar: 4, noDrop: true, st: { str: 16, int: 16, vit: 16, spr: 16 }, fx: { cdr: 0.04 }, desc: '跨越了极限的勇士。' });

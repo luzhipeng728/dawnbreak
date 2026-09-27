@@ -28,13 +28,13 @@ const WEAPON_NAMES = {
   broom: { r2: ['羽毛扫把', '星辉扫把', '炎心扫把', '霜语扫把', '雷鸣扫把', '魔女的扫把'], r3: ['月光扫把', '星辰扫把', '夜空扫把'], r4: ['女巫之王的扫把', '流星扫把'] },
 };
 const ARMOR_NOUN = {
-  cloth: { top: '长袍', head: '披肩', bottom: '长裙', belt: '束带', shoes: '便鞋' },
-  leather: { top: '皮衣', head: '皮护肩', bottom: '皮裤', belt: '皮带', shoes: '皮靴' },
-  light: { top: '轻甲', head: '轻护肩', bottom: '轻护腿', belt: '轻腰带', shoes: '轻靴' },
-  heavy: { top: '锁甲', head: '锁甲护肩', bottom: '锁甲护腿', belt: '锁甲腰带', shoes: '锁甲战靴' },
-  plate: { top: '板甲', head: '板甲护肩', bottom: '板甲护腿', belt: '板甲腰带', shoes: '板甲战靴' },
+  cloth: { top: '衬衫', head: '肩甲', bottom: '短裤', belt: '腰带', shoes: '短靴' },
+  leather: { top: '皮衣', head: '护肩', bottom: '皮裤', belt: '皮带', shoes: '皮鞋' },
+  light: { top: '胸甲', head: '护肩', bottom: '绑腿', belt: '腰带', shoes: '长靴' },
+  heavy: { top: '胸甲', head: '护肩', bottom: '绑腿', belt: '腰带', shoes: '长靴' },
+  plate: { top: '胸甲', head: '护肩', bottom: '护腿', belt: '腰带', shoes: '长靴' },
 };
-const ARMOR_P0 = { cloth: ['粗布', '亚麻', '丝绸', '学者', '贤者', '魔导', '星辰'], leather: ['兽皮', '硬皮', '鞣制', '猎人', '游侠', '龙皮', '暗夜'], light: ['轻便', '迅捷', '疾风', '游击', '精灵', '风暴', '幻影'], heavy: ['铁制', '钢制', '精钢', '骑士', '圣骑士', '守护者', '英雄'], plate: ['铁板', '钢板', '重装', '堡垒', '要塞', '泰坦', '巨神'] };
+const ARMOR_P0 = { cloth: ['亚麻', '蚕丝', '丝绸', '学者', '魔导', '星辰', '天界'], leather: ['粗皮', '兽皮', '鳄鱼皮', '狐皮', '暗影', '龙皮', '夜行'], light: ['藤编', '菩提', '茱萸', '游击', '精灵', '风暴', '幻影'], heavy: ['铁制', '卫兵', '战士', '骑士', '圣骑士', '守护者', '英雄'], plate: ['铁板', '钢板', '重装', '伏魔', '要塞', '泰坦', '巨神'] };
 const ARMOR_P1 = ['精制', '强化', '改良', '精良', '上等', '卓越', '无瑕'];
 const ARMOR_P2 = ['苍蓝', '赤焰', '寒霜', '雷鸣', '暗影', '圣光'];
 const ARMOR_P3 = ['精灵王的', '龙骑士的', '魔神的'], ARMOR_P4 = ['英灵的', '天界的'];
@@ -44,6 +44,29 @@ const ACC_P2 = ['红宝石', '蓝宝石', '翡翠', '紫水晶', '黑曜石', '�
 const ACC_P3 = ['精灵的', '贤者的', '龙之'], ACC_P4 = ['王者的', '英雄的'];
 const SUPPORT_NAMES = { 10: ['见习者的护符', '冒险家的护符', '勇士的护符'], 15: ['猎人的徽章', '骑士的徽章', '守护者的徽章', '精灵的徽章'], 20: ['远征者的护符', '智者的护符', '英雄的护符', '天界的护符'], 25: ['星辰徽章', '月光徽章', '烈日徽章', '传说徽章'], 30: ['破晓护符', '黎明护符', '曙光护符', '晨星护符'] };
 const STONE_NAMES = { 10: ['初级魔法石', '火焰魔法石', '寒冰魔法石'], 15: ['中级魔法石', '雷光魔法石', '暗影魔法石', '元素魔法石'], 20: ['高级魔法石', '炽炎之心', '冰霜之心', '深渊之心'], 25: ['稀有魔法石', '精灵之泪', '龙之眼', '贤者之石'], 30: ['传说魔法石', '晨星之核', '破晓之石', '天界之核'] };
+// 官方名称（国服资料站 / 怀旧服图鉴，等级就近归到等级段）：'等级段_品级' → 名字，没有的按规则生成
+const OFFICIAL_NAMES = {
+  shortsword: { '1_0': '破损的短剑', '5_0': '黑铁剑', '5_1': '骨剑', '10_0': '短剑', '15_1': '精炼的钢剑' },
+  katana: { '1_0': '破损的武士刀', '5_0': '武士刀', '10_0': '长刀', '15_0': '枯叶刀', '20_0': '短太刀', '30_0': '节刀', '30_3': '红丸' },
+  club: { '1_0': '破损的木棒', '5_1': '火焰楠木棒', '10_0': '修士橡木棒', '15_1': '葡萄藤槌' },
+  greatsword: { '1_0': '生锈的重剑', '5_0': '卫士重剑', '10_1': '断水巨剑', '20_2': '千年玄铁剑' },
+  lightsaber: { '20_2': '蓝星烁芒剑', '25_2': '极光剑' },
+  revolver: { '1_0': '生锈的左轮枪', '5_1': '惩罚者', '10_1': '西部射手', '30_3': '鲁格尔-黑鹰' },
+  autopistol: { '1_0': '生锈的自动手枪', '5_1': '极速手枪', '10_3': '杰宁斯-J22' },
+  rifle: { '1_0': '生锈的步枪', '5_0': '野战步枪', '10_0': '军用步枪', '10_2': '爱国者' },
+  handcannon: { '1_0': '生锈的手炮', '5_0': '强力手炮', '15_1': '勇士战炮', '15_2': '炫炎手炮' },
+  bowgun: { '1_0': '破损的手弩', '5_0': '苍蟒手弩', '10_0': '警备手弩', '15_2': '双影手弩' },
+  spear: { '1_0': '破损的长矛', '5_0': '长矛', '10_0': '青铜长矛', '15_1': '银光长矛' },
+  pole: { '1_0': '破损的木棍', '5_0': '狼牙棍', '10_1': '追风棍', '15_1': '逆风棍' },
+  rod: { '1_0': '破损的魔杖', '5_0': '桃木魔杖', '10_1': '银蛇魔杖', '20_2': '离火魔杖' },
+  staff: { '1_0': '破损的法杖', '5_0': '栗木法杖', '10_0': '紫铜法杖', '15_1': '唤灵法杖' },
+  broom: { '1_0': '破旧的扫把', '20_3': '多利亚的淑女扫把' },
+  cloth: { '10_1': { head: '贤者肩甲' } },
+  leather: { '5_0': { top: '鳄鱼皮衣', head: '兽皮护肩', bottom: '狐皮短裤', shoes: '羔羊皮鞋', belt: '羔羊皮带' } },
+  light: { '5_0': { top: '茱萸胸甲', head: '菩提护肩', bottom: '茱萸绑腿', shoes: '菩提长靴', belt: '菩提腰带' } },
+  heavy: { '5_0': { top: '初级战士胸甲', head: '卫兵护肩', bottom: '初级战士绑腿', shoes: '首领长靴', belt: '守护腰带' } },
+  plate: { '15_0': { head: '伏魔护肩', shoes: '伏魔长靴', belt: '伏魔腰带' }, '20_0': { top: '伏魔胸甲', bottom: '伏魔护腿' } },
+};
 const tierIdx = lv => TIER_LV.indexOf(lv);
 (function defineGearLines() {
   // 武器
@@ -52,14 +75,16 @@ const tierIdx = lv => TIER_LV.indexOf(lv);
     for (const r in RAR_TIERS) for (const lv of RAR_TIERS[r]) {
       const ti = tierIdx(lv), rr = +r;
       const name = rr === 0 ? MAT0[ti] + T.name : rr === 1 ? MAT1[ti] + T.name : rr === 2 ? (N.r2 || [])[ti - 1] : rr === 3 ? (N.r3 || [])[[10, 20, 30].indexOf(lv)] : (N.r4 || [])[[15, 25].indexOf(lv)];
-      defineGear(`${w}_${lv}_${rr}`, { slot: 'weapon', wtype: w, lvl: lv, rar: rr, name: name || `${RARITY[rr].name}${T.name}` });
+      const off = (OFFICIAL_NAMES[w] || {})[`${lv}_${rr}`];
+      defineGear(`${w}_${lv}_${rr}`, { slot: 'weapon', wtype: w, lvl: lv, rar: rr, name: off || name || `${RARITY[rr].name}${T.name}` });
     }
   }
   // 防具
   for (const a in ATYPES) for (const s of ARMOR_SLOTS) for (const r in RAR_TIERS) for (const lv of RAR_TIERS[r]) {
     const ti = tierIdx(lv), rr = +r, noun = ARMOR_NOUN[a][s];
-    const name = rr === 0 ? ARMOR_P0[a][ti] + noun : rr === 1 ? ARMOR_P1[ti] + ARMOR_P0[a][ti] + noun : rr === 2 ? ARMOR_P2[ti - 1] + noun : rr === 3 ? ARMOR_P3[[10, 20, 30].indexOf(lv)] + noun : ARMOR_P4[[15, 25].indexOf(lv)] + noun;
-    defineGear(`${a}_${s}_${lv}_${rr}`, { slot: s, atype: a, lvl: lv, rar: rr, name });
+    const name = rr === 0 ? ARMOR_P0[a][ti] + noun : rr === 1 ? ARMOR_P1[ti] + ARMOR_P0[a][ti] + noun : rr === 2 ? ARMOR_P2[ti - 1] + ARMOR_P0[a][ti] + noun : rr === 3 ? ARMOR_P3[[10, 20, 30].indexOf(lv)] + ARMOR_P0[a][ti] + noun : ARMOR_P4[[15, 25].indexOf(lv)] + ARMOR_P0[a][ti] + noun;
+    const off = ((OFFICIAL_NAMES[a] || {})[`${lv}_${rr}`] || {})[s];
+    defineGear(`${a}_${s}_${lv}_${rr}`, { slot: s, atype: a, lvl: lv, rar: rr, name: off || name });
   }
   // 首饰
   for (const s of ACC_SLOTS) for (const r in RAR_TIERS) for (const lv of RAR_TIERS[r]) {

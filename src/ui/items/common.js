@@ -111,7 +111,7 @@ function itemTipOne(it, cur, head) {
     const s1 = h('div', { class: 'sec' });
     s1.append(h('div', { class: it.lvl > game.lvl ? 'bad' : '' }, `Lv.${it.lvl} 以上可以使用`));
     if (it.slot === 'weapon' && it.cls) s1.append(h('div', { class: p && it.cls !== p.cls ? 'bad' : '' }, `${CLASSES[it.cls] ? CLASSES[it.cls].name : it.cls}专用`));
-    if (it.atype && ARMOR_SLOTS.includes(it.slot)) { const m = p && masteryOf(p.cls, game.job) === it.atype; s1.append(h('div', {}, `${ATYPES[it.atype].name}`, h('span', { class: m ? 'good' : 'dimt' }, m ? '（精通：有额外加成）' : '（非精通）'))); }
+    if (it.atype && ARMOR_SLOTS.includes(it.slot)) { const m = p && masteryOf(p.cls, game.job) === it.atype; s1.append(h('div', {}, `${ATYPES[it.atype].name}`, h('span', { class: m ? 'good' : it.atype === 'heavy' || it.atype === 'plate' ? 'bad' : 'dimt' }, m ? '（精通：有额外加成）' : it.atype === 'heavy' || it.atype === 'plate' ? '（非精通：攻速 / 施放 / MP 恢复略微降低）' : '（非精通）'))); }
     if (it.slot === 'weapon' && WTYPES[it.wtype]) { const T = WTYPES[it.wtype]; s1.append(h('div', {}, `攻击速度：${T.spd}`, T.aspd ? h('span', { class: T.aspd > 0 ? 'good' : 'bad' }, `（${T.aspd > 0 ? '+' : ''}${Math.round(T.aspd * 100)}%）`) : null, T.elem ? h('span', { class: 'enh' }, `　附带${{ fire: '火', ice: '冰', light: '光', dark: '暗' }[T.elem]}属性攻击`) : null)); }
     if (it.durMax) { const low = it.dur <= it.durMax * 0.2; s1.append(h('div', { class: it.dur <= 0 ? 'bad' : '' }, `耐久度 ${it.dur}/${it.durMax}`, h('span', { class: 'durbar' + (low ? ' low' : '') }, h('i', { style: `width:${Math.round(it.dur / it.durMax * 100)}%` })), it.dur <= 0 ? '　属性失效，请修理' : null)); }
     el.append(s1);
@@ -204,6 +204,8 @@ function itemSlot(it, opt = {}) {
   if (opt.drop) dnd.target(el, opt.drop);
   return el;
 }
+// 复选框（h() 用 setAttribute，checked / disabled 传 null 也会生效，所以单独做）
+function checkBox(on, onChange, disabled) { const i = h('input', { type: 'checkbox' }); i.checked = !!on; i.disabled = !!disabled; i.addEventListener('change', () => onChange(i.checked)); return i; }
 /* ---- 窗口内对话框（确认 / 数量） ---- */
 let idlgOpen = null;
 function itemDialog(win, { title = '确认', msg, body, okText = '确定', cancelText = '取消', onOk, danger }) {

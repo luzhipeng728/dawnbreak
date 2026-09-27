@@ -11,33 +11,33 @@ const ARMOR_SLOTS = ['top', 'head', 'bottom', 'belt', 'shoes'], ACC_SLOTS = ['ne
 const GRADES = ['最下级', '下级', '中级', '上级', '最上级'];
 const RAR_MUL = [1, 1.25, 1.55, 1.85, 2.2, 2.8];
 const gradeMul = g => g == null ? 1 : 0.9 + g * 0.05;
-// 武器类型（官方 15 种）：phys / mag 物攻 / 魔攻系数，aspd / cspd 攻速 / 施放速度加成，spd 为说明里的“攻击速度”
+// 武器类型（官方 15 种，攻速 / 物攻 / 魔攻特点按官方资料站）：phys / mag 物攻 / 魔攻系数，aspd / cspd 攻速 / 施放速度加成，spd 为说明里的“攻击速度”，dur 耐久
 const WTYPES = {
-  shortsword: { name: '短剑', cls: 'sword', phys: 1.0, mag: 0.9, aspd: 0, cspd: 0.05, spd: '普通', dur: 30, desc: '攻击力均衡，魔法攻击力也不错' },
-  katana: { name: '太刀', cls: 'sword', phys: 1.0, mag: 0.6, aspd: 0.08, crit: 0.02, spd: '快速', dur: 30, desc: '出手快，暴击率高' },
-  club: { name: '钝器', cls: 'sword', phys: 1.1, mag: 0.55, aspd: -0.06, stagger: 30, spd: '慢速', dur: 34, desc: '沉重的打击，让敌人僵直更久' },
-  greatsword: { name: '巨剑', cls: 'sword', phys: 1.2, mag: 0.45, aspd: -0.1, hardness: 20, spd: '慢速', dur: 36, desc: '攻击力最高，挥动缓慢' },
-  lightsaber: { name: '光剑', cls: 'sword', phys: 0.92, mag: 0.85, aspd: 0.12, elem: 'light', spd: '非常快', dur: 26, desc: '极快的光刃，附带光属性攻击' },
-  revolver: { name: '左轮枪', cls: 'gun', phys: 1.0, mag: 0.5, aspd: 0.02, crit: 0.02, spd: '普通', dur: 30, desc: '每轮连射 4 发，暴击率高' },
-  autopistol: { name: '自动手枪', cls: 'gun', phys: 0.9, mag: 0.95, aspd: 0.1, cspd: 0.05, spd: '快速', dur: 28, desc: '每轮连射 6 发，魔法攻击力高' },
-  rifle: { name: '步枪', cls: 'gun', phys: 1.08, mag: 0.55, aspd: -0.04, hit: 0.03, spd: '普通', dur: 32, desc: '每轮连射 3 发，射程远、命中高' },
-  handcannon: { name: '手炮', cls: 'gun', phys: 1.2, mag: 0.45, aspd: -0.12, stagger: 35, spd: '慢速', dur: 36, desc: '每轮连射 2 发，威力巨大' },
-  bowgun: { name: '手弩', cls: 'gun', phys: 0.92, mag: 0.6, aspd: 0.14, spd: '非常快', dur: 26, desc: '每轮连射 7 发，射速最快' },
-  spear: { name: '矛', cls: 'mage', phys: 1.05, mag: 0.95, aspd: -0.06, stagger: 20, spd: '慢速', dur: 34, desc: '物理攻击力高的魔法武器' },
-  pole: { name: '棍棒', cls: 'mage', phys: 0.9, mag: 1.0, aspd: 0, spd: '普通', dur: 30, desc: '物理与魔法兼顾' },
-  rod: { name: '魔杖', cls: 'mage', phys: 0.55, mag: 1.02, aspd: 0.05, cspd: 0.1, spd: '快速', dur: 26, desc: '施放速度快' },
-  staff: { name: '法杖', cls: 'mage', phys: 0.5, mag: 1.12, cspd: -0.04, mcrit: 0.02, spd: '慢速', dur: 30, desc: '魔法攻击力最高' },
-  broom: { name: '扫把', cls: 'mage', phys: 0.75, mag: 1.0, aspd: 0.08, cspd: 0.04, mspd: 0.03, spd: '快速', dur: 28, desc: '轻快灵巧，移动速度提升' },
+  shortsword: { name: '短剑', cls: 'sword', phys: 1.0, mag: 1.0, aspd: 0, spd: '普通', dur: 30, desc: '攻速普通，魔法攻击力是鬼剑士武器里最高的' },
+  katana: { name: '太刀', cls: 'sword', phys: 0.98, mag: 0.8, aspd: 0.08, crit: 0.02, spd: '快速', dur: 30, desc: '出手快，魔法攻击力较高' },
+  club: { name: '钝器', cls: 'sword', phys: 1.1, mag: 0.55, aspd: -0.08, stagger: 30, spd: '缓慢', dur: 34, desc: '物理攻击力较高，打击让敌人僵直更久' },
+  greatsword: { name: '巨剑', cls: 'sword', phys: 1.2, mag: 0.45, aspd: -0.12, hardness: 20, spd: '最慢', dur: 36, desc: '物理攻击力最高，挥动最慢' },
+  lightsaber: { name: '光剑', cls: 'sword', phys: 0.9, mag: 0.8, aspd: 0.14, elem: 'light', spd: '极快', dur: 23, desc: '攻速极快，物理攻击力最低，附带光属性攻击' },
+  revolver: { name: '左轮枪', cls: 'gun', phys: 1.02, mag: 0.5, aspd: 0.06, crit: 0.02, spd: '快速', dur: 30, desc: '每轮连射 4 发，物理攻击力中上' },
+  autopistol: { name: '自动手枪', cls: 'gun', phys: 0.85, mag: 1.0, aspd: 0.14, spd: '极快', dur: 28, desc: '每轮连射 6 发，魔法攻击力最高、物理攻击力最低' },
+  rifle: { name: '步枪', cls: 'gun', phys: 1.1, mag: 0.55, aspd: -0.06, hit: 0.03, spd: '缓慢', dur: 34, desc: '每轮连射 3 发，攻击力仅次于手炮，射程最远' },
+  handcannon: { name: '手炮', cls: 'gun', phys: 1.22, mag: 0.45, aspd: -0.14, stagger: 35, spd: '极慢', dur: 36, desc: '每轮连射 2 发，攻击力最高' },
+  bowgun: { name: '手弩', cls: 'gun', phys: 0.96, mag: 0.6, aspd: 0, spd: '普通', dur: 39, desc: '每轮连射 7 发' },
+  spear: { name: '矛', cls: 'mage', phys: 1.1, mag: 0.9, aspd: -0.08, stagger: 20, spd: '缓慢', dur: 34, desc: '物理攻击力最高，攻击范围最大' },
+  pole: { name: '棍棒', cls: 'mage', phys: 0.95, mag: 0.98, aspd: 0.06, spd: '快速', dur: 30, desc: '物理与魔法攻击力均衡' },
+  rod: { name: '魔杖', cls: 'mage', phys: 0.55, mag: 1.05, aspd: 0.12, cspd: 0.05, spd: '极快', dur: 26, desc: '攻速极快，魔法攻击力次于法杖，施放速度 +5%' },
+  staff: { name: '法杖', cls: 'mage', phys: 0.5, mag: 1.15, aspd: -0.12, mcrit: 0.02, spd: '极慢', dur: 30, desc: '魔法攻击力最高，攻速极慢' },
+  broom: { name: '扫把', cls: 'mage', phys: 0.8, mag: 1.0, aspd: 0.06, mspd: 0.03, spd: '快速', dur: 28, desc: '移动速度 +3%' },
 };
 const CLASS_WTYPES = cls => Object.keys(WTYPES).filter(k => WTYPES[k].cls === cls);
 const CLASS_START_WEAPON = { sword: 'katana', gun: 'revolver', mage: 'staff' };
-// 防具类型：def / mdef / hp / mp 系数，dur 耐久
+// 防具类型：def / mdef / hp / mp 系数，dur 上衣耐久（官方：布 28、皮 33、轻 38、重 40、板 60；其他部位 ×0.85）
 const ATYPES = {
-  cloth: { name: '布甲', def: 0.82, mdef: 1.3, hp: 0.9, mp: 1.4, dur: 26 },
-  leather: { name: '皮甲', def: 0.92, mdef: 1.0, hp: 0.95, mp: 1.1, dur: 30 },
-  light: { name: '轻甲', def: 0.96, mdef: 0.96, hp: 1.0, mp: 1.0, dur: 30 },
-  heavy: { name: '重甲', def: 1.1, mdef: 0.85, hp: 1.12, mp: 0.9, dur: 36 },
-  plate: { name: '板甲', def: 1.25, mdef: 0.75, hp: 1.15, mp: 0.8, dur: 40 },
+  cloth: { name: '布甲', def: 0.94, mdef: 1.3, hp: 0.95, mp: 1.4, dur: 28 },
+  leather: { name: '皮甲', def: 0.99, mdef: 1.05, hp: 1.0, mp: 1.1, dur: 33 },
+  light: { name: '轻甲', def: 1.02, mdef: 0.98, hp: 1.0, mp: 1.0, dur: 38 },
+  heavy: { name: '重甲', def: 1.1, mdef: 0.88, hp: 1.1, mp: 0.9, dur: 40 },
+  plate: { name: '板甲', def: 1.25, mdef: 0.8, hp: 1.15, mp: 0.85, dur: 60 },
 };
 const ARMOR_W = { top: 1.2, bottom: 1.1, head: 1.0, shoes: 0.85, belt: 0.85 };
 // 属性名（tooltip / 面板）；pct 表示百分比显示
@@ -71,7 +71,7 @@ function defineItem(key, def) {
   if (D.kind === 'equip') {
     D.lvl = D.lvl || 1;
     if (D.slot === 'weapon' && D.wtype) D.cls = D.cls || WTYPES[D.wtype].cls;
-    if (D.durMax === undefined) D.durMax = D.slot === 'title' ? 0 : D.slot === 'weapon' ? (WTYPES[D.wtype] || {}).dur || 30 : D.atype ? ATYPES[D.atype].dur : 24;
+    if (D.durMax === undefined) D.durMax = D.slot === 'title' ? 0 : D.slot === 'weapon' ? (WTYPES[D.wtype] || {}).dur || 30 : D.atype ? Math.round(ATYPES[D.atype].dur * (D.slot === 'top' ? 1 : 0.85)) : 24;
     if (!def.price) D.price = Math.round((40 + D.lvl * 25) * Math.pow(2.2, D.rar) * (D.slot === 'weapon' ? 1.2 : D.slot === 'title' ? 1.5 : 1));
     if (!D.noDrop && !D.quest) GEAR.push(D);
     if (D.rar === 5) EPICS.push({ slot: D.slot, cls: D.cls || null, lvl: D.lvl, key, name: D.name, fx: D.fx, desc: D.desc });
@@ -301,7 +301,8 @@ const inv = {
     const U = D.use;
     if (U.dungeonOnly && game.scene !== 'dungeon' && game.scene !== 'test') { toastMsg('只能在地下城里使用', '#ffb0a0'); sfx.error(); return false; }
     if ((U.hp || U.mp) && this.potCd > 0) return false;
-    if (U.fatigue && save.data.fatigue >= FATIGUE_MAX) { toastMsg('疲劳值已满', '#ffb0a0'); sfx.error(); return false; }
+    if (U.fatigue && save.data.fatigue >= (U.fatigueBelow || FATIGUE_MAX)) { toastMsg(U.fatigueBelow ? `疲劳值低于 ${U.fatigueBelow} 时才能使用` : '疲劳值已满', '#ffb0a0'); sfx.error(); return false; }
+    if (U.perDay) { const u = save.data.itemDaily || (save.data.itemDaily = {}), d = typeof dayKey === 'function' ? dayKey() : ''; if (u.day !== d) { u.day = d; u.n = {}; } if ((u.n[it.key] || 0) >= U.perDay) { toastMsg(`今天已经用了 ${U.perDay} 次，明天再来吧`, '#ffb0a0'); sfx.error(); return false; } u.n[it.key] = (u.n[it.key] || 0) + 1; }
     if (U.open && !this.canOpen(U)) return false;
     if (!this.take(it.key, 1)) return false;
     if (U.hp) { const hh = Math.round(p.hpMax * U.hp); p.hp = Math.min(p.hpMax, p.hp + hh); if (game.scene !== 'town') addNumber(hh, p.x, p.y, p.z, { heal: true }); }
@@ -454,14 +455,16 @@ function tryEnhance(it, useGuard, rnd01 = Math.random()) {
 function disassembleYield(it) {
   const L = it.lvl, r = it.rar, out = {};
   const add = (k, n) => { if (n > 0 && ITEMS[k]) out[k] = (out[k] || 0) + n; };
+  const seed = mulberry(it.id || 1), R = () => seed();
   const metal = it.slot === 'weapon' || it.atype === 'heavy' || it.atype === 'plate';
   const basic = ACC_SLOTS.includes(it.slot) || SPECIAL_SLOTS.includes(it.slot) ? 'm_bone' : metal ? 'm_iron' : it.atype === 'leather' || it.atype === 'light' ? 'm_leather' : 'm_cloth';
-  const seed = mulberry(it.id || 1), R = () => seed();
-  add('crystal', Math.round([1.5, 3, 6, 10, 14, 18][r] + L * [0.15, 0.25, 0.35, 0.45, 0.5, 0.6][r]));
-  if (r <= 1) add(basic, 1 + Math.floor(R() * 2) + Math.floor(L / 12));
-  if (r >= 2) add('m_elem', r - 1 + Math.floor(R() * 2) + Math.floor(L / 15));
-  if (r >= 2 && R() < 0.4) add(pick(['c_red', 'c_blue', 'c_white', 'c_black']), 1 + Math.floor(L / 10));
-  if (r >= 3) add('m_diamond', r === 3 ? (R() < 0.5 ? 1 : 0) : r - 2);
+  const color = ['c_red', 'c_blue', 'c_white', 'c_black'][Math.floor(R() * 4)];
+  add('crystal', Math.round([2, 3, 5, 8, 12, 16][r] + L * [0.2, 0.3, 0.35, 0.45, 0.5, 0.6][r]));   // 白装：无色小晶块
+  if (r === 0 && R() < 0.5) add(basic, 1 + Math.floor(L / 12));
+  if (r >= 1) add(color, 1 + Math.floor(L / 8) + (r >= 2 ? 1 : 0));                                 // 蓝装：有色小晶块
+  if (r >= 2 || it.set) add('m_elem', 1 + Math.floor(L / 12) + Math.floor(R() * 2));                // 紫装 / 套装：下级元素结晶
+  if (r >= 3) add('m_elem2', r - 2 + Math.floor(L / 20));                                           // 粉装以上：上级元素结晶
+  if (r >= 4) add('m_diamond', r - 3);
   if (r >= 5) add('m_soul', 1);
   if (it.enh) add('crystal', it.enh * 3);
   return out;

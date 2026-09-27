@@ -66,15 +66,15 @@ Object.assign(menus, {
         if (sel) {
           const c = enhCost(sel), rate = sel.enh < ENH_MAX ? ENH_RATE[sel.enh] : 0, [risk, rc] = enhRiskText(sel), f = enhFailResult(sel);
           const hasG = inv.count('crystal'), guardN = inv.count('guard');
-          right.append(
+          right.append(...[
             h('div', { class: 'enhlv' }, `+${sel.enh}`, sel.enh < ENH_MAX ? h('span', { class: 'to' }, ` → +${sel.enh + 1}`) : null),
             h('div', { class: 'enhrate' }, '成功率 ', h('b', {}, `${(rate * 100).toFixed(1)}%`)),
             h('div', { class: 'enhrisk ' + rc }, risk),
             h('div', { class: 'enhcost' }, h('span', {}, '金币'), h('b', { class: game.gold < c.gold ? 'no' : 'gold' }, `${fmtNum(c.gold)} G（持有 ${fmtNum(game.gold)}）`), h('span', {}, '无色小晶块'), h('b', { class: hasG < c.crystal ? 'no' : '' }, `${c.crystal} 个（持有 ${hasG}）`)),
-            f.broken && sel.enh < ENH_MAX ? h('label', { class: 'small', style: 'cursor:pointer' }, h('input', { type: 'checkbox', checked: IW.enhGuard && guardN ? '' : null, disabled: guardN ? null : '', onchange: e => { IW.enhGuard = e.target.checked; } }), ` 使用强化保护券（持有 ${guardN}）：失败时不破碎，但强化等级归零`) : null,
+            f.broken && sel.enh < ENH_MAX ? h('label', { class: 'small', style: 'cursor:pointer' }, checkBox(!!(IW.enhGuard && guardN), v => { IW.enhGuard = v; }, !guardN), ` 使用强化保护券（持有 ${guardN}）：失败时不破碎，但强化等级归零`) : null,
             (() => { const s = enhStats({ ...sel, enh: Math.min(ENH_MAX, sel.enh + 1) }), cur = enhStats(sel); return h('div', { class: 'small', style: 'color:#8fe8ff' }, '成功后：', Object.keys(s).map(k => `${(STAT_INFO[k] || [k])[0]} ${fmtStatVal(k, s[k])}${cur[k] ? `（+${fmtNum(s[k] - cur[k])}）` : ''}`).join('，') || '-'); })(),
             h('div', { class: 'enhbar' + (IW.enhBusy ? ' run' : '') }, h('i')),
-            h('button', { class: 'btn big' + (IW.enhBusy || sel.enh >= ENH_MAX ? ' off' : ''), onclick: () => enhGo(el, sel) }, IW.enhBusy ? '强化中……' : '强化'));
+            h('button', { class: 'btn big' + (IW.enhBusy || sel.enh >= ENH_MAX ? ' off' : ''), onclick: () => enhGo(el, sel) }, IW.enhBusy ? '强化中……' : '强化')].filter(Boolean));
         }
         right.append(h('div', { class: 'enhmsg ' + (M ? M.cls : '') }, M ? M.text : ''));
       }

@@ -9,12 +9,28 @@
 //     手里金币超过“保底”（等级 × 1500）时，把武器强化到目标等级（Lv10 前 +4，Lv15 前 +6，之后 +8），晶块不够就按 40 G 买
 import { launch, URL_BASE } from './lib.mjs';
 const N = +(process.argv[2] || 20), DIFF = +(process.argv[3] || 0), EXPK = +(process.argv[4] || 1), QUEST = process.argv[5] === 'q';   // EXPK：把升级所需经验再放大几倍（评估等级曲线用）；q：算上任务奖励
-// 任务奖励（任务组分支 content/quests/main.js + side.js 的汇总，任务等级 → [经验占该级升级所需的比例合计, 金币合计]）
-const QUESTS = { 1: [1.15, 1200], 2: [1.05, 1400], 3: [2.05, 4400], 4: [1.1, 2200], 5: [1.3, 3300], 6: [1.55, 5100], 7: [1.15, 4100], 8: [2.45, 11700], 9: [1.1, 6200], 10: [1.7, 10100], 11: [1.35, 9800], 12: [1.35, 10500], 13: [1.75, 12500], 14: [0.25, 1500], 16: [0.9, 10000], 17: [0.4, 4000], 18: [0.5, 8000] };
+// 任务奖励（任务组分支 test/qbalance.mjs 生成的汇总：任务等级 → [该等级段所有任务经验合计占升级所需的比例, 金币合计]；每日任务未计入）
+const QUESTS = {"1":[0.41,600],"2":[0.5,1000],"3":[0.49,2450],"4":[0.4,1540],"5":[0.39,2150],"6":[0.49,2550],"7":[0.38,2670],"8":[0.5,5850],"9":[0.49,4640],"10":[0.34,5050],"11":[0.46,5760],"12":[0.34,5250],"13":[0.5,7230],"14":[0.3,2450],"15":[0.4,4200],"16":[0.29,5000],"17":[0.25,2000],"18":[0.5,10500]};
+// 环境变量：TARGET=24 模拟到几级（默认 20）；SKY=1 在页面里临时加上地下城内容组的天空之城 6 图（合并前用他们给的数值估算，怪物用数值接近的现有怪代替）
+const TARGET = +(process.env.TARGET || 20), SKY = !!process.env.SKY, SKY_MOB = +(process.env.SKY_MOB || 170), SKY_BOSS = +(process.env.SKY_BOSS || 1);
 const { browser, page, logs } = await launch({ width: 640, height: 360 });
 await page.goto(`${URL_BASE}?town&fresh&cls=sword&mute`);
 await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 30000 });
-const res = await page.evaluate(({ N, DIFF, EXPK, QUEST, QUESTS }) => {
+const res = await page.evaluate(({ N, DIFF, EXPK, QUEST, QUESTS, TARGET, SKY, SKY_MOB, SKY_BOSS }) => {
+  if (SKY && !DUNGEONS.dragon_tower) {
+    // 普通怪 exp 150~230 / 金币 30~65，领主 exp 2600~5600 / 金币 260~700（地下城内容组 09-27 给的范围）
+    const MK = SKY_MOB / 170;   // SKY_MOB：普通怪 exp 基数（估算用，可调）
+    MON.__sky1 = { ...MON.zombieRed, exp: Math.round(170 * MK), gold: [30, 60] }; MON.__sky2 = { ...MON.zombieRed, exp: Math.round(210 * MK), gold: [35, 65] };
+    const boss = (exp, g) => ({ ...MON.boneLord, exp: Math.round(exp * SKY_BOSS), gold: g });
+    MON.__lucas = boss(2600, [260, 460]); MON.__dogrey = boss(3000, [280, 500]); MON.__platani = boss(3600, [320, 560]); MON.__expel = boss(4300, [360, 620]); MON.__seghart = boss(5000, [400, 680]); MON.__sin = boss(5600, [440, 700]);
+    const mobs = [['__sky1', 2], ['__sky2', 1]];
+    defineDungeon('dragon_tower', { name: '龙人之塔', lvl: [14, 16], rooms: 6, mobs, boss: { kind: '__lucas', lvl: 17 }, clearExp: 4800 });
+    defineDungeon('puppet_hall', { name: '人偶玄关', lvl: [15, 17], rooms: 6, mobs, boss: { kind: '__dogrey', lvl: 18 }, clearExp: 5400 });
+    defineDungeon('golem_tower', { name: '石巨人塔', lvl: [16, 19], rooms: 7, mobs, boss: { kind: '__platani', lvl: 20 }, clearExp: 6400 });
+    defineDungeon('dark_corridor', { name: '黑暗玄廊', lvl: [18, 21], rooms: 7, mobs, boss: { kind: '__expel', lvl: 22 }, clearExp: 7600 });
+    defineDungeon('lord_palace', { name: '城主宫殿', lvl: [20, 23], rooms: 8, mobs, boss: { kind: '__seghart', lvl: 24 }, clearExp: 9000 });
+    defineDungeon('floating_castle', { name: '悬空城', lvl: [21, 24], rooms: 7, hidden: true, mobs, boss: { kind: '__sin', lvl: 25 }, clearExp: 10000 });
+  }
   const toastMsg0 = window.toastMsg; window.toastMsg = () => {};
   const D = DIFFS[DIFF], dgs = Object.values(DUNGEONS).filter(d => !d.hidden).sort((a, b) => a.lvl[0] - b.lvl[0]);
   const all = [];
@@ -26,7 +42,7 @@ const res = await page.evaluate(({ N, DIFF, EXPK, QUEST, QUESTS }) => {
     const take = (it) => { if (it.kind !== 'equip') { if (it.key === 'crystal') inv.add(it); else if (ITEMS[it.key].kind === 'use') inv.add(it); else { log.inc.sell += sellPrice(it); game.gold += sellPrice(it); } return; }
       if (better(it)) { const old = inv.equip[it.slot]; inv.equip[it.slot] = it; if (old) { log.inc.sell += sellPrice(old); game.gold += sellPrice(old); } } else { log.inc.sell += sellPrice(it); game.gold += sellPrice(it); } };
     let tierBought = 0;
-    while (game.lvl < 20 && log.runs < 400) {
+    while (game.lvl < TARGET && log.runs < 400) {
       // 在城里：到了新等级段就买装备
       const T = TIER_LV.filter(t => t <= game.lvl).pop();
       if (T >= 5 && T > tierBought) {
@@ -76,24 +92,24 @@ const res = await page.evaluate(({ N, DIFF, EXPK, QUEST, QUESTS }) => {
       if (QUEST) for (let q = log.qDone + 1; q <= game.lvl; q++) { log.qDone = q; const Q = QUESTS[q]; if (!Q) continue; gainExp(expNeed(q) * Q[0] / EXPK); game.gold += Q[1]; log.inc.quest += Q[1]; }
     }
     snap();
-    log.final = Math.round(game.gold); log.days = +(log.rooms / FATIGUE_MAX).toFixed(1);
+    log.final = Math.round(game.gold); log.run14 = (log.byLv[14] || {}).run; log.days = +(log.rooms / FATIGUE_MAX).toFixed(1);
     all.push(log);
   }
   window.toastMsg = toastMsg0;
   const avg = f => Math.round(all.reduce((s, l) => s + f(l), 0) / all.length);
-  const lv = {}; for (const L of [3, 5, 8, 10, 12, 15, 18, 20]) lv[L] = { run: avg(l => (l.byLv[L] || {}).run || 0), gold: avg(l => (l.byLv[L] || {}).gold || 0), enh: +(all.reduce((s, l) => s + ((l.byLv[L] || {}).enh || 0), 0) / all.length).toFixed(1) };
+  const lv = {}; for (const L of [3, 5, 8, 10, 12, 14, 15, 18, 20, 22, 24]) lv[L] = { run: avg(l => (l.byLv[L] || {}).run || 0), gold: avg(l => (l.byLv[L] || {}).gold || 0), enh: +(all.reduce((s, l) => s + ((l.byLv[L] || {}).enh || 0), 0) / all.length).toFixed(1) };
   const perDg = {}; for (const l of all) for (const k in l.perDg) perDg[k] = (perDg[k] || 0) + l.perDg[k] / all.length;
   for (const k in perDg) perDg[k] = +perDg[k].toFixed(1);
-  return { N, diff: D.name, quests: QUEST, perDg, runs: avg(l => l.runs), days: +(all.reduce((s, l) => s + l.days, 0) / all.length).toFixed(1), inc: { mob: avg(l => l.inc.mob), card: avg(l => l.inc.card), sell: avg(l => l.inc.sell), quest: avg(l => l.inc.quest) }, out: { pot: avg(l => l.out.pot), repair: avg(l => l.out.repair), gear: avg(l => l.out.gear), enh: avg(l => l.out.enh) }, final: avg(l => l.final), minGold: avg(l => l.minGold), maxEnh: avg(l => l.maxEnh), broke: avg(l => l.broke * 100) / 100, lv, bought: all[0].bought };
-}, { N, DIFF, EXPK, QUEST, QUESTS });
+  return { N, diff: D.name, quests: QUEST, target: TARGET, run14: avg(l => l.run14 || 0), perDg, runs: avg(l => l.runs), days: +(all.reduce((s, l) => s + l.days, 0) / all.length).toFixed(1), inc: { mob: avg(l => l.inc.mob), card: avg(l => l.inc.card), sell: avg(l => l.inc.sell), quest: avg(l => l.inc.quest) }, out: { pot: avg(l => l.out.pot), repair: avg(l => l.out.repair), gear: avg(l => l.out.gear), enh: avg(l => l.out.enh) }, final: avg(l => l.final), minGold: avg(l => l.minGold), maxEnh: avg(l => l.maxEnh), broke: avg(l => l.broke * 100) / 100, lv, bought: all[0].bought };
+}, { N, DIFF, EXPK, QUEST, QUESTS, TARGET, SKY, SKY_MOB, SKY_BOSS });
 console.log(JSON.stringify(res, null, 1));
 const tot = res.inc.mob + res.inc.card + res.inc.sell + res.inc.quest, spend = res.out.pot + res.out.repair + res.out.gear + res.out.enh;
-console.log(`${res.runs} 次地下城到 Lv20（${res.days} 天疲劳）；每个地下城次数 ${JSON.stringify(res.perDg)}`);
-console.log(`收入 ${tot}（怪物 ${Math.round(res.inc.mob / tot * 100)}%、翻牌 ${Math.round(res.inc.card / tot * 100)}%、卖装备 ${Math.round(res.inc.sell / tot * 100)}%、任务 ${Math.round(res.inc.quest / tot * 100)}%），支出 ${spend}（药 ${res.out.pot}、修理 ${res.out.repair}、买装备 ${res.out.gear}、强化 ${res.out.enh}），Lv20 时余额 ${res.final}`);
+console.log(`${res.runs} 次地下城到 Lv${res.target}（${res.days} 天疲劳，Lv14 时已打 ${res.run14} 次）；每个地下城次数 ${JSON.stringify(res.perDg)}`);
+console.log(`收入 ${tot}（怪物 ${Math.round(res.inc.mob / tot * 100)}%、翻牌 ${Math.round(res.inc.card / tot * 100)}%、卖装备 ${Math.round(res.inc.sell / tot * 100)}%、任务 ${Math.round(res.inc.quest / tot * 100)}%），支出 ${spend}（药 ${res.out.pot}、修理 ${res.out.repair}、买装备 ${res.out.gear}、强化 ${res.out.enh}），Lv${res.target} 时余额 ${res.final}`);
 const warn = [];
 if (res.minGold < 0) warn.push('有模拟出现金币为负（药剂 / 修理付不起）');
 if (res.final > 400000) warn.push('Lv20 时金币过多（> 40 万），价格偏低或产出偏高');
-if (res.lv[10].enh < 3) warn.push('Lv10 时武器强化等级偏低，强化费用偏贵');
+if (res.lv[10] && res.lv[10].enh < 3) warn.push('Lv10 时武器强化等级偏低，强化费用偏贵');
 if (res.out.repair > tot * 0.2) warn.push('修理费占收入 20% 以上，偏贵');
 console.log(warn.length ? '⚠ ' + warn.join('；') : '平衡检查通过');
 console.log('LOGS', JSON.stringify(logs.filter(l => l.type !== 'warning')));

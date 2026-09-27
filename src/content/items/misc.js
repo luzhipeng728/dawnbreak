@@ -11,13 +11,13 @@ defineItem('mpS', { kind: 'use', name: '新手 MP 药剂', rar: 0, price: 60, co
 defineItem('mpM', { kind: 'use', name: '普通 MP 药剂', rar: 0, price: 160, col: '#3a78ff', icon: 'item_mp_m', use: { mp: 0.45 }, desc: '立即恢复 45% 的 MP。' });
 defineItem('mpL', { kind: 'use', name: '熟练 MP 药剂', rar: 1, price: 400, col: '#3a78ff', icon: 'item_mp_l', use: { mp: 0.7 }, desc: '立即恢复 70% 的 MP。' });
 defineItem('elixir', { kind: 'use', name: '天堂的痊愈药剂', rar: 3, price: 1500, col: '#ffd23a', icon: 'item_elixir', use: { hp: 1, mp: 1 }, desc: '来自天界的灵药，HP 和 MP 全部恢复。' });
-defineItem('essence', { kind: 'use', name: '精灵香精', rar: 2, price: 700, col: '#9ae8ff', icon: 'item_mp_l', use: { mp: 1 }, desc: '精灵们珍藏的香精，MP 全部恢复。' });
+defineItem('essence', { kind: 'use', name: '精灵香精', rar: 2, price: 700, col: '#9ae8ff', icon: 'item_essence', use: { mp: 1 }, desc: '精灵们珍藏的香精，MP 全部恢复。' });
 defineItem('bread', { kind: 'use', name: '香喷喷的面包', rar: 0, price: 90, col: '#e8b060', icon: 'item_bread', use: { hp: 0.3, mp: 0.15 }, desc: '奥兰奶奶亲手烤的面包。恢复 30% HP、15% MP。' });
 defineItem('meat', { kind: 'use', name: '烤肉串', rar: 1, price: 260, col: '#c86a3a', icon: 'item_meat', use: { hp: 0.55 }, desc: '外焦里嫩，吃完浑身是劲。恢复 55% HP。' });
 /* ---- 地下城 BUFF 药剂（进地下城后使用） ---- */
-defineItem('potStr', { kind: 'use', name: '力量秘药', rar: 1, price: 900, col: '#ff6a3a', icon: 'item_hp_l', use: { buff: { atk: 0.08, t: 300 }, dungeonOnly: true }, desc: '5 分钟内攻击力 +8%。（地下城内使用）' });
-defineItem('potSpd', { kind: 'use', name: '疾风秘药', rar: 1, price: 700, col: '#6aff9a', icon: 'item_fatigue', use: { buff: { spd: 0.1, t: 300 }, dungeonOnly: true }, desc: '5 分钟内移动速度 +10%。（地下城内使用）' });
-defineItem('potCrit', { kind: 'use', name: '鹰眼秘药', rar: 2, price: 1600, col: '#ffd23a', icon: 'item_elixir', use: { buff: { crit: 0.05, t: 300 }, dungeonOnly: true }, desc: '5 分钟内暴击率 +5%。（地下城内使用）' });
+defineItem('potStr', { kind: 'use', name: '力量秘药', rar: 1, price: 900, col: '#ff6a3a', icon: 'item_pot_str', use: { buff: { atk: 0.08, t: 300 }, dungeonOnly: true }, desc: '5 分钟内攻击力 +8%。（地下城内使用）' });
+defineItem('potSpd', { kind: 'use', name: '疾风秘药', rar: 1, price: 700, col: '#6aff9a', icon: 'item_pot_spd', use: { buff: { spd: 0.1, t: 300 }, dungeonOnly: true }, desc: '5 分钟内移动速度 +10%。（地下城内使用）' });
+defineItem('potCrit', { kind: 'use', name: '鹰眼秘药', rar: 2, price: 1600, col: '#ffd23a', icon: 'item_pot_crit', use: { buff: { crit: 0.05, t: 300 }, dungeonOnly: true }, desc: '5 分钟内暴击率 +5%。（地下城内使用）' });
 /* ---- 疲劳 / 复活 / 强化 ---- */
 defineItem('fatigue', { kind: 'use', name: '抗疲劳秘药', rar: 2, price: 6000, col: '#6ad06a', icon: 'item_fatigue', use: { fatigue: 50, fatigueBelow: 50, perDay: 3 }, desc: '疲劳值低于 50 时可以使用，恢复 50 点疲劳值。每天最多使用 3 次。' });
 defineItem('coin', { kind: 'use', name: '复活币', rar: 2, price: 3000, col: '#ffd23a', icon: 'item_coin', desc: '在地下城里倒下时，可以原地满状态复活。获得后自动放进复活币栏。' });
@@ -26,7 +26,7 @@ defineItem('guard', { kind: 'use', name: '装备强化保护券', rar: 3, price:
 const potRoll = (lv, W) => { let r = Math.random() * W.reduce((a, b) => a + b[0], 0); for (const [w, f] of W) { r -= w; if (r <= 0) return f(lv); } return W[0][1](lv); };
 defineItem('pot', { kind: 'use', name: '袖珍罐', rar: 1, price: 800, icon: 'item_pot', desc: '土罐亲手烧制的小罐子，打开能得到与自己等级相符的随机物品。',
   use: { open: lv => [potRoll(lv, [[30, () => ({ key: pick(['hpM', 'mpM', 'hpL', 'bread', 'meat']), n: rndi(2, 5) })], [22, () => ({ key: 'crystal', n: rndi(8, 25) })], [30, () => ({ equip: true, rar: pick([1, 1, 2]) })], [12, () => ({ equip: true, rar: 3 })], [5, () => ({ equip: true, rar: 4 })], [1, () => ({ key: 'elixir', n: 1 })]])] } });
-defineItem('potGold', { kind: 'use', name: '黄金袖珍罐', rar: 3, price: 6000, icon: 'item_pot', desc: '金光闪闪的罐子，必定开出稀有以上的装备，极低几率开出史诗。',
+defineItem('potGold', { kind: 'use', name: '黄金袖珍罐', rar: 3, price: 6000, icon: 'item_pot_gold', desc: '金光闪闪的罐子，必定开出稀有以上的装备，极低几率开出史诗。',
   use: { open: lv => { const r = Math.random(); if (r < 0.02) { const E = rollEpic(lv); if (E) return [{ key: E.key }]; } return [{ equip: true, rar: r < 0.12 ? 4 : r < 0.45 ? 3 : 2 }]; } } });
 /* ---- 材料 ---- */
 defineItem('crystal', { kind: 'mat', name: '无色小晶块', rar: 0, price: 40, sellMul: 0.25, col: '#dfe8f0', icon: 'item_crystal', desc: '强化装备必需的材料。分解装备可以得到。' });
@@ -39,13 +39,13 @@ defineItem('m_leather', { kind: 'mat', name: '破旧的皮革', rar: 0, price: 3
 defineItem('m_iron', { kind: 'mat', name: '生锈的铁片', rar: 0, price: 30, col: '#9a8a7a', icon: 'item_mat_iron', desc: '从武器、重甲、板甲上拆下来的铁片。' });
 defineItem('m_bone', { kind: 'mat', name: '风化的碎骨', rar: 0, price: 30, col: '#e8e0c8', icon: 'item_mat_bone', desc: '分解首饰得到的碎骨。' });
 defineItem('m_elem', { kind: 'mat', name: '下级元素结晶', rar: 2, price: 400, col: '#b36bff', icon: 'item_mat_elem', desc: '分解稀有、套装装备得到的元素结晶。' });
-defineItem('m_elem2', { kind: 'mat', name: '上级元素结晶', rar: 3, price: 1600, col: '#ff6bd0', icon: 'item_mat_elem', desc: '分解神器以上的装备得到的高纯度元素结晶。' });
-defineItem('m_obsidian', { kind: 'mat', name: '黑曜石', rar: 3, price: 2000, col: '#3a2a4a', icon: 'item_crystal_black', desc: '暗黑雷鸣废墟深处偶尔能找到的黑色宝石。' });
+defineItem('m_elem2', { kind: 'mat', name: '上级元素结晶', rar: 3, price: 1600, col: '#ff6bd0', icon: 'item_mat_elem2', desc: '分解神器以上的装备得到的高纯度元素结晶。' });
+defineItem('m_obsidian', { kind: 'mat', name: '黑曜石', rar: 3, price: 2000, col: '#3a2a4a', icon: 'item_mat_obsidian', desc: '暗黑雷鸣废墟深处偶尔能找到的黑色宝石。' });
 defineItem('m_diamond', { kind: 'mat', name: '金刚石', rar: 3, price: 2500, col: '#bfefff', icon: 'item_mat_diamond', desc: '分解传说以上的装备得到的宝石，价值不菲。' });
 defineItem('m_soul', { kind: 'mat', name: '灵魂之石', rar: 5, price: 15000, col: '#e080ff', icon: 'item_mat_soul', desc: '分解史诗装备得到的结晶，寄宿着装备的灵魂。' });
 /* ---- 称号（帕丽丝出售 / 任务奖励）：slot 'title'，没有耐久，不能强化 ----
    任务组发称号：giveItem(makeItem('title_xxx')) */
-const defineTitle = (key, def) => defineItem(key, { kind: 'equip', slot: 'title', icon: 'item_title', durMax: 0, noEnhance: true, noDisassemble: true, ...def });
+const defineTitle = (key, def) => defineItem(key, { kind: 'equip', slot: 'title', icon: def.rar >= 4 ? 'item_title3' : def.rar >= 3 ? 'item_title' : 'item_title2', durMax: 0, noEnhance: true, noDisassemble: true, ...def });
 defineTitle('title_novice', { name: '初出茅庐', lvl: 1, rar: 1, price: 1500, st: { str: 3, int: 3, vit: 3, spr: 3 }, desc: '每个勇士都是从这里开始的。' });
 defineTitle('title_learner', { name: '好学的冒险家', lvl: 5, rar: 1, price: 3000, st: { str: 5, int: 5, vit: 5, spr: 5 }, fx: { expUp: 0.03 }, desc: '经验获得量 +3%。' });
 defineTitle('title_forest', { name: '格兰之森的守护者', lvl: 5, rar: 2, price: 6000, st: { str: 6, int: 6, vit: 6, spr: 6 }, fx: { mspd: 0.03 }, desc: '守护森林的勇士。' });

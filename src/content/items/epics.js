@@ -6,7 +6,7 @@
      proc：命中时的特殊效果（需要 bus 'playerHit' 事件）{ chance, cut?（削减目标当前 HP 比例）, burn?（灼伤秒数）, boss?（对领主是否生效） }
    套装：defineSet(id, { name, bonus: { 2: { st, desc }, 3: {...}, 5: {...} } })，部件用 setPiece / armorSet 注册
    ===================================================================== */
-const defineEpic = (key, def) => defineGear(key, { rar: 5, ...def });
+const defineEpic = (key, def) => defineGear(key, { rar: 5, icon: 'item_' + key, ...def });   // 专属图标 art/final/icon/item_ep_*.webp，没有就用类型图标
 // ---- 史诗武器（名字来自官方史诗） ----
 defineEpic('ep_shortsword', { slot: 'weapon', wtype: 'shortsword', lvl: 15, name: '无影剑-艾雷诺', st: { int: 19 }, fx: { crit: 0.04, mcrit: 0.04, critDmg: 0.12 }, desc: '传说中的名剑，剑身薄得几乎看不见。' });
 defineEpic('ep_katana', { slot: 'weapon', wtype: 'katana', lvl: 10, name: '月之光芒', fx: { critDmg: 0.25, crit: 0.05, mcrit: 0.05 }, desc: '刀身映着月光，挥动时留下银色的残影。' });
@@ -76,3 +76,20 @@ bus.on('playerHit', e => {
   if (P.cut && !(t.boss && P.boss === false)) { const d = Math.max(1, Math.round(t.hp * P.cut)); t.hp = Math.max(1, t.hp - d); addNumber(d, t.x, t.y, t.z + 20, { col: '#ff4a8a' }); fxText('十字斩！', t.x, t.y, t.z + 30, { col: '#ff4a8a', size: 12 }); }
   if (P.burn && typeof addStatus === 'function') addStatus(t, 'burn', P.burn, { dps: (game.player.atk || 500) * 0.12, src: game.player });
 });
+/* ---- 天空之城（Lv14~24）：Lv24 史诗与套装 ---- */
+defineEpic('ep_autopistol', { slot: 'weapon', wtype: 'autopistol', lvl: 24, name: '萤火之光', fx: { aspd: 0.1, light: 30, critDmg: 0.12 }, desc: '天空之城的工匠留下的手枪，子弹拖着萤火般的尾光。' });
+defineEpic('ep_rifle', { slot: 'weapon', wtype: 'rifle', lvl: 24, name: '贯穿之眼', fx: { crit: 0.06, mcrit: 0.06, hit: 0.05, dmgUp: 0.06 }, desc: '据说能看穿敌人的一切破绽。' });
+defineEpic('ep_spear', { slot: 'weapon', wtype: 'spear', lvl: 24, name: '龙人之枪', fx: { stagger: 50, dmgUp: 0.1, fire: 20 }, desc: '龙人族战士代代相传的长枪。' });
+defineEpic('ep_pole', { slot: 'weapon', wtype: 'pole', lvl: 24, name: '天穹之棍', fx: { cdr: 0.1, aspd: 0.06, cspd: 0.06 }, desc: '用天空之城顶端的神木削成。' });
+defineEpic('ep_ring2', { slot: 'ring', lvl: 24, name: '暗精灵之戒', fx: { dark: 30, crit: 0.05, mcrit: 0.05, critDmg: 0.1 }, desc: '暗之精灵祝福过的戒指。' });
+defineEpic('ep_neck2', { slot: 'neck', lvl: 24, name: '赛格哈特的吊坠', fx: { cdr: 0.08, dmgUp: 0.06 }, desc: '天空之城城主珍藏的吊坠。' });
+armorSet('set_sky', '悬空城守卫套装', 'plate', 24, 3, ['守卫胸甲', '守卫护肩', '守卫护腿', '守卫腰带', '守卫长靴'],
+  { 2: { st: { defPct: 0.07, vit: 25 }, desc: '防御力 +7%，体力 +25' }, 3: { st: { hpPct: 0.1, str: 30, int: 30 }, desc: 'HP 上限 +10%，力量 / 智力 +30' }, 5: { st: { dmgUp: 0.1, dmgReduce: 0.06, hardness: 40 }, desc: '伤害增加 10%，受到的伤害 -6%，硬直 +40' } });
+armorSet('set_dragonkin', '龙人秘法套装', 'cloth', 24, 3, ['秘法衬衫', '秘法肩甲', '秘法短裤', '秘法腰带', '秘法短靴'],
+  { 2: { st: { int: 30, mpPct: 0.1 }, desc: '智力 +30，MP 上限 +10%' }, 3: { st: { cspd: 0.08, elemAll: 15 }, desc: '施放速度 +8%，所有属性强化 +15' }, 5: { st: { dmgUp: 0.1, cdr: 0.08, mcrit: 0.05 }, desc: '伤害增加 10%，技能冷却 -8%，魔法暴击 +5%' } });
+armorSet('set_skyranger', '天空游侠套装', 'leather', 24, 3, ['游侠皮衣', '游侠护肩', '游侠皮裤', '游侠皮带', '游侠皮鞋'],
+  { 2: { st: { crit: 0.04, mcrit: 0.04 }, desc: '暴击率 +4%' }, 3: { st: { aspd: 0.08, str: 30, int: 30 }, desc: '攻击速度 +8%，力量 / 智力 +30' }, 5: { st: { dmgUp: 0.1, critDmg: 0.15 }, desc: '伤害增加 10%，暴击伤害 +15%' } });
+defineSet('set_seghart', { name: '城主赛格哈特的秘宝', bonus: { 2: { st: { allStat: 25 }, desc: '四维 +25' }, 3: { st: { dmgUp: 0.08, critDmg: 0.1, elemAll: 20 }, desc: '伤害增加 8%，暴击伤害 +10%，所有属性强化 +20' } } });
+setPiece('set_seghart', 'set_seghart_neck', { slot: 'neck', lvl: 24, rar: 4, name: '城主的项链' });
+setPiece('set_seghart', 'set_seghart_bracelet', { slot: 'bracelet', lvl: 24, rar: 4, name: '城主的手镯' });
+setPiece('set_seghart', 'set_seghart_ring', { slot: 'ring', lvl: 24, rar: 4, name: '城主的戒指' });

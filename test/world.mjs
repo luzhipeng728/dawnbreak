@@ -142,6 +142,8 @@ await closeAll();
 
 console.log('· 隐藏地下城的门现身');
 await page.evaluate(() => { (save.data.questDone ??= {}).q_hidden_frozen = true; save.data.hiddenSeen = {}; });
+await enter('gf_forest', { x: 2500, y: 90 }); await wait(600);
+ok(await page.evaluate(() => !world.fx.some(f => f.type === 'reveal') && !save.data.hiddenSeen.frozen_woods), '门在画面外时先不播现身特效（等玩家走到能看见的地方）');
 await enter('gf_forest', { x: 700, y: 90 }); await wait(700); await shot('hidden-reveal');
 const rv = await page.evaluate(() => world.fx.some(f => f.type === 'reveal'));
 ok(rv, '冰霜幽暗密林的门播放现身特效');

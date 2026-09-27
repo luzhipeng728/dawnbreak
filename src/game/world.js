@@ -124,7 +124,8 @@ function worldUpdate(dt) {
   world.near = near;
   world.exitLock = Math.max(0, world.exitLock - dt);
   // 隐藏地下城的门第一次出现：播放现身特效
-  for (const g of S.gates) { const D = DUNGEONS[g.dungeon]; if (D && D.hidden && gateVisible(g) && !(save.data.hiddenSeen ??= {})[D.id] && !world.revealing[D.id]) revealGate(g); }
+  // （门进入画面后才播：刚进场景时门常常在画面外，玩家走过去时特效早就播完了——试玩发现）
+  for (const g of S.gates) { const D = DUNGEONS[g.dungeon]; if (D && D.hidden && gateVisible(g) && !(save.data.hiddenSeen ??= {})[D.id] && !world.revealing[D.id] && Math.abs(g.x - (cam.x + WW / 2)) < WW / 2 - 80) revealGate(g); }
   if (menus.modal()) return;
   if (near && input.hit('attack')) { input.consume('attack'); openNpc(near.npc); return; }
   if (world.exitLock <= 0) for (const ex of S.exits) if (exitTouched(ex, p)) { useExit(ex); return; }

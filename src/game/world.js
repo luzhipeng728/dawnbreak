@@ -4,7 +4,7 @@
    - defineScene(id, def)：场景
        name 城镇 / 区域名（右上角大字、世界地图分组）  area 小区域名（如“中央广场”）  kind 'town' 城镇 | 'field' 区域地图
        width 场景宽  theme 背景（art/final/bg/<theme>_{far,floor,edge}）  bgm 曲目  interior 室内（没有路人和天气粒子）
-       map [x, y] 世界地图上的位置（0~100 × 0~60）  spawn {x, y} 默认出生点  ambient 环境粒子  crowd 路人数量
+       map [x, y] 世界地图上的位置（横 0~100 × 纵 -8~68）  spawn {x, y} 默认出生点  ambient 环境粒子  crowd 路人数量
        props [{ art, x, h, y?, anim?, glow?, flip? }]：y 省略 = 贴在后墙；y ≥ 0 = 摆在地面上，和角色一起按纵深排序
          anim：'flag'（左端固定的旗子）'hang'（上端固定的挂布）'sway'（摇摆）'bob'（漂浮）'breathe'（小动物）'fountain'（喷泉）
          glow：[x, y, 半径, 颜色]，x / y 是图内的相对位置（0~1），画一团会闪的光（灯、水晶）

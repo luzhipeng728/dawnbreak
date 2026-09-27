@@ -6,7 +6,7 @@
        通过区域移动 NPC 打开（{ travel: true }）→ 任何地方都能传；按 N 打开 → 只有站在城镇里时能传
    ===================================================================== */
 NPC_SERVICES.travel ??= { label: '区域移动', run: N => { if (menus.isOpen('worldmap')) menus.close('worldmap'); menus.open('worldmap', { travel: true, npc: N }); } };
-const WORLDMAP_H = 68;   // 地图坐标的纵向范围（横向 0~100）
+const WORLDMAP_Y0 = -8, WORLDMAP_H = 76;   // 地图坐标的纵向范围 -8 ~ 68（横向 0~100）；负数留给最北边的天空之城 / 天帷巨兽
 const REGION_COL = { 艾尔文防线: '#6fbf5a', 赫顿玛尔: '#e6c35c', 西海岸: '#5ab4e6', 洛兰: '#4fae8a', 格兰之森: '#8a6ad8', 天空之城: '#8ad0ff' };
 // 从 from 出发，按出口的等级要求 / 是否开放，能走到的场景
 function reachableScenes(from) {
@@ -30,7 +30,7 @@ Object.assign(menus, {
     const seen = save.data.seen || {}, reach = here ? reachableScenes(here) : new Set();
     let sel = SCENES[this.wmSel] ? this.wmSel : here;
     const map = h('div', { class: 'wm-map' }), info = h('div', { class: 'wm-info' });
-    const P = S => [S.map[0], S.map[1] / WORLDMAP_H * 100];
+    const P = S => [S.map[0], (S.map[1] - WORLDMAP_Y0) / WORLDMAP_H * 100];
     // 地区的底色（按城镇名分组，把同一地区的点包起来）
     const groups = {};
     for (const id in SCENES) { const S = SCENES[id]; if (S.map) (groups[S.name] ??= []).push(S); }
@@ -91,7 +91,7 @@ Object.assign(menus, {
 });
 addStyle(`
 .wm{display:flex;gap:.8em;align-items:stretch}
-.wm-map{position:relative;flex:1;aspect-ratio:100/68;border-radius:.4em;overflow:hidden;border:.12em solid #8a6a3a;
+.wm-map{position:relative;flex:1;aspect-ratio:100/76;border-radius:.4em;overflow:hidden;border:.12em solid #8a6a3a;
   background:radial-gradient(ellipse at 30% 30%,#f6e8c4,#e4c98e 70%,#c9a868);box-shadow:inset 0 0 2.4em rgba(90,60,20,.55)}
 .wm-region{position:absolute;border-radius:50%;background:radial-gradient(ellipse,color-mix(in srgb,var(--c) 42%,transparent),transparent 72%)}
 .wm-region span{position:absolute;left:50%;top:.2em;transform:translateX(-50%);font-weight:900;font-size:.95em;color:#4a3214;letter-spacing:.2em;text-shadow:0 0 .3em #fff6d8;white-space:nowrap}
@@ -102,7 +102,7 @@ addStyle(`
 .wm-node i{width:1.05em;height:1.05em;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6d0,#e8b44a 60%,#8a5a1a);border:.12em solid #4a2c0a;box-shadow:0 .1em .3em rgba(0,0,0,.5)}
 .wm-node.field i{border-radius:.15em;transform:rotate(45deg);width:.85em;height:.85em;background:radial-gradient(circle at 35% 35%,#e8fff0,#5ab48a 60%,#1a5a3a)}
 .wm-node b{margin-top:.15em;font-size:.72em;color:#3a2410;white-space:nowrap;text-shadow:0 0 .25em #fff8e0,0 0 .25em #fff8e0}
-.wm-node small{font-size:.6em;font-weight:800;color:#2a5a3a;text-shadow:0 0 .25em #fff8e0}
+.wm-node small{font-size:.6em;font-weight:800;color:#2a5a3a;background:rgba(255,246,220,.85);border-radius:.3em;padding:0 .3em;line-height:1.3}
 .wm-node.unk b{color:#8a7a5a}.wm-node.lock i{filter:grayscale(1) brightness(.8)}
 .wm-node.sel i{outline:.14em solid #fff;outline-offset:.12em}
 .wm-node.here i{animation:wmPulse 1.2s ease-in-out infinite;background:radial-gradient(circle at 35% 35%,#fff,#ff7a4a 55%,#9a2a0a)}

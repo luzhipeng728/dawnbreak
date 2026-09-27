@@ -51,7 +51,7 @@ defineScene('hm_market', {
   kind: 'town',                              // 'town' 城镇 | 'field' 区域地图（有地下城门）
   width: 2800, theme: 'town', bgm: 'hendon', // theme 对应 art/final/bg/<theme>_{far,floor,edge}.webp
   ambient: 'petals',                         // 环境粒子：leaves 落叶 / petals 花瓣 / sunbeam 室内光柱 / dust 光尘 / lantern 灯火光点 / magic 魔法光点 / gulls 海鸥
-  map: [52, 24],                             // 世界地图坐标：横 0~100，纵 0~62
+  map: [52, 24],                             // 世界地图坐标：横 0~100，纵 -8~68（越小越靠北）
   props: [ { art: 'world/b_merchant', x: 600, h: 230 }, { art: 'world/p_lamp', x: 900, h: 128, glow: [0.74, 0.36, 30] } ],
   npcs: [ { npc: 'norton', x: 650, y: 46 } ],
   exits: [ { side: 'right', to: 'hm_plaza' } ],

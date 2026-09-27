@@ -30,6 +30,6 @@ if (typeof GATE_ART !== 'undefined') Object.assign(GATE_ART, {
 });
 
 /* ---- 区域地图：从西海岸的云梯上来，站在最左边；越往右等级越高 ---- */
-defineScene('sky_castle', { name: '天空之城', area: '天空之城', kind: 'field', width: 3600, theme: 'skyTower', bgm: 'sky', map: [30, 5],
+defineScene('sky_castle', { name: '天空之城', area: '天空之城', kind: 'field', width: 3600, theme: 'skyTower', bgm: 'sky', map: [30, 2],
   exits: [{ side: 'left', to: 'west_coast' }],
   gates: [{ dungeon: 'dragon_tower', x: 480 }, { dungeon: 'puppet_hall', x: 1000 }, { dungeon: 'golem_tower', x: 1520 }, { dungeon: 'dark_corridor', x: 2040 }, { dungeon: 'lord_palace', x: 2560 }, { dungeon: 'floating_castle', x: 3080 }] });

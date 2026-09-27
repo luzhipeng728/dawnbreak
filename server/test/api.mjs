@@ -7,7 +7,18 @@ import WebSocket from 'ws';
 import { start } from '../index.js';
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dnf-api-'));
-const app = await start({ port: 0, db: path.join(tmp, 't.db'), invites: ['TESTCODE'], admins: ['alice'], graceMs: 1500 });
+// 扩展模块示例（和其他组写 server/modules/*.js 的方式一样）
+fs.writeFileSync(path.join(tmp, 'demo.js'), `export default {
+  name: 'demo',
+  migrations: ['CREATE TABLE demo (id INTEGER PRIMARY KEY, user_id INTEGER, text TEXT)'],
+  init(ctx) { return { count: () => ctx.db.get('SELECT COUNT(*) AS n FROM demo').n }; },
+  routes(r, ctx) {
+    r.post('/api/demo', { auth: true, rate: [3, 60] }, req => { if (!req.body.text) throw ctx.err(400, '没有内容'); ctx.db.run('INSERT INTO demo (user_id, text) VALUES (?, ?)', req.user.id, String(req.body.text)); ctx.sendTo(req.user.id, { t: 'demo:new', n: ctx.mods.demo.count() }); return { n: ctx.mods.demo.count() }; });
+    r.get('/api/demo/admin', { admin: true }, () => ({ online: ctx.online().length }));
+  },
+  ws: { 'demo:echo'(c, msg) { c.send({ t: 'demo:echo', v: msg.v, me: c.user.name }); } },
+};`);
+const app = await start({ port: 0, db: path.join(tmp, 't.db'), invites: ['TESTCODE'], admins: ['alice'], graceMs: 1500, extraModules: [path.join(tmp, 'demo.js')] });
 const BASE = `http://127.0.0.1:${app.port}`;
 let fails = 0, n = 0;
 const ok = (c, msg) => { n++; if (c) console.log('✓', msg); else { fails++; console.log('✗', msg); } };
@@ -77,6 +88,15 @@ try {
   const bad = new WebSocket(`ws://127.0.0.1:${app.port}/ws`);
   const badClose = await new Promise(res => { bad.on('open', () => bad.send(JSON.stringify({ t: 'auth', token: A, ver: 999 }))); bad.on('close', code => res(code)); });
   ok(badClose === 4002, '协议版本不一致 → 断开（4002）');
+  // 扩展模块
+  ok((await api('POST', '/api/demo', { text: 'hi' }, A)).data.n === 1, '扩展模块：路由 + 迁移 + ctx.mods 互调');
+  ok(await has(ca, m => m.t === 'demo:new' && m.n === 1), '扩展模块：ctx.sendTo 推送');
+  ok((await api('POST', '/api/demo', {}, A)).status === 400, '扩展模块：ctx.err 返回中文错误');
+  ok((await api('GET', '/api/demo/admin', null, B)).status === 403 && (await api('GET', '/api/demo/admin', null, A)).data.online >= 1, '扩展模块：admin 路由只有管理员能调');
+  await api('POST', '/api/demo', { text: '2' }, A); await api('POST', '/api/demo', { text: '3' }, A);
+  ok((await api('POST', '/api/demo', { text: '4' }, A)).status === 429, '扩展模块：路由限流 rate');
+  ca.send({ t: 'demo:echo', v: 7 });
+  ok(await has(ca, m => m.t === 'demo:echo' && m.v === 7 && m.me === 'alice'), '扩展模块：WS 消息处理');
   // 同屏
   const char = n => ({ name: n, cls: 'sword', job: null, lvl: 5, look: { wpn: 'katana', set: null, acc: [] } });
   ca.send({ t: 'hello', char: char('阿丽') }); cb.send({ t: 'hello', char: char('小鲍') });

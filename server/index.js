@@ -44,6 +44,7 @@ export async function start(over = {}) {
   const files = [
     ...coreOrder.map(n => path.join(DIR, 'core', n + '.js')),
     ...(fs.existsSync(path.join(DIR, 'modules')) ? fs.readdirSync(path.join(DIR, 'modules')).filter(f => f.endsWith('.js')).sort().map(f => path.join(DIR, 'modules', f)) : []),
+    ...(cfg.extraModules || []),   // 测试用：额外加载的模块文件
   ];
   const loaded = [];
   for (const f of files) {

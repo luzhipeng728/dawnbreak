@@ -25,12 +25,24 @@ def fit(im, m):
     s = m / max(im.size)
     return im.resize((max(1, round(im.width * s)), max(1, round(im.height * s))), Image.LANCZOS)
 
+# 战斗组新增的技能特效（原图在主仓库 art/src/combat/fx，生成见 combatgen.py）
+COMBAT_GLOW = {'ghost': 320, 'crossx': 256, 'swordrain': 256, 'bloodwave': 320, 'bloodhand': 320, 'bloodpillar': 384, 'lava': 320, 'dragonfang': 384,
+               'chaser': 96, 'laser': 512, 'flame': 256, 'shell': 128, 'quantum': 256, 'darkorb': 192, 'eel': 128, 'petal': 256, 'thunderbolt': 512, 'elemmeteor': 256}
+COMBAT_SOLID = {'icewall': 192, 'jack': 96, 'jackbig': 256, 'snowman': 128}
+
 def main():
+    """fxprep.py            处理 art/src/fx 下的特效原图
+       fxprep.py --combat   处理战斗组的特效原图（主仓库 art/src/combat/fx）"""
     out = os.path.join(ROOT, 'final', 'fx'); os.makedirs(out, exist_ok=True); tot = 0
-    for n, m in {**GLOW, **SOLID}.items():
-        p = os.path.join(ROOT, 'src', 'fx', f'{n}.png')
+    glow, src = GLOW, os.path.join(ROOT, 'src', 'fx')
+    todo = {**GLOW, **SOLID}
+    if '--combat' in sys.argv:
+        from combatgen import OUT
+        glow, src, todo = COMBAT_GLOW, os.path.join(OUT, 'fx'), {**COMBAT_GLOW, **COMBAT_SOLID}
+    for n, m in todo.items():
+        p = os.path.join(src, f'{n}.png')
         if not os.path.exists(p): print('missing', n); continue
-        im = glow_to_rgba(Image.open(p)) if n in GLOW else remove_bg(Image.open(p))
+        im = glow_to_rgba(Image.open(p)) if n in glow else remove_bg(Image.open(p))
         im = fit(im, m); f = os.path.join(out, f'{n}.webp'); im.save(f, 'WEBP', quality=80, method=6)
         tot += os.path.getsize(f); print(f'{n:10s} {im.size}  {os.path.getsize(f) // 1024}K')
     print('total', tot // 1024, 'KB')

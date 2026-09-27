@@ -179,7 +179,7 @@ class Ent {
     else if (s === 'air') clip = this.vz > 80 ? this.clipOr('airUp', 'air') : this.clipOr('air');
     else if (s === 'down' || (s === 'dead' && this.z <= 0)) clip = this.clipOr('down');
     else if (s === 'dead') clip = 'air';
-    else if (s === 'held') clip = this.clipOr('held', 'hit2', 'hit');
+    else if (s === 'held') clip = this.heldClip && this.clips[this.heldClip] ? this.heldClip : this.clipOr('held', 'hit2', 'hit');
     else if (s === 'getup') clip = this.clipName;
     if (this.landT > 0) this.landT -= dt;
     if (clip !== this.clipName) this.play(clip);

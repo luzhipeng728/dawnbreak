@@ -60,6 +60,7 @@ function tickFighter(p, dt) {
 function playerControl(p, dt) {
   if (p.dead) return;
   const I = p.pad, dx = I.dx(), dy = I.dy();
+  tickPassives(p, dt);
   if (p.reboundCd > 0) p.reboundCd -= dt;
   if (p.dodgeCd > 0) p.dodgeCd -= dt;
   if (p.breakCd > 0) p.breakCd -= dt;
@@ -73,6 +74,8 @@ function playerControl(p, dt) {
   if (!p.free && p.st !== 'act') return;   // 硬直 / 浮空 / 倒地 / 起身 / 被抓
   // 后跳：↓ + C（站立时；普攻打出判定后 / 技能后摇中也能用来取消）
   if (I.buffered('jump') && I.is('down') && p.z <= 1 && canBackstep(p)) { I.consume('jump'); p.doAct(p.acts.back || BACKSTEP); return; }
+  // 动作自己处理输入（流心的 X/C/Z、移动射击、天雷落点、连按追加……）
+  if (p.st === 'act' && p.act && p.act.onInput && p.act.onInput(p, I, dt)) return;
   // ---- 技能（可取消普攻 / 技能后摇）----
   if (trySkill(p)) return;
   // ---- 动作中：普攻连段 ----
@@ -141,6 +144,7 @@ function castSkill(p, id, viaCmd, key) {
   const slot = barOf(p).indexOf(id), flash = msg => { if (human && slot >= 0) ui.flashSlot(slot, msg); return true; };
   if (lv <= 0) return flash('未学习');
   if (S.job && S.job !== jobOf(p)) return flash('未转职');
+  if (S.awaken && human && typeof awakenUnlocked === 'function' && !awakenUnlocked()) return flash('未觉醒');
   if ((p.cool[id] || 0) > 0) return flash('冷却中');
   const mp = Math.round(S.mp * (viaCmd ? 0.98 : 1));
   if (p.mp < mp) return flash('MP不足');
@@ -154,7 +158,7 @@ function castSkill(p, id, viaCmd, key) {
   if (S.pvp) extra.pvp = S.pvp;
   if (S.speed || S.cast) extra.speed = S.speed || 'cspd';
   p.doAct(S.act(lv, p), extra);
-  if (human) game.onSkill(id);
+  if (human) { game.onSkill(id); bus.emit('skillUse', { id }); }
   return true;
 }
 function trySkill(p) {
@@ -176,22 +180,28 @@ function trySkill(p) {
     I.consume(key);
     if (castSkill(p, id, false, key)) return true;
   }
-  // 指令：方向 + Z（或 + X）
+  // 指令：方向 + Z（攻击类）/ Space（Buff 类，cmdB）/ X / C
   const C = CLASSES[p.cls];
-  if (!C.cmdsSorted) C.cmdsSorted = [...C.cmds].sort((a, b) => cmdRank(b[0]) - cmdRank(a[0]));
-  for (const key of ['cmd', 'attack']) {
+  if (!C.cmdsSorted) C.cmdsSorted = [...C.cmds].sort((a, b) => cmdRank(b[0]) - (b[2] === 'buff' ? 0.01 : 0) - cmdRank(a[0]) + (a[2] === 'buff' ? 0.01 : 0));
+  const hasCmdB = !!KEYMAP.cmdB;
+  for (const key of CMD_KEYS) {
     if (!I.buffered(key)) continue;
     for (const [seq, id, k2] of C.cmdsSorted) {
-      if ((k2 || 'cmd') !== key || !cmdMatch(I, seq, p.face)) continue;
+      const kk = k2 || 'cmd';
+      const ok = key === 'cmdB' ? kk === 'buff' : key === 'cmd' ? kk === 'cmd' || (kk === 'buff' && !hasCmdB) : kk === key;
+      if (!ok || (seq === '' && key !== 'cmd') || !cmdMatch(I, seq, p.face)) continue;
       if (lvOf(p, id) <= 0 || (p.cool[id] || 0) > 0 || (SKILLS[id].job && SKILLS[id].job !== jobOf(p))) continue;
-      if (key === 'attack' && seq === '') continue;
-      I.consume(key);
-      if (castSkill(p, id, seq !== '', key)) return true;
+      if (seq !== '' && isHuman(p) && cmdLocked(id)) continue;   // 技能窗口里锁定了指令：只能用快捷栏释放
+      I.consume(key); if (key === 'cmdB') I.consume('cmd');
+      if (castSkill(p, id, seq !== '', key === 'cmdB' ? 'cmd' : key)) return true;
     }
     if (key === 'cmd') { I.consume('cmd'); return false; }
   }
   return false;
 }
+const CMD_KEYS = ['cmdB', 'cmd', 'attack', 'jump'];
+// 指令锁定（界面组在技能窗口右键设置）：save.data.opts.cmdLock[id] 为 true 时不能用指令释放
+const cmdLocked = id => !!(save.data && save.data.opts && save.data.opts.cmdLock && save.data.opts.cmdLock[id]);
 // 指令优先级：长指令 > 按住→ > 单方向 > 无方向
 const cmdRank = s => s === 'hold' ? 1.5 : s === '' ? 0 : s.length + (s.length === 1 ? 0.2 : 0);
 function cmdMatch(I, seq, face) {

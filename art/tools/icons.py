@@ -16,9 +16,15 @@ SHEETS = {
 }
 
 def main():
+    """icons.py            切 art/src/icons 下的图标表
+       icons.py --combat   切战斗组的技能图标表（主仓库 art/src/combat/icons，名字见 combatgen.ICON_SHEETS）"""
     out = os.path.join(ROOT, 'final', 'icon'); os.makedirs(out, exist_ok=True)
-    for sheet, names in SHEETS.items():
-        p = os.path.join(ROOT, 'src', 'icons', f'{sheet}.png')
+    sheets, src = SHEETS, os.path.join(ROOT, 'src', 'icons')
+    if '--combat' in sys.argv:
+        from combatgen import ICON_SHEETS, OUT
+        sheets, src = {k: [n for n, _ in v] for k, v in ICON_SHEETS.items()}, os.path.join(OUT, 'icons')
+    for sheet, names in sheets.items():
+        p = os.path.join(src, f'{sheet}.png')
         if not os.path.exists(p): print('missing', sheet); continue
         im = remove_bg(Image.open(p)); arr = np.array(im)
         lab, comps = components(arr[..., 3], min_cells=200)

@@ -25,6 +25,12 @@ NAMES = {
 MON = {'act': ['atk1', 'atk2', 'atk3', 'atk4', 'hit1', 'hit2', 'air', 'down'], 'more': ['cast1', 'cast2', 'low1', 'low2', 'getup', 'jump', 'idle2', 'taunt']}
 CYCLE = {'walk', 'run'}
 
+try:   # 战斗组新增的动作表（art/tools/combatgen.py）：帧名来自那里的 SHEETS
+    from combatgen import SHEETS as CSHEETS
+    for _k, _v in CSHEETS.items():
+        _c, _s = _k.split('_', 1); NAMES.setdefault(_c, {})[_s] = [n for n, _ in _v]
+except Exception as _e: print('combatgen 未加载', _e)
+
 def names_for(char, sheet):
     if sheet == 'walk': return ['idle'] + W8
     if sheet == 'run': return [None] + R8
@@ -51,18 +57,30 @@ def cut9(path, n=9):
     return im, arr, lab, order
 
 def main():
-    pre = sys.argv[1] if len(sys.argv) > 1 else ''
-    src = os.path.join(ROOT, 'src', 'sheets2'); pv_dir = os.path.join(ROOT, 'cut', 'sheets2'); os.makedirs(pv_dir, exist_ok=True)
+    """frames2.py [前缀]                              全部重切（会清空 art/final/spr/<角色>/）
+       frames2.py --src <目录> --keep [前缀]          只切某个目录里的表，追加 / 覆盖到现有素材（沿用现有 spr.json 的 res）"""
+    import argparse
+    ap = argparse.ArgumentParser(); ap.add_argument('pre', nargs='?', default=''); ap.add_argument('--src', default=os.path.join(ROOT, 'src', 'sheets2')); ap.add_argument('--keep', action='store_true')
+    A = ap.parse_args(); pre = A.pre; keep = A.keep
+    src = A.src; pv_dir = os.path.join(ROOT, 'cut', 'sheets2'); os.makedirs(pv_dir, exist_ok=True)
     chars = {}
     for f in sorted(os.listdir(src)):
-        char, sheet = f[:-4].rsplit('_', 1)
-        if char.startswith(pre): chars.setdefault(char, []).append((sheet, os.path.join(src, f)))
+        if not f.endswith('.png') or f.endswith('_raw.png'): continue
+        char, sheet = f[:-4].split('_', 1)
+        if f[:-4].startswith(pre): chars.setdefault(char, []).append((sheet, os.path.join(src, f)))
     for char, sheets in chars.items():
         out = os.path.join(ROOT, 'final', 'spr', char)
-        if os.path.isdir(out):
-            for x in os.listdir(out): os.remove(os.path.join(out, x))
+        global RES
+        if keep and os.path.exists(os.path.join(out, 'spr.json')):
+            meta = json.load(open(os.path.join(out, 'spr.json'))); RES = meta['res']
+            for sheet, _ in sheets:
+                for fn in names_for(char, sheet):
+                    if fn: meta['frames'].pop(fn, None)
+        else:
+            if os.path.isdir(out):
+                for x in os.listdir(out): os.remove(os.path.join(out, x))
+            meta = {'res': RES, 'frames': {}}
         os.makedirs(out, exist_ok=True)
-        meta = {'res': RES, 'frames': {}}
         for sheet, path in sheets:
             names = names_for(char, sheet)
             im, arr, lab, order = cut9(path)

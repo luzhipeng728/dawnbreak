@@ -234,16 +234,18 @@ function spawnCrowd(S) {
   loadArtKeys(CROWD_CLS.flatMap(crowdFrames)).then(() => {
     if (world !== W0) return;
     const used = new Set();
-    for (let i = 0; i < n; i++) world.crowd.push(makePasserby(S, used, true));
+    for (let i = 0; i < n; i++) { const w = makePasserby(S, used, (i + 0.5) / n); if (w) world.crowd.push(w); }
   });
 }
-function makePasserby(S, used, anywhere) {
-  const cls = pick(CROWD_CLS.filter(c => SPR_DATA[c] && IMG[`spr/${c}/idle`])); if (!cls) return null;
+// slot：开场时均匀撒在场景里的位置（0~1）；不传 = 从出口 / 地下城门里走出来
+function makePasserby(S, used, slot) {
+  const have = CROWD_CLS.filter(c => SPR_DATA[c] && IMG[`spr/${c}/idle`]); if (!have.length) return null;
+  const cnt = c => world.crowd.filter(w => w.cls === c).length, least = Math.min(...have.map(cnt)), cls = pick(have.filter(c => cnt(c) === least));   // 三个职业轮着来
   let name = pick(CROWD_NAMES); for (let k = 0; k < 6 && used.has(name); k++) name = pick(CROWD_NAMES); used.add(name);
   const looks = CROWD_LOOKS[cls].filter((l, i) => i || !game.player || game.player.cls !== cls);
   const w = new Passerby({ cls, name, guild: pick(CROWD_GUILDS), model: new SpriteModel(cls, SPR_FALLBACK, SPR_ANIMS[cls], pick(looks)) });
   const edges = S.exits.filter(e => (e.side === 'left' || e.side === 'right') && !e.locked), gates = S.gates.filter(gateVisible);
-  if (anywhere) { w.x = rnd(150, S.width - 150); w.y = rnd(30, DEPTH - 30); }
+  if (slot !== undefined) { w.x = clamp(slot * S.width + rnd(-80, 80), 150, S.width - 150); w.y = rnd(30, DEPTH - 30); w.wait = rnd(0.5, 4); }
   else if (S.kind === 'field' && gates.length && Math.random() < 0.6) { const g = pick(gates); w.x = g.x; w.y = 24; }   // 刚从地下城出来
   else if (edges.length) { const e = pick(edges); w.x = e.side === 'left' ? 40 : S.width - 40; w.y = rnd(40, DEPTH - 40); }
   else { w.x = rnd(150, S.width - 150); w.y = rnd(30, DEPTH - 30); }
@@ -253,7 +255,7 @@ function makePasserby(S, used, anywhere) {
 function updateCrowdPool() {
   const S = world.S, C = world.crowd;
   for (let i = C.length - 1; i >= 0; i--) if (C[i].gone) C.splice(i, 1);
-  if (C.length < crowdSize(S) && Math.random() < 0.004) { const w = makePasserby(S, new Set(C.map(c => c.name)), false); if (w) C.push(w); }
+  if (C.length < crowdSize(S) && Math.random() < 0.004) { const w = makePasserby(S, new Set(C.map(c => c.name))); if (w) C.push(w); }
 }
 /* =====================================================================
    环境粒子：落叶 / 花瓣 / 光尘 / 魔法光点 / 海鸥（按场景的 ambient 选择；区域地图沿用主题自带的萤火虫、雨等）

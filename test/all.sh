@@ -33,5 +33,7 @@ run botrun    env SPEED=3 node test/botrun.mjs lorien:3:0:sword,lorien_deep:4:0:
 run serverapi node server/test/api.mjs
 run netacct   node test/net_account.mjs
 # 社交组、联机组后续的测试加在这里
+run svcapi    node test/svc_api.mjs
+run svcplay   node test/svc_play.mjs
 run webflow   env WEB=1 node test/flow.mjs
 echo; cat $LOG/summary.txt

@@ -81,7 +81,7 @@ function sxaBuy(el, d) {
 function sxaBuyAsk(el, a) {
   if (game.gold < a.price) { toastMsg('金币不足', '#ff6a6a'); sfx.error(); return; }
   const it = a.item || { name: a.name, rar: a.rar };
-  itemDialog(el, { title: '一口价购买', msg: `以 <span class="gold">${fmtNum(a.price)} G</span> 购买 ${itemNameHtml({ ...it, n: a.n })}？<br><span class="small dim">物品会通过邮件送到你的邮箱。</span>`, okText: '购买', onOk: () => {
+  itemDialog(el, { title: '一口价购买', msg: `以 <span class="gold">${fmtNum(a.price)} G</span> 购买 ${sxItemHtml({ ...it, n: a.n })}？<br><span class="small dim">物品会通过邮件送到你的邮箱。</span>`, okText: '购买', onOk: () => {
     if (SXA.busy) return;
     SXA.busy = true;
     sxAuctionBuy(a).then(() => { sfx.coin(); toastMsg(`购买成功：${a.name}，请到邮箱领取`, '#8aff9a'); }).catch(e => { toastMsg(e.message, '#ff6a6a'); sfx.error(); })
@@ -141,7 +141,7 @@ function sxaListAsk(el) {
   if (!it) return;
   if (p < 1) { toastMsg('请填写价格', '#ffb0a0'); sfx.error(); return; }
   const fee = sxAuctionFee(p, S.hours);
-  itemDialog(el, { title: '确认上架', msg: `${itemNameHtml({ ...it, n: it.kind === 'equip' ? 1 : S.n })}<br>一口价 <span class="gold">${fmtNum(p)} G</span>，上架 ${S.hours} 小时<br>保管费 <span class="gold">${fmtNum(fee)} G</span>（不退）`, okText: '上架', onOk: () => {
+  itemDialog(el, { title: '确认上架', msg: `${sxItemHtml({ ...it, n: it.kind === 'equip' ? 1 : S.n })}<br>一口价 <span class="gold">${fmtNum(p)} G</span>，上架 ${S.hours} 小时<br>保管费 <span class="gold">${fmtNum(fee)} G</span>（不退）`, okText: '上架', onOk: () => {
     if (SXA.busy) return;
     SXA.busy = true;
     sxAuctionList(it, S.n, p, S.hours).then(() => { sfx.coin(); toastMsg(`已上架：${it.name}`, '#8aff9a'); S.it = null; S.price = ''; }).catch(e => { toastMsg(e.message, '#ff6a6a'); sfx.error(); })

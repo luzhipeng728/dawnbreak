@@ -78,6 +78,8 @@ function sxEntrySlot(e, opt = {}) {
   if (opt.sm) el.classList.add('sm');
   return el;
 }
+// 物品名（HTML，名字来自其他玩家，先转义）
+const sxItemHtml = it => `<span class="q${(it.rar | 0)}">${escHtml(`${it.enh ? '+' + (it.enh | 0) + ' ' : ''}${it.name || ''}${it.n > 1 ? ' ×' + (it.n | 0) : ''}`)}</span>`;
 // 金币 / 点券 条目
 const sxMoney = (gold, cera) => [gold ? h('span', { class: 'gold', style: 'font-weight:900' }, `${fmtNum(gold)} G`) : null, cera ? h('span', { class: 'cera', style: 'font-weight:900' }, `点券 ${fmtNum(cera)}`) : null].filter(Boolean);
 

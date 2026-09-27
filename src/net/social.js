@@ -246,7 +246,10 @@ bus.on('sceneEnter', () => {
 });
 async function sxSigninCheck() {
   if (!socialOn()) return;
-  try { const s = await sxApi('GET', '/api/signin'); SX.signed = !!s.signed; SX.signinState = s; } catch (e) { /* 下次再查 */ }
+  try {
+    const s = await sxApi('GET', '/api/signin'); SX.signed = !!s.signed; SX.signinState = s;
+    if (!s.signed && SX.remindDay !== s.today) { SX.remindDay = s.today; toastMsg('每日签到：今天还没有签到哦（屏幕左侧“签到”）', '#ffe08a'); }
+  } catch (e) { /* 下次再查 */ }
 }
 function sxOnline() { if (!socialOn()) return; sxMailCounts(); sxSigninCheck(); sxReconcile(); sxRankSoon(2000); }
 bus.on('netLogin', sxOnline);

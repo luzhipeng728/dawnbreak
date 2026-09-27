@@ -19,6 +19,8 @@ const AVATAR_SETS = {
   av_spring: { id: 'spring', name: '锦鲤贺岁' },
   av_sky1: { id: 'sky1', name: '天穹圣翼' },
   av_summer: { id: 'summer', name: '晴空海滩' },
+  av_sky2: { id: 'sky2', name: '炎龙之魂' },
+  av_academy: { id: 'academy', name: '星辉学院' },
 };
 // 头部配件（帽子 / 头部 / 脸部）：按每帧的头部锚点（art/tools/avatar_head.py 求出的站姿头部中心 + 转角）叠加；图 IMG['avatar/<img>']
 //   pos[职业 / 职业@ / 职业@套装] = [dx, dy, 转角, 缩放]：配件图中心相对头部锚点的位置（帧像素，站姿朝右时）。
@@ -37,6 +39,13 @@ const AVATAR_ACC = {
   av_hat_summer: { img: 'summer_hat', pos: { sword: [4, -24, 0.2, 0.62], gun: [4, -24, 0.2, 0.62], mage: [4, -24, 0.2, 0.62] } },
   av_hair_summer: { img: 'summer_hair', pos: { sword: [-30, 6, 0, 0.75], gun: [-30, 6, 0, 0.75], mage: [-30, 6, 0, 0.75] } },
   av_face_summer: { img: 'summer_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66] } },
+  // 天空套二「炎龙之魂」：一对黑红龙角、火焰发饰；脸部无配件
+  av_hat_sky2: { img: 'sky2_hat', pos: { sword: [2, -36, -0.1, 0.62], gun: [2, -36, -0.1, 0.62], mage: [2, -36, -0.1, 0.62] } },
+  av_hair_sky2: { img: 'sky2_hair', pos: { sword: [-30, 0, 0, 0.75], gun: [-30, 0, 0, 0.75], mage: [-30, 0, 0, 0.75] } },
+  // 学院「星辉学院」：藏青贝雷帽（金色校徽）、红格纹蝴蝶结、黑框方形眼镜
+  av_hat_academy: { img: 'academy_hat', pos: { sword: [0, -30, -0.12, 0.66], gun: [0, -30, -0.12, 0.66], mage: [0, -30, -0.12, 0.66] } },
+  av_hair_academy: { img: 'academy_hair', pos: { sword: [-32, 14, 0, 0.6], gun: [-32, 14, 0, 0.6], mage: [-32, 14, 0, 0.6] } },
+  av_face_academy: { img: 'academy_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66] } },
   av_face_spring: { img: 'spring_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66] } },
 };
 const AVATAR_ACC_SCALE = 0.8;   // 配件图比游戏里画的大 1.25 倍（art/tools/avatar_acc.py）

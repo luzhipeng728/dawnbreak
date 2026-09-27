@@ -4,7 +4,7 @@
    ===================================================================== */
 const FATIGUE_MAX = 156;
 const dayKey = () => { const d = new Date(Date.now() - 6 * 3600 * 1000); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
-const SAVE_V = 3, MAX_CHARS = 6;
+const SAVE_V = 4, MAX_CHARS = 6;
 const DUNGEON_ALIAS = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
 /* 存档结构：{ v, cur, chars: [角色数据...] }，每个角色独立保存等级 / 背包 / 任务 / 位置等（官方的角色选择） */
 const save = {
@@ -53,6 +53,14 @@ const save = {
     if ((d.v || 1) < 3) {   // v2 → v3：地下城改成官方名称（编号映射），新增角色名 / 转职 / 任务 / 位置
       const remap = o => { const r = {}; for (const k in o || {}) { const [id, diff] = k.split(':'); r[(DUNGEON_ALIAS[id] || id) + (diff !== undefined ? ':' + diff : '')] = o[k]; } return r; };
       d.unlocked = remap(d.unlocked); d.best = remap(d.best); d.loc = null;
+    }
+    if ((d.v || 1) < 4) {   // v3 → v4：技能体系按官方重做（旧技能删除、初始技能改变）→ 和官方大版本一样，技能初始化并返还全部 SP
+      const C = CLASSES[d.cls];
+      d.skillLv = {}; for (const id of C.start) d.skillLv[id] = 1;
+      d.skillBar = C.bar.slice(0, 12); while (d.skillBar.length < 12) d.skillBar.push(null);
+      d.sp = 150; for (let l = 2; l <= (d.lvl || 1); l++) d.sp += 28 + l;   // 与 onLevelUp 的 SP 发放一致
+      if (d.opts) d.opts.cmdLock = {};
+      this.skillReset = true;
     }
     d.v = SAVE_V; return d;
   },

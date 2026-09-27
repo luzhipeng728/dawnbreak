@@ -13,6 +13,7 @@ function startGameNow(cls) {
   return goTown().then(() => afterEnterWorld());
 }
 function afterEnterWorld() {
+  if (save.skillReset) { save.skillReset = false; toastMsg('版本更新：技能体系按官方重做，技能已初始化，SP 全部返还（按 K 重新加点）', '#8aff9a'); }
   if (save.migrated) { save.migrated = false; toastMsg('版本更新：角色变强了！获得 150 SP、1000 G 与药剂补给，新增闪避（Shift）', '#8aff9a'); }
   if (!save.data.seenHelp) { save.data.seenHelp = true; menus.open('help'); }
 }

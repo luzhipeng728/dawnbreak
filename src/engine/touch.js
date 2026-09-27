@@ -1,6 +1,6 @@
 /* =====================================================================
    32. 触屏操作（手机 / 平板自动启用，?touch 强制启用）
-   左半屏：浮动摇杆（推到底 = 跑步；方向变化会记入指令输入）；右侧：攻击 X / 跳跃 C / 指令 Z / 闪避 / 6 个技能（可翻页）；
+   左半屏：浮动摇杆（推到底 = 跑步；方向变化会记入指令输入）；右侧：攻击 X / 跳跃 C / 指令 Z / Buff 指令 / 闪避 / 6 个技能（可翻页）；
    左上：药水 / 翻页 / 物品栏 / 技能 / 任务 / 菜单。设置 → 手机按钮 可以调大小、透明度、左右互换（uiPref touchSize / touchAlpha / touchSwap）
    打开任何窗口时隐藏虚拟按键，避免和窗口抢触摸（窗口用 ✕ 关闭）
    ===================================================================== */
@@ -39,6 +39,8 @@ const touch = {
     // 右下角：X 为圆心，C / Z / 闪避在内圈，6 个技能在外圈（角度 / 半径 / 大小，单位 vh，相对屏幕右下角）
     const put = (b, ang, r, size) => { this.placed.push({ b, ang, r, size }); el.appendChild(b); return b; };
     put(btn('X', 'atk', ...key('attack')), 0, 0, 16); put(btn('C', 'jump', ...key('jump')), 196, 16.5, 10.5); put(btn('Z', 'cmd', ...key('cmd')), 104, 16.5, 10.5); put(btn('闪', 'dodge', ...key('dodge')), 150, 17, 10.5);
+    // Buff 指令键（等同键盘 Space：同时算指令键和 Buff 指令键）
+    put(btn('Buff', 'cmdb', () => { input.virt.cmd = 2; input.virt.cmdB = 2; }, () => { delete input.virt.cmd; delete input.virt.cmdB; }), 64, 17, 8);
     [212, 186, 160, 134, 108, 82].forEach((ang, i) => { const b = put(btn('', 'sk', () => { input.virt['s' + (i + this.page * 6)] = 2; }, () => { delete input.virt['s' + i]; delete input.virt['s' + (i + 6)]; }), ang, 29, 9); this.skillEls.push(b); });
     const misc = h('div', { class: 'tmisc' },
       btn('HP', 'pot hp', ...key('i0')), btn('MP', 'pot mp', ...key('i1')),
@@ -58,6 +60,7 @@ const touch = {
       Object.assign(b.style, { width: s + 'vh', height: s + 'vh', bottom: (CY + dy - s / 2) + 'vh', fontSize: (3.4 * k) + 'vh', left: '', right: '' });
       b.style[swap ? 'left' : 'right'] = (CX - dx - s / 2) + 'vh';
       if (b.classList.contains('atk')) b.style.fontSize = (6 * k) + 'vh';
+      if (b.classList.contains('cmdb')) b.style.fontSize = (2.4 * k) + 'vh';
     }
     this.el.style.opacity = uiPref('touchAlpha');
     this.zone.classList.toggle('swap', swap); this.misc.classList.toggle('swap', swap);

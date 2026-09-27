@@ -471,7 +471,7 @@ function uiKey(a) {
   if (a === 'confirm') { const el = top && menus.wins[top]; if (el && el._onConfirm) el._onConfirm(); return; }
   if (top === 'ask') { if (a === 'menu') menus.closeTop(); return; }
   if (game.scene === 'title' || !game.player) {   // 标题 / 选角：只有 Esc 和设置
-    if (a === 'menu') { menus.closeTop(); sfx.click(); } else if (a === 'settings') { menus.open('settings'); sfx.open(); }
+    if (a === 'menu') { if (top) { menus.closeTop(); sfx.click(); } } else if (a === 'settings') { menus.open('settings'); sfx.open(); }   // 加载中（没有窗口）按 Esc 不弹系统菜单
     return;
   }
   if (menus.isOpen('result')) return;

@@ -59,6 +59,21 @@ addStyle(`
 .itip .durbar{display:inline-block;width:5em;height:.45em;background:#2a2228;border-radius:.2em;vertical-align:middle;margin-left:.3em;overflow:hidden}
 .itip .durbar i{display:block;height:100%;background:linear-gradient(90deg,#6ad06a,#bfe86a)}
 .itip .durbar.low i{background:linear-gradient(90deg,#ff4a3a,#ff9a4a)}
+/* 装备深化：史诗 / 神器 / 传说的 tooltip */
+.itip.r5{animation:itipepic 2.4s ease-in-out infinite;background:linear-gradient(180deg,rgba(40,28,8,.98),rgba(10,7,4,.98) 38%,rgba(8,6,12,.98))}
+@keyframes itipepic{50%{box-shadow:0 0 1.6em rgba(255,190,40,.55),0 .4em 1.4em rgba(0,0,0,.7);border-color:#e0b040}}
+.itip.r4{background:linear-gradient(180deg,rgba(40,20,6,.98),rgba(8,6,12,.98) 35%)}.itip.r3{background:linear-gradient(180deg,rgba(36,12,36,.98),rgba(8,6,12,.98) 35%)}
+.itip-hd .nm.q5{background:linear-gradient(90deg,#ffb400,#fff1b8 40%,#ffb400 60%,#ffcf4a);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:itipname 2.6s linear infinite}
+@keyframes itipname{to{background-position:-220% 0}}
+.itip-hd .tag{display:inline-block;font-size:.66em;font-weight:900;padding:0 .35em;border-radius:.2em;margin-left:.3em;vertical-align:.12em;color:#1a1004;background:#ffb400}
+.itip-hd .tag.r4{background:#ff7800}.itip-hd .tag.r3{background:#ff55ff}.itip-hd .tag.abyss{background:linear-gradient(90deg,#b05aff,#ff5ad0);color:#fff}
+.itip .enh.amp,.itip .amp{color:#ff5a8a}.itip .forge{color:#ffb070}.itip .orb{color:#9ae8ff}
+.itip .proc{color:#ffe08a;background:rgba(255,180,0,.08);border-left:.16em solid #ffb400;padding:.15em .4em;margin-top:.25em;border-radius:0 .2em .2em 0}
+.itip .proc b{color:#ffcf4a}
+.itip .bindl{font-size:.85em;color:#ffb070}.itip .bindl.free{color:#8fd88f}
+.itip .src{font-size:.82em;color:#9ab8d8}
+.itip .scorel{font-size:.82em;color:#c8b890;display:flex;justify-content:space-between}
+.itip .scorel b{color:#ffe070}
 /* 窗口内对话框 */
 .idlg-wrap{position:absolute;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:20;border-radius:.3em}
 .idlg{min-width:18em;max-width:26em;background:linear-gradient(180deg,#2a2030,#150f1a);border:.12em solid #a88450;border-radius:.35em;padding:.8em 1em;box-shadow:0 .5em 2em rgba(0,0,0,.8)}
@@ -70,7 +85,7 @@ addStyle(`
 `);
 /* ---- 状态（跨窗口共享，重绘时保留） ---- */
 const IW = { invTab: 'equip', shopTab: {}, shopCat: {}, shopSel: {}, sellSel: new Set(), disSel: new Set(), stTab: 'char', enhSel: null };
-const ITEM_WINS = ['inv', 'status', 'shop', 'sell', 'storage', 'enhance', 'disassemble', 'repair'];
+const ITEM_WINS = ['inv', 'status', 'shop', 'sell', 'storage', 'enhance', 'disassemble', 'repair', 'amplify', 'forge', 'enchant', 'codex', 'abyss', 'bulk'];
 // 物品变化后刷新所有打开的物品窗口（原地重绘，保留位置与滚动）
 function itemsRefresh(except) {
   menus.hideTip();
@@ -90,7 +105,7 @@ function itemWin(name, title, render, opts = {}) {
   return el;
 }
 /* ---- tooltip ---- */
-const itemEff = it => { const o = { ...(it.st || {}) }, e = enhStats(it); for (const k in e) o[k] = (o[k] || 0) + e[k]; return o; };
+const itemEff = it => { const o = { ...(it.st || {}) }, e = enhStats(it), x = gearExtraStats(it); for (const k in e) o[k] = (o[k] || 0) + e[k]; for (const k in x) o[k] = (o[k] || 0) + x[k]; return o; };
 const TIP_ORDER = ['atk', 'matk', 'indep', 'def', 'mdef', 'str', 'int', 'vit', 'spr', 'hp', 'mp', 'crit', 'mcrit', 'critDmg', 'aspd', 'cspd', 'mspd', 'hit', 'evade', 'hardness', 'stagger', 'fire', 'ice', 'light', 'dark', 'elemAll', 'rfire', 'rice', 'rlight', 'rdark', 'resAll', 'allStat'];
 function itemTypeName(it) {
   if (it.kind === 'equip') {
@@ -104,8 +119,10 @@ function itemTipOne(it, cur, head) {
   const D = ITEMS[it.key] || {}, r = it.rar || 0, R = RARITY[r], p = game.player;
   const el = h('div', { class: `itip r${r}` });
   if (head) el.append(h('div', { class: 'cur' }, head));
+  const tag = it.kind === 'equip' && r >= 3 ? h('span', { class: `tag r${r}${D.abyss ? ' abyss' : ''}` }, D.abyss ? '深渊' : D.set && r === 5 ? '史诗套装' : R.name) : null;
+  const encol = it.dim ? '#ff5a8a' : '#8fe8ff';
   el.append(h('div', { class: 'itip-hd' }, h('img', { src: itemIconSrc(it, 64) }),
-    h('div', {}, h('div', { class: `nm q${r}` }, (it.enh ? `+${it.enh} ` : '') + it.name + (it.n > 1 ? ` ×${it.n}` : '')), h('div', { class: 'sub' }, `${R.name} ${itemTypeName(it)}`)),
+    h('div', {}, h('div', { class: `nm q${r}` }, it.enh ? h('span', { style: `color:${encol};-webkit-text-fill-color:${encol}` }, `+${it.enh} `) : null, it.name + (it.n > 1 ? ` ×${it.n}` : '')), h('div', { class: 'sub' }, `${R.name} ${itemTypeName(it)}`, tag)),
     it.kind === 'equip' && it.grade != null ? h('div', { class: 'gr' }, GRADES[it.grade]) : null));
   if (it.kind === 'equip') {
     const s1 = h('div', { class: 'sec' });
@@ -114,6 +131,7 @@ function itemTipOne(it, cur, head) {
     if (it.atype && ARMOR_SLOTS.includes(it.slot)) { const m = p && masteryOf(p.cls, game.job) === it.atype; s1.append(h('div', {}, `${ATYPES[it.atype].name}`, h('span', { class: m ? 'good' : it.atype === 'heavy' || it.atype === 'plate' ? 'bad' : 'dimt' }, m ? '（精通：有额外加成）' : it.atype === 'heavy' || it.atype === 'plate' ? '（非精通：攻速 / 施放 / MP 恢复略微降低）' : '（非精通）'))); }
     if (it.slot === 'weapon' && WTYPES[it.wtype]) { const T = WTYPES[it.wtype]; s1.append(h('div', {}, `攻击速度：${T.spd}`, T.aspd ? h('span', { class: T.aspd > 0 ? 'good' : 'bad' }, `（${T.aspd > 0 ? '+' : ''}${Math.round(T.aspd * 100)}%）`) : null, T.elem ? h('span', { class: 'enh' }, `　附带${{ fire: '火', ice: '冰', light: '光', dark: '暗' }[T.elem]}属性攻击`) : null)); }
     if (it.durMax) { const low = it.dur <= it.durMax * 0.2; s1.append(h('div', { class: it.dur <= 0 ? 'bad' : '' }, `耐久度 ${it.dur}/${it.durMax}`, h('span', { class: 'durbar' + (low ? ' low' : '') }, h('i', { style: `width:${Math.round(it.dur / it.durMax * 100)}%` })), it.dur <= 0 ? '　属性失效，请修理' : null)); }
+    s1.append(h('div', { class: 'bindl' + (itemBind(it) ? '' : ' free') }, itemBindText(it)));
     el.append(s1);
     // 属性（含强化）与对比
     const eff = itemEff(it), ce = cur && cur !== it ? itemEff(cur) : null, keys = TIP_ORDER.filter(k => eff[k] || (ce && ce[k]));
@@ -126,7 +144,10 @@ function itemTipOne(it, cur, head) {
       }
       el.append(s2);
     }
-    if (it.enh) { const e = enhStats(it); el.append(h('div', { class: 'sec enh' }, `强化 +${it.enh}：`, Object.keys(e).map(k => statLine(k, e[k])).join('，'))); }
+    if (it.enh) { const e = enhStats(it), av = it.dim ? ampStatVal(it) : 0; el.append(h('div', { class: 'sec enh' + (it.dim ? ' amp' : '') }, `${it.dim ? '增幅' : '强化'} +${it.enh}：`, Object.keys(e).map(k => it.dim && k === it.dim ? `${DIM_NAME[k]} +${av}${e[k] - av ? '，' + statLine(k, e[k] - av) : ''}` : statLine(k, e[k])).join('，'))); }
+    else if (it.dim) el.append(h('div', { class: 'sec amp' }, `异次元属性：${DIM_NAME[it.dim]}（增幅后生效）`));
+    if (it.forge) { const f = forgeStats(it); el.append(h('div', { class: 'sec forge' }, `锻造 +${it.forge}：`, Object.keys(f).map(k => statLine(k, f[k])).join('，'))); }
+    if (it.orb) { const o = orbStats(it); el.append(h('div', { class: 'sec orb' }, `附魔【${orbName(it)}】：`, Object.keys(o).map(k => statLine(k, o[k])).join('，'))); }
     if (it.fx && Object.keys(it.fx).some(k => typeof it.fx[k] === 'number')) {
       const s3 = h('div', { class: 'sec fx' });
       const shown = new Set();
@@ -134,11 +155,12 @@ function itemTipOne(it, cur, head) {
       if (it.fx.atkElem) s3.append(h('div', {}, `◆ 攻击附带${{ fire: '火', ice: '冰', light: '光', dark: '暗' }[it.fx.atkElem]}属性`));
       el.append(s3);
     }
+    if (D.proc) for (const P of [].concat(D.proc)) if (P && P.desc) el.append(h('div', { class: 'proc' }, h('b', {}, `${r >= 5 ? '专属特效' : '特效'}${P.name ? '【' + P.name.replace(/！$/, '') + '】' : ''}：`), P.desc));
     if (it.set && SETS[it.set]) {
       const S = SETS[it.set], own = new Set(SLOTS.map(s => inv.equip[s]).filter(x => x && x.set === it.set && itemActive(x)).map(x => x.key));
       const s4 = h('div', { class: 'sec set' }, h('div', { style: 'font-weight:900' }, `${S.name}（${own.size}/${S.pieces.length}）`));
       for (const k of S.pieces) s4.append(h('div', { class: own.has(k) ? '' : 'off', style: 'padding-left:.6em;font-size:.9em' }, (ITEMS[k] || {}).name || k));
-      for (const n in S.bonus) s4.append(h('div', { class: own.size >= +n ? '' : 'off' }, `[${n} 件套] ${S.bonus[n].desc || Object.keys(S.bonus[n].st || {}).map(k => statLine(k, S.bonus[n].st[k])).join('，')}`));
+      for (const n in S.bonus) { const B = S.bonus[n], P = B.proc && [].concat(B.proc).find(x => x && x.desc); s4.append(h('div', { class: own.size >= +n ? '' : 'off' }, `[${n} 件套] ${B.desc || Object.keys(B.st || {}).map(k => statLine(k, B.st[k])).join('，')}${P && !(B.desc || '').includes(P.desc) ? '；' + P.desc : ''}`)); }
       el.append(s4);
     }
   } else {
@@ -151,6 +173,10 @@ function itemTipOne(it, cur, head) {
     if (s.childNodes.length) el.append(s);
   }
   if (it.kind === 'equip' && it.desc) el.append(h('div', { class: 'sec desc' }, it.desc));
+  if (D.orb) el.append(h('div', { class: 'sec orb' }, `可附魔：${orbOnText(D.orb.on)}`, h('br'), Object.keys(D.orb.st).map(k => statLine(k, D.orb.st[k])).join('，'), h('div', { class: 'dimt', style: 'font-size:.85em' }, '右键打开附魔窗口')));
+  const srcTxt = itemSourceText(it.key); if (srcTxt) el.append(h('div', { class: 'sec src' }, '获取途径：' + srcTxt));
+  const coded = !!(save.data && save.data.codex && save.data.codex[it.key]);
+  if (it.kind === 'equip' && !isAvatar(it)) el.append(h('div', { class: 'sec scorel' }, h('span', {}, '装备评分 ', h('b', {}, fmtNum(itemScore(it)))), codexWorthy(it) ? h('span', { class: coded ? 'good' : 'dimt' }, coded ? '图鉴已登记' : '图鉴未登记') : null));
   const sp = sellPrice(it);
   el.append(h('div', { class: 'sec price' }, canSell(it) ? `出售价格 ${fmtNum(sp)} G` : '不能出售'));
   return el;

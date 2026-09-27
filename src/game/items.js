@@ -243,7 +243,9 @@ const inv = {
     if (it.key === 'coin' && list === this.items) { if (save.data) save.data.coins += it.n || 1; return true; }
     if (it.kind !== 'equip') { const ex = list.find(x => x.key === it.key && x.kind !== 'equip'); if (ex) { ex.n += it.n || 1; return true; } }
     if (it.kind !== 'quest' && this.tabCount(TAB_OF(it), list) >= cap) return false;   // 任务道具不占格子上限（不能丢，也不能因为满了消失）
-    list.push(it); return true;
+    list.push(it);
+    if (it.kind === 'equip' && list === this.items && typeof codexRecord === 'function') codexRecord(it);   // 装备图鉴：第一次获得时登记
+    return true;
   },
   count(key, list = this.items) { let n = 0; for (const x of list) if (x.key === key) n += x.kind === 'equip' ? 1 : x.n || 1; return n; },
   has(key, n = 1) { return this.count(key) >= n; },
@@ -326,6 +328,7 @@ const inv = {
   // 罐子 / 礼盒：按表随机开出物品
   openBox(D) {
     const got = [], U = D.use, lv = game.lvl;
+    codexSrcNext = `打开${D.name}`;
     const rolls = U.open(lv) || [];
     for (const r of rolls) {
       let it = null;
@@ -333,6 +336,7 @@ const inv = {
       if (r.equip) it = rollEquip({ lvl: r.lvl || lv, rar: r.rar, slot: r.slot }) || makeItem('crystal', 10 + lv); else if (r.key) it = makeItem(r.key, r.n || 1);
       if (it) { giveItem(it); got.push(`<span class="q${it.rar || 0}">${it.name}${it.n > 1 ? ' ×' + it.n : ''}</span>`); if (it.rar >= 5) sfx.epic(); }
     }
+    codexSrcNext = null;
     toastMsg(`打开了${D.name}：${got.map(s => s.replace(/<[^>]+>/g, '')).join('、') || '什么都没有……'}`, '#ffe8a8');
     this.lastOpened = got;
   },
@@ -340,6 +344,8 @@ const inv = {
 // 放进背包；背包满了就按出售价自动换成金币（避免奖励凭空消失）
 function giveItem(it) {
   if (!it) return false;
+  const dg = game.dungeon;
+  if ((it.rar || 0) >= 5 && it.kind === 'equip' && game.scene === 'dungeon' && dg && dg.state === 'result') bus.emit('announce', { kind: 'epic', item: it, dungeon: dg.def.id, abyss: !!dg.def.abyss, via: 'card' });   // 翻牌翻到史诗
   if (inv.add(it)) return true;
   const g = Math.max(1, sellPrice(it));
   game.gold += g; toastMsg(`背包已满，${it.name} 已自动出售（+${fmtNum(g)} G）`, '#ffd070'); return false;
@@ -411,7 +417,7 @@ function repairAll(verbose, list = repairList()) {
 const ENH_MAX = 16;
 const ENH_RATE = [1, 1, 1, 0.95, 0.9, 0.8, 0.75, 0.621, 0.537, 0.414, 0.339, 0.28, 0.207, 0.173, 0.136, 0.101];
 const enhBonus = e => e <= 0 ? 0 : [0, 0.03, 0.06, 0.1, 0.14, 0.19, 0.25, 0.32, 0.4, 0.5, 0.62, 0.8, 1.0, 1.25, 1.55, 1.9, 2.3][Math.min(ENH_MAX, e)];
-const canEnhance = it => it && it.kind === 'equip' && it.slot !== 'title' && !isAvatar(it) && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);
+const canEnhance = it => it && it.kind === 'equip' && it.slot !== 'title' && !isAvatar(it) && !it.dim && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);   // 带异次元属性（增幅）的装备不能再强化（game/gear.js）
 const enhCost = it => ({ gold: Math.round((it.lvl * 24 + 60) * Math.pow(1.42, it.enh) * (1 + it.rar * 0.3)), crystal: Math.max(1, Math.round((it.lvl + 4) * 0.35 * Math.pow(1.25, it.enh))) });
 // 失败后的结果：{ lvl（失败后的强化等级）, broken }
 function enhFailResult(it) {
@@ -429,6 +435,7 @@ function enhStats(it) {
   else if (ARMOR_SLOTS.includes(it.slot)) o.def = Math.round((st.def || 10) * b * 0.8);
   else if (ACC_SLOTS.includes(it.slot)) o.mdef = Math.round((st.mdef || 10) * b * 0.9 + e * 4);
   else if (SPECIAL_SLOTS.includes(it.slot)) o.allStat = Math.round(e * e * 0.35 + e);
+  if (it.dim) o[it.dim] = (o[it.dim] || 0) + ampStatVal(it);   // 增幅：同级强化加成 + 红字（异次元属性）
   return o;
 }
 function tryEnhance(it, useGuard, rnd01 = Math.random()) {
@@ -473,7 +480,9 @@ function disassembleYield(it) {
   if (r >= 3) add('m_elem2', r - 2 + Math.floor(L / 20));                                           // 粉装以上：上级元素结晶
   if (r >= 4) add('m_diamond', r - 3);
   if (r >= 5) add('m_soul', 1);
-  if (it.enh) add('crystal', it.enh * 3);
+  if (it.enh && !it.dim) add('crystal', it.enh * 3);
+  if (it.dim) add('m_contra', 1 + Math.floor((it.enh || 0) / 3));   // 增幅过的装备返还矛盾的结晶体
+  if (it.forge) add('m_elem', Math.ceil(it.forge / 2));
   return out;
 }
 const canDisassemble = it => it && it.kind === 'equip' && it.slot !== 'title' && !isAvatar(it) && !(ITEMS[it.key] && ITEMS[it.key].noDisassemble);

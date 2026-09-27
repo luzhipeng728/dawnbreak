@@ -41,6 +41,15 @@ defineItem('m_bone', { kind: 'mat', name: '风化的碎骨', rar: 0, price: 30, 
 defineItem('m_elem', { kind: 'mat', name: '下级元素结晶', rar: 2, price: 400, col: '#b36bff', icon: 'item_mat_elem', desc: '分解稀有、套装装备得到的元素结晶。' });
 defineItem('m_elem2', { kind: 'mat', name: '上级元素结晶', rar: 3, price: 1600, col: '#ff6bd0', icon: 'item_mat_elem2', desc: '分解神器以上的装备得到的高纯度元素结晶。' });
 defineItem('m_obsidian', { kind: 'mat', name: '黑曜石', rar: 3, price: 2000, col: '#3a2a4a', icon: 'item_mat_obsidian', desc: '暗黑雷鸣废墟深处偶尔能找到的黑色宝石。' });
+/* ---- 装备深化：增幅 / 锻造 / 深渊派对的材料（规则见 game/gear.js、content/abyss.js） ---- */
+defineItem('m_contra', { kind: 'mat', name: '矛盾的结晶体', rar: 3, price: 3000, sellMul: 0.1, col: '#ff5a8a', icon: 'item_m_contra', src: '深渊派对、Lv15 以上地下城的领主；凯丽处购买；分解增幅过的装备', desc: '增幅装备必需的结晶体，里面同时存在着两种互相排斥的力量。' });
+defineItem('amp_purify', { kind: 'mat', name: '异界气息净化书', rar: 3, price: 6000, sellMul: 0.1, col: '#c080ff', icon: 'item_amp_purify', src: '凯丽处购买；深渊派对', desc: '净化装备上的“异界气息”，随机赋予一种异次元属性（红字），之后才能增幅。已有红字的装备可以重新净化（换一种红字，增幅等级不变）。只对 Lv15 以上、稀有品级以上的装备有效。' });
+defineItem('amp_guard', { kind: 'mat', name: '增幅保护券', rar: 3, price: 20000, sellMul: 0.05, col: '#ff8ab0', icon: 'item_amp_guard', src: '凯丽处购买；商城', desc: '在增幅界面勾选使用：增幅失败时装备不会破碎、不会归零，只降 1 级（券被消耗）。' });
+defineItem('amp_book', { kind: 'mat', name: '黄金增幅书', rar: 4, price: 30000, sellMul: 0.05, col: '#ffd23a', icon: 'item_amp_book', src: '商城；深渊派对', desc: '在增幅界面勾选使用：本次增幅成功率 +15%（最高 100%）。' });
+defineItem('m_aura', { kind: 'mat', name: '强烈的气息', rar: 2, price: 600, sellMul: 0.2, col: '#ffb24a', icon: 'item_m_aura', src: 'Lv10 以上地下城的领主和精英；深渊派对', desc: '锻造武器用的材料，从强大的敌人身上散逸出来的气息。' });
+defineItem('abyss_ticket', { kind: 'mat', name: '深渊派对邀请函', rar: 2, price: 4000, sellMul: 0.1, col: '#c05aff', icon: 'item_abyss_ticket', src: 'Lv12 以上地下城掉落（领主为主）；歌兰蒂斯处购买 / 兑换；每日任务「深渊的呼唤」', desc: '进入深渊派对（格兰之森深渊、天空之城深渊）需要消耗 1 张。' });
+defineItem('m_cosmos', { kind: 'mat', name: '宇宙灵魂', rar: 4, price: 5000, sellMul: 0.05, col: '#8ae0ff', icon: 'item_m_cosmos', src: '深渊派对（通关必得）', desc: '深渊派对里收集到的灵魂结晶。可以在歌兰蒂斯处兑换史诗装备。' });
+defineItem('m_otherworld', { kind: 'mat', name: '浓密的异界精髓', rar: 3, price: 3000, sellMul: 0.1, col: '#6ad0a0', icon: 'item_m_otherworld', src: '深渊派对的深渊领主、堕落守护者', desc: '异界气息浓缩成的精髓。可以在歌兰蒂斯处兑换异界套装。' });
 defineItem('m_diamond', { kind: 'mat', name: '金刚石', rar: 3, price: 2500, col: '#bfefff', icon: 'item_mat_diamond', desc: '分解传说以上的装备得到的宝石，价值不菲。' });
 defineItem('m_soul', { kind: 'mat', name: '灵魂之石', rar: 5, price: 15000, col: '#e080ff', icon: 'item_mat_soul', desc: '分解史诗装备得到的结晶，寄宿着装备的灵魂。' });
 /* ---- 称号（帕丽丝出售 / 任务奖励）：slot 'title'，没有耐久，不能强化 ----

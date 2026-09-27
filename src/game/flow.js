@@ -21,6 +21,7 @@ function enterDungeon(id, diff) {
   const def = DUNGEONS[id];
   save.daily();
   if (save.data.fatigue < def.rooms) { toastMsg(`疲劳值不足：${def.name} 至少需要 ${def.rooms} 点疲劳`, '#ff6a6a'); sfx.error(); return false; }
+  if (def.beforeEnter && def.beforeEnter(diff) === false) return false;   // 进图前的检查 / 消耗（深渊派对邀请函，content/abyss.js）
   game.maxCombo = 0; game.combo = 0;
   return withLoading(dungeonBundles(def), () => { new Dungeon(def, diff).start(); return true; });
 }

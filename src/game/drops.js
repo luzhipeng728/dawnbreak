@@ -17,11 +17,21 @@ function rollRarity(bonus = 0, boss = false) {
 }
 // 掉落装备的等级：地下城推荐等级段内随机（不会高于玩家太多，否则穿不上）
 const dropLvl = (t, dg) => { const L = dg ? dg.def.lvl : [t.lvl, t.lvl]; return clamp(rndi(L[0], L[1] + (t.boss ? 1 : 0)), 1, Math.max(L[1] + 1, game.lvl + 2)); };
-function rollEpic(lvl) {
+// 随机一件史诗：等级 ≤ lvl + 3；只出本职业武器；深渊专属（abyss: true）的只在深渊派对里出（opt.abyss）
+// opt：{ abyss（深渊派对：可出深渊专属，且偏向接近 lvl 的）, lo（最低等级） }
+function rollEpic(lvl, opt = {}) {
   const cls = game.player ? game.player.cls : 'sword';
-  const pool = EPICS.filter(E => E.lvl <= lvl + 3 && (!E.cls || E.cls === cls) && !(ITEMS[E.key] && ITEMS[E.key].noDrop));
-  const E = pool.length ? pick(pool) : null;
-  return E ? makeItem(E.key) : null;
+  const pool = EPICS.filter(E => { const D = ITEMS[E.key]; return D && E.lvl <= lvl + 3 && E.lvl >= (opt.lo || 0) && (!E.cls || E.cls === cls) && !D.noDrop && (opt.abyss || !D.abyss); });
+  if (!pool.length) return null;
+  // 越接近目标等级越容易出（深渊派对里更集中）
+  const w = pool.map(E => 1 / (1 + Math.abs(lvl - E.lvl) * (opt.abyss ? 0.18 : 0.08)));
+  let r = Math.random() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return makeItem(pool[i].key); }
+  return makeItem(pool[0].key);
+}
+// 商城组的史诗自选礼盒用：单件史诗（不含套装部件、深渊专属），等级 ≤ lvl + 3，武器只列本职业
+function epicChoiceKeys(lvl = game.lvl, cls = game.player ? game.player.cls : 'sword') {
+  return EPICS.filter(E => { const D = ITEMS[E.key]; return D && !D.set && !D.abyss && !D.noDrop && E.lvl <= lvl + 3 && (!E.cls || E.cls === cls); }).map(E => E.key);
 }
 // 没配掉落表的地下城（新加的地下城）：按推荐等级自动生成——等级段内的套装部件和史诗，领主小几率掉落
 function autoDropTable(def) {
@@ -45,6 +55,8 @@ function rollDrop(t, dg) {
   // 材料 / 消耗品
   if (Math.random() < (t.boss ? 1 : t.elite ? 0.3 : 0.06)) spawnDrop({ kind: 'item', item: makeItem(pick(['hpS', 'mpS', 'hpM', 'crystal']), t.boss ? 3 : 1), x: t.x, y: t.y, z: 20 });
   if (T) for (const [key, p, cnt] of T.mats) if (Math.random() < p * (t.boss ? 4 : t.elite ? 2 : 1)) { const it = makeItem(key, cnt || 1); if (it) spawnDrop({ kind: 'item', item: it, x: t.x, y: t.y, z: 20 }); }
+  // 装备深化：深渊派对邀请函、怪物卡片、深渊派对的史诗（content/abyss.js）
+  if (typeof abyssExtraDrops === 'function') abyssExtraDrops(t, dg);
 }
 // 翻牌奖励（结算界面）：gold = 黄金卡牌。返回 { gold } 或 { item }
 function rollCardReward(dg, gold) {
@@ -60,16 +72,16 @@ function spawnCoins(e, amount) {
   for (let i = 0; i < n; i++) spawnDrop({ kind: 'gold', amount: Math.ceil(amount / n), x: e.x, y: e.y, z: Math.max(e.z, 20) });
 }
 function spawnDrop(o) {
-  const d = { t: 0, vx: rnd(-70, 70), vy: rnd(-25, 25), vz: rnd(220, 320), bounce: 0, ...o };
+  const d = { t: 0, vx: rnd(-70, 70), vy: rnd(-25, 25), vz: rnd(220, 320), bounce: 0, landT: null, ...o };
   d.draw = drawDrop; drops.push(d);
-  if (d.item) sfx.drop(d.item.rar || 0);
+  if (d.item) { const r = d.item.rar || 0; if (r >= 5) { sfx.tone('triangle', 1200, 1800, 0.12, 0.08); const dg = game.dungeon; bus.emit('epicDrop', { item: d.item, dungeon: dg && dg.def.id, abyss: !!(dg && dg.def.abyss) }); } else sfx.drop(r); }
   return d;
 }
 function updateDrops(dt) {
   const p = game.player;
   for (let i = drops.length - 1; i >= 0; i--) {
     const d = drops[i]; d.t += dt;
-    if (d.z > 0 || d.vz > 0) { d.vz -= 900 * dt; d.z += d.vz * dt; d.x += d.vx * dt; d.y = clamp(d.y + d.vy * dt, 6, DEPTH - 6); if (d.z <= 0) { d.z = 0; if (d.bounce++ < 1) { d.vz = 120; d.vx *= 0.4; } else { d.vz = 0; d.vx = 0; d.vy = 0; } } }
+    if (d.z > 0 || d.vz > 0) { d.vz -= 900 * dt; d.z += d.vz * dt; d.x += d.vx * dt; d.y = clamp(d.y + d.vy * dt, 6, DEPTH - 6); if (d.z <= 0) { d.z = 0; if (d.landT == null) dropLanded(d); if (d.bounce++ < 1) { d.vz = 120; d.vx *= 0.4; } else { d.vz = 0; d.vx = 0; d.vy = 0; } } }
     const R = game.room; if (R) d.x = clamp(d.x, R.x0 + 10, R.x1 - 10);
     if (!p || p.dead || d.t < 0.45) continue;
     const near = Math.abs(p.x - d.x) < 20 && Math.abs(p.y - d.y) < 14 && p.z < 20;
@@ -80,6 +92,13 @@ function updateDrops(dt) {
     d.near = near;
   }
 }
+// 第一次落地：史诗立起光柱并播放专属音效，传说是橙色的小光柱
+function dropLanded(d) {
+  d.landT = game.t;
+  const r = d.item ? d.item.rar || 0 : 0;
+  if (r >= 5) { gearSfx.epicDrop(); cam.shake = Math.max(cam.shake, 3); toastMsg(`史诗装备 ${d.item.name} 掉落了！`, RARITY[5].col); }
+  else if (r === 4) gearSfx.legendDrop();
+}
 function tryPickup(p) {
   let best = null, bd = 99;
   for (const d of drops) if (d.kind !== 'gold' && d.t > 0.45) { const dd = Math.abs(p.x - d.x) + Math.abs(p.y - d.y); if (dd < 30 && dd < bd) { bd = dd; best = d; } }
@@ -87,7 +106,10 @@ function tryPickup(p) {
   if (!inv.add(best.item)) { toastMsg('背包已满', '#ff6a6a'); return false; }
   drops.splice(drops.indexOf(best), 1); sfx.pickup(); bus.emit('pickup', { item: best.item });
   toastMsg(`获得 ${best.item.name}${best.item.n > 1 ? ' ×' + best.item.n : ''}`, RARITY[best.item.rar || 0].col);
-  if ((best.item.rar || 0) >= 5) sfx.epic();
+  if ((best.item.rar || 0) >= 5) {
+    sfx.epic();
+    const dg = game.dungeon; bus.emit('announce', { kind: 'epic', item: best.item, dungeon: dg ? dg.def.id : null, abyss: !!(best.abyss || (dg && dg.def.abyss)) });   // 全服公告（社交组广播）
+  }
   return true;
 }
 function drawDropShadows(c) { for (const d of drops) { c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(sx(d.x), sy(d.y, 0), 7, 2.5, 0, 0, TAU); c.fill(); } }
@@ -101,12 +123,8 @@ function drawDrop(c) {
     return;
   }
   const it = d.item, R = RARITY[it.rar || 0];
-  if ((it.rar || 0) >= 5) {   // 史诗光柱
-    c.save(); c.globalCompositeOperation = 'lighter';
-    const g = c.createLinearGradient(0, Y - 220, 0, Y); g.addColorStop(0, 'rgba(255,190,40,0)'); g.addColorStop(0.7, 'rgba(255,190,40,.35)'); g.addColorStop(1, 'rgba(255,236,150,.8)');
-    c.fillStyle = g; const w = 10 + Math.sin(d.t * 4) * 2; c.fillRect(X - w / 2, Y - 220, w, 220);
-    c.restore();
-  } else if ((it.rar || 0) >= 2) {
+  if ((it.kind === 'equip' && (it.rar || 0) >= 4) || d.abyss) drawDropPillar(c, d, sx(d.x), sy(d.y, 0));   // 史诗金色光柱 / 传说橙色光柱（game/gear_fx.js）
+  else if ((it.rar || 0) >= 2) {
     c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = shade(R.col, 0, 0.25 + 0.1 * Math.sin(d.t * 5)); c.beginPath(); c.ellipse(X, Y - 2, 12, 4, 0, 0, TAU); c.fill(); c.restore();
   }
   c.save(); c.translate(X, Y - 6 - Math.abs(Math.sin(d.t * 3)) * 2); drawItemIcon(c, it, 14); c.restore();

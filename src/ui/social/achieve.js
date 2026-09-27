@@ -1,6 +1,6 @@
 /* =====================================================================
    成就窗口（achieve，快捷键 U，菜单按钮“成就”）：总览（成就点、各档数量、各分类进度、最近达成、一键领奖）+ 六个分类页签（进度条、奖励、领取）
-   达成时屏幕上方弹出成就提示（DOM + CSS 动画，排队播放）并播放音效；单机也能用（社交类成就需要登录才能推进）
+   达成时屏幕下方（技能栏上面）弹出成就提示（DOM + CSS 动画，排队播放，最多同时 2 条）并播放音效；单机也能用（社交类成就需要登录才能推进）
    ===================================================================== */
 addStyle(`
 .achw .abody{display:flex;gap:.6em;min-height:0;height:27em}
@@ -35,7 +35,7 @@ addStyle(`
 .achw .ovcat b{display:block;margin-bottom:.2em}
 .achw .recent .r{display:flex;gap:.5em;align-items:center;font-size:.85em;padding:.2em 0}
 .achw .recent .ach-medal{width:1.6em;height:1.6em;font-size:.7em}
-#achpop{position:absolute;left:50%;top:calc(var(--u) * 78px);transform:translateX(-50%);z-index:30;pointer-events:none!important;display:flex;flex-direction:column;gap:.4em;align-items:center}
+#achpop{position:absolute;left:50%;bottom:calc(var(--u) * 175px);transform:translateX(-50%);z-index:30;pointer-events:none!important;display:flex;flex-direction:column-reverse;gap:.4em;align-items:center}
 #achpop .p{display:flex;gap:.7em;align-items:center;padding:.5em 1.1em .5em .6em;border-radius:3em;background:linear-gradient(90deg,rgba(30,20,8,.94),rgba(60,42,12,.94));border:.12em solid #c8a24a;box-shadow:0 .3em 1.2em rgba(0,0,0,.6),0 0 1.2em rgba(255,200,60,.3);animation:achin 3.6s ease forwards;min-width:18em}
 #achpop .p.t3{border-color:#ffd23a;box-shadow:0 .3em 1.2em rgba(0,0,0,.6),0 0 2em rgba(255,210,60,.65)}
 #achpop .p .h{font-size:.72em;color:#c8a870;font-weight:900;letter-spacing:.1em}

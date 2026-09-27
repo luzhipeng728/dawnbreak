@@ -40,6 +40,8 @@ run netacct   node test/net_account.mjs
 # 社交组、联机组后续的测试加在这里
 run svcapi    node test/svc_api.mjs
 run svcplay   node test/svc_play.mjs
+run svcguildapi node test/svc_guild_api.mjs
+run svcguild  node test/svc_guild.mjs
 run webflow   env WEB=1 node test/flow.mjs
 # 联机（本机临时服务端 + 2~3 个无头页面，测完即关）
 run mptown    node test/mp_town.mjs

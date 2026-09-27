@@ -1,0 +1,14 @@
+{
+  "name": "dawnbreak-server",
+  "private": true,
+  "description": "破晓地下城联机服务端：账号 / 云存档 / 好友 / 聊天 / 城镇同屏 / 组队与决斗房间转发",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning index.js",
+    "test": "node --disable-warning=ExperimentalWarning test/api.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

@@ -2,7 +2,7 @@
    事件总线：各系统之间解耦（任务、成就、统计、教程都靠监听事件，不用改战斗 / 地下城代码）
      bus.on('kill', e => ...)      bus.emit('kill', {...})
    已有事件（新增事件请在这里登记）：
-     kill         { kind, lvl, boss, elite, dungeon }      地下城里击杀一只怪
+     kill         { kind, lvl, boss, elite, dungeon, x, y } 地下城里击杀一只怪（x/y 为怪物位置）
      dungeonClear { id, diff, rank, time, hurt, maxCombo }  地下城通关（结算时）
      dungeonEnter { id, diff }                             进入地下城
      roomEnter    { id, room, type }                       进入地下城房间（type: normal/elite/boss）

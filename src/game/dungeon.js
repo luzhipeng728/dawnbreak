@@ -137,7 +137,7 @@ class Dungeon {
   onHit(t, dmg, counter, back) { if (t.st === 'air' || t.z > 4) this.aerial++; if (counter) this.counter++; if (back) this.back++; game.lastTarget = t; game.lastTargetT = game.t; }
   onKill(t, a) {
     this.kills++;
-    bus.emit('kill', { kind: t.kind, lvl: t.lvl, boss: !!t.boss, elite: !!t.elite, dungeon: this.def.id });
+    bus.emit('kill', { kind: t.kind, lvl: t.lvl, boss: !!t.boss, elite: !!t.elite, dungeon: this.def.id, x: t.x, y: t.y });
     if (t.noLoot) return;
     const over = a.team === 'p' && t.lastDmg > t.hpMax * 0.3;
     if (over) { this.overkill++; fxText('OVER KILL', t.x, t.y, t.z + 14, { col: '#ff4aa0', size: 12 }); }

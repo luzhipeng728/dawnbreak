@@ -124,7 +124,7 @@ const CASH_BOXES = {
   box_magic: { shard: 1, pity: 100, tiers: [
     { name: '大奖', jackpot: true, items: [[0.5, { key: 'tk_sky' }], [0.5, { epic: true }], [0.4, { key: 'aura_box' }], [0.4, { key: 'title_box' }], [0.4, { key: 'tk_enh10' }], [0.3, { key: 'orb_pet_supreme' }], [0.5, { key: 'cera_l' }]] },
     { name: '稀有', items: [[3, { key: 'box_equip' }], [2.5, { key: 'box_orb' }], [2.5, { key: 'tk_enh7' }], [1.5, { key: 'egg_pet' }], [2, { key: 'tk_avatar' }], [2, { key: 'synth_gold' }], [1.5, { key: 'box_petgear2' }], [1.5, { key: 'cera_m' }], [0.5, { key: 'amp_purify' }]] },
-    { name: '普通', items: [[10, { key: 'box_supply' }], [10, { key: 'coin', n: 2 }], [8, { key: 'synth_basic', n: 2 }], [8, { key: 'box_gold' }], [7, { key: 'fatigue' }], [6, { key: 'elixir', n: 2 }], [6, { key: 'box_avatar' }],
+    { name: '普通', items: [[10, { key: 'box_supply' }], [10, { key: 'coin', n: 2 }], [8, { key: 'synth_basic', n: 2 }], [8, { key: 'box_gold' }], [7, { key: 'fatigue' }], [5, { key: 'elixir', n: 2 }], [6, { key: 'box_avatar' }],
       [4, { key: 'crystal', n: 60 }], [2, { key: 'm_contra', n: 20 }], [5, { key: 'guard' }], [5, { key: 'cera_s' }], [3, { key: 'amp_guard' }], [3, { key: 'abyss_ticket', n: 2 }], [2, { key: 'amp_book' }], [2, { key: 'm_elem2', n: 3 }]] },
   ] },
   box_magic2: { shard: 3, pityOf: 'box_magic', tiers: [

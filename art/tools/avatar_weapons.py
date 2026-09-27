@@ -26,6 +26,8 @@ SIZE = {'shortsword': 72, 'katana': 100, 'club': 70, 'greatsword': 112, 'lightsa
 KIND = {'shortsword': 'blade', 'katana': 'blade', 'greatsword': 'blade', 'lightsaber': 'saber', 'club': 'club',
         'revolver': 'gun', 'autopistol': 'gun', 'handcannon': 'gun', 'bowgun': 'gun', 'rifle': 'rifle',
         'spear': 'pole', 'pole': 'pole', 'staff': 'pole', 'broom': 'pole', 'rod': 'rod'}
+EP2_CODE = {'ss': 'shortsword', 'kt': 'katana', 'cb': 'club', 'gs': 'greatsword', 'ls': 'lightsaber', 'rv': 'revolver', 'ap': 'autopistol', 'rf': 'rifle', 'hc': 'handcannon',
+            'bg': 'bowgun', 'sp': 'spear', 'pl': 'pole', 'rd': 'rod', 'st': 'staff', 'br': 'broom'}   # 第二批史诗：ep_<类型缩写>_<名字>
 SINGLE = {'rifle', 'handcannon', 'bowgun'}   # 长枪 / 手炮 / 手弩不双持：双枪帧里只画主手那把
 EP_TYPE = {'ep_shortsword': 'shortsword', 'ep_katana': 'katana', 'ep_katana2': 'katana', 'ep_club': 'club', 'ep_greatsword': 'greatsword', 'ep_lightsaber': 'lightsaber',
            'ep_revolver': 'revolver', 'ep_autopistol': 'autopistol', 'ep_rifle': 'rifle', 'ep_handcannon': 'handcannon', 'ep_bowgun': 'bowgun',
@@ -137,7 +139,8 @@ def main():
                 sub = solo; ys, xs = np.where(sub[..., 3] > 40); sub = sub[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
             if 'cut' in f:   # 只保留左边这么多（去掉枪口的火焰等特效）
                 sub = sub[:, :int(sub.shape[1] * f['cut'])]; cols = np.where((sub[..., 3] > 40).any(0))[0]; sub = sub[:, :cols.max() + 1]
-            wt = EP_TYPE.get(key, key); kind = KIND[wt]; H, W = sub.shape[:2]
+            wt = EP_TYPE.get(key) or EP2_CODE.get(key.split('_')[1] if key.startswith('ep_') else '') or (key.split('_', 1)[1] if '_' in key and key.split('_', 1)[1] in SIZE else key)   # 装扮：<装扮>_<武器类型>
+            kind = KIND[wt]; H, W = sub.shape[:2]
             gx, gy = auto_grip(sub, kind)
             if 'gx' in f: gx = f['gx'] * W
             if 'gy' in f: gy = f['gy'] * H

@@ -30,6 +30,7 @@ const r = await page.evaluate(() => {
   sky.set8 = Math.min(sky.basic, sky.gold) * 8;
   const magic = { pity: CASH_BOXES.box_magic.pity * CASH_GOODS.box_magic.price, jack: cashBoxOdds('box_magic').filter(o => o.jackpot).reduce((s, o) => s + o.p, 0) };
   // 商城物品对输出的影响（Lv20 鬼剑士，一身随机的 Lv20 稀有装备 +7 武器；只比较输出 off）
+  const R0 = Math.random; Math.random = mulberry(20260928);   // 固定随机装备，结果可复现
   game.lvl = 20; const p = game.player; inv.equip = {};
   for (const s of ['weapon', 'top', 'head', 'bottom', 'belt', 'shoes', 'neck', 'bracelet', 'ring', 'support', 'stone']) { const it = rollEquip({ slot: s, lvl: 20, rar: 2, cls: 'sword', strict: true }); if (it) inv.equip[s] = it; }
   inv.equip.weapon.enh = 7; inv.equip.title = makeItem('title_hero');
@@ -45,6 +46,7 @@ const r = await page.evaluate(() => {
   const w0 = rollEquip({ slot: 'weapon', lvl: 20, rar: 2, cls: 'sword', strict: true }); w0.enh = 7; inv.equip.weapon = w0; inv.equip.title = makeItem('title_hero');
   const b2 = gearMetrics(p, type).off; const ep = EPICS.filter(E => E.slot === 'weapon' && E.cls === 'sword' && E.lvl <= 23).sort((a, b) => b.lvl - a.lvl)[0];
   let epic = null; if (ep) { const it = makeItem(ep.key); it.enh = 7; inv.equip.weapon = it; epic = gearMetrics(p, type).off / b2 - 1; }
+  Math.random = R0;
   return { day, newbie, setPrice, packPrice, sky, magic, steps, epic, epicName: ep && ep.name };
 });
 const W = n => (n / (r.day.serious.total * 7)).toFixed(1);

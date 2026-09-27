@@ -109,7 +109,8 @@ defineNpc('norton', {
   - `cure`
   - `travel`（区域移动，打开世界地图）
   - `arena`（决斗场，由战斗组注册）
-- 新的功能类型：在 `NPC_SERVICES` 里注册（`ui/npc.js` 归任务组），或在自己的文件里写 `NPC_SERVICES.xxx ??= {...}`。
+  - `auction`（拍卖行）、`mail`（邮箱）：由社交组注册，在线功能，没登录时按钮自动隐藏；现在挂在中央广场的诺顿身上
+- 新的功能类型：在 `NPC_SERVICES` 里注册（`ui/npc.js` 归任务组），或在自己的文件里写 `NPC_SERVICES.xxx ??= {...}`。如果注册它的文件在加载顺序里排在 `ui/worldmap.js`（启动校验）之后，要把功能名加进 `world.js` 的 `WORLD_LATE_SERVICES`，否则校验会报“没有注册”。
 
 **其他字段**
 - `still: true`：物件型 NPC（例如布告栏），不做呼吸和转身动画。

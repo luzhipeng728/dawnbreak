@@ -12,7 +12,7 @@ defineEpic('ep_shortsword', { slot: 'weapon', wtype: 'shortsword', lvl: 15, name
 defineEpic('ep_katana', { slot: 'weapon', wtype: 'katana', lvl: 10, name: '月之光芒', fx: { critDmg: 0.25, crit: 0.05, mcrit: 0.05 }, desc: '刀身映着月光，挥动时留下银色的残影。' });
 defineEpic('ep_katana2', { slot: 'weapon', wtype: 'katana', lvl: 20, name: '十字斩刀-者', fx: { dmgUp: 0.08, crit: 0.03 }, proc: { chance: 0.03, cut: 0.3, boss: false }, desc: '攻击时有 3% 几率削减敌人 30% 的当前 HP（对领主无效）。' });
 defineEpic('ep_club', { slot: 'weapon', wtype: 'club', lvl: 13, name: '地狱邪目', fx: { stagger: 50, critDmg: 0.15, dark: 20 }, desc: '钝器上镶着一只永不闭合的邪眼。' });
-defineEpic('ep_greatsword', { slot: 'weapon', wtype: 'greatsword', lvl: 18, name: '屠戮之刃', fx: { dmgUp: 0.1, hardness: 40 }, desc: '饮过无数鲜血的巨刃。' });
+defineEpic('ep_greatsword', { slot: 'weapon', wtype: 'greatsword', lvl: 18, name: '狂龙之怒', fx: { dmgUp: 0.1, hardness: 40 }, desc: '狂龙的怒吼封在剑里，挥动时会发出龙啸。（官方 Lv50 史诗巨剑；原名“屠戮之刃”其实是太刀，已改正）' });
 defineEpic('ep_lightsaber', { slot: 'weapon', wtype: 'lightsaber', lvl: 22, name: '光剑-雷鸣赤诚', fx: { aspd: 0.08, light: 30, critDmg: 0.1 }, desc: '雷光凝成的剑刃，挥动时噼啪作响。' });
 defineEpic('ep_revolver', { slot: 'weapon', wtype: 'revolver', lvl: 10, name: '沙漠之鹰-黄昏', fx: { critDmg: 0.2, crit: 0.08, mcrit: 0.08 }, desc: '黄昏时分最后一声枪响。' });
 defineEpic('ep_handcannon', { slot: 'weapon', wtype: 'handcannon', lvl: 18, name: '吞日者', fx: { dmgUp: 0.08, fire: 30, stagger: 30 }, proc: { chance: 0.04, burn: 3 }, desc: '攻击时有 4% 几率使敌人灼伤。' });
@@ -67,15 +67,7 @@ defineSet('set_elf', { name: '精灵王的祝福', bonus: { 2: { st: { allStat: 
 setPiece('set_elf', 'set_elf_neck', { slot: 'neck', lvl: 16, name: '精灵王的项链' });
 setPiece('set_elf', 'set_elf_bracelet', { slot: 'bracelet', lvl: 16, name: '精灵王的手镯' });
 setPiece('set_elf', 'set_elf_ring', { slot: 'ring', lvl: 16, name: '精灵王的戒指' });
-/* ---- 史诗的命中特效（proc）：需要 bus 'playerHit' 事件 { target, dmg, crit } ---- */
-bus.on('playerHit', e => {
-  const w = inv.equip.weapon, t = e && e.target; if (!w || !t || t.dead || t.hp <= 0 || !itemActive(w)) return;
-  if (t.team === 'p' || t.cls || (game.scene !== 'dungeon' && game.scene !== 'test')) return;   // 决斗场（PvP）不触发装备特效
-  // 只直接改 target.hp（不走伤害函数，避免递归），并且不会把目标打死
-  const P = (ITEMS[w.key] || {}).proc; if (!P || Math.random() >= P.chance) return;
-  if (P.cut && !(t.boss && P.boss === false)) { const d = Math.max(1, Math.round(t.hp * P.cut)); t.hp = Math.max(1, t.hp - d); addNumber(d, t.x, t.y, t.z + 20, { col: '#ff4a8a' }); fxText('十字斩！', t.x, t.y, t.z + 30, { col: '#ff4a8a', size: 12 }); }
-  if (P.burn && typeof addStatus === 'function') addStatus(t, 'burn', P.burn, { dps: (game.player.atk || 500) * 0.12, src: game.player });
-});
+/* ---- 史诗的命中特效（proc）：统一由 game/gear_fx.js 处理（旧写法 { chance, cut, boss } / { chance, burn } 仍然有效） ---- */
 /* ---- 天空之城（Lv14~24）：Lv24 史诗与套装 ---- */
 defineEpic('ep_autopistol', { slot: 'weapon', wtype: 'autopistol', lvl: 24, name: '萤火之光', fx: { aspd: 0.1, light: 30, critDmg: 0.12 }, desc: '天空之城的工匠留下的手枪，子弹拖着萤火般的尾光。' });
 defineEpic('ep_rifle', { slot: 'weapon', wtype: 'rifle', lvl: 24, name: '贯穿之眼', fx: { crit: 0.06, mcrit: 0.06, hit: 0.05, dmgUp: 0.06 }, desc: '据说能看穿敌人的一切破绽。' });

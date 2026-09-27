@@ -9,6 +9,10 @@ function invPrimary(it, win) {
   if (menus.isOpen('storage')) return storagePut(it);
   if (menus.isOpen('disassemble') && canDisassemble(it)) { IW.disSel.has(it) ? IW.disSel.delete(it) : IW.disSel.add(it); sfx.click(); return itemsRefresh(); }
   if (menus.isOpen('enhance') && canEnhance(it)) { IW.enhSel = it; sfx.click(); return itemsRefresh(); }
+  if (menus.isOpen('amplify') && canAmplify(it)) { IW.ampSel = it; IW.ampMsg = null; sfx.click(); return itemsRefresh(); }
+  if (menus.isOpen('forge') && canForge(it)) { IW.forgeSel = it; IW.forgeMsg = null; sfx.click(); return itemsRefresh(); }
+  if (menus.isOpen('enchant') && it.kind === 'equip') { IW.enchTgt = it; IW.enchMsg = null; sfx.click(); return itemsRefresh(); }
+  if (ITEMS[it.key] && ITEMS[it.key].orb) return invOpenEnchant(it);
   if (it.kind === 'equip') { if (inv.wear(it)) { save.write(); itemsRefresh(); } return; }
   if (it.kind === 'use') { if (inv.useItem(it)) itemsRefresh(); return; }
   toastMsg(it.kind === 'quest' ? '任务道具，完成任务时会自动交付' : '材料：可以出售，或在强化时使用', '#bfb0a0');
@@ -42,12 +46,15 @@ function invActions(it, el) {
   const row = h('div', { class: 'ibar', style: 'margin-top:.3em;padding:.3em .45em;background:#0c0a10;border:.08em solid #3a3040;border-radius:.25em' }, h('span', { class: `q${it.rar || 0}`, style: 'font-weight:800;font-size:.85em;max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' }, it.name), h('span', { class: 'sp' }));
   if (it.kind === 'equip') row.append(b('穿戴', () => invPrimaryPlain(it)));
   if (it.kind === 'use' && ITEMS[it.key] && ITEMS[it.key].use) row.append(b(ITEMS[it.key].use.open ? '打开' : '使用', () => invPrimaryPlain(it)));
+  if (ITEMS[it.key] && ITEMS[it.key].orb) row.append(b('附魔', () => invOpenEnchant(it)));
   if (it.kind === 'use') row.append(h('span', { class: 'small dim' }, '快捷栏'), ...[0, 1, 2, 3, 4, 5].map(i => h('button', { class: 'btn sm' + (inv.quick[i] === it.key ? ' blue' : ''), style: 'padding:.2em .45em', onclick: () => { inv.quick[i] = inv.quick[i] === it.key ? null : it.key; sfx.click(); save.write(); el._render(); } }, String(i + 1))));
   if (menus.isOpen('shop') && canSell(it)) row.append(b('出售', () => shopSellAsk([it], menus.wins.shop), 'red'));
   if (menus.isOpen('storage') && it.kind !== 'quest') row.append(b('存入', () => storagePut(it)));
   if (it.kind !== 'quest') row.append(b('丢弃', () => invDiscard(it, el), 'red'));
   return row;
 }
+// 宝珠 / 怪物卡片：打开附魔窗口并选中它
+function invOpenEnchant(it) { IW.enchOrb = it.key; IW.enchMsg = null; sfx.click(); if (menus.isOpen('enchant')) itemsRefresh(); else menus.open('enchant', { card: it }); }
 // 不管有没有开商店 / 仓库，直接穿戴 / 使用
 function invPrimaryPlain(it) {
   if (it.kind === 'equip') { if (inv.wear(it)) { save.write(); itemsRefresh(); } }
@@ -77,7 +84,8 @@ Object.assign(menus, {
         h('span', { class: 'sp' }),
         h('span', { class: 'small dim' }, `${list.length}/${inv.cap}`),
         h('button', { class: 'btn sm', onclick: () => { inv.sort(); sfx.click(); itemsRefresh(); } }, '整理'),
-        menus.w_status ? h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('status')) menus.open('status'); } }, '个人信息') : null);
+        menus.w_status ? h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('status')) menus.open('status'); } }, '个人信息') : null,
+        h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('codex')) menus.open('codex'); } }, '图鉴'));
       const acts = invActions(IW.invSel, el);
       const hint = h('div', { class: 'ihint' }, menus.isOpen('shop') ? '右键 / 拖进商店：出售' : menus.isOpen('storage') ? '右键：存入仓库' : '▲ 比身上的好 · ▼ 比身上的差 · 右键：穿戴 / 使用 · 拖动：换位置、放进快捷栏 · 拖到窗外：丢弃');
       return [tabs, grid, quests, bar, acts, hint];

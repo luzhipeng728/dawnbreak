@@ -24,8 +24,8 @@ class AvatarLayer {
     const p = typeof game !== 'undefined' && game.player, own = !!(p && p.model === this.m);
     if (own) {
       const e = inv.equip, s = this.sig;
-      if (this.own && s[0] === e.weapon && s[1] === e.av_top && s[2] === e.av_bottom && s[3] === e.av_hat && s[4] === e.av_hair && s[5] === e.av_face && s[6] === e) return;
-      this.sig = [e.weapon, e.av_top, e.av_bottom, e.av_hat, e.av_hair, e.av_face, e];
+      if (this.own && s[0] === e.weapon && s[1] === e.av_top && s[2] === e.av_bottom && s[3] === e.av_hat && s[4] === e.av_hair && s[5] === e.av_face && s[6] === e.av_weapon && s[7] === e) return;
+      this.sig = [e.weapon, e.av_top, e.av_bottom, e.av_hat, e.av_hair, e.av_face, e.av_weapon, e];
       this.own = true; this.apply(lookFromEquip(this.cls, e)); return;
     }
     if (this.own === false && this.look) return;
@@ -94,7 +94,7 @@ class AvatarLayer {
     const H = F.head;
     for (const a of this.acc) {
       if (!!a.back !== back || (a.face && H.f === 0)) continue;
-      const im = IMG['avatar/' + a.img], P = (this.S2 && a.pos[this.setKey]) || a.pos[this.cls]; if (!im || !P) continue;
+      const im = IMG['avatar/' + a.img], P = (this.S2 && (a.pos[this.setKey] || a.pos[this.cls + '@'])) || a.pos[this.cls]; if (!im || !P) continue;
       c.save(); c.translate(H.x - F.ax, H.y - F.ay); if (H.a) c.rotate(H.a); c.translate(P[0], P[1]); if (P[2]) c.rotate(P[2]);
       const k = AVATAR_ACC_SCALE * (P[3] || 1); c.scale(k, k); c.drawImage(im, -im.width / 2, -im.height / 2); c.restore();
     }

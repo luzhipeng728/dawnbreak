@@ -15,6 +15,8 @@ run ui        node test/ui.mjs
 run items     node test/items.mjs
 run compare   node test/compare.mjs
 run bulk      node test/bulk.mjs
+run gear      node test/gear.mjs
+run gearsim   node test/gear_sim.mjs 20
 run quests    node test/quests.mjs
 run guide     node test/guide.mjs
 run quickquest node test/quickquest.mjs
@@ -36,5 +38,12 @@ run botrun    env SPEED=3 node test/botrun.mjs lorien:3:0:sword,lorien_deep:4:0:
 run serverapi node server/test/api.mjs
 run netacct   node test/net_account.mjs
 # 社交组、联机组后续的测试加在这里
+run svcapi    node test/svc_api.mjs
+run svcplay   node test/svc_play.mjs
 run webflow   env WEB=1 node test/flow.mjs
+# 联机（本机临时服务端 + 2~3 个无头页面，测完即关）
+run mptown    node test/mp_town.mjs
+run mpcoop    node test/mp_coop.mjs 2
+run mpdrop    node test/mp_coop_drop.mjs
+run mpduel    node test/mp_duel.mjs
 echo; cat $LOG/summary.txt

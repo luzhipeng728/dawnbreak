@@ -12,6 +12,7 @@ from prep import remove_bg, components
 from avatar_gen import ACC, OUT
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WIDTH = {'hat': 78, 'hair': 44, 'face': 44}   # 在角色帧里的宽度（帧像素）
+WIDTH_SET = {'spring': {'hat': 96, 'hair': 40}, 'sky1': {'hat': 80, 'hair': 42}, 'summer': {'hat': 100, 'hair': 40}, 'sky2': {'hat': 80, 'hair': 34}, 'academy': {'hat': 74, 'hair': 44}}   # 个别套装的配件更大 / 更小
 OVER = 1.25
 
 def main():
@@ -31,7 +32,7 @@ def main():
         big.sort(key=lambda b: b['x0'])
         for (part, _), b in zip(items, big):
             sub = a[b['y0']:b['y1'], b['x0']:b['x1']].copy(); sub[..., 3] = np.where(np.isin(lab[b['y0']:b['y1'], b['x0']:b['x1']], b['ids']), sub[..., 3], 0)
-            im = Image.fromarray(sub, 'RGBA'); k = WIDTH[part] * OVER / im.width
+            im = Image.fromarray(sub, 'RGBA'); k = WIDTH_SET.get(sid, {}).get(part, WIDTH[part]) * OVER / im.width
             sm = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS)
             sm.save(os.path.join(outd, f'{sid}_{part}.webp'), 'WEBP', quality=88, method=6)
             print(f'  {sid}_{part}: {sm.width}x{sm.height}')

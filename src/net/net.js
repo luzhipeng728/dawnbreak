@@ -54,6 +54,7 @@ const net = {
   /* ---- WebSocket ---- */
   connect(now) {
     if (!this.token || (this.ws && this.ws.readyState <= 1)) return;
+    if (performance.now() < this.blockUntil) { clearTimeout(this.retryT); this.retryT = setTimeout(() => this.connect(), this.blockUntil - performance.now() + 50); return; }
     this.stopped = false; clearTimeout(this.retryT);
     const url = (this.base ? this.base.replace(/^http/, 'ws') : (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host) + '/ws';
     let ws;
@@ -77,6 +78,9 @@ const net = {
     clearTimeout(this.retryT); this.retryT = setTimeout(() => this.connect(), ms);
   },
   disconnect() { this.stopped = true; clearTimeout(this.retryT); clearInterval(this.pingT); const ws = this.ws; this.ws = null; if (ws) try { ws.close(1000); } catch (e) { /* 忽略 */ } if (this.connected) { this.connected = false; bus.emit('netClose', {}); } },
+  // 测试用：模拟断网 ms 毫秒（断开 WS，期间不重连）
+  blockUntil: 0,
+  simDrop(ms) { this.blockUntil = performance.now() + ms; const ws = this.ws; if (ws) { try { ws.close(4000); } catch (e) { /* */ } } },
   send(msg) { const ws = this.ws; if (!ws || ws.readyState !== 1 || !this.connected) return false; try { ws.send(JSON.stringify(msg)); return true; } catch (e) { return false; } },
   on(t, fn) { (this.handlers[t] || (this.handlers[t] = [])).push(fn); return () => this.off(t, fn); },
   off(t, fn) { const L = this.handlers[t]; if (L) { const i = L.indexOf(fn); if (i >= 0) L.splice(i, 1); } },

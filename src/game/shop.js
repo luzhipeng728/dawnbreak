@@ -241,7 +241,7 @@ function cashTicketTargets(T) {
   inv.ensure();
   const all = [...SLOTS.map(s => inv.equip[s]).filter(it => it && inv.equip[it.slot] === it), ...inv.items].filter(it => it && it.kind === 'equip');
   if (T.kind === 'enh') return all.filter(it => canEnhance(it) && !it.dim && (it.enh || 0) < T.lvl);
-  if (T.kind === 'amp') return all.filter(it => canEnhance(it) && (it.enh || 0) < T.lvl && (it.dim || !(it.enh > 0)));
+  if (T.kind === 'amp') return all.filter(it => canEnhance(it) && (it.enh || 0) < T.lvl);   // 强化过的装备用增幅券会转为增幅（convert）
   return [];
 }
 function cashUseTicket(tk, target, sel = {}) {
@@ -253,7 +253,7 @@ function cashUseTicket(tk, target, sel = {}) {
   } else if (T.kind === 'amp') {
     if (typeof ampSetLevel !== 'function') return { err: '增幅系统尚未开放' };
     if (!target) return { err: '请选择装备' };
-    if (!ampSetLevel(target, T.lvl, { stat: sel.stat })) return { err: '这件装备不能使用增幅券' };
+    if (!ampSetLevel(target, T.lvl, { stat: sel.stat, convert: true })) return { err: '这件装备不能使用增幅券' };
     inv.take(tk.key, 1);
   } else if (T.kind === 'avatar' || T.kind === 'sky') {
     const sets = T.kind === 'sky' ? CASH_SKY_SETS : CASH_ADV_SETS;

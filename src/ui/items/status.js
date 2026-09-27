@@ -19,6 +19,8 @@ addStyle(`
 .sttbl span{color:#b8ac90}.sttbl b{text-align:right;color:#fff2d0;font-weight:800}
 .sttbl .hd{grid-column:1 / -1;color:#e8c26a;font-weight:900;border-bottom:.08em solid #3a3040;margin:.2em 0 .1em}
 .sttbl b.up{color:#8aff8a}.sttbl b.bad{color:#ff7a6a}
+.stscore{display:flex;align-items:center;gap:.5em;padding:.3em .6em;border-radius:.25em;background:linear-gradient(90deg,rgba(120,80,10,.55),rgba(20,14,8,.6));border:.1em solid #8a6a2a;font-size:.9em;color:#e8d8b0}
+.stscore b{color:#ffe070;font-size:1.25em;text-shadow:0 0 .4em rgba(255,200,60,.5)}.stscore .sp{flex:1}
 .stsets{font-size:.8em;line-height:1.5;background:#0c0a10;border:.1em solid #3a3040;border-radius:.25em;padding:.35em .6em;max-height:7em;overflow:auto}
 `);
 const DOLL_LEFT = ['head', 'top', 'bottom', 'belt', 'shoes'], DOLL_RIGHT = ['weapon', 'title', 'bracelet', 'neck', 'ring'], DOLL_BOTTOM = ['support', 'stone'];
@@ -75,16 +77,19 @@ Object.assign(menus, {
         h('div', { class: 'hd' }, '属性强化 / 抗性'),
         ...row('火 / 冰', `${S.elem.fire} / ${S.elem.ice}`), ...row('光 / 暗', `${S.elem.light} / ${S.elem.dark}`),
         ...row('火抗 / 冰抗', `${S.res.fire} / ${S.res.ice}`), ...row('光抗 / 暗抗', `${S.res.light} / ${S.res.dark}`));
-      const sets = (p.sets || []).map(x => { const Sd = SETS[x.id]; return Sd ? h('div', {}, h('b', { style: 'color:var(--qset)' }, `${Sd.name}（${x.n}/${Sd.pieces.length}）`), ' ', x.on.length ? x.on.map(n => `${n} 件：${Sd.bonus[n].desc || ''}`).join('；') : h('span', { class: 'dim' }, '未激活')) : null; }).filter(Boolean);
+      const sets = (p.sets || []).map(x => { const Sd = SETS[x.id]; return Sd ? h('div', {}, h('b', { style: 'color:var(--qset)' }, `${Sd.name}（${x.n}/${Sd.pieces.length}）`), ' ', x.on.length ? x.on.map(n => { const B = Sd.bonus[n], P = B.proc && [].concat(B.proc).find(q => q && q.desc); return `${n} 件：${B.desc || ''}${P && !(B.desc || '').includes(P.desc) ? '；' + P.desc : ''}`; }).join('；') : h('span', { class: 'dim' }, '未激活')) : null; }).filter(Boolean);
       const broken = durItems().filter(x => x.dur <= 0);
       const info = h('div', { class: 'stsets' },
         h('div', {}, '防具精通：', h('b', { class: 'gold' }, (ATYPES[p.mastery] || {}).name || '-'), ` ${p.masteryN || 0}/5 件`, h('span', { class: 'dim' }, p.masteryN ? '（每件都有额外加成）' : '（穿上精通类型的防具有额外加成）')),
         ...sets,
         broken.length ? h('div', { style: 'color:#ff6a6a' }, `耐久度为 0：${broken.map(x => x.name).join('、')}（属性失效，请修理）`) : null,
         p.weak ? h('div', { style: 'color:#ff9a8a' }, '虚弱中：攻击、防御、HP 上限 -25%') : null);
+      const cs = codexStats();
+      const score = h('div', { class: 'stscore' }, h('span', {}, '装备评分 ', h('b', {}, fmtNum(gearScore()))), h('span', { class: 'sp' }), h('span', { class: 'small' }, `图鉴 史诗 ${cs.epic}/${cs.epicTotal}`),
+        h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('codex')) menus.open('codex'); } }, '装备图鉴'));
       const panel = h('div', { class: 'stpanel col', style: 'gap:.35em' },
         h('div', { class: 'stname' }, `${save.data ? save.data.name : ''}`, h('small', {}, `Lv.${game.lvl} ${statusJobName()}`)),
-        tbl, info);
+        score, tbl, info);
       return [h('div', { class: 'stwrap' }, h('div', {}, pages, doll), panel), h('div', { class: 'ihint' }, '把背包里的装备拖到对应的格子上穿戴；右键装备栏卸下。')];
     }, { w: 42, at: 'left' });
     return el;

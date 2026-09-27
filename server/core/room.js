@@ -82,8 +82,8 @@ export default {
       const P = ctx.mods.party.of(me);
       if (!P) return c.send({ t: 'party:note', text: '你还没有队伍' });
       if (P.leader !== me) return c.send({ t: 'party:note', text: '只有队长可以带队进入地下城' });
-      const members = P.members.filter(id => ctx.isOnline(id));
-      const meta = msg.meta && typeof msg.meta === 'object' ? JSON.parse(JSON.stringify(msg.meta).slice(0, 4000) || '{}') : {};
+      const members = P.members.filter(id => ctx.isOnline(id) && (id === me || !(A.of(id) && A.of(id).kind === 'duel')));   // 正在决斗的队员不拉进来
+      const mj = msg.meta && typeof msg.meta === 'object' ? JSON.stringify(msg.meta) : '{}', meta = mj.length <= 4000 ? JSON.parse(mj) : {};
       A.open('dungeon', me, members, meta, P.id);
     },
     r(c, msg, ctx) { ctx.mods.room.relay(c, msg); },

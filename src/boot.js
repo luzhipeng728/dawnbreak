@@ -7,7 +7,7 @@ else {
   touch.init();
   loadBundles(['core']).then(() => {
     requestAnimationFrame(frame);
-    return boot();
+    return PARAMS.has('duel') ? bootDuel() : boot();   // ?duel=…：决斗场（game/duel.js）
   }).then(() => { window.__READY = true; });
 }
 // 调试钩子（测试脚本使用）

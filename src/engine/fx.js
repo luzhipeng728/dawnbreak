@@ -11,7 +11,8 @@ function updateFx(dt) {
 }
 
 /* ---- 手绘特效素材：fx/<名字>；发光类用“叠加”混合绘制，可按颜色换色 ---- */
-const FX_BASE_HUE = { orb: 300, slash: 195, thrust: 195, slashx: 200, rune: 220, hexagram: 220, aura: 48, burst: 48, spark: 50, wave: 205, shock: 30 };
+const FX_BASE_HUE = { orb: 300, slash: 195, thrust: 195, slashx: 200, rune: 220, hexagram: 220, aura: 48, burst: 48, spark: 50, wave: 205, shock: 30,
+  ghost: 275, crossx: 355, swordrain: 190, bloodwave: 355, bloodhand: 355, bloodpillar: 355, lava: 25, dragonfang: 45, chaser: 50, laser: 190, flame: 25, quantum: 205, darkorb: 285, eel: 55, petal: 330, thunderbolt: 240 };
 function hueOf(hex) { const [r, g, b] = hexRgb(hex), mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; if (!d) return { h: 0, s: 0 }; let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; if (h < 0) h += 360; return { h, s: d / mx }; }
 // 按目标颜色给发光素材换色（近白色 → 去饱和）
 function fxTint(name, col) {
@@ -82,6 +83,7 @@ function addNumber(n, x, y, z, { crit = false, player = false, heal = false, col
   numList.push({ n: Math.round(n), x: x + rnd(-6, 6), y, z: z + off, t: 0, dur: 0.85, crit, player, heal, col });
 }
 function drawNumbers(c) {
+  if (typeof uiPref === 'function' && !uiPref('dmgNum')) return;   // 设置里关闭了伤害数字
   for (const d of numList) {
     const k = d.t / d.dur, pop = d.t < 0.08 ? 1.7 - d.t / 0.08 * 0.7 : 1, rise = easeOut(Math.min(1, d.t / 0.5)) * 18;
     const X = sx(d.x), Y = sy(d.y, d.z + rise + 70);
@@ -114,7 +116,7 @@ function fxText(txt, x, y, z, { col = '#ff5a3a', size = 13, dur = 0.7 } = {}) {
 }
 /* ---- 残影（技能突进时） ---- */
 function fxAfterimage(ent, col = '#6ad0ff') {
-  const snap = { x: ent.x, y: ent.y, z: ent.z, face: ent.face, pose: JSON.parse(JSON.stringify(ent.pose)) };
+  const snap = { x: ent.x, y: ent.y, z: ent.z, face: ent.face, pose: { ...ent.pose, r: ent.pose.r ? ent.pose.r.slice() : undefined } };
   addFx({ y: ent.y - 0.2, dur: 0.22, snap, col, model: ent.model,
     draw(c) {
       const k = this.t / this.dur;
@@ -150,5 +152,43 @@ function fxSlashX(x, y, z, size = 150, col) {
   const img = col ? fxTint('slashx', col) : IMG['fx/slashx'];
   addFx({ x, y: y + 2, z, dur: 0.35, add: true, img, rot: rnd(-0.4, 0.4), draw(c) {
     const k = this.t / this.dur; drawSpr(c, this.img, sx(this.x), sy(this.y, this.z), size * (0.6 + easeOut(Math.min(1, k * 3)) * 0.5), 0, { rot: this.rot, alpha: 1 - k * k });
+  } });
+}
+/* ---- 通用手绘特效：一张素材做出现 / 缩放 / 旋转 / 淡出（技能特效大多用它） ----
+   o：{ w, h, dur, rot, spin, flip, col（换色）, grow:[起始比例, 结束比例], ax, ay, add, follow（跟随实体）, fadeIn, alpha } */
+function fxSpr(name, x, y, z, o = {}) {
+  const img = o.col ? fxTint(name, o.col) : IMG['fx/' + name];
+  const g = o.grow || [1, 1];
+  return addFx({ x, y: y + 1, yy: y, z, dur: o.dur || 0.4, add: o.add !== false, img, o, draw(c) {
+    const k = this.t / this.dur, O = this.o, s = lerp(g[0], g[1], easeOut(k)), fi = O.fadeIn || 0.08;
+    const a = (O.alpha ?? 1) * (k < fi ? k / fi : k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1);
+    const e = O.follow, X = sx(e ? e.x + (O.ox || 0) * e.face : this.x), Y = sy(e ? e.y : this.yy, e ? e.z + (O.oz || 0) : this.z);
+    drawSpr(c, this.img, X, Y, O.w ? O.w * s : 0, O.h ? O.h * s : 0, { rot: (O.rot || 0) + (O.spin || 0) * this.t, flip: O.flip, alpha: a, ax: O.ax, ay: O.ay, add: O.add });
+  } });
+}
+/* ---- 横向光束（激光炮等）：一段光束素材横向拉伸，宽度随时间收缩 ---- */
+function fxBeam(x, y, z, len, face, o = {}) {
+  const img = o.col ? fxTint(o.img || 'laser', o.col) : IMG['fx/' + (o.img || 'laser')];
+  return addFx({ x, y: y + 1, z, dur: o.dur || 0.5, add: true, img, len, face, w: o.w || 40, draw(c) {
+    const k = this.t / this.dur, h = this.w * (k < 0.1 ? k / 0.1 : 1 - easeIn(Math.max(0, (k - 0.5) / 0.5)) * 0.9);
+    drawSpr(c, this.img, sx(this.x), sy(this.y, this.z), this.len, h, { ax: 0, ay: 0.5, flip: this.face < 0, alpha: k > 0.8 ? (1 - k) / 0.2 : 1 });
+  } });
+}
+/* ---- 蓄力：光点向角色汇聚 ---- */
+function fxCharge(e, col = '#ffe07a', n = 1) {
+  for (let i = 0; i < n; i++) {
+    const a = rnd(0, TAU), r = rnd(40, 70);
+    addFx({ x: e.x, y: e.y + 1, z: e.z + 50, ax: Math.cos(a) * r, az: Math.sin(a) * r * 0.8, dur: 0.3, col, ent: e, draw(c) {
+      const k = easeIn(this.t / this.dur), X = sx(this.ent.x + this.ax * (1 - k)), Y = sy(this.ent.y, this.ent.z + 50 + this.az * (1 - k));
+      c.fillStyle = this.col; c.globalAlpha = 0.9 * (1 - k * 0.5); c.fillRect(X - 1.5, Y - 1.5, 3, 3); c.globalAlpha = 1;
+    } });
+  }
+}
+/* ---- 格挡火花 ---- */
+function fxGuard(e) {
+  addFx({ x: e.x + e.face * 22, y: e.y + 2, z: e.z + 55, dur: 0.2, add: true, face: e.face, draw(c) {
+    const k = this.t / this.dur; c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(160,220,255,${1 - k})`; c.lineWidth = 3;
+    c.beginPath(); c.ellipse(sx(this.x), sy(this.y, this.z), 8 + k * 10, 26 + k * 10, 0, this.face > 0 ? -1.3 : 1.84, this.face > 0 ? 1.3 : 4.44); c.stroke(); c.restore();
+    drawSpr(c, 'spark', sx(this.x), sy(this.y, this.z), 40 * (1 - k * 0.5), 0, { alpha: 1 - k });
   } });
 }

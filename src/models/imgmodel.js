@@ -79,13 +79,20 @@ class SpriteModel {
     if (!f || !this.img[f]) f = this.map[pose.__n || ''] || this.map._;
     return this.img[f] ? f : 'idle';
   }
+  // 外观层钩子（外观与换装组 models/avatar.js）：this.av = { frame(m, f) → {F, im} 换帧来源（时装），under / over(c, m, f, F) 在帧前后叠加武器与配件 }；没有 av 时行为不变
   draw(c, pose, t = 0, opts = NO_OPTS) {
-    const f = this.frameOf(pose), F = this.S.frames[f], im = this.img[f]; if (!im) return;
+    const f = this.frameOf(pose), av = this.av;
+    let F = this.S.frames[f], im = this.img[f];
+    if (av) { const s = av.frame(this, f); if (s) { F = s.F; im = s.im; } }
+    if (!im) return;
     const k = 1 / this.S.res, rot = SPR_ROT[f] && pose.r ? pose.r[2] * SPR_ROT[f] * D2R : 0;
     c.save();
     if (rot) { const cy = -F.h * k * 0.45; c.translate(0, cy); c.rotate(rot); c.translate(0, -cy); }
     if (f === 'idle') c.scale(1 - Math.sin(t * 2.6) * 0.006, 1 + Math.sin(t * 2.6) * 0.012);   // 呼吸
-    c.scale(k, k); c.drawImage(im, -F.ax, -F.ay);
+    c.scale(k, k);
+    if (av) av.under(c, this, f, F);
+    c.drawImage(im, -F.ax, -F.ay);
+    if (av) av.over(c, this, f, F);
     if (opts.glow) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = Math.min(1, opts.glow) * 0.45; c.drawImage(im, -F.ax, -F.ay); }
     c.restore();
   }

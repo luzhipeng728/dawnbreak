@@ -16,7 +16,7 @@
 | `server/modules/gm.js` | 管理员后台：发邮件、邀请码、在线玩家、发公告、日志、强制下架；公共操作日志表 `svc_log`（`ctx.mods.gm.log()`，拍卖 / 邮件 / 签到 / 管理员操作都记在这里） |
 | `src/net/social.js` | 客户端逻辑：接口封装、待办对账（防复制 / 防丢失）、公告上报、排行榜上报、邮件领取入包 |
 | `src/ui/social/*.js` | 窗口：`auction` `mail` `rank` `signin` `gm`；顶部滚动公告条；社交按钮条和信封提示 |
-| `test/svc_api.mjs` | 接口测试（不开浏览器）：拍卖、邮件、签到、排行榜、公告、管理员，共 88 项 |
+| `test/svc_api.mjs` | 接口测试（不开浏览器）：拍卖、邮件、签到、排行榜、公告、管理员，共 89 项 |
 | `test/svc_host.mjs` | 测试用服务端：联机组的真实服务端（`server/index.js` 的 `start()`）+ 临时数据库，注册测试账号、加好友，打开 gm 的测试接口（`DNF_SVC_TEST=1`，可以平移服务端时间） |
 | `test/svc_play.mjs` | 端到端测试（40 项）：本机起服务端（临时数据库），1 个 Chrome 里同时最多 2 个玩家上下文，全部走真实界面 |
 
@@ -210,8 +210,19 @@ WS（服务端 → 客户端）：`mail:new { unread }`，`notice:show { kind, t
 
 这样做以后，无论在哪一步断网或刷新，物品和金币都不会复制，也不会丢失。
 
-## 与其他组的约定
-- 联机：模块扩展点、`net.api / net.on`、`netLogin / netLogout` 事件、好友列表、在线列表、立即上传云存档、`pvpResult` 事件。
-- 商城：点券 `save.data.cera` / `addCera(n, 来源)`；签到奖励的物品 key；魔盒大奖、天空套合成的公告。
-- 装备深化：`bind` 字段 / `itemTradable(it)`；`gearScore()`；`epicCollectCount()`；增幅、史诗掉落的公告。
-- 世界：拍卖行 NPC（功能 `auction`，在我的文件里写 `NPC_SERVICES.auction ??= {...}`）。
+## 与其他组的约定（都已对上，且都有 typeof 兜底：对方的代码没合进来时也能运行）
+- 联机：
+  - 服务端：模块扩展点（`routes / migrations / init / tick`）、`ctx.sendTo / broadcast / online / findUser`、`ctx.mods.social.friendsOf`、`ctx.mods.account.createInvite / listInvites / deleteInvite`。
+  - 客户端：`net.api / net.on`、`netLogin / netOpen / netLogout` 事件、`netSaveFlush()`（立即上传云存档）。
+  - 好友决斗结束时的 `pvpResult { win, draw, vs }` 由联机组在 M4 发出。
+- 商城：
+  - 点券：`addCera(n, 来源)`，余额在 `save.data.cera`。
+  - 计数型物品：`cera` / `shard_box` / `coin_gift`，不占格子。
+  - 签到奖励的物品 key：`box_magic` `box_supply` `box_equip` `box_orb` `tk_enh7`。
+  - 公告：`skyset` / `box` / `multi`。
+- 装备深化：
+  - 交易与绑定：`itemTradable(it)` / `itemBindText(it)`，绑定取值 `'char' | 'account' | 'equip'`（封装：穿戴后变为账号绑定）。
+  - 排行榜数据：`gearScore(inv.equip)`、`epicCollectCount()`。
+  - 公告：`amplify` / `epic`（翻牌带 `via: 'card'`）。
+  - 这些都已在试合并里验证过：史诗默认“封装”可以上架，穿过以后不行；时装账号绑定，不能上架；邮件附件里的点券 / 魔盒 / 强化券能正常领取。
+- 世界：诺顿（赫顿玛尔中央广场）的 services 里有 `auction`、`mail`（提交 610f2c0），由 `ui/social/common.js` 用 `NPC_SERVICES.xxx ??=` 注册。

@@ -63,6 +63,9 @@ function skyLineHit(e, x0, x1, y, hw, h, o = {}) {
 }
 const skyAlive = kind => ents.filter(e => e.kind === kind && !e.dead).length;
 const skyMul = () => game.dungeon ? { mul: game.dungeon.D.hp, atkMul: game.dungeon.D.atk } : {};
+// 同屏的远程小怪轮流出手：整个房间每 2.4 秒最多出一次远程攻击（打磨组实测：黑暗玄廊 / 城主宫殿的被击主要来自多只远程怪同时射击）
+const skyRangedOk = () => game.t - (game.skyRangedT || -9) > 2.4;
+const skyRangedUse = () => { game.skyRangedT = game.t; };
 const skyWall = (e, dir) => { const R = game.room; return R ? (dir > 0 ? R.x1 - 20 : R.x0 + 20) : e.x + dir * 700; };
 
 /* ---- 招式模板 ---- */
@@ -283,7 +286,7 @@ Object.assign(MON, {
   puppeteerRock: { name: '岩石人偶师', lvl: 17, hp: 5600, atk: 235, def: 240, w: 11, d: 11, h: 70, weight: 0.8, speed: 90, exp: 115, gold: [24, 46], shadowR: 15, pref: 220, clips: BEAST_CLIPS,
     model: () => buildGoblinVariant({ ...SKY_GOB, skin: '#8a8a8a', skin2: '#5a5a5a', eye: '#ffa030', band: null }, { weapon: 'none', robe: '#5a5a62' }),
     attacks: [
-      { clip: 'throw', range: [90, 360], dy: 36, cd: [3, 4.4], w: 1.4, act: { dur: 0.9, events: [evAt(0.45, e => skyStoneShot(e))] } },
+      { clip: 'throw', range: [90, 360], dy: 36, cd: [4.6, 6.2], w: 1.4, cond: skyRangedOk, act: { dur: 0.9, onStart: skyRangedUse, events: [evAt(0.45, e => skyStoneShot(e))] } },
       { clip: 'cast', range: [0, 440], dy: 440, cd: [4.5, 6.5], act: { dur: 1.2, events: [evAt(0.25, e => { const p = game.player; if (p) skySpikeAt(e, p.x, p.y, 1.1, { r: 36, dmg: 1.05, follow: p, rock: '#9a9690' }); })] } }] },
   // 寒冰人偶师 沙杜（稀有）：冰刺会冻结；任务组的“冰冷的净化水”从它身上掉
   puppeteerIce: { name: '寒冰人偶师 沙杜', lvl: 17, hp: 7400, atk: 240, def: 260, w: 11, d: 11, h: 70, weight: 0.9, speed: 95, exp: 160, gold: [40, 80], shadowR: 15, pref: 220, clips: BEAST_CLIPS, scale: 1.08,
@@ -301,7 +304,7 @@ Object.assign(MON, {
   golemBronze: { name: '青铜石巨人', lvl: 18, hp: 13000, atk: 255, def: 460, w: 20, d: 15, h: 112, weight: 3, speed: 58, exp: 130, gold: [30, 60], shadowR: 26, pref: 60, clips: BEAST_CLIPS,
     model: () => buildTau({ fur: '#b0703a', muzzle: '#c89a6a', horn: '#8a5a2a', eye: '#6ad0ff', cloth: '#6a4a2a' }, { weapon: 'none' }),
     attacks: [
-      melee('slam', 0.7, 0.8, [-10, 108, 34, 0, 110], { range: [0, 95], cd: [2.6, 4], sa: true, w: 1.5, hit: { dmg: 1.6, down: true, knock: 220, shake: 6 }, events: [evAt(0.7, e => { fxDust(e.x + e.face * 60, e.y, 12, 36, '#8a7a5a'); fxShock(e.x + e.face * 60, e.y, 70, '#d8a050'); sfx.boom(0.6); })] }),
+      melee('slam', 0.7, 0.8, [-10, 108, 34, 0, 110], { range: [0, 95], cd: [3.2, 4.6], sa: true, w: 1.5, hit: { dmg: 1.6, down: true, knock: 220, shake: 6 }, events: [evAt(0.7, e => { fxDust(e.x + e.face * 60, e.y, 12, 36, '#8a7a5a'); fxShock(e.x + e.face * 60, e.y, 70, '#d8a050'); sfx.boom(0.6); })] }),
       { clip: 'chargeW', range: [150, 420], dy: 24, cd: [6, 9], w: 0.7, act: tauCharge(0.9) }] },
   // 石巨人操纵师（精英）：打倒它，房间里的石巨人会一起崩裂（官方：变成石巨人的灵魂）
   golemMaster: { name: '石巨人操纵师', lvl: 18, hp: 7200, atk: 240, def: 260, w: 11, d: 11, h: 70, weight: 0.9, speed: 95, exp: 160, gold: [40, 80], shadowR: 15, pref: 240, clips: BEAST_CLIPS, scale: 1.1,
@@ -314,25 +317,25 @@ Object.assign(MON, {
     model: () => buildGoblinVariant({ ...SKY_GOB, skin: '#5a6a8a', skin2: '#3a4a6a', eye: '#60ff90', band: '#c83a3a' }, { weapon: 'none' }),
     attacks: [
       melee('atk1', 0.08, 0.16, [0, 48, 20, 10, 60], { range: [0, 44], cd: [1.4, 2.4], hit: { dmg: 0.8, knock: 70, snd: 'stab' } }),
-      { clip: 'throw', range: [100, 380], dy: 40, cd: [2.6, 3.8], w: 1.6, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, 1))] } }] },
+      { clip: 'throw', range: [100, 340], dy: 40, cd: [5.5, 7], w: 1.6, cond: skyRangedOk, act: { dur: 0.9, onStart: skyRangedUse, events: [evAt(0.45, e => skyDart(e, 1))] } }] },
   // 夜视镜卡格：扔烟雾弹“关灯”（烟里会失明）；它还活着时黑暗玄廊会更黑（见 themes/sky_castle.js）
   kargoGoggle: { name: '夜视镜卡格', lvl: 19, hp: 5800, atk: 240, def: 240, w: 10, d: 10, h: 66, weight: 0.7, speed: 125, exp: 115, gold: [28, 52], shadowR: 14, pref: 240, clips: BEAST_CLIPS,
     model: () => buildGoblinVariant({ ...SKY_GOB, skin: '#6a5a8a', skin2: '#4a3a6a', eye: '#60ff90', band: '#3a3a3a' }, { weapon: 'none' }),
     attacks: [
-      { clip: 'throw', range: [100, 380], dy: 40, cd: [2.8, 4], w: 1.2, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, 1))] } },
-      { clip: 'throw', range: [120, 360], dy: 60, cd: [6, 8], w: 1, act: { dur: 0.9, events: [evAt(0.45, e => skySmokeBomb(e))] } }] },
+      { clip: 'throw', range: [100, 340], dy: 40, cd: [5.5, 7], w: 1.2, cond: skyRangedOk, act: { dur: 0.9, onStart: skyRangedUse, events: [evAt(0.45, e => skyDart(e, 1))] } },
+      { clip: 'throw', range: [120, 360], dy: 60, cd: [7, 9], w: 1, cond: skyRangedOk, act: { dur: 0.9, onStart: skyRangedUse, events: [evAt(0.45, e => skySmokeBomb(e))] } }] },
   // 驱逐者：挥剑 + 短距离冲刺
   expeller: { name: '驱逐者', lvl: 19, hp: 10000, atk: 245, def: 420, w: 15, d: 12, h: 116, weight: 1.6, speed: 95, exp: 125, gold: [28, 56], shadowR: 20, pref: 60, clips: BEAST_CLIPS,
     model: () => buildZombie({ skin: '#5a5a66', hair: '#2a2a32', eye: '#ff3a2a', cloth: '#3a3a4a', pants: '#2a2a32' }),
     attacks: [
-      melee('club', 0.44, 0.52, [0, 96, 24, 10, 100], { range: [0, 88], cd: [1.6, 2.8], w: 1.5, hit: { dmg: 1.1, knock: 140, stun: 0.45, snd: 'slash' }, events: [slashAt(0.42, { a0: -2.2, a1: 0.8, r: 56, w: 12, off: [10, 50], col: '#ffb0a0', silent: true })] }),
+      melee('club', 0.44, 0.52, [0, 96, 24, 10, 100], { range: [0, 88], cd: [2.4, 3.6], w: 1.5, hit: { dmg: 1.1, knock: 140, stun: 0.45, snd: 'slash' }, events: [slashAt(0.42, { a0: -2.2, a1: 0.8, r: 56, w: 12, off: [10, 50], col: '#ffb0a0', silent: true })] }),
       { clip: 'chargeW', range: [140, 300], dy: 24, cd: [4, 6], act: skyDashAct(240, 560, 1.1) }] },
   // 斧之驱逐者：挥斧时霸体
   expellerAxe: { name: '斧之驱逐者', lvl: 20, hp: 11500, atk: 255, def: 460, w: 16, d: 12, h: 116, weight: 2, speed: 85, exp: 130, gold: [30, 58], shadowR: 21, pref: 65, clips: BEAST_CLIPS, scale: 1.05,
     model: () => buildZombie({ skin: '#6a5a4a', hair: '#2a2a32', eye: '#ff3a2a', cloth: '#4a3a2a', pants: '#2a2a32' }),
     attacks: [
-      melee('axe', 0.62, 0.72, [0, 104, 30, 0, 120], { range: [0, 95], cd: [2.4, 3.6], sa: true, w: 1.5, hit: { dmg: 1.3, knock: 220, stun: 0.55, shake: 5 } }),
-      melee('slam', 0.7, 0.8, [-80, 100, 40, 0, 110], { range: [0, 90], dy: 30, cd: [6, 8], sa: true, hit: { dmg: 1.2, down: true, knock: 200, shake: 5 }, events: [evAt(0.7, e => { fxShock(e.x, e.y, 110, '#ff8a6a'); sfx.boom(0.5); })] })] },
+      melee('axe', 0.62, 0.72, [0, 104, 30, 0, 120], { range: [0, 95], cd: [3.2, 4.4], sa: true, w: 1.5, hit: { dmg: 1.3, knock: 220, stun: 0.55, shake: 5 } }),
+      melee('slam', 0.7, 0.8, [-80, 100, 40, 0, 110], { range: [0, 90], dy: 30, cd: [7, 9], sa: true, hit: { dmg: 1.2, down: true, knock: 200, shake: 5 }, events: [evAt(0.7, e => { fxShock(e.x, e.y, 110, '#ff8a6a'); sfx.boom(0.5); })] })] },
   // 侍剑骑兵（悬空城）：进房时是石像，走近或被打才会醒来
   knight: { name: '侍剑骑兵', lvl: 22, hp: 11500, atk: 268, def: 480, w: 15, d: 12, h: 116, weight: 1.8, speed: 100, exp: 130, gold: [30, 60], shadowR: 20, pref: 60, clips: BEAST_CLIPS, scale: 1.05,
     model: () => buildZombie({ skin: '#8a8a9a', hair: '#3a3a4a', eye: '#6ad0ff', cloth: '#4a4a6a', pants: '#2a2a3a' }),
@@ -390,7 +393,7 @@ Object.assign(MON, {
   skyExpeller: { name: '天之驱逐者', lvl: 22, hp: 148000, atk: 310, def: 580, w: 17, d: 14, h: 124, weight: 3, speed: 110, exp: 2700, gold: [320, 580], shadowR: 25, pref: 80, clips: BEAST_CLIPS, scale: 1.18, bars: 30,
     model: () => buildZombie({ skin: '#d8d8e8', hair: '#8a8aa0', eye: '#ff3a2a', cloth: '#2a4aa0', pants: '#8a8aa0' }),
     attacks: [
-      { clip: 'club', range: [0, 110], dy: 20, cd: [1.6, 2.6], w: 2, act: { dur: 1.3, hits: [{ t0: 0.44, t1: 0.52, box: [0, 118, 28, 10, 120], dmg: 1.1, knock: 110, stun: 0.45, hs: 0.07, snd: 'slash' }, { t0: 0.94, t1: 1.02, box: [0, 118, 28, 10, 120], dmg: 1.3, knock: 200, stun: 0.5, hs: 0.08, snd: 'slash', shake: 3 }],
+      { clip: 'club', range: [0, 110], dy: 20, cd: [2.2, 3.2], w: 2, act: { dur: 1.3, hits: [{ t0: 0.44, t1: 0.52, box: [0, 118, 28, 10, 120], dmg: 1.1, knock: 110, stun: 0.45, hs: 0.07, snd: 'slash' }, { t0: 0.94, t1: 1.02, box: [0, 118, 28, 10, 120], dmg: 1.3, knock: 200, stun: 0.5, hs: 0.08, snd: 'slash', shake: 3 }],
         events: [slashAt(0.42, { a0: -2.2, a1: 0.8, r: 70, w: 14, off: [10, 55], col: '#ffe070', silent: true }), evAt(0.6, e => e.play('club', true)), slashAt(0.92, { a0: 1.0, a1: -2.0, r: 70, w: 14, off: [10, 55], col: '#ffe070' })] } },
       { clip: 'cast', range: [0, 900], dy: 900, cd: [6, 8], w: 1.5, act: { dur: 2.0, superArmor: true, events: [evAt(0.2, e => skyThunderLanes(e, e.enraged ? 3 : rndi(1, 3)))] } },
       { clip: 'chargeW', range: [160, 900], dy: 40, cd: [5, 7.5], w: 1.2, act: tauCharge(1.4) },
@@ -399,7 +402,7 @@ Object.assign(MON, {
   seghart: { name: '光之城主 赛格哈特', lvl: 24, hp: 168000, atk: 328, def: 620, w: 16, d: 14, h: 128, weight: 3, speed: 105, exp: 3200, gold: [360, 660], shadowR: 25, pref: 110, clips: BEAST_CLIPS, scale: 1.18, bars: 34,
     model: () => buildZombie({ skin: '#f0e0c0', hair: '#fff0b0', eye: '#ffd23a', cloth: '#f0f0f8', pants: '#d8c070' }),
     attacks: [
-      melee('scratch', 0.3, 0.4, [-70, 104, 34, 10, 120], { range: [0, 95], dy: 30, cd: [1.4, 2.2], w: 2, hit: { dmg: 1.2, knock: 150, stun: 0.45 }, events: [slashAt(0.28, { a0: -2.6, a1: 1.2, r: 74, w: 14, off: [0, 60], col: '#ffe8a0', silent: true })] }),
+      melee('scratch', 0.3, 0.4, [-70, 104, 34, 10, 120], { range: [0, 95], dy: 30, cd: [2, 3], w: 2, hit: { dmg: 1.2, knock: 150, stun: 0.45 }, events: [slashAt(0.28, { a0: -2.6, a1: 1.2, r: 74, w: 14, off: [0, 60], col: '#ffe8a0', silent: true })] }),
       { clip: 'cast', range: [0, 160], dy: 90, cd: [5, 7], w: 1.4, act: { dur: 1.3, superArmor: true, events: [evAt(0.1, e => skyNova(e, 125, 0.9, '#fff0a0', { dmg: 1.5 }))] } },
       { clip: 'cast', range: [0, 900], dy: 900, cd: [8, 11], w: 1.3, act: { dur: 2.2, superArmor: true, events: [evAt(0.1, e => skyLightField(e))] } },
       { clip: 'cast', range: [150, 900], dy: 40, cd: [5, 7], w: 1.4, act: { dur: 1.9, superArmor: true, events: [evAt(0.15, e => { skyLaser(e, e.y, { dmg: 1.9 }); if (e.enraged && game.player) { const y2 = game.player.y; if (Math.abs(y2 - e.y) > 50) skyLaser(e, y2, { dmg: 1.6, warn: 1.4 }); } })] } }] },

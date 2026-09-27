@@ -32,7 +32,7 @@ ok(await page.evaluate(() => world.S.id === 'sky_castle'), 'Lv.16 走上云梯�
 await page.screenshot({ path: `${out}/route-field.png` });
 
 console.log('· 区域地图上的门');
-const gates = await page.evaluate(() => SCENES.sky_castle.gates.map(g => ({ id: g.dungeon, x: g.x, hidden: !!DUNGEONS[g.dungeon].hidden, visible: gateVisible(g) })));
+const gates = await page.evaluate(() => SCENES.sky_castle.gates.filter(g => !DUNGEONS[g.dungeon].abyss).map(g => ({ id: g.dungeon, x: g.x, hidden: !!DUNGEONS[g.dungeon].hidden, visible: gateVisible(g) })));
 for (const g of gates) ok(g.hidden ? !g.visible : g.visible, `${g.id}：${g.hidden ? '隐藏图，任务完成前看不到门' : '门可见'}`);
 await page.evaluate(() => { (save.data.questDone ??= {}).q_hidden_floating = true; (save.data.hiddenSeen ??= {}).floating_castle = 1; });   // 现身特效由世界组负责（test/world.mjs 已测），这里直接标记为已出现
 ok(await page.evaluate(() => gateVisible(SCENES.sky_castle.gates.find(g => g.dungeon === 'floating_castle'))), '完成 q_hidden_floating 后悬空城的门出现');

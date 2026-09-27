@@ -57,6 +57,17 @@ for (const g of gates) {
   ok(r.art && r.theme.startsWith('sky'), `${g.id}：手绘背景 ${r.theme}`);
   ok(r.mons > 0 && r.spr === r.mons, `${g.id}：怪物 ${r.mons} 只，逐帧精灵 ${r.spr} 只`);
   await page.screenshot({ path: `${out}/route-${g.id}.png` });
+  // 房间机关：悬空城的侍剑骑兵开局是石像；龙人之塔的领主房有两座龙之雕像
+  if (g.id === 'floating_castle') {
+    const k = await page.evaluate(() => { const L = ents.filter(e => e.kind === 'knight' && !e.dead && !e.elite); return { n: L.length, statue: L.filter(e => e.statue).length }; });
+    ok(k.statue === k.n, `floating_castle：侍剑骑兵 ${k.n} 只，石像 ${k.statue} 只`);
+  }
+  const bossRoom = await page.evaluate(() => { const D = game.dungeon; D.enter(D.layout.boss, 'left'); const E = ents.filter(e => e.team === 'e' && !e.dead); return { boss: E.filter(e => e.boss).map(e => e.kind).join(','), statues: E.filter(e => e.kind === 'dragonStatue').length, adds: E.filter(e => !e.boss && e.kind !== 'dragonStatue').length }; });
+  const bossKind = await page.evaluate(id => DUNGEONS[id].boss.kind, g.id);
+  ok(bossRoom.boss === bossKind && bossRoom.adds > 0, `${g.id}：领主房有 ${bossRoom.boss} 和 ${bossRoom.adds} 只小怪`);
+  if (g.id === 'dragon_tower') ok(bossRoom.statues === 2, `dragon_tower：领主房两侧有龙之雕像（${bossRoom.statues}）`);
+  await wait(900);
+  await page.screenshot({ path: `${out}/route-${g.id}-boss.png` });
   // 回城：记下的位置就是门口
   await page.evaluate(() => { game.dungeon = null; return goTown(); }); await wait(800); await closeAll();
   const back = await page.evaluate(() => ({ id: world.S.id, x: Math.round(game.player.x) }));

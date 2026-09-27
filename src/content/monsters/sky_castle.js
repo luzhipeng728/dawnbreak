@@ -136,8 +136,8 @@ function skyDart(e, n = 1) {
   const p = game.player; sfx.swing(false);
   for (let i = 0; i < n; i++) game.after(i * 0.12, () => {
     if (e.dead) return;
-    spawnProj({ owner: e, x: e.x + e.face * 12, y: e.y, z: 48, vx: e.face * 380, vy: p ? clamp((p.y - e.y) * 1.3, -80, 80) : 0, life: 1.6, w: 7, d: 8, h: 10, face: e.face, pierce: false, shadow: 3,
-      hit: { dmg: 0.6, stun: 0.25, knock: 40, hs: 0.04, snd: 'stab', onHit: (a, t) => addStatus(t, 'poison', 3, { dps: a.atk * 0.05, src: a }) },
+    spawnProj({ owner: e, x: e.x + e.face * 12, y: e.y, z: 48, vx: e.face * 330, vy: p ? clamp((p.y - e.y) * 1.3, -80, 80) : 0, life: 1.6, w: 7, d: 8, h: 10, face: e.face, pierce: false, shadow: 3,
+      hit: { dmg: 0.5, stun: 0.25, knock: 40, hs: 0.04, snd: 'stab', onHit: (a, t) => addStatus(t, 'poison', 3, { dps: a.atk * 0.04, src: a }) },
       draw(c, pr) { const X = sx(pr.x), Y = sy(pr.y, pr.z), f = pr.face; c.save(); c.strokeStyle = '#3a3a44'; c.lineWidth = 2; c.beginPath(); c.moveTo(X - f * 10, Y); c.lineTo(X + f * 6, Y); c.stroke(); c.fillStyle = '#c8ccd8'; c.beginPath(); c.moveTo(X + f * 10, Y); c.lineTo(X + f * 3, Y - 3); c.lineTo(X + f * 3, Y + 3); c.closePath(); c.fill(); c.fillStyle = '#a04ad0'; c.fillRect(X - f * 12 - 2, Y - 2, 4, 4); c.restore(); } });
   });
 }
@@ -309,30 +309,30 @@ Object.assign(MON, {
     attacks: [
       { clip: 'cast', range: [0, 460], dy: 460, cd: [3, 4.2], w: 1.6, act: { dur: 1.3, events: [evAt(0.25, e => { const p = game.player; if (!p) return; skySpikeAt(e, p.x, p.y, 1.1, { r: 38, dmg: 1.05, follow: p }); skySpikeAt(e, p.x + rnd(-120, 120), clamp(p.y + rnd(-50, 50), 10, DEPTH - 10), 1.3, { r: 38, dmg: 1.05 }); })] } },
       { clip: 'roar', range: [0, 800], dy: 800, cd: [12, 16], w: 0.6, cond: () => skyAlive('golem') + skyAlive('golemBronze') < 2, act: { dur: 1.3, superArmor: true, events: [evAt(0.6, e => { fxText('起来吧，石巨人！', e.x, e.y, e.z + 30, { col: '#ffe060', size: 11 }); spawnMonster('golem', clamp(e.x + rnd(-160, 160), 80, (game.room ? game.room.x1 : 1200) - 80), rnd(20, DEPTH - 20), { lvl: e.lvl - 1, drop: true, ...skyMul() }); })] } }] },
-  // 卡格：扔毒飞镖，一次 1~2 枚（黑暗玄廊远程怪多，机器人实测被击偏多，2026-09-27 调低频率）
-  kargo: { name: '卡格', lvl: 18, hp: 5400, atk: 235, def: 230, w: 10, d: 10, h: 66, weight: 0.7, speed: 145, exp: 110, gold: [26, 50], shadowR: 14, pref: 220, clips: BEAST_CLIPS,
+  // 卡格：扔毒飞镖，一次 1 枚（黑暗玄廊远程怪多，机器人实测被击次数偏多，2026-09-27 调低频率和移速）
+  kargo: { name: '卡格', lvl: 18, hp: 5400, atk: 235, def: 230, w: 10, d: 10, h: 66, weight: 0.7, speed: 120, exp: 110, gold: [26, 50], shadowR: 14, pref: 220, clips: BEAST_CLIPS,
     model: () => buildGoblinVariant({ ...SKY_GOB, skin: '#5a6a8a', skin2: '#3a4a6a', eye: '#60ff90', band: '#c83a3a' }, { weapon: 'none' }),
     attacks: [
       melee('atk1', 0.08, 0.16, [0, 48, 20, 10, 60], { range: [0, 44], cd: [1.4, 2.4], hit: { dmg: 0.8, knock: 70, snd: 'stab' } }),
-      { clip: 'throw', range: [100, 380], dy: 40, cd: [2.6, 3.8], w: 1.6, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, rndi(1, 2)))] } }] },
+      { clip: 'throw', range: [100, 380], dy: 40, cd: [2.6, 3.8], w: 1.6, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, 1))] } }] },
   // 夜视镜卡格：扔烟雾弹“关灯”（烟里会失明）；它还活着时黑暗玄廊会更黑（见 themes/sky_castle.js）
-  kargoGoggle: { name: '夜视镜卡格', lvl: 19, hp: 5800, atk: 240, def: 240, w: 10, d: 10, h: 66, weight: 0.7, speed: 150, exp: 115, gold: [28, 52], shadowR: 14, pref: 240, clips: BEAST_CLIPS,
+  kargoGoggle: { name: '夜视镜卡格', lvl: 19, hp: 5800, atk: 240, def: 240, w: 10, d: 10, h: 66, weight: 0.7, speed: 125, exp: 115, gold: [28, 52], shadowR: 14, pref: 240, clips: BEAST_CLIPS,
     model: () => buildGoblinVariant({ ...SKY_GOB, skin: '#6a5a8a', skin2: '#4a3a6a', eye: '#60ff90', band: '#3a3a3a' }, { weapon: 'none' }),
     attacks: [
-      { clip: 'throw', range: [100, 380], dy: 40, cd: [2.8, 4], w: 1.2, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, rndi(1, 2)))] } },
+      { clip: 'throw', range: [100, 380], dy: 40, cd: [2.8, 4], w: 1.2, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, 1))] } },
       { clip: 'throw', range: [120, 360], dy: 60, cd: [6, 8], w: 1, act: { dur: 0.9, events: [evAt(0.45, e => skySmokeBomb(e))] } }] },
   // 驱逐者：挥剑 + 短距离冲刺
-  expeller: { name: '驱逐者', lvl: 19, hp: 11000, atk: 255, def: 420, w: 15, d: 12, h: 116, weight: 1.6, speed: 95, exp: 125, gold: [28, 56], shadowR: 20, pref: 60, clips: BEAST_CLIPS,
+  expeller: { name: '驱逐者', lvl: 19, hp: 11000, atk: 245, def: 420, w: 15, d: 12, h: 116, weight: 1.6, speed: 95, exp: 125, gold: [28, 56], shadowR: 20, pref: 60, clips: BEAST_CLIPS,
     model: () => buildZombie({ skin: '#5a5a66', hair: '#2a2a32', eye: '#ff3a2a', cloth: '#3a3a4a', pants: '#2a2a32' }),
     attacks: [
       melee('club', 0.44, 0.52, [0, 96, 24, 10, 100], { range: [0, 88], cd: [1.6, 2.8], w: 1.5, hit: { dmg: 1.1, knock: 140, stun: 0.45, snd: 'slash' }, events: [slashAt(0.42, { a0: -2.2, a1: 0.8, r: 56, w: 12, off: [10, 50], col: '#ffb0a0', silent: true })] }),
       { clip: 'chargeW', range: [140, 300], dy: 24, cd: [4, 6], act: skyDashAct(240, 560, 1.1) }] },
   // 斧之驱逐者：挥斧时霸体
-  expellerAxe: { name: '斧之驱逐者', lvl: 20, hp: 13000, atk: 265, def: 460, w: 16, d: 12, h: 116, weight: 2, speed: 85, exp: 130, gold: [30, 58], shadowR: 21, pref: 65, clips: BEAST_CLIPS, scale: 1.05,
+  expellerAxe: { name: '斧之驱逐者', lvl: 20, hp: 13000, atk: 255, def: 460, w: 16, d: 12, h: 116, weight: 2, speed: 85, exp: 130, gold: [30, 58], shadowR: 21, pref: 65, clips: BEAST_CLIPS, scale: 1.05,
     model: () => buildZombie({ skin: '#6a5a4a', hair: '#2a2a32', eye: '#ff3a2a', cloth: '#4a3a2a', pants: '#2a2a32' }),
     attacks: [
-      melee('axe', 0.62, 0.72, [0, 104, 30, 0, 120], { range: [0, 95], cd: [2.2, 3.4], sa: true, w: 1.5, hit: { dmg: 1.5, knock: 220, stun: 0.55, shake: 5 } }),
-      melee('slam', 0.7, 0.8, [-80, 100, 40, 0, 110], { range: [0, 90], dy: 30, cd: [5, 7], sa: true, hit: { dmg: 1.4, down: true, knock: 200, shake: 5 }, events: [evAt(0.7, e => { fxShock(e.x, e.y, 110, '#ff8a6a'); sfx.boom(0.5); })] })] },
+      melee('axe', 0.62, 0.72, [0, 104, 30, 0, 120], { range: [0, 95], cd: [2.4, 3.6], sa: true, w: 1.5, hit: { dmg: 1.3, knock: 220, stun: 0.55, shake: 5 } }),
+      melee('slam', 0.7, 0.8, [-80, 100, 40, 0, 110], { range: [0, 90], dy: 30, cd: [6, 8], sa: true, hit: { dmg: 1.2, down: true, knock: 200, shake: 5 }, events: [evAt(0.7, e => { fxShock(e.x, e.y, 110, '#ff8a6a'); sfx.boom(0.5); })] })] },
   // 侍剑骑兵（悬空城）：进房时是石像，走近或被打才会醒来
   knight: { name: '侍剑骑兵', lvl: 22, hp: 13500, atk: 268, def: 480, w: 15, d: 12, h: 116, weight: 1.8, speed: 100, exp: 130, gold: [30, 60], shadowR: 20, pref: 60, clips: BEAST_CLIPS, scale: 1.05,
     model: () => buildZombie({ skin: '#8a8a9a', hair: '#3a3a4a', eye: '#6ad0ff', cloth: '#4a4a6a', pants: '#2a2a3a' }),
@@ -387,7 +387,7 @@ Object.assign(MON, {
       })] } },
       { clip: 'cast', range: [0, 170], dy: 90, cd: [6, 9], w: 1, act: { dur: 1.4, superArmor: true, events: [evAt(0.1, e => skyNova(e, 150, 1.0, '#ffc040', { dmg: 1.5 }))] } }] },
   // 天之驱逐者（黑暗玄廊）：双剑斩、1~3 列落雷（总会留一条安全通道）、长距离冲刺
-  skyExpeller: { name: '天之驱逐者', lvl: 22, hp: 185000, atk: 318, def: 580, w: 17, d: 14, h: 124, weight: 3, speed: 110, exp: 2700, gold: [320, 580], shadowR: 25, pref: 80, clips: BEAST_CLIPS, scale: 1.18, bars: 30,
+  skyExpeller: { name: '天之驱逐者', lvl: 22, hp: 185000, atk: 310, def: 580, w: 17, d: 14, h: 124, weight: 3, speed: 110, exp: 2700, gold: [320, 580], shadowR: 25, pref: 80, clips: BEAST_CLIPS, scale: 1.18, bars: 30,
     model: () => buildZombie({ skin: '#d8d8e8', hair: '#8a8aa0', eye: '#ff3a2a', cloth: '#2a4aa0', pants: '#8a8aa0' }),
     attacks: [
       { clip: 'club', range: [0, 110], dy: 20, cd: [1.6, 2.6], w: 2, act: { dur: 1.3, hits: [{ t0: 0.44, t1: 0.52, box: [0, 118, 28, 10, 120], dmg: 1.1, knock: 110, stun: 0.45, hs: 0.07, snd: 'slash' }, { t0: 0.94, t1: 1.02, box: [0, 118, 28, 10, 120], dmg: 1.3, knock: 200, stun: 0.5, hs: 0.08, snd: 'slash', shake: 3 }],
@@ -436,11 +436,11 @@ function skyMakeStatue(m, wake = 170) {
   if (typeof SpriteModel === 'undefined' || !SPR_DATA[r] || !IMG[`spr/${r}/idle`]) return;
   const live = m.model;
   m.model = new SpriteModel(r, { idle: 'idle', _: 'idle' }, {}, { ...o, sat: 0.05, bright: 0.82 });
-  m.statue = true;
+  m.statue = true; m.noGrab = true;   // 石像状态不能被抓取（抓取无视霸体，会打断“石像”动作）
   m.doAct({ name: 'statue', clip: 'idle', dur: 999, superArmor: true, noCounter: true, update: (e) => {
     const p = game.player, woke = e.hp < e.hpMax || (p && Math.abs(p.x - e.x) < wake && Math.abs(p.y - e.y) < 70);
     if (!woke) { e.vx = e.vy = 0; return; }
-    e.model = live; e.statue = false; e.actT = e.act.dur; e.aiCd = 0.6; e.flash = 0.2;
+    e.model = live; e.statue = false; e.noGrab = false; e.actT = e.act.dur; e.aiCd = 0.6; e.flash = 0.2;
     fxText('苏醒了！', e.x, e.y, e.z + e.h + 10, { col: '#bfe8ff', size: 11 }); fxDust(e.x, e.y, 10, 30, '#b0b0b0'); sfx.thud(0.8);
   } });
 }

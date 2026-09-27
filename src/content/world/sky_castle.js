@@ -12,7 +12,7 @@ defineDungeon('puppet_hall', { name: '人偶玄关', lvl: [15, 17], theme: 'skyH
   desc: '摆满冰冷石像的玄关，人偶师在暗处施法——脚下出现红圈时后跳就能躲开。人偶之王道格里会连放三次石柱、用丝线把人拖过去，还会扔石化石弹。' });
 defineDungeon('golem_tower', { name: '石巨人塔', lvl: [16, 19], theme: 'skyTower', rooms: 7, branches: 3, rows: 4, mobs: [['golem', 3], ['golemBronze', 2], ['puppeteer', 2], ['puppeteerRock', 1]], elite: 'golemMaster', boss: { kind: 'platani', lvl: 20 }, bossAdds: 2, clearExp: 6400, bgm: 'dungeon3',
   desc: '魔法生命体石巨人把守的高塔。打倒石巨人操纵师，石巨人会一起崩裂。黄金巨人普拉塔尼几乎不会硬直，但连续冲撞之后会过热——那就是反击的时机。' });
-defineDungeon('dark_corridor', { name: '黑暗玄廊', lvl: [18, 21], theme: 'skyDark', rooms: 7, branches: 3, rows: 4, mobs: [['kargo', 3], ['kargoGoggle', 1.5], ['expeller', 3], ['expellerAxe', 1.5]], elite: 'expellerAxe', boss: { kind: 'skyExpeller', lvl: 22 }, bossAdds: 3, clearExp: 7600, bgm: 'abyss', bossBgm: 'boss',
+defineDungeon('dark_corridor', { name: '黑暗玄廊', lvl: [18, 21], theme: 'skyDark', rooms: 7, branches: 3, rows: 4, mobs: [['kargo', 2.5], ['kargoGoggle', 1.5], ['expeller', 3], ['expellerAxe', 1.5]], elite: 'expellerAxe', boss: { kind: 'skyExpeller', lvl: 22 }, bossAdds: 3, clearExp: 7600, bgm: 'abyss', bossBgm: 'boss',
   desc: '伸手不见五指的长廊。夜视镜卡格会让四周更黑，先解决它。光之城主的亲卫队长天之驱逐者会落下 1~3 列雷电（总有一条安全通道）并长距离冲刺。' });
 defineDungeon('lord_palace', { name: '城主宫殿', lvl: [20, 23], theme: 'skyPalace', rooms: 8, branches: 3, rows: 4, mobs: [['minius', 2], ['puppeteerRock', 2], ['golemBronze', 2], ['expeller', 2], ['expellerAxe', 1], ['kargoGoggle', 1]], elite: 'hughes', boss: { kind: 'seghart', lvl: 24 }, bossAdds: 3, clearExp: 10800, bgm: 'dungeon3',
   desc: '天空之城的最顶层。光之城主赛格哈特会甩动长发、放出光环；雷电密布时要么贴身要么离远；地上出现细细的光线时，赶紧上下移动躲开激光。' });

@@ -71,7 +71,7 @@ function updateCamera(dt) {
   if (cam.flash > 0) cam.flash -= dt;
 }
 function renderWorld() {
-  const c = wctx; c.setTransform(RS, 0, 0, RS, 0, 0); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; c.globalAlpha = 1; c.filter = 'none';
+  const c = wctx; c.setTransform(RS, 0, 0, RS, 0, 0); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'medium';   // 'high' 在 GPU 上是逐像素的高阶滤波，实测会把帧率从 60 拖到 20~40、GPU 占满发烫；medium 画质几乎一样 c.globalAlpha = 1; c.filter = 'none';
   if (game.scene === 'title' && IMG.title) {   // 标题主图：缓慢推镜
     const im = IMG.title, z = 1.04 + Math.sin(performance.now() / 9000) * 0.03, w = WW * z, h = WH * z;
     c.drawImage(im, (WW - w) / 2, (WH - h) / 2, w, h); return;
@@ -100,8 +100,11 @@ function renderWorld() {
   if (game.duel) game.duel.drawOverlay(c);
 }
 let lastT = performance.now(), acc = 0, fps = 60, fpsAcc = 0, fpsN = 0;
+let lastFrameT = 0;
 function frame(now) {
   requestAnimationFrame(frame);   // 先排下一帧：即使本帧出错，游戏也不会整个卡死
+  if (now - lastFrameT < 11) return;   // 最多 60 帧：120Hz 高刷屏（ProMotion）上隔一帧画一次，GPU 负载减半（逻辑本来就是固定 60Hz 步长）
+  lastFrameT = now;
   try { frameBody(now); } catch (e) { console.error(e); }
 }
 function frameBody(now) {

@@ -1,14 +1,22 @@
 /* =====================================================================
-   13. 投射物：剑气、飞石、箭、火球……（按 rep 间隔对同一目标多段命中）
+   13. 投射物：剑气、子弹、飞石、火球……（按 rep 间隔对同一目标多段命中，max 限制次数）
+   生成时记下发射者当前动作的伤害类型 / 属性 / 蓄力倍率（动作结束后投射物仍按发射时的数值结算）
    ===================================================================== */
 const projs = [];
 function spawnProj(o) {
   const p = { t: 0, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, grav: 0, w: 10, d: 12, h: 20, life: 1, pierce: true, hitMap: new Map(), face: 1, ...o };
-  p.team = o.owner.team; projs.push(p); return p;
+  const own = o.owner, act = own.act;
+  p.team = own.team;
+  if (p.hit) {
+    if (!p.hit.type) p.hit.type = (act && act.type) || own.dmgType || 'phys';
+    if (!p.hit.elem && act && act.elem) p.hit.elem = act.elem;
+    p.mul = p.mul || (act && act.dmgMul) || 1;
+  }
+  projs.push(p); return p;
 }
 function updateProjs(dt) {
   for (let i = projs.length - 1; i >= 0; i--) {
-    const p = projs[i];
+    const p = projs[i]; if (!p) continue;   // 回调在遍历中删掉了投射物（例如领主死亡清场）
     if (p.owner.hitstop > 0 && p.freezeWithOwner) continue;
     p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.grav) p.vz -= p.grav * dt;
     if (p.update) p.update(p, dt);
@@ -18,17 +26,18 @@ function updateProjs(dt) {
     if (!dead && p.hit) {
       const B = { x0: p.x - p.w, x1: p.x + p.w, y0: p.y - p.d, y1: p.y + p.d, z0: p.z, z1: p.z + p.h };
       for (const t of ents) {
-        if (t.team === p.team || t.dead || t.invul > 0 || t.remove) continue;
-        if (!overlaps(B, t)) continue;
+        if (t.team === p.team || !canHit(p.owner, t, p.hit) || !overlaps(B, t)) continue;
         const last = p.hitMap.get(t.id);
         if (last !== undefined && (!p.hit.rep || p.t - last < p.hit.rep)) continue;
+        if (p.hit.max) { const n = p.hitMap.get(-t.id) || 0; if (n >= p.hit.max) continue; p.hitMap.set(-t.id, n + 1); }
         p.hitMap.set(t.id, p.t);
         const fake = { x: p.x - p.face * 10, y: p.y, z: p.z, face: p.face };   // applyHit 只从 src 读取位置与朝向
-        applyHit(p.owner, t, { ...p.hit, box: null }, { proj: true, src: fake });
+        applyHit(p.owner, t, p.hitBox ? p.hit : { ...p.hit, box: null }, { proj: true, src: fake, mul: p.mul });
+        if (p.onHitT) p.onHitT(p, t);
         if (!p.pierce) { dead = true; break; }
       }
     }
-    if (dead) { if (p.onEnd && !p.culled) p.onEnd(p); projs.splice(i, 1); }
+    if (dead) { if (p.onEnd && !p.culled) p.onEnd(p); const j = projs.indexOf(p); if (j >= 0) projs.splice(j, 1); }
   }
 }
 function drawProjShadows(c) { for (const p of projs) if (p.shadow) { c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(sx(p.x), sy(p.y, 0), p.shadow, p.shadow * 0.35, 0, 0, TAU); c.fill(); } }

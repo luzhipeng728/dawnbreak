@@ -12,17 +12,26 @@ engine/fx.js
 engine/audio.js
 engine/music.js
 engine/entity.js
+engine/combat.js
+engine/pad.js
 # game：玩法系统
 game/player.js
-content/classes/sword_skills.js
 engine/proj.js
 game/monsters.js
 models/beast_models.js
 content/monsters/bestiary.js
 game/room.js
 game/themes.js
+content/classes/common.js
+content/classes/sword.js
+content/classes/sword_blade.js
+content/classes/sword_berserker.js
 content/classes/gunner.js
+content/classes/gun_ranger.js
+content/classes/gun_launcher.js
 content/classes/mage.js
+content/classes/mage_elemental.js
+content/classes/mage_battle.js
 engine/touch.js
 game/drops.js
 game/progress.js
@@ -49,7 +58,6 @@ ui/items/shop.js
 ui/items/smith.js
 ui/items/storage.js
 game/save.js
-content/classes/swordsman.js
 content/world/towns.js
 content/world/grand_flores.js
 # 任务与转职（依赖 world / items / save / menus）
@@ -67,4 +75,6 @@ content/sprites.js
 game/flow.js
 ui/artlab.js
 game/bot.js
+game/fighter_ai.js
+game/duel.js
 boot.js

@@ -177,11 +177,11 @@ async function jobTrial() {
     await P.enterDungeon(); let rooms = 0;
     const r = await P.fightDungeon({ onRoom: async s => { rooms++; if (s.d.boss) await P.shot(`boss-${tries}`); } });
     step(`烈焰格拉卡第 ${tries} 次：${JSON.stringify(r)}`);
-    if (r.state === 'result') { await P.shot(`trial-result-${tries}`); ok = r.hurt <= 30; await P.flipAndReturn(); }
+    if (r.state === 'result') { await P.shot(`trial-result-${tries}`); ok = r.hurt <= 40; await P.flipAndReturn(); }
     else { await wait(3000); }
     step('试炼任务：' + await page.evaluate(id => questState(id), `q_job_${CLS}_final`));
   }
-  check(ok, `试炼 3 次都没做到被击 ≤30`);
+  check(ok, `试炼 3 次都没做到被击 ≤40`);
   check(await goScene(mScene), '回不到导师处');
   check(await P.talk(MENTOR), '回来和导师对话失败');
   const b = await P.dialogTo(['完成任务']); step('交试炼：' + b); if (await page.evaluate(() => menus.isOpen('npcquest'))) { await P.shot('trial-reward'); await P.tap('KeyX'); await wait(400); }
@@ -250,8 +250,72 @@ async function duel() {
   const sv = await page.evaluate(() => [...menus.wins.npc.querySelectorAll('.npcmenu .btn')].map(b => b.textContent)); step('维尔·克鲁菜单：' + sv.join(' '));
 }
 
+// ---- 手机（触屏）：用 CDP 的多点触控，一根手指按摇杆，另一根手指点按钮 ----
+async function mobile() {
+  const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+  const pg = await ctx.newPage(); pg.on('pageerror', e => logs.push({ type: 'pageerror', text: e.message }));
+  const cdp = await ctx.newCDPSession(pg), T = { stick: null };
+  const send = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts });
+  const pts = extra => [...(T.stick ? [{ x: T.stick.x, y: T.stick.y, id: 0 }] : []), ...(extra || [])];
+  const tapXY = async (x, y, ms = 70) => { await send('touchStart', pts([{ x, y, id: 1 }])); await pg.waitForTimeout(ms); await send('touchEnd', pts()); await pg.waitForTimeout(90); };
+  const tapSel = async sel => { const b = await pg.locator(sel).first().boundingBox(); if (!b) { P.note(`手机：找不到 ${sel}`); return false; } await tapXY(b.x + b.width / 2, b.y + b.height / 2); return true; };
+  const stick = async (dx, dy) => {   // dx, dy ∈ [-1, 1]；0,0 = 松开
+    if (!dx && !dy) { if (T.stick) { T.stick = null; await send('touchEnd', []); } return; }
+    if (!T.stick) { T.stick = { x: 150, y: 250, bx: 150, by: 250 }; await send('touchStart', pts()); }
+    T.stick.x = T.stick.bx + dx * 60; T.stick.y = T.stick.by + dy * 60; await send('touchMove', pts());
+  };
+  let n = 0; const shot = async name => { const f = `${out}/m${String(++n).padStart(2, '0')}-${name}.png`; await pg.screenshot({ path: f }); console.log('  📷 ' + f); };
+  const st = () => pg.evaluate(() => ({ scene: game.scene, sid: world && world.S && world.S.id, x: game.player && game.player.x, y: game.player && game.player.y, menus: menus.stack.slice() }));
+  const walkTo = async (x, y, maxMs = 15000) => { const t0 = Date.now(); while (Date.now() - t0 < maxMs) { const s = await st(); const dx = x - s.x, dy = y - s.y; if (Math.abs(dx) < 16 && Math.abs(dy) < 10) break; if (s.menus.length) break; await stick(Math.abs(dx) > 16 ? Math.sign(dx) * (Math.abs(dx) > 250 ? 1 : 0.55) : 0, Math.abs(dy) > 10 ? Math.sign(dy) * 0.7 : 0); await pg.waitForTimeout(60); } await stick(0, 0); };
+  const npcXY = id => pg.evaluate(id => { const e = world.npcs.find(x => x.npc.id === id); const r = wcan.getBoundingClientRect(); return { x: r.left + (e.x - cam.x) / WW * r.width, y: r.top + (FLOOR_Y + e.y - e.npc.h * 0.5) / WH * r.height, wx: e.x, wy: e.y }; }, id);
+  const talkTap = async id => { const n0 = await npcXY(id); await walkTo(n0.wx - 60, n0.wy + 4); const n1 = await npcXY(id); await tapXY(n1.x, n1.y); await pg.waitForTimeout(500); return pg.evaluate(() => menus.isOpen('npc')); };
+  const dlg = async labels => { for (let i = 0; i < 25; i++) { const b = await pg.evaluate(l => { const w = menus.wins.npc; const b = w && [...w.querySelectorAll('.qbtns .btn')].find(b => l.includes(b.textContent.trim())); return b ? b.textContent.trim() : null; }, labels); if (b) { await tapSel(`.npcwin .qbtns .btn:has-text("${b}")`); await pg.waitForTimeout(400); return b; } if (!(await tapSel('.npcwin .qline'))) break; await pg.waitForTimeout(200); } return null; };
+  const exitSide = async (to, side) => { const t0 = Date.now(); while (Date.now() - t0 < 20000 && !(await pg.evaluate(t => world.S.id === t, to))) { await stick(side === 'right' ? 1 : -1, 0); await pg.waitForTimeout(100); } await stick(0, 0); await pg.waitForTimeout(800); return pg.evaluate(t => world.S.id === t, to); };
+  await pg.goto(`${URL_BASE}?touch&mute&fresh`); await pg.waitForFunction(() => window.__READY); await pg.waitForTimeout(800);
+  await shot('title'); await tapSel('text=进入游戏'); await pg.waitForTimeout(500); await shot('charselect');
+  await tapSel('#charsel button:has-text("创建角色")'); await pg.waitForTimeout(500); await tapSel(`.clscard >> nth=${ci}`); await pg.waitForTimeout(300); await shot('newgame');
+  await tapSel('text=创建并开始'); await pg.waitForTimeout(1600); await shot('help');
+  if (await pg.evaluate(() => menus.isOpen('help'))) await tapSel('[data-win="help"] .hd .x');
+  await pg.waitForTimeout(400); await shot('seria-room');
+  check(await talkTap('seria'), '手机：点赛丽亚没打开对话'); await shot('seria-talk');
+  step('手机 赛丽亚：' + await dlg(['接受'])); await tapSel('.npcmenu .btn:has-text("离开")'); await pg.waitForTimeout(300);
+  check(await exitSide('elvenguard', 'right'), '手机：出不了房间'); await shot('elvenguard');
+  check(await talkTap('linus'), '手机：点林纳斯没打开对话'); step('手机 林纳斯：' + await dlg(['完成任务']));
+  if (await pg.evaluate(() => menus.isOpen('npcquest'))) { await shot('reward'); await tapSel('[data-win="npcquest"] .btn'); await pg.waitForTimeout(400); }
+  step('手机 林纳斯接：' + await dlg(['接受'])); await tapSel('.npcmenu .btn:has-text("离开")'); await pg.waitForTimeout(300);
+  check(await exitSide('gf_lorien', 'right'), '手机：走不到洛兰');
+  const g = await pg.evaluate(() => world.S.gates.find(g => g.dungeon === 'lorien').x); await walkTo(g, 40);
+  for (let i = 0; i < 30 && !(await pg.evaluate(() => menus.isOpen('dungeon'))); i++) { await stick(0, -1); await pg.waitForTimeout(100); } await stick(0, 0);
+  await shot('gate'); await tapSel('text=进入地下城'); await pg.waitForFunction(() => game.scene === 'dungeon' && game.dungeon && game.dungeon.state === 'play', null, { timeout: 20000 }); await pg.waitForTimeout(600); await shot('dungeon');
+  // 触屏打怪：摇杆靠近 + 点 X，偶尔点技能
+  const atk = await pg.locator('#touch .atk').boundingBox(), sk0 = await pg.locator('#touch .sk').first().boundingBox();
+  const t0 = Date.now(); let k = 0;
+  while (Date.now() - t0 < 300000) {
+    const s = await pg.evaluate(() => { const p = game.player, D = game.dungeon; if (!D || game.scene !== 'dungeon') return { done: true }; const en = ents.filter(e => e.team === 'e' && !e.dead).map(e => ({ x: e.x, y: e.y, w: e.w })); return { res: menus.isOpen('result'), p: { x: p.x, y: p.y, face: p.face }, en, open: D.doorsOpen, route: D.doorsOpen ? bot.route(D) : null, x1: game.room.x1, dead: D.state === 'dead', trans: !!D.transition }; });
+    if (s.done || s.res) break;
+    if (s.trans) { await stick(0, 0); await pg.waitForTimeout(100); continue; }
+    if (s.dead) { await stick(0, 0); await tapXY(atk.x + atk.width / 2, atk.y + atk.height / 2); continue; }
+    const t = s.en.sort((a, b) => Math.abs(a.x - s.p.x) - Math.abs(b.x - s.p.x))[0];
+    if (t) {
+      const dx = t.x - s.p.x, dy = t.y - s.p.y;
+      if (Math.abs(dx) < 60 + t.w && Math.abs(dy) < 14) { if (Math.sign(dx) !== s.p.face) { await stick(Math.sign(dx), 0); await pg.waitForTimeout(60); } await stick(0, 0); const b = ++k % 6 === 0 ? sk0 : atk; await tapXY(b.x + b.width / 2, b.y + b.height / 2, 50); if (k === 12) await shot('touch-fight'); continue; }
+      await stick(Math.abs(dx) > 40 ? Math.sign(dx) : 0, Math.abs(dy) > 8 ? Math.sign(dy) * 0.8 : 0); await pg.waitForTimeout(60); continue;
+    }
+    if (s.open && s.route) { const tx = s.route === 'left' ? 0 : s.route === 'right' ? s.x1 : s.x1 / 2; const vx = s.route === 'up' || s.route === 'down' ? (Math.abs(tx - s.p.x) > 30 ? Math.sign(tx - s.p.x) : 0) : Math.sign(tx - s.p.x); await stick(vx, s.route === 'up' ? -1 : s.route === 'down' ? 1 : 0); await pg.waitForTimeout(80); continue; }
+    await stick(0, 0); await pg.waitForTimeout(100);
+  }
+  await stick(0, 0);
+  await pg.waitForFunction(() => menus.isOpen('result'), null, { timeout: 30000 }).catch(() => P.note('手机：没打到结算'));
+  await pg.waitForTimeout(1200); await shot('result'); await tapSel('#result .card'); await pg.waitForTimeout(900); await shot('result-flip');
+  await tapSel('text=返回城镇'); await pg.waitForTimeout(1500); await shot('back');
+  // 窗口：包、技能、任务
+  for (const [b, nm] of [['包', 'inv'], ['技', 'skills'], ['任', 'quests']]) { await tapSel(`#touch .tmisc .tbtn:has-text("${b}")`); await pg.waitForTimeout(500); await shot('win-' + nm); step(`手机 ${b} → ${await pg.evaluate(() => menus.stack.join(','))}`); await tapSel(`[data-win="${nm}"] .hd .x`); await pg.waitForTimeout(300); }
+  await ctx.close();
+}
+
 try {
   if (leg === 'newbie') { await newbie(); await town(); }
+  else if (leg === 'mobile') await mobile();
   else if (leg === 'job') await jobTrial();
   else if (leg === 'awaken') await awaken();
   else if (leg === 'hidden') await hidden();

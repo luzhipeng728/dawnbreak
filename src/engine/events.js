@@ -16,6 +16,7 @@
      itemUse      { item }                                 使用消耗品
      equip        { item, slot }                           穿上装备
      jobChange    { job }                                  转职
+     charLeave    { cls }                                  离开当前角色（返回角色选择），按角色缓存的状态请在这里清掉
      skillUse     { id }                                   玩家施放技能（由战斗模块 player.js 发出）
    ===================================================================== */
 const bus = {

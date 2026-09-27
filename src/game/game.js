@@ -65,6 +65,7 @@ function updateCamera(dt) {
     cam.x = clamp(cam.x, R.x0, Math.max(R.x0, R.x1 - WW));
   }
   if (cam.shake > 0) { cam.shx = Math.round(rnd(-1, 1) * cam.shake); cam.shy = Math.round(rnd(-1, 1) * cam.shake * 0.6); cam.shake = Math.max(0, cam.shake - dt * 40); } else { cam.shx = cam.shy = 0; }
+  if (typeof uiPref === 'function' && !uiPref('shake')) cam.shx = cam.shy = 0;   // 设置里关掉了屏幕震动
   if (cam.flash > 0) cam.flash -= dt;
 }
 function renderWorld() {

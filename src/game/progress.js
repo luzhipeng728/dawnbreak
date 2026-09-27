@@ -16,6 +16,7 @@ function onLevelUp() {
     (fxAura(p, '#ffd23a', 1.6), fxBurst(p.x, p.y, p.z + 60, 200, '#ffd23a'));
   }
   toastMsg(`等级提升到 Lv.${game.lvl}！获得 SP ${28 + game.lvl}`, '#ffe070');
+  bus.emit('levelUp', { lvl: game.lvl });
 }
 // 勇者加成：整体降低难度（2026-09-27 调整）
 const HERO_BONUS = { hp: 1.6, mp: 1.25, def: 1.3, atk: 1.2, spd: 1.12 };

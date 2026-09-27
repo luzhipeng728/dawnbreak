@@ -26,7 +26,7 @@ function updateDrops(dt) {
     const near = Math.abs(p.x - d.x) < 20 && Math.abs(p.y - d.y) < 14 && p.z < 20;
     if (d.kind === 'gold' && (near || (game.autoLoot && d.t > 0.8))) {
       if (!near) { d.x = damp(d.x, p.x, 10, dt); d.y = damp(d.y, p.y, 10, dt); if (Math.abs(p.x - d.x) > 20) continue; }
-      game.gold += d.amount; sfx.coin(); addNumber(d.amount, p.x, p.y, p.z + 10, { col: '#ffd24a' }); drops.splice(i, 1); continue;
+      game.gold += d.amount; bus.emit('gold', { n: d.amount }); sfx.coin(); addNumber(d.amount, p.x, p.y, p.z + 10, { col: '#ffd24a' }); drops.splice(i, 1); continue;
     }
     d.near = near;
   }
@@ -36,7 +36,7 @@ function tryPickup(p) {
   for (const d of drops) if (d.kind !== 'gold' && d.t > 0.45) { const dd = Math.abs(p.x - d.x) + Math.abs(p.y - d.y); if (dd < 30 && dd < bd) { bd = dd; best = d; } }
   if (!best) return false;
   if (!inv.add(best.item)) { toastMsg('背包已满'); return false; }
-  drops.splice(drops.indexOf(best), 1); sfx.pickup();
+  drops.splice(drops.indexOf(best), 1); sfx.pickup(); bus.emit('pickup', { item: best.item });
   toastMsg(`获得 ${best.item.name}`, RARITY[best.item.rar || 0].col);
   return true;
 }

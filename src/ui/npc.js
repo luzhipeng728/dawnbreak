@@ -15,6 +15,7 @@ const NPC_SERVICES = {
 function openNpc(N) {
   sfx.open(); menus.open('npc', N);
   if (typeof questsOnTalk === 'function') questsOnTalk(N.id);
+  bus.emit('npcTalk', { id: N.id });
 }
 const npcPortrait = (N, cls = 'npcpt') => IMG[N.art] ? h('img', { class: cls, src: IMG[N.art].src }) : h('div', { class: cls });
 Object.assign(menus, {

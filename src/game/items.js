@@ -74,7 +74,7 @@ const inv = {
     if (it.lvl > game.lvl) { toastMsg(`需要等级 ${it.lvl}`, '#ff6a6a'); sfx.error(); return false; }
     if (it.slot === 'weapon' && it.cls && it.cls !== game.player.cls) { toastMsg('职业无法使用这件武器', '#ff6a6a'); sfx.error(); return false; }
     const old = this.equip[it.slot]; this.remove(it); this.equip[it.slot] = it; if (old) this.items.push(old);
-    recalcStats(game.player); sfx.pickup(); return true;
+    recalcStats(game.player); sfx.pickup(); bus.emit('equip', { item: it, slot: it.slot }); return true;
   },
   unwear(slot) { const it = this.equip[slot]; if (!it) return; if (this.items.length >= this.cap) { toastMsg('背包已满'); return; } delete this.equip[slot]; this.items.push(it); recalcStats(game.player); },
   // 装备总属性：基础 + 强化（武器加攻击，防具加防御，首饰加力量）+ 史诗特效
@@ -99,7 +99,7 @@ const inv = {
     if (!this.take(key)) { toastMsg('没有这个物品了'); return false; }
     if (C.hp) { const h = Math.round(p.hpMax * C.hp); p.hp = Math.min(p.hpMax, p.hp + h); addNumber(h, p.x, p.y, p.z, { heal: true }); }
     if (C.mp) { const m = Math.round(p.mpMax * C.mp); p.mp = Math.min(p.mpMax, p.mp + m); addNumber(m, p.x, p.y, p.z + 12, { col: '#6ab8ff' }); }
-    this.potCd = 1; sfx.pickup();
+    this.potCd = 1; sfx.pickup(); bus.emit('itemUse', { item: C, key });
     addFx({ x: p.x, y: p.y + 1, z: 0, dur: 0.5, add: true, col: C.col, draw(c) { const k = this.t / this.dur; c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = shade(this.col, 0.3, 0.5 * (1 - k)); for (let i = 0; i < 6; i++) { const a = i / 6 * TAU + k * 3; c.beginPath(); c.arc(sx(game.player.x) + Math.cos(a) * 16, sy(game.player.y, 20 + k * 70), 2.5, 0, TAU); c.fill(); } c.restore(); } });
     return true;
   },

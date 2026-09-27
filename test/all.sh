@@ -39,4 +39,9 @@ run netacct   node test/net_account.mjs
 run svcapi    node test/svc_api.mjs
 run svcplay   node test/svc_play.mjs
 run webflow   env WEB=1 node test/flow.mjs
+# 联机（本机临时服务端 + 2~3 个无头页面，测完即关）
+run mptown    node test/mp_town.mjs
+run mpcoop    node test/mp_coop.mjs 2
+run mpdrop    node test/mp_coop_drop.mjs
+run mpduel    node test/mp_duel.mjs
 echo; cat $LOG/summary.txt

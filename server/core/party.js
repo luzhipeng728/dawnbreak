@@ -12,7 +12,8 @@ export default {
   init(ctx) {
     const parties = new Map(), byUser = new Map(), invites = new Map(), grace = new Map();
     let seq = 1;
-    setInterval(() => { const t = Date.now(); for (const [k, v] of invites) if (v.exp < t) invites.delete(k); }, 60_000).unref();
+    // 过期的邀请：告诉邀请的人“对方没有回应”
+    setInterval(() => { const t = Date.now(); for (const [k, v] of invites) if (v.exp < t) { invites.delete(k); if (v.from) ctx.sendTo(v.from, { t: 'party:declined', by: v.toName || '对方', why: 'timeout' }); } }, 3000).unref();
     const info = id => { const c = ctx.client(id), u = c ? c.user : ctx.findUser(id); return { id, name: u ? u.name : '?', char: c ? c.char : null, online: !!c, build: c ? c.build : '' }; };
     const view = P => P && { id: P.id, leader: P.leader, members: P.members.map(info) };
     const note = (P, text, skip) => { for (const id of P.members) if (id !== skip) ctx.sendTo(id, { t: 'party:note', text }); };
@@ -75,7 +76,7 @@ export default {
       if (P && P.members.length >= PARTY_MAX) return fail(`队伍已满（最多 ${PARTY_MAX} 人）`);
       if (P && ctx.mods.room && ctx.mods.room.partyBusy(P)) return fail('队伍正在地下城里，回城后再邀请');
       if (A.of(to.id)) return fail(`${to.name} 已经有队伍了`);
-      A.invites.set(`${to.id}:${me}`, { exp: Date.now() + INVITE_TTL });
+      A.invites.set(`${to.id}:${me}`, { exp: Date.now() + INVITE_TTL, from: me, toName: to.name });
       ctx.sendTo(to.id, { t: 'party:invited', from: { id: me, name: c.user.name, char: c.char, build: c.build }, size: P ? P.members.length : 1 });
       c.send({ t: 'party:note', text: `已向 ${to.name} 发出组队邀请` });
     },

@@ -14,7 +14,8 @@ export function cleanChar(c) {
   const key = v => typeof v === 'string' && KEY_RE.test(v) ? v : null;
   return {
     name: str(c.name, 16) || '勇士', cls: CLS_RE.test(c.cls) ? c.cls : 'sword', job: key(c.job), lvl: Math.round(clampNum(c.lvl, 1, 99, 1)),
-    look: { wpn: key(look.wpn), set: key(look.set), acc: Array.isArray(look.acc) ? look.acc.map(key).filter(Boolean).slice(0, 6) : [] },
+    look: { wpn: key(look.wpn), set: key(look.set), acc: Array.isArray(look.acc) ? look.acc.map(key).filter(Boolean).slice(0, 6) : [],
+      cash: look.cash && typeof look.cash === 'object' ? { pet: key(look.cash.pet), aura: key(look.cash.aura), sky8: key(look.cash.sky8) } : null },   // 商城外观：宠物 / 光环 / 天空套光效
     title: str(c.title, 24) || null, hp: clampNum(c.hp, 0, 1, 1),
   };
 }

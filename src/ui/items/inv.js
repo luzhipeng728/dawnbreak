@@ -66,7 +66,7 @@ Object.assign(menus, {
         grid.append(itemSlot(it, {
           quick: true, sel: it && it === IW.invSel, onRight: () => invPrimary(it, el), onDbl: () => invPrimary(it, el),
           onClick: () => { IW.invSel = it && IW.invSel !== it ? it : null; el._render(); },
-          drag: it ? () => ({ type: 'item', item: it, key: it.key, from: 'inv', onVoid: () => invDiscard(it, el) }) : null,
+          drag: it ? () => ({ type: 'item', item: it, key: it.key, from: 'inv', onVoid: () => { if (!ptrOverWindow()) invDiscard(it, el); } }) : null,
           drop: invDropTarget(it),
         }));
       }

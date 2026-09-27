@@ -89,6 +89,16 @@ if (oldIdx >= 0) { await page.hover(`[data-win=inv] .igrid .islot >> nth=${oldId
 await page.mouse.move(5, 5);
 await shot('06-inv-status');
 
+// 消耗品拖到 HUD 快捷栏（落点由界面组的 hud.js 处理）
+if (await ev(() => typeof hudQuickRect === 'function')) {
+  await ev(() => { IW.invTab = 'use'; itemsRefresh(); inv.quick[2] = null; }); await wait(150);
+  const qi = await ev(() => inv.items.filter(x => TAB_OF(x) === 'use').findIndex(x => x.key === 'hpM'));
+  const from = await page.locator(`[data-win=inv] .igrid .islot >> nth=${qi}`).boundingBox();
+  const to = await ev(() => { const R = hudQuickRect(2), r = stage.getBoundingClientRect(); return { x: r.left + (R.x + R.s / 2) / UW * r.width, y: r.top + (R.y + R.s / 2) / UH * r.height }; });
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2); await page.mouse.down();
+  await page.mouse.move(from.x + 20, from.y + 20, { steps: 4 }); await page.mouse.move(to.x, to.y, { steps: 10 }); await page.mouse.up(); await wait(200);
+  check(await ev(() => inv.quick[2] === 'hpM'), '背包消耗品拖到 HUD 快捷栏第 3 格');
+}
 /* ---------- 3. 出售 + 回购 ---------- */
 step('出售（全选普通）与回购');
 await ev(() => { for (let i = 0; i < 3; i++) inv.add(rollEquip({ lvl: 8, rar: 0 })); const e = rollEquip({ lvl: 8, rar: 1 }); e.enh = 4; inv.add(e); itemsRefresh(); });
@@ -204,6 +214,26 @@ check(lg.w[0] === 'rod' && lg.w[1] && lg.w[2] === 30 && lg.w[3] === 3, '旧武�
 check(lg.a[0] && lg.a[1], '旧防具补全防具类型 / 魔防');
 check(lg.e[0] === 0.18 && lg.e[1] === undefined, '旧史诗的速度特效换算成移速');
 check(lg.c[0] && lg.c[1] === 5, '旧药剂名字更新、数量保留');
+
+/* ---------- 8b. 回归：代码审查发现的问题 ---------- */
+step('回归检查');
+const rg = await ev(() => {
+  let nulls = 0, badSlot = 0, titles = 0;
+  for (let i = 0; i < 400; i++) { const it = makeEquip(pick(SLOTS), 1 + (i % 24), i % 6); if (!it) nulls++; else { if (!SLOT_WEIGHT[it.slot]) badSlot++; if (it.slot === 'title') titles++; } }
+  let rollNull = 0; for (let i = 0; i < 300; i++) if (!rollEquip({ lvl: 1 + (i % 9), rar: i % 5 })) rollNull++;
+  const cdr = statLine('cdr', 0.1), dr = statLine('dmgReduce', 0.03);
+  const stray = makeItem('katana_5_1'); const r = tryEnhance(stray, false, 0); const worn = inv.wear(makeItem('katana_5_1'));
+  return { nulls, badSlot, titles, rollNull, cdr, dr, strayErr: !!r.err, worn };
+});
+check(rg.nulls === 0 && rg.badSlot === 0 && rg.titles === 0, '旧接口 makeEquip(任意部位) 不返回 null、不出称号 / 时装（结算翻牌不会崩）', JSON.stringify(rg));
+check(rg.rollNull === 0, '低等级随机装备不会凭空消失');
+check(/-10%/.test(rg.cdr) && /-3%/.test(rg.dr), `提示框正负号：${rg.cdr}；${rg.dr}`);
+check(rg.strayErr && rg.worn === false, '不在身上 / 背包里的装备不能强化、不能穿');
+await closeAll(); await ev(() => menus.open('shop', { shop: 'ophelia', npc: NPCS.ophelia || NPCS.linus })); await wait(200);
+if (await page.isVisible('.shopwin .srow')) { await page.click('.shopwin .srow >> nth=0'); await wait(100); }
+await closeAll(); await ev(() => menus.open('shop', { shop: 'linus', npc: NPCS.linus })); await wait(200);
+check(await ev(() => !Object.keys(IW.shopSel.linus || {}).length), '商店勾选不跨店共享');
+await closeAll();
 
 /* ---------- 9. 刷新后数据仍在 ---------- */
 step('刷新后数据仍在');

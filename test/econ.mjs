@@ -28,8 +28,8 @@ const res = await page.evaluate(({ N, DIFF, EXPK, QUEST, QUESTS, TARGET, SKY, SK
     D6('puppet_hall', '人偶玄关', [15, 17], 18, 6, 2, 2, 5400, [['puppeteer', 3], ['puppeteerRock', 2], ['dragonman', 2], ['minius', 1], ['puppeteerIce', 0.4]], 'dogrey');
     D6('golem_tower', '石巨人塔', [16, 19], 20, 7, 3, 2, 6400, [['golem', 3], ['golemBronze', 2], ['puppeteer', 2], ['puppeteerRock', 1]], 'platani', { elite: 'golemMaster' });
     D6('dark_corridor', '黑暗玄廊', [18, 21], 22, 7, 3, 3, 7600, [['kargo', 3], ['kargoGoggle', 1.5], ['expeller', 3], ['expellerAxe', 1.5]], 'skyExpeller', { elite: 'hughes' });
-    D6('lord_palace', '城主宫殿', [20, 23], 24, 8, 3, 3, 9000, [['minius', 2], ['puppeteerRock', 2], ['golemBronze', 2], ['expeller', 2], ['expellerAxe', 1], ['kargoGoggle', 1]], 'seghart', { elite: 'knight' });
-    D6('floating_castle', '悬空城', [21, 24], 25, 7, 3, 3, 10000, [['expeller', 2], ['knight', 2], ['golemBronze', 2]], 'sinEye', { hidden: true });
+    D6('lord_palace', '城主宫殿', [20, 23], 24, 8, 3, 3, 10800, [['minius', 2], ['puppeteerRock', 2], ['golemBronze', 2], ['expeller', 2], ['expellerAxe', 1], ['kargoGoggle', 1]], 'seghart', { elite: 'knight' });
+    D6('floating_castle', '悬空城', [21, 24], 25, 7, 3, 3, 11500, [['expeller', 2], ['knight', 2], ['golemBronze', 2]], 'sinEye', { hidden: true });
   }
 
   const toastMsg0 = window.toastMsg; window.toastMsg = () => {};

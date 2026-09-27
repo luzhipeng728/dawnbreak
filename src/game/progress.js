@@ -69,7 +69,7 @@ function equipTotals(cls = game.player ? game.player.cls : 'sword', job = game.j
   const mastery = masteryOf(cls, job), sets = {};
   let masteryN = 0;
   for (const s of SLOTS) {
-    const it = inv.equip[s]; if (!it || !itemActive(it)) continue;
+    const it = inv.equip[s]; if (!it || it.slot !== s || !itemActive(it)) continue;   // 部位不对的（别的代码直接往 equip 里塞的）不算
     for (const k in it.st) add(k, it.st[k]);
     const e = enhStats(it); for (const k in e) add(k, e[k]);
     if (it.fx) for (const k in it.fx) if (typeof it.fx[k] === 'number') add(k, it.fx[k]);

@@ -23,7 +23,7 @@ addStyle(`
 const DOLL_LEFT = ['head', 'top', 'bottom', 'belt', 'shoes'], DOLL_RIGHT = ['weapon', 'title', 'bracelet', 'neck', 'ring'], DOLL_BOTTOM = ['support', 'stone'];
 const AV_LEFT = ['av_hair', 'av_hat', 'av_face', 'av_chest'], AV_RIGHT = ['av_top', 'av_bottom', 'av_belt', 'av_shoes'];
 function equipSlotEl(slot, win) {
-  const it = inv.equip[slot];
+  const it0 = inv.equip[slot], it = it0 && it0.slot === slot ? it0 : null;
   return itemSlot(it, {
     label: SLOT_NAME[slot], cmp: false,
     onRight: () => { if (it && inv.unwear(slot)) { save.write(); itemsRefresh(); } },

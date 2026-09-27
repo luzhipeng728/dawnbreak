@@ -4,6 +4,7 @@
    - 领主几率会乘上难度加成（冒险 / 勇士 / 王者 更高）；材料几率精英 ×2、领主 ×4
    - 通用的随机装备掉落（品级按难度）在 drops.js 的 rollDrop 里，不需要在这里写
    ===================================================================== */
+{   // 局部常量放进块作用域
 const setDrops = (ids, p) => ids.flatMap(id => SETS[id].pieces.map(k => [k, p]));
 const NOVICE = setDrops(['set_goblin'], 0.035);
 const CLASS12 = setDrops(['set_knight', 'set_sage', 'set_hunter'], 0.025);
@@ -30,3 +31,4 @@ defineDropTable('golem_tower', { boss: [...ADV18, ...THRONE, ['ep_greatsword', 0
 defineDropTable('dark_corridor', { boss: [...ADV22, ...THRONE, ['ep_katana2', 0.01], ['ep_head2', 0.01], ['ep_lightsaber', 0.01], ['ep_broom', 0.01], ['ep_stone', 0.008]], mats: [['crystal', 0.09, 7], ['c_black', 0.03, 2], ['m_obsidian', 0.005, 1]] });
 defineDropTable('lord_palace', { boss: [...ADV22, ...SKY24, ...SEGHART, ['ep_support', 0.01], ['ep_autopistol', 0.008], ['ep_rifle', 0.008], ['ep_spear', 0.008], ['ep_pole', 0.008], ['ep_ring2', 0.008], ['ep_neck2', 0.008]], mats: [['crystal', 0.1, 8], ['m_elem2', 0.006, 1], ['m_soul', 0.001, 1]] });
 defineDropTable('floating_castle', { boss: [...SKY24.map(([k, p]) => [k, p * 1.5]), ...SEGHART.map(([k, p]) => [k, p * 1.5]), ['ep_autopistol', 0.012], ['ep_rifle', 0.012], ['ep_spear', 0.012], ['ep_pole', 0.012], ['ep_ring2', 0.012], ['ep_neck2', 0.012], ['ep_stone', 0.01], ['ep_support', 0.01]], mats: [['crystal', 0.1, 8], ['m_diamond', 0.006, 1], ['m_elem2', 0.008, 1]] });
+}

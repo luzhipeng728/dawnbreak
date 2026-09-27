@@ -12,7 +12,6 @@ function gearGoods({ slots, rars = [0, 1], wtypes, atypes, lo = -8, hi = 4, min 
     && (!wtypes || wtypes.includes(D.wtype)) && (!atypes || atypes.includes(D.atype)) && D.lvl >= Math.max(min, lvl + lo) && D.lvl <= Math.min(max, lvl + hi))
     .sort((a, b) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot) || (a.wtype || a.atype || '').localeCompare(b.wtype || b.atype || '') || a.lvl - b.lvl || a.rar - b.rar).map(D => D.key);
 }
-const ALL_WEAPONS = Object.keys(WTYPES);
 defineShop('seria', { name: '赛丽亚的杂货', greet: '需要补给的话，随时来找我哦。', tabs: [
   { name: '药剂', goods: ['hpS', 'hpM', 'hpL', 'mpS', 'mpM', 'mpL'] },
   { name: '冒险用品', goods: ['coin', 'crystal', 'bread'] }] });

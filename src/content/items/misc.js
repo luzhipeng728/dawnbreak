@@ -23,9 +23,9 @@ defineItem('fatigue', { kind: 'use', name: '抗疲劳秘药', rar: 2, price: 600
 defineItem('coin', { kind: 'use', name: '复活币', rar: 2, price: 3000, col: '#ffd23a', icon: 'item_coin', desc: '在地下城里倒下时，可以原地满状态复活。获得后自动放进复活币栏。' });
 defineItem('guard', { kind: 'use', name: '装备强化保护券', rar: 3, price: 12000, col: '#6ad0ff', icon: 'item_guard', desc: '在强化界面勾选使用：强化失败本应破碎时，装备不会破碎，但强化等级归零。' });
 /* ---- 罐子（土罐） ---- */
-const potRoll = (lv, W) => { let r = Math.random() * W.reduce((a, b) => a + b[0], 0); for (const [w, f] of W) { r -= w; if (r <= 0) return f(lv); } return W[0][1](lv); };
+var itemPotRoll = (lv, W) => { let r = Math.random() * W.reduce((a, b) => a + b[0], 0); for (const [w, f] of W) { r -= w; if (r <= 0) return f(lv); } return W[0][1](lv); };
 defineItem('pot', { kind: 'use', name: '袖珍罐', rar: 1, price: 800, icon: 'item_pot', desc: '土罐亲手烧制的小罐子，打开能得到与自己等级相符的随机物品。',
-  use: { open: lv => [potRoll(lv, [[30, () => ({ key: pick(['hpM', 'mpM', 'hpL', 'bread', 'meat']), n: rndi(2, 5) })], [22, () => ({ key: 'crystal', n: rndi(8, 25) })], [30, () => ({ equip: true, rar: pick([1, 1, 2]) })], [12, () => ({ equip: true, rar: 3 })], [5, () => ({ equip: true, rar: 4 })], [1, () => ({ key: 'elixir', n: 1 })]])] } });
+  use: { open: lv => [itemPotRoll(lv, [[30, () => ({ key: pick(['hpM', 'mpM', 'hpL', 'bread', 'meat']), n: rndi(2, 5) })], [22, () => ({ key: 'crystal', n: rndi(8, 25) })], [30, () => ({ equip: true, rar: pick([1, 1, 2]) })], [12, () => ({ equip: true, rar: 3 })], [5, () => ({ equip: true, rar: 4 })], [1, () => ({ key: 'elixir', n: 1 })]])] } });
 defineItem('potGold', { kind: 'use', name: '黄金袖珍罐', rar: 3, price: 6000, icon: 'item_pot_gold', desc: '金光闪闪的罐子，必定开出稀有以上的装备，极低几率开出史诗。',
   use: { open: lv => { const r = Math.random(); if (r < 0.02) { const E = rollEpic(lv); if (E) return [{ key: E.key }]; } return [{ equip: true, rar: r < 0.12 ? 4 : r < 0.45 ? 3 : 2 }]; } } });
 /* ---- 材料 ---- */
@@ -67,7 +67,9 @@ defineTitle('title_hunter', { name: '怪兽猎杀者', lvl: 12, rar: 3, noDrop: 
 defineTitle('title_basic', { name: '基础精通者', lvl: 5, rar: 2, noDrop: true, st: { str: 5, int: 5, vit: 5, spr: 5 }, fx: { cdr: 0.02 }, desc: '掌握了战斗的基础。' });
 defineTitle('title_awaken', { name: '觉醒者', lvl: 18, rar: 4, noDrop: true, st: { str: 16, int: 16, vit: 16, spr: 16 }, fx: { cdr: 0.04 }, desc: '跨越了极限的勇士。' });
 /* ---- 时装（帕丽丝）：官方 8 部位，同一套集齐有套装效果 ---- */
+{
 const AV_STAT = { av_hair: { cspd: 0.02 }, av_hat: { cspd: 0.02 }, av_face: { aspd: 0.02 }, av_chest: { aspd: 0.02 }, av_top: { str: 10, int: 10, vit: 10, spr: 10 }, av_bottom: { hp: 250, mp: 150 }, av_belt: { evade: 0.02 }, av_shoes: { mspd: 0.04 } };
 const AV_NAME = { av_hair: '庆典发饰', av_hat: '庆典小礼帽', av_face: '庆典圆框眼镜', av_chest: '庆典领结', av_top: '庆典外套', av_bottom: '庆典短裙', av_belt: '庆典缎带腰带', av_shoes: '庆典小皮鞋' };
 defineSet('av_festival', { name: '庆典时装套装', bonus: { 3: { st: { str: 8, int: 8, vit: 8, spr: 8 }, desc: '四维 +8' }, 5: { st: { mspd: 0.03, hp: 300 }, desc: '移动速度 +3%，HP 上限 +300' }, 8: { st: { aspd: 0.03, cspd: 0.03, dmgUp: 0.03 }, desc: '攻击 / 施放速度 +3%，伤害增加 3%' } } });
 for (const s of AV_SLOTS) { defineItem(`${s}_festival`, { kind: 'equip', slot: s, lvl: 1, rar: 2, price: s === 'av_top' || s === 'av_bottom' ? 6000 : 3500, name: AV_NAME[s], set: 'av_festival', st: AV_STAT[s], icon: 'item_' + s, durMax: 0, noEnhance: true, noDisassemble: true, noDrop: true, desc: '帕丽丝精心设计的节日时装。' }); SETS.av_festival.pieces.push(`${s}_festival`); }
+}

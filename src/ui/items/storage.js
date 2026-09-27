@@ -3,6 +3,8 @@
    背包右键 = 存入当前页签；仓库右键 = 取出；两边可以互相拖；Shift + 右键可以只存 / 取一部分
    ===================================================================== */
 const storageList = which => which === 'bank' ? bank.load().items : inv.storage;
+// 金库操作前重新从 localStorage 读一次（开了多个标签页时尽量不互相覆盖）
+const bankFresh = () => { bank.loadedKey = null; return bank.load(); };
 function storageAdd(list, it, cap = 48) {
   if (it.kind !== 'equip') { const ex = list.find(x => x.key === it.key && x.kind !== 'equip'); if (ex) { ex.n += it.n || 1; return true; } }
   if (list.length >= cap) return false;
@@ -11,6 +13,7 @@ function storageAdd(list, it, cap = 48) {
 function storageSaved(which) { if (which === 'bank') bank.write(); if (save.data) save.data.storage = inv.storage; save.write(); }
 function storagePut(it, which = IW.stTab, n) {
   if (!it || !inv.items.includes(it)) return;
+  if (which === 'bank') bankFresh();
   if (it.kind === 'quest') { toastMsg('任务道具不能放进仓库', '#ff6a6a'); sfx.error(); return; }
   const list = storageList(which), part = n && it.kind !== 'equip' && n < it.n ? { ...it, id: itemSeq++, n } : it;
   if (!storageAdd(list, part === it ? it : { ...part })) { toastMsg('仓库已满', '#ff6a6a'); sfx.error(); return; }
@@ -19,6 +22,7 @@ function storagePut(it, which = IW.stTab, n) {
   sfx.pickup(); storageSaved(which); itemsRefresh();
 }
 function storageTake(it, which = IW.stTab, n) {
+  if (which === 'bank') { const id = it.id; bankFresh(); it = bank.items.find(x => x.id === id); if (!it) { itemsRefresh(); return; } }
   const list = storageList(which); if (!list.includes(it)) return;
   const part = n && it.kind !== 'equip' && n < it.n ? { ...it, id: itemSeq++, n } : it;
   if (!inv.add(part === it ? it : part)) { toastMsg('背包已满', '#ff6a6a'); sfx.error(); return; }
@@ -47,8 +51,8 @@ Object.assign(menus, {
         inp.addEventListener('keydown', ev => ev.stopPropagation());
         const amt = () => Math.max(0, Math.floor(+inp.value || 0));
         out.push(h('div', { class: 'shopfoot' }, h('span', {}, '金库金币 ', h('b', { class: 'igold' }, `${fmtNum(bank.gold)} G`)), h('span', { class: 'sp' }), inp,
-          h('button', { class: 'btn sm', onclick: () => { const a = Math.min(amt() || game.gold, game.gold); if (a <= 0) return; game.gold -= a; bank.gold += a; sfx.coin(); storageSaved('bank'); itemsRefresh(); } }, '存入'),
-          h('button', { class: 'btn sm blue', onclick: () => { const a = Math.min(amt() || bank.gold, bank.gold); if (a <= 0) return; bank.gold -= a; game.gold += a; sfx.coin(); storageSaved('bank'); itemsRefresh(); } }, '取出')));
+          h('button', { class: 'btn sm', onclick: () => { const a = Math.min(amt(), game.gold); if (a <= 0) { toastMsg('请输入要存入的金额', '#ffb0a0'); sfx.error(); return; } bankFresh(); game.gold -= a; bank.gold += a; sfx.coin(); storageSaved('bank'); itemsRefresh(); } }, '存入'),
+          h('button', { class: 'btn sm blue', onclick: () => { bankFresh(); const a = Math.min(amt(), bank.gold); if (a <= 0) { toastMsg(bank.gold ? '请输入要取出的金额' : '金库里没有金币', '#ffb0a0'); sfx.error(); return; } bank.gold -= a; game.gold += a; sfx.coin(); storageSaved('bank'); itemsRefresh(); } }, '取出')));
       }
       out.push(h('div', { class: 'ibar' }, h('span', { class: 'igold' }, `${fmtNum(game.gold)} G`), h('span', { class: 'sp' }),
         h('button', { class: 'btn sm', onclick: () => { const L = storageList(which), m = []; for (const x of L) { if (x.kind !== 'equip') { const e = m.find(y => y.key === x.key && y.kind !== 'equip'); if (e) { e.n += x.n; continue; } } m.push(x); } m.sort((a, b) => (TAB_OF(a) > TAB_OF(b) ? 1 : TAB_OF(a) < TAB_OF(b) ? -1 : 0) || b.rar - a.rar || (b.lvl || 0) - (a.lvl || 0)); L.length = 0; L.push(...m); storageSaved(which); sfx.click(); el._render(); } }, '整理')),

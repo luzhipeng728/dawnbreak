@@ -39,7 +39,7 @@ addStyle(`
 .ilist{display:flex;flex-direction:column;gap:.2em;max-height:24em;overflow:auto;padding-right:.2em}
 .ilist::-webkit-scrollbar,.igrid::-webkit-scrollbar{width:.4em}.ilist::-webkit-scrollbar-thumb{background:#5a4a36;border-radius:.2em}
 /* tooltip */
-#itip{position:absolute;z-index:60;pointer-events:none}
+#itip{position:absolute;z-index:99999;pointer-events:none}
 .itip-pair{display:flex;gap:.4em;align-items:flex-start}
 .itip{width:17em;background:linear-gradient(180deg,rgba(18,14,24,.98),rgba(8,6,12,.98));border:.1em solid #5a4a36;border-radius:.3em;padding:.5em .65em;font-size:.86em;line-height:1.45;box-shadow:0 .4em 1.4em rgba(0,0,0,.7);color:#e0d8c4}
 .itip.r5{border-color:#a8801a;box-shadow:0 0 1em rgba(255,180,0,.35),0 .4em 1.4em rgba(0,0,0,.7)}
@@ -168,13 +168,19 @@ function showItemTip(it, ev, opt) {
   if (!it) return;
   if (menus.tip) menus.tip.classList.add('hidden');
   if (!itipEl || !itipEl.isConnected) { itipEl = h('div', { id: 'itip' }); dom.appendChild(itipEl); }
-  itipEl.replaceChildren(itemTip(it, opt)); itipEl.hidden = false;
+  const sig = `${it.id}|${it.enh}|${it.dur}|${it.n}|${opt && opt.cmp}|${(inv.equip[it.slot] || {}).id}`;
+  if (itipEl._sig !== sig || itipEl.hidden) { itipEl.replaceChildren(itemTip(it, opt)); itipEl._sig = sig; }   // 同一件物品只移动位置，不重建
+  itipEl.hidden = false;
   const r = stage.getBoundingClientRect(), x = ev.clientX - r.left + 18, y = ev.clientY - r.top + 14;
   const tw = itipEl.offsetWidth, th = itipEl.offsetHeight;
   itipEl.style.left = Math.max(4, x + tw > r.width - 6 ? ev.clientX - r.left - tw - 14 : x) + 'px';
   itipEl.style.top = Math.max(4, Math.min(y, r.height - th - 6)) + 'px';
 }
-function hideItemTip() { if (itipEl) itipEl.hidden = true; }
+function hideItemTip() { if (itipEl) { itipEl.hidden = true; itipEl._sig = null; } }
+// 记录指针位置：拖放落在窗口上（但不是格子）时不算“拖到窗外丢弃”
+const lastPtr = { x: 0, y: 0 };
+addEventListener('pointermove', e => { lastPtr.x = e.clientX; lastPtr.y = e.clientY; }, true);
+const ptrOverWindow = () => { const el = document.elementFromPoint(lastPtr.x, lastPtr.y); return !!(el && el.closest('.win')); };
 { const hide0 = menus.hideTip; menus.hideTip = function () { hideItemTip(); return hide0.apply(this, arguments); }; }
 // 旧接口：返回 HTML 字符串
 menus.itemTip = it => itemTip(it).outerHTML;

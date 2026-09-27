@@ -63,9 +63,10 @@ function shopBuy(list, S = SHOPS._default) {
 }
 function shopBuyAsk(list, win, S) {
   S = S || (win && win._shop) || SHOPS._default;
-  list = list.filter(e => ITEMS[e.key] && e.n > 0); if (!list.length) return;
+  const shelf = new Set(S.tabs.flatMap((T, i) => shopGoods(S, i)));
+  list = list.filter(e => ITEMS[e.key] && e.n > 0 && shelf.has(e.key)); if (!list.length) return;   // 只能买本店货架上的东西
   const cost = list.reduce((s, e) => s + shopPrice(S, e.key) * e.n, 0);
-  const done = () => { if (shopBuy(list, S)) { IW.shopSel = {}; itemsRefresh(); } };
+  const done = () => { if (shopBuy(list, S)) { IW.shopSel[S.id] = {}; itemsRefresh(); } };
   const valuable = cost >= 10000 || list.some(e => ITEMS[e.key].rar >= 3);
   if (!valuable || !win) return done();
   itemDialog(win, { title: '确认购买', msg: list.map(e => `${itemNameHtml({ ...ITEMS[e.key], n: e.n })}　<span class="gold">${fmtNum(shopPrice(S, e.key) * e.n)} G</span>`).join('<br>') + `<hr>合计 <b class="gold">${fmtNum(cost)} G</b>（持有 ${fmtNum(game.gold)} G）`, okText: '购买', onOk: done });
@@ -102,7 +103,9 @@ Object.assign(menus, {
   w_sell(arg = {}) { return this.w_shop({ ...arg, tab: 'sell' }); },
 });
 function shopBuyView(S, el) {
-  const sid = S.id, cat = clamp(IW.shopCat[sid] || 0, 0, S.tabs.length - 1), sel = IW.shopSel;
+  const sid = S.id, cat = clamp(IW.shopCat[sid] || 0, 0, S.tabs.length - 1), sel = IW.shopSel[sid] || (IW.shopSel[sid] = {});
+  const onShelf = new Set(S.tabs.flatMap((T, i) => shopGoods(S, i)));
+  for (const k in sel) if (!onShelf.has(k)) delete sel[k];   // 勾选只在本店有效
   const cats = h('div', { class: 'shopcats' }, S.tabs.length > 1 ? S.tabs.map((T, i) => h('span', { class: 'cat' + (i === cat ? ' on' : ''), onclick: () => { IW.shopCat[sid] = i; sfx.click(); el._render(); } }, T.name)) : null,
     S.tabs[cat].cls ? h('label', {}, itemCheckBox(IW.shopOwnCls !== false, v => { IW.shopOwnCls = v; el._render(); }), '只看本职业') : null);
   const keys = shopGoods(S, cat);
@@ -135,7 +138,7 @@ function shopBuyView(S, el) {
   const total = chosen.reduce((s, k) => s + shopPrice(S, k) * sel[k], 0);
   const foot = h('div', { class: 'shopfoot' },
     h('span', {}, `已选 ${chosen.length} 种　合计 `, h('span', { class: 'tot' }, `${fmtNum(total)} G`)), h('span', { class: 'sp' }), h('span', { class: 'igold' }, `${fmtNum(game.gold)} G`),
-    h('button', { class: 'btn sm blue' + (chosen.length ? '' : ' off'), onclick: () => { IW.shopSel = {}; sfx.click(); el._render(); } }, '清空'),
+    h('button', { class: 'btn sm blue' + (chosen.length ? '' : ' off'), onclick: () => { IW.shopSel[sid] = {}; sfx.click(); el._render(); } }, '清空'),
     h('button', { class: 'btn sm' + (chosen.length && total <= game.gold ? '' : ' off'), onclick: () => { sfx.click(); shopBuyAsk(chosen.map(k => ({ key: k, n: sel[k] })), el, S); } }, `购买选中${chosen.length ? `（${chosen.length}）` : ''}`));
   return [cats, list, foot, h('div', { class: 'ihint' }, '点击勾选（可多选）· Shift + 点击输入数量 · 右键直接购买 1 个 · 拖到背包购买 · 把背包物品拖进来出售')];
 }

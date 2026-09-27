@@ -101,12 +101,13 @@ function sxgGive(el) {
 function sxgInvite(el, d) {
   const note = sxInput({ placeholder: '备注（给谁的）', maxlength: 40, style: 'width:12em' });
   const n = sxInput({ type: 'number', min: 1, max: 20, value: 1, style: 'width:4em;text-align:right' });
-  const list = (d.list || []).slice().sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+  // 联机组的 listInvites：{ code, createdAt, usedAt, note, createdBy（用户名）, usedBy（用户名）}
+  const list = (d.list || []).map(v => ({ code: v.code, note: v.note, at: v.createdAt ?? v.created_at, usedAt: v.usedAt ?? v.used_at, usedBy: v.usedBy ?? v.used_by, by: v.createdBy ?? '' })).sort((a, b) => (b.at || 0) - (a.at || 0));
   return [h('div', { class: 'row' }, note, n, h('span', { class: 'small dim' }, '个'), h('button', { class: 'btn sm', onclick: () => sxApi('POST', '/api/gm/invite', { note: note.value, n: +n.value || 1 }).then(r => { toastMsg(`生成了 ${r.codes.length} 个邀请码`, '#8aff9a'); el._reload(); }).catch(sxgFail) }, '生成')),
     h('div', { class: 'sxscroll', style: 'max-height:20em' }, list.length ? h('table', { class: 'sxtbl' }, h('thead', {}, h('tr', {}, ['邀请码', '备注', '生成时间', '状态', ''].map(t => h('th', {}, t)))),
-      h('tbody', {}, list.map(v => h('tr', {}, h('td', { class: 'code' }, v.code), h('td', { class: 'small' }, v.note || ''), h('td', { class: 'small dim' }, v.created_at ? sxDate(v.created_at) : ''),
-        h('td', { class: 'small', style: v.used_by ? 'color:#9a8f7c' : 'color:#8aff8a' }, v.used_by ? `已使用${v.used_name ? `（${v.used_name}）` : ''}${v.used_at ? ' ' + sxDate(v.used_at) : ''}` : '未使用'),
-        h('td', {}, v.used_by ? null : h('button', { class: 'btn sm red', onclick: () => sxApi('DELETE', `/api/gm/invite/${encodeURIComponent(v.code)}`).then(() => el._reload()).catch(sxgFail) }, '删除'))))))
+      h('tbody', {}, list.map(v => h('tr', {}, h('td', { class: 'code' }, v.code), h('td', { class: 'small' }, v.note || ''), h('td', { class: 'small dim' }, v.at ? sxDate(v.at) : ''),
+        h('td', { class: 'small', style: v.usedBy || v.usedAt ? 'color:#9a8f7c' : 'color:#8aff8a' }, v.usedBy || v.usedAt ? `已使用${v.usedBy ? `（${v.usedBy}）` : ''}${v.usedAt ? ' ' + sxDate(v.usedAt) : ''}` : '未使用'),
+        h('td', {}, v.usedBy || v.usedAt ? null : h('button', { class: 'btn sm red', onclick: () => sxApi('DELETE', `/api/gm/invite/${encodeURIComponent(v.code)}`).then(() => el._reload()).catch(sxgFail) }, '删除'))))))
       : h('div', { class: 'sxload' }, '还没有邀请码'))];
 }
 /* ---- 在线玩家 ---- */

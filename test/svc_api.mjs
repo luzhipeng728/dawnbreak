@@ -1,6 +1,6 @@
 // 社交服务接口测试（不开浏览器）：拍卖（上架 / 幂等 / 购买 / 邮件交割 / 到期退回 / 下架）、邮件（领取幂等 / 好友寄信 / 删除）、
 // 签到（跨天 / 连续 / 断签）、排行榜、公告校验与广播、管理员（权限 / 发放 / 群发 / 邀请码 / 日志 / 强制下架）
-// 用法：node test/svc_api.mjs          （默认用 test/svc_host.mjs 的最小宿主；SVC_BASE=http://… 时连真实服务端）
+// 用法：node test/svc_api.mjs（用联机组的真实服务端 + 临时数据库，见 test/svc_host.mjs）
 import { startHost } from './svc_host.mjs';
 const H = await startHost({ admins: ['gm'] });
 let pass = 0, fail = 0;
@@ -8,6 +8,7 @@ const ok = (c, msg, extra) => { if (c) { pass++; console.log('  ✓', msg); } el
 const step = s => console.log('·', s);
 const A = (m, p, b) => H.api('alice', m, p, b), B = (m, p, b) => H.api('bob', m, p, b), G = (m, p, b) => H.api('gm', m, p, b);
 const HOUR = 3600000;
+const msgs = async who => { await new Promise(r => setTimeout(r, 250)); return H.msgs(who); };
 const sword = { id: 11, key: 'katana_10_2', kind: 'equip', slot: 'weapon', name: '寒光太刀', rar: 2, lvl: 10, grade: 3, enh: 5, st: { atk: 300 }, cls: 'sword', wtype: 'katana', dur: 30, durMax: 30, price: 5000 };
 const pots = { id: 12, key: 'hpM', kind: 'use', name: '普通HP药剂', rar: 0, n: 20, price: 60 };
 try {
@@ -59,7 +60,7 @@ try {
   const am = await A('GET', '/api/mail');
   const sellMail = am.list.find(m => m.kind === 'auction' && m.title.includes('出售成功'));
   ok(sellMail && sellMail.gold === 9500, '卖家收到 9500 G（扣 5% 手续费）', sellMail && sellMail.gold);
-  const bMsgs = H.msgs('bob');
+  const bMsgs = await msgs('bob');
   ok(bMsgs.some(m => m.t === 'mail:new' && m.unread >= 1), '买家收到 WS 新邮件推送 mail:new', bMsgs);
 
   step('邮件：领取（幂等）/ 删除');
@@ -166,7 +167,7 @@ try {
   H.msgs('alice'); H.msgs('bob');
   r = await A('POST', '/api/notice', { kind: 'enhance', char: '爱丽丝', item: { key: 'katana_10_2', name: '寒光太刀', rar: 2, enh: 12 }, lvl: 12 });
   ok(r.status === 200 && r.notice.text === '勇士「爱丽丝」将 [寒光太刀] 强化到了 +12！', '强化 +12 公告文案', r.notice && r.notice.text);
-  const bn = H.msgs('bob').filter(m => m.t === 'notice:show');
+  const bn = (await msgs('bob')).filter(m => m.t === 'notice:show');
   ok(bn.length === 1 && bn[0].item.rar === 2, '广播给其他在线玩家（带品级，客户端上色）', bn);
   r = await A('POST', '/api/notice', { kind: 'enhance', item: { name: 'x' }, lvl: 9 });
   ok(r.status === 400, '+9 不发公告', r);
@@ -198,10 +199,10 @@ try {
   r = await G('GET', '/api/gm/invites');
   ok(r.list.length === 2, '邀请码列表', r.list.length);
   r = await G('GET', '/api/gm/online');
-  ok(r.list.length === 3 && r.list[0].char, '在线玩家列表', r.list.length);
+  ok(r.list.length === 3 && r.list.some(o => o.name === 'bob'), '在线玩家列表', r.list.length);
   H.msgs('bob');
   r = await G('POST', '/api/gm/notice', { text: '今晚 8 点维护' });
-  ok(r.status === 200 && H.msgs('bob').some(m => m.t === 'notice:show' && m.kind === 'custom' && m.text === '今晚 8 点维护'), '管理员全服公告', r);
+  ok(r.status === 200 && (await msgs('bob')).some(m => m.t === 'notice:show' && m.kind === 'custom' && m.text === '今晚 8 点维护'), '管理员全服公告', r);
   r = await G('GET', '/api/gm/logs?type=auction');
   ok(r.list.some(x => x.type === 'auction.buy') && r.list.some(x => x.type === 'auction.expire') && r.list.every(x => x.type.startsWith('auction')), '拍卖日志（上架 / 成交 / 到期 / 下架）', [...new Set(r.list.map(x => x.type))]);
   r = await G('GET', '/api/gm/logs?type=mail');

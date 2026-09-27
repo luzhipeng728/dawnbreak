@@ -71,7 +71,7 @@ function updateCamera(dt) {
   if (cam.flash > 0) cam.flash -= dt;
 }
 function renderWorld() {
-  const c = wctx; c.setTransform(RS, 0, 0, RS, 0, 0); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'medium';   // 'high' 在 GPU 上是逐像素的高阶滤波，实测会把帧率从 60 拖到 20~40、GPU 占满发烫；medium 画质几乎一样 c.globalAlpha = 1; c.filter = 'none';
+  const c = wctx; c.setTransform(RS, 0, 0, RS, 0, 0); c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'medium'; c.globalAlpha = 1; c.filter = 'none';   // 平滑用 medium：'high' 在 GPU 上是逐像素的高阶滤波，实测会把帧率从 60 拖到 20~40、GPU 占满发烫；medium 画质几乎一样
   if (game.scene === 'title' && IMG.title) {   // 标题主图：缓慢推镜
     const im = IMG.title, z = 1.04 + Math.sin(performance.now() / 9000) * 0.03, w = WW * z, h = WH * z;
     c.drawImage(im, (WW - w) / 2, (WH - h) / 2, w, h); return;

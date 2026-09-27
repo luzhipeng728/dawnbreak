@@ -10,7 +10,7 @@ const jobsOf = cls => (CLASSES[cls] && CLASSES[cls].jobs) || null;
 const jobTrialDone = cls => !QUESTS['q_job_' + cls + '_final'] || questDone('q_job_' + cls + '_final');
 // 导师 NPC 是否显示「转职」按钮
 function jobAvailable(N) {
-  const cls = playerCls();
+  const cls = qPlayerCls();
   if (!N || N.jobFor !== cls || game.job || !jobsOf(cls)) return false;
   return game.lvl >= JOB_LVL && jobTrialDone(cls);
 }
@@ -20,9 +20,9 @@ const jobArt = (cls, id) => IMG[jobArtKey(cls, id)] || IMG['cutin/' + cls] || IM
 // 立绘单独分包（build.mjs 里 job/ → 'job'）：打开导师对话 / 转职窗口时再加载；分包不存在时这些图已在 core 里
 function jobArtPreload(then) { if (typeof loadBundles !== 'function') return; const p = loadBundles(['job']); if (then) p.then(then); }
 bus.on('npcTalk', e => { const N = NPCS[e.id]; if (N && N.jobFor) jobArtPreload(); });
-function jobName(cls = playerCls(), job = game.job) { const J = job && jobsOf(cls) && jobsOf(cls)[job]; return J ? J.name : null; }
+function jobName(cls = qPlayerCls(), job = game.job) { const J = job && jobsOf(cls) && jobsOf(cls)[job]; return J ? J.name : null; }
 function doJobChange(jobId) {
-  const cls = playerCls(), J = jobsOf(cls) && jobsOf(cls)[jobId];
+  const cls = qPlayerCls(), J = jobsOf(cls) && jobsOf(cls)[jobId];
   if (!J || game.job) return false;
   game.job = jobId; if (save.data) save.data.job = jobId;
   bus.emit('jobChange', { job: jobId });
@@ -79,7 +79,7 @@ addStyle(`
 Object.assign(menus, {
   w_job(arg) {
     if (arg && arg.fx) return jobCeremony(arg.fx);
-    const N = arg, cls = playerCls(), jobs = jobsOf(cls), C = CLASSES[cls];
+    const N = arg, cls = qPlayerCls(), jobs = jobsOf(cls), C = CLASSES[cls];
     const ui = this.jobUI || (this.jobUI = { sel: null, ask: false });
     const body = h('div', { class: 'jobwin' });
     body.append(h('div', { class: 'intro' }, N && IMG[N.art] ? h('img', { src: IMG[N.art].src }) : null,
@@ -112,7 +112,7 @@ Object.assign(menus, {
 });
 // 转职演出：全屏特效 + 立绘 + 音效；演出 0.9 秒（白闪）时真正执行转职
 function jobCeremony(jobId) {
-  const cls = playerCls(), J = jobsOf(cls) && jobsOf(cls)[jobId]; if (!J) return null;
+  const cls = qPlayerCls(), J = jobsOf(cls) && jobsOf(cls)[jobId]; if (!J) return null;
   const own = jobArtKey(cls, jobId), art = jobArt(cls, jobId);
   const cv = h('canvas', { width: 960, height: 540 });
   const el = h('div', { class: 'jobfx', 'data-block': '1', 'data-hud': 'hide' },

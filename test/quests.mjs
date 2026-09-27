@@ -19,7 +19,7 @@ const closeAll = () => ev(() => { while (menus.stack.length) menus.close(menus.s
 const Q = id => ev(id => ({ st: questState(id), rec: save.data.quests[id] || null, done: !!save.data.questDone[id] }), id);
 // NPC 对话：点任务 → 一直“下一页” → 点指定按钮
 async function npcQuest(npc, qname, btn) {
-  await ev(id => { const S = sceneOfNpc(id); if (S && world.S.id !== S.id) return enterScene(S.id); }, npc); await wait(400);
+  await ev(id => { const S = qSceneOfNpc(id); if (S && world.S.id !== S.id) return enterScene(S.id); }, npc); await wait(400);
   await ev(id => { const e = world.npcs.find(x => x.npc.id === id); if (e) { game.player.x = e.x - 40; game.player.y = e.y; } }, npc); await wait(150);
   await page.keyboard.press('KeyX'); await wait(400);
   if (!await ev(() => menus.isOpen('npc'))) await ev(id => openNpc(NPCS[id]), npc), await wait(300);
@@ -100,9 +100,13 @@ check((await Q('q_job_kill')).st === 'ready', '试炼：被击 8 次 → 达成'
 await ev(() => { for (const id of ['q_m03', 'q_m04', 'q_m05', 'q_m06', 'q_m07', 'q_m08', 'q_m09', 'q_m10', 'q_m11']) save.data.questDone[id] = 1; delete save.data.quests.q_m03; game.lvl = 8; questAccept('q_m12'); });
 await ev(() => bus.emit('kill', { kind: 'catKing', boss: true, dungeon: 'venom_ruins', lvl: 12, x: 500, y: 90 }));
 check((await Q('q_m12')).st === 'ready', '收集：毒猫王掉落「毒猫王的毒药袋」→ 可交付');
+check(await ev(() => inv.count('q_poison_sac')) === 1, '任务道具同时出现在背包“任务”页');
+await ev(() => { if (typeof IW !== 'undefined') IW.invTab = 'quest'; menus.open('inv'); }); await wait(400); await shot('04b-inv-quest-tab'); await closeAll();
 check(await ev(() => questMarkerInfo('gsd') && questMarkerInfo('gsd').ch) === '?', 'G.S.D 头顶 ?（可交付）');
+await ev(() => questComplete('q_m12'));
+check(await ev(() => inv.count('q_poison_sac')) === 0, '交付后任务道具从背包收回');
 // 对话目标：艾丽丝的「冰与火的歌谣」第一个目标是和莎兰对话
-await ev(() => { game.lvl = 13; save.data.questDone.q_m12 = 1; delete save.data.quests.q_m12; questAccept('s_alice_song'); });
+await ev(() => { game.lvl = 13; questAccept('s_alice_song'); });
 check(await ev(() => questMarker('sharan')) === '?', '有“与莎兰对话”目标时莎兰头顶是 ?');
 await ev(() => openNpc(NPCS.sharan)); await wait(300);
 const talk = await ev(() => ({ p: save.data.quests.s_alice_song.p[0], mode: npcUI.mode, line: document.querySelector('.npcwin .qline').textContent }));

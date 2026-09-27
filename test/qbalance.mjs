@@ -6,7 +6,7 @@ const Q = [], g = globalThis;
 g.expNeed = lv => lv;   // 只关心比例：qexp(lv, f) 记成 { lv, f }
 g.qexp = (lv, f) => ({ __lv: lv, __f: f });
 g.defineQuest = (id, d) => Q.push({ id, type: 'side', ...d });
-g.NPCS = {}; g.CLASSES = { sword: { name: '鬼剑士' }, gun: { name: '神枪手' }, mage: { name: '魔法师' } }; g.npcName = x => x;
+g.NPCS = {}; g.CLASSES = { sword: { name: '鬼剑士' }, gun: { name: '神枪手' }, mage: { name: '魔法师' } }; g.qNpcName = x => x;
 const root = new URL('..', import.meta.url).pathname;
 for (const f of fs.readdirSync(root + 'src/content/quests').filter(f => f.endsWith('.js')).sort((a, b) => (a === 'main.js' ? -1 : b === 'main.js' ? 1 : a.localeCompare(b))))
   (0, eval)(fs.readFileSync(root + 'src/content/quests/' + f, 'utf8').replace(/^const /gm, 'var '));

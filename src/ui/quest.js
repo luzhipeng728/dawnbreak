@@ -90,10 +90,10 @@ function drawQuestTracker(c) {
   for (const id of ids) {
     const q = QUESTS[id], rec = d.quests[id], ready = questReady(id);
     rows.push({ q, head: true, ready });
-    if (ready) rows.push({ q, txt: q.to ? `找 ${npcName(q.to)} 交付` : '目标达成', ok: true, turnIn: true });
-    else q.goals.forEach((g, i) => { const v = goalVal(q, rec, i); rows.push({ q, txt: goalText(g), val: goalProgText(q, rec, i), ok: v >= g.n, icon: g.type === 'collect' && g.key && IMG['icon/' + g.key] }); });
+    if (ready) rows.push({ q, txt: q.to ? `找 ${qNpcName(q.to)} 交付` : '目标达成', ok: true, turnIn: true });
+    else q.goals.forEach((g, i) => { const v = goalVal(q, rec, i); rows.push({ q, txt: goalText(g), val: goalProgText(q, rec, i), ok: v >= g.n, icon: g.type === 'collect' && g.key && IMG['icon/' + (g.icon || g.key)] }); });
   }
-  if (hint) { rows.push({ q: hint, head: true, hint: true }); rows.push({ q: hint, txt: hint.lvl > game.lvl ? `Lv.${hint.lvl} 后可接取` : `去找 ${npcWhere(hint.npc)} 接取`, hintRow: true }); }
+  if (hint) { rows.push({ q: hint, head: true, hint: true }); rows.push({ q: hint, txt: hint.lvl > game.lvl ? `Lv.${hint.lvl} 后可接取` : `去找 ${qNpcWhere(hint.npc)} 接取`, hintRow: true }); }
   const H = 40 + rows.reduce((s, r) => s + (r.head ? 36 : 28), 0) + 6;
   questUI.trackRect = { x: x0 - 30, y: y0, w: W + 30, h: H };
   c.save();
@@ -140,10 +140,10 @@ function questIco(st) { return h('span', { class: 'qico ' + (st === 'ready' ? ''
 function questTag(q) { const T = QTYPES[q.type]; return h('span', { class: 'qtag', style: `color:${T.col}` }, T.name); }
 function questGoalsEl(q) {
   const rec = questRec(q.id);
-  if (!q.goals.length) return h('div', { class: 'qgoals' }, h('div', { class: 'qgoal' + (rec ? ' ok' : '') }, h('span', {}, `去找 ${npcWhere(q.to)}`)));
+  if (!q.goals.length) return h('div', { class: 'qgoals' }, h('div', { class: 'qgoal' + (rec ? ' ok' : '') }, h('span', {}, `去找 ${qNpcWhere(q.to)}`)));
   return h('div', { class: 'qgoals' }, q.goals.map((g, i) => {
     const v = rec ? goalVal(q, rec, i) : 0;
-    const ic = g.type === 'collect' && g.key && IMG['icon/' + g.key];
+    const ic = g.type === 'collect' && g.key && IMG['icon/' + (g.icon || g.key)];
     return h('div', { class: 'qgoal' + (rec && v >= g.n ? ' ok' : '') }, ic ? h('img', { class: 'qgi', src: ic.src }) : null, h('span', {}, goalText(g)), rec ? h('span', { class: 'v' }, goalProgText(q, rec, i)) : (goalCounted(g) && g.n > 1 ? h('span', { class: 'v' }, `×${g.n}`) : null));
   }));
 }
@@ -152,7 +152,7 @@ function questChip(r, i = 0) {
   let src = null;
   if (r.item && typeof itemIconSrc === 'function') { try { src = itemIconSrc(r.item); } catch (e) { src = null; } }
   if (!src && r.item) src = itemIconURL(r.item);
-  if (!src && r.spec) { try { const it = r.spec.equip ? { kind: 'equip', slot: r.spec.equip === 'rand' ? 'top' : r.spec.equip, rar: r.spec.rar ?? 1, cls: playerCls() } : { kind: 'use', key: r.spec.key, rar: 0 }; src = typeof itemIconSrc === 'function' && !r.spec.equip ? itemIconSrc(r.spec.key) : itemIconURL(it); } catch (e) { src = null; } }
+  if (!src && r.spec) { try { const it = r.spec.equip ? { kind: 'equip', slot: r.spec.equip === 'rand' ? 'top' : r.spec.equip, rar: r.spec.rar ?? 1, cls: qPlayerCls() } : { kind: 'use', key: r.spec.key, rar: 0 }; src = typeof itemIconSrc === 'function' && !r.spec.equip ? itemIconSrc(r.spec.key) : itemIconURL(it); } catch (e) { src = null; } }
   if (!src && IMG[REWARD_ICON[r.kind]]) src = IMG[REWARD_ICON[r.kind]].src;
   const el = h('span', { class: 'qchip ' + r.kind, style: `animation-delay:${0.15 + i * 0.08}s` }, src ? h('img', { src }) : null, r.label);
   if (r.item) { el.addEventListener('mousemove', ev => menus.showTip(menus.itemTip(r.item), ev)); el.addEventListener('mouseleave', () => menus.hideTip()); }
@@ -188,7 +188,7 @@ Object.assign(menus, {
       det.append(...[
         h('h3', {}, questTag(q), q.name),
         q.chapter ? h('div', { class: 'chap' }, q.chapter) : null,
-        h('div', { class: 'who' }, `接取：${npcWhere(q.npc)}` + (q.to !== q.npc ? `　交付：${npcWhere(q.to)}` : '') + `　等级 Lv.${q.lvl}`),
+        h('div', { class: 'who' }, `接取：${qNpcWhere(q.npc)}` + (q.to !== q.npc ? `　交付：${qNpcWhere(q.to)}` : '') + `　等级 Lv.${q.lvl}`),
         h('div', { class: 'desc' }, questFmt(q.desc || (q.talk.offer[0] || '').replace(/^我：/, ''))),
         h('div', { class: 'lbl' }, '任务目标'), questGoalsEl(q),
         h('div', { class: 'lbl' }, '任务奖励'), questRewardsEl(q)].filter(Boolean));
@@ -196,10 +196,10 @@ Object.assign(menus, {
       if (rec) {
         const on = d.questTrack.includes(q.id);
         btns.append(h('button', { class: 'btn' + (on ? '' : ' blue'), onclick: () => { if (on) d.questTrack = d.questTrack.filter(x => x !== q.id); else { d.questTrack.unshift(q.id); d.questTrack.length = Math.min(d.questTrack.length, QUEST_TRACK_MAX); } sfx.click(); save.write(); this.refresh('quests'); } }, on ? '取消追踪' : '追踪'));
-        if (st === 'ready') btns.append(h('span', { class: 'gold small' }, `目标已达成，去找 ${npcWhere(q.to)} 交付`));
+        if (st === 'ready') btns.append(h('span', { class: 'gold small' }, `目标已达成，去找 ${qNpcWhere(q.to)} 交付`));
         if (ui.ask === q.id) btns.append(h('span', { class: 'small', style: 'color:#ffb0a0' }, '确定要放弃吗？进度会清空'), h('button', { class: 'btn red', onclick: () => { ui.ask = null; questAbandon(q.id); this.refresh('quests'); } }, '放弃'), h('button', { class: 'btn', onclick: () => { ui.ask = null; sfx.click(); this.refresh('quests'); } }, '取消'));
         else btns.append(h('span', { class: 'sp' }), h('button', { class: 'btn red', onclick: () => { ui.ask = q.id; sfx.click(); this.refresh('quests'); } }, '放弃任务'));
-      } else if (st === 'avail') btns.append(h('span', { class: 'small', style: 'color:#ffd23a' }, `去找 ${npcWhere(q.npc)} 接取这个任务`));
+      } else if (st === 'avail') btns.append(h('span', { class: 'small', style: 'color:#ffd23a' }, `去找 ${qNpcWhere(q.npc)} 接取这个任务`));
       else if (st === 'soon') btns.append(h('span', { class: 'small dim' }, `需要等级 Lv.${q.lvl}（当前 Lv.${game.lvl}）`));
       else if (st === 'done') btns.append(h('span', { class: 'small', style: 'color:#8aff9a' }, q.type === 'daily' ? '今天已经完成，明天 06:00 后可以再接' : '✔ 已完成'));
       det.append(btns);

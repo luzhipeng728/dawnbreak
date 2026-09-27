@@ -53,8 +53,8 @@ defineQuest('s_olan_herb', { name: '奶奶的草药', npc: ['olan', 'grandis'], 
 defineQuest('s_paris_fur', { name: '哥布林材料', npc: 'paris', lvl: 4,
   desc: '帕丽丝想用哥布林毛皮做一批新款式的时装。',
   goals: [{ type: 'collect', key: 'q_goblin_fur', item: '哥布林毛皮', from: Q_GOBLINS, rate: 0.4, n: 8, desc: '粗糙但结实的毛皮，据说染色后意外地好看。' }],
-  talk: { offer: ['勇士～你觉得哥布林毛皮做成披风会不会很可爱？', '我想试试新款式！帮我收集 8 张哥布林毛皮好不好？作为回报，送你一个超受欢迎的称号哦～'], done: ['哇，手感比想象的还好！新款式一定大卖！', '这是说好的称号～戴上它，你就是赫顿玛尔最时尚的冒险家啦！'] },
-  reward: QR(4, 0.04, 250, { title: '时尚冒险家', titleKey: 'title_fashion' }) });
+  talk: { offer: ['勇士～你觉得哥布林毛皮做成披风会不会很可爱？', '我想试试新款式！帮我收集 8 张哥布林毛皮好不好？作为回报，送你一个超受欢迎的称号哦～'], done: ['哇，手感比想象的还好！新款式一定大卖！', '这是说好的称号——“哥布林克星”！哥布林们听到你的名字就会发抖哦～'] },
+  reward: QR(4, 0.04, 250, { title: 'title_goblin' }) });
 
 defineQuest('s_fengzhen_wind', { name: '像风一样(难)', npc: 'fengzhen', lvl: 5,
   desc: '风振的挑战：在 3 分钟内通关幽暗密林深处。',
@@ -78,7 +78,7 @@ defineQuest('s_boken_guild', { name: '公会的悬赏', npc: ['boken', 'skadi'],
   desc: '公会管理员博肯发布的悬赏：击败 5 只精英怪物。',
   goals: [{ type: 'kill', elite: true, n: 5, text: '击败精英怪物' }],
   talk: { offer: ['冒险家公会本周的悬赏：精英怪物。', '那些家伙比普通怪物强得多，经常伤到新人。击败 5 只，公会有重赏。'], done: ['公会记下你的功劳了。这是赏金。'] },
-  reward: QR(8, 0.04, 1000, { items: [QI('hpL', 2)] }) });
+  reward: QR(8, 0.04, 1000, { items: [QI('hpL', 2)], title: 'title_hunter' }) });
 
 defineQuest('s_sosia_venom', { name: '药剂的材料', npc: ['sosia', 'grandis'], lvl: 9,   // 自创
   desc: '药剂商人索西雅需要毒爪猫妖的毒腺来调制解毒剂。',
@@ -149,9 +149,9 @@ defineQuest('s_mc1', { name: '修补魔法阵布告', npc: ['board', 'seria'], t
 defineQuest('s_mc2', { name: '寻找魔法粘合剂的材料', npc: 'sharan', lvl: 7, pre: 's_mc1',
   desc: '魔法粘合剂需要 3 个牛头怪的硬角、2 张凯诺的毛皮和 2 个寒气结晶。',
   goals: [
-    { type: 'collect', key: 'q_glue_horn', item: '牛头怪的硬角', from: Q_TAUS, rate: 0.45, n: 3, desc: '又硬又韧的牛角。' },
+    { type: 'collect', key: 'q_glue_horn', icon: 'q_tau_horn', item: '牛头怪的硬角', from: Q_TAUS, rate: 0.45, n: 3, desc: '又硬又韧的牛角。' },
     { type: 'collect', key: 'q_kaino_fur', item: '凯诺的毛皮', from: 'goblinShaman', boss: true, rate: 1, n: 2, desc: '落雷凯诺的毛皮，摸上去会噼啪作响。' },
-    { type: 'collect', key: 'q_glue_frost', item: '寒气结晶', from: 'goblinFrost', rate: 0.5, n: 2, desc: '冰霜哥布林身上的结晶。' }],
+    { type: 'collect', key: 'q_glue_frost', icon: 'q_frost_crystal', item: '寒气结晶', from: 'goblinFrost', rate: 0.5, n: 2, desc: '冰霜哥布林身上的结晶。' }],
   talk: { offer: ['魔法粘合剂的配方是：牛头怪的硬角 3 个，凯诺的毛皮 2 张，寒气结晶 2 个。', '硬角在牛头怪身上，毛皮要从雷鸣废墟的落雷凯诺身上剥，寒气结晶……冰霜哥布林身上有。去吧。'], doing: ['材料不齐，粘合剂是做不出来的。'], done: ['嗯，材料齐了。', '不过调制粘合剂还需要胶水做底料——这方面，罗莉安比我在行。'] },
   reward: QR(7, 0.05, 600) });
 
@@ -231,10 +231,16 @@ defineQuest('s_alice_song', { name: '冰与火的歌谣', npc: ['alice', 'sharan
     { type: 'talk', npc: 'sharan', lines: ['克拉赫和彼诺修？……她们是我的同门师妹。', '一个喜欢冬天，一个喜欢夏天，从小吵到大，却谁也离不开谁。', '师父说格兰之森太危险，她们偏要去……告诉艾丽丝，歌里别把她们写成坏人。'] },
     { type: 'clear', dungeon: 'frozen_woods' }, { type: 'clear', dungeon: 'blazing_graca' }],
   talk: { offer: ['♪ 冰之森林，火之营地，两位少女迷失在流动的森林里——', '我想为那对魔法师姐妹写一首歌，可是我对她们一无所知。', '听说魔法师公会的莎兰认识她们。你能先替我去问问，再亲眼去看看冰与火的森林吗？'], done: ['……原来是这样的故事。', '♪ 冬天的妹妹，夏天的姐姐，终于在歌里重逢——谢谢你，这首歌会传遍阿拉德的。'] },
-  reward: QR(13, 0.05, 1500, { title: '歌谣中的冒险家', titleKey: 'title_ballad' }) });
+  reward: QR(13, 0.05, 1500, { items: [QE('neck', 14, 2)] }) });
 
 defineQuest('s_kanina_armor', { name: '合身的防具', npc: ['kanina', 'linus'], lvl: 6,   // 自创
   desc: '防具商人卡妮娜说，冒险家要穿合身的防具：穿戴 Lv.5 以上的上衣。',
   goals: [{ type: 'equip', slot: 'top', lvl: 5 }],
   talk: { offer: ['你身上这件……该换了吧？', '冒险家的命，一半在武器上，一半在防具上。去换一件 Lv.5 以上的上衣再来给我看看。'], done: ['这才像样嘛。这些晶块拿去强化防具用。'] },
   reward: QR(6, 0.04, 400, { items: [QI('crystal', 15)] }) });
+defineQuest('s_kanina_hope', { name: '卡妮娜的希望', npc: ['kanina', 'linus'], lvl: 10, pre: 's_kanina_armor',   // 自创（称号「卡妮娜的希望☆」由装备组定义）
+  desc: '卡妮娜想用四种颜色的小晶块给防具染色。带来红、蓝、白、黑色小晶块各 5 个。',
+  goals: [{ type: 'item', key: 'c_red', n: 5 }, { type: 'item', key: 'c_blue', n: 5 }, { type: 'item', key: 'c_white', n: 5 }, { type: 'item', key: 'c_black', n: 5 }],
+  talk: { offer: ['我在想……要是防具也能有漂亮的颜色就好了。', '红、蓝、白、黑，四种颜色的小晶块各 5 个——分解装备的时候偶尔会得到。帮我凑齐好不好？'],
+    doing: ['四种颜色，一种都不能少哦。'], done: ['哇……真的凑齐了！', '这是我的心意——“卡妮娜的希望”。戴上它，就像我一直在给你加油一样☆'] },
+  reward: QR(10, 0.04, 800, { title: 'title_kanina' }) });

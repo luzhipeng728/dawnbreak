@@ -97,7 +97,7 @@ Object.assign(menus, {
     let showExtra = false;
     if (q && last && (U.mode === 'offer' || U.mode === 'doing' || U.mode === 'done')) {
       showExtra = true;
-      extra.append(h('div', { class: 'qhead' }, questTag(q), q.name, q.to !== q.npc && U.mode === 'offer' ? h('span', { class: 'small dim' }, `（完成后找 ${npcName(q.to)}）`) : null));
+      extra.append(h('div', { class: 'qhead' }, questTag(q), q.name, q.to !== q.npc && U.mode === 'offer' ? h('span', { class: 'small dim' }, `（完成后找 ${qNpcName(q.to)}）`) : null));
       if (U.mode !== 'done') extra.append(h('div', { class: 'lbl' }, '任务目标'), questGoalsEl(q));
       extra.append(h('div', { class: 'lbl' }, '任务奖励'), questRewardsEl(q));
     }
@@ -136,15 +136,7 @@ addEventListener('keydown', e => {
   const b = menus.wins.npc && menus.wins.npc.querySelector('.qbtns .btn'); if (b) b.click();
 });
 
-/* ---- 修理 / 解除虚弱（repairCost / repairAll 归装备与经济维护） ---- */
-function repairCost() { let c = 0; for (const s of SLOTS) { const it = inv.equip[s]; if (it && it.durMax && it.dur < it.durMax) c += Math.ceil((it.durMax - it.dur) * (8 + it.lvl * 3) * (1 + it.rar * 0.4)); } return c; }
-function repairAll(verbose) {
-  const c = repairCost();
-  if (!c) { if (verbose) toastMsg('装备都很完好，不需要修理', '#bfe8bf'); return; }
-  if (game.gold < c) { toastMsg(`金币不足，修理需要 ${fmtNum(c)} G`, '#ff6a6a'); sfx.error(); return; }
-  game.gold -= c; for (const s of SLOTS) { const it = inv.equip[s]; if (it && it.durMax) it.dur = it.durMax; }
-  recalcStats(game.player); sfx.coin(); save.write(); toastMsg(`修理完成，花费 ${fmtNum(c)} G`, '#ffd23a');
-}
+/* ---- 解除虚弱（修理 repairCost / repairAll 在装备与经济的 game/items.js） ---- */
 function cureWeak() {
   const cost = 200 + game.lvl * 60;
   if (game.gold < cost) { toastMsg(`金币不足，需要 ${fmtNum(cost)} G`, '#ff6a6a'); sfx.error(); return; }

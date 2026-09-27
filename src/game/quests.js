@@ -2,15 +2,15 @@
    任务引擎（任务与转职）：定义 / 状态 / 进度 / 奖励 / 每日重置
    - defineQuest(id, def)：
        def = { type: 'main'|'side'|'daily'|'job'|'hidden', name, npc（接取）, to（交付，默认同 npc）, lvl（等级要求）,
-               pre: [前置任务], cls: 职业限定, job: true（需已转职）/ false（需未转职）, chapter, desc,
-               goals: [目标...], reward: { exp, gold, sp, coins, items: [{ key, n } | { equip: 部位, lvl, rar }], title, flag, unlock },
+               pre: [前置任务], cls: 职业限定, job: true（需已转职）/ false（需未转职）, cond: () => bool（额外条件）, chapter, desc,
+               goals: [目标...], reward: { exp | expFrac, gold, sp, coins, items: [{ key, n } | { equip: 部位 | 'rand', lvl, rar }], title: 称号物品 key, flag, unlock },
                talk: { offer: [接取台词...], doing: [进行中...], done: [完成...] } }
      台词里「我：」开头的是玩家说的话；{name} 角色名，{cls} 职业名，{job} 转职名
    - 目标类型（进度全部靠监听 bus 事件推进，不往战斗 / 地下城代码里插调用）：
        clear   通关地下城 { dungeon, diff（最低难度）, rank（最低评价）, hurt（被击 ≤N）, time（秒内）, noCoin, n }
        kill    击杀 { kind（怪物 id 或数组）, boss, elite, dungeon, n }
        collect 收集任务道具 { key（任务道具 key，装备组的 defineItem 注册后会同时放进背包“任务”页）, item（道具名）, icon, from（怪物）, dungeon, rate（掉率）, boss, n }
-               —— 只在任务进行中掉落；进度以任务记录为准，背包里的只是展示，交付 / 放弃时一并收回
+               —— 只在任务进行中掉落；进度以任务记录为准，背包里的只是展示，交付 / 放弃时一并收回；icon 可指定共用的图标名
        talk    对话 { npc, lines: [台词...] }
        reach   到达场景 { scene }
        level   等级 { lvl }
@@ -46,7 +46,8 @@ function defineQuest(id, def) {
   q.talk = { offer: [].concat(t.offer || []), doing: [].concat(t.doing || []), done: [].concat(t.done || []) };
   q.goals = q.goals.map(g => ({ n: 1, ...g, npc: g.npc && questNpc(g.npc) }));
   // 任务道具：装备组的 defineItem 存在时注册成背包“任务”页的道具
-  if (typeof defineItem === 'function' && typeof ITEMS !== 'undefined') for (const g of q.goals) if (g.type === 'collect' && g.key && !ITEMS[g.key]) { try { defineItem(g.key, { kind: 'quest', name: g.item, desc: g.desc || `任务「${q.name}」所需的道具。`, rar: g.rar || 1 }); } catch (e) { /* 物品库接口变化时不影响任务本身 */ } }
+  // 任务道具注册进物品库（背包“任务”页显示；icon 可以和别的任务道具共用）
+  for (const g of q.goals) if (g.type === 'collect' && g.key && !ITEMS[g.key]) defineItem(g.key, { kind: 'quest', name: g.item, desc: g.desc || `任务「${q.name}」所需的道具。`, rar: g.rar || 1, icon: g.icon || g.key });
   q.seq = Object.keys(QUESTS).length;
   QUESTS[id] = q;
   return q;
@@ -60,12 +61,12 @@ function qdata() {
 }
 const questRec = id => { const d = qdata(); return d && d.quests[id]; };
 const questDone = id => { const d = qdata(); return !!(d && d.questDone[id]); };
-const playerCls = () => game.player ? game.player.cls : save.data && save.data.cls;
+const qPlayerCls = () => game.player ? game.player.cls : save.data && save.data.cls;
 
 /* ---- 条件与状态 ---- */
 function questReqOk(q) {
   const d = qdata(); if (!d) return false;
-  if (q.cls && ![].concat(q.cls).includes(playerCls())) return false;
+  if (q.cls && ![].concat(q.cls).includes(qPlayerCls())) return false;
   if (q.job === true && !game.job) return false;
   if (q.job === false && game.job) return false;
   for (const p of q.pre) if (!d.questDone[p]) return false;
@@ -118,14 +119,14 @@ function questList(filter) {
 const activeQuests = () => { const d = qdata(); return d ? Object.keys(d.quests).filter(id => QUESTS[id]).map(id => QUESTS[id]) : []; };
 
 /* ---- 文本 ---- */
-const npcName = id => (NPCS[id] && NPCS[id].name) || id || '—';
-const sceneOfNpc = id => { for (const s of Object.values(SCENES)) if (s.npcs.some(n => n.npc === id)) return s; return null; };
-const sceneLabel = S => S.area && S.area !== S.name ? (S.area.includes(S.name) ? S.area : `${S.name}·${S.area}`) : S.name;
-const npcWhere = id => { if (!id) return '—'; const S = sceneOfNpc(id); return S ? `${npcName(id)}（${sceneLabel(S)}）` : npcName(id); };
-const monName = k => (MON[k] && MON[k].name) || k;
-const dgName = id => (DUNGEONS[id] && DUNGEONS[id].name) || id;
+const qNpcName = id => (NPCS[id] && NPCS[id].name) || id || '—';
+const qSceneOfNpc = id => { for (const s of Object.values(SCENES)) if (s.npcs.some(n => n.npc === id)) return s; return null; };
+const qSceneLabel = S => S.area && S.area !== S.name ? (S.area.includes(S.name) ? S.area : `${S.name}·${S.area}`) : S.name;
+const qNpcWhere = id => { if (!id) return '—'; const S = qSceneOfNpc(id); return S ? `${qNpcName(id)}（${qSceneLabel(S)}）` : qNpcName(id); };
+const qMonName = k => (MON[k] && MON[k].name) || k;
+const qDgName = id => (DUNGEONS[id] && DUNGEONS[id].name) || id;
 function questFmt(s) {
-  const d = save.data || {}, C = CLASSES[playerCls()] || {}, J = game.job && C.jobs && C.jobs[game.job];
+  const d = save.data || {}, C = CLASSES[qPlayerCls()] || {}, J = game.job && C.jobs && C.jobs[game.job];
   return String(s).replace(/\{name\}/g, d.name || '勇士').replace(/\{cls\}/g, C.name || '冒险家').replace(/\{job\}/g, J ? J.name : (C.name || ''));
 }
 function goalText(g) {
@@ -139,24 +140,24 @@ function goalText(g) {
       if (g.hurt != null) conds.push(`被击 ≤ ${g.hurt} 次`);
       if (g.time != null) conds.push(`${Math.floor(g.time / 60) ? Math.floor(g.time / 60) + ' 分 ' : ''}${g.time % 60 ? g.time % 60 + ' 秒' : ''}内`);
       if (g.noCoin) conds.push('不使用复活币');
-      return `通关 ${!g.dungeon || g.dungeon === 'any' ? '任意地下城' : list(g.dungeon, dgName)}${conds.length ? '（' + conds.join('，') + '）' : ''}`;
+      return `通关 ${!g.dungeon || g.dungeon === 'any' ? '任意地下城' : list(g.dungeon, qDgName)}${conds.length ? '（' + conds.join('，') + '）' : ''}`;
     }
-    case 'kill': return `${g.dungeon ? '在' + list(g.dungeon, dgName) + '' : ''}击败 ${g.kind ? list(g.kind, monName) : g.boss ? '领主' : g.elite ? '精英怪' : '怪物'}`;
+    case 'kill': return `${g.dungeon ? '在' + list(g.dungeon, qDgName) + '' : ''}击败 ${g.kind ? list(g.kind, qMonName) : g.boss ? '领主' : g.elite ? '精英怪' : '怪物'}`;
     case 'collect': return `收集 ${g.item}`;
-    case 'talk': return `与 ${npcName(g.npc)} 对话`;
+    case 'talk': return `与 ${qNpcName(g.npc)} 对话`;
     case 'reach': { const S = SCENES[g.scene]; return `前往 ${S ? S.area || S.name : g.scene}`; }
     case 'level': return `达到 Lv.${g.lvl}`;
     case 'job': return '完成转职';
     case 'equip': return `穿戴${g.lvl ? ' Lv.' + g.lvl + ' 以上的' : ''}${g.rar ? RARITY[g.rar].name + '以上的' : ''}${g.slot ? SLOT_NAME[g.slot] : '装备'}`;
     case 'enhance': return `将${g.slot ? SLOT_NAME[g.slot] : '装备'}强化到 +${g.lvl}`;
     case 'skill': { const id = goalSkillId(g); return `使用技能${id && SKILLS[id] ? '「' + SKILLS[id].name + '」' : ''}`; }
-    case 'use': return `使用${g.key && CONSUMABLES[g.key] ? CONSUMABLES[g.key].name : '消耗品'}`;
-    case 'item': return `带来 ${CONSUMABLES[g.key] ? CONSUMABLES[g.key].name : g.key}`;
+    case 'use': return `使用${g.key ? qItemName(g.key) : '消耗品'}`;
+    case 'item': return `带来 ${qItemName(g.key)}`;
   }
   return '???';
 }
 // 进度文字：计数目标显示 (a/b)，一次性目标显示 完成 / 未完成
-const goalSkillId = g => g.id && typeof g.id === 'object' ? g.id[playerCls()] : g.id;
+const goalSkillId = g => g.id && typeof g.id === 'object' ? g.id[qPlayerCls()] : g.id;
 const goalCounted = g => g.n > 1 || ['kill', 'collect', 'skill', 'use', 'item'].includes(g.type);
 function goalProgText(q, rec, i) {
   const g = q.goals[i], v = goalVal(q, rec, i);
@@ -164,25 +165,18 @@ function goalProgText(q, rec, i) {
   return goalCounted(g) ? `${v}/${g.n}` : v >= g.n ? '完成' : '未完成';
 }
 
-/* ---- 奖励 ---- */
-// 物品奖励：优先用装备组的 makeItem(key, n)，没有就回退到 makeConsumable / makeEquip
+/* ---- 奖励（物品全部走装备组的 makeItem / rollEquip / giveItem） ---- */
+// 奖励物品写法：{ key, n }（物品库 key）或 { equip: 部位 | 'rand', lvl, rar }（按条件随机一件装备）
 function questMakeItem(r) {
-  if (r.equip) {
-    const slot = r.equip === 'rand' ? pick(SLOTS) : r.equip, lvl = r.lvl || game.lvl, rar = r.rar ?? 1;
-    if (typeof makeItem === 'function' && r.key) { try { const it = makeItem(r.key, 1); if (it) return it; } catch (e) { /* 回退 */ } }
-    if (typeof rollEquip === 'function') { try { const it = rollEquip({ slot, lvl, rar, cls: playerCls() }); if (it) return it; } catch (e) { /* 回退 */ } }
-    return makeEquip(slot, lvl, rar, playerCls());
-  }
-  if (typeof makeItem === 'function') { try { const it = makeItem(r.key, r.n || 1); if (it) return it; } catch (e) { /* 回退 */ } }
-  if (CONSUMABLES[r.key]) return makeConsumable(r.key, r.n || 1);
-  return null;
+  if (r.equip) return rollEquip({ slot: r.equip === 'rand' ? undefined : r.equip, lvl: r.lvl || game.lvl, rar: r.rar ?? 1, cls: qPlayerCls() });
+  return makeItem(r.key, r.n || 1);
 }
-function questItemMakeAny(key) { if (typeof makeItem !== 'function') return null; try { return makeItem(key, 1) || null; } catch (e) { return null; } }
+const qItemName = key => (ITEMS[key] && ITEMS[key].name) || key;
 function questRewardName(r) {
   if (r.equip) return `${RARITY[r.rar ?? 1].name}${r.equip === 'rand' ? '装备' : SLOT_NAME[r.equip]}（Lv.${r.lvl || game.lvl}）`;
-  return (CONSUMABLES[r.key] ? CONSUMABLES[r.key].name : r.name || r.key) + (r.n > 1 ? ` ×${r.n}` : '');
+  return qItemName(r.key) + (r.n > 1 ? ` ×${r.n}` : '');
 }
-// 奖励清单（给界面显示用）：[{ kind, label, icon?, item? }]
+// 奖励清单（给界面显示用）：[{ kind, label, spec?, item? }]
 const questExp = R => R.exp || (R.expFrac ? qexp(game.lvl, R.expFrac) : 0);
 function questRewardList(q) {
   const R = q.reward || {}, out = [], exp = questExp(R);
@@ -191,24 +185,20 @@ function questRewardList(q) {
   if (R.sp) out.push({ kind: 'sp', label: `SP +${R.sp}` });
   if (R.coins) out.push({ kind: 'coin', label: `复活币 ×${R.coins}` });
   for (const r of R.items || []) out.push({ kind: 'item', label: questRewardName(r), spec: r });
-  if (R.title) out.push({ kind: 'title', label: `称号「${R.title}」` });
-  if (R.unlock) out.push({ kind: 'unlock', label: `开放隐藏地下城「${dgName(R.unlock)}」` });
+  if (R.title) out.push({ kind: 'title', label: `称号「${qItemName(R.title)}」`, spec: { key: R.title } });
+  if (R.unlock) out.push({ kind: 'unlock', label: `开放隐藏地下城「${qDgName(R.unlock)}」` });
   if (R.flag === 'awaken') out.push({ kind: 'flag', label: '解锁觉醒技能' });
-  else if (R.flag === 'jobTrial') out.push({ kind: 'flag', label: '获得转职资格' });
   return out;
 }
 function giveQuestRewards(q) {
   const R = q.reward || {}, d = qdata(), got = [];
+  const give = (it, kind, label) => { if (!it) return; giveItem(it); got.push({ kind, label: label || (it.n > 1 ? it.n + '× ' : '') + it.name, item: it }); };
   if (R.gold) { game.gold += R.gold; bus.emit('gold', { n: R.gold }); got.push({ kind: 'gold', label: `金币 +${fmtNum(R.gold)} G` }); }
   if (R.sp) { game.sp = (game.sp || 0) + R.sp; got.push({ kind: 'sp', label: `SP +${R.sp}` }); }
-  if (R.coins) { d.coins = (d.coins || 0) + R.coins; got.push({ kind: 'coin', label: `复活币 ×${R.coins}` }); }
-  for (const r of R.items || []) { const it = questMakeItem(r); if (!it) continue; giveItem(it); got.push({ kind: 'item', label: (it.n > 1 ? it.n + '× ' : '') + it.name, item: it }); }
-  if (R.title) {   // 称号：装备组的称号表里有 titleKey 就发称号装备，否则记进 save.data.titles
-    const it = R.titleKey && questItemMakeAny(R.titleKey);
-    if (it) giveItem(it); else if (!d.titles.includes(R.title)) d.titles.push(R.title);
-    got.push({ kind: 'title', label: `称号「${R.title}」`, item: it || null });
-  }
-  if (R.unlock) got.push({ kind: 'unlock', label: `隐藏地下城「${dgName(R.unlock)}」已开放` });
+  if (R.coins) { giveItem(makeItem('coin', R.coins)); got.push({ kind: 'coin', label: `复活币 ×${R.coins}` }); }
+  for (const r of R.items || []) give(questMakeItem(r), 'item');
+  if (R.title) { const it = makeItem(R.title); give(it, 'title', `称号「${it ? it.name : R.title}」`); if (it && !d.titles.includes(it.name)) d.titles.push(it.name); }
+  if (R.unlock) got.push({ kind: 'unlock', label: `隐藏地下城「${qDgName(R.unlock)}」已开放` });
   if (R.flag) { d.flags[R.flag] = true; if (R.flag === 'awaken') { got.push({ kind: 'flag', label: '解锁觉醒技能' }); bus.emit('awaken', { job: game.job }); } }
   const exp = questExp(R);
   if (exp) { got.unshift({ kind: 'exp', label: `经验值 +${fmtNum(exp)}` }); gainExp(exp); }   // 经验最后给：升级提示排在奖励之后
@@ -246,21 +236,19 @@ function questProgress(id, i, add = 1, at) {
   if (g.type === 'collect') {
     const x = at && at.x != null ? at.x : game.player.x, y = at && at.y != null ? at.y : game.player.y;
     if (typeof fxText === 'function') fxText(`${g.item} ${rec.p[i]}/${g.n}`, x, y, 30, { col: '#ffe070', size: 11, dur: 1.4 });
-    if (g.key) { const it = questItemMake(g.key); if (it) inv.add(it); }
+    if (g.key) inv.add(makeItem(g.key, 1));   // 背包“任务”页里的展示用道具（进度以任务记录为准）
     sfx.pickup();
   }
   if (rec.p[i] >= g.n && goalCounted(g)) toastMsg(`${q.name}：${goalText(g)}（${g.n}/${g.n}）`, '#e8f0c0');
   questCheck(id);
 }
-// 任务道具：装备组的物品库里注册过（defineItem kind:'quest'）才放进背包展示
-function questItemMake(key) { if (typeof makeItem !== 'function' || typeof ITEMS === 'undefined' || !ITEMS[key]) return null; try { return makeItem(key, 1); } catch (e) { return null; } }
 function questItemsTake(q) { for (const g of q.goals) if (g.type === 'collect' && g.key && inv.count(g.key)) inv.take(g.key, inv.count(g.key)); }
 // 检查是否刚刚全部达成 → 提示去交付
 function questCheck(id) {
   questDirty();
   const rec = questRec(id); if (!rec) return;
   const r = questReady(id);
-  if (r && !rec.r) { const q = QUESTS[id]; rec.r = 1; sfxQuest('ready'); toastMsg(q.to ? `任务目标达成：${q.name} → 找 ${npcName(q.to)} 交付` : `任务目标达成：${q.name}`, '#ffd23a'); bus.emit('questReady', { id }); }
+  if (r && !rec.r) { const q = QUESTS[id]; rec.r = 1; sfxQuest('ready'); toastMsg(q.to ? `任务目标达成：${q.name} → 找 ${qNpcName(q.to)} 交付` : `任务目标达成：${q.name}`, '#ffd23a'); bus.emit('questReady', { id }); }
   else if (!r && rec.r) rec.r = 0;
 }
 const questCheckAll = () => { for (const q of activeQuests()) questCheck(q.id); };
@@ -293,11 +281,11 @@ function forGoals(type, fn) {
     q.goals.forEach((g, i) => { if (g.type === type && (rec.p[i] || 0) < g.n) fn(q, g, i, rec); });
   }
 }
-const inList = (v, x) => [].concat(v).includes(x);
-const rankIdx = r => RANKS.findIndex(x => x[0] === r);
+const qInList = (v, x) => [].concat(v).includes(x);
+const qRankIdx = r => RANKS.findIndex(x => x[0] === r);
 function killMatch(g, e, kinds) {
-  if (g.dungeon && !inList(g.dungeon, e.dungeon)) return false;
-  if (kinds && !inList(kinds, e.kind)) return false;
+  if (g.dungeon && !qInList(g.dungeon, e.dungeon)) return false;
+  if (kinds && !qInList(kinds, e.kind)) return false;
   if (g.boss && !e.boss) return false;
   if (g.elite && !e.elite) return false;
   if (g.diff != null && !(game.dungeon && game.dungeon.diff >= g.diff)) return false;
@@ -311,7 +299,7 @@ bus.on('kill', e => {
 function clearFails(g, e) {
   const why = [];
   if (g.diff != null && e.diff < g.diff) why.push(`难度需要${DIFFS[g.diff].name}以上`);
-  if (g.rank && rankIdx(e.rank) < rankIdx(g.rank)) why.push(`评价 ${e.rank}（需要 ${g.rank} 以上）`);
+  if (g.rank && qRankIdx(e.rank) < qRankIdx(g.rank)) why.push(`评价 ${e.rank}（需要 ${g.rank} 以上）`);
   if (g.hurt != null && e.hurt > g.hurt) why.push(`被击 ${e.hurt} 次（需要 ≤ ${g.hurt}）`);
   if (g.time != null && e.time > g.time) why.push(`用时 ${Math.round(e.time)} 秒（需要 ${g.time} 秒内）`);
   if (g.noCoin && game.dungeon && game.dungeon.usedCoins) why.push('使用了复活币');
@@ -319,7 +307,7 @@ function clearFails(g, e) {
 }
 bus.on('dungeonClear', e => {
   forGoals('clear', (q, g, i) => {
-    if (g.dungeon && g.dungeon !== 'any' && !inList(g.dungeon, e.id)) return;
+    if (g.dungeon && g.dungeon !== 'any' && !qInList(g.dungeon, e.id)) return;
     const why = clearFails(g, e);
     if (why.length) { toastMsg(`「${q.name}」条件未达成：${why.join('，')}`, '#ff9a7a'); return; }
     questProgress(q.id, i, 1);
@@ -385,7 +373,7 @@ function questsOnEnterScene(sceneId) {
   const S = SCENES[sceneId]; if (!S || !qdata()) return;
   for (const n of S.npcs) for (const id of questsOfNpc(n.npc)) {
     const q = QUESTS[id];
-    if (q.type === 'main' && questState(id) === 'avail' && !questUI.notified[id]) { questUI.notified[id] = 1; game.after(0.6, () => toastMsg(`新的主线任务：${q.name}（${npcName(q.npc)}）`, '#ffd23a')); }
+    if (q.type === 'main' && questState(id) === 'avail' && !questUI.notified[id]) { questUI.notified[id] = 1; game.after(0.6, () => toastMsg(`新的主线任务：${q.name}（${qNpcName(q.npc)}）`, '#ffd23a')); }
   }
 }
 // 觉醒任务完成后才能学觉醒技能（战斗组的技能学习条件可以调用）

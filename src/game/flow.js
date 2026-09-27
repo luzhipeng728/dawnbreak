@@ -31,7 +31,7 @@ function boot() {
     return withLoading(['spr:' + tcls, 'bg:forest', ...monBundles(kinds)], () => { save.newGame(tcls); game.player = makePlayer(tcls); cmdLabel(tcls); for (const id of CLASSES[tcls].skills) game.skillLv[id] = Math.max(game.skillLv[id] || 0, 1); game.skillBar = CLASSES[tcls].skills.concat([null, null]).slice(0, 12); startTestRoom(); });
   }
   const alias = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
-  const devSave = () => { if (!save.load() || (PARAMS.has('cls') && save.data.cls !== tcls)) save.newGame(tcls); save.apply(); };
+  const devSave = () => { save.loadAll(); const i = PARAMS.has('cls') ? save.chars.findIndex(c => c.cls === tcls) : save.chars.length - 1; if (i >= 0) save.select(i); else save.newGame(tcls); save.apply(); };
   if (PARAMS.has('dungeon')) { devSave(); return startGame(save.data.cls).then(() => { if (menus.isOpen('help')) menus.close('help'); if (PARAMS.has('lv')) testLoadout(+PARAMS.get('lv')); const id = PARAMS.get('dungeon') || 'lorien'; return enterDungeon(alias[id] || id, +(PARAMS.get('diff') || 0)); }); }
   if (PARAMS.has('town')) { devSave(); return startGame(save.data.cls); }
   // 标题画面背后是暮色林地的风景

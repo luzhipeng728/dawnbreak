@@ -30,6 +30,7 @@ game/world.js
 game/game.js
 ui/hud.js
 ui/menus.js
+ui/npc.js
 game/items.js
 game/save.js
 content/classes/swordsman.js

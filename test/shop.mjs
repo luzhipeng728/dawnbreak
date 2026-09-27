@@ -29,6 +29,8 @@ await page.keyboard.press(']'); await wait(200);
 check(await ev(() => !menus.isOpen('cash')), '再按 ] 关闭');
 await page.click('#menubar button[title="商城"]'); await wait(300);
 check(await ev(() => menus.isOpen('cash')), '点菜单按钮打开商城');
+await closeAll(); await ev(() => menus.open('system')); await wait(150); await page.click('[data-win=system] .btn:has-text("破晓商城")'); await wait(250);
+check(await ev(() => menus.isOpen('cash') && !menus.isOpen('system')), '系统菜单（触屏也能进）里的“破晓商城”打开商城');
 
 /* ---------- 2. 购买：单件自选属性、整套、限购、免费礼包、等级礼包 ---------- */
 step('购买');

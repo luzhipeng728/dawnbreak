@@ -101,6 +101,8 @@ ACTION_NAME.cash = '商城';
 UI_WIN.cash = 'cash'; UI_ACTIONS.add('cash');
 if (typeof MB_WIN !== 'undefined') MB_WIN.cash = 'cash';
 if (typeof MENUBAR !== 'undefined' && !MENUBAR.some(b => b[0] === 'cash')) MENUBAR.push(['cash', '商城']);
+// 系统菜单（Esc，触屏也能打开）里加“破晓商城”：触屏模式没有菜单按钮栏，从这里进
+{ const ws0 = menus.w_system; menus.w_system = function () { const el = ws0.apply(this, arguments); const col = el && el.querySelector('.sysmenu'); if (col && game.player) col.insertBefore(h('button', { class: 'btn', onclick: () => { sfx.click(); this.close('system'); this.show('cash'); } }, '破晓商城', h('span', { class: 'kbd' }, keyName('cash'))), col.children[1] || null); return el; }; }
 // 有免费礼包可以领（新手 / 等级礼包）时，菜单按钮上显示“领取”
 setInterval(() => { const b = typeof menubar !== 'undefined' && menubar.btns && menubar.btns.cash; if (!b || !save.data || !game.player) return; b.classList.toggle('cash-dot', ['pkg_newbie', 'pkg_lv10', 'pkg_lv20', 'pkg_lv30'].some(p => !cashGoodsBlock(cashGoods(p)))); }, 2000);
 ITEM_WINS.push('cash', 'cashx', 'avopt', 'pet', 'synth', 'lotto', 'ticket', 'cashlog');

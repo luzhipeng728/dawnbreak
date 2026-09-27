@@ -158,7 +158,7 @@ ok(g.id === 'gf_thunder' && Math.abs(g.x - 1360) < 5 && !g.win, `从地下城回
 console.log('· 城镇曲目');
 const page2 = await browser.newPage({ viewport: { width: 960, height: 540 } });
 await page2.goto(`${URL_BASE}?test&mobs=0`); await page2.waitForFunction(() => window.__READY); await page2.mouse.click(400, 300); await page2.waitForTimeout(300);
-for (const name of ['seria', 'town', 'hendon', 'backstreet', 'westcoast', 'guild', 'field']) {
+for (const name of ['seria', 'town', 'hendon', 'backstreet', 'westcoast', 'guild', 'sky', 'field']) {
   await page2.evaluate(n => music.play(n), name); await page2.waitForTimeout(1300);
   const r = await page2.evaluate(async () => { const a = sfx.analyser, buf = new Float32Array(a.fftSize); let sum = 0, peak = 0; for (let i = 0; i < 30; i++) { a.getFloatTimeDomainData(buf); let s = 0; for (const v of buf) { s += v * v; peak = Math.max(peak, Math.abs(v)); } sum += Math.sqrt(s / buf.length); await new Promise(r => setTimeout(r, 50)); } return { rms: +(sum / 30).toFixed(4), peak: +peak.toFixed(3) }; });
   ok(r.rms > 0.004 && r.peak < 1, `曲目 ${name}：rms ${r.rms}，峰值 ${r.peak}`);

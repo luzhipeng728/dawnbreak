@@ -1,8 +1,8 @@
 /* =====================================================================
    08. 背景音乐：WebAudio 实时合成的步进音序器（16 分音符网格，提前 0.25 s 排程）
    曲目（全部原创）：title 钢琴 / town 田园吉他+长笛（艾尔文防线）/ field 区域地图 / dungeon 明快冒险 / dungeon2 摇滚 / dungeon3 部落战鼓 / abyss 阴森钟声 / boss 高压 / clear 胜利号角
-     城镇：seria 八音盒（赛丽亚的房间）/ hendon 王都进行曲（赫顿玛尔）/ backstreet 小酒馆爵士（后街）/ westcoast 水手小调（西海岸）/ guild 竖琴与钟声（魔法师公会）
-   只用有音高的乐器与短促的鼓点，不放任何持续噪声
+     城镇：seria 八音盒 + 鸟叫（赛丽亚的房间）/ hendon 王都进行曲 + 钟楼（赫顿玛尔）/ backstreet 小酒馆爵士（后街）/ westcoast 水手小调 + 海浪（西海岸）/ guild 竖琴与钟声（魔法师公会）/ sky 云端竖琴（天空之城区域地图）
+   只用有音高的乐器与短促的鼓点，不放持续的底噪（西海岸的海浪是每两小节一次的涨落）
    ===================================================================== */
 const MAJOR = [0, 2, 4, 5, 7, 9, 11], MINOR = [0, 2, 3, 5, 7, 8, 10];
 const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
@@ -161,7 +161,30 @@ const SONGS = {
   clear: { bpm: 120, root: 60, scale: MAJOR, once: true, chords: [[0, 'M'], [7, 'M'], [0, 'M'], [0, 'M']],
     parts: [partMel('0 2 4 7 . . 4 7 11 . . . 9 . 10 . 14 . . . . . . . - - - - - - - -', 'brass', 0, 0.1), partPad('strings', -12, 0.02, 16), partDrums({ t: 'l.l.h...........', crash: 1 }, 0.8)] },
 };
-// 各城镇的曲目（场景 bgm 字段）：艾尔文防线沿用 town（田园吉他 + 长笛）
+// ---- 城镇环境音（混在曲目里，短促、有起伏，不做持续的底噪） ----
+// 鸟叫：每小节按固定的伪随机位置叫两三声（上滑的短哨音）
+function partBirds(vol = 0.03, dens = 0.3) {
+  const R = mulberry(77), plan = Array.from({ length: 64 }, () => R() < dens ? 2300 + R() * 1500 : 0);
+  return (t, bi, pos) => {
+    const f = plan[(bi * 16 + pos) % 64]; if (!f) return;
+    for (let i = 0; i < 2; i++) { const o = music.osc('sine', f, t + i * 0.09, 0.05, vol, { a: 0.004 }); o.frequency.setValueAtTime(f, t + i * 0.09); o.frequency.exponentialRampToValueAtTime(f * 1.35, t + i * 0.09 + 0.05); }
+  };
+}
+// 海浪：每两小节一次缓慢涨落的低通噪声
+function partWaves(vol = 0.05) {
+  return (t, bi, pos, root, tones, sd) => {
+    if (pos || bi % 2) return;
+    const c = sfx.ctx, s = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain(), dur = sd * 30;
+    s.buffer = sfx.noiseBuf; s.loop = true; fl.type = 'lowpass'; fl.frequency.setValueAtTime(380, t); fl.frequency.linearRampToValueAtTime(900, t + dur * 0.4); fl.frequency.linearRampToValueAtTime(300, t + dur);
+    s.connect(fl); fl.connect(g); g.connect(music.out);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + dur * 0.4); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+    s.start(t, Math.random()); s.stop(t + dur + 0.05); s.onended = () => { s.disconnect(); fl.disconnect(); g.disconnect(); };
+  };
+}
+// 钟楼：每八小节开头敲两下
+function partChime(vol = 0.05) { return (t, bi, pos, root, tones, sd, S) => { if (pos || bi % 8) return; MI.bell(t, S.root + 12, vol, 2); MI.bell(t + sd * 4, S.root + 7, vol * 0.8, 2); }; }
+// 各城镇的曲目（场景 bgm 字段）：艾尔文防线沿用 town（田园吉他 + 长笛），另加鸟叫
+SONGS.town.parts.push(partBirds(0.025, 0.28));
 Object.assign(SONGS, {
   seria: { bpm: 84, root: 65, scale: MAJOR, wet: 1.3, chords: [[0, 'M'], [9, 'm'], [5, 'M'], [7, 'M'], [0, 'M'], [4, 'm'], [5, 'M'], [7, 'M']],   // 赛丽亚的房间：八音盒摇篮曲
     parts: [partArp([0, 2, 3, 2, 1, 2, 3, 2], 2, 'bell', 12, 0.028), partBass('x.......x.......', 'bass', -24, 0.09), partPad('pad', -12, 0.009),
@@ -181,4 +204,11 @@ Object.assign(SONGS, {
   guild: { bpm: 80, root: 57, scale: MINOR, wet: 1.4, chords: [[0, 'm'], [8, 'M'], [3, 'M'], [10, 'M'], [0, 'm'], [5, 'm'], [7, 'M'], [0, 'm']],   // 魔法师公会：神秘的竖琴与钟声
     parts: [partArp([0, 1, 2, 3, 4, 3, 2, 1], 1, 'pluck', 0, 0.03), partPad('pad', -12, 0.013), partBells(0.035),
       partMel('4 . 7 6 5 . . 4 2 . 4 5 6 . . . 7 . 9 8 7 . 5 3 4 . 6# . 7 . . -', 'flute', 12, 0.07, 4)] },
+  sky: { bpm: 92, root: 64, scale: MAJOR, wet: 1.4, chords: [[0, 'M'], [2, 'M'], [5, 'M'], [0, 'M'], [9, 'm'], [2, 'M'], [5, 'M'], [7, 'M']],   // 天空之城区域地图：云端的竖琴（利底亚色彩）
+    parts: [partArp([0, 1, 2, 3, 4, 3, 2, 1], 1, 'pluck', 12, 0.022), partPad('strings', -12, 0.013, 8), partBass('x.......x.......', 'bass', -24, 0.1),
+      partMel('4 . . 7 9 . 7 . 8 . . 5 3# . . . 7 . 5 . 3 . 5 . 4 . . . . . - . 5 . 7 . 9 . 7 . 8 . 10# . 12 . 10# . 10 . 9 . 7 . 5 . 6 . 8 . 4 . . .', 'flute', 12, 0.065),
+      partDrums({ k: 'x...........x...', sh: '..x...x...x...x.' }, 0.45)] },
 });
+SONGS.seria.parts.push(partBirds(0.014, 0.12));   // 窗外的鸟叫
+SONGS.hendon.parts.push(partChime(0.045));         // 王都的钟楼
+SONGS.westcoast.parts.push(partWaves(0.05));       // 海浪

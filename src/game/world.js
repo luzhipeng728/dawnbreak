@@ -187,7 +187,7 @@ const CROWD_GUILDS = ['破晓', '赫顿夜话', '洛兰互助会', '西海岸渔
 const CROWD_CLS = ['sword', 'gun', 'mage'];
 // 路人的“时装”：只对衣服的主色相区间换色（鬼剑士的藏青外套、神枪手的蓝领巾、魔法师的紫裙），和玩家本人区分开
 const CROWD_LOOKS = {
-  sword: [{}, { hue: 150, only: [195, 255] }, { hue: -95, only: [195, 255] }, { hue: 100, only: [195, 255] }],
+  sword: [{}, { hue: 140, only: [195, 255] }, { hue: -95, only: [195, 255] }, { sat: 0.12, bright: 1.5, only: [195, 255] }],
   gun: [{}, { hue: 150, only: [190, 250] }, { hue: -100, only: [190, 250] }],
   mage: [{}, { hue: -100, only: [250, 320] }, { hue: 70, only: [250, 320] }, { hue: 150, only: [250, 320] }],
 };

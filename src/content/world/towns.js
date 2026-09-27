@@ -127,25 +127,27 @@ defineScene('elvenguard', { name: '艾尔文防线', area: '集市', kind: 'town
 // 赫顿玛尔市政街：竞技场、市政厅（冒险家公会）、大圣堂、王宫
 defineScene('hendon_myre', { name: '赫顿玛尔', area: '市政街', kind: 'town', width: 3200, theme: 'civic', bgm: 'hendon', ambient: 'petals', map: [60, 40],
   props: [{ art: 'world/b_arena', x: 420, h: 250 }, banner(700), { art: 'world/b_townhall', x: 1160, h: 300 }, lamp(1540), { art: 'world/b_cathedral', x: 1960, h: 300 }, banner(2420), { art: 'world/b_palace', x: 2820, h: 290 },
-    { art: 'world/p_planter', x: 880, h: 36 }, { art: 'world/p_planter', x: 2250, h: 36 }, { art: 'world/p_puppy', x: 1700, y: 120, h: 30, anim: 'breathe' }],
+    { art: 'world/p_planter', x: 880, h: 36 }, { art: 'world/p_planter', x: 2250, h: 36 }, { art: 'world/p_puppy', x: 1700, y: 120, h: 30, anim: 'breathe' },
+    { art: 'world/p_bench', x: 1560, h: 40 }, { art: 'world/p_tree', x: 1380, h: 70, anim: 'sway' }, { art: 'world/p_tree', x: 2600, h: 70, anim: 'sway' }],
   npcs: [{ npc: 'vier', x: 480, y: 46 }, { npc: 'albert', x: 1050, y: 44 }, { npc: 'boken', x: 1270, y: 50 }, { npc: 'grandis', x: 2020, y: 44 }, { npc: 'skadi', x: 2850, y: 40 }],
   exits: [{ side: 'right', to: 'elvenguard' }, { side: 'left', to: 'hm_plaza' }] });
 // 中央广场：往左一直走是格兰之森；北边的路口上去是旧城区，南边的小巷下去是后街
 defineScene('hm_plaza', { name: '赫顿玛尔', area: '中央广场', kind: 'town', width: 3400, theme: 'town', bgm: 'hendon', ambient: 'petals', map: [46, 40],
   props: [{ art: 'world/b_dojo', x: 460, h: 220 }, lamp(800), { art: 'world/b_workshop', x: 1110, h: 240 }, { art: 'world/b_fountain', x: 1760, h: 200, anim: 'fountain' }, { art: 'world/b_teleporter', x: 2070, h: 100, glow: [0.5, 0.35, 60, '120,210,255'] },
-    lamp(2260), { art: 'world/b_merchant', x: 2470, h: 230 }, { art: 'world/b_potion', x: 3040, h: 220 }, banner(1420), { art: 'world/p_cart', x: 2700, y: 150, h: 64 }, { art: 'world/p_sacks', x: 2330, h: 40 }],
+    lamp(2260), { art: 'world/b_merchant', x: 2470, h: 230 }, { art: 'world/b_potion', x: 3040, h: 220 }, banner(1420), { art: 'world/p_cart', x: 2700, y: 150, h: 64 }, { art: 'world/p_sacks', x: 2330, h: 40 },
+    { art: 'world/p_bench', x: 1990, h: 40 }, { art: 'world/p_chicken', x: 800, y: 130, h: 24, anim: 'breathe', flip: true }, { art: 'world/p_bucket', x: 2860, h: 26 }],
   npcs: [{ npc: 'fengzhen', x: 530, y: 42 }, { npc: 'kiri', x: 1170, y: 44 }, { npc: 'nuoyu', x: 2070, y: 40 }, { npc: 'norton', x: 2520, y: 46 }, { npc: 'sosia', x: 3080, y: 42 }],
   exits: [{ side: 'right', to: 'hendon_myre' }, { side: 'left', to: 'gf_forest' }, { side: 'up', x: 1440, to: 'hm_oldtown' }, { side: 'down', x: 2780, to: 'hm_backstreet' }] });
 // 旧城区：老房子、杂货铺、防具店；G.S.D 在街角
 defineScene('hm_oldtown', { name: '赫顿玛尔', area: '旧城区', kind: 'town', width: 2800, theme: 'oldtown', bgm: 'hendon', ambient: 'dust', map: [40, 20],
   props: [{ art: 'world/b_oldhouse', x: 300, h: 260 }, { art: 'world/b_grocery', x: 830, h: 220 }, lamp(1180), { art: 'world/b_armorshop', x: 1520, h: 230 }, { art: 'world/p_crates', x: 1790, h: 56 }, { art: 'world/b_oldhouse', x: 2200, h: 250, flip: true },
-    { art: 'world/p_logs', x: 2500, h: 36 }, { art: 'world/p_hay', x: 600, y: 150, h: 40 }],
+    { art: 'world/p_logs', x: 2500, h: 36 }, { art: 'world/p_hay', x: 600, y: 150, h: 40 }, { art: 'world/p_sign', x: 1000, h: 64 }, { art: 'world/p_cat', x: 2080, y: 6, h: 28, anim: 'breathe', flip: true }],
   npcs: [{ npc: 'olan', x: 870, y: 46 }, { npc: 'kanina', x: 1560, y: 44 }, { npc: 'sinda', x: 1830, y: 60 }, { npc: 'gsd', x: 2420, y: 44 }],
   exits: [{ side: 'down', x: 1180, to: 'hm_plaza' }, { side: 'left', to: 'west_coast' }] });
 // 后街：昏暗的小巷，月光酒馆（官方 Lv.49 的地下城区域，这里只做门面）
 defineScene('hm_backstreet', { name: '赫顿玛尔', area: '后街', kind: 'town', width: 2400, theme: 'backstreet', bgm: 'backstreet', ambient: 'lantern', map: [46, 56],
   props: [{ art: 'world/b_alley', x: 300, h: 250 }, { art: 'world/b_tavern', x: 960, h: 260 }, { art: 'world/p_barrels', x: 1210, h: 50 }, { art: 'world/b_goblinstall', x: 1680, h: 200 }, { art: 'world/b_alley', x: 2160, h: 240, flip: true },
-    { art: 'world/p_blackcat', x: 1400, y: 8, h: 32, anim: 'breathe' }],
+    { art: 'world/p_blackcat', x: 1400, y: 8, h: 32, anim: 'breathe' }, { art: 'world/p_chest', x: 1880, h: 32 }, { art: 'world/p_crates', x: 620, y: 160, h: 50 }],
   npcs: [{ npc: 'paris', x: 560, y: 44 }, { npc: 'sherlock', x: 1720, y: 46 }, { npc: 'minette', x: 2230, y: 30 }],
   exits: [{ side: 'up', x: 1320, to: 'hm_plaza' }, { side: 'up', x: 960, label: '月光酒馆', locked: '月光酒馆（Lv.49 地下城区域）还没有开放', door: true }] });
 // 西海岸商贸区：港口（去天帷巨兽的船，未开放）、首饰店；东端是通往天空之城的云梯（官方：天空之城在西海岸东部）
@@ -153,13 +155,14 @@ defineScene('hm_backstreet', { name: '赫顿玛尔', area: '后街', kind: 'town
 defineScene('west_coast', { name: '西海岸', area: '商贸区', kind: 'town', width: 2800, theme: 'westcoast', bgm: 'westcoast', ambient: 'gulls', map: [24, 20],
   props: [{ art: 'world/b_harbor', x: 420, h: 220 }, { art: 'world/b_ship', x: 1040, h: 240 }, { art: 'world/p_anchor', x: 1330, h: 66 }, { art: 'world/b_jewelry', x: 1640, h: 220 }, lamp(1900),
     { art: 'world/p_net', x: 2080, h: 90, anim: 'hang' }, { art: 'world/p_fishcrates', x: 2400, h: 44 }, { art: 'world/p_gull', x: 760, h: 70 }, { art: 'world/p_buoy', x: 2220, h: 34 },
-    { art: 'world/b_skystair', x: 2600, h: 310 }],
+    { art: 'world/b_skystair', x: 2600, h: 310 }, { art: 'world/p_rope', x: 1240, y: 170, h: 26 }, { art: 'world/p_boat', x: 200, h: 40 }, { art: 'world/p_bollard', x: 1480, h: 30 }],
   npcs: [{ npc: 'roget', x: 470, y: 42 }, { npc: 'daphne', x: 1680, y: 44 }, { npc: 'lorian', x: 1960, y: 56 }, { npc: 'kakun', x: 2300, y: 44 }],
   exits: [{ side: 'right', to: 'hm_oldtown' }, { side: 'left', to: 'wc_guild' }, { side: 'up', x: 2600, to: 'sky_castle', minLv: 14, label: '天空之城', optional: true },
     { side: 'up', x: 1040, label: '天帷巨兽', locked: '去天帷巨兽的船还没有起航（Lv.27 区域，暂未开放）' }] });
 // 西海岸魔法师公会：莎兰的魔法学院
 defineScene('wc_guild', { name: '西海岸', area: '魔法师公会', kind: 'town', width: 2600, theme: 'magicGuild', bgm: 'guild', ambient: 'magic', map: [10, 20],
   props: [{ art: 'world/b_guildhall', x: 660, h: 300 }, { art: 'world/p_magiclamp', x: 1000, h: 130, glow: [0.5, 0.2, 36, '190,140,255'] }, { art: 'world/b_academy', x: 1380, h: 300 }, { art: 'world/p_crystal', x: 1620, h: 70, anim: 'bob', glow: [0.5, 0.35, 40, '190,140,255'] },
-    { art: 'world/b_library', x: 1980, h: 280 }, { art: 'world/b_teleporter', x: 2380, h: 100, glow: [0.5, 0.35, 60, '120,210,255'] }, { art: 'world/p_books', x: 1180, h: 50 }, { art: 'world/p_cauldron', x: 2200, y: 150, h: 52 }],
+    { art: 'world/b_library', x: 1980, h: 280 }, { art: 'world/b_teleporter', x: 2380, h: 100, glow: [0.5, 0.35, 60, '120,210,255'] }, { art: 'world/p_books', x: 1180, h: 50 }, { art: 'world/p_cauldron', x: 2200, y: 150, h: 52 },
+    { art: 'world/p_telescope', x: 2140, h: 66 }, { art: 'world/p_blueflower', x: 900, h: 40, glow: [0.5, 0.3, 26, '120,200,255'] }, { art: 'world/p_blueflower', x: 1830, h: 40, glow: [0.5, 0.3, 26, '120,200,255'] }],
   npcs: [{ npc: 'sharan', x: 730, y: 44 }, { npc: 'alice', x: 1180, y: 70 }, { npc: 'ophelia', x: 1720, y: 44 }, { npc: 'marin', x: 2380, y: 40 }],
   exits: [{ side: 'right', to: 'west_coast' }] });

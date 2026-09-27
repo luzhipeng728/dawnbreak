@@ -159,7 +159,7 @@ function backToCharSelect() {
   game.player = null; game.dungeon = null; game.paused = false; game.cutin = null; game.slowmo = false; game.timeStop = 0; game.timers.length = 0;
   game.combo = 0; game.comboT = 0; game.maxCombo = 0; game.lastTarget = null; game.job = null;
   world = null; inv.potCd = 0; input.clearAll(); ui.log.length = 0;
-  menus.sel = null; menus.skSel = null; menus.enSel = null; shopStock.stock = null;
+  menus.sel = null; menus.skSel = null; menus.enSel = null;
   save.data = null; save.live = false;
   game.scene = 'title'; game.room = { x0: 0, x1: 1600, theme: 'forest', seed: 3 }; if (!IMG.title) buildRoomArt(game.room); cam.x = 200; cam.shake = 0;
   menus.open('charselect'); music.play('title');

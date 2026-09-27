@@ -96,7 +96,11 @@ function drawQuestTracker(c) {
   if (hint) { rows.push({ q: hint, head: true, hint: true }); rows.push({ q: hint, txt: hint.lvl > game.lvl ? `Lv.${hint.lvl} 后可接取` : `去找 ${qNpcWhere(hint.npc)} 接取`, hintRow: true }); }
   const H = 40 + rows.reduce((s, r) => s + (r.head ? 36 : 28), 0) + 6;
   questUI.trackRect = { x: x0 - 30, y: y0, w: W + 30, h: H };
-  c.save();
+  // 城镇里右侧 NPC 的名字 / 头顶任务标记被追踪栏盖住时，追踪栏淡出（NPC 离开这块区域后恢复）
+  const cover = !dg && game.scene === 'town' && world && world.npcs.some(e => { const X = sx(e.x) * 2, Y = sy(e.y, e.npc.h + 16) * 2; return X + 60 > x0 - 30 && X - 60 < x1 && Y + 10 > y0 && Y - 90 < y0 + H; });
+  const now = performance.now(), fdt = Math.min(0.1, (now - (questUI.fadeT || now)) / 1000); questUI.fadeT = now;
+  questUI.fade = clamp((questUI.fade ?? 1) + (cover ? -fdt * 5 : fdt * 3), 0.1, 1);
+  c.save(); c.globalAlpha = questUI.fade;
   const bg = c.createLinearGradient(x0, 0, x1, 0); bg.addColorStop(0, 'rgba(10,8,14,0)'); bg.addColorStop(0.18, 'rgba(10,8,14,.55)'); bg.addColorStop(1, 'rgba(10,8,14,.7)');
   c.fillStyle = bg; c.fillRect(x0 - 30, y0, W + 30, H);
   c.fillStyle = 'rgba(232,194,106,.5)'; c.fillRect(x0 + 40, y0, W - 40, 2);
@@ -128,7 +132,7 @@ function drawQuestTracker(c) {
 }
 // 点击追踪栏 → 打开任务日志（手机上没有 F1 / L 键时也能打开）
 wcan.addEventListener('click', ev => {
-  const R = questUI.trackRect; if (!R || !game.player || !['town', 'dungeon'].includes(game.scene) || menus.modal()) return;
+  const R = questUI.trackRect; if (!R || !game.player || !['town', 'dungeon'].includes(game.scene) || menus.modal() || (questUI.fade < 0.5 && game.scene === 'town' && world && world.hover)) return;   // 淡出时点到下面的 NPC：交给 NPC 对话
   const r = wcan.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * 1920, y = (ev.clientY - r.top) / r.height * 1080;
   if (x >= R.x && x <= R.x + R.w && y >= R.y && y <= R.y + R.h) { menus.open('quests'); sfx.open(); }
 });

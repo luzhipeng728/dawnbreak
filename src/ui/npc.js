@@ -19,11 +19,20 @@ function openNpc(N) {
   sfx.open();
   // 先记下“与此 NPC 对话”的任务目标，再发 npcTalk 事件（任务引擎监听它推进进度），窗口里播放这些目标的台词
   const talks = typeof questTalksFor === 'function' ? questTalksFor(N.id) : [];
-  npcSet(N, talks.length ? 'talk' : 'greet', null, talks.length ? talks.flatMap(t => (t.g.lines && t.g.lines.length ? t.g.lines : [`（关于「${t.q.name}」）……原来如此，我知道了。`]).map(questFmt)) : null);
+  // 没有“与我对话”的目标时：有能交的任务就直接进入交任务，有能接的主线 / 转职任务就直接进入接任务（不用先点右侧列表）
+  const pickQ = !talks.length && typeof questsOfNpc === 'function' ? npcAutoQuest(N) : null;
+  if (pickQ) npcSet(N, pickQ.mode, pickQ.id);
+  else npcSet(N, talks.length ? 'talk' : 'greet', null, talks.length ? talks.flatMap(t => (t.g.lines && t.g.lines.length ? t.g.lines : [`（关于「${t.q.name}」）……原来如此，我知道了。`]).map(questFmt)) : null);
   npcUI.talks = talks;
   if (typeof questsOnTalk === 'function') questsOnTalk(N.id);
   bus.emit('npcTalk', { id: N.id });
   if (menus.isOpen('npc')) menus.refresh('npc', N); else menus.open('npc', N);
+}
+function npcAutoQuest(N) {
+  const qs = questsOfNpc(N.id), ready = qs.find(id => questState(id) === 'ready');
+  if (ready) return { mode: 'done', id: ready };
+  const offer = qs.find(id => questState(id) === 'avail' && ['main', 'job'].includes(QUESTS[id].type));
+  return offer ? { mode: 'offer', id: offer } : null;
 }
 function npcGreet(N) { const L = N.greet && N.greet.length ? N.greet : N.lines; return questFmt(pick(L)); }
 function npcSet(N, mode, qid, pages) {
@@ -133,7 +142,8 @@ addEventListener('keydown', e => {
   e.preventDefault();
   if (npcUI.finishTyping && npcUI.finishTyping()) return;
   if (npcUI.page < npcUI.pages.length - 1 || npcUI.mode === 'talk') { npcAdvance(); return; }
-  const b = menus.wins.npc && menus.wins.npc.querySelector('.qbtns .btn'); if (b) b.click();
+  const b = menus.wins.npc && menus.wins.npc.querySelector('.qbtns .btn'); if (b) { b.click(); return; }
+  const qi = npcUI.mode === 'greet' && menus.wins.npc && menus.wins.npc.querySelector('.npcmenu .qitem'); if (qi) qi.click();   // 寒暄页按 X：打开第一个任务
 });
 
 /* ---- 解除虚弱（修理 repairCost / repairAll 在装备与经济的 game/items.js） ---- */

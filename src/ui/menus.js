@@ -18,9 +18,6 @@ function h(tag, attrs = {}, ...kids) {
 }
 // 各模块自带样式：addStyle(css)（新窗口的 CSS 写在自己的 JS 文件里，不用都挤进 shell_top.html）
 function addStyle(css) { document.head.appendChild(h('style', {}, css)); }
-const statTxt = { atk: '攻击力', def: '防御力', hp: 'HP', mp: 'MP', str: '力量', crit: '暴击率', critDmg: '暴击伤害', spd: '速度' };
-const fmtStat = (k, v) => (k === 'crit' || k === 'critDmg' || k === 'spd') ? `+${(v * 100).toFixed(1)}%` : `+${fmtNum(v)}`;
-const shopStock = {};
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 // 快捷键 → 窗口名（窗口名分配见 docs/ARCHITECTURE.md）
 const UI_WIN = { inv: 'inv', status: 'status', skills: 'skills', quests: 'quests', map: 'worldmap', settings: 'settings', pvp: 'duel' };
@@ -28,11 +25,11 @@ const UI_ACTIONS = new Set(['menu', 'confirm', 'uiMode', 'dropNames', 'hideRank'
 const menus = {
   stack: [], wins: {}, tip: null, sel: null, z: 10,
   // 默认阻挡移动的窗口（对话 / NPC 服务 / 全屏界面）；别人的窗口也可以用 win({ block }) 或 data-block 自己声明
-  BLOCK: new Set(['title', 'charselect', 'newgame', 'npc', 'npcquest', 'job', 'dungeon', 'result', 'system', 'shop', 'gear', 'enhance', 'storage', 'disassemble', 'sell', 'repair', 'keyconfig', 'ask', 'duel']),
+  BLOCK: new Set(['title', 'charselect', 'newgame', 'npc', 'npcquest', 'job', 'dungeon', 'result', 'system', 'shop', 'enhance', 'storage', 'disassemble', 'sell', 'repair', 'keyconfig', 'ask', 'duel']),
   // 打开时隐藏 HUD 底栏的窗口（NPC 对话在屏幕下方，和底栏重叠）
   HUD_HIDE: new Set(['npc', 'npcquest', 'title', 'charselect', 'newgame']),
   // 首次打开的默认位置（官方：物品栏在右、个人信息在左）
-  AT: { inv: 'right', status: 'left', quests: 'left', storage: 'left', shop: 'left', gear: 'left', sell: 'left' },
+  AT: { inv: 'right', status: 'left', quests: 'left', storage: 'left', shop: 'left', sell: 'left' },
   blocking(n) { const el = this.wins[n]; if (el && el.dataset.block) return el.dataset.block !== '0'; return this.BLOCK.has(n); },
   modal() { return game.scene === 'title' || isTyping() || this.stack.some(n => this.blocking(n)); },
   hudHidden() { return this.stack.some(n => this.HUD_HIDE.has(n) || (this.wins[n] && this.wins[n].dataset.hud === 'hide')); },
@@ -54,14 +51,33 @@ const menus = {
   mount(name, el) {
     el.dataset.win = name; dom.appendChild(el); this.wins[name] = el; this.stack.push(name);
     el.addEventListener('pointerdown', () => this.focus(el.dataset.win), true);
-    if (el.classList.contains('win')) { this.place(name, el); this.makeDraggable(el); }
+    if (el.classList.contains('win')) { this.place(name, el); this.makeDraggable(el); this.pack(); }
     this.focus(name);
+  },
+  // 自动并排：同时开着的几个窗口（都没被玩家拖过）左右放得下就并排（M 左、K 中、I 右）；
+  // 放不下时技能窗口 K 改成紧凑版（隐藏右侧详情，悬停图标看说明），1280 宽也能同时摆下 I / M / K
+  pack() {
+    const wp = uiPref('winPos') || {}, W = dom.clientWidth, H = dom.clientHeight, sk = this.wins.skills;
+    const list = this.stack.filter(n => this.wins[n] && this.wins[n].classList.contains('win') && this.wins[n].dataset.drag !== '0');
+    const rank = n => ({ left: 0, center: 1, right: 2 })[this.wins[n].dataset.at || this.AT[n] || 'center'] ?? 1;
+    const els = list.sort((a, b) => rank(a) - rank(b)).map(n => this.wins[n]);
+    const total = () => els.reduce((s, e) => s + e.offsetWidth, 0), fits = () => total() + 8 * (els.length + 1) <= W;
+    if (sk) {   // 紧凑版只在“完整版放不下、紧凑版放得下”时使用；切换后按记住的位置 / 当前位置重新摆一次（宽度变了）
+      const was = sk.classList.contains('compact');
+      sk.classList.remove('compact'); if (list.length >= 2 && !fits()) { sk.classList.add('compact'); if (!fits()) sk.classList.remove('compact'); }
+      if (was !== sk.classList.contains('compact')) { if (wp.skills) this.place('skills', sk); else this.moveWin(sk, sk.offsetLeft, sk.offsetTop); }
+    }
+    if (list.length < 2 || list.some(n => wp[n]) || !fits()) return;
+    const gap = Math.min(40, (W - total()) / (els.length + 1));
+    let x = (W - total() - gap * (els.length - 1)) / 2;
+    for (const e of els) { this.moveWin(e, x, Math.max(0, (H - e.offsetHeight) * 0.3)); x += e.offsetWidth + gap; }
   },
   close(name) {
     const el = this.wins[name]; if (!el && !this.isOpen(name)) return;
     const wasBlocking = this.blocking(name);
     if (el) el.remove(); delete this.wins[name];
     this.stack = this.stack.filter(n => n !== name); this.hideTip();
+    if (this.wins.skills && this.wins.skills.classList.contains('compact')) this.pack();   // 技能窗口是紧凑版：别的窗口关了就看看能不能恢复完整版
     if (!this.stack.length && game.scene === 'dungeon' && !(game.dungeon && game.dungeon.state === 'result')) game.paused = false;
     if (wasBlocking || game.scene === 'dungeon') input.clearAll();
   },
@@ -90,6 +106,7 @@ const menus = {
     requestAnimationFrame(() => [...el.querySelectorAll(SCR)].forEach((e, i) => { if (olds[i]) e.scrollTop = olds[i]; }));
     if (el._arg === undefined) el._arg = arg ?? old._arg;
     el.dataset.win = name; el.style.zIndex = old.style.zIndex;
+    if (old.classList.contains('compact')) el.classList.add('compact');
     if (old.dataset.placed) { el.style.left = old.style.left; el.style.top = old.style.top; el.style.transform = 'none'; el.dataset.placed = '1'; }
     old.replaceWith(el); this.wins[name] = el;
     el.addEventListener('pointerdown', () => this.focus(el.dataset.win), true);
@@ -196,41 +213,7 @@ const menus = {
     el.classList.add('askwin'); el._onConfirm = go;
     return el;
   },
-  /* ---------------- 以下为旧窗口（背包 / 商店 / 强化 / 地下城选择 / 结算），负责人合并后会在自己的文件里覆盖 ---------------- */
-  itemTip(it) {
-    const R = RARITY[it.rar || 0];
-    if (it.kind !== 'equip') { const C = CONSUMABLES[it.key] || {}; return `<div class="nm r${it.rar || 0}">${it.name}</div><div class="dim small">${C.kind === 'use' ? '消耗品' : '材料'}</div><hr>${C.hp ? `恢复 ${C.hp * 100}% HP<br>` : ''}${C.mp ? `恢复 ${C.mp * 100}% MP<br>` : ''}${it.key === 'crystal' ? '强化装备所需的材料' : ''}${it.key === 'guard' ? '强化失败时装备不会破碎' : ''}${it.key === 'coin' ? '倒下时可原地复活' : ''}<hr><span class="gold">出售价格 ${fmtNum(Math.round((it.price || 10) * 0.2))} G</span>`; }
-    const cur = inv.equip[it.slot];
-    let s = `<div class="nm r${it.rar}">${it.enh ? '+' + it.enh + ' ' : ''}${it.name}</div><div class="dim small">${R.name} · ${GRADES[it.grade]} · ${SLOT_NAME[it.slot]} · 需要等级 ${it.lvl}</div><hr>`;
-    for (const k in it.st) {
-      let v = it.st[k];
-      if (k === 'atk' && it.slot === 'weapon' && it.enh) v += Math.round(v * enhBonus(it.enh));
-      let cmp = '';
-      if (cur && cur !== it) { let cv = cur.st[k] || 0; if (k === 'atk' && cur.slot === 'weapon' && cur.enh) cv += Math.round(cv * enhBonus(cur.enh)); const d = v - cv; if (Math.abs(d) > 1e-6) cmp = ` <span class="${d > 0 ? 'up' : 'down'}">(${d > 0 ? '▲' : '▼'}${k === 'crit' ? (Math.abs(d) * 100).toFixed(1) + '%' : fmtNum(Math.abs(d))})</span>`; }
-      s += `${statTxt[k] || k} ${fmtStat(k, v)}${cmp}<br>`;
-    }
-    if (it.enh) s += `<span style="color:#9fe0ff">强化 +${it.enh}：${it.slot === 'weapon' ? '攻击力' : it.st.def ? '防御力' : '力量'}提升</span><br>`;
-    if (it.desc) s += `<hr><span class="r5">${it.desc}</span><br>`;
-    if (cur && cur !== it) s += `<hr><span class="dim small">当前装备：<span class="r${cur.rar}">${cur.enh ? '+' + cur.enh + ' ' : ''}${cur.name}</span></span><br>`;
-    s += `<hr><span class="gold">出售价格 ${fmtNum(Math.round(it.price * 0.2))} G</span>`;
-    return s;
-  },
-  slotEl(it, { onclick, ondbl, extra = '', sel } = {}) {
-    const el = h('div', { class: `slot b${it ? it.rar || 0 : 0}${sel ? ' sel' : ''}` });
-    if (it) {
-      el.appendChild(h('img', { src: itemIconURL(it) }));
-      if (it.n > 1) el.appendChild(h('span', { class: 'n' }, String(it.n)));
-      if (it.enh) el.appendChild(h('span', { class: 'e' }, '+' + it.enh));
-      el.addEventListener('mousemove', ev => this.showTip(this.itemTip(it), ev));
-      el.addEventListener('mouseleave', () => this.hideTip());
-    }
-    if (extra) el.appendChild(h('span', { class: 'lbl' }, extra));
-    if (onclick) el.addEventListener('click', () => { sfx.click(); onclick(); });
-    if (ondbl) el.addEventListener('dblclick', () => ondbl());
-    return el;
-  },
-
-  /* ---------------- 地下城选择 ---------------- */
+  /* ---------------- 地下城选择 / 结算（背包、商店、强化等物品窗口在 ui/items/*） ---------------- */
   w_dungeon(arg = {}) {
     // 从区域地图的门口进入：只显示这一个地下城（官方做法）；arg.dungeon 缺省时显示当前场景的全部门
     const S = SCENES[arg.scene || (world && world.S.id)] || {}, ids = arg.dungeon ? [arg.dungeon] : (S.gates || []).filter(gateVisible).map(g => g.dungeon);
@@ -256,7 +239,7 @@ const menus = {
     };
     const listEl = ids.length > 1 ? h('div', { class: 'dglist' }, ids.map(id => { const d = DUNGEONS[id]; return h('div', { class: 'dgi', 'data-id': d.id, onclick: () => { sel = d; diff = Math.min(diff, save.data.unlocked[d.id] || 0); sfx.click(); render(); } }, h('b', {}, d.name), h('small', {}, `Lv.${d.lvl[0]}~${d.lvl[1]}`)); })) : null;
     if (listEl) body.append(listEl); body.append(detail); render();
-    return this.win(`${S.name || ''} · ${sel.name}`, body, { w: listEl ? 44 : 32 });
+    return this.win(S.name && S.name !== sel.name ? `${S.name} · ${sel.name}` : sel.name, body, { w: listEl ? 44 : 32 });
   },
 
   /* ---------------- 结算 + 翻牌 ---------------- */
@@ -302,101 +285,6 @@ const menus = {
     return el;
   },
 
-  /* ---------------- 角色与背包（I / M） ---------------- */
-  w_inv(opts = {}) {
-    const p = game.player, st = inv.equipStats();
-    const eq = h('div', { class: 'eqgrid' }, SLOTS.map(s => this.slotEl(inv.equip[s], { extra: inv.equip[s] ? '' : SLOT_NAME[s], onclick: () => { if (inv.equip[s]) { inv.unwear(s); this.refresh('inv'); } } })));
-    const cv = h('canvas', { width: 110, height: 130, style: 'width:6.9em;height:8.1em;image-rendering:pixelated;background:#120e16;border:.1em solid #3a3040' });
-    requestAnimationFrame(() => { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.translate(55, 124); p.model.draw(x, POSE.idle, game.t, {}); });
-    const S = h('div', { class: 'stats' },
-      '等级', h('b', {}, `Lv.${game.lvl}`), 'HP', h('b', {}, `${fmtNum(p.hp)} / ${fmtNum(p.hpMax)}`), 'MP', h('b', {}, `${fmtNum(p.mp)} / ${fmtNum(p.mpMax)}`),
-      '攻击力', h('b', {}, fmtNum(p.baseStats ? p.baseStats.atk : p.atk)), '防御力', h('b', {}, fmtNum(p.def)), '力量', h('b', {}, fmtNum(CLASSES[p.cls].str0 + CLASSES[p.cls].strPer * (game.lvl - 1) + st.str)),
-      '暴击率', h('b', {}, (p.crit * 100).toFixed(1) + '%'), '暴击伤害', h('b', {}, (p.critDmg * 100).toFixed(0) + '%'), 'SP', h('b', {}, String(game.sp || 0)), '金币', h('b', { class: 'gold' }, `${fmtNum(game.gold)} G`));
-    let sel = this.sel && inv.items.includes(this.sel) ? this.sel : null;
-    const grid = h('div', { class: 'grid' });
-    for (let i = 0; i < inv.cap; i++) {
-      const it = inv.items[i];
-      const cell = this.slotEl(it, { sel: it && it === sel, onclick: () => { if (it) { this.sel = it; this.refresh('inv'); } }, ondbl: () => { if (!it) return; if (it.kind === 'equip') inv.wear(it); else if (it.kind === 'use') inv.use(it.key); this.sel = null; this.refresh('inv'); } });
-      if (it && it.kind === 'use' && typeof dnd !== 'undefined') dnd.source(cell, () => ({ type: 'item', item: it, from: 'inv' }));   // 消耗品拖到 HUD 快捷栏
-      grid.appendChild(cell);
-    }
-    const shopMode = this.isOpen('shop') || this.isOpen('gear');
-    const acts = h('div', { class: 'row', style: 'min-height:2.4em;flex-wrap:wrap' });
-    if (sel) {
-      acts.append(h('span', { class: `r${sel.rar || 0}`, style: 'font-weight:800' }, sel.name));
-      if (sel.kind === 'equip') acts.append(h('button', { class: 'btn', onclick: () => { inv.wear(sel); this.sel = null; this.refresh('inv'); } }, '装备'));
-      if (sel.kind === 'use') { acts.append(h('button', { class: 'btn', onclick: () => { inv.use(sel.key); this.refresh('inv'); } }, '使用')); acts.append(h('span', { class: 'small dim' }, '放入快捷栏：'), h('div', { class: 'keyrow' }, [0, 1, 2, 3, 4, 5].map(i => h('span', { class: 'key' + (inv.quick[i] === sel.key ? ' on' : ''), onclick: () => { inv.quick[i] = inv.quick[i] === sel.key ? null : sel.key; sfx.click(); this.refresh('inv'); } }, String(i + 1))))); }
-      acts.append(h('button', { class: 'btn red', onclick: () => { const price = Math.round((sel.price || 10) * 0.2) * (sel.n || 1); game.gold += price; inv.remove(sel); this.sel = null; sfx.coin(); toastMsg(`出售获得 ${fmtNum(price)} G`, '#ffd23a'); this.refresh('inv'); save.write(); } }, shopMode ? '出售' : '出售（×0.2）'));
-    } else acts.append(h('span', { class: 'small dim' }, '单击选中物品，双击直接装备 / 使用；点击装备栏卸下装备'));
-    const body = h('div', { class: 'row', style: 'align-items:flex-start;gap:1.2em' },
-      h('div', { class: 'col', style: 'align-items:center' }, cv, eq), h('div', { class: 'col' }, S),
-      h('div', { class: 'col' }, h('div', { class: 'row' }, h('b', { class: 'gold' }, '背包'), h('span', { class: 'sp' }), h('span', { class: 'small dim' }, `${inv.items.length}/${inv.cap}`)), grid, acts));
-    const el = this.win('角色 · 背包', body, { w: 58 }); el._arg = opts; return el;
-  },
-
-  /* ---------------- 商店（药剂师） ---------------- */
-  w_shop(arg) {
-    const npc = arg && arg.npc; if (arg && arg.shop === 'linus') return this.w_gear(npc);
-    const goods = ['hpS', 'hpM', 'hpL', 'mpS', 'mpM', 'elixir', 'crystal', 'guard', 'coin'];
-    const body = h('div', { class: 'col' },
-      h('div', { class: 'dim' }, npc ? `“${pick(npc.lines)}”` : ''),
-      h('div', { class: 'col', style: 'max-height:26em;overflow:auto' }, goods.map(k => {
-        const C = CONSUMABLES[k], it = { kind: C.kind, key: k, rar: k === 'elixir' ? 3 : 0 };
-        const buy = (n) => { const cost = C.price * n; if (game.gold < cost) { toastMsg('金币不足'); sfx.error(); return; } if (k === 'coin') { game.gold -= cost; save.data.coins += n; } else if (!inv.add(makeConsumable(k, n))) { toastMsg('背包已满'); return; } else game.gold -= cost; sfx.coin(); save.write(); this.refresh('shop', npc); this.refresh('inv'); };
-        return h('div', { class: 'shopi' }, h('img', { src: itemIconURL(it) }), h('div', { class: 'sp' }, h('b', {}, C.name), h('div', { class: 'small gold' }, `${fmtNum(C.price)} G`), h('div', { class: 'small dim' }, k === 'coin' ? `持有 ${save.data.coins}` : `持有 ${inv.count(k)}`)),
-          h('button', { class: 'btn', onclick: () => buy(1) }, '购买'), h('button', { class: 'btn', onclick: () => buy(10) }, '×10'));
-      })),
-      h('div', { class: 'row' }, h('b', { class: 'gold' }, `金币 ${fmtNum(game.gold)} G`), h('span', { class: 'sp' }), h('button', { class: 'btn blue', onclick: () => this.open('inv') }, '打开背包（出售物品）')));
-    const el = this.win(npc ? npc.name : '商店', body, { w: 30 }); el._arg = arg; return el;
-  },
-  /* ---------------- 行商（装备） ---------------- */
-  w_gear(npc) {
-    if (!shopStock.stock || shopStock.stockLvl !== game.lvl) { shopStock.stockLvl = game.lvl; shopStock.stock = Array.from({ length: 6 }, (_, i) => { const it = makeEquip(i === 0 ? 'weapon' : pick(SLOTS), clamp(game.lvl + rndi(0, 2), 1, 30), i < 2 ? 2 : 1); it.price = Math.round(it.price * 1.6); return it; }); }
-    const body = h('div', { class: 'col' },
-      h('div', { class: 'dim' }, `“${pick(npc.lines)}”`),
-      h('div', { class: 'col' }, shopStock.stock.map(it => h('div', { class: 'shopi' }, this.slotEl(it), h('div', { class: 'sp' }, h('b', { class: `r${it.rar}` }, it.name), h('div', { class: 'small dim' }, `${SLOT_NAME[it.slot]} · Lv.${it.lvl}`), h('div', { class: 'small gold' }, `${fmtNum(it.price)} G`)),
-        h('button', { class: 'btn', onclick: (ev) => { if (ev.currentTarget.classList.contains('off')) return; if (game.gold < it.price) { toastMsg('金币不足'); sfx.error(); return; } if (!inv.add(it)) { toastMsg('背包已满'); return; } ev.currentTarget.classList.add('off'); game.gold -= it.price; shopStock.stock.splice(shopStock.stock.indexOf(it), 1); sfx.coin(); save.write(); this.refresh('gear', npc); this.refresh('inv'); } }, '购买')))),
-      h('div', { class: 'row' }, h('b', { class: 'gold' }, `金币 ${fmtNum(game.gold)} G`), h('span', { class: 'sp' }), h('button', { class: 'btn blue', onclick: () => this.open('inv') }, '打开背包')));
-    const el = this.win(npc.name, body, { w: 32 }); el._arg = npc; return el;
-  },
-  /* ---------------- 强化（铁匠） ---------------- */
-  w_enhance(npc) {
-    const all = [...SLOTS.map(s => inv.equip[s]).filter(Boolean), ...inv.items.filter(i => i.kind === 'equip')];
-    let sel = this.enSel && all.includes(this.enSel) ? this.enSel : all[0];
-    this.enSel = sel;
-    const grid = h('div', { class: 'grid', style: 'grid-template-columns:repeat(6,3.3em)' }, all.map(it => this.slotEl(it, { sel: it === sel, onclick: () => { this.enSel = it; this.refresh('enhance', npc); } })));
-    const right = h('div', { class: 'col', style: 'width:20em;align-items:center' });
-    if (sel) {
-      const c = enhCost(sel), rate = sel.enh < 15 ? ENH_RATE[sel.enh] : 0;
-      const bar = h('i'), msg = h('div', { class: 'bigtxt', style: 'min-height:1.4em' });
-      let useGuard = false;
-      const guardBox = h('label', { class: 'small' }, h('input', { type: 'checkbox', onchange: e => { useGuard = e.target.checked; } }), ` 使用强化保护券（+10 以上失败时生效，持有 ${inv.count('guard')}）`);
-      const risk = sel.enh < 3 ? '失败不会降级' : sel.enh < 10 ? '失败会降 1 级' : sel.slot === 'weapon' && sel.enh < 12 ? `失败会降为 +${sel.enh === 10 ? 7 : 8}` : '⚠ 失败装备会破碎！';
-      const go = h('button', { class: 'btn big' + (sel.enh >= 15 ? ' off' : ''), onclick: () => {
-        go.classList.add('off');
-        const cost = enhCost(sel); if (game.gold < cost.gold || inv.count('crystal') < cost.crystal) { toastMsg('材料或金币不足'); sfx.error(); go.classList.remove('off'); return; }
-        sfx.charge(); bar.style.transition = 'width 1.1s linear'; bar.style.width = '100%';
-        setTimeout(() => {
-          const owned = inv.items.includes(sel) || SLOTS.some(s => inv.equip[s] === sel);
-          if (!owned || !this.isOpen('enhance')) return;
-          const res = tryEnhance(sel, useGuard);
-          if (res.err) { toastMsg(res.err); go.classList.remove('off'); return; }
-          if (res.ok) { msg.textContent = `成功！+${res.lvl}`; msg.style.color = '#6aff8a'; sfx.enhanceOk(); if (res.lvl >= 10) toastMsg(`【公告】勇士将 ${sel.name} 强化到了 +${res.lvl}！`, '#ffd23a'); }
-          else if (res.broken) { msg.textContent = '装备破碎……'; msg.style.color = '#ff4a4a'; sfx.enhanceFail(); for (const s of SLOTS) if (inv.equip[s] === sel) delete inv.equip[s]; inv.remove(sel); giveItem(makeConsumable('crystal', Math.round(sel.lvl * 3))); this.enSel = null; recalcStats(game.player); }
-          else { msg.textContent = res.guard ? `失败（保护券生效）+${res.lvl}` : `失败 +${res.from} → +${res.lvl}`; msg.style.color = '#ff8a8a'; sfx.enhanceFail(); }
-          recalcStats(game.player); save.write();
-          setTimeout(() => this.refresh('enhance', npc), 900);
-        }, 1150);
-      } }, '强化');
-      right.append(this.slotEl(sel), h('div', { class: `r${sel.rar}`, style: 'font-weight:900;font-size:1.2em' }, sel.name),
-        h('div', { class: 'bigtxt' }, `+${sel.enh} → +${Math.min(15, sel.enh + 1)}`),
-        h('div', {}, `成功率 `, h('b', { style: 'color:#ffe070' }, `${(rate * 100).toFixed(1)}%`), h('span', { class: 'small dim' }, `  （${risk}）`)),
-        h('div', { class: 'small' }, `消耗：${fmtNum(c.gold)} G + 无色晶块 ×${c.crystal}（持有 ${inv.count('crystal')}）`), guardBox,
-        h('div', { class: 'enhbar', style: 'width:100%' }, bar), go, msg);
-    } else right.append(h('div', { class: 'dim' }, '没有可以强化的装备'));
-    const body = h('div', { class: 'col' }, h('div', { class: 'dim' }, `“${pick(npc ? npc.lines : ['来强化吧'])}”`), h('div', { class: 'row', style: 'align-items:flex-start;gap:1em' }, grid, right));
-    const el = this.win(npc ? npc.name + ' · 装备强化' : '装备强化', body, { w: 46 }); el._arg = npc; return el;
-  },
   /* ---------------- 系统菜单（Esc） ---------------- */
   w_system() {
     const town = game.scene === 'town', dg = game.scene === 'dungeon';
@@ -473,7 +361,6 @@ function uiKey(a) {
   if (a === 'menu') { menus.closeTop(); sfx.click(); return; }
   let w = UI_WIN[a];
   if (w) {
-    if (w === 'status' && typeof menus.w_status !== 'function') w = 'inv';   // 个人信息窗口合并前：回退到旧的“角色 · 背包”
     if (typeof menus['w_' + w] !== 'function') { toastMsg(`${ACTION_NAME[a]}：暂未开放`, '#ffd0a0'); sfx.error(); return; }
     const was = menus.isOpen(w); menus.open(w); if (was) sfx.click(); else sfx.open();
     return;

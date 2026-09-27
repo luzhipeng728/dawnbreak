@@ -231,10 +231,25 @@ class Passerby {
   draw(c) {
     const X = sx(this.x), Y = sy(this.y); if (this.a <= 0 || X < -80 || X > WW + 80) return;
     c.save(); c.globalAlpha = this.a; c.translate(X, Y); c.scale(this.face, 1); this.model.draw(c, this.pose, game.t + this.seed, NO_OPTS); c.restore();
+  }
+  // 名牌（公会 + 名字）：所有角色画完后由 drawCrowdLabels 统一画，互相错开
+  drawLabel(c, X, ny) {
     c.save(); c.globalAlpha = this.a * 0.95; c.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif'; c.textAlign = 'center'; c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.8)';
-    const ny = sy(this.y, 124);
     if (this.guild) { c.strokeText(`<${this.guild}>`, X, ny - 11); c.fillStyle = '#a8e6a0'; c.fillText(`<${this.guild}>`, X, ny - 11); }
     c.strokeText(this.name, X, ny); c.fillStyle = '#ffffff'; c.fillText(this.name, X, ny); c.restore();
+  }
+}
+// 路人名牌避让：NPC 名牌（含头顶任务标记）优先；路人从前排（y 大）往后排放，和已放好的名牌重叠就往上挪一行，挪两次还挡就不显示
+function drawCrowdLabels(c, npcRects) {
+  const taken = npcRects.slice(), hit = r => taken.some(o => r.x0 < o.x1 && r.x1 > o.x0 && r.y0 < o.y1 && r.y1 > o.y0);
+  c.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif';
+  for (const w of [...world.crowd].sort((a, b) => b.y - a.y)) {
+    const X = sx(w.x); if (w.a <= 0.05 || X < -80 || X > WW + 80) continue;
+    const half = Math.max(c.measureText(w.name).width, w.guild ? c.measureText(`<${w.guild}>`).width : 0) / 2 + 2, top = w.guild ? 20 : 10;
+    let ny = sy(w.y, 124), r = null;
+    for (let k = 0; k < 3; k++, ny -= top + 3) { const t = { x0: X - half, x1: X + half, y0: ny - top, y1: ny + 3 }; if (!hit(t)) { r = t; break; } }
+    if (!r) continue;
+    taken.push(r); w.drawLabel(c, X, ny);
   }
 }
 function crowdSize(S) { return S.crowd ?? (S.interior ? 0 : S.kind === 'field' ? 2 : Math.max(3, Math.round(S.width / 650))); }
@@ -363,11 +378,13 @@ function renderScene(c) {
   const ground = S.props.filter(pr => pr.y !== undefined).map(pr => ({ y: pr.y, draw: cc => { const r = propRect(pr); if (r && r.X < WW + 40 && r.X + r.w > -40) drawProp(cc, pr, r.X, r.Y, r.w, r.h, r.im); } }));
   const list = [...ents, ...fxList, ...world.crowd, ...ground].sort((a, b) => a.y - b.y);
   for (const o of list) o.draw(c);
-  // NPC 名牌 + 任务标记
+  // NPC 名牌 + 任务标记（记下占用的区域，路人名牌避开）
+  const npcRects = [];
   for (const e of world.npcs) {
     const N = e.npc, X = sx(e.x), Y = sy(e.y, N.h + 16), hot = world.near === e || world.hover === e;
     if (X < -100 || X > WW + 100) continue;
     c.font = `bold ${hot ? 11 : 10}px "PingFang SC","Microsoft YaHei",sans-serif`; c.textAlign = 'center';
+    { const half = Math.max(c.measureText(N.name).width, N.title ? c.measureText(`[${N.title}]`).width * 0.8 : 0) / 2 + 3; npcRects.push({ x0: X - half, x1: X + half, y0: Y - 46, y1: Y + 4 }); }
     c.lineWidth = 3; c.strokeStyle = '#000'; c.strokeText(N.name, X, Y); c.fillStyle = hot ? '#fff6c0' : '#ffe070'; c.fillText(N.name, X, Y);
     if (N.title) { c.font = 'bold 8px sans-serif'; c.strokeText(`[${N.title}]`, X, Y - 11); c.fillStyle = '#9fe0ff'; c.fillText(`[${N.title}]`, X, Y - 11); }
     if (typeof drawQuestMarker === 'function') drawQuestMarker(c, X, Y - 24, N.id);
@@ -376,6 +393,7 @@ function renderScene(c) {
       if (mk) { const bob = Math.sin(game.t * 4) * 2; c.font = '900 18px "Arial Black",sans-serif'; c.lineWidth = 4; c.strokeText(mk, X, Y - 24 + bob); c.fillStyle = mk === '?' ? '#6aff6a' : '#ffd23a'; c.fillText(mk, X, Y - 24 + bob); }
     }
   }
+  drawCrowdLabels(c, npcRects);
   // 左右出口：箭头 + 目的地名牌
   for (const ex of S.exits) {
     if (ex.side !== 'left' && ex.side !== 'right') continue;
@@ -471,7 +489,7 @@ function worldUI(c) {
   if (world.banner) drawAreaBanner(c, world.banner);
   if (world.near && !menus.modal()) uiText(`按 ${keyName('attack')} 或点击与 ${world.near.npc.name} 对话`, 960, 700, { size: 28, align: 'center', color: '#ffe8a8', sw: 5 });
   if (typeof drawQuestTracker === 'function') drawQuestTracker(c);
-  drawToasts(c);
+  drawToastBanner(c);
 }
 // 官方式的区域名：屏幕上方中间，金色大字 + 两侧饰线，淡入 0.5 秒、停留、淡出
 function drawAreaBanner(c, B) {
@@ -490,10 +508,6 @@ function drawAreaBanner(c, B) {
   uiText(B.big, 960, y + rise, { size: 64, weight: 900, align: 'center', color: '#ffe6a6', sw: 8, stroke: 'rgba(40,20,0,.9)' });
   if (B.small) uiText(B.small, 960, y + 50 + rise, { size: 30, align: 'center', color: '#f4ecd8', sw: 5 });
   c.restore();
-}
-function drawToasts(c) {
-  let ty = 360;
-  for (let i = toastList.length - 1; i >= 0; i--) { const m = toastList[i]; m.t += 1 / 60; if (m.t > 3) { toastList.splice(i, 1); continue; } c.globalAlpha = m.t > 2.4 ? (3 - m.t) / 0.6 : 1; uiText(m.msg, 960, ty, { size: 28, align: 'center', color: m.col, sw: 5 }); ty += 40; c.globalAlpha = 1; }
 }
 // 鼠标：悬停高亮 / 点击 NPC 对话
 function worldPointer(ev, click) {

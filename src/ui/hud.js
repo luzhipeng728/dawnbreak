@@ -64,11 +64,8 @@ function quickPut(i, key, from) {
 }
 function quickClear(i) { if (inv.quick[i] !== undefined) { inv.quick[i] = null; if (save.data) save.write(); } }
 const quickIconSrc = key => { try { if (typeof itemIconSrc === 'function') return itemIconSrc(key); } catch (e) { /* 回退 */ } return itemIconURL({ kind: 'use', key }); };
-/* ---- 伤害数字 / 屏幕震动 开关（设置 → 画面）：包一层兜底，对应模块原生支持后这层不会冲突 ---- */
-{
-  const dn = drawNumbers; drawNumbers = function (c) { if (uiPref('dmgNum')) return dn.apply(this, arguments); };
-  const uc = updateCamera; updateCamera = function (dt) { const r = uc.apply(this, arguments); if (!uiPref('shake')) { cam.shx = 0; cam.shy = 0; } return r; };
-}
+/* ---- 伤害数字开关（设置 → 画面）：包一层兜底，战斗组在 fx.js 原生支持后这层不冲突；屏幕震动由主线程在 game.js 的 updateCamera 里原生判断 uiPref('shake') ---- */
+{ const dn = drawNumbers; drawNumbers = function (c) { if (uiPref('dmgNum')) return dn.apply(this, arguments); }; }
 const ui = {
   slotMsg: [], combo: { shown: 0, t: 0 }, log: [], seen: new WeakSet(), lastNow: 0,
   flashSlot(i, msg) { this.slotMsg[i] = { msg, t: 0.8 }; sfx.error(); },
@@ -80,7 +77,7 @@ const ui = {
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, ucan.width, ucan.height);
     c.setTransform(uiScale, 0, 0, uiScale, 0, 0);
     if (save.data && game.player && game.scene !== 'title' && !game.paused) save.data.playTime = (save.data.playTime || 0) + rdt;   // 角色选择界面显示的游戏时间
-    this.collectLog();
+    if (this.inGame()) this.collectLog(); else for (const m of toastList) this.seen.add(m);
     const fight = game.scene === 'dungeon' || game.scene === 'test';
     if (this.panelOn()) { this.drawLog(c, rdt); this.drawPanel(c); }
     if (fight) { this.drawCombo(c); this.drawTarget(c); if (game.dungeon) game.dungeon.drawUI(c); if (typeof drawQuestTracker === 'function') drawQuestTracker(c); }

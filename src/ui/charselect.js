@@ -158,9 +158,9 @@ function backToCharSelect() {
   ents.length = 0; projs.length = 0; drops.length = 0; fxList.length = 0; numList.length = 0; groundFx.length = 0;
   game.player = null; game.dungeon = null; game.paused = false; game.cutin = null; game.slowmo = false; game.timeStop = 0; game.timers.length = 0;
   game.combo = 0; game.comboT = 0; game.maxCombo = 0; game.lastTarget = null; game.job = null;
-  world = null; inv.potCd = 0; input.clearAll();
+  world = null; inv.potCd = 0; input.clearAll(); ui.log.length = 0;
   menus.sel = null; menus.skSel = null; menus.enSel = null; shopStock.stock = null;
-  save.data = null;
+  save.data = null; save.live = false;
   game.scene = 'title'; game.room = { x0: 0, x1: 1600, theme: 'forest', seed: 3 }; if (!IMG.title) buildRoomArt(game.room); cam.x = 200; cam.shake = 0;
   menus.open('charselect'); music.play('title');
   return true;
@@ -169,8 +169,9 @@ addStyle(`
 #title .titlego{font-size:1.6em;padding:.6em 3em}
 #charsel,#newgame{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1em;background:radial-gradient(ellipse at 50% 45%,rgba(10,6,16,.35),rgba(6,4,10,.88))}
 #charsel .logo,#newgame .logo{font-size:3em;font-weight:900;letter-spacing:.1em;background:linear-gradient(180deg,#fff8d8,#ffd23a 50%,#c86a1a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .06em 0 #3a1400)}
-.cshd{display:flex;flex-direction:column;align-items:center;gap:.2em}
-.csrow{display:flex;gap:.8em;align-items:flex-end}
+.cshd{display:flex;flex-direction:column;align-items:center;gap:.2em}.cshd .small{color:#e8dcc0;text-shadow:0 0 .3em #000,0 0 .3em #000}
+#charsel{font-size:1.15em}body.touchui #charsel{font-size:1em}
+.csrow{display:flex;gap:.8em;align-items:flex-end;flex-wrap:wrap;justify-content:center;max-width:96%}
 .cslot{position:relative;width:10.5em;height:17em;border:.12em solid #5a4a36;border-radius:.5em;background:linear-gradient(180deg,rgba(40,30,44,.85),rgba(14,10,18,.92));cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:.5em .3em;transition:transform .15s,border-color .15s,box-shadow .15s}
 .cslot:hover{border-color:#b8945a;transform:translateY(-.2em)}
 .cslot.sel{border-color:#ffd23a;box-shadow:0 0 1.2em rgba(255,210,58,.45),inset 0 0 2em rgba(255,210,58,.12);transform:translateY(-.4em)}

@@ -85,6 +85,9 @@ const menus = {
     if (!this.isOpen(name)) return;
     this.hideTip(); const old = this.wins[name];
     const el = this['w_' + name](arg ?? old._arg); if (!el) return;
+    // 保留滚动位置（点 + / 改键等操作会整窗重画）
+    const SCR = '.bd, .keygrid, .sklist2, .dglist, .ngjobs, [data-scroll]', olds = [...old.querySelectorAll(SCR)].map(e => e.scrollTop);
+    requestAnimationFrame(() => [...el.querySelectorAll(SCR)].forEach((e, i) => { if (olds[i]) e.scrollTop = olds[i]; }));
     if (el._arg === undefined) el._arg = arg ?? old._arg;
     el.dataset.win = name; el.style.zIndex = old.style.zIndex;
     if (old.dataset.placed) { el.style.left = old.style.left; el.style.top = old.style.top; el.style.transform = 'none'; el.dataset.placed = '1'; }
@@ -109,15 +112,19 @@ const menus = {
     let x, y;
     if (pos && el.dataset.drag !== '0') { x = pos.x * W; y = pos.y * H; }
     else {
-      const at = el.dataset.at || this.AT[name] || 'center';
-      x = at === 'left' ? W * 0.03 : at === 'right' ? W * 0.97 - w : (W - w) / 2;
+      // 默认位置（at）；如果和已经打开的窗口重叠，就在 左 / 中 / 右 里挑重叠最少的位置（官方：I、M、K 同时开时各占一边）
+      const at = el.dataset.at || this.AT[name] || 'center', xs = { left: W * 0.03, right: W * 0.97 - w, center: (W - w) / 2 };
       y = Math.max(0, (H - hh) * (at === 'center' ? 0.42 : 0.3));
+      const others = this.stack.filter(n => n !== name && this.wins[n] && this.wins[n].classList.contains('win')).map(n => this.wins[n]);
+      const overlap = cx => others.reduce((s, o) => s + Math.max(0, Math.min(cx + w, o.offsetLeft + o.offsetWidth) - Math.max(cx, o.offsetLeft)) * Math.max(0, Math.min(y + hh, o.offsetTop + o.offsetHeight) - Math.max(y, o.offsetTop)), 0);
+      x = xs[at] ?? xs.center;
+      if (others.length && overlap(x) > 0) for (const k of [at, 'center', 'left', 'right']) if (overlap(xs[k]) < overlap(x) - 1) x = xs[k];
     }
     this.moveWin(el, x, y); el.dataset.placed = '1';
   },
   moveWin(el, x, y) {
-    const W = dom.clientWidth, H = dom.clientHeight, w = el.offsetWidth;
-    x = clamp(x, Math.min(0, -(w - 90)), Math.max(0, W - 90)); y = clamp(y, 0, Math.max(0, H - 40));
+    const W = dom.clientWidth, H = dom.clientHeight, w = el.offsetWidth, hh = el.offsetHeight;   // 整个窗口保持在屏幕内（官方）
+    x = clamp(x, 0, Math.max(0, W - w)); y = clamp(y, 0, Math.max(0, H - hh));
     el.style.left = Math.round(x) + 'px'; el.style.top = Math.round(y) + 'px'; el.style.transform = 'none';
   },
   makeDraggable(el) {
@@ -312,7 +319,9 @@ const menus = {
     const grid = h('div', { class: 'grid' });
     for (let i = 0; i < inv.cap; i++) {
       const it = inv.items[i];
-      grid.appendChild(this.slotEl(it, { sel: it && it === sel, onclick: () => { if (it) { this.sel = it; this.refresh('inv'); } }, ondbl: () => { if (!it) return; if (it.kind === 'equip') inv.wear(it); else if (it.kind === 'use') inv.use(it.key); this.sel = null; this.refresh('inv'); } }));
+      const cell = this.slotEl(it, { sel: it && it === sel, onclick: () => { if (it) { this.sel = it; this.refresh('inv'); } }, ondbl: () => { if (!it) return; if (it.kind === 'equip') inv.wear(it); else if (it.kind === 'use') inv.use(it.key); this.sel = null; this.refresh('inv'); } });
+      if (it && it.kind === 'use' && typeof dnd !== 'undefined') dnd.source(cell, () => ({ type: 'item', item: it, from: 'inv' }));   // 消耗品拖到 HUD 快捷栏
+      grid.appendChild(cell);
     }
     const shopMode = this.isOpen('shop') || this.isOpen('gear');
     const acts = h('div', { class: 'row', style: 'min-height:2.4em;flex-wrap:wrap' });

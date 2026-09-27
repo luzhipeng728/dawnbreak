@@ -28,6 +28,7 @@ const duel = {
     game.room = { x0: 0, x1: 1120, theme: o.theme, seed: 11 }; buildRoomArt(game.room);
     // 玩家一方：技能栏 / 等级写进 game（HUD 用），角色用同一份 kit
     const kA = aiKit(o.a, o.ja, o.lv);
+    if (o.me && o.me.skillLv) { kA.lv = { ...o.me.skillLv }; if (o.me.skillBar && o.me.skillBar.some(Boolean)) kA.bar = o.me.skillBar.slice(0, 12); }   // 我的角色：用自己的技能等级与技能栏
     game.job = o.ja; game.skillLv = kA.lv; game.skillBar = kA.bar;
     const a = makePlayer(o.a, { kit: { bar: game.skillBar, lv: game.skillLv, job: o.ja, wtype: null }, name: o.nameA || CLASSES[o.a].name });
     if (o.auto) { a.pad = new Pad(); a.brain = new FighterBrain(a, o.ai); }
@@ -116,15 +117,15 @@ const duel = {
 function duelParams() {
   const pick1 = (v, def) => CLASSES[v] ? v : def;
   let a = PARAMS.get('duel'), me = null;
-  if (a === 'me') { try { if (save.load()) me = { ...save.data }; } catch (e) { /* 没有存档 */ } a = me ? me.cls : 'sword'; }
+  if (a === 'me') { const k0 = save.key; save.key = 'dawnbreak_save_v1'; try { if (save.load()) me = JSON.parse(JSON.stringify(save.data)); } catch (e) { /* 没有存档 */ } save.key = k0; a = me ? me.cls : 'sword'; }   // 只读正式存档，不写回
   a = pick1(a, 'sword'); const b = pick1(PARAMS.get('vs'), pick(['sword', 'gun', 'mage']));
   const jobOk = (cls, j) => j === 'none' ? null : CLASSES[cls].jobs && CLASSES[cls].jobs[j] ? j : firstJob(cls);
   return { a, b, ja: me && me.job ? me.job : jobOk(a, PARAMS.get('job')), jb: jobOk(b, PARAMS.get('vsjob')), lv: +(PARAMS.get('lv') || DUEL_CFG.lv), ai: clamp(+(PARAMS.get('ai') || 2), 1, 3),
-    auto: PARAMS.has('auto'), theme: PARAMS.get('theme') || 'ruinsDark', nameA: me && me.name };
+    auto: PARAMS.has('auto'), theme: PARAMS.get('theme') || 'ruinsDark', nameA: me && me.name, me };
 }
 function bootDuel() {
   save.key = 'dawnbreak_duel'; const o = duelParams();
-  save.data = save.defaults(o.a);   // 决斗不碰正式存档
+  save.key = 'dawnbreak_duel'; save.chars = []; save.cur = -1; save.data = save.defaults(o.a);   // 决斗不碰正式存档（存档键切到 dawnbreak_duel）
   return withLoading(['spr:' + o.a, 'spr:' + o.b, 'bg:' + o.theme], () => duel.start(o));
 }
 /* ---- 决斗场入口：城镇 NPC 维尔·克鲁（竞技大赛）/ P 键窗口 ---- */

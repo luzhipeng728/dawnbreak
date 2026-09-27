@@ -22,6 +22,8 @@ run world     node test/world.mjs
 run combat    node test/combat.mjs
 run skillsa   node test/skill_sa.mjs
 run avatar    node test/avatar.mjs
+run shop      node test/shop.mjs
+run shopecon  node test/shop_econ.mjs
 run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,gun:ranger,gun:launcher,mage:elemental,mage:battlemage
 [ "$1" = quick ] && exit 0
 run bestiary  node test/bestiary.mjs

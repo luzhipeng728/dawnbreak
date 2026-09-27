@@ -32,6 +32,7 @@ Object.assign(menus, {
       toggle('掉落物名称', 'dropNames', `快捷键 ${keyName('dropNames')}`),
       toggle('实时评价', 'hideRank', `右下角的操作 / 技巧评价，快捷键 ${keyName('hideRank')}`, true),
       toggle('详细说明', 'tipDetail', `技能 / 装备提示框显示详细数值，快捷键 ${keyName('tipDetail')}`),
+      toggle('显示帧率', 'fps', '右上角显示 FPS'),
       h('div', { class: 'setrow' }, h('span', {}, '界面显示', h('span', { class: 'small dim' }, `  快捷键 ${keyName('uiMode')}`)),
         h('div', { class: 'row seg' }, [['full', '完整'], ['lite', '简洁']].map(([v, t]) => h('button', { class: 'btn' + (uiPref('hudMode') === v ? ' on' : ''), 'data-hud': v, onclick: () => { setPref('hudMode', v); sfx.click(); rf(); } }, t)))),
       h('div', { class: 'row', style: 'margin-top:.4em' },

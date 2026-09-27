@@ -84,7 +84,7 @@ const ui = {
     if (game.scene === 'town' && world) worldUI(c);
     if (game.cutin && uiPref('cutin')) this.drawCutin(c);
     if (game.scene === 'title') this.drawToasts(c);
-    if (PARAMS.has('fps')) uiText(`${fps.toFixed(0)} fps · ents ${ents.length} fx ${fxList.length}`, 1900, 30, { size: 20, align: 'right' });
+    if (PARAMS.has('fps') || uiPref('fps')) uiText(`${fps.toFixed(0)} fps · ents ${ents.length} fx ${fxList.length}`, 1900, 30, { size: 20, align: 'right' });
     menus.drawUI(c);
   },
   // 标题 / 选角界面上的提示（城镇和地下城的提示由 worldUI / dungeon.drawUI 画）
@@ -243,6 +243,18 @@ const ui = {
     c.restore();
   },
   /* ---- HUD 的鼠标操作：悬停提示、拖出、右键清空、拖入（dnd.canvas）；城镇里右键 / 双击 NPC 对话 ---- */
+  infoAt(x, y) {
+    const p = game.player; if (!p || !this.panelOn()) return null;
+    const inOrb = O => Math.hypot(x - O.x, y - O.y) < O.r + 6;
+    if (inOrb(HUD.hp)) return `<b style="color:#ff8a8a">HP</b> ${fmtNum(p.hp)} / ${fmtNum(p.hpMax)}<br><span class="small dim">4 秒没受伤会自动回复</span>`;
+    if (inOrb(HUD.mp)) return `<b style="color:#8ac8ff">MP</b> ${fmtNum(p.mp)} / ${fmtNum(p.mpMax)}<br><span class="small dim">释放技能消耗 MP，会随时间回复</span>`;
+    const { y0, x0, x1 } = HUD, lite = uiPref('hudMode') === 'lite', ey = lite ? 1070 : y0 + 6;
+    if (x > x0 + 18 && x < x1 - 18 && y > ey - 6 && y < ey + 15) { const need = expNeed(game.lvl); return `<b>Lv.${game.lvl}</b> 经验 ${fmtNum(game.exp)} / ${fmtNum(need)}（${(game.exp / need * 100).toFixed(2)}%）`; }
+    const fw = HUD.quick.gap * 5 + HUD.quick.s;
+    if (!lite && save.data && x > HUD.quick.x && x < HUD.quick.x + fw && y > 1016 && y < 1044) return `<b>疲劳值</b> ${save.data.fatigue} / ${FATIGUE_MAX}<br><span class="small dim">进入新房间消耗 1 点，每天 06:00 恢复</span>`;
+    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b) continue; if (x >= bx && x <= bx + 34 && y >= y0 - 84 && y <= y0 - 50) return `<b>${SKILLS[k] ? SKILLS[k].name : (b.name || k)}</b><br>剩余 ${Math.ceil(b.t)} 秒`; bx += 40; } }
+    return null;
+  },
   toUI(ev) { const r = stage.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * UW, (ev.clientY - r.top) / r.height * UH]; },
   slotAt(ev) {
     const [x, y] = this.toUI(ev); let i = hudSkillSlotAt(x, y); if (i >= 0) return { kind: 'skill', i, id: game.skillBar[i] };
@@ -271,14 +283,18 @@ const ui = {
       if (game.scene === 'town' && typeof worldPointer === 'function') worldPointer(ev, true);   // 右键 NPC 对话
     });
     wcan.addEventListener('dblclick', ev => { if (game.scene === 'town' && !this.slotAt(ev) && typeof worldPointer === 'function' && !menus.isOpen('npc')) worldPointer(ev, true); });
+    const itemName = key => (typeof ITEMS !== 'undefined' && ITEMS[key] && ITEMS[key].name) || (typeof CONSUMABLES !== 'undefined' && CONSUMABLES[key] && CONSUMABLES[key].name) || key;
     wcan.addEventListener('pointermove', ev => {
       if (dnd.cur) return;
       const s = this.slotAt(ev), prev = this.hot; this.hot = s;
       if (s && s.id) {
         if (s.kind === 'skill' && SKILLS[s.id] && typeof skillTipHtml === 'function') menus.showTip(skillTipHtml(s.id), ev);
-        else if (s.kind === 'quick') { const it = inv.items.find(x => x.key === s.id); menus.showTip(it && typeof itemTip === 'function' ? itemTip(it) : it ? menus.itemTip(it) : `<b>${(CONSUMABLES[s.id] || {}).name || s.id}</b><br><span class="small dim">背包里没有了</span>`, ev); }
-        wcan.style.cursor = 'grab';
-      } else if (prev && prev.id) { menus.hideTip(); wcan.style.cursor = ''; }
+        else if (s.kind === 'quick') { const it = inv.items.find(x => x.key === s.id); menus.showTip(it && typeof itemTip === 'function' ? itemTip(it) : it ? menus.itemTip(it) : `<b>${itemName(s.id)}</b><br><span class="small dim">背包里没有了</span>`, ev); }
+        wcan.style.cursor = 'grab'; this.infoHot = false; return;
+      }
+      if (prev && prev.id) { menus.hideTip(); wcan.style.cursor = ''; }
+      const info = this.infoAt(...this.toUI(ev));   // HP / MP 球、经验条、疲劳条、Buff 图标的说明
+      if (info) { menus.showTip(info, ev); this.infoHot = true; } else if (this.infoHot) { menus.hideTip(); this.infoHot = false; }
     });
     wcan.addEventListener('pointerleave', () => { this.hot = null; });
     dnd.canvas((p, x, y) => {

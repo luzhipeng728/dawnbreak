@@ -92,7 +92,7 @@ Object.assign(menus, {
     if (!game.player) return null;
     const cls = game.player.cls, pages = skillPages(cls, game.job), C = CLASSES[cls] || {};
     let tab = this.skTab === 'job' ? 'job' : 'base';
-    const ids = pages[tab];
+    const ids = [...pages[tab]].sort((a, b) => (SKILLS[a].lvReq || 1) - (SKILLS[b].lvReq || 1));   // 官方：按学习等级排列
     let sel = this.skSel && (ids.includes(this.skSel)) ? this.skSel : ids[0];
     const rf = () => this.refresh('skills');
     const jobName = game.job && C.jobs && C.jobs[game.job] ? C.jobs[game.job].name : game.job;

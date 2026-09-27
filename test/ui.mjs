@@ -235,7 +235,8 @@ ok(tip.includes('当前等级') || tip.includes('下一等级'), '技能提示�
 await shot('10-skill-tip');
 await closeAll();
 
-sec('HUD 消耗品栏');
+sec('HUD 消耗品栏 / 悬停提示');
+const HUD_HP = await ev(() => [HUD.hp.x, HUD.hp.y]);
 await ev(() => { inv.quick[5] = null; });
 const q5 = await ev(() => { const R = hudQuickRect(5); return [R.x + R.s / 2, R.y + R.s / 2]; });
 const hpKey = await ev(() => inv.quick[0]);
@@ -243,6 +244,14 @@ await dragTo(await uiPt(...await ev(() => { const R = hudQuickRect(0); return [R
 ok(await ev(k => inv.quick[5] === k && inv.quick[0] !== k, hpKey), '消耗品栏格子之间拖动 = 移动');
 const dropOk = await ev(() => { const it = inv.items.find(i => i.kind === 'use'); if (!it) return 'noitem'; const R = hudQuickRect(2); inv.quick[2] = null; for (const fn of dnd.canvasFns) if (fn({ type: 'item', item: it, from: 'inv' }, R.x + 5, R.y + 5)) break; return inv.quick[2] === it.key; });
 ok(dropOk === true, '背包消耗品拖入快捷栏（dnd.canvas 落点）', String(dropOk));
+
+const tipText = () => ev(() => { const t = document.getElementById('tip'); return t && !t.classList.contains('hidden') ? t.textContent : ''; });
+await page.mouse.move(...await uiPt(HUD_HP[0], HUD_HP[1])); await wait(100);
+ok((await tipText()).includes('HP'), '悬停 HP 球显示数值', await tipText());
+await page.mouse.move(...await uiPt(...(await ev(() => { const R = hudSkillRect(1); return [R.x + 20, R.y + 20]; })))); await wait(100);
+ok((await tipText()).length > 0, '悬停技能栏显示技能说明');
+await page.mouse.move(...await uiPt(960, 300)); await wait(100);
+ok((await tipText()) === '', '移开后提示框消失');
 
 sec('地下城：开窗口暂停');
 await ev(() => enterDungeon('lorien', 0)); await page.waitForFunction(() => game.scene === 'dungeon', null, { timeout: 20000 }); await wait(600);

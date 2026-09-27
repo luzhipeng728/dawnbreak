@@ -46,7 +46,7 @@ Object.assign(menus, {
         h('button', { class: 'btn big titlego', onclick: go }, '进入游戏'),
         h('div', { class: 'small dim' }, n ? `已有 ${n} 个角色 · 上次：${save.chars[Math.max(0, save.cur)].name || ''} Lv.${save.chars[Math.max(0, save.cur)].lvl}` : '还没有角色，进入后创建你的第一个角色'),
         h('button', { class: 'btn', onclick: () => { sfx.click(); this.show('settings'); } }, '游戏设置')),
-      h('div', { class: 'small dim', style: 'margin-top:2em;text-align:center;line-height:1.8' }, `方向键移动（双击跑） · ${keyName('attack')} 攻击 · ${keyName('jump')} 跳跃 · ${keyName('cmd')} 指令技能 · ASDFGH / QWERTY 技能栏`, h('br'), '进度自动保存在本机浏览器'));
+      h('div', { class: 'small dim', style: 'margin-top:2em;text-align:center;line-height:1.8' }, `方向键移动（双击跑） · ${keyName('attack')} 攻击 · ${keyName('jump')} 跳跃 · ${keyName('cmd')} 指令技能 · ${[0, 1, 2, 3, 4, 5].map(i => keyName('s' + i)).join('')} / ${[6, 7, 8, 9, 10, 11].map(i => keyName('s' + i)).join('')} 技能栏`, h('br'), '进度自动保存在本机浏览器'));
     el._onConfirm = go;
     return el;
   },

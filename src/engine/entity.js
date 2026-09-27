@@ -94,7 +94,7 @@ class Ent {
       const a = this.act; spd = a.spd;
       if (a.invul && inWin(a.invul, a.actT)) this.invul = Math.max(this.invul, 0.02);
       if (a.superArmor && a.superArmor !== true && inWin(a.superArmor, a.actT)) this.superArmor = Math.max(this.superArmor, 0.02);
-      if (a.charge && !a.chargeDone && !a.charging && a.actT >= a.charge.at) { a.charging = true; a.chargeT = 0; this.actT = a.charge.at; if (a.charge.clip) this.play(a.charge.clip, true); }
+      if (a.charge && !a.chargeDone && !a.charging && this.actT >= a.charge.at) { a.charging = true; a.chargeT = 0; this.actT = a.charge.at; if (a.charge.clip) this.play(a.charge.clip, true); }
       if (a.charging) {
         a.chargeT += dt;
         const held = this.pad ? this.pad.is(a.key) : false, C = a.charge;

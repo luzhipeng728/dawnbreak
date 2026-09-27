@@ -66,7 +66,7 @@ def main():
     chars = {}
     for f in sorted(os.listdir(src)):
         if not f.endswith('.png') or f.endswith('_raw.png'): continue
-        char, sheet = f[:-4].split('_', 1)
+        char, sheet = f[:-4].rsplit('_', 1)
         if f[:-4].startswith(pre): chars.setdefault(char, []).append((sheet, os.path.join(src, f)))
     for char, sheets in chars.items():
         out = os.path.join(ROOT, 'final', 'spr', char)

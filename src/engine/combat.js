@@ -171,7 +171,7 @@ function react(a, t, h, src, counter, pvp) {
   // 怪物蓄力招式：被打出足够伤害 → 破招
   if (t.act && t.act.breakable && a.team !== t.team) { t.breakDmg = (t.breakDmg || 0) + t.lastDmg; if (t.breakDmg > t.hpMax * t.act.breakable) { breakAct(t); return; } }
   if (h.grab) { if (canGrab(a, t, h)) { startGrab(a, t, h); return; } if (hasSA(t)) { t.flash = 0.1; return; } }
-  else if (hasSA(t)) { t.flash = 0.1; return; }                     // 霸体：照常受伤，不硬直不浮空
+  else if (hasSA(t) && !h.throwHit) { t.flash = 0.1; return; }      // 霸体：照常受伤，不硬直不浮空（抓取技的投掷无视霸体）
   t.interrupt();
   const dir = h.radial ? Math.sign(t.x - src.x || src.face) : h.pull ? -src.face : src.face;
   const kb = (h.knock ?? 80) / Math.max(0.5, t.weight), c = t.cmb;
@@ -245,6 +245,6 @@ function dropGrab(a) { const t = a.grabbed; a.grabbed = null; if (t && t.heldBy 
 function throwGrab(a, h) {
   const t = a.grabbed; if (!t) return null;
   a.grabbed = null; t.heldBy = null; t.heldClip = null; t.setState('hit'); t.grabProt = isPvp(a, t) ? PVP.grabProt : 0.3;
-  applyHit(a, t, { sure: true, noCounterBonus: true, ...h }, { proj: !!h.proj });
+  applyHit(a, t, { sure: true, noCounterBonus: true, throwHit: true, ...h }, { proj: !!h.proj });
   return t;
 }

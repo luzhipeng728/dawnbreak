@@ -182,15 +182,25 @@ await shot('17-dungeon');
 const perf = await ev(async () => { const t0 = performance.now(); for (let i = 0; i < 300; i++) renderWorld(); return (performance.now() - t0) / 300; });
 console.log(`  · 每帧 renderWorld 平均 ${perf.toFixed(2)} ms（含宠物 / 光环 / 光效）`);
 
-// 外观组登记的时装帧集：上衣 + 下装同套时整套换装；武器装扮换武器图（外观组分支合并后才有，没合并时只打印）
+// 外观：五套时装都能买（高级装扮整套 / 天空套兑换券）、能穿（上衣 + 下装整套换装）、能试穿；武器装扮换武器图
+step('外观验收：五套时装 + 武器装扮');
 const looks = await ev(() => {
-  const cls = game.player.cls, reg = [], miss = [];
-  for (const set in CASH_SETS) { const eq = { av_top: makeItem(avKey(set, 'av_top')), av_bottom: makeItem(avKey(set, 'av_bottom')) }; const L = lookFromEquip(cls, eq); (L.set ? reg : miss).push(set); }
-  const w = lookFromEquip(cls, { weapon: inv.equip.weapon, av_weapon: makeItem('av_weapon_spring') }).wpn;
-  return { reg, miss, wskin: w, sets: Object.keys(AVATAR_SETS || {}) };
+  const cls = game.player.cls, out = {};
+  for (const set in CASH_SETS) {
+    let items;
+    if (CASH_SETS[set].tier === 'adv') { const r = cashBuy('set:' + set, 1); items = r.items || []; }
+    else { items = []; for (const slot of AV_PIECE_SLOTS) { inv.add(makeItem('tk_sky', 1)); const tk = inv.items.find(x => x.key === 'tk_sky'); const r = cashUseTicket(tk, null, { set, slot }); if (r.items) items.push(r.items[0]); } }
+    for (const it of items) inv.wear(it);
+    const L = lookFromEquip(cls, inv.equip), cv = cashTryOn(items);
+    out[set] = { n: items.length, set: L.set, acc: L.acc.length, tryOn: !!cv, sky8: cashLook(inv.equip).sky8 };
+  }
+  const wp = inv.items.find(x => x.key === 'av_weapon_spring') || (inv.add(makeItem('av_weapon_spring')), inv.items.find(x => x.key === 'av_weapon_spring'));
+  inv.wear(wp); out.wpn = lookFromEquip(cls, inv.equip).wpn;
+  return out;
 });
-console.log(`  · 已登记整套帧集：${looks.reg.join(' ') || '无'}；还没有：${looks.miss.join(' ') || '无'}；武器装扮 → ${looks.wskin}`);
-check(looks.reg.every(set => looks.sets.includes(set)), '登记了帧集的时装，穿上衣 + 下装会整套换装');
+for (const set of ['av_spring', 'av_summer', 'av_academy', 'av_sky1', 'av_sky2']) { const L = looks[set]; check(L && L.n === 8 && L.set === set.slice(3) && L.tryOn && (set.startsWith('av_sky') ? L.sky8 === set : true), `${set}：8 件到手、整套换装（${L && L.set}）、配件 ${L && L.acc} 件、试穿画布${set.startsWith('av_sky') ? '、8 件套光效' : ''}`); }
+check(/^spring_/.test(looks.wpn || ''), `武器装扮：金龙贺岁生效（${looks.wpn}）`);
+await wait(1500); await shot('16b-looks-sky2');
 
 /* ---------- 11. 点券产出 ---------- */
 step('点券产出');

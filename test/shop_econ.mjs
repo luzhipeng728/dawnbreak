@@ -21,7 +21,8 @@ const r = await page.evaluate(() => {
   let lvl = 0; for (let l = 2; l <= 20; l++) lvl += l * E.lvl;
   const dg = Object.values(DUNGEONS).filter(D => !D.hidden && D.lvl && D.lvl[0] <= 20);
   const first = dg.length * E.first + Math.round(dg.length / 2) * E.firstDiff[1];
-  const ach = ['kill500', 'enh7', 'job', 'awaken', 'box', 'sss'].reduce((s, id) => s + CASH_ACH.find(A => A.id === id).cera, 0);
+  // 成就：社交组的成就系统（149 个，含商城原来的 14 个）按他们的估算，认真玩第一周约 53 个 / 3590 点券；没有成就系统时按商城自己的 6 个估算
+  const ach = typeof ACHIEVEMENTS !== 'undefined' ? 3590 : ['kill500', 'enh7', 'job', 'awaken', 'box', 'sss'].reduce((s, id) => s + CASH_ACH.find(A => A.id === id).cera, 0);
   const newbie = { lvl, first, ach, daily: day.serious.total * 7, total: lvl + first + ach + day.serious.total * 7, dungeons: dg.length };
   // 价格
   const setPrice = CASH_GOODS['set:av_spring'].price, packPrice = CASH_GOODS.pkg_spring.price, piece = CASH_GOODS.box_avatar.price;
@@ -51,7 +52,7 @@ const r = await page.evaluate(() => {
 });
 const W = n => (n / (r.day.serious.total * 7)).toFixed(1);
 console.log('每天点券：', JSON.stringify(r.day));
-console.log(`认真玩家每周 ${r.day.serious.total * 7}；休闲玩家每周 ${r.day.casual.total * 7}`);
+console.log(`认真玩家每周 ${r.day.serious.total * 7}（前 6~8 周另有成就约 +3500 / 周，逐周减少）；休闲玩家每周 ${r.day.casual.total * 7}`);
 console.log(`新手第一周：升级 ${r.newbie.lvl} + 首通 ${r.newbie.first}（${r.newbie.dungeons} 个地下城）+ 成就 ${r.newbie.ach} + 日常 ${r.newbie.daily} = ${r.newbie.total}`);
 console.log(`节日时装整套 ${r.setPrice}（认真玩 ${W(r.setPrice)} 周）；节日礼包 ${r.packPrice}（${W(r.packPrice)} 周）`);
 console.log(`天空每件期望：普通 ${r.sky.basic} / 黄金 ${r.sky.gold} / 梦想 ${r.sky.dream}；整套 8 件约 ${r.sky.set8}（${W(r.sky.set8)} 周）`);

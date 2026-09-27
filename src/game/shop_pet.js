@@ -27,7 +27,7 @@ function cashFxTick(dt) {
     if (cashLookDirty || !cashPlayerLook) { inv.ensure(); cashPlayerLook = cashLook(inv.equip); cashLookDirty = false; }
     cashEntTick(p, cashPlayerLook, dt);
   }
-  for (const [e, L] of cashAttached) { if (e.remove || (typeof ents !== 'undefined' && !ents.includes(e) && !(world && world.crowd && world.crowd.includes(e)))) { cashDetach(e); continue; } cashEntTick(e, L, dt); }
+  for (const [e, L] of cashAttached) { if (e.gone || e.remove || (typeof ents !== 'undefined' && !ents.includes(e) && !(world && world.crowd && world.crowd.includes(e)))) { cashDetach(e); continue; } cashEntTick(e, L, dt); }
 }
 function cashEntTick(e, L, dt) {
   const C = e._cash || (e._cash = { t: Math.random() * 10, pet: null, parts: [], spawn: 0 });
@@ -57,9 +57,9 @@ function cashEntTick(e, L, dt) {
   if (L.sky8) {
     C.sky8 = L.sky8; C.glowFx.y = e.y + 0.5;
     const sky2 = L.sky8 === 'av_sky2';
-    if ((C.spawn -= dt) <= 0 && C.parts.length < 16) {
-      C.spawn = sky2 ? 0.09 : 0.12;
-      const feather = !sky2 && Math.random() < 0.25;
+    if ((C.spawn -= dt) <= 0 && C.parts.length < 22) {
+      C.spawn = sky2 ? 0.07 : 0.08;
+      const feather = !sky2 && Math.random() < 0.3;
       C.parts.push(feather ? { x: rnd(-34, 34), z: rnd(100, 130), vx: rnd(-8, 8), vz: -rnd(14, 22), life: 2.4, t: 0, kind: 1, rot: rnd(0, TAU) }
         : sky2 ? { x: rnd(-22, 22), z: rnd(0, 20), vx: rnd(-6, 6), vz: rnd(40, 70), life: rnd(1, 1.6), t: 0, kind: 2, g: rndi(60, 170) }
           : { x: rnd(-26, 26), z: rnd(10, 110), vx: 0, vz: rnd(8, 18), life: rnd(0.8, 1.4), t: 0, kind: 0 });
@@ -122,10 +122,11 @@ function cashDrawGlow(c, e) {
   c.save(); c.globalCompositeOperation = 'lighter';
   for (const q of C.parts) {
     const k = q.t / q.life, a = k < 0.2 ? k / 0.2 : 1 - (k - 0.2) / 0.8;
-    if (q.kind === 1) { c.save(); c.globalCompositeOperation = 'source-over'; c.globalAlpha = a * 0.9; c.translate(X + q.x, Y - q.z); c.rotate(q.rot + Math.sin(q.t * 2) * 0.6); c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(0, 0, 5, 1.8, 0, 0, TAU); c.fill(); c.fillStyle = '#ffe9a0'; c.fillRect(-5, -0.4, 10, 0.8); c.restore(); continue; }
-    c.fillStyle = sky2 ? `rgba(255,${q.g},40,${a * 0.9})` : `rgba(255,226,120,${a * 0.85})`;
-    const s = sky2 ? 2.2 : 1.6 + Math.sin(q.t * 9) * 0.6;
-    c.beginPath(); c.arc(X + q.x, Y - q.z, s, 0, TAU); c.fill();
+    if (q.kind === 1) { c.save(); c.globalCompositeOperation = 'source-over'; c.globalAlpha = a * 0.9; c.translate(X + q.x, Y - q.z); c.rotate(q.rot + Math.sin(q.t * 2) * 0.6); c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(0, 0, 7, 2.6, 0, 0, TAU); c.fill(); c.fillStyle = '#ffe9a0'; c.fillRect(-7, -0.5, 14, 1); c.restore(); continue; }
+    if (sky2) { c.fillStyle = `rgba(255,${q.g},40,${a * 0.95})`; c.beginPath(); c.arc(X + q.x, Y - q.z, 2.6, 0, TAU); c.fill(); c.fillStyle = `rgba(255,${q.g},40,${a * 0.35})`; c.beginPath(); c.arc(X + q.x - q.vx * 0.05, Y - q.z + 5, 1.8, 0, TAU); c.fill(); continue; }
+    const s = 2.6 + Math.sin(q.t * 9) * 1.2, px = X + q.x, py = Y - q.z;   // 四角星形的金色闪光
+    c.fillStyle = `rgba(255,226,120,${a * 0.9})`; c.fillRect(px - s * 1.6, py - 0.6, s * 3.2, 1.2); c.fillRect(px - 0.6, py - s * 1.6, 1.2, s * 3.2);
+    c.fillStyle = `rgba(255,250,210,${a})`; c.beginPath(); c.arc(px, py, 1.3, 0, TAU); c.fill();
   }
   c.restore();
 }

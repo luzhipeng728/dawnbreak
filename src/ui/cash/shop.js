@@ -90,6 +90,8 @@ addStyle(`
 .cavrow select{font-family:inherit;background:#0c0a10;color:#fff2d0;border:.08em solid #6a5436;border-radius:.2em;padding:.1em}
 #menubar button[title="商城"]{grid-column:1/-1;height:calc(var(--u) * 46px);flex-direction:row;gap:.5em;border-color:#c89a3a;background:linear-gradient(#8a3a5a,#3a1224);color:#ffe8f4}
 #menubar button[title="商城"]:hover{background:linear-gradient(#b04a76,#4a1a30)}
+#menubar button.cash-dot{position:relative}
+#menubar button.cash-dot::after{content:'领取';position:absolute;right:.35em;top:50%;transform:translateY(-50%);font-size:.62em;font-weight:900;color:#fff;background:#e8283a;border-radius:1em;padding:.05em .45em;box-shadow:0 0 .4em #ff3a3a}
 `);
 /* ---- 快捷键 ] = 商城（动作 cash，可在按键设置里改）；菜单按钮栏加“商城” ---- */
 KEYMAP_DEFAULT.cash = ['BracketRight'];
@@ -99,6 +101,8 @@ ACTION_NAME.cash = '商城';
 UI_WIN.cash = 'cash'; UI_ACTIONS.add('cash');
 if (typeof MB_WIN !== 'undefined') MB_WIN.cash = 'cash';
 if (typeof MENUBAR !== 'undefined' && !MENUBAR.some(b => b[0] === 'cash')) MENUBAR.push(['cash', '商城']);
+// 有免费礼包可以领（新手 / 等级礼包）时，菜单按钮上显示“领取”
+setInterval(() => { const b = typeof menubar !== 'undefined' && menubar.btns && menubar.btns.cash; if (!b || !save.data || !game.player) return; b.classList.toggle('cash-dot', ['pkg_newbie', 'pkg_lv10', 'pkg_lv20', 'pkg_lv30'].some(p => !cashGoodsBlock(cashGoods(p)))); }, 2000);
 ITEM_WINS.push('cash', 'cashx', 'avopt', 'pet', 'synth', 'lotto', 'ticket', 'cashlog');
 menus.BLOCK.add('cash'); menus.BLOCK.add('boxopen');
 

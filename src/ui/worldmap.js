@@ -57,6 +57,8 @@ Object.assign(menus, {
       const el = h('div', { class: `wm-node ${S.kind}${id === here ? ' here' : ''}${id === sel ? ' sel' : ''}${known ? '' : ' unk'}${reach.has(id) ? '' : ' lock'}`, style: `left:${x}%;top:${y}%`, 'data-id': id,
         onclick: () => { this.wmSel = id; sfx.click(); this.refresh('worldmap', arg); } },
         h('i', {}), h('b', {}, S.area && S.area !== S.name ? S.area : S.name));
+      const lv = S.gates.map(g => DUNGEONS[g.dungeon]).filter(D => D && dungeonUnlocked(D)).flatMap(D => D.lvl);
+      if (lv.length) el.append(h('small', {}, `Lv.${Math.min(...lv)}~${Math.max(...lv)}`));   // 区域地图：这里地下城的推荐等级范围
       if (id === here) el.append(h('em', {}, '你在这里'));
       map.append(el);
     }
@@ -100,10 +102,11 @@ addStyle(`
 .wm-node i{width:1.05em;height:1.05em;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6d0,#e8b44a 60%,#8a5a1a);border:.12em solid #4a2c0a;box-shadow:0 .1em .3em rgba(0,0,0,.5)}
 .wm-node.field i{border-radius:.15em;transform:rotate(45deg);width:.85em;height:.85em;background:radial-gradient(circle at 35% 35%,#e8fff0,#5ab48a 60%,#1a5a3a)}
 .wm-node b{margin-top:.15em;font-size:.72em;color:#3a2410;white-space:nowrap;text-shadow:0 0 .25em #fff8e0,0 0 .25em #fff8e0}
+.wm-node small{font-size:.6em;font-weight:800;color:#2a5a3a;text-shadow:0 0 .25em #fff8e0}
 .wm-node.unk b{color:#8a7a5a}.wm-node.lock i{filter:grayscale(1) brightness(.8)}
 .wm-node.sel i{outline:.14em solid #fff;outline-offset:.12em}
 .wm-node.here i{animation:wmPulse 1.2s ease-in-out infinite;background:radial-gradient(circle at 35% 35%,#fff,#ff7a4a 55%,#9a2a0a)}
-.wm-node em{position:absolute;bottom:100%;margin-bottom:.2em;font-style:normal;font-size:.68em;font-weight:900;color:#fff;background:#c0421a;padding:.05em .4em;border-radius:.3em;white-space:nowrap;box-shadow:0 .1em .25em rgba(0,0,0,.4)}
+.wm-node em{position:absolute;left:calc(50% + .75em);top:-.1em;font-style:normal;font-size:.68em;font-weight:900;color:#fff;background:#c0421a;padding:.05em .4em;border-radius:.3em;white-space:nowrap;box-shadow:0 .1em .25em rgba(0,0,0,.4)}
 @keyframes wmPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,120,60,.8)}50%{box-shadow:0 0 0 .5em rgba(255,120,60,0)}}
 .wm-info{width:13em;display:flex;flex-direction:column;gap:.3em;font-size:.9em}
 .wm-title{font-weight:900;color:var(--gold);font-size:1.15em}

@@ -53,7 +53,7 @@ THEMES.skyTower = {
   wall(c, w, R) { brickWall(c, 0, w, FLOOR_Y - 30, FLOOR_Y, ['#e0d8c8', '#cfc6b4'], R); c.fillStyle = '#c8a040'; c.fillRect(0, FLOOR_Y - 32, w, 3); },
   floor(c, w, R) { flagstones(c, w, FLOOR_Y - 4, ['#d8d2c4', '#e4ddd0', '#ccc4b4'], R, 'rgba(90,80,60,.35)'); c.fillStyle = 'rgba(200,160,64,.35)'; for (let x = 0; x < w; x += 120) c.fillRect(x, FLOOR_Y - 4, 2, WH); },
   fore(c, w, R) { c.fillStyle = 'rgba(255,255,255,.9)'; for (let x = 0; x < w; x += 260 + R() * 200) for (let j = 0; j < 4; j++) { c.beginPath(); c.ellipse(x + j * 30, WH + 10, 40, 26, 0, Math.PI, 0); c.fill(); } },
-  back(c, room) { skyClouds(c, 7, 30, FLOOR_TOP - 60, '#ffffff', 10, 0.18); },
+  back(c, room) { c.fillStyle = 'rgba(30,40,80,.1)'; c.fillRect(0, 0, WW, WH); skyClouds(c, 7, 30, FLOOR_TOP - 60, '#ffffff', 10, 0.18); },
   ambient(c) {
     c.save(); c.globalAlpha = 0.9;
     ambientParticles(c, 14, (i, a, b, s) => { const x = ((a * 1300 + game.t * (40 + s * 40) - cam.x * 1.05) % 1100 + 1100) % 1100 - 70, y = FLOOR_Y - 120 + b * 320 + Math.sin(game.t * 2 + i) * 10; c.fillStyle = i % 3 ? 'rgba(255,255,255,.75)' : 'rgba(255,210,230,.75)'; c.save(); c.translate(x, y); c.rotate(game.t * 2 + i); c.fillRect(-2, -1, 4, 2); c.restore(); });
@@ -109,6 +109,6 @@ THEMES.skyPalace = {
   wall(c, w, R) { brickWall(c, 0, w, FLOOR_Y - 24, FLOOR_Y, ['#f4ecdc', '#e8dcc4'], R); c.fillStyle = '#d8b040'; c.fillRect(0, FLOOR_Y - 26, w, 3); },
   floor(c, w, R) { flagstones(c, w, FLOOR_Y - 4, ['#f8f4ec', '#efe8da', '#fffcf6'], R, 'rgba(200,160,60,.45)'); },
   fore(c, w, R) { for (let x = 80; x < w; x += 380 + R() * 200) column(c, x, WH + 30, 150, 34, ['#e8d8b0', '#d8c490', '#c8b070'], R, false); },
-  back(c, room) { skyRays(c, 4, '255,240,190', 0.12); },
+  back(c, room) { c.fillStyle = 'rgba(40,30,70,.2)'; c.fillRect(0, 0, WW, WH); skyRays(c, 4, '255,240,190', 0.12); },   // 背景整体压暗一点，金白色的赛格哈特才看得清
   ambient(c) { skyMotes(c, 22, '255,230,150', 18); },
 };

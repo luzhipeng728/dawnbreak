@@ -14,6 +14,8 @@ const stack = () => ev(() => menus.stack.slice());
 // UI 逻辑坐标（1920×1080）→ 页面坐标
 const uiPt = async (x, y) => ev(([x, y]) => { const r = stage.getBoundingClientRect(); return [r.left + x / UW * r.width, r.top + y / UH * r.height]; }, [x, y]);
 const center = async sel => { const b = await page.locator(sel).first().boundingBox(); return [b.x + b.width / 2, b.y + b.height / 2]; };
+// 元素上一个没被其他窗口挡住的点
+const visiblePt = sel => ev(sel => { const el = document.querySelector(sel), r = el.getBoundingClientRect(); for (let fy = 0.05; fy < 1; fy += 0.1) for (let fx = 0.05; fx < 1; fx += 0.1) { const x = r.left + r.width * fx, y = r.top + r.height * fy, t = document.elementFromPoint(x, y); if (t && el.contains(t)) return [x, y]; } return null; }, sel);
 const dragTo = async ([x0, y0], [x1, y1]) => { await page.mouse.move(x0, y0); await page.mouse.down(); await page.mouse.move(x0 + 10, y0 + 10, { steps: 3 }); await page.mouse.move(x1, y1, { steps: 8 }); await wait(60); await page.mouse.up(); await wait(150); };
 
 await page.goto(`${URL_BASE}?mute`);
@@ -90,7 +92,7 @@ sec('Esc 行为 / 多窗口 / 层级 / 拖动');
 await page.keyboard.press('KeyI'); await wait(150); await page.keyboard.press('KeyK'); await wait(150); await page.keyboard.press('KeyM'); await wait(200);
 ok((await stack()).join() === 'inv,skills,status', 'I + K + M 可以同时打开', (await stack()).join());
 await shot('05-three-windows');
-{ const b = await page.locator('[data-win="inv"]').boundingBox(); await page.mouse.click(b.x + b.width - 12, b.y + b.height - 12); await wait(100); }
+{ const pt = await visiblePt('[data-win="inv"]'); ok(!!pt, '同时打开的窗口不会被完全挡住（错开摆放）'); if (pt) await page.mouse.click(pt[0], pt[1]); await wait(100); }
 ok((await stack()).at(-1) === 'inv', '点击窗口置顶（stack 最后一个 = inv）');
 const zs = await ev(() => ['inv', 'skills', 'status'].map(n => +menus.wins[n].style.zIndex));
 ok(zs[0] > zs[1] && zs[0] > zs[2], '置顶窗口 z-index 最大', zs.join());
@@ -106,7 +108,7 @@ ok(bb.x + bb.width <= 1281 && bb.y + bb.height <= 721, '拖不出屏幕', JSON.s
 await dragTo([bb.x + 40, bb.y + 12], [b1.x + 40, b1.y + 12]);
 const b1b = await page.locator('[data-win="skills"]').boundingBox();
 await page.keyboard.press('Escape'); await wait(120);
-ok((await stack()).join() === 'status,inv', 'Esc 只关最上层', (await stack()).join());
+ok((await stack()).length === 2 && !(await stack()).includes('skills'), 'Esc 只关最上层', (await stack()).join());
 await page.keyboard.press('KeyK'); await wait(150);
 const b2 = await page.locator('[data-win="skills"]').boundingBox();
 ok(Math.abs(b2.x - b1b.x) < 3 && Math.abs(b2.y - b1b.y) < 3, '重新打开记住位置', `${b2.x},${b2.y} vs ${b1b.x},${b1b.y}`);

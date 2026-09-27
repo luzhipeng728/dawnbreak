@@ -119,6 +119,8 @@ const menus = {
       const overlap = cx => others.reduce((s, o) => s + Math.max(0, Math.min(cx + w, o.offsetLeft + o.offsetWidth) - Math.max(cx, o.offsetLeft)) * Math.max(0, Math.min(y + hh, o.offsetTop + o.offsetHeight) - Math.max(y, o.offsetTop)), 0);
       x = xs[at] ?? xs.center;
       if (others.length && overlap(x) > 0) for (const k of [at, 'center', 'left', 'right']) if (overlap(xs[k]) < overlap(x) - 1) x = xs[k];
+      // 实在放不下时错开（阶梯式），保证每个窗口的标题栏都露出来
+      for (let k = 0; k < 8 && others.some(o => Math.abs(o.offsetLeft - x) < w * 0.5 && Math.abs(o.offsetTop - y) < 36); k++) { y += 38; x += (x + w + 30 < W ? 30 : -30); }
     }
     this.moveWin(el, x, y); el.dataset.placed = '1';
   },

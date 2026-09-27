@@ -129,17 +129,17 @@ function toastMsg(msg, col = '#fff', kind) {
   toastList.push({ msg, col, t: 0, end: 2.6 });
   if (toastList.length > 4) toastList.splice(1, 1);   // 排得太多：丢掉最早排队的（正在显示的那条不动）
 }
+// 横幅用 DOM 画在所有窗口之上（画在画布上会被商店 / 背包等窗口挡住）；ui.draw 每帧开始时清标记，谁这一帧调用了就显示，没人调用就隐藏
+const toastBar = { el: null, shown: false, sig: '' };
 function drawToastBanner(c, y = 380) {
   const now = performance.now(), dt = Math.min(0.1, (now - (drawToastBanner.last || now)) / 1000); drawToastBanner.last = now;
   const m = toastList[0]; if (!m) return;
   m.t += dt;
   if (toastList.length > 1) m.end = Math.min(m.end, Math.max(1.2, m.t + 0.35));   // 后面有排队的：至少显示 1.2 秒就换下一条
   if (m.t >= m.end) { toastList.shift(); return; }
-  const a = Math.min(1, m.t / 0.15, (m.end - m.t) / 0.35);
-  c.save(); c.globalAlpha = a;
-  c.font = '700 28px "PingFang SC","Microsoft YaHei",sans-serif'; const w = Math.min(1500, c.measureText(m.msg).width + 180);
-  const g = c.createLinearGradient(960 - w / 2, 0, 960 + w / 2, 0); g.addColorStop(0, 'rgba(8,6,12,0)'); g.addColorStop(0.2, 'rgba(8,6,12,.62)'); g.addColorStop(0.8, 'rgba(8,6,12,.62)'); g.addColorStop(1, 'rgba(8,6,12,0)');
-  c.fillStyle = g; c.fillRect(960 - w / 2, y - 30, w, 48);
-  uiText(m.msg, 960, y + 4, { size: 28, align: 'center', color: m.col, sw: 5 });
-  c.restore();
+  const B = toastBar;
+  if (!B.el) { B.el = h('div', { id: 'toastbar' }, h('span')); dom.appendChild(B.el); }
+  const sig = m.msg + m.col + y; if (B.sig !== sig) { B.sig = sig; const sp = B.el.firstChild; sp.textContent = m.msg; sp.style.color = m.col; B.el.style.top = `calc(var(--u) * ${y - 30}px)`; }
+  B.el.style.opacity = Math.min(1, m.t / 0.15, (m.end - m.t) / 0.35).toFixed(2); B.el.hidden = false; B.shown = true;
 }
+function toastBarFrame(end) { const B = toastBar; if (!end) { B.shown = false; return; } if (B.el && !B.shown && !B.el.hidden) B.el.hidden = true; }

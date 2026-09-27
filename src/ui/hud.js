@@ -75,7 +75,7 @@ const ui = {
     const c = uctx, now = performance.now(), rdt = Math.min(0.1, (now - (this.lastNow || now)) / 1000); this.lastNow = now;
     if (!this.inputReady) this.initInput();
     c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, ucan.width, ucan.height);
-    c.setTransform(uiScale, 0, 0, uiScale, 0, 0);
+    c.setTransform(uiScale, 0, 0, uiScale, 0, 0); toastBarFrame(false);
     if (save.data && game.player && game.scene !== 'title' && !game.paused) save.data.playTime = (save.data.playTime || 0) + rdt;   // 角色选择界面显示的游戏时间
     const fight = game.scene === 'dungeon' || game.scene === 'test';
     if (this.panelOn()) { this.drawLog(c, rdt); this.drawPanel(c); }
@@ -84,7 +84,7 @@ const ui = {
     if (game.cutin && uiPref('cutin')) this.drawCutin(c);
     if (game.scene === 'title') drawToastBanner(c, 120);
     if (PARAMS.has('fps') || uiPref('fps')) uiText(`${fps.toFixed(0)} fps · ents ${ents.length} fx ${fxList.length}`, 1900, 30, { size: 20, align: 'right' });
-    menus.drawUI(c);
+    menus.drawUI(c); toastBarFrame(true);
   },
   /* ---- 左下系统消息（获得物品 / 金币 / 任务进度的滚动记录；toastMsg 的 'log' 类消息写到这里，横幅类不重复记录） ---- */
   pushLog(msg, col = '#e8e0d0') { this.log.push({ msg, col, t: 0 }); if (this.log.length > 30) this.log.shift(); },

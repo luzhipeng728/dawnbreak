@@ -72,13 +72,64 @@ async function newbie() {
   await P.closeAll();
 }
 
+async function clickDlgOk() { const b = page.locator('.idlg .row .btn').last(); if (await b.count()) { await b.click(); await wait(400); return true; } return false; }
 async function town() {
-  // 商店：林纳斯（多选购买）
+  // 商店：林纳斯（多选购买 → 出售）
   check(await P.talk('linus'), '和林纳斯对话失败');
   const svc = await page.evaluate(() => [...menus.wins.npc.querySelectorAll('.npcmenu .btn')].map(b => b.textContent));
   step('林纳斯菜单：' + svc.join(' '));
   await P.npcService('商店'); await P.shot('shop');
-  step('商店窗口：' + await page.evaluate(() => menus.stack.join(',')));
+  const g0 = await page.evaluate(() => ({ gold: game.gold, n: inv.items.length }));
+  await page.click('.shopcats .cat:has-text("材料")').catch(() => {}); await wait(200);
+  const rows = page.locator('.shopwin .srow'); const nRows = await rows.count();
+  for (let i = 0; i < Math.min(2, nRows); i++) { await rows.nth(i).click(); await wait(150); }
+  await P.shot('shop-select');
+  await page.click('.shopwin .btn:has-text("购买选中")'); await wait(300); await clickDlgOk();
+  const g1 = await page.evaluate(() => ({ gold: game.gold, n: inv.items.length }));
+  step(`多选购买：金币 ${g0.gold} → ${g1.gold}，物品 ${g0.n} → ${g1.n}`); check(g1.gold < g0.gold, '多选购买没有扣钱');
+  await P.shot('shop-bought');
+  await page.click('.shopwin .itab:has-text("出售")'); await wait(250);
+  await page.click('.shopwin .cat:has-text("全选普通")'); await wait(200); await P.shot('sell-select');
+  const sellBtn = page.locator('.shopwin .btn:has-text("出售选中")');
+  if (await sellBtn.count()) { await sellBtn.click(); await wait(300); await clickDlgOk(); }
+  const g2 = await page.evaluate(() => ({ gold: game.gold, n: inv.items.length }));
+  step(`出售：金币 ${g1.gold} → ${g2.gold}，物品 ${g1.n} → ${g2.n}`); await P.shot('sold');
+  await P.closeAll();
+  // 背包：右键穿装备（先从回购把装备买回来一件，保证有装备可穿——正常玩家不会全卖，这里只是为了继续流程）
+  await P.tap('KeyI'); await wait(400);
+  const eqCell = page.locator('[data-win="inv"] .igrid .islot:has(img)').first();
+  if (await eqCell.count()) { await eqCell.click({ button: 'right' }); await wait(300); step('右键穿戴：' + await page.evaluate(() => Object.keys(inv.equip).filter(k => inv.equip[k]).join(','))); }
+  else P.note('背包里没有装备可穿（都卖掉了）');
+  await P.tap('KeyM'); await wait(400); await P.shot('inv-status');
+  await P.closeAll();
+  // 强化
+  check(await P.talk('linus'), '和林纳斯对话失败');
+  await P.npcService('强化'); await wait(300); await P.shot('enhance');
+  const eb = page.locator('.enhright .btn.big');
+  if (await eb.count()) { const e0 = await page.evaluate(() => IW.enhSel && IW.enhSel.enh); await eb.click(); await wait(400); await clickDlgOk(); await wait(1500); const e1 = await page.evaluate(() => IW.enhMsg && IW.enhMsg.text); step(`强化：+${e0} → ${e1}`); await P.shot('enhanced'); }
+  await P.closeAll();
+  // 技能：学一个技能，拖到 HUD 技能栏
+  await P.tap('KeyK'); await wait(400);
+  const learn = page.locator('.sklist2 .ski2:not(.lock) .pmb:not(.off):has-text("+")').first();
+  if (await learn.count()) { await learn.click(); await wait(300); }
+  await P.shot('skills');
+  const learned = await page.evaluate(() => Object.keys(game.skillLv).filter(k => game.skillLv[k] > 0 && !SKILLS[k].passive).sort((a, b) => game.skillBar.includes(a) - game.skillBar.includes(b)));
+  step('已学的主动技能：' + learned.join(','));
+  if (learned.length) {
+    const target = await page.evaluate(() => { const R = hudSkillRect(4), r = ucan.getBoundingClientRect(); return { x: r.left + (R.x + R.s / 2) / 1920 * r.width, y: r.top + (R.y + R.s / 2) / 1080 * r.height }; });
+    const b2 = await page.locator(`.sklist2 .skic[data-id="${learned[0]}"]`).boundingBox();
+    if (b2) { await page.mouse.move(b2.x + b2.width / 2, b2.y + b2.height / 2); await page.mouse.down(); await page.mouse.move(target.x, target.y, { steps: 12 }); await wait(100); await P.shot('skill-dragging'); await page.mouse.up(); await wait(300); }
+    const bar = await page.evaluate(() => game.skillBar.slice(0, 6));
+    step('拖到 HUD 第 5 格后：' + bar.join(',')); check(bar[4] === learned[0], `拖技能 ${learned[0]} 到 HUD 技能栏失败`);
+    await P.shot('skill-dragged');
+  }
+  await P.closeAll();
+  // 世界地图：看看赫顿玛尔（Lv.3 才能去）
+  await P.tap('KeyN'); await wait(500); await P.shot('worldmap');
+  const pt = page.locator('.wm-node[data-id="hendon_myre"]').first();
+  if (await pt.count()) { await pt.click(); await wait(300); await P.shot('worldmap-sel'); }
+  step('地图详情：' + await page.evaluate(() => (document.querySelector('.wm-info') || {}).textContent || '').then(t => t.slice(0, 120)));
+  await P.closeAll();
 }
 
 try {

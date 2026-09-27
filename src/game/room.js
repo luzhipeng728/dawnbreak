@@ -51,7 +51,8 @@ function drawArtBack(c, room) {
 let vignette = null;
 function drawGrade(c, room) {
   const G = BG_GRADE[room.theme]; if (!G) return;
-  c.save(); c.globalCompositeOperation = 'soft-light'; c.fillStyle = G.tint; c.fillRect(0, 0, WW, WH); c.restore();
+  // 色调：原来用全屏 soft-light 混合（高级混合模式需要读回整屏像素，GPU 很贵），改成普通半透明叠加
+  c.save(); c.globalAlpha = 0.6; c.fillStyle = G.tint; c.fillRect(0, 0, WW, WH); c.restore();
   if (!vignette) { const [cv, x] = offCanvas(480, 270); const g = x.createRadialGradient(240, 150, 90, 240, 135, 300); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)'); x.fillStyle = g; x.fillRect(0, 0, 480, 270); vignette = cv; }
   c.drawImage(vignette, 0, 0, WW, WH);
 }

@@ -22,6 +22,7 @@ MAIN = '/Users/luzhipeng/projects/dawnbreak/art'                              # 
 SRC = os.path.join(MAIN, 'src', 'sky')
 GI = os.path.expanduser('~/.claude/skills/gpt-image/scripts/gpt_image.py')
 PAR = 2   # 生图并发上限
+BACKOFF = 65   # 遇到 429 的退避秒数（其他区域的脚本可以改这两个值，见 behemoth_art.py）
 
 # ---- 怪物设定：外观、站立高度（世界单位）、攻击 / 施法描述、手持物；fly = 悬浮（切帧后整体抬高） ----
 M = {
@@ -101,7 +102,7 @@ def gen(out, prompt, size, model=None, refs=()):
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode == 0 and os.path.exists(out): return f'ok   {os.path.basename(out)}  {time.time() - t:.0f}s'
         err = (r.stderr + r.stdout)[-300:]
-        time.sleep(65 if '429' in err else 8 + attempt * 6)
+        time.sleep(BACKOFF if '429' in err else 8 + attempt * 6)
     return f'FAIL {os.path.basename(out)}: {err}'
 
 
@@ -110,6 +111,7 @@ def sheet_job(name, sheet):
     import sheets2
     d = M[name]; ref = os.path.join(SRC, f'{name}_ref.png'); out = os.path.join(SRC, 'sheets2', f'{name}_{sheet}.png')
     if sheet in ('walk', 'run'):
+        if d.get('cycle'): return out, sheets2.prompt(d['cycle'][sheet], None), [ref]   # 车辆 / 植物等没有腿的：自定义循环
         if d.get('fly'): return out, sheets2.prompt(FLY[sheet], None), [ref]
         return out, sheets2.guide_prompt(sheet, d['hold']), [ref, os.path.join(MAIN, 'src', f'guide_{sheet}.png')]
     atk, cast, low = d['atk'], d['cast'], d['low']
@@ -248,6 +250,7 @@ def main():
         for n in M:
             if not n.startswith(a.only): continue
             for sh in a.sheets.split(','):
+                if sh not in M[n].get('sheets', ('walk', 'run', 'act', 'more')): continue
                 out, prompt, refs = sheet_job(n, sh); L.append((out, prompt, '2048x2048', 'gpt-image-2.5-sunburst', refs))
     elif a.phase in ('bg', 'edge'):
         for t, d in BG.items():

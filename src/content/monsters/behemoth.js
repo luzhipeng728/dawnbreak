@@ -278,12 +278,12 @@ Object.assign(MON, {
     model: () => buildCat({ fur: '#e8e0d0', belly: '#ffffff', ear: '#c8a040', eye: '#6ac8ff', cloth: '#3a6a9a' }),
     attacks: [{ clip: 'cast', range: [0, 300], dy: 200, cd: [4, 5.5], cond: skyRangedOk, act: { dur: 1.3, onStart: skyRangedUse, events: [evAt(0.2, e => { const p = game.player; if (!p) return; telegraph({ x: p.x, y: p.y, r: 44, dur: 1.1, col: '#ff5a3a', fire: g => { if (e.dead) return; meteorImpact(g, 0.45); areaHit(e, g.x, g.y, 44, 0, { dmg: 1.1, down: true, knock: 180, hs: 0.07, snd: 'fire' }); } }); })] } }] },
   // 精英：园丁鲁尔（会种混乱花的树精）、巨型黑章鱼（会旋转、喷墨、召唤小八爪；官方是第一脊椎的领主）
-  blackOctopus: { name: '巨型黑章鱼', lvl: 29, hp: 12000, atk: 275, def: 600, w: 18, d: 14, h: 96, weight: 3, speed: 70, exp: 230, gold: [50, 100], shadowR: 24, pref: 70, clips: BEAST_CLIPS, scale: 1.5,
+  blackOctopus: { name: '巨型黑章鱼', lvl: 29, hp: 12000, atk: 275, def: 600, w: 34, d: 22, h: 160, weight: 5, speed: 60, exp: 230, gold: [50, 100], shadowR: 44, pref: 90, clips: BEAST_CLIPS, scale: 2.1, noGrab: true,
     model: () => buildCat({ fur: '#3a2a4a', belly: '#6a5a7a', ear: '#2a1a3a', eye: '#ff3a3a', cloth: '#1a0a2a' }),
     attacks: [
-      { clip: 'roar', range: [0, 120], dy: 50, cd: [5, 7], w: 1.4, act: { dur: 2.0, superArmor: true, onStart: e => { e.spinTele = telegraph({ x: e.x, y: e.y, r: 110, dur: 0.8, col: '#ff5a8a', follow: e }); fxText('要转起来了！', e.x, e.y, e.z + 120, { col: '#ff9ad8', size: 12 }); },
-        onEnd: e => { if (e.spinTele) killTele(e.spinTele); }, hits: [{ t0: 0.8, t1: 1.7, rep: 0.45, box: [-110, 110, 50, 0, 90], dmg: 0.55, knock: 160, stun: 0.3, hs: 0.04, snd: 'blunt' }], events: [evAt(0.8, e => { sfx.swing(true); for (let i = 0; i < 4; i++) game.after(i * 0.28, () => { if (!e.dead) fxShock(e.x, e.y, 110, '#b060d0'); }); })] } },
-      { clip: 'throw', range: [60, 360], dy: 60, cd: [5, 7], act: { dur: 1.2, events: [evAt(0.1, e => bhInk(e, 80))] } },
+      { clip: 'roar', range: [0, 145], dy: 60, cd: [5, 7], w: 1.4, act: { dur: 2.0, superArmor: true, onStart: e => { e.spinTele = telegraph({ x: e.x, y: e.y, r: 135, dur: 0.9, col: '#ff5a8a', follow: e }); fxText('要转起来了！', e.x, e.y, e.z + 190, { col: '#ff9ad8', size: 12 }); },
+        onEnd: e => { if (e.spinTele) killTele(e.spinTele); }, hits: [{ t0: 0.9, t1: 1.8, rep: 0.45, box: [-135, 135, 60, 0, 120], dmg: 0.55, knock: 160, stun: 0.3, hs: 0.04, snd: 'blunt' }], events: [evAt(0.8, e => { sfx.swing(true); for (let i = 0; i < 4; i++) game.after(i * 0.28, () => { if (!e.dead) fxShock(e.x, e.y, 135, '#b060d0'); }); })] } },
+      { clip: 'throw', range: [80, 380], dy: 60, cd: [5, 7], act: { dur: 1.2, events: [evAt(0.1, e => bhInk(e, 90))] } },
       { clip: 'cast', range: [0, 700], dy: 700, cd: [12, 16], w: 0.7, cond: () => skyAlive('babyOcto') < 3, act: { dur: 1.2, superArmor: true, events: [evAt(0.6, e => bhSummon(e, 'babyOcto', 2, null, '孩子们！', '#ff9ad8'))] } }] },
   // 大祭司：和大主教一起出现在神殿外围的领主房；她活着时大主教有圣光护盾（见下方 roomEnter）
   gblHighPriest: { name: 'GBL教大祭司', lvl: 26, hp: 26000, atk: 290, def: 480, w: 13, d: 12, h: 116, weight: 2, speed: 90, exp: 900, gold: [120, 240], shadowR: 18, pref: 170, clips: BEAST_CLIPS, scale: 1.1, bars: 8,
@@ -365,7 +365,7 @@ MON.gblArchbishop.summons = ['gblBeliever', 'gblHighPriest']; MON.rodin.summons 
 Object.assign(MON_ART, {
   gblBeliever: ['gbl'], gblPriest: ['gbl', { hue: 40, sat: 1.1 }], gblShaman: ['gbl', { hue: 100, sat: 1.1 }], gblBishop: ['gbl', { hue: -140, sat: 1.3, bright: 1.05 }],
   gblRevPriest: ['gbl', { hue: 170, sat: 1.4, bright: 0.75 }], gblRevShaman: ['gbl', { hue: 140, sat: 1.3, bright: 0.7 }], gblRevBishop: ['gbl', { hue: 180, sat: 1.6, bright: 0.8 }],
-  octopus: ['octopus'], octopusBlue: ['octopus', { hue: -90, sat: 1.1 }], babyOcto: ['octopus', { hue: 40, sat: 1.2, bright: 1.1 }], blackOctopus: ['octopus', { sat: 0.35, bright: 0.5 }],
+  octopus: ['octopus'], octopusBlue: ['octopus', { hue: -90, sat: 1.1 }], babyOcto: ['octopus', { hue: 40, sat: 1.2, bright: 1.1 }], blackOctopus: ['octopus', { hue: -40, sat: 0.75, bright: 0.42 }],
   yaksha: ['yaksha'], treant: ['treant'], treantDark: ['treant', { hue: 150, sat: 0.9, bright: 0.75 }], gardenerRul: ['treant', { hue: 40, sat: 1.25, bright: 1.1 }],
   flower: ['flower'], dragonCannon: ['dragonCannon'], fireCannon: ['dragonCannon', { hue: -30, sat: 1.5 }], laserCannon: ['dragonCannon', { hue: 170, sat: 1.1 }],
   sawCart: ['sawCart'], donnier: ['donnier'],

@@ -69,8 +69,14 @@ for (const g of gates) {
   ok(r.mons > 0 && r.spr === r.mons, `${g.id}：怪物 ${r.mons} 只，逐帧精灵 ${r.spr} 只`);
   await page.screenshot({ path: `${out}/route-${g.id}.png` });
   if (g.id === 'second_spine') {   // 通往领主房的前一个房间：一定有巨型黑章鱼
-    const o = await page.evaluate(() => { const D = game.dungeon, L = D.layout, pre = L.rooms.find(rm => rm !== L.boss && Object.values(rm.doors).includes(L.boss)); D.enter(pre, 'left'); return ents.filter(e => e.kind === 'blackOctopus' && !e.dead).length; });
-    ok(o === 1, `second_spine：领主房前的房间里有巨型黑章鱼（${o}）`);
+    const o = await page.evaluate(() => {
+      const D = game.dungeon, L = D.layout, pre = L.rooms.find(rm => rm !== L.boss && Object.values(rm.doors).includes(L.boss)); D.enter(pre, 'left');
+      const B = ents.filter(e => e.kind === 'blackOctopus' && !e.dead), b = B[0], p = game.player;
+      if (b) { p.x = b.x - 230; p.y = b.y; cam.x = clamp(b.x - WW / 2, 0, game.room.x1 - WW); }   // 截图时让黑章鱼在画面中间
+      return { n: B.length, scale: b ? +b.scale.toFixed(2) : 0, w: b ? b.w : 0, h: b ? b.h : 0 };
+    });
+    ok(o.n === 1, `second_spine：领主房前的房间里有巨型黑章鱼（${o.n}）`);
+    ok(o.scale >= 2 && o.w >= 30 && o.h >= 150, `second_spine：巨型黑章鱼是巨型的（画面 ×${o.scale}，碰撞框 ${o.w}×${o.h}）`);
     await wait(900); await page.screenshot({ path: `${out}/route-second_spine-octo.png` });
   }
   const bossRoom = await page.evaluate(() => { const D = game.dungeon; D.enter(D.layout.boss, 'left'); const E = ents.filter(e => e.team === 'e' && !e.dead); const b = E.find(e => e.boss); return { boss: b ? b.kind : '', shield: b ? b.dmgTakenMul || 1 : 0, priest: E.filter(e => e.kind === 'gblHighPriest').length, adds: E.filter(e => !e.boss && e.kind !== 'gblHighPriest').length }; });

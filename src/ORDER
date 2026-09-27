@@ -76,6 +76,10 @@ ui/quest.js
 ui/job.js
 ui/worldmap.js
 content/sprites.js
+# 外观与换装：武器图数据、外观规则、外观合成（给职业精灵模型挂外观层）
+content/avatar/weapon_art.js
+content/avatar/looks.js
+models/avatar.js
 game/flow.js
 ui/artlab.js
 game/bot.js

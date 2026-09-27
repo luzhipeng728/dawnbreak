@@ -34,6 +34,13 @@ function csClassArt(cls, cl = 'cart', job) {
   requestAnimationFrame(() => { try { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.translate(45, 124); C.model().draw(x, (CLIPS[cls] || CLIPS.sword).idle.keys[0][1], 0, {}); } catch (e) { /* 模型未就绪 */ } });
   return cv;
 }
+// 角色位上的站姿：有外观组的 avatarCanvas 时按存档里的装备 / 时装画（官方选角界面显示角色当前的样子），否则用职业立绘
+function csCharArt(d) {
+  if (typeof avatarCanvas === 'function' && typeof lookFromEquip === 'function') {
+    try { const cv = avatarCanvas(d.cls, lookFromEquip(d.cls, d.equip), 180, 240, 2); cv.className = 'cart avatar'; return cv; } catch (e) { /* 回退到立绘 */ }
+  }
+  return csClassArt(d.cls, 'cart', d.job);
+}
 Object.assign(menus, {
   /* ---------------- 标题 ---------------- */
   w_title() {
@@ -67,7 +74,7 @@ Object.assign(menus, {
       const c = chars[i];
       if (!c) { slots.push(h('div', { class: 'cslot empty', onclick: () => { sfx.click(); this.close('charselect'); this.open('newgame'); } }, h('div', { class: 'plus' }, '+'), h('div', { class: 'small' }, '创建角色'))); continue; }
       const card = h('div', { class: 'cslot' + (i === sel ? ' sel' : ''), 'data-i': i, onclick: () => { if (this.csSel !== i) { this.csSel = i; sfx.click(); this.refresh('charselect'); } }, ondblclick: () => start(i) },
-        h('div', { class: 'lv' }, `Lv.${c.lvl}`), csClassArt(c.cls, 'cart', c.job), h('div', { class: 'stage' }),
+        h('div', { class: 'lv' }, `Lv.${c.lvl}`), csCharArt(c), h('div', { class: 'stage' }),
         h('div', { class: 'nm' }, c.name || csClassName(c.cls)), h('div', { class: 'job' }, csClassName(c.cls, c.job)));
       slots.push(card);
     }

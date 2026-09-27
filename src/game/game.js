@@ -8,8 +8,8 @@ const game = {
   combo: 0, comboT: 0, maxCombo: 0, comboDmg: 0, timeStop: 0, cutin: null, maxAttackers: 2,
   gold: 0, exp: 0, lvl: 1,
   onPlayerHit(t, dmg, crit, counter, back) { this.combo++; this.comboT = 1.6; this.comboDmg += dmg; this.maxCombo = Math.max(this.maxCombo, this.combo); if (this.dungeon) this.dungeon.onHit(t, dmg, counter, back); },
-  onPlayerHurt(p, dmg) { p.lastHurtT = this.t; p.invul = Math.max(p.invul, 0.2); if (this.dungeon) this.dungeon.hurt++; },
-  onKill(t, a) { if (t.team === 'p') return; for (const e of ents) if (e !== t && !e.dead && e.def_ && e.def_.coward) cowardDrop(e); if (this.dungeon) this.dungeon.onKill(t, a); else { spawnCoins(t, rndi(t.gold ? t.gold[0] : 5, t.gold ? t.gold[1] : 15)); } },
+  onPlayerHurt(p, dmg, a) { p.lastHurtT = this.t; if (!(a && a.fighter)) p.invul = Math.max(p.invul, 0.2); if (this.dungeon) this.dungeon.hurt++; },   // 被怪物打中给 0.2 秒保护；决斗场里不给（否则连不上招）
+  onKill(t, a) { if (this.duel) { this.duel.onKill(t, a); return; } if (t.team === 'p') return; for (const e of ents) if (e !== t && !e.dead && e.def_ && e.def_.coward) cowardDrop(e); if (this.dungeon) this.dungeon.onKill(t, a); else { spawnCoins(t, rndi(t.gold ? t.gold[0] : 5, t.gold ? t.gold[1] : 15)); } },
   onSkill(id) { },
   timers: [],
   after(sec, fn) { this.timers.push({ t: sec, fn }); },
@@ -24,7 +24,7 @@ function step(dt) {
   const p = game.player;
   if (p) {
     for (const k in p.cool) if (p.cool[k] > 0) p.cool[k] -= dt;
-    if (!p.dead && game.t - (p.lastHurtT || -99) > 4 && p.hp < p.hpMax) p.hp = Math.min(p.hpMax, p.hp + p.hpMax * 0.015 * dt);
+    if (!p.dead && !game.pvp && game.t - (p.lastHurtT || -99) > 4 && p.hp < p.hpMax) p.hp = Math.min(p.hpMax, p.hp + p.hpMax * 0.015 * dt);
     if (!p.dead) { p.mp = Math.min(p.mpMax, p.mp + p.mpMax * 0.02 * dt * (p.mpRegen || 1) * (1 + (p.buffMpr || 0)) * (game.scene === 'town' ? 5 : 1)); }
     if (inv.potCd > 0) inv.potCd -= dt;
     if (p.weak && (game.weakChk = (game.weakChk || 0) + dt) > 1) { game.weakChk = 0; if (!(save.data.weak > Date.now())) { recalcStats(p); toastMsg('虚弱状态解除了', '#8aff9a'); } }
@@ -33,6 +33,7 @@ function step(dt) {
     applyBuffs(p);
   }
   if (game.scene === 'dungeon' || game.scene === 'test') {
+    for (const e of ents) if (e.fighter && e !== p) tickFighter(e, dt);   // AI / 网络格斗者：冷却、MP、BUFF
     for (const e of ents) if (e.control && e.hitstop <= 0 && !(game.dungeon && game.dungeon.transition)) e.control(e, dt);
     for (const e of ents) { e.update(dt); if (e.status && !e.dead) updateStatus(e, dt); }
     resolveHits();
@@ -40,6 +41,7 @@ function step(dt) {
     updateGroundFx(dt);
     updateDrops(dt);
     if (game.dungeon) game.dungeon.update(dt);
+    if (game.duel) game.duel.update(dt);
   } else if (game.scene === 'town') { worldUpdate(dt); }
   for (let i = game.timers.length - 1; i >= 0; i--) { const T = game.timers[i]; T.t -= dt * (game.slowmo ? 1 / 0.35 : 1); if (T.t <= 0) { game.timers.splice(i, 1); T.fn(); } }
   updateFx(dt);
@@ -60,7 +62,7 @@ function applyBuffs(p) {
 function updateCamera(dt) {
   const p = game.player, R = game.room;
   if (p && R) {
-    const want = clamp(p.x - WW / 2 + p.face * 70, R.x0, R.x1 - WW);
+    const want = clamp((game.duel ? game.duel.focusX() : p.x + p.face * 70) - WW / 2, R.x0, R.x1 - WW);
     cam.x = damp(cam.x, want, 5, dt);
     cam.x = clamp(cam.x, R.x0, Math.max(R.x0, R.x1 - WW));
   }
@@ -94,6 +96,7 @@ function renderWorld() {
   if (game.timeStop > 0) { c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(0, 0, WW, WH); const p = game.player; if (p) p.draw(c); }
   if (cam.flash > 0) { c.globalAlpha = clamp(cam.flash * 5, 0, 0.85); c.fillStyle = cam.flashCol; c.fillRect(0, 0, WW, WH); c.globalAlpha = 1; }
   if (game.dungeon) game.dungeon.drawOverlay(c);
+  if (game.duel) game.duel.drawOverlay(c);
 }
 let lastT = performance.now(), acc = 0, fps = 60, fpsAcc = 0, fpsN = 0;
 function frame(now) {

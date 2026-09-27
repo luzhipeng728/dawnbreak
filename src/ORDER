@@ -11,6 +11,8 @@ engine/fx.js
 engine/audio.js
 engine/music.js
 engine/entity.js
+engine/combat.js
+engine/pad.js
 # game：玩法系统
 game/player.js
 content/classes/sword_skills.js

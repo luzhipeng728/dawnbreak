@@ -44,7 +44,7 @@ const MAGE_ACTS = {
   dash: { name: 'dash', clip: 'dash', dur: 0.45, move: [[0, 0.24, 380]], noCounter: true,
     hits: [{ t0: 0.05, t1: 0.24, box: [0, 60, 26, 10, 90], dmg: 1.1, launch: 220, knock: 90, hs: 0.06, snd: 'blunt' }], events: [slashAt(0.05, { a0: -2.6, a1: 1.0, r: 50, w: 10, off: [10, 40] })] },
   jatk: { name: 'jatk', clip: 'mjatk', dur: 0.32, airOnly: true, lowGrav: 0.7, events: [evAt(0.08, e => magicOrb(e, { down: true, dmg: 0.9, burst: 30 }))] },
-  back: SWORD_ACTS.back,
+  back: BACKSTEP,
 };
 /* ---- 技能 ---- */
 SKILLS.mg_orb = { name: '魔力弹射', cls: 'mage', lvReq: 1, maxLv: 10, mp: 14, cd: 2.4, desc: '连续射出三发会自动追踪敌人的魔力弹。', col: '#b04ad0',

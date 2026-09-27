@@ -48,7 +48,7 @@ const GUN_ACTS = {
     update: e => { if (e.actT < 0.3 && Math.random() < 0.5) fxDust(e.x - e.face * 10, e.y, 1, 4); } },
   jatk: { name: 'jatk', clip: 'gdown', dur: 0.22, airOnly: true, lowGrav: 0.55, chain: [0.11, 0.22], next: 'jatk', hold: true,
     onStart: e => { e.vz = Math.max(e.vz, 30); }, events: [evAt(0.01, e => fireBullet(e, { down: true, dmg: 0.45 }))] },
-  back: SWORD_ACTS.back,
+  back: BACKSTEP,
 };
 /* ---- 技能 ---- */
 const gIcon = (fn) => (c, arc) => { c.lineWidth = 5; fn(c, arc); };
@@ -115,7 +115,7 @@ SKILLS.g_gatling = { name: '格林机枪', cls: 'gun', lvReq: 7, maxLv: 10, mp: 
   drawIcon: gIcon(c => { c.fillRect(10, 26, 36, 12); for (let i = 0; i < 3; i++) c.fillRect(46, 25 + i * 5, 12, 3); c.fillRect(18, 38, 8, 14); }),
   act: (lv) => ({ name: 'gatling', clip: 'gatling', dur: 2.1, superArmor: true, noCounter: true, onEnd: e => { e.vy = 0; },
     update: (e, dt) => {
-      if (e.team === 'p') e.vy = input.dy() * 70;
+      if (e.pad) e.vy = e.pad.dy() * 70;
       const n = Math.floor(e.actT / 0.05); if (n !== e._gt && e.actT > 0.2 && e.actT < 2.0) { e._gt = n; fireBullet(e, { dmg: skillDmg(0.18, 0.02, lv), lift: 70, knock: 18, life: 0.45, vol: 0.45, quiet: n % 2 === 1 }); e.x -= e.face * 0.6; }
       if (!(e.model instanceof SpriteModel)) addFx({ x: e.x, y: e.y + 0.6, z: e.z, face: e.face, dur: 0.02, draw(c) { const X = sx(this.x + this.face * 14), Y = sy(this.y, this.z + 56); c.save(); c.translate(X, Y); c.scale(this.face, 1); c.fillStyle = '#3a3a44'; c.fillRect(0, -6, 30, 12); c.fillStyle = '#5a5a66'; for (let i = 0; i < 3; i++) c.fillRect(30, -5 + i * 3.5, 16, 2.5); c.fillStyle = '#6a4a2a'; c.fillRect(4, 6, 6, 10); c.restore(); } });
     } }) };

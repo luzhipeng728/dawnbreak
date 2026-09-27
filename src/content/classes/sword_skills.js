@@ -1,9 +1,33 @@
+const SWORD_ACTS = {
+  atk1: { name: 'atk1', dur: 0.34, chain: [0.13, 0.34], next: 'atk2', move: [[0.03, 0.09, 120]],
+    hits: [{ t0: 0.07, t1: 0.12, box: [0, 72, 28, 18, 100], dmg: 1.0, stun: 0.36, knock: 60, hs: 0.055 }],
+    events: [slashAt(0.06, { a0: -2.4, a1: 0.7, r: 54, w: 15, off: [14, 58], squash: 0.72 })] },
+  atk2: { name: 'atk2', dur: 0.36, chain: [0.13, 0.36], next: 'atk3', move: [[0.03, 0.09, 110]],
+    hits: [{ t0: 0.07, t1: 0.12, box: [0, 70, 28, 18, 110], dmg: 1.05, stun: 0.38, knock: 60, hs: 0.055 }],
+    events: [slashAt(0.06, { a0: 1.0, a1: -2.1, r: 52, w: 15, off: [12, 56], squash: 0.8 })] },
+  atk3: { name: 'atk3', dur: 0.5, chain: [0.26, 0.5], next: null, move: [[0.07, 0.16, 240]],
+    hits: [{ t0: 0.13, t1: 0.19, box: [0, 84, 30, 0, 115], dmg: 1.7, stun: 0.5, knock: 230, hs: 0.09, shake: 3, down: false, big: 1.3 }],
+    events: [slashAt(0.12, { a0: -2.7, a1: 1.1, r: 66, w: 22, off: [10, 56], squash: 0.85, heavy: true })] },
+  dash: { name: 'dash', dur: 0.45, move: [[0, 0.26, 420]], noCounter: true,
+    hits: [{ t0: 0.05, t1: 0.26, box: [0, 58, 26, 30, 90], dmg: 1.35, stun: 0.45, knock: 240, hs: 0.07, shake: 2 }],
+    events: [evAt(0.04, e => { fxStreak({ x: e.x, y: e.y, z: e.z + 62, face: e.face, len: 80, w: 10, col: '#8fd8ff' }); sfx.swing(true); })] },
+  jatk: { name: 'jatk', dur: 0.36, airOnly: true, lowGrav: 0.75,
+    hits: [{ t0: 0.07, t1: 0.17, box: [0, 64, 28, -30, 80], dmg: 0.95, stun: 0.35, knock: 50, hs: 0.05, airLift: 160 }],
+    events: [slashAt(0.06, { a0: -1.9, a1: 1.3, r: 48, w: 14, off: [12, 40] })] },
+  back: BACKSTEP, _old: { name: 'back', dur: 0.36, move: [[0, 0.3, -340, 250]], noCounter: true, onStart: e => { e.invul = 0.36; e.jumpRun = false; e.mp = Math.max(0, e.mp - 1); sfx.jump(); }, onLand: e => { e.vx *= 0.3; e.endAct(); } },
+  // 连突刺：跑攻后再按 X
+  dash2: { name: 'dash2', clip: 'flurry', dur: 0.55, move: [[0, 0.4, 60]], noCounter: true,
+    hits: [{ t0: 0.02, t1: 0.4, rep: 0.08, box: [0, 64, 26, 30, 95], dmg: 0.45, stun: 0.3, knock: 40, hs: 0.03, snd: 'stab' }, { t0: 0.42, t1: 0.48, box: [0, 70, 28, 25, 100], dmg: 1.2, knock: 220, stun: 0.5, hs: 0.07, shake: 2 }],
+    update: e => { if (e.actT < 0.4 && Math.floor(e.actT / 0.08) !== e._fl) { e._fl = Math.floor(e.actT / 0.08); fxStreak({ x: e.x + e.face * 12, y: e.y + rnd(-4, 4), z: e.z + rnd(50, 70), face: e.face, len: rnd(45, 65), w: 5, col: '#8fd8ff', dur: 0.1 }); } } },
+};
+SWORD_ACTS.dash.chain = [0.14, 0.45]; SWORD_ACTS.dash.next = 'dash2';
+
+CLASSES.sword.acts = SWORD_ACTS;
 /* =====================================================================
    12. 技能（剑士）。每个技能：名称、描述、MP、冷却、学习等级、最大等级、图标、act(lv, 玩家) → 动作定义
    技能伤害 = 攻击力 × dmg，dmg 随技能等级成长
    ===================================================================== */
 const SKILLS = {};
-const hittable = (e, t) => t.team !== e.team && !t.dead && !t.remove && t.invul <= 0 && t.team !== 'n';
 const skillDmg = (base, per, lv) => base + per * (lv - 1);
 function projWave(p, o) {   // 地面剑气：向前推进的多段浮空判定
   spawnProj({ owner: p, x: p.x + p.face * 30, y: p.y, z: 0, vx: p.face * (o.speed || 360), face: p.face, life: o.life || 0.7, w: 26, d: 26, h: 90,
@@ -87,9 +111,4 @@ SKILLS.awaken = { name: '破晓·一闪', cls: 'sword', lvReq: 8, maxLv: 3, mp: 
       for (const t of ents) if (hittable(e, t) && Math.abs(t.x - (cam.x + WW / 2)) < WW / 2 + 20)
         applyHit(e, t, { dmg: skillDmg(14, 4, lv), down: true, knock: 220, hs: 0.2, big: 2.2, col: '#ffe070', critBonus: 0.3 }, { proj: true });
     })] }) };
-// 立即判定（不依赖动作的命中窗口）：用于冲击波、拔刀等
-function instantHit(e, h) {
-  const B = atkBox(e, h);
-  for (const t of ents) if (hittable(e, t) && overlaps(B, t)) applyHit(e, t, h);
-}
 const SWORD_SKILL_ORDER = ['upslash', 'triple', 'wave', 'slam', 'focus', 'iai', 'spin', 'awaken', 'flurry', 'rise'];

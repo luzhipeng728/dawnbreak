@@ -68,8 +68,9 @@ for (const kind of KINDS) {
       const A = m.def_.attacks[i]; m.face = __G.player.x >= m.x ? 1 : -1;
       m.doAct({ name: A.clip, clip: A.clip, ...A.act, events: (A.act.events || []).map(ev => ({ ...ev, done: false })), hits: A.act.hits && A.act.hits.map(h => ({ ...h })) });
     }, i);
-    await page.waitForTimeout(1500);
-    if (i === 1) await page.screenshot({ path: `${out}/${kind}-force.png` });
+    await page.waitForTimeout(350);
+    await page.screenshot({ path: `${out}/${kind}-a${i}.png` });   // 预警刚出现的时候
+    await page.waitForTimeout(1150);
   }
   // 自由行动：玩家站着挨打，看怪物会不会主动出手
   await page.waitForTimeout(boss ? 5000 : 4000);

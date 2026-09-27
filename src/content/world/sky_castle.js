@@ -14,9 +14,9 @@ defineDungeon('golem_tower', { name: '石巨人塔', lvl: [16, 19], theme: 'skyT
   desc: '魔法生命体石巨人把守的高塔。打倒石巨人操纵师，石巨人会一起崩裂。黄金巨人普拉塔尼几乎不会硬直，但连续冲撞之后会过热——那就是反击的时机。' });
 defineDungeon('dark_corridor', { name: '黑暗玄廊', lvl: [18, 21], theme: 'skyDark', rooms: 7, branches: 3, rows: 4, mobs: [['kargo', 3], ['kargoGoggle', 1.5], ['expeller', 3], ['expellerAxe', 1.5]], elite: 'expellerAxe', boss: { kind: 'skyExpeller', lvl: 22 }, bossAdds: 3, clearExp: 7600, bgm: 'abyss', bossBgm: 'boss',
   desc: '伸手不见五指的长廊。夜视镜卡格会让四周更黑，先解决它。光之城主的亲卫队长天之驱逐者会落下 1~3 列雷电（总有一条安全通道）并长距离冲刺。' });
-defineDungeon('lord_palace', { name: '城主宫殿', lvl: [20, 23], theme: 'skyPalace', rooms: 8, branches: 3, rows: 4, mobs: [['minius', 2], ['puppeteerRock', 2], ['golemBronze', 2], ['expeller', 2], ['expellerAxe', 1], ['kargoGoggle', 1]], elite: 'hughes', boss: { kind: 'seghart', lvl: 24 }, bossAdds: 3, clearExp: 9000, bgm: 'dungeon3',
+defineDungeon('lord_palace', { name: '城主宫殿', lvl: [20, 23], theme: 'skyPalace', rooms: 8, branches: 3, rows: 4, mobs: [['minius', 2], ['puppeteerRock', 2], ['golemBronze', 2], ['expeller', 2], ['expellerAxe', 1], ['kargoGoggle', 1]], elite: 'hughes', boss: { kind: 'seghart', lvl: 24 }, bossAdds: 3, clearExp: 10800, bgm: 'dungeon3',
   desc: '天空之城的最顶层。光之城主赛格哈特会甩动长发、放出光环；雷电密布时要么贴身要么离远；地上出现细细的光线时，赶紧上下移动躲开激光。' });
-defineDungeon('floating_castle', { name: '悬空城', lvl: [21, 24], theme: 'skyPalace', rooms: 7, branches: 3, rows: 4, hidden: true, unlock: { quest: 'q_hidden_floating' }, mobs: [['knight', 3], ['expeller', 2], ['expellerAxe', 1], ['kargo', 1], ['golemBronze', 1]], elite: 'knight', boss: { kind: 'sinEye', lvl: 25 }, bossAdds: 3, clearExp: 10000, bgm: 'abyss', bossBgm: 'boss',
+defineDungeon('floating_castle', { name: '悬空城', lvl: [21, 24], theme: 'skyPalace', rooms: 7, branches: 3, rows: 4, hidden: true, unlock: { quest: 'q_hidden_floating' }, mobs: [['knight', 3], ['expeller', 2], ['expellerAxe', 1], ['kargo', 1], ['golemBronze', 1]], elite: 'knight', boss: { kind: 'sinEye', lvl: 25 }, bossAdds: 3, clearExp: 11500, bgm: 'abyss', bossBgm: 'boss',
   desc: '【隐藏地下城】飘在云上的废城。侍剑骑兵平时是石像，走近才会醒来。罪恶之眼会放冲击波、追踪光柱和石化眼球——眼球那一排总会留一个缺口。' });
 
 /* ---- 门的美术（世界组出图：art/final/world/g_<id>.webp；portal 是传送门在图里的位置 [cx, cy, rx, ry]） ---- */
@@ -30,6 +30,6 @@ if (typeof GATE_ART !== 'undefined') Object.assign(GATE_ART, {
 });
 
 /* ---- 区域地图：从西海岸的云梯上来，站在最左边；越往右等级越高 ---- */
-defineScene('sky_castle', { name: '天空之城', area: '天空之城', kind: 'field', width: 3600, theme: 'skyTower', bgm: 'field', map: [30, 5],
+defineScene('sky_castle', { name: '天空之城', area: '天空之城', kind: 'field', width: 3600, theme: 'skyTower', bgm: 'sky', map: [30, 5],
   exits: [{ side: 'left', to: 'west_coast' }],
   gates: [{ dungeon: 'dragon_tower', x: 480 }, { dungeon: 'puppet_hall', x: 1000 }, { dungeon: 'golem_tower', x: 1520 }, { dungeon: 'dark_corridor', x: 2040 }, { dungeon: 'lord_palace', x: 2560 }, { dungeon: 'floating_castle', x: 3080 }] });

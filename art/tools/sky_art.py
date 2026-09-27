@@ -152,8 +152,10 @@ def clear_holes(im, thr=236, min_area=400):
 
 def cut9(path, holes=True, n=9):
     """同 frames2.cut9，只是换成 clear_holes。"""
-    from prep import remove_bg, components, fill_holes
-    im = remove_bg(Image.open(path)); im = clear_holes(im) if holes else fill_holes(im, min_area=90, thr=251); arr = np.array(im)
+    from prep import remove_bg, components
+    im = remove_bg(Image.open(path))
+    if holes: im = clear_holes(im)                 # False：白色系角色（白甲、白发、白披风）不补洞，否则会把角色本身挖空
+    arr = np.array(im)
     lab, comps = components(arr[..., 3], min_cells=4)
     boxes = []
     for c, cells in comps:

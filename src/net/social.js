@@ -66,11 +66,14 @@ function sxRollback(p) {
   if (p.op === 'list') { sxGiveBack(p.item); game.gold += p.fee || 0; }
   else if (p.op === 'buy') game.gold += p.price || 0;
   else if (p.op === 'send') { game.gold += (p.gold || 0) + (p.postage || 0); for (const it of p.items || []) sxGiveBack(it); }
+  else if (p.op === 'gcreate') game.gold += p.gold || 0;   // 创建公会失败（重名等）：退还金币
 }
 function sxReq(p) {
   if (p.op === 'list') return ['POST', '/api/auction/list', { item: p.item, price: p.price, hours: p.hours, rid: p.rid, char: p.char }];
   if (p.op === 'buy') return ['POST', '/api/auction/buy', { id: p.id, price: p.price, rid: p.rid, char: p.char }];
   if (p.op === 'send') return ['POST', '/api/mail/send', { to: p.to, title: p.title, body: p.body, gold: p.gold, items: (p.items || []).map(item => ({ item })), rid: p.rid }];
+  if (p.op === 'gcreate') return ['POST', '/api/guild/create', { name: p.name, badge: p.badge, rid: p.rid, char: p.char }];
+  if (p.op === 'gshop') return ['POST', '/api/guild/shop/buy', { id: p.id, rid: p.rid }];
   return ['POST', '/api/mail/claim', { id: p.id, rid: p.rid }];
 }
 // 执行一条待办；成功返回服务端结果。失败抛错：err.definite = true 表示已经退回（服务端明确拒绝），否则待办保留、稍后自动重试
@@ -87,7 +90,7 @@ async function sxRunOnce(p) {
     if (sxDefinite(e)) { sxRollback(p); sxDrop(p); await sxFlush(); if (typeof itemsRefresh === 'function') itemsRefresh(); throw Object.assign(new Error(sxErrText(e)), { definite: true, status: e.status }); }
     throw Object.assign(new Error(sxErrText(e) + '（已记录，稍后自动重试）'), { definite: false });
   }
-  if (p.op === 'claim') res.got = sxApplyClaim(res);
+  if (p.op === 'claim' || p.op === 'gshop') res.got = sxApplyClaim(res);   // 邮件附件 / 公会商店：服务端先扣，客户端再入包（同一次写存档里删掉待办）
   sxDrop(p); await sxFlush();
   if (typeof itemsRefresh === 'function') itemsRefresh();
   if (res.unread != null) sxSetCounts(res);
@@ -148,7 +151,9 @@ async function sxMailClaim(m) {
   const p = { rid: sxRid(), op: 'claim', id: m.id, t: Date.now() };
   sxPend().push(p);
   if (!(await sxFlush())) { sxDrop(p); save.write(); throw new Error('网络异常，存档没能上传，请稍后再试'); }
-  return sxRun(p);
+  const r = await sxRun(p);
+  if (m.kind === 'auction' && m.gold > 0) bus.emit('sxAuction', { op: 'sold' });   // 拍卖行货款到账 = 卖出一件（成就统计）
+  return r;
 }
 // items：[{ it: 背包里的物品, n: 数量 }]（可以叠加的物品可以只寄一部分）
 async function sxMailSend({ to, title, body, gold = 0, items = [] }) {
@@ -172,7 +177,7 @@ async function sxMailSend({ to, title, body, gold = 0, items = [] }) {
   const p = { rid: sxRid(), op: 'send', to, title, body, gold, postage, items: parts, char: save.data.name, t: Date.now() };
   sxPend().push(p);
   if (!(await sxFlush())) { sxRollback(p); sxDrop(p); save.write(); throw new Error('网络异常，存档没能上传，请稍后再试'); }
-  return sxRun(p);
+  const r = await sxRun(p); bus.emit('sxMail', { op: 'send' }); return r;
 }
 function sxClearQuick(key) { for (let i = 0; i < 6; i++) if (inv.quick[i] === key && !inv.count(key)) inv.quick[i] = null; }
 
@@ -194,7 +199,7 @@ async function sxAuctionList(it, n, price, hours) {
   const p = { rid: sxRid(), op: 'list', item: part, price, hours, fee, char: save.data.name, t: Date.now() };
   sxPend().push(p);
   if (!(await sxFlush())) { sxRollback(p); sxDrop(p); save.write(); throw new Error('网络异常，存档没能上传，请稍后再试'); }
-  return sxRun(p);
+  const r = await sxRun(p); bus.emit('sxAuction', { op: 'list' }); return r;
 }
 async function sxAuctionBuy(a) {
   if (!save.live) throw new Error('请先进入游戏');
@@ -204,7 +209,7 @@ async function sxAuctionBuy(a) {
   const p = { rid: sxRid(), op: 'buy', id: a.id, price: a.price, name: a.name, char: save.data.name, t: Date.now() };
   sxPend().push(p);
   if (!(await sxFlush())) { sxRollback(p); sxDrop(p); save.write(); throw new Error('网络异常，存档没能上传，请稍后再试'); }
-  return sxRun(p);
+  const r = await sxRun(p); bus.emit('sxAuction', { op: 'buy' }); return r;
 }
 
 /* ---- 全服公告：announce 事件 → 服务端广播（同一件物品 + kind + lvl 10 秒内只发一次） ---- */
@@ -246,7 +251,7 @@ function sxRankReport() {
   const d = save.data;
   SX.rankAt = Date.now(); SX.rankCid = d.created;
   return sxApi('POST', '/api/rank/report', { cid: String(d.created), char: d.name, cls: d.cls, job: game.job || null, lvl: game.lvl, exp: Math.floor(game.exp || 0),
-    score: sxGearScore(), epics: sxEpicCount(), chars: save.chars.map(c => String(c.created)) }).catch(() => {});
+    score: sxGearScore(), epics: sxEpicCount(), ach: typeof achPoints === 'function' ? achPoints() : 0, chars: save.chars.map(c => String(c.created)) }).catch(() => {});
 }
 for (const ev of ['levelUp', 'equip', 'unequip']) bus.on(ev, () => sxRankSoon());
 bus.on('pvpResult', e => {
@@ -279,3 +284,5 @@ if (typeof net !== 'undefined' && typeof net.on === 'function') {
   });
   net.on('notice:show', m => { if (typeof noticeShow === 'function') noticeShow(m); });
 }
+// 好友数（成就统计）：联机组的 netFriends 没有事件，登录时每 10 秒看一次
+setInterval(() => { if (socialOn() && typeof netFriends !== 'undefined' && netFriends.list) bus.emit('friendsList', { n: netFriends.list.length }); }, 10000);

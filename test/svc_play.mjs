@@ -33,7 +33,7 @@ try {
   step('登录、建角色');
   await enter(A, 'alice', '爱丽丝', 0); await enter(B, 'bob', '鲍勃', 1);
   const bar = await ev(A, () => { sxbar.t = 0; ui.draw(); const b = document.getElementById('sxbar'); return b && !b.hidden ? [...b.querySelectorAll('button')].filter(x => getComputedStyle(x).display !== 'none').map(x => x.textContent) : null; });
-  ok(bar && bar.length === 4 && bar.join().includes('拍卖行') && !bar.join().includes('管理'), '登录后屏幕左侧出现社交按钮条（普通玩家没有“管理”）', bar);
+  ok(bar && bar.length === 5 && bar.join().includes('拍卖行') && bar.join().includes('公会') && !bar.join().includes('管理'), '登录后屏幕左侧出现社交按钮条（普通玩家没有“管理”）', bar);
   await shot(A, '01-bar');
 
   step('上架：alice 选背包里的物品 → 定价 → 上架');

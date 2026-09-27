@@ -18,6 +18,7 @@ run guide     node test/guide.mjs
 run quickquest node test/quickquest.mjs
 run world     node test/world.mjs
 run combat    node test/combat.mjs
+run skillsa   node test/skill_sa.mjs
 run avatar    node test/avatar.mjs
 run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,gun:ranger,gun:launcher,mage:elemental,mage:battlemage
 [ "$1" = quick ] && exit 0

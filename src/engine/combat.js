@@ -31,7 +31,10 @@ const PVP = {
   downTime: 0.7,
 };
 const isPvp = (a, t) => !!(a && t && a.fighter && t.fighter && a.team !== t.team);
-const hasSA = e => e.superArmor > 0 || !!(e.st === 'act' && e.act && e.act.superArmor === true);
+// 地下城里玩家的技能释放期间自带霸体（后来的官方版本也是大部分技能有霸体；用户反馈技能总被打断）。
+// 普攻 / 跳跃攻击 / 冲刺攻击不带；决斗场保持技能原本的霸体设定；技能定义里写 noSA: true 可以单独关掉。
+const skillSA = e => !game.pvp && e.team === 'p' && e.st === 'act' && !!e.act && !!e.act.skill && !e.act.noSA && !(SKILLS[e.act.skill] && SKILLS[e.act.skill].noSA);
+const hasSA = e => e.superArmor > 0 || !!(e.st === 'act' && e.act && (e.act.superArmor === true || skillSA(e)));
 const isCounter = t => t.st === 'act' && !!t.act && !t.act.noCounter && t.actT < t.act.counterEnd;
 const foe = (e, t) => t !== e && t.team !== e.team && t.team !== 'n' && !t.dead && !t.remove;
 const hittable = (e, t) => foe(e, t) && t.invul <= 0;

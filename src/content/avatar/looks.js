@@ -2,16 +2,21 @@
    外观数据（外观与换装组）：物品 → 武器图、时装套装 → 帧集、头部配件
    不改物品文件，按物品 key / 武器类型 / 套装 id 映射
    ===================================================================== */
-// 武器图：史诗按物品 key 有专属外观，其余按武器类型（WEAPON_IMG 由 art/tools/avatar_weapons.py 生成）
-function weaponArtOf(it, cls) {
-  if (!it) return null;                                     // 没拿武器：空手
-  if (WEAPON_IMG[it.key]) return it.key;
+// 武器图：武器装扮 > 史诗专属外观 > 武器类型（WEAPON_IMG 由 art/tools/avatar_weapons.py 生成）
+//   武器装扮（时装栏 av_weapon，商城组）：一件覆盖三职业 15 种武器类型，图 key = <装扮>_<武器类型>，缺图就显示真实武器
+const WEAPON_SKINS = { av_weapon_spring: 'spring', av_weapon_summer: 'summer' };
+function weaponArtOf(it, cls, skin) {
+  if (!it) return null;                                     // 没拿武器：空手（装扮只改外观，不会凭空变出武器）
   const t = it.wtype || (typeof CLASS_START_WEAPON !== 'undefined' && CLASS_START_WEAPON[it.cls || cls]);
+  const sk = skin && (skin.skin || WEAPON_SKINS[skin.key]);   // 商城物品带 skin 字段；没有就按 key 查表
+  if (sk && t && WEAPON_IMG[`${sk}_${t}`]) return `${sk}_${t}`;
+  if (WEAPON_IMG[it.key]) return it.key;
   return t && WEAPON_IMG[t] ? t : null;
 }
 // 时装套装（物品的 set 字段）→ 帧集 id：art/final/spr/<职业>@<id>/，分包 spr:<职业>@<id>
 const AVATAR_SETS = {
   av_festival: { id: 'festival', name: '庆典时装' },
+  av_spring: { id: 'spring', name: '锦鲤贺岁' },
 };
 // 头部配件（帽子 / 头部 / 脸部）：按每帧的头部锚点（art/tools/avatar_head.py 求出的站姿头部中心 + 转角）叠加；图 IMG['avatar/<img>']
 //   pos[职业 / 职业@ / 职业@套装] = [dx, dy, 转角, 缩放]：配件图中心相对头部锚点的位置（帧像素，站姿朝右时）。
@@ -41,7 +46,7 @@ function lookFromEquip(cls, eq) {
     if (slot !== 'av_face' && AVATAR_HAT_CLS[cls] && !set) continue;
     acc.push(it.key);
   }
-  return { wpn: weaponArtOf(eq.weapon, cls), set, acc };
+  return { wpn: weaponArtOf(eq.weapon, cls, eq.av_weapon), set, acc };
 }
 // 职业默认外观（选角立绘、路人、决斗场对手等没有装备信息的模型）
 function defaultLook(cls) {
@@ -51,7 +56,7 @@ function defaultLook(cls) {
 // 路人冒险家：随机武器（偶尔史诗）+ 一定几率穿时装
 function avatarRandomLook(cls) {
   const types = Object.keys(WEAPON_IMG).filter(k => WEAPON_IMG[k].type && typeof WTYPES !== 'undefined' && WTYPES[WEAPON_IMG[k].type] && WTYPES[WEAPON_IMG[k].type].cls === cls);
-  const base = types.filter(k => !k.startsWith('ep_')), ep = types.filter(k => k.startsWith('ep_'));
+  const base = types.filter(k => k === WEAPON_IMG[k].type), ep = types.filter(k => k.startsWith('ep_'));
   const wpn = ep.length && Math.random() < 0.2 ? pick(ep) : base.length ? pick(base) : defaultLook(cls).wpn;
   const sets = Object.values(AVATAR_SETS).filter(S => SPR_DATA[`${cls}@${S.id}`]);
   const set = sets.length && Math.random() < 0.35 ? pick(sets).id : null;

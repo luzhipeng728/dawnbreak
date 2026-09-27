@@ -24,8 +24,8 @@ class AvatarLayer {
     const p = typeof game !== 'undefined' && game.player, own = !!(p && p.model === this.m);
     if (own) {
       const e = inv.equip, s = this.sig;
-      if (this.own && s[0] === e.weapon && s[1] === e.av_top && s[2] === e.av_bottom && s[3] === e.av_hat && s[4] === e.av_hair && s[5] === e.av_face && s[6] === e) return;
-      this.sig = [e.weapon, e.av_top, e.av_bottom, e.av_hat, e.av_hair, e.av_face, e];
+      if (this.own && s[0] === e.weapon && s[1] === e.av_top && s[2] === e.av_bottom && s[3] === e.av_hat && s[4] === e.av_hair && s[5] === e.av_face && s[6] === e.av_weapon && s[7] === e) return;
+      this.sig = [e.weapon, e.av_top, e.av_bottom, e.av_hat, e.av_hair, e.av_face, e.av_weapon, e];
       this.own = true; this.apply(lookFromEquip(this.cls, e)); return;
     }
     if (this.own === false && this.look) return;

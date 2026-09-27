@@ -326,7 +326,18 @@ def keep_clothes_holes(rb, a, ref_path):
                 a[ys + y0, xs + x0] = rb[ys + y0, xs + x0]; restored += len(ys)
     return a
 
-def process_sheet(char, sheet, path, names, res, fixes, pv_path, ref_h=None, ref_path=None):
+def follow_base(st, bw, P, la, lg, lm, body, fist, char, fix):
+    """时装帧：姿势和原装一样，武器的朝向 / 身前身后以原装（已人工验收）为准。
+    方向差了 135° 以上 = 尖端认反了，按翻转重算；身前身后直接跟原装。"""
+    d = abs((st['ang'] - bw['ang'] + math.pi) % (2 * math.pi) - math.pi)
+    f2 = dict(fix)
+    if d > math.radians(135) and 'grip' not in fix: f2['flip'] = not fix.get('flip')
+    if st['front'] != bw['front'] and 'front' not in fix: f2['front'] = bw['front']
+    if f2 != fix:
+        st = analyze(P, la, lg, lm, body, fist, char, f2); st['why'] += ' 跟原装'
+    return st
+
+def process_sheet(char, sheet, path, names, res, fixes, pv_path, ref_h=None, ref_path=None, base_frames=None):
     """ref_h：按这个参考高度定缩放（时装表用对应占位表的站姿高度：时装去掉了帽子，按自己的站姿量会把人放大）
     ref_path：时装表对照的占位表（区分透出来的白底和白色衣物）"""
     img = Image.open(path)
@@ -373,6 +384,13 @@ def process_sheet(char, sheet, path, names, res, fixes, pv_path, ref_h=None, ref
                 if len(P) < 120: continue
                 sticks.append(analyze(P, la, lg, lm, body, fist, char, fix))
             sticks.sort(key=lambda s: -(s['t1'] - s['t0']))
+            bw = base_frames and fn in base_frames and base_frames[fn].get('wpn')
+            if bw and sticks:
+                Ps = [P for P in stick_groups(solid[Y0:Y1, X0:X1], lab_g[Y0:Y1, X0:X1], gids) if len(P) >= 120]
+                Ps.sort(key=lambda P: -len(P))
+                # 找到主棍子对应的点集（最长那根），按原装校正
+                P0 = max(Ps, key=lambda P: float(np.ptp((P - P.mean(0)) @ sticks[0]['d']))) if Ps else None
+                if P0 is not None: sticks[0] = follow_base(sticks[0], bw, P0, la, lg, lm, body, fist, char, fix)
             for st in sticks[1:]: st['minor'] = (st['t1'] - st['t0']) < 0.5 * (sticks[0]['t1'] - sticks[0]['t0'])
             if fix.get('one'): sticks = sticks[:1]   # 手工：只有一把（另一段是改图留下的碎块）
         hole = stickreg & ((lg > 0.07) | ((lm > 0.1) if use_m else False))
@@ -486,7 +504,7 @@ def main():
                     from avatar_gen import source_sheets
                     bp = source_sheets().get(f'{char}_{sheet}')
                 ref_h = ref_height(bp) if bp else None
-            frames, base, k, _ = process_sheet(char, sheet, path, names, res, fixes, None, ref_h, bp if A.set else None)
+            frames, base, k, _ = process_sheet(char, sheet, path, names, res, fixes, None, ref_h, bp if A.set else None, base_meta['frames'] if A.set else None)
             finish(char, sheet, frames, base, k, res, meta, out_dir, os.path.join(pv_dir, f'{char}_{sheet}.png'), A.dry, base_meta['frames'] if A.set else None)
         if not A.dry:
             meta['frames'] = dict(sorted(meta['frames'].items()))

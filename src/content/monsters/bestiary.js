@@ -313,7 +313,8 @@ Object.assign(MON, {
       { clip: 'cast', range: [0, 800], dy: 800, cd: [6, 8], w: 1.5, act: { dur: 1.8, superArmor: true, events: [evAt(0.3, e => iceArrowRing(e))] } },
       { clip: 'cast', range: [0, 800], dy: 800, cd: [14, 18], w: 0.6, act: { dur: 1.4, superArmor: true, events: [evAt(0.6, e => { fxText('来吧，冰霜的仆从们！', e.x, e.y, e.z + 30, { col: '#bfefff', size: 11 }); for (let i = 0; i < 3 && aliveAdds() < 4; i++) spawnMonster('goblinFrost', cam.x + rnd(80, WW - 80), rnd(20, DEPTH - 20), { lvl: e.lvl - 3, drop: true, mul: game.dungeon ? game.dungeon.D.hp : 1, atkMul: game.dungeon ? game.dungeon.D.atk : 1 }); })] } }] },
   plague: { ...MON.goblinThrower, name: '普拉格', lvl: 15, hp: 6000, atk: 230, def: 200, speed: 110, exp: 180, gold: [30, 60],
-    attacks: [{ clip: 'throw', range: [100, 340], dy: 40, cd: [1.1, 1.8], w: 2, act: { dur: 0.9, events: [0.35, 0.55].map(t => evAt(t, e => throwRock(e))) } }, MON.goblinBomber.attacks[1]] },
+    // 试玩核查：原来 1.1~1.8 秒扔一次（一次两块），几只普拉格在屏幕外轮流扔会把人砸得起不来（机器人在暗黑雷鸣废墟被击 153 次里有 113 次来自它），放慢到和赤哥布林差不多
+    attacks: [{ clip: 'throw', range: [100, 340], dy: 40, cd: [2.6, 3.8], w: 2, act: { dur: 0.9, events: [0.35, 0.55].map(t => evAt(t, e => throwRock(e))) } }, MON.goblinBomber.attacks[1]] },
 });
 const G = [45, 160];   // 哥布林绿色皮肤的色相区间
 const MON_ART = {

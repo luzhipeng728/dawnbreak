@@ -1,13 +1,13 @@
 /* =====================================================================
    转职任务链（官方经典版：格兰之森 - 杀手 → 拜访导师 → 七次修炼 → 在导师处转职；本作转职 Lv.15，觉醒 Lv.18）
    - 鬼剑士：G.S.D「鬼剑士之路」；神枪手：凯丽「弹无虚发」；魔法师：莎兰「神奇的魔法」
-   - 最后的试炼：被击不超过 15 次通关烈焰格拉卡
+   - 最后的试炼：被击不超过 30 次通关烈焰格拉卡（试玩核查：原来的 15 次太苛刻，远程哥布林的小伤害也算被击；机器人 45~60 次、键盘试玩 27~49 次）
    - 觉醒：两步任务，完成后 save.data.flags.awaken = true（awakenUnlocked() 为真）
    ===================================================================== */
 defineQuest('q_job_kill', { type: 'job', name: '格兰之森 - 杀手', npc: 'linus', lvl: 2,
-  desc: '林纳斯的考验：被击不超过 12 次通关洛兰深处。通过了，他就把你介绍给职业导师。',
-  goals: [{ type: 'clear', dungeon: 'lorien_deep', hurt: 12 }],
-  talk: { offer: ['想变得更强，光靠蛮力是不够的。', '真正的强者，是不会被敌人轻易碰到的。——被击不超过 12 次，通关洛兰深处。做到了，我就把你介绍给你的导师。'], doing: ['被打中 12 次以上就不算。挨打之前，先想想怎么躲。'], done: ['哼，有点样子了。', '去见见你的导师吧。他们会带你走上真正属于你的道路。'] },
+  desc: '林纳斯的考验：被击不超过 20 次通关洛兰深处。通过了，他就把你介绍给职业导师。',
+  goals: [{ type: 'clear', dungeon: 'lorien_deep', hurt: 20 }],   // 原来 12 次：机器人 14~25 次，新手很难做到
+  talk: { offer: ['想变得更强，光靠蛮力是不够的。', '真正的强者，是不会被敌人轻易碰到的。——被击不超过 20 次，通关洛兰深处。做到了，我就把你介绍给你的导师。'], doing: ['被打中超过 20 次就不算。挨打之前，先想想怎么躲——远处扔石头的哥布林要先解决。'], done: ['哼，有点样子了。', '去见见你的导师吧。他们会带你走上真正属于你的道路。'] },
   reward: QR(2, 0.12, 300, { items: [QI('hpM', 3)], title: 'title_basic' }) });
 
 const JOB_CHAINS = {
@@ -54,9 +54,9 @@ for (const [cls, C] of Object.entries(JOB_CHAINS)) {
     prev = id;
   });
   defineQuest(`q_job_${cls}_final`, { type: 'job', cls, name: `${C.path} - ${C.last}`, npc: M, lvl: 15, pre: prev,
-    desc: '最后的试炼：被击不超过 15 次，通关烈焰格拉卡。',
-    goals: [{ type: 'clear', dungeon: 'blazing_graca', hurt: 15 }],
-    talk: { offer: [`${C.path}——${C.last}。`, '烈焰格拉卡。被击不超过 15 次，活着走出来。', '做到了，你就有资格选择自己的道路。'], doing: ['15 次。多一次都不行。'], done: C.finalDone },
+    desc: '最后的试炼：被击不超过 30 次，通关烈焰格拉卡。',
+    goals: [{ type: 'clear', dungeon: 'blazing_graca', hurt: 30 }],
+    talk: { offer: [`${C.path}——${C.last}。`, '烈焰格拉卡。被击不超过 30 次，活着走出来。', '做到了，你就有资格选择自己的道路。'], doing: ['30 次。多一次都不行。先收拾扔火瓶的赤哥布林，看到地上的红色六芒星就躲开。'], done: C.finalDone },
     reward: QR(15, 0.12, 1500, { sp: 20 }) });
   defineQuest(`q_job_${cls}_change`, { type: 'job', cls, name: C.change, npc: M, lvl: 15, pre: `q_job_${cls}_final`,
     desc: `在${qNpcName(M)}处完成转职（对话里选择「转职」）。`,

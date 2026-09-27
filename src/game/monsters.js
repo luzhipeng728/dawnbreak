@@ -23,7 +23,7 @@ function throwRock(e) {
   const dist = Math.abs(p.x - e.x), T = clamp(dist / 260, 0.5, 1.1);
   sfx.swing(false);
   spawnProj({ owner: e, x: e.x + e.face * 12, y: e.y, z: 60, vx: (p.x - e.x) / T, vy: (p.y - e.y) / T, vz: 240, grav: (60 + 240 * T) * 2 / (T * T), life: 3, w: 8, d: 10, h: 12, face: e.face, shadow: 6, pierce: false,
-    hit: { dmg: 0.9, stun: 0.35, knock: 80, hs: 0.05, snd: 'blunt' }, spin: 0,
+    hit: { dmg: 0.9, stun: 0.2, knock: 80, hs: 0.05, snd: 'blunt' }, spin: 0,   // 硬直 0.35 → 0.2：被一块石头打中后来得及躲下一块
     update(pr, dt) { pr.spin += dt * 12; },
     onEnd(pr) { fxDust(pr.x, pr.y, 3, 5, '#9a8a70'); },
     draw(c, pr) { drawSpr(c, 'rock', sx(pr.x), sy(pr.y, pr.z), 18, 18, { add: false, rot: pr.spin }); } });

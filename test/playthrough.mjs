@@ -177,11 +177,11 @@ async function jobTrial() {
     await P.enterDungeon(); let rooms = 0;
     const r = await P.fightDungeon({ onRoom: async s => { rooms++; if (s.d.boss) await P.shot(`boss-${tries}`); } });
     step(`烈焰格拉卡第 ${tries} 次：${JSON.stringify(r)}`);
-    if (r.state === 'result') { await P.shot(`trial-result-${tries}`); ok = r.hurt <= 15; await P.flipAndReturn(); }
+    if (r.state === 'result') { await P.shot(`trial-result-${tries}`); ok = r.hurt <= 30; await P.flipAndReturn(); }
     else { await wait(3000); }
     step('试炼任务：' + await page.evaluate(id => questState(id), `q_job_${CLS}_final`));
   }
-  check(ok, `试炼 3 次都没做到被击 ≤15`);
+  check(ok, `试炼 3 次都没做到被击 ≤30`);
   check(await goScene(mScene), '回不到导师处');
   check(await P.talk(MENTOR), '回来和导师对话失败');
   const b = await P.dialogTo(['完成任务']); step('交试炼：' + b); if (await page.evaluate(() => menus.isOpen('npcquest'))) { await P.shot('trial-reward'); await P.tap('KeyX'); await wait(400); }

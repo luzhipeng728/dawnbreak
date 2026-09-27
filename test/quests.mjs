@@ -93,8 +93,8 @@ await ev(() => { for (let i = 0; i < 12; i++) bus.emit('kill', { kind: i % 2 ? '
 check((await Q('q_m03')).st === 'ready', '洛兰深处击杀 12 只哥布林 → 可交付');
 check(await ev(() => questMarkerInfo('linus').col) === '#ffd23a', '林纳斯头顶黄色 ?');
 await ev(() => questAccept('q_job_kill'));
-await ev(() => bus.emit('dungeonClear', { id: 'lorien_deep', diff: 0, rank: 'A', time: 90, hurt: 20 }));
-check((await Q('q_job_kill')).rec.p[0] === 0, '试炼：被击 20 次（要求 ≤12）不算');
+await ev(() => bus.emit('dungeonClear', { id: 'lorien_deep', diff: 0, rank: 'A', time: 90, hurt: 21 }));
+check((await Q('q_job_kill')).rec.p[0] === 0, '试炼：被击 21 次（要求 ≤20）不算');
 await ev(() => bus.emit('dungeonClear', { id: 'lorien_deep', diff: 0, rank: 'A', time: 90, hurt: 8 }));
 check((await Q('q_job_kill')).st === 'ready', '试炼：被击 8 次 → 达成');
 await ev(() => { for (const id of ['q_m03', 'q_m04', 'q_m05', 'q_m06', 'q_m07', 'q_m08', 'q_m09', 'q_m10', 'q_m11']) save.data.questDone[id] = 1; delete save.data.quests.q_m03; game.lvl = 8; questAccept('q_m12'); });

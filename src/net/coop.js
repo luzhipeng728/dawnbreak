@@ -446,13 +446,18 @@ const coop = {
     const why = m.why;
     this.room = null;
     if (this.state === 'result' || this.state === 'none') { this.reset(); return; }
-    if (this.role === 'guest' && (this.state === 'play' || this.state === 'load')) {
+    if (this.role === 'guest' && this.state === 'load') { chatSys(why === 'host-lost' ? '队长掉线了，没能进图' : '队长取消了进图'); this.reset(); }
+    else if (this.role === 'guest' && this.state === 'play') {
       const text = why === 'host-lost' ? '队长掉线了，地下城结束' : why === 'host-dead' ? '队长倒下了，地下城结束' : '队长离开了地下城';
       this.leaveToTown(`${text}，返回城镇（这次拿到的经验和物品都保留）`);
     } else if (this.role === 'host' && this.state === 'play') { chatSys('房间已关闭，队友和你断开了联机，地下城继续（单人）'); this.detach(); }
     else this.reset();
   },
-  onRoomLeft(m) { if (!this.room || m.id !== this.room.id) return; this.removeMate(m.user, m.why === 'timeout' ? '掉线，离开了地下城' : '离开了地下城'); },
+  onRoomLeft(m) {
+    if (!this.room || m.id !== this.room.id) return;
+    if (this.state === 'prep') { if (this.prep && !this.prep.resp.has(m.user)) this.onResp(m.user, false, '离开了'); return; }
+    this.removeMate(m.user, m.why === 'timeout' ? '掉线，离开了地下城' : '离开了地下城');
+  },
   onRoomLag(m) {
     if (!this.room || m.id !== this.room.id) return;
     const g = this.mates.get(m.user); if (g) g.lag = m.on;

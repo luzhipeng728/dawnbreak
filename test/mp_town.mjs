@@ -32,9 +32,10 @@ try {
   ok(bx - 150 > b0 && Math.abs(seen.x - bx) < 6, 'bob 走动后 alice 看到的位置跟上', { b0, bx, seen });
   // 平滑：采样 alice 看到的 bob 位置，不应该有跳变
   await B.keyboard.down('ArrowLeft');
-  const samples = await A.evaluate(async () => { const p = [...netTown.peers.values()].find(p => p.char.name === '小鲍枪手'), xs = []; for (let i = 0; i < 60; i++) { await new Promise(r => requestAnimationFrame(r)); xs.push([performance.now(), p.x]); } return xs; });
+  // 按游戏逻辑时间（game.t，固定 60Hz 步长）算速度：浏览器负载高时一帧可能跑好几步，用真实时间算会误报
+  const samples = await A.evaluate(async () => { const p = [...netTown.peers.values()].find(p => p.char.name === '小鲍枪手'), xs = []; for (let i = 0; i < 60; i++) { await new Promise(r => requestAnimationFrame(r)); xs.push([game.t * 1000, p.x]); } return xs; });
   await B.keyboard.up('ArrowLeft');
-  const speeds = samples.slice(1).map((s, i) => Math.abs(s[1] - samples[i][1]) / Math.max(1, s[0] - samples[i][0]) * 1000);
+  const speeds = [0]; for (let i = 1; i < samples.length; i++) { const dt = samples[i][0] - samples[i - 1][0]; if (dt > 1) speeds.push(Math.abs(samples[i][1] - samples[i - 1][1]) / dt * 1000); }
   ok(Math.max(...speeds) < 400, '插值平滑：看到的移动速度没有跳变（< 400 像素/秒，走路约 165）', { max: Math.max(...speeds).toFixed(0) });
   await A.screenshot({ path: `${out}/01-alice-sees.png` });
   // 换装后外观同步：给 bob 换一把武器

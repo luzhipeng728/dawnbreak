@@ -32,8 +32,8 @@ net.on('friend:del', () => netFriends.load());
 net.on('friend:on', m => {
   const f = netFriends.byId(m.id); if (!f) return;
   f.online = m.on; if (m.char) f.char = m.char;
-  if (m.on && !f._seenOn) chatSys(`好友 ${f.name} 上线了`);
-  f._seenOn = m.on;
+  if (!m.on) f._offT = Date.now();
+  else if (!f._offT || Date.now() - f._offT > 30000) chatSys(`好友 ${f.name} 上线了`);   // 短暂断线重连不刷屏
   menus.refresh('friends');
 });
 bus.on('netOpen', () => netFriends.load());

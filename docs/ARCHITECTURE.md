@@ -32,6 +32,7 @@
 | 界面与操作 | `ui/menus.js`（窗口框架与通用窗口） `ui/hud.js` `engine/touch.js` `engine/core.js`（KEYMAP 与 input） `shell_top.html` `shell_bottom.html` | 角色选择 / 创建、快捷键与按键设置、技能窗口 K、系统窗口、HUD、手机适配、窗口拖动 |
 | 世界与美术 | `game/world.js` `content/world/*` `engine/music.js` 新建 `ui/worldmap.js` `art/final/{world,bg,scene}` `art/tools/{bgs,worldprep}.py` | 城镇 / 区域场景、NPC 摆放与立绘、世界地图 N、城镇氛围 |
 | 主线程（总协调） | `game/save.js` `game/dungeon.js` `game/flow.js` `game/game.js` `build.mjs` `src/ORDER` `docs/*` `test/flow.mjs` | 集成、合并、存档、地下城流程、发布 |
+| 联机 | `server/`（核心：lib / core / deploy） `src/net/*` `src/ui/{login,chat,friends,party}.js` `test/net_*.mjs` `test/mp_*.mjs` | 账号、云存档、同屏、聊天、好友、组队刷图、好友决斗（设计见 docs/NETWORK.md） |
 
 `src/ORDER`：新文件请加到合适的位置。合并时我会统一处理冲突。
 
@@ -53,6 +54,7 @@
   - 任务：`npc` `npcquest` `quests` `job`
   - 世界：`worldmap`
   - 主线程：`dungeon` `result`
+  - 联机：`login` `account` `passwd` `friends` `party` `pmenu` `pinfo`，联机提示框 `nd_*`（聊天框是 DOM `#chatbox`）
 
 ### 拖放（`ui/dnd.js`）
 - `dnd.source(el, () => payload)`：让元素可以被拖起。

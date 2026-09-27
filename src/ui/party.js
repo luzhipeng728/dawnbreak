@@ -14,7 +14,8 @@ const PARTY_WHY = { leave: '你离开了队伍', kick: '你被队长请离了队
 net.on('party', m => {
   const was = netParty.p; netParty.p = m.party;
   if (!m.party && was && m.why) chatSys(PARTY_WHY[m.why] || '你离开了队伍');
-  if (m.party && !was) chatSys('已加入队伍（聊天框切到“队伍”频道和队友说话）');
+  if (m.party && !was && m.party.id !== netParty.lastPid) chatSys('已加入队伍（聊天框切到“队伍”频道和队友说话）');
+  if (m.party) netParty.lastPid = m.party.id;
   if (m.party && m.party.members.length > 1) {   // 队友页面版本不一致：提醒刷新
     const mine = netBuild(), diff = m.party.members.filter(x => x.online && x.build && x.build !== mine && x.id !== (net.user && net.user.id));
     const sig = diff.map(x => x.id).join(',');
@@ -35,6 +36,8 @@ net.on('party:invited', m => {
 });
 net.on('party:declined', m => { chatSys(m.why === 'busy' ? `${m.by} 现在很忙，没法组队` : `${m.by} 拒绝了组队邀请`); toastMsg(`${m.by} 拒绝了组队邀请`, '#ffb08a'); });
 bus.on('netLogout', () => { netParty.p = null; });
+// 重连（包括服务端重启）：先清空，服务端如果还记得这个队伍会马上补发 party 消息
+bus.on('netOpen', () => { netParty.p = null; menus.refresh('party'); });
 function netPartyInvite(id, name) {
   if (!net.connected) { toastMsg('没有连上服务器', '#ff9a6a'); return; }
   if (netParty.p && !netParty.isLeader()) { toastMsg('只有队长可以邀请队员', '#ffb08a'); return; }

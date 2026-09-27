@@ -6,7 +6,7 @@
 const NET_INTERP_DELAY = 140;   // 插值延迟（毫秒）：位置 10Hz 更新，留 1.4 帧的缓冲，网络抖动时也平滑
 class NetPeer {
   constructor(p) {
-    Object.assign(this, { id: p.id, acct: p.name, name: p.name, guild: '', char: null, x: p.x || 0, y: p.y || 100, z: 0, face: p.f || 1, st: p.s || 'idle', a: 0, fade: 1, buf: [], model: null, seed: Math.random() * 99, net: true, cls: null });
+    Object.assign(this, { id: p.id, acct: p.name, name: p.name, job: '', char: null, x: p.x || 0, y: p.y || 100, z: 0, face: p.f || 1, st: p.s || 'idle', a: 0, fade: 1, buf: [], model: null, seed: Math.random() * 99, net: true, cls: null });
     this.pose = { __c: 'idle', __t: 0 };
     this.setChar(p.char); this.push(p.x, p.y, p.f, p.s);
   }
@@ -15,7 +15,7 @@ class NetPeer {
     const old = this.char; this.char = ch;
     // 名牌文字（world.js 的 drawCrowdLabels 按 name / guild 两行排版避让）：第一行 Lv + 角色名，上面一行职业 / 转职
     const J = ch.job && CLASSES[ch.cls] && CLASSES[ch.cls].jobs && CLASSES[ch.cls].jobs[ch.job];
-    this.name = `Lv.${ch.lvl} ${ch.name}`; this.guild = J ? J.name : (CLASSES[ch.cls] ? CLASSES[ch.cls].name : '');
+    this.name = `Lv.${ch.lvl} ${ch.name}`; this.job = J ? J.name : (CLASSES[ch.cls] ? CLASSES[ch.cls].name : '');
     const lookSig = JSON.stringify(ch.look || {});
     if (old && old.cls === ch.cls && this.lookSig === lookSig && this.model) return;
     this.lookSig = lookSig; this.cls = CLASSES[ch.cls] && SPR_DATA[ch.cls] ? ch.cls : 'sword';
@@ -56,9 +56,13 @@ class NetPeer {
   }
   // 名牌：所有角色画完后由 world.js 的 drawCrowdLabels 统一画（和路人、NPC 名牌互相避让）
   drawLabel(c, X, ny) { netNamePlate(c, X, ny, this.char, this.acct, this.id, this.a, netTown.hover === this); }
+  // 名牌第二行（drawCrowdLabels 按它算宽度避让）：〈公会〉 + 职业 / 转职
+  get guild() { const t = netTagOf(this.id); return t ? `<${t}> ${this.job}` : this.job; }
   hit(mx, my) { const X = this.x, top = FLOOR_Y + this.y - 112, bot = FLOOR_Y + this.y + 6; return Math.abs(mx - X) < 24 && my > top && my < bot; }
 }
 // 头顶名牌：Lv + 角色名（颜色：队友橙、好友绿、其他蓝）+ 小字职业 / 转职；鼠标悬停时加底框
+// 名牌上的额外标签（公会名等）：其他组定义全局函数 netPlayerTag(userId) → 字符串 | null，画在职业那一行前面（绿色）
+function netTagOf(id) { if (typeof netPlayerTag !== 'function') return null; try { const t = netPlayerTag(id); return t ? String(t).slice(0, 12) : null; } catch (e) { return null; } }
 function netNamePlate(c, X, ny, ch, acct, id, a = 1, hot = false) {
   if (!ch) return;
   const J = ch.job && CLASSES[ch.cls] && CLASSES[ch.cls].jobs && CLASSES[ch.cls].jobs[ch.job];
@@ -68,7 +72,12 @@ function netNamePlate(c, X, ny, ch, acct, id, a = 1, hot = false) {
   c.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
   if (hot) { const w = c.measureText(t1).width + 14; c.fillStyle = 'rgba(10,8,14,.75)'; c.fillRect(X - w / 2, ny - 22, w, 27); c.strokeStyle = col; c.lineWidth = 1; c.strokeRect(X - w / 2 + 0.5, ny - 21.5, w - 1, 26); }
   c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.85)'; c.strokeText(t1, X, ny); c.fillStyle = col; c.fillText(t1, X, ny);
-  if (t2) { c.font = 'bold 8px "PingFang SC","Microsoft YaHei",sans-serif'; c.strokeText(t2, X, ny - 11); c.fillStyle = '#e8dcc0'; c.fillText(t2, X, ny - 11); }
+  const tag = netTagOf(id);
+  if (tag) {   // 〈公会〉 职业：两段颜色，整体居中
+    c.font = 'bold 8px "PingFang SC","Microsoft YaHei",sans-serif';
+    const a1 = `<${tag}> `, w1 = c.measureText(a1).width, w2 = c.measureText(t2).width, x0 = X - (w1 + w2) / 2;
+    c.textAlign = 'left'; c.strokeText(a1 + t2, x0, ny - 11); c.fillStyle = '#9aff7a'; c.fillText(a1, x0, ny - 11); c.fillStyle = '#e8dcc0'; c.fillText(t2, x0 + w1, ny - 11); c.textAlign = 'center';
+  } else if (t2) { c.font = 'bold 8px "PingFang SC","Microsoft YaHei",sans-serif'; c.strokeText(t2, X, ny - 11); c.fillStyle = '#e8dcc0'; c.fillText(t2, X, ny - 11); }
   c.restore();
 }
 // 自己的角色信息（发给别人看的）

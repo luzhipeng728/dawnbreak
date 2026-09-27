@@ -38,6 +38,11 @@ try {
   const speeds = [0]; for (let i = 1; i < samples.length; i++) { const dt = samples[i][0] - samples[i - 1][0]; if (dt > 1) speeds.push(Math.abs(samples[i][1] - samples[i - 1][1]) / dt * 1000); }
   ok(Math.max(...speeds) < 400, '插值平滑：看到的移动速度没有跳变（< 400 像素/秒，走路约 165）', { max: Math.max(...speeds).toFixed(0) });
   await A.screenshot({ path: `${out}/01-alice-sees.png` });
+  // 名牌扩展点：其他组定义 netPlayerTag(userId)（例如公会名），画在职业那行前面
+  const tagged = await A.evaluate(() => { window.netPlayerTag = id => id === 2 ? '破晓' : null; const p = [...netTown.peers.values()].find(p => p.id === 2); return p.guild; });
+  ok(/^<破晓> /.test(tagged), '名牌扩展点 netPlayerTag：公会名显示在职业前', tagged);
+  await sleep(200); await A.screenshot({ path: `${out}/01b-tag.png` });
+  await A.evaluate(() => { delete window.netPlayerTag; });
   // 换装后外观同步：给 bob 换一把武器
   const wpnB = await B.evaluate(() => { const it = inv.items.find(x => x.slot === 'weapon' || (x.kind === 'equip' && x.slot === 'weapon')); return it ? it.key : null; });
   // 离开场景：carol 去另一个场景 → alice 那边消失

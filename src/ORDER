@@ -100,4 +100,5 @@ ui/chat.js
 ui/friends.js
 ui/party.js
 net/pvp.js
+net/coop.js
 boot.js

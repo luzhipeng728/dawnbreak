@@ -1,5 +1,5 @@
 // 全服公告（社交与经济服务）：客户端上报 → 按 kind 白名单生成文案 → 记录 → WS 广播给所有在线玩家
-// 格式约定见协作板「announce 事件格式」：kind = epic / enhance / amplify / skyset / box / job / awaken / firstClear / custom（只给管理员）
+// 格式约定见协作板「announce 事件格式」：kind = epic / enhance / amplify / skyset / box / multi / job / awaken / firstClear / custom（只给管理员）
 import { now } from './mail.js';
 const txt = (s, n) => String(s ?? '').replace(/[\u0000-\u001f\u007f\[\]]/g, ' ').trim().slice(0, n);
 const int = (v, lo, hi) => { const n = Math.floor(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
@@ -14,6 +14,7 @@ const KINDS = {
   job: (b, who) => b.job && `勇士${who}转职成为了${txt(b.job, 16)}！`,
   awaken: (b, who) => b.job && `勇士${who}完成了觉醒：${txt(b.job, 16)}！`,
   firstClear: (b, who) => b.place && `勇士${who}首次通关了${txt(b.place, 20)}！`,
+  multi: (b, who) => (b.item || b.name) && `勇士${who}累计购买节日礼包，获得了 [${b.item ? itemName(b.item) : txt(b.name, 30)}]！`,
 };
 function show(ctx, o) {
   const t = now(ctx);
@@ -34,7 +35,7 @@ export default {
     return { broadcast: o => show(ctx, { kind: o.kind || 'custom', text: txt(o.text, 120), user: o.user, char: o.char, rar: o.rar, uid: o.uid }) };
   },
   routes(r, ctx) {
-    r.post('/api/notice', { auth: true, rate: [10, 60] }, req => {
+    r.post('/api/notice', { auth: true, rate: [20, 60] }, req => {
       const b = req.body || {}, f = KINDS[b.kind];
       if (!f) throw ctx.err(400, '不支持的公告类型');
       const char = txt(b.char, 24) || req.user.name;

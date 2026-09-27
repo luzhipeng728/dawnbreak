@@ -175,7 +175,7 @@ try {
   ok(r.status === 400, '玩家不能发 custom（只有管理员后台能发）', r);
   r = await A('POST', '/api/notice', { kind: 'epic', char: '爱丽丝', item: { name: '[假]<b>名</b>', rar: 5 }, place: '天空之城' });
   ok(r.status === 200 && !r.notice.text.includes('[假]') && r.notice.text.includes('<b>'), '名字里的方括号被去掉（HTML 由客户端转义显示）', r.notice && r.notice.text);
-  for (const k of ['skyset', 'box', 'job', 'awaken', 'firstClear', 'amplify']) {
+  for (const k of ['skyset', 'box', 'multi', 'job', 'awaken', 'firstClear', 'amplify']) {
     r = await A('POST', '/api/notice', { kind: k, char: '爱丽丝', item: { name: '天空套', rar: 4 }, name: '天空套', box: '魔盒', job: '剑魂', place: '城主宫殿', lvl: 10 });
     ok(r.status === 200, `公告 ${k}：${r.notice && r.notice.text}`, r);
   }

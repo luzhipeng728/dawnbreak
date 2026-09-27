@@ -87,7 +87,7 @@ const CASH_PACKS = {
   pkg_lv20: [{ key: 'egg_pet' }, { key: 'box_orb', n: 2 }, { key: 'box_magic', n: 10 }, { key: 'box_petgear2' }, { key: 'cera', n: 2000 }],
   pkg_lv30: [{ key: 'box_epic' }, { key: 'box_magic', n: 20 }, { key: 'synth_gold', n: 3 }, { key: 'cera', n: 3000 }],
   pkg_ltd_box: [{ key: 'box_magic', n: 10 }, { key: 'box_magic2' }, { key: 'box_mystery' }],
-  pkg_ltd_enh: [{ key: 'tk_enh7' }, { key: 'guard', n: 3 }, { key: 'crystal', n: 200 }, { key: 'amp_guard', n: 2 }, { key: 'amp_book' }],
+  pkg_ltd_enh: [{ key: 'tk_enh7' }, { key: 'guard', n: 3 }, { key: 'crystal', n: 200 }, { key: 'amp_guard', n: 2 }, { key: 'amp_book' }, { key: 'm_contra', n: 30 }],
   pkg_ltd_pet: [{ key: 'egg_pet' }, { key: 'box_petgear', n: 2 }, { key: 'orb_pet1' }],
   pkg_ltd_synth: [{ key: 'box_avatar', n: 3 }, { key: 'synth_basic', n: 3 }, { key: 'synth_gold' }],
 };
@@ -123,9 +123,9 @@ const CASH_EXCH = {
 const CASH_BOXES = {
   box_magic: { shard: 1, pity: 100, tiers: [
     { name: '大奖', jackpot: true, items: [[0.5, { key: 'tk_sky' }], [0.5, { epic: true }], [0.4, { key: 'aura_box' }], [0.4, { key: 'title_box' }], [0.4, { key: 'tk_enh10' }], [0.3, { key: 'orb_pet_supreme' }], [0.5, { key: 'cera_l' }]] },
-    { name: '稀有', items: [[3, { key: 'box_equip' }], [2.5, { key: 'box_orb' }], [2.5, { key: 'tk_enh7' }], [2, { key: 'egg_pet' }], [2, { key: 'tk_avatar' }], [2, { key: 'synth_gold' }], [1.5, { key: 'box_petgear2' }], [1.5, { key: 'cera_m' }]] },
+    { name: '稀有', items: [[3, { key: 'box_equip' }], [2.5, { key: 'box_orb' }], [2.5, { key: 'tk_enh7' }], [1.5, { key: 'egg_pet' }], [2, { key: 'tk_avatar' }], [2, { key: 'synth_gold' }], [1.5, { key: 'box_petgear2' }], [1.5, { key: 'cera_m' }], [0.5, { key: 'amp_purify' }]] },
     { name: '普通', items: [[10, { key: 'box_supply' }], [10, { key: 'coin', n: 2 }], [8, { key: 'synth_basic', n: 2 }], [8, { key: 'box_gold' }], [7, { key: 'fatigue' }], [6, { key: 'elixir', n: 2 }], [6, { key: 'box_avatar' }],
-      [6, { key: 'crystal', n: 60 }], [5, { key: 'guard' }], [5, { key: 'cera_s' }], [3, { key: 'amp_guard' }], [3, { key: 'abyss_ticket', n: 2 }], [2, { key: 'amp_book' }], [2, { key: 'm_elem2', n: 3 }]] },
+      [4, { key: 'crystal', n: 60 }], [2, { key: 'm_contra', n: 20 }], [5, { key: 'guard' }], [5, { key: 'cera_s' }], [3, { key: 'amp_guard' }], [3, { key: 'abyss_ticket', n: 2 }], [2, { key: 'amp_book' }], [2, { key: 'm_elem2', n: 3 }]] },
   ] },
   box_magic2: { shard: 3, pityOf: 'box_magic', tiers: [
     { name: '大奖', jackpot: true, items: [[3, { key: 'tk_sky' }], [2.5, { epic: true }], [2, { key: 'aura_box' }], [2, { key: 'title_box' }], [2, { key: 'tk_enh10' }], [1.5, { key: 'orb_pet_supreme' }], [2, { key: 'cera_l' }]] },

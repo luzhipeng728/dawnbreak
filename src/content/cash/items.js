@@ -132,8 +132,8 @@ const defCashUse = (key, def) => defineItem(key, { kind: 'use', price: 10, noSel
 // 券
 defCashUse('tk_enh7', { name: '+7 装备强化券', rar: 2, cashUse: 'ticket', ticket: { kind: 'enh', lvl: 7 }, desc: '选择一件装备，把强化等级直接变为 +7（已经 +7 以上的不能用；增幅过的装备不能用）。' });
 defCashUse('tk_enh10', { name: '+10 装备强化券', rar: 4, cashUse: 'ticket', ticket: { kind: 'enh', lvl: 10 }, desc: '选择一件装备，把强化等级直接变为 +10（已经 +10 以上的不能用；增幅过的装备不能用）。' });
-defCashUse('tk_amp7', { name: '+7 装备增幅券', rar: 3, cashUse: 'ticket', ticket: { kind: 'amp', lvl: 7 }, desc: '选择一件装备，把增幅等级直接变为 +7（没有异次元属性时按职业主属性赋予）。' });
-defCashUse('tk_amp10', { name: '+10 装备增幅券', rar: 5, cashUse: 'ticket', ticket: { kind: 'amp', lvl: 10 }, desc: '选择一件装备，把增幅等级直接变为 +10（没有异次元属性时按职业主属性赋予）。' });
+defCashUse('tk_amp7', { name: '+7 装备增幅券', rar: 3, cashUse: 'ticket', ticket: { kind: 'amp', lvl: 7 }, desc: '选择一件装备，把增幅等级直接变为 +7（没有异次元属性时按选择赋予；强化过的装备会转为增幅）。' });
+defCashUse('tk_amp10', { name: '+10 装备增幅券', rar: 5, cashUse: 'ticket', ticket: { kind: 'amp', lvl: 10 }, desc: '选择一件装备，把增幅等级直接变为 +10（没有异次元属性时按选择赋予；强化过的装备会转为增幅）。' });
 defCashUse('tk_avatar', { name: '高级装扮兑换券', rar: 2, cashUse: 'ticket', ticket: { kind: 'avatar' }, desc: '自选套装、部位和属性，兑换 1 件高级装扮（锦鲤贺岁 / 晴空海滩 / 星辉学院）。' });
 defCashUse('tk_sky', { name: '天空套部件兑换券', rar: 4, cashUse: 'ticket', ticket: { kind: 'sky' }, desc: '自选天空套、部位和属性，兑换 1 件稀有装扮（天穹圣翼 / 炎龙之魂）。' });
 defCashUse('tk_avopt', { name: '装扮属性变更券', rar: 1, cashUse: 'ticket', ticket: { kind: 'avopt' }, desc: '更换 1 次时装的自选属性（在商城“属性选择”里使用）。每件时装第一次选择属性免费。' });

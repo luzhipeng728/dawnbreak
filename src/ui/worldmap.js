@@ -5,7 +5,7 @@
    - 区域移动（官方：赫顿玛尔的诺羽、西海岸的马琳）：去过的城镇可以直接传送
        通过区域移动 NPC 打开（{ travel: true }）→ 任何地方都能传；按 N 打开 → 只有站在城镇里时能传
    ===================================================================== */
-NPC_SERVICES.travel ??= { label: '区域移动', run: N => menus.open('worldmap', { travel: true, npc: N }) };
+NPC_SERVICES.travel ??= { label: '区域移动', run: N => { if (menus.isOpen('worldmap')) menus.close('worldmap'); menus.open('worldmap', { travel: true, npc: N }); } };
 const WORLDMAP_H = 68;   // 地图坐标的纵向范围（横向 0~100）
 const REGION_COL = { 艾尔文防线: '#6fbf5a', 赫顿玛尔: '#e6c35c', 西海岸: '#5ab4e6', 洛兰: '#4fae8a', 格兰之森: '#8a6ad8', 天空之城: '#8ad0ff' };
 // 从 from 出发，按出口的等级要求 / 是否开放，能走到的场景

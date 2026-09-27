@@ -110,7 +110,7 @@ for (const id of info.scenes) {
 
 console.log('· 世界地图');
 await enter('elvenguard'); await closeAll(); await wait(300);
-await page.evaluate(() => menus.open('worldmap')); await wait(400);
+await page.keyboard.down('KeyN'); await wait(60); await page.keyboard.up('KeyN'); await wait(400);   // N 键（界面组 KEYMAP 的 map）
 const wm = await page.evaluate(() => ({ open: menus.isOpen('worldmap'), nodes: document.querySelectorAll('.wm-node').length, here: (document.querySelector('.wm-node.here') || {}).dataset?.id }));
 ok(wm.open, '世界地图能打开');
 ok(wm.nodes === info.scenes.length, `世界地图画出了全部 ${info.scenes.length} 个地点（${wm.nodes}）`);
@@ -123,7 +123,7 @@ ok(await page.evaluate(() => world.S.id) === 'hm_plaza', '世界地图区域移�
 await shot('travel-arrive');
 // 在区域地图里按 N 打开：不能传送；通过诺羽打开：可以传送
 await enter('gf_forest'); await closeAll(); await wait(300);
-await page.evaluate(() => menus.open('worldmap')); await wait(300);
+await page.keyboard.down('KeyN'); await wait(60); await page.keyboard.up('KeyN'); await wait(300);
 await page.click('.wm-node[data-id="elvenguard"]'); await wait(300);
 ok(await page.evaluate(() => !!document.querySelector('.wm-go .btn.off')), '区域地图里按 N 打开时不能传送');
 await closeAll();

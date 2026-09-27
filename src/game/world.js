@@ -460,7 +460,7 @@ function worldUI(c) {
   uiText(S.name, 1880, 52, { size: 30, align: 'right', color: '#ffe8a8', sw: 5 });
   if (S.area && S.area !== S.name) uiText(S.area, 1880, 86, { size: 20, align: 'right', color: '#d8d0b8', sw: 3 });
   if (world.banner) drawAreaBanner(c, world.banner);
-  if (world.near && !menus.modal()) uiText(`按 ${typeof keyName === 'function' ? keyName('attack') : 'X'} 或点击与 ${world.near.npc.name} 对话`, 960, 700, { size: 28, align: 'center', color: '#ffe8a8', sw: 5 });
+  if (world.near && !menus.modal()) uiText(`按 ${keyName('attack')} 或点击与 ${world.near.npc.name} 对话`, 960, 700, { size: 28, align: 'center', color: '#ffe8a8', sw: 5 });
   if (typeof drawQuestTracker === 'function') drawQuestTracker(c);
   drawToasts(c);
 }

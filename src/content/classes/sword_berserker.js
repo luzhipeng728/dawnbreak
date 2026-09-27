@@ -10,7 +10,7 @@ defSkill('frenzy', { name: '血之狂暴', cls: 'sword', job: 'berserker', lvReq
 defSkill('bloodwake', { name: '血气唤醒', cls: 'sword', job: 'berserker', lvReq: 15, mp: 0, cd: 0, type: 'phys', passive: true, col: '#a01020',
   desc: '【被动】HP 越低越强：HP ≤40% / 30% / 20% 时分三阶段提升技能伤害、攻击速度与移动速度。',
   infoExtra: lv => [['伤害提升', `${pct(0.04 + 0.006 * lv)} / ${pct(0.08 + 0.008 * lv)} / ${pct(0.12 + 0.01 * lv)}`]] });
-defSkill('soulhand', { name: '嗜魂之手', cls: 'sword', job: 'berserker', lvReq: 25, mp: 35, cd: 8, type: 'phys', col: '#b01a2a',
+defSkill('soulhand', { name: '嗜魂之手', cls: 'sword', job: 'berserker', lvReq: 19, mp: 35, cd: 8, type: 'phys', col: '#b01a2a',
   desc: '伸出鬼手抓住前方的敌人（可以抓住霸体和格挡中的敌人），吸取鲜血恢复 HP，最后让血气喷发把敌人击飞。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'grab', r: [20, 150], dy: 22 },
   act: (lv, p) => { const m = bzMul(p); return { name: 'soulhand', clip: 'soulhand', dur: 1.15, noCounter: true, superArmor: [0.1, 1.1],
     hits: [HB(0.12, 0.3, [10, 160, 30, 0, 110], skillDmg(0.8, 0.08, lv) * m, { grab: true, stun: 0.4, hs: 0.05 })],
@@ -21,18 +21,18 @@ defSkill('soulhand', { name: '嗜魂之手', cls: 'sword', job: 'berserker', lvR
       evAt(0.92, e => { cam.shake = Math.max(cam.shake, 6); sfx.boom(0.8); const g = e.grabbed;
         if (g) { fxSpr('bloodpillar', g.x, g.y, 0, { h: 190, dur: 0.5, ay: 1, grow: [0.4, 1] }); fxBurst(g.x, g.y, g.z + 30, 170, '#ff3040'); }
         throwGrab(e, { dmg: skillDmg(1.4, 0.14, lv) * m, launch: 520, knock: 60, hs: 0.1, big: 1.5, col: '#ff4a5a' }); })] }; } });
-defSkill('rampage', { name: '暴走', cls: 'sword', job: 'berserker', lvReq: 25, mp: 40, cd: 30, type: 'phys', buff: true, col: '#d02a2a',
+defSkill('rampage', { name: '暴走', cls: 'sword', job: 'berserker', lvReq: 19, mp: 40, cd: 30, type: 'phys', buff: true, col: '#d02a2a',
   desc: '【BUFF】30 秒内攻击力、攻击速度、移动速度、僵直度大幅提升，但受到的伤害增加 10%。', ai: { kind: 'buff' },
   infoExtra: lv => [['攻击力', '+' + pct(0.1 + 0.01 * lv)], ['攻速 / 移速', '+15%']],
   act: (lv) => ({ name: 'rampage', clip: 'roar', dur: 0.5, noCounter: true, superArmor: true,
     onStart: e => { e.buffs.rampage = { t: 30, atk: 0.1 + 0.01 * lv, aspd: 0.15, mspd: 0.15, stagger: 60, taken: 0.1 }; sfx.buff(); fxAura(e, '#ff5a3a', 1); } }) });
-defSkill('outrage', { name: '怒气爆发', cls: 'sword', job: 'berserker', lvReq: 30, mp: 40, cd: 10, type: 'phys', col: '#e0402a',
+defSkill('outrage', { name: '怒气爆发', cls: 'sword', job: 'berserker', lvReq: 21, mp: 40, cd: 10, type: 'phys', col: '#e0402a',
   desc: '以自身为中心爆发出血红的怒气，把周围所有敌人震上天。霸体。血之狂暴状态下威力提升。', pow: lv => skillDmg(4.5, 0.45, lv), ai: { kind: 'aoe', r: [0, 110], dy: 50 },
   act: (lv, p) => { const m = bzMul(p); return { name: 'outrage', clip: 'outrage', dur: 0.62, cancelFrom: 0.45, superArmor: true, noCounter: true,
     events: [evAt(0.02, () => sfx.charge()), evAt(0.2, e => { cam.shake = Math.max(cam.shake, 7); sfx.boom(1); fxShock(e.x, e.y, 200, '#ff3a3a'); fxBurst(e.x, e.y, e.z + 50, 240, '#ff2a3a');
       for (let i = 0; i < 6; i++) fxSpr('bloodpillar', e.x + Math.cos(i) * 70, e.y + Math.sin(i) * 25, 0, { h: 120, dur: 0.4, ay: 1, grow: [0.5, 1], alpha: 0.8 });
       blast(e, e.x, e.y, 120, { dmg: skillDmg(4.5, 0.45, lv) * m, launch: 520, knock: 60, hs: 0.1, big: 1.6, col: '#ff5a5a' }, { zMax: 150 }); })] }; } });
-defSkill('bloodblade', { name: '血气之刃', cls: 'sword', job: 'berserker', lvReq: 40, mp: 50, cd: 12, type: 'phys', col: '#a0101a',
+defSkill('bloodblade', { name: '血气之刃', cls: 'sword', job: 'berserker', lvReq: 25, mp: 50, cd: 12, type: 'phys', col: '#a0101a',
   desc: '消耗 3% HP，化作血光向前突进贯穿敌人（霸体），随后在终点引发血气爆炸。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'gap', r: [0, 220], dy: 24 },
   act: (lv) => ({ name: 'bloodblade', clip: 'bloodblade', dur: 0.8, superArmor: true, noCounter: true, move: [[0.08, 0.3, 700]],
     onStart: e => { e.hp = Math.max(1, e.hp - Math.round(e.hpMax * 0.03)); },
@@ -40,7 +40,7 @@ defSkill('bloodblade', { name: '血气之刃', cls: 'sword', job: 'berserker', l
     events: [evAt(0.08, e => { fxAfterimage(e, '#ff4a5a'); fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 220, w: 22, col: '#ff3040', dur: 0.3 }); sfx.iai(); }),
       evAt(0.45, e => { const x = e.x + e.face * 30; cam.shake = Math.max(cam.shake, 6); sfx.boom(0.9); fxSpr('bloodwave', x, e.y, 0, { h: 150, dur: 0.4, ay: 1, flip: e.face < 0, grow: [0.5, 1.1] }); fxBurst(x, e.y, 60, 200, '#ff2a3a');
         blast(e, x, e.y, 110, { dmg: skillDmg(4.2, 0.42, lv), launch: 440, knock: 160, hs: 0.1, big: 1.6, col: '#ff5a5a' }, { zMax: 160 }); })] }) });
-defSkill('quake', { name: '崩山裂地斩', cls: 'sword', job: 'berserker', lvReq: 45, mp: 70, cd: 20, type: 'phys', col: '#e0702a',
+defSkill('quake', { name: '崩山裂地斩', cls: 'sword', job: 'berserker', lvReq: 27, mp: 70, cd: 20, type: 'phys', col: '#e0702a',
   desc: '高高跃起后把剑砸进大地，大范围冲击波把敌人震上天，随后岩浆接连喷发追打浮空的敌人。', pow: lv => skillDmg(9.0, 0.9, lv), ai: { kind: 'aoe', r: [0, 170], dy: 50 },
   act: (lv) => ({ name: 'quake', clip: 'quake', dur: 1.6, superArmor: true, noCounter: true,
     onStart: e => { e.vz = 560; e.z = Math.max(e.z, 1); e.vx = e.face * 120; sfx.jump(); },

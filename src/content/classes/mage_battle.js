@@ -29,7 +29,7 @@ defSkill('bm_chaser', { name: '炫纹发射', cls: 'mage', job: 'battlemage', lv
   desc: '【开关】开启后，直接攻击命中敌人时向它射出一个炫纹。炫纹由普攻最后一击（无）、龙牙（冰）、天击（光）、落花掌（火）、圆舞棍（暗）生成，最多储存 3 个（5 / 10 级各 +1）。', pow: lv => skillDmg(0.9, 0.09, lv),
   infoExtra: lv => [['炫纹上限', String(3 + (lv >= 5) + (lv >= 10))]], ai: { kind: 'buff' },
   act: (lv) => ({ name: 'bm_chaser', clip: 'chaser', dur: 0.35, noCounter: true, onStart: e => { if (toggleBuff(e, 'bm_chaser', 9999, {})) { sfx.buff(); addChaser(e, 'none'); } } }) });
-defSkill('bm_round', { name: '圆舞棍', cls: 'mage', job: 'battlemage', lvReq: 20, mp: 35, cd: 7, type: 'phys', col: '#6a3a9a',
+defSkill('bm_round', { name: '圆舞棍', cls: 'mage', job: 'battlemage', lvReq: 17, mp: 35, cd: 7, type: 'phys', col: '#6a3a9a',
   desc: '用棍把敌人挑起（抓取判定，能抓住霸体敌人），在头顶抡一圈后摔向身后，落地冲击波击倒周围敌人。生成暗属性炫纹。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'grab', r: [0, 70], dy: 20 },
   act: (lv) => ({ name: 'bm_round', clip: 'smash', dur: 0.95, noCounter: true, superArmor: [0.1, 0.9],
     hits: [HB(0.06, 0.16, [0, 70, 26, 10, 110], skillDmg(0.8, 0.08, lv), { grab: true, stun: 0.4, hs: 0.05, snd: 'blunt' })],
@@ -39,32 +39,32 @@ defSkill('bm_round', { name: '圆舞棍', cls: 'mage', job: 'battlemage', lvReq:
       throwGrab(e, { dmg: skillDmg(2.0, 0.2, lv), down: true, downLift: 120, knock: 60, bounce: 0.5, hs: 0.1, shake: 4, big: 1.5 });
       fxShock(e.x - e.face * 40, e.y, 150, '#b080ff'); cam.shake = Math.max(cam.shake, 5); sfx.boom(0.7);
       blast(e, e.x - e.face * 40, e.y, 90, { dmg: skillDmg(1.2, 0.12, lv), down: true, knock: 120, hs: 0.06, downHit: true }); })] }) });
-defSkill('bm_fusion', { name: '炫纹融合', cls: 'mage', job: 'battlemage', lvReq: 30, mp: 30, cd: 15, type: 'mag', col: '#f0c040', buff: true,
+defSkill('bm_fusion', { name: '炫纹融合', cls: 'mage', job: 'battlemage', lvReq: 21, mp: 30, cd: 15, type: 'mag', col: '#f0c040', buff: true,
   desc: '把 2 个炫纹融合成一个巨大炫纹射出，同时 20 秒内魔法攻击力与魔法暴击率提升。', pow: lv => skillDmg(0.9, 0.09, lv) * 3, infoExtra: lv => [['魔攻', '+' + pct(0.06 + 0.01 * lv)], ['魔法暴击', '+5%']], ai: { kind: 'buff' },
   act: (lv) => ({ name: 'bm_fusion', clip: 'chaser', dur: 0.45, noCounter: true, cancelFrom: 0.3,
     onStart: e => { e.buffs.bm_fusion = { t: 20, atk: 0.06 + 0.01 * lv, crit: 0.05 }; sfx.buff(); fxAura(e, '#ffd070');
       if (e.chasers && e.chasers.length >= 2) { const el = e.chasers.shift(); e.chasers.shift(); fireChaser(e, nearestFoe(e, 500), el, { big: 2.6, burst: 70 }); } } }) });
-defSkill('bm_smash', { name: '碎霸', cls: 'mage', job: 'battlemage', lvReq: 30, mp: 40, cd: 8, type: 'phys', col: '#8a4ab0',
+defSkill('bm_smash', { name: '碎霸', cls: 'mage', job: 'battlemage', lvReq: 21, mp: 40, cd: 8, type: 'phys', col: '#8a4ab0',
   desc: '挥棍大范围横扫把敌人挑起，接着当头砸下，砸地冲击波击倒周围的敌人。', pow: lv => skillDmg(4.6, 0.46, lv), ai: { kind: 'aoe', r: [0, 110], dy: 30 },
   act: (lv) => ({ name: 'bm_smash', clip: 'smash', dur: 0.8, cancelFrom: 0.6, superArmor: [0.3, 0.55],
     hits: [HB(0.08, 0.16, [-30, 110, 40, 0, 140], skillDmg(1.8, 0.18, lv), { launch: 380, knock: 40, hs: 0.07 })],
     events: [slashAt(0.07, { a0: 1.6, a1: -1.6, r: 76, w: 16, off: [10, 50], col: '#d0a0ff' }), evAt(0.36, e => { e.play('smashDown', true); sfx.swing(true); fxSlashOn(e, { col: '#d0a0ff', a0: -1.8, a1: 1.4, r: 80, w: 20, off: [10, 50] }); }),
       evAt(0.44, e => { cam.shake = Math.max(cam.shake, 5); sfx.boom(0.8); fxShock(e.x + e.face * 60, e.y, 180, '#c080ff');
         instantHit(e, { box: [-10, 120, 40, -10, 140], dmg: skillDmg(2.8, 0.28, lv), spike: 400, bounce: 0.5, down: true, knock: 100, hs: 0.1, big: 1.5, downHit: true }); })] }) });
-defSkill('bm_flash', { name: '流星闪影击', cls: 'mage', job: 'battlemage', lvReq: 35, mp: 55, cd: 12, type: 'phys', col: '#e0c040',
+defSkill('bm_flash', { name: '流星闪影击', cls: 'mage', job: 'battlemage', lvReq: 23, mp: 55, cd: 12, type: 'phys', col: '#e0c040',
   desc: '霸体连续向前直刺，最后一击把敌人击飞。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'burst', r: [0, 100], dy: 22 },
   act: (lv) => ({ name: 'bm_flash', clip: 'fangRush', dur: 1.0, superArmor: true, noCounter: true, move: [[0, 0.7, 50]],
     hits: [HB(0.04, 0.7, [0, 96, 24, 30, 95], skillDmg(0.45, 0.045, lv), { rep: 0.08, stun: 0.3, knock: 20, hs: 0.025, snd: 'stab' }),
       HB(0.76, 0.82, [0, 104, 28, 20, 110], skillDmg(2.4, 0.24, lv), { launch: 460, knock: 220, hs: 0.1, big: 1.5, shake: 3 })],
     update: e => { if (e.actT < 0.7 && Math.floor(e.actT / 0.08) !== e.act.k) { e.act.k = Math.floor(e.actT / 0.08); fxStreak({ x: e.x + e.face * 14, y: e.y + rnd(-5, 5), z: e.z + rnd(45, 70), face: e.face, len: rnd(70, 100), w: 7, col: '#ffe090', dur: 0.1 }); if (e.act.k % 2) sfx.swing(false); } } }) });
-defSkill('bm_press', { name: '炫纹强压', cls: 'mage', job: 'battlemage', lvReq: 35, mp: 40, cd: 10, type: 'mag', col: '#d0a030',
+defSkill('bm_press', { name: '炫纹强压', cls: 'mage', job: 'battlemage', lvReq: 23, mp: 40, cd: 10, type: 'mag', col: '#d0a030',
   desc: '把储存的全部炫纹集中砸向前方地面爆炸（没有炫纹时只砸出一个）。炫纹越多威力越大。', pow: lv => skillDmg(1.8, 0.18, lv) * 3, ai: { kind: 'aoe', r: [40, 220], dy: 50 },
   act: (lv) => ({ name: 'bm_press', clip: 'smashDown', dur: 0.6, cancelFrom: 0.45, superArmor: true,
     events: [evAt(0.12, e => { const at = aimAhead(e, 120, 240), L = e.chasers && e.chasers.length ? e.chasers.splice(0) : ['none'];
       L.forEach((el, i) => game.after(i * 0.08, () => { const x = at.x + rnd(-30, 30), y = clamp(at.y + rnd(-15, 15), 6, DEPTH - 6), col = CHASER_COL[el];
         addFx({ x, y: y + 1, z: 0, dur: 0.18, col, draw(c) { const k = this.t / this.dur; drawSpr(c, fxTint('orb', this.col), sx(this.x), sy(this.y, 0) - 200 * (1 - k), 26, 26); } });
         game.after(0.18, () => { fxBurst(x, y, 10, 110, col); fxShock(x, y, 90, col); sfx.boom(0.5); blast(e, x, y, 60, { dmg: skillDmg(1.8, 0.18, lv), launch: 320, knock: 60, hs: 0.06, type: 'mag', elem: el === 'none' ? undefined : el, col, downHit: true }, { zMax: 200 }); }); })); })] }) });
-defSkill('bm_raid', { name: '强袭流星打', cls: 'mage', job: 'battlemage', lvReq: 40, mp: 60, cd: 15, type: 'phys', col: '#e08a2a',
+defSkill('bm_raid', { name: '强袭流星打', cls: 'mage', job: 'battlemage', lvReq: 25, mp: 60, cd: 15, type: 'phys', col: '#e08a2a',
   desc: '蓄气（按住技能键最长 0.8 秒）后化作流星向前冲刺，撞飞路径上的敌人，再跃回原位。', pow: lv => skillDmg(6.5, 0.65, lv), ai: { kind: 'gap', r: [0, 260], dy: 24 },
   act: (lv) => ({ name: 'bm_raid', clip: 'fang', dur: 1.1, superArmor: true, noCounter: true,
     charge: { at: 0.08, max: 0.8, min: 0, dmg: 0.6, clip: 'charge', update: e => { if (Math.random() < 0.5) fxCharge(e, '#ffb060'); } },
@@ -74,7 +74,7 @@ defSkill('bm_raid', { name: '强袭流星打', cls: 'mage', job: 'battlemage', l
       else if (!a.back) { a.back = true; e.vx = (a.x0 - e.x) / 0.4; e.vz = 380; e.z = Math.max(e.z, 1); e.play('bmLeap', true); } },
     hits: [HB(0.1, 0.5, [-20, 70, 30, 0, 110], skillDmg(6.5, 0.65, lv), { launch: 480, knock: 120, hs: 0.1, big: 1.6, shake: 4 })],
     onLand: e => { if (e.act.back) { e.vx = 0; e.endAct(); } } }) });
-defSkill('bm_dragon', { name: '煌龙偃月', cls: 'mage', job: 'battlemage', lvReq: 45, mp: 80, cd: 20, type: 'phys', col: '#f0c030',
+defSkill('bm_dragon', { name: '煌龙偃月', cls: 'mage', job: 'battlemage', lvReq: 27, mp: 80, cd: 20, type: 'phys', col: '#f0c030',
   desc: '连续突刺把敌人推到棍尖，最后龙之炫纹在棍尖爆炸。', pow: lv => skillDmg(9.0, 0.9, lv), ai: { kind: 'burst', r: [0, 120], dy: 26 },
   act: (lv) => ({ name: 'bm_dragon', clip: 'fangRush', dur: 1.3, superArmor: true, noCounter: true, move: [[0.05, 0.75, 180]],
     hits: [HB(0.05, 0.75, [0, 100, 30, 10, 110], skillDmg(0.5, 0.05, lv), { rep: 0.09, stun: 0.4, knock: 0, hs: 0.02, snd: 'stab', onHit: (a, t) => { if (!hasSA(t)) t.x = a.x + a.face * 90; } })],

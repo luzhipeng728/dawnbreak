@@ -6,13 +6,13 @@ defSkill('mg_flame', { name: '烈焰冲击', cls: 'mage', job: 'elemental', lvRe
   act: (lv) => ({ name: 'mg_flame', clip: 'flameCast', dur: 0.62, cancelFrom: 0.42,
     events: [evAt(0.2, e => { const at = aimAhead(e, 150, 320); const I = e.pad; if (I) { at.x += I.dx() * 60; at.y = clamp(at.y + I.dy() * 40, 8, DEPTH - 8); } sfx.hit('fire', false); sfx.boom(0.4);
       groundPillar(e, at.x, at.y, { life: 0.85, hit: { dmg: skillDmg(0.6, 0.06, lv), stun: 0.3, launch: 330, knock: 10, hs: 0.03, rep: 0.14, snd: 'fire', col: '#ffb060', elem: 'fire', type: 'mag', onHit: (a, t) => addStatus(t, 'burn', 3, { dps: a.atk * 0.08, src: a }) } }); })] }) });
-defSkill('mg_void', { name: '虚无之球', cls: 'mage', job: 'elemental', lvReq: 20, mp: 40, cd: 8, type: 'mag', elem: 'dark', col: '#4a1a6a', cast: true,
+defSkill('mg_void', { name: '虚无之球', cls: 'mage', job: 'elemental', lvReq: 17, mp: 40, cd: 8, type: 'mag', elem: 'dark', col: '#4a1a6a', cast: true,
   desc: '放出缓慢前进的暗属性虚无之球，贯穿路径上的敌人，每 0.4 秒造成一次伤害。', pow: lv => skillDmg(4.2, 0.42, lv), ai: { kind: 'proj', r: [0, 300], dy: 20 },
   act: (lv) => ({ name: 'mg_void', clip: 'void', dur: 0.6, cancelFrom: 0.42,
     events: [evAt(0.26, e => { sfx.charge(); shootProj(e, { img: 'darkorb', w: 74, speed: 130, life: 2.4, z: 38, dx: 40, bw: 26, bh: 60, pierce: true, spin: 2, noFlip: true,
       hit: { dmg: skillDmg(0.6, 0.06, lv), stun: 0.35, knock: 10, airLift: 60, hs: 0.03, rep: 0.4, elem: 'dark', type: 'mag', col: '#c79aff' },
       onEnd: pr => { fxBurst(pr.x, pr.y, pr.z + 30, 140, '#b070ff'); sfx.boom(0.5); blast(e, pr.x, pr.y, 70, { dmg: skillDmg(1.4, 0.14, lv), launch: 300, knock: 80, hs: 0.06, elem: 'dark', type: 'mag' }, { zMax: 140 }); } }); })] }) });
-defSkill('mg_icewall', { name: '冰墙', cls: 'mage', job: 'elemental', lvReq: 25, mp: 45, cd: 12, type: 'mag', elem: 'ice', col: '#6ab8e8', cast: true,
+defSkill('mg_icewall', { name: '冰墙', cls: 'mage', job: 'elemental', lvReq: 19, mp: 45, cd: 12, type: 'mag', elem: 'ice', col: '#6ab8e8', cast: true,
   desc: '在自身周围竖起冰墙，震开并减速周围的敌人；冰墙持续 4 秒，挡住敌人的投射物，进入的敌人被减速。', pow: lv => skillDmg(3.0, 0.3, lv), ai: { kind: 'aoe', r: [0, 110], dy: 50 },
   act: (lv) => ({ name: 'mg_icewall', clip: 'wall', dur: 0.6, cancelFrom: 0.45, superArmor: true, noCounter: true,
     events: [evAt(0.2, e => { sfx.ice(); sfx.boom(0.5); cam.shake = Math.max(cam.shake, 4); const cx = e.x, cy = e.y;
@@ -22,7 +22,7 @@ defSkill('mg_icewall', { name: '冰墙', cls: 'mage', job: 'elemental', lvReq: 2
       game.after(0.01, function tick() { wall.t += 0.1; for (let i = projs.length - 1; i >= 0; i--) { const pr = projs[i]; if (pr.team !== e.team && Math.hypot(pr.x - cx, (pr.y - cy) * 2.2) < 110) { fxSpr('frost', pr.x, pr.y, pr.z, { w: 40, dur: 0.3 }); projs.splice(i, 1); } }
         for (const t of ents) if (foe(e, t) && Math.hypot(t.x - cx, (t.y - cy) * 2.2) < 110) addStatus(t, 'slow', 0.5, { src: e });
         if (wall.t < wall.dur && !e.dead) game.after(0.1, tick); }); })] }) });
-defSkill('mg_vortex', { name: '雷旋', cls: 'mage', job: 'elemental', lvReq: 25, mp: 40, cd: 8, type: 'mag', elem: 'light', col: '#e0c82a', cast: true,
+defSkill('mg_vortex', { name: '雷旋', cls: 'mage', job: 'elemental', lvReq: 19, mp: 40, cd: 8, type: 'mag', elem: 'light', col: '#e0c82a', cast: true,
   desc: '召唤雷球绕自身旋转一圈，连续电击周围的敌人。按住技能键蓄力增加雷球数量。', pow: lv => skillDmg(3.8, 0.38, lv), ai: { kind: 'aoe', r: [0, 110], dy: 50 },
   act: (lv) => ({ name: 'mg_vortex', clip: 'thunderCast', dur: 0.5, cancelFrom: 0.36,
     charge: { at: 0.06, max: 0.6, min: 0, dmg: 0.4, update: e => { if (Math.random() < 0.4) fxCharge(e, '#fff38a'); } },
@@ -31,14 +31,14 @@ defSkill('mg_vortex', { name: '雷旋', cls: 'mage', job: 'elemental', lvReq: 25
         hit: { dmg: skillDmg(0.3, 0.03, lv), stun: 0.3, knock: 10, airLift: 100, hs: 0.02, rep: 0.18, elem: 'light', type: 'mag', col: '#fff6a0', snd: 'crit' },
         update(pr) { const a = a0 + pr.t * 5.5; pr.x = e.x + Math.cos(a) * 90; pr.y = clamp(e.y + Math.sin(a) * 38, 4, DEPTH - 4); },
         draw(c, pr) { drawSpr(c, 'spark', sx(pr.x), sy(pr.y, pr.z), 36, 36, { rot: pr.t * 12 }); drawSpr(c, 'orb', sx(pr.x), sy(pr.y, pr.z), 22, 22, { col: '#fff38a' }); } }); } })] }) });
-defSkill('mg_jackfall', { name: '杰克降临', cls: 'mage', job: 'elemental', lvReq: 35, mp: 60, cd: 15, type: 'mag', elem: 'fire', col: '#e0702a', cast: true,
+defSkill('mg_jackfall', { name: '杰克降临', cls: 'mage', job: 'elemental', lvReq: 23, mp: 60, cd: 15, type: 'mag', elem: 'fire', col: '#e0702a', cast: true,
   desc: '召唤巨型杰克爆弹从天空斜线落下，落地爆炸并产生冲击波。', pow: lv => skillDmg(7.5, 0.75, lv), ai: { kind: 'aoe', r: [80, 320], dy: 60 },
   act: (lv) => ({ name: 'mg_jackfall', clip: 'jackfall', dur: 0.8, superArmor: true, noCounter: true, cancelFrom: 0.62,
     events: [evAt(0.15, e => { const at = aimAhead(e, 200, 380); sfx.charge();
       telegraph({ x: at.x, y: at.y, r: 100, dur: 0.75, kind: 'hex', col: '#ff9a3a', friendly: true, fire: g => { meteorImpact(g, 1.1); fxShock(g.x, g.y, 220, '#ffb060');
         blast(e, g.x, g.y, 100, { dmg: skillDmg(7.5, 0.75, lv), launch: 460, knock: 160, hs: 0.12, big: 1.8, snd: 'fire', col: '#ffb060', elem: 'fire', type: 'mag', downHit: true }, { zMax: 220, status: 'burn', sdur: 3, dps: 0.1 }); } });
       addFx({ x: at.x, y: at.y + 2, z: 0, dur: 0.75, add: false, draw(c) { const k = this.t / this.dur; drawSpr(c, 'jackbig', sx(this.x) - 240 * (1 - k), sy(this.y, 0) - 480 * (1 - k) - 40, 110, 0, { add: false, rot: k * 2 }); } }); })] }) });
-defSkill('mg_thunder', { name: '天雷', cls: 'mage', job: 'elemental', lvReq: 35, mp: 60, cd: 15, type: 'mag', elem: 'light', icon: 'mg_chain', col: '#d8c82a', cast: true,
+defSkill('mg_thunder', { name: '天雷', cls: 'mage', job: 'elemental', lvReq: 23, mp: 60, cd: 15, type: 'mag', elem: 'light', icon: 'mg_chain', col: '#d8c82a', cast: true,
   desc: '召唤雷光标记（方向键移动），按 X 在标记处落下天雷（最多 6 次）。施放中自己不能移动。', pow: lv => skillDmg(1.4, 0.14, lv) * 6, ai: { kind: 'aoe', r: [40, 360], dy: 90 },
   act: (lv) => ({ name: 'mg_thunder', clip: 'thunderCast', dur: 2.6, noCounter: true, cancelFrom: 0.4,
     onStart: e => { const at = aimAhead(e, 160, 400); e.act.cx = at.x; e.act.cy = at.y; e.act.n = 0; e.act.cd = 0.3; },
@@ -48,7 +48,7 @@ defSkill('mg_thunder', { name: '天雷', cls: 'mage', job: 'elemental', lvReq: 3
         blast(e, a.cx, a.cy, 50, { dmg: skillDmg(1.4, 0.14, lv), stun: 0.5, launch: 200, knock: 20, hs: 0.07, snd: 'crit', col: '#fff6a0', elem: 'light', type: 'mag' }, { zMax: 200 }); if (a.n >= 6) a.dur = e.actT + 0.3; }
       return false; },
     update: e => { const a = e.act; addFx({ x: a.cx, y: a.cy + 1, z: 0, dur: 0.02, draw(c) { const X = sx(this.x), Y = sy(this.y, 0); c.strokeStyle = 'rgba(255,240,120,.8)'; c.lineWidth = 2; c.beginPath(); c.ellipse(X, Y, 24, 24 * GR, 0, 0, TAU); c.stroke(); c.beginPath(); c.moveTo(X - 30, Y); c.lineTo(X + 30, Y); c.moveTo(X, Y - 14); c.lineTo(X, Y + 14); c.stroke(); } }); } }) });
-defSkill('mg_icefeast', { name: '极冰盛宴', cls: 'mage', job: 'elemental', lvReq: 40, mp: 70, cd: 20, type: 'mag', elem: 'ice', col: '#3a8ae0', cast: true,
+defSkill('mg_icefeast', { name: '极冰盛宴', cls: 'mage', job: 'elemental', lvReq: 25, mp: 70, cd: 20, type: 'mag', elem: 'ice', col: '#3a8ae0', cast: true,
   desc: '在前方展开冰之魔法阵，阵内接连召唤冰柱砸落，冰冻敌人。', pow: lv => skillDmg(8.0, 0.8, lv), ai: { kind: 'aoe', r: [60, 320], dy: 80 },
   act: (lv) => ({ name: 'mg_icefeast', clip: 'wall', dur: 0.7, superArmor: true, noCounter: true,
     events: [evAt(0.2, e => { const at = aimAhead(e, 180, 360); sfx.ice();
@@ -56,7 +56,7 @@ defSkill('mg_icefeast', { name: '极冰盛宴', cls: 'mage', job: 'elemental', l
       for (let i = 0; i < 10; i++) game.after(0.3 + i * 0.16, () => { if (e.dead) return; const x = at.x + rnd(-100, 100), y = clamp(at.y + rnd(-45, 45), 6, DEPTH - 6); sfx.ice();
         addFx({ x, y: y + 1, z: 0, dur: 0.35, draw(c) { const k = this.t / this.dur; drawSpr(c, 'icespike', sx(this.x), sy(this.y, 0) - 300 * (1 - Math.min(1, k * 3)), 0, 80, { rot: Math.PI / 2, add: true, alpha: 1 - Math.max(0, k - 0.6) / 0.4 }); } });
         game.after(0.1, () => { fxSpr('frost', x, y, 0, { w: 90, dur: 0.4, ay: 0.75 }); blast(e, x, y, 42, { dmg: skillDmg(0.8, 0.08, lv), stun: 0.4, launch: 220, knock: 20, hs: 0.05, elem: 'ice', type: 'mag', col: '#bfefff' }, { zMax: 200, status: i === 9 ? 'freeze' : null, sdur: 1.5 }); }); }); })] }) });
-defSkill('mg_hole', { name: '湮灭黑洞', cls: 'mage', job: 'elemental', lvReq: 40, mp: 70, cd: 20, type: 'mag', elem: 'dark', icon: 'mg_hole', col: '#4a2a6a', cast: true,
+defSkill('mg_hole', { name: '湮灭黑洞', cls: 'mage', job: 'elemental', lvReq: 25, mp: 70, cd: 20, type: 'mag', elem: 'dark', icon: 'mg_hole', col: '#4a2a6a', cast: true,
   desc: '在前方制造黑洞，持续把周围的敌人吸到中心，最后爆炸把它们击飞。', pow: lv => skillDmg(8.5, 0.85, lv), ai: { kind: 'aoe', r: [80, 300], dy: 80 },
   act: (lv) => ({ name: 'mg_hole', clip: 'grip', dur: 0.7, superArmor: true, noCounter: true, events: [evAt(0.15, e => {
     const at = aimAhead(e, 190, 300); sfx.charge();

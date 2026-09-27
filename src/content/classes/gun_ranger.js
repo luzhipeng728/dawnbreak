@@ -12,17 +12,17 @@ defSkill('g_head', { name: '致命射击', cls: 'gun', job: 'ranger', lvReq: 15,
       fxStreak({ x: e.x + e.face * 30, y: e.y, z: e.z + 64, face: e.face, len: 520, w: 10, col: '#ffd070', dur: 0.25 });
       instantHit(e, { box: [20, 520, 16, 45, 90], dmg: skillDmg(4.0, 0.4, lv) * shotDmgOf(e), down: true, knock: 240, hs: 0.12, big: 1.6, col: '#ffe0a0', critBonus: 0.4, snd: 'stab' });
     })] }) });
-defSkill('g_buff', { name: '死亡左轮', cls: 'gun', job: 'ranger', lvReq: 30, mp: 60, cd: 40, type: 'phys', buff: true, icon: 'g_buff', col: '#8a60e0',
+defSkill('g_buff', { name: '死亡左轮', cls: 'gun', job: 'ranger', lvReq: 21, mp: 60, cd: 40, type: 'phys', buff: true, icon: 'g_buff', col: '#8a60e0',
   desc: '【BUFF】30 秒内左轮射击的伤害与暴击伤害提升。', infoExtra: lv => [['射击伤害', '+' + pct(0.15 + 0.02 * lv)], ['暴击伤害', '+' + pct(0.2 + 0.02 * lv)]], ai: { kind: 'buff' },
   act: (lv) => ({ name: 'g_buff', clip: 'gbuff', dur: 0.45, noCounter: true,
     onStart: e => { e.buffs.g_buff = { t: 30, shot: 0.15 + 0.02 * lv, critDmg: 0.2 + 0.02 * lv }; sfx.buff(); muzzle(e); sfx.gun(0.6); fxAura(e, '#b080ff'); } }) });
-defSkill('g_rapid', { name: '枪舞', cls: 'gun', job: 'ranger', lvReq: 35, mp: 50, cd: 10, type: 'phys', icon: 'g_rapid', col: '#d8a02a',
+defSkill('g_rapid', { name: '枪舞', cls: 'gun', job: 'ranger', lvReq: 23, mp: 50, cd: 10, type: 'phys', icon: 'g_rapid', col: '#d8a02a',
   desc: '双枪狂舞，向身体周围连续射击。连按 X 加快射速，按 C 中断。', pow: lv => skillDmg(5.0, 0.5, lv), ai: { kind: 'aoe', r: [0, 200], dy: 60 },
   act: (lv) => ({ name: 'g_rapid', clip: 'gunDance', dur: 1.6, noCounter: true, superArmor: [0, 0.15],
     onInput: (e, I) => { if (I.buffered('attack')) { I.consume('attack'); e.act.fast = Math.min(0.5, (e.act.fast || 0) + 0.06); } if (I.buffered('jump')) { I.consume('jump'); e.act.dur = Math.min(e.act.dur, e.actT + 0.05); } return false; },
     update: e => { const a = e.act, step = 0.075 * (1 - (a.fast || 0)), n = Math.floor(e.actT / step);
       if (n !== a.n && e.actT < a.dur - 0.12) { a.n = n; const f = e.face; e.face = n % 3 === 1 ? -f : f; fireBullet(e, { up: n % 4 === 2, low: n % 4 === 3, dmg: skillDmg(0.3, 0.03, lv) * shotDmgOf(e), lift: 180, life: 0.35, vol: 0.5, quiet: n % 2 === 1 }); e.face = f; } } }) });
-defSkill('g_moving', { name: '移动射击', cls: 'gun', job: 'ranger', lvReq: 35, mp: 40, cd: 12, type: 'phys', col: '#6a8a3a',
+defSkill('g_moving', { name: '移动射击', cls: 'gun', job: 'ranger', lvReq: 23, mp: 40, cd: 12, type: 'phys', col: '#6a8a3a',
   desc: '进入移动射击模式（4 秒）：方向键自由移动，X 射击，Z 改变射击方向，C 退出。', pow: lv => skillDmg(0.4, 0.04, lv), infoExtra: () => [['持续', '4 秒']], ai: { kind: 'mode' },
   act: (lv) => ({ name: 'g_moving', clip: 'moveShot', dur: 4, noCounter: true, cancelable: true, cancelFrom: 0.2,
     onInput: (e, I) => {
@@ -36,7 +36,7 @@ defSkill('g_moving', { name: '移动射击', cls: 'gun', job: 'ranger', lvReq: 3
     },
     update: e => { e.play(e.act.walking ? 'moveShot' : 'dualAim'); },
     onEnd: e => { e.vx = 0; e.vy = 0; } }) });
-defSkill('g_multi', { name: '多重爆头', cls: 'gun', job: 'ranger', lvReq: 40, mp: 60, cd: 15, type: 'phys', col: '#a02a3a',
+defSkill('g_multi', { name: '多重爆头', cls: 'gun', job: 'ranger', lvReq: 25, mp: 60, cd: 15, type: 'phys', col: '#a02a3a',
   desc: '锁定前方范围内最多 5 名敌人，接连对每个目标精准爆头，暴击率提升。', pow: lv => skillDmg(7.0, 0.7, lv), ai: { kind: 'burst', r: [0, 420], dy: 80 },
   act: (lv) => ({ name: 'g_multi', clip: 'aimShot', dur: 1.2, noCounter: true, superArmor: true,
     onStart: e => { e.act.list = ents.filter(t => hittable(e, t) && (t.x - e.x) * e.face > -20 && Math.abs(t.x - e.x) < 420 && Math.abs(t.y - e.y) < 90).slice(0, 5); sfx.charge();
@@ -45,7 +45,7 @@ defSkill('g_multi', { name: '多重爆头', cls: 'gun', job: 'ranger', lvReq: 40
       if (e.actT > 0.45 && n !== a.n && n < a.list.length) { a.n = n; const t = a.list[n]; if (!t || t.dead) return; e.face = t.x >= e.x ? 1 : -1; muzzle(e); sfx.gun(1.2); e.play('aimShot', true);
         addFx({ x: e.x + e.face * 34, y: Math.max(e.y, t.y) + 1, z: e.z + 64, tx: t.x, ty: t.y, tz: t.z + t.hurtH() * 0.7, dur: 0.1, add: true, draw(c) { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(255,220,120,${1 - this.t / this.dur})`; c.lineWidth = 3; c.beginPath(); c.moveTo(sx(this.x), sy(this.y, this.z)); c.lineTo(sx(this.tx), sy(this.ty, this.tz)); c.stroke(); c.restore(); } });
         if (hittable(e, t)) applyHit(e, t, { dmg: skillDmg(1.4, 0.14, lv) * shotDmgOf(e), stun: 0.6, knock: 120, heavy: true, hs: 0.08, critBonus: 0.3, snd: 'stab', col: '#ffe0a0', sure: true }, { proj: true }); } } }) });
-defSkill('g_hawk', { name: '双鹰回旋', cls: 'gun', job: 'ranger', lvReq: 45, mp: 60, cd: 16, type: 'phys', icon: 'g_hawk', col: '#2aa0a0',
+defSkill('g_hawk', { name: '双鹰回旋', cls: 'gun', job: 'ranger', lvReq: 27, mp: 60, cd: 16, type: 'phys', icon: 'g_hawk', col: '#2aa0a0',
   desc: '把两把左轮旋转着掷出，飞出后再飞回手中，来回切割路径上的敌人。再按技能键可以追加投掷（最多 3 次）。', pow: lv => skillDmg(4.5, 0.45, lv) * 3, ai: { kind: 'proj', r: [0, 330], dy: 20 },
   act: (lv) => hawkThrow(lv, 1) });
 function hawkThrow(lv, n) {

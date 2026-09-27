@@ -45,12 +45,12 @@ const DIM_NAME = { str: '异次元力量', int: '异次元智力', vit: '异次�
 const AMP_MAX = 15;
 // 到 +1 ~ +15 的成功率（下标 = 当前等级；官方公示：+1~+4 必定成功，+5 80%、+6 70%、+7 60%、+8 70%、+9 60%、+10 50%、+11 40%、+12 30%、+13 起 20%）
 const AMP_RATE = [1, 1, 1, 1, 0.8, 0.7, 0.6, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.2, 0.2];
-// 红字 = round((0.6 + 装备等级 × 0.06) × 品级系数 × AMP_MUL[等级])；官方：+6 和 +10 之后涨幅明显变大，红 10 → 红 11 约涨 70%
+// 红字 = round((1 + 装备等级 × 0.09) × 品级系数 × AMP_MUL[等级])；官方：+6 和 +10 之后涨幅明显变大，红 10 → 红 11 约涨 70%
 const AMP_MUL = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 2.0, 2.4, 2.8, 3.2, 3.6, 6.1, 7.6, 9.2, 11, 13];
 const AMP_RAR = [0.7, 0.8, 0.9, 1, 1.1, 1.25];
 const canAmplify = it => !!it && it.kind === 'equip' && SLOTS.includes(it.slot) && it.slot !== 'title' && !isAvatar(it) && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);
 const hasOtherworld = it => canAmplify(it) && (it.lvl || 1) >= 15 && (it.rar || 0) >= 2;
-const ampStatVal = (it, lv = it.enh || 0) => lv > 0 ? Math.round((0.6 + (it.lvl || 1) * 0.06) * AMP_RAR[it.rar || 0] * AMP_MUL[Math.min(AMP_MAX, lv)]) : 0;
+const ampStatVal = (it, lv = it.enh || 0) => lv > 0 ? Math.round((1 + (it.lvl || 1) * 0.09) * AMP_RAR[it.rar || 0] * AMP_MUL[Math.min(AMP_MAX, lv)]) : 0;
 // 职业的主属性（增幅券缺省按它赋予红字）
 const mainStatOf = (cls = game.player && game.player.cls) => ((CLASSES[cls] || {}).dmgType || (cls === 'mage' ? 'mag' : 'phys')) === 'mag' ? 'int' : 'str';
 // 失败结果（官方经典规则）：冲 +5~+7 失败掉 1 级；冲 +8~+10 失败归零；冲 +11 起失败装备破碎（用增幅保护券：不碎、不归零，只掉 1 级）

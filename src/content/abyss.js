@@ -39,7 +39,9 @@ class AbyssSealModel {
     if (hex) { c.globalAlpha = 0.9; c.save(); c.translate(0, -92); c.rotate(t * 0.8); c.scale(1, 1); c.drawImage(hex, -70, -70, 140, 140); c.restore();
       c.globalAlpha = 0.5; c.save(); c.translate(0, -2); c.scale(1, 0.3); c.rotate(-t * 1.2); c.drawImage(hex, -90, -90, 180, 180); c.restore(); }
     c.restore();
-    // 中间的深渊水晶
+    const im = IMG['icon/item_gear_seal'];   // 封印水晶（装备深化的图标表里画的）
+    if (im) { const b = Math.sin(t * 2) * 4; c.drawImage(im, -64, -166 + b, 128, 128); return; }
+    // 没有美术时：代码画的深渊水晶
     c.fillStyle = '#2a0a3a'; c.strokeStyle = '#e0a0ff'; c.lineWidth = 2;
     c.beginPath(); c.moveTo(0, -150); c.lineTo(20, -95); c.lineTo(0, -40); c.lineTo(-20, -95); c.closePath(); c.fill(); c.stroke();
     c.fillStyle = `rgba(230,150,255,${0.5 + 0.4 * Math.sin(t * 4)})`; c.beginPath(); c.moveTo(0, -130); c.lineTo(9, -95); c.lineTo(0, -60); c.lineTo(-9, -95); c.closePath(); c.fill();

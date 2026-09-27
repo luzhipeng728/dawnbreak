@@ -127,7 +127,7 @@ EP('ep_ring_fire', { slot: 'ring', lvl: 20, name: '火精灵之戒', fx: { fire:
 EP('ep_sup_michel', { slot: 'support', lvl: 16, name: '米歇尔的祝福', fx: { resAll: 15, dmgReduce: 0.04, allStat: 10 }, desc: '圣职者米歇尔亲手祝福过的护符。' });
 EP('ep_sup_paris', { slot: 'support', lvl: 26, name: '帕丽丝的家族象征', fx: { dmgUp: 0.08, allStat: 20 },
   proc: { vs: 'any', act: 'extra', frac: 0.15, desc: '攻击处于异常状态（灼伤、中毒、出血、冰冻、眩晕、减速）的敌人时附加 15% 伤害。' }, desc: '帕丽丝家族代代相传的徽记。' });
-EP('ep_stone_platani', { slot: 'stone', lvl: 22, name: '普拉塔尼的黄金石', fx: { allStat: 30, hpPct: 0.04 }, desc: '黄金巨人普拉塔尼的核心碎片。只有石巨人塔的领主会掉落它。' });
+EP('ep_stone_platani', { slot: 'stone', lvl: 22, noDrop: true, src: '石巨人塔的领主（黄金巨人 普拉塔尼）', name: '普拉塔尼的黄金石', fx: { allStat: 30, hpPct: 0.04 }, desc: '黄金巨人普拉塔尼的核心碎片。只有石巨人塔的领主会掉落它。' });
 EP('ep_stone_grelin', { slot: 'stone', lvl: 28, abyss: true, abyssFrom: SKY, name: '极光格雷林之泪', fx: { light: 35, dmgUp: 0.05 }, desc: '极光龙格雷林的眼泪，凝成了永不融化的晶石。' });
 EP('ep_stone_herik', { slot: 'stone', lvl: 28, abyss: true, abyssFrom: SKY, name: '火焰赫瑞克的眼泪', fx: { fire: 35, dmgUp: 0.05 }, desc: '火龙赫瑞克的眼泪，握在手里会发烫。' });
 EP('ep_stone_aqui', { slot: 'stone', lvl: 28, abyss: true, abyssFrom: SKY, name: '冰影阿奎利斯之泪', fx: { ice: 35, dmgUp: 0.05 }, desc: '冰龙阿奎利斯的眼泪，里面封着一片雪原。' });

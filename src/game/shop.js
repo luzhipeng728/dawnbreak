@@ -273,6 +273,7 @@ function cashUseTicket(tk, target, sel = {}) {
 function cashStat(k, v, max) {
   const S = cashData(); if (!S) return;
   S.stat[k] = max ? Math.max(S.stat[k] || 0, v) : (S.stat[k] || 0) + v;
+  if (typeof ACHIEVEMENTS !== 'undefined') return;   // 社交组的成就系统（game/achieve.js）接管发奖：它收录了这 14 个成就，发奖时也写 S.ach，不会重复
   for (const A of CASH_ACH) if (A.stat === k && !S.ach[A.id] && S.stat[k] >= A.n) { S.ach[A.id] = Date.now(); addCera(A.cera, `成就：${A.name}`); toastMsg(`成就达成：${A.name}（${A.desc}）`, '#ffd23a'); }
 }
 bus.on('levelUp', e => { if (!save.data || !e.lvl) return; const S = cashData(); if ((S.lvlPaid || 1) >= e.lvl) return; S.lvlPaid = e.lvl; addCera(e.lvl * CASH_EARN.lvl, `升级到 Lv.${e.lvl}`); });

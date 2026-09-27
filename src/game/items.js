@@ -214,7 +214,7 @@ function rollEquip(o = {}) {
 // 旧接口
 function makeEquip(slot, lvl, rar, cls, epic = null) {
   if (epic && epic.key) return makeItem(epic.key);
-  return rollEquip({ slot, lvl, rar, cls }) || rollEquip({ lvl, rar: 0, cls });
+  return rollEquip({ slot, lvl, rar, cls }) || (slot ? rollEquip({ slot, lvl, rar: 0, cls }) : rollEquip({ lvl, rar: 0, cls }));   // 找不到时保持部位不变（可能返回 null）
 }
 function makeConsumable(key, n = 1) { return makeItem(key, n); }
 
@@ -227,7 +227,7 @@ const inv = {
     if (this._norm === this.items && this._normSt === this.storage && this._normEq === this.equip) return;
     this.items = (this.items || []).filter(Boolean).map(normalizeItem);
     this.storage = (this.storage || []).filter(Boolean).map(normalizeItem);
-    for (const s in this.equip) { if (!this.equip[s]) delete this.equip[s]; else normalizeItem(this.equip[s]); }
+    for (const s in this.equip) { const it = this.equip[s]; if (!it) { delete this.equip[s]; continue; } normalizeItem(it); if (it.slot !== s) { delete this.equip[s]; if (!this.add(it)) { /* 部位不对又放不下：丢掉比卡死好 */ } } }
     // 旧存档：equip 里的键名一致，无需迁移；背包 / 仓库里的复活币物品换成计数
     for (const L of [this.items, this.storage]) for (let i = L.length - 1; i >= 0; i--) if (L[i].key === 'coin') { if (save.data) save.data.coins += L[i].n || 1; L.splice(i, 1); }
     this._norm = this.items; this._normSt = this.storage; this._normEq = this.equip;

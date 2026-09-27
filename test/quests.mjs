@@ -142,13 +142,15 @@ for (const [qid, dg, setup] of [
   await closeAll(); await wait(300); await shot(`05-gate-${dg}`);
 }
 
-step('7. 转职（假 jobs 表）');
+step('7. 转职（jobs 表：战斗组合并前用假的）');
 await ev(() => {
-  CLASSES.sword.jobs = {
+  window.__realJobs = !!CLASSES.sword.jobs;   // 战斗组的 jobs 表合并后用真的，没有时塞一个假的
+  if (!CLASSES.sword.jobs) CLASSES.sword.jobs = {
     blade: { name: '剑魂', role: '近战 · 连击', desc: '专精各类武器的剑术大师，连段华丽、浮空控制出色。', skills: ['iai', 'rise', 'flurry', 'awaken'], awaken: 'awaken', awakenName: '极·鬼剑术' },
     berserker: { name: '狂战士', role: '近战 · 爆发', desc: '以自身鲜血为代价换取狂暴力量的战士，越战越勇。', skills: ['slam', 'spin', 'focus'], awaken: 'awaken', awakenName: '魔狱血刹' },
   };
-  window.onJobChange = (p, job) => { window.__ojc = job; recalcStats(p); };
+  const realOJC = typeof onJobChange === 'function' ? onJobChange : null;
+  window.onJobChange = (p, job) => { window.__ojc = job; if (realOJC) realOJC(p, job); else recalcStats(p); };
   bus.on('jobChange', e => { window.__jce = e.job; });
   game.lvl = 15; for (const id of ['q_job_kill', 'q_job_visit_sword', 'q_job_sword_1', 'q_job_sword_2', 'q_job_sword_3', 'q_job_sword_4', 'q_job_sword_5', 'q_job_sword_6']) save.data.questDone[id] = 1;
   save.data.questDone.q_job_kill = 1; delete save.data.quests.q_job_kill;

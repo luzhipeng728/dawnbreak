@@ -144,6 +144,7 @@ async function sxMailClaim(m) {
   if (!(await sxFlush())) { sxDrop(p); save.write(); throw new Error('网络异常，存档没能上传，请稍后再试'); }
   return sxRun(p);
 }
+// items：[{ it: 背包里的物品, n: 数量 }]（可以叠加的物品可以只寄一部分）
 async function sxMailSend({ to, title, body, gold = 0, items = [] }) {
   gold = Math.max(0, Math.floor(gold || 0));
   const postage = gold || items.length ? SX_POSTAGE : 0;
@@ -151,10 +152,18 @@ async function sxMailSend({ to, title, body, gold = 0, items = [] }) {
   if (!title) throw new Error('请填写标题');
   if (items.length > 5) throw new Error('每封邮件最多附带 5 件物品');
   if (game.gold < gold + postage) throw new Error(`金币不足（附带 ${fmtNum(gold)} G + 邮费 ${fmtNum(postage)} G）`);
-  for (const it of items) { if (!inv.items.includes(it)) throw new Error(`${it.name} 已经不在背包里了`); if (!sxTradable(it)) throw new Error(`${it.name}：${sxBindText(it)}，不能邮寄`); }
-  for (const it of items) { inv.remove(it); sxClearQuick(it.key); }
+  for (const { it, n } of items) {
+    if (!inv.items.includes(it)) throw new Error(`${it.name} 已经不在背包里了`);
+    if (!sxTradable(it)) throw new Error(`${it.name}：${sxBindText(it)}，不能邮寄`);
+    if (it.kind !== 'equip' && n > (it.n || 1)) throw new Error(`${it.name} 数量不够了`);
+  }
+  const parts = items.map(({ it, n }) => {
+    let part = it;
+    if (it.kind !== 'equip' && n < (it.n || 1)) { it.n -= n; part = { ...JSON.parse(JSON.stringify(it)), id: itemSeq++, n }; } else inv.remove(it);
+    sxClearQuick(it.key); return part;
+  });
   game.gold -= gold + postage;
-  const p = { rid: sxRid(), op: 'send', to, title, body, gold, postage, items, char: save.data.name, t: Date.now() };
+  const p = { rid: sxRid(), op: 'send', to, title, body, gold, postage, items: parts, char: save.data.name, t: Date.now() };
   sxPend().push(p);
   if (!(await sxFlush())) { sxRollback(p); sxDrop(p); save.write(); throw new Error('网络异常，存档没能上传，请稍后再试'); }
   return sxRun(p);

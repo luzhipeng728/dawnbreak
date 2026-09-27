@@ -82,6 +82,29 @@ try {
   await until(A.page, g => game.gold > g, ga);
   ok(await ev(A, () => game.gold) === ga + 19000, 'alice 收到 19000 G（扣 5% 手续费）', await ev(A, () => game.gold) - ga);
 
+  step('好友寄信：alice 给 bob 寄金币 + 物品');
+  await A.page.click('.sxmail .itab:has-text("写信")'); await until(A.page, () => document.querySelector('.sxmail .cgrid .islot'));
+  await A.page.fill('.sxmail input[list="sxfrlist"]', 'bob');
+  await A.page.fill('.sxmail input[placeholder="标题"]', '送你点东西');
+  await A.page.fill('.sxmail textarea', '一起刷图吧！');
+  await A.page.fill('.sxmail input[type=number]', '1000');
+  await A.page.click('.sxmail .cgrid .islot >> nth=0'); await until(A.page, () => document.querySelector('.idlg input[type=number]'));
+  await A.page.fill('.idlg input[type=number]', '5'); await A.page.click('.idlg button:has-text("确定")'); await sleep(300);
+  const sent = await ev(A, () => { const a = SXM.c.items[0]; return a && { key: a.it.key, n: a.n, cnt: inv.count(a.it.key), gold: game.gold }; });
+  ok(sent && sent.n === 5, '叠加物品先问数量：只寄 5 个', sent);
+  await shot(A, '05b-compose');
+  await A.page.click('.sxmail button:has-text("寄出")');
+  await until(A.page, s => game.gold === s.gold - 1100 && !SXM.busy, sent);
+  const af = await ev(A, k => ({ gold: game.gold, cnt: inv.count(k), pend: save.data.svcPend.length }), sent.key);
+  ok(af.gold === sent.gold - 1100 && af.cnt === sent.cnt - sent.n && af.pend === 0, `寄出：扣 1000 G + 邮费 100 G，${sent.key} ×${sent.n} 移出背包`, { sent, af });
+  ok(await until(B.page, () => SX.unread > 0), 'bob 收到好友邮件推送');
+  await closeWins(B); await B.page.click('#sxbar button:has-text("邮件")'); await until(B.page, () => document.querySelector('.sxmail .mrow'));
+  const bf = await ev(B, k => ({ gold: game.gold, cnt: inv.count(k) }), sent.key);
+  await B.page.click('.sxmail .mrow:has-text("送你点东西")'); await sleep(300);
+  await B.page.click('.sxmail button:has-text("领取附件")');
+  ok(await until(B.page, ([s, b]) => game.gold === b.gold + 1000 && inv.count(s.key) === b.cnt + s.n, [sent, bf]), 'bob 领到 1000 G 和物品');
+  await closeWins(A); await closeWins(B);
+
   step('到期退回');
   await closeWins(A); await ev(A, () => { SXA.tab = 'sell'; SXA.s.it = null; SXA.s.tab = 'use'; });
   await A.page.keyboard.press('KeyB'); await until(A.page, () => document.querySelector('.sxauc .sell .igrid .islot'));

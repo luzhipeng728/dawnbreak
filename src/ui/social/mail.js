@@ -88,7 +88,7 @@ async function sxMailDoClaim(el, list, btn) {
 }
 function sxMailCompose(el) {
   const C = SXM.c;
-  C.items = C.items.filter(it => inv.items.includes(it));
+  C.items = C.items.filter(a => inv.items.includes(a.it) && (a.it.kind === 'equip' || a.n <= a.it.n));
   const fr = SXM.friends || [];
   const to = sxInput({ list: 'sxfrlist', placeholder: fr.length ? '好友名字' : '（还没有好友）', value: C.to, style: 'width:12em' });
   const dl = h('datalist', { id: 'sxfrlist' }, fr.map(n => h('option', { value: n })));
@@ -99,10 +99,19 @@ function sxMailCompose(el) {
   const upd = () => { C.to = to.value.trim(); C.title = title.value.trim(); C.body = body.value; C.gold = Math.max(0, Math.floor(+gold.value || 0)); const p = C.gold || C.items.length ? SX_POSTAGE : 0; post.textContent = `邮费 ${fmtNum(p)} G · 合计 ${fmtNum(C.gold + p)} G（持有 ${fmtNum(game.gold)} G）`; };
   for (const x of [to, title, body, gold]) x.addEventListener('input', upd);
   upd();
-  const toggle = it => { const i = C.items.indexOf(it); if (i >= 0) C.items.splice(i, 1); else { if (C.items.length >= 5) { toastMsg('每封邮件最多附带 5 件物品', '#ffb0a0'); sfx.error(); return; } if (!sxTradable(it)) { toastMsg(`${it.name}：${sxBindText(it)}，不能邮寄`, '#ffb0a0'); sfx.error(); return; } C.items.push(it); } sfx.click(); upd(); el._render(); };
-  const att = h('div', { class: 'catt' }, Array.from({ length: 5 }, (_, i) => { const it = C.items[i]; return itemSlot(it || null, { label: '附件', cmp: false, onClick: () => it && toggle(it), drop: { accept: p => p.type === 'item' && p.from === 'inv', drop: p => { if (!C.items.includes(p.item)) toggle(p.item); } } }); }));
+  // 点击：放进 / 拿出附件；可以叠加的物品先问数量（默认全部）
+  const add = (it, n) => { C.items.push({ it, n }); sfx.click(); upd(); el._render(); };
+  const toggle = it => {
+    const i = C.items.findIndex(a => a.it === it);
+    if (i >= 0) { C.items.splice(i, 1); sfx.click(); upd(); el._render(); return; }
+    if (C.items.length >= 5) { toastMsg('每封邮件最多附带 5 件物品', '#ffb0a0'); sfx.error(); return; }
+    if (!sxTradable(it)) { toastMsg(`${it.name}：${sxBindText(it)}，不能邮寄`, '#ffb0a0'); sfx.error(); return; }
+    if (it.kind !== 'equip' && it.n > 1) qtyDialog(el, { title: `邮寄数量：${it.name}`, max: it.n, init: it.n, onOk: n => add(it, n) });
+    else add(it, 1);
+  };
+  const att = h('div', { class: 'catt' }, Array.from({ length: 5 }, (_, i) => { const a = C.items[i]; return itemSlot(a ? (a.it.kind === 'equip' ? a.it : { ...a.it, n: a.n }) : null, { label: '附件', cmp: false, onClick: () => a && toggle(a.it), drop: { accept: p => p.type === 'item' && p.from === 'inv', drop: p => { if (!C.items.some(x => x.it === p.item)) toggle(p.item); } } }); }));
   const pool = inv.items.filter(sxTradable);
-  const grid = h('div', { class: 'cgrid', 'data-sk': 'cg' }, pool.map(it => itemSlot(it, { cmp: false, chk: C.items.includes(it), onClick: () => toggle(it) })));
+  const grid = h('div', { class: 'cgrid', 'data-sk': 'cg' }, pool.map(it => itemSlot(it, { cmp: false, chk: C.items.some(a => a.it === it), onClick: () => toggle(it) })));
   const send = h('button', { class: 'btn', onclick: async () => {
     upd(); if (SXM.busy) return;
     SXM.busy = true; send.classList.add('off');

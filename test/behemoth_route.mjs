@@ -88,6 +88,24 @@ for (const g of gates) {
   const back = await page.evaluate(() => ({ id: world.S.id, x: Math.round(game.player.x) }));
   ok(back.id === g.scene && Math.abs(back.x - g.x) < 10, `${g.id}：回城站在门口（${back.id} @${back.x}）`);
 }
+// 深渊派对的门（装备深化组在脊背上加的，content/abyss.js）：完成资格任务后出现，带邀请函能进
+console.log('· 脊背上的深渊门（装备深化组）');
+const abyss = await page.evaluate(() => (SCENES.behemoth_spine.gates || []).filter(g => DUNGEONS[g.dungeon] && DUNGEONS[g.dungeon].abyss).map(g => ({ id: g.dungeon, x: g.x, q: DUNGEONS[g.dungeon].unlock.quest })));
+if (!abyss.length) console.log('  （这个版本没有天帷深渊，跳过）');
+for (const a of abyss) {
+  await closeAll();
+  const hidden = await page.evaluate(id => !gateVisible(SCENES.behemoth_spine.gates.find(g => g.dungeon === id)), a.id);
+  ok(hidden, `${a.id}：资格任务完成前看不到门`);
+  await page.evaluate(a => { save.data.questDone[a.q] = true; (save.data.hiddenSeen ??= {})[a.id] = 1; save.data.fatigue = 156; if (typeof makeItem === 'function' && ITEMS.abyss_ticket) giveItem(makeItem('abyss_ticket', 2)); }, a);
+  await enter('behemoth_spine', { x: a.x, y: 60 }); await closeAll(); await wait(400);
+  await hold('ArrowUp', () => menus.isOpen('dungeon'), 3000);
+  ok(await page.evaluate(() => menus.isOpen('dungeon')), `${a.id}：走到深渊门口弹出地下城选择`);
+  await page.evaluate(() => { const b = [...document.querySelectorAll('button')].find(b => b.textContent === '进入地下城'); b && b.click(); });
+  const inDg = await page.waitForFunction(id => game.scene === 'dungeon' && game.dungeon && game.dungeon.def.id === id, a.id, { timeout: 15000 }).then(() => true, () => false);
+  ok(inDg, `${a.id}：带着邀请函进入了深渊`);
+  if (inDg) { await wait(1200); await page.screenshot({ path: `${out}/route-${a.id}.png` }); }
+  await page.evaluate(() => { game.dungeon = null; return goTown(); }); await wait(800);
+}
 const errs = logs.filter(l => l.type !== 'warning');
 for (const e of errs.slice(0, 6)) console.log('ERR', e.text.slice(0, 300));
 ok(!errs.length, `没有报错（${errs.length}）`);

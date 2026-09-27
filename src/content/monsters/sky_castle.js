@@ -402,7 +402,7 @@ Object.assign(MON, {
   seghart: { name: '光之城主 赛格哈特', lvl: 24, hp: 168000, atk: 328, def: 620, w: 16, d: 14, h: 128, weight: 3, speed: 105, exp: 3200, gold: [360, 660], shadowR: 25, pref: 110, clips: BEAST_CLIPS, scale: 1.18, bars: 34,
     model: () => buildZombie({ skin: '#f0e0c0', hair: '#fff0b0', eye: '#ffd23a', cloth: '#f0f0f8', pants: '#d8c070' }),
     attacks: [
-      melee('scratch', 0.3, 0.4, [-70, 104, 34, 10, 120], { range: [0, 95], dy: 30, cd: [2, 3], w: 2, hit: { dmg: 1.2, knock: 150, stun: 0.45 }, events: [slashAt(0.28, { a0: -2.6, a1: 1.2, r: 74, w: 14, off: [0, 60], col: '#ffe8a0', silent: true })] }),
+      melee('scratch', 0.3, 0.4, [-70, 104, 34, 10, 120], { range: [0, 95], dy: 30, cd: [2.4, 3.4], w: 2, hit: { dmg: 1.2, knock: 150, stun: 0.45 }, events: [slashAt(0.28, { a0: -2.6, a1: 1.2, r: 74, w: 14, off: [0, 60], col: '#ffe8a0', silent: true })] }),
       { clip: 'cast', range: [0, 160], dy: 90, cd: [5, 7], w: 1.4, act: { dur: 1.3, superArmor: true, events: [evAt(0.1, e => skyNova(e, 125, 0.9, '#fff0a0', { dmg: 1.5 }))] } },
       { clip: 'cast', range: [0, 900], dy: 900, cd: [8, 11], w: 1.3, act: { dur: 2.2, superArmor: true, events: [evAt(0.1, e => skyLightField(e))] } },
       { clip: 'cast', range: [150, 900], dy: 40, cd: [5, 7], w: 1.4, act: { dur: 1.9, superArmor: true, events: [evAt(0.15, e => { skyLaser(e, e.y, { dmg: 1.9 }); if (e.enraged && game.player) { const y2 = game.player.y; if (Math.abs(y2 - e.y) > 50) skyLaser(e, y2, { dmg: 1.6, warn: 1.4 }); } })] } }] },

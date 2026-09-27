@@ -6,11 +6,11 @@
    注意：选角界面上 save.data 保持为 null，避免关页面时 save.write() 把当前（空的）游戏状态写进某个角色
    ===================================================================== */
 const NAME_RULE = { min: 2, max: 12 };   // 按显示宽度计：汉字算 2，字母数字算 1（官方：最多 6 个汉字 / 12 个字母）
-const nameWidth = s => [...s].reduce((n, ch) => n + (/[⺀-鿿豈-﫿＀-￯]/.test(ch) ? 2 : 1), 0);
+const csNameWidth = s => [...s].reduce((n, ch) => n + (/[⺀-鿿豈-﫿＀-￯]/.test(ch) ? 2 : 1), 0);
 function checkCharName(name, skip = -1) {
   if (!name) return '请输入角色名';
   if (!/^[一-鿿A-Za-z0-9]+$/.test(name)) return '只能使用汉字、英文字母和数字（不能有空格和符号）';
-  const w = nameWidth(name);
+  const w = csNameWidth(name);
   if (w < NAME_RULE.min) return `角色名太短（至少 ${NAME_RULE.min} 个字符）`;
   if (w > NAME_RULE.max) return `角色名太长（最多 ${NAME_RULE.max} 个字符，汉字算 2 个）`;
   if (/^\d+$/.test(name)) return '角色名不能全是数字';
@@ -23,11 +23,11 @@ function suggestName(cls) {
   for (let k = 0; k < 40; k++) { const n = pick(pre) + (C.name || '勇士').slice(-2) + (k > 8 ? rndi(1, 99) : ''); if (!checkCharName(n)) return n; }
   return '勇士' + rndi(100, 999);
 }
-const className = (cls, job) => { const C = CLASSES[cls] || {}; const J = job && C.jobs && C.jobs[job]; return J ? J.name : (C.name || cls); };
-const locName = d => { const id = d.loc && d.loc.scene; const S = SCENES[id] || SCENES[typeof START_SCENE !== 'undefined' ? START_SCENE : ''] || {}; return S.name || '艾尔文防线'; };
-const fmtPlay = s => { s = Math.floor(s || 0); const hh = Math.floor(s / 3600), mm = Math.floor(s % 3600 / 60); return hh ? `${hh} 小时 ${mm} 分` : `${mm} 分钟`; };
+const csClassName = (cls, job) => { const C = CLASSES[cls] || {}; const J = job && C.jobs && C.jobs[job]; return J ? J.name : (C.name || cls); };
+const csLocName = d => { const id = d.loc && d.loc.scene; const S = SCENES[id] || SCENES[typeof START_SCENE !== 'undefined' ? START_SCENE : ''] || {}; return S.name || '艾尔文防线'; };
+const csFmtPlay = s => { s = Math.floor(s || 0); const hh = Math.floor(s / 3600), mm = Math.floor(s % 3600 / 60); return hh ? `${hh} 小时 ${mm} 分` : `${mm} 分钟`; };
 // 职业立绘（手绘优先；没有就用模型画一帧站姿）
-function classArt(cls, cl = 'cart', job) {
+function csClassArt(cls, cl = 'cart', job) {
   const C = CLASSES[cls] || {}, J = job && C.jobs && C.jobs[job], im = (J && J.art && IMG[J.art]) || IMG[`class/${cls}`];   // 转职后优先用转职立绘
   if (im) return h('img', { class: cl, src: im.src, draggable: 'false' });
   const cv = h('canvas', { class: cl, width: 90, height: 130 });
@@ -67,18 +67,18 @@ Object.assign(menus, {
       const c = chars[i];
       if (!c) { slots.push(h('div', { class: 'cslot empty', onclick: () => { sfx.click(); this.close('charselect'); this.open('newgame'); } }, h('div', { class: 'plus' }, '+'), h('div', { class: 'small' }, '创建角色'))); continue; }
       const card = h('div', { class: 'cslot' + (i === sel ? ' sel' : ''), 'data-i': i, onclick: () => { if (this.csSel !== i) { this.csSel = i; sfx.click(); this.refresh('charselect'); } }, ondblclick: () => start(i) },
-        h('div', { class: 'lv' }, `Lv.${c.lvl}`), classArt(c.cls, 'cart', c.job), h('div', { class: 'stage' }),
-        h('div', { class: 'nm' }, c.name || className(c.cls)), h('div', { class: 'job' }, className(c.cls, c.job)));
+        h('div', { class: 'lv' }, `Lv.${c.lvl}`), csClassArt(c.cls, 'cart', c.job), h('div', { class: 'stage' }),
+        h('div', { class: 'nm' }, c.name || csClassName(c.cls)), h('div', { class: 'job' }, csClassName(c.cls, c.job)));
       slots.push(card);
     }
     const info = d ? h('div', { class: 'csinfo' },
-      h('div', { class: 'row' }, h('b', { class: 'big' }, d.name || className(d.cls)), h('span', { class: 'gold' }, `Lv.${d.lvl}`), h('span', {}, className(d.cls, d.job) + (d.job ? `（${CLASSES[d.cls].name}）` : ''))),
-      h('div', { class: 'row small' }, h('span', {}, `所在位置：${locName(d)}`), h('span', {}, `金币：${fmtNum(d.gold || 0)} G`), h('span', {}, `疲劳：${d.fatigue}/${FATIGUE_MAX}`), h('span', {}, `游戏时间：${fmtPlay(d.playTime)}`)))
+      h('div', { class: 'row' }, h('b', { class: 'big' }, d.name || csClassName(d.cls)), h('span', { class: 'gold' }, `Lv.${d.lvl}`), h('span', {}, csClassName(d.cls, d.job) + (d.job ? `（${CLASSES[d.cls].name}）` : ''))),
+      h('div', { class: 'row small' }, h('span', {}, `所在位置：${csLocName(d)}`), h('span', {}, `金币：${fmtNum(d.gold || 0)} G`), h('span', {}, `疲劳：${d.fatigue}/${FATIGUE_MAX}`), h('span', {}, `游戏时间：${csFmtPlay(d.playTime)}`)))
       : h('div', { class: 'csinfo dim' }, chars.length ? '选择一个角色' : '还没有角色。点击空的角色位或“创建角色”，开始你的冒险吧！');
     const del = () => {
       if (!d) return; sfx.click();
       this.ask({ title: '删除角色', danger: true, okText: '删除',
-        text: `确定要删除 <b class="gold">${escHtml(d.name)}</b>（Lv.${d.lvl} ${escHtml(className(d.cls, d.job))}）吗？<br><span style="color:#ff9a8a">删除后无法恢复。</span>请输入角色名确认：`,
+        text: `确定要删除 <b class="gold">${escHtml(d.name)}</b>（Lv.${d.lvl} ${escHtml(csClassName(d.cls, d.job))}）吗？<br><span style="color:#ff9a8a">删除后无法恢复。</span>请输入角色名确认：`,
         input: { placeholder: d.name, max: 16, check: v => v === d.name ? null : '输入的角色名不一致' },
         ok: () => { save.remove(sel); save.data = null; this.csSel = Math.min(sel, save.chars.length - 1); toastMsg(`角色 ${d.name} 已删除`, '#ffb0a0'); this.refresh('charselect'); } });
     };
@@ -105,7 +105,7 @@ Object.assign(menus, {
     const list = h('div', { class: 'nglist' }, ids.map(id => {
       const K = CLASSES[id], off = K.ready === false;
       return h('div', { class: 'clscard' + (id === cls ? ' sel' : '') + (off ? ' off' : ''), 'data-cls': id, onclick: () => { if (off) return; if (this.ngCls !== id) { if (!this.ngTyped) this.ngName = null; this.ngCls = id; sfx.click(); this.refresh('newgame'); } } },
-        classArt(id, 'clsart'), h('h3', {}, K.name), off ? h('p', { class: 'gold' }, '即将开放') : null);
+        csClassArt(id, 'clsart'), h('h3', {}, K.name), off ? h('p', { class: 'gold' }, '即将开放') : null);
     }));
     const jobs = C.jobs ? Object.entries(C.jobs) : [];
     const jobsEl = jobs.length ? h('div', { class: 'ngjobs' }, jobs.map(([jid, J]) => h('div', { class: 'ngjob' },
@@ -133,7 +133,7 @@ Object.assign(menus, {
       h('div', { class: 'logo' }, '创建角色'),
       h('div', { class: 'ngbody' },
         list,
-        h('div', { class: 'ngart' }, classArt(cls, 'bigart')),
+        h('div', { class: 'ngart' }, csClassArt(cls, 'bigart')),
         h('div', { class: 'ngdesc' },
           h('div', { class: 'ngname' }, C.name), h('div', { class: 'ngtxt' }, C.desc || ''),
           skills.length ? h('div', { class: 'ngskills' }, h('div', { class: 'small gold' }, '初始技能'), h('div', { class: 'row', style: 'flex-wrap:wrap;gap:.3em' }, skills.map(id => this.tipOn(h('img', { class: 'ngsk', src: skillIcon(id, 48).toDataURL() }), () => `<b>${SKILLS[id].name}</b><br><span class="small">${SKILLS[id].desc || ''}</span>`)))) : null,

@@ -71,19 +71,19 @@ function actionsOf(code) { const r = []; for (const a in KEYMAP) if (KEYMAP[a].i
 /* ---- 界面偏好（本机保存，与角色无关）：按键、音量、画面选项、窗口位置、手机按钮 ---- */
 const UI_PREF_KEY = 'dawnbreak_ui_v1';
 const PREF_DEFAULT = { music: 0.6, sfx: 0.9, dmgNum: true, shake: true, cutin: true, dropNames: true, hideRank: false, tipDetail: true, hudMode: 'full', winPos: {}, touchSize: 1, touchAlpha: 1, touchSwap: false };
-const prefs = JSON.parse(JSON.stringify(PREF_DEFAULT));
-function uiPref(k) { return k in prefs ? prefs[k] : PREF_DEFAULT[k]; }
-function setPref(k, v) { prefs[k] = v; savePrefs(); }
+const uiPrefs = JSON.parse(JSON.stringify(PREF_DEFAULT));
+function uiPref(k) { return k in uiPrefs ? uiPrefs[k] : PREF_DEFAULT[k]; }
+function setPref(k, v) { uiPrefs[k] = v; savePrefs(); }
 function savePrefs() {
   const keys = {};
   for (const a in KEYMAP) if (KEYMAP[a].join() !== (KEYMAP_DEFAULT[a] || []).join()) keys[a] = KEYMAP[a];
-  try { localStorage.setItem(UI_PREF_KEY, JSON.stringify({ ...prefs, keys })); } catch (e) { /* 无痕模式 / 存储已满 */ }
+  try { localStorage.setItem(UI_PREF_KEY, JSON.stringify({ ...uiPrefs, keys })); } catch (e) { /* 无痕模式 / 存储已满 */ }
 }
 function loadPrefs() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(UI_PREF_KEY) || 'null'); } catch (e) { d = null; }
   if (!d || typeof d !== 'object') return;
-  for (const k in PREF_DEFAULT) if (k in d && typeof d[k] === typeof PREF_DEFAULT[k]) prefs[k] = d[k];
+  for (const k in PREF_DEFAULT) if (k in d && typeof d[k] === typeof PREF_DEFAULT[k]) uiPrefs[k] = d[k];
   const keys = d.keys || {};
   for (const a in keys) if (KEYMAP[a] && !KEY_FIXED.has(a) && Array.isArray(keys[a])) KEYMAP[a].splice(0, KEYMAP[a].length, ...keys[a].filter(c => typeof c === 'string').slice(0, 2));
 }

@@ -58,7 +58,7 @@ await wait(400);
 ok((await page.locator('#charsel .cslot:not(.empty)').count()) === 2, '选角界面显示 2 个角色');
 await page.click('#charsel .cslot[data-i="0"]'); await wait(200); await shot('03-charselect-2');
 const info0 = await page.textContent('#charsel .csinfo');
-const locWant = await ev(() => locName(save.chars[0]));
+const locWant = await ev(() => csLocName(save.chars[0]));
 ok(info0.includes('测试剑士') && info0.includes(locWant), '角色信息显示名字与所在位置', info0);
 await page.click('#charsel button:has-text("开始游戏")'); await page.waitForFunction(() => game.scene === 'town' && game.player, null, { timeout: 15000 }); await wait(400);
 ok(await ev(() => save.data.name === '测试剑士' && game.player.cls === 'sword' && game.gold === 12345), '切回第一个角色：金币 12345 保留');
@@ -77,6 +77,21 @@ const stored = await ev(() => JSON.parse(localStorage.getItem(save.key)));
 ok(stored.chars.length === 1 && stored.chars[0].name === '测试剑士' && stored.chars[0].gold === 12345, '删除后本地存档只剩第一个角色，数据完好');
 await page.click('#charsel .cslot[data-i="0"]'); await page.click('#charsel button:has-text("开始游戏")');
 await page.waitForFunction(() => game.scene === 'town' && game.player, null, { timeout: 15000 }); await wait(400); await closeAll();
+
+sec('角色位上限');
+{
+  const P2 = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await P2.goto(`${URL_BASE}?mute`); await P2.waitForFunction(() => window.__READY);
+  await P2.evaluate(() => { const chars = Array.from({ length: MAX_CHARS }, (_, i) => ({ ...save.defaults(['sword', 'gun', 'mage'][i % 3], '角色' + '甲乙丙丁戊己庚辛'[i]), lvl: 10 + i })); localStorage.setItem(save.key + '_bak', localStorage.getItem(save.key) || ''); localStorage.setItem(save.key, JSON.stringify({ v: SAVE_V, cur: 2, chars })); menus.closeAll(); menus.open('charselect'); });
+  await P2.waitForTimeout(200);
+  ok((await P2.locator('#charsel .cslot.empty').count()) === 0 && (await P2.locator('#charsel .cslot.sel').count()) === 1, `${await ev(() => MAX_CHARS)} 个角色位全满，默认选中上次的角色`);
+  ok(await P2.evaluate(() => document.querySelector('#charsel button.blue').classList.contains('off')), '角色位满时“创建角色”不可用');
+  await P2.keyboard.press('ArrowRight'); await P2.waitForTimeout(100);
+  ok(await P2.evaluate(() => menus.csSel === 3), '← → 切换选中的角色');
+  await P2.screenshot({ path: `${out}/03b-charselect-full.png` });
+  await P2.evaluate(() => { const b = localStorage.getItem(save.key + '_bak'); if (b) localStorage.setItem(save.key, b); else localStorage.removeItem(save.key); localStorage.removeItem(save.key + '_bak'); });
+  await P2.close();
+}
 
 sec('快捷键 → 窗口');
 // 其他组的窗口（quests / worldmap / status / duel）合并前用占位窗口，只验证键位映射

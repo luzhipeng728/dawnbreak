@@ -45,9 +45,9 @@ const HUD = {
 };
 const hudQuickRect = i => ({ x: HUD.quick.x + i * HUD.quick.gap, y: HUD.quick.y, s: HUD.quick.s });
 const hudSkillRect = i => ({ x: HUD.skill.x + (i % 6) * HUD.skill.gap, y: HUD.skill.y + Math.floor(i / 6) * HUD.skill.row, s: HUD.skill.s });
-const inRect = (R, x, y, pad = 3) => x >= R.x - pad && x <= R.x + R.s + pad && y >= R.y - pad && y <= R.y + R.s + pad;
-function hudSkillSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < 12; i++) if (inRect(hudSkillRect(i), x, y)) return i; return -1; }
-function hudQuickSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < 6; i++) if (inRect(hudQuickRect(i), x, y)) return i; return -1; }
+const hudInRect = (R, x, y, pad = 3) => x >= R.x - pad && x <= R.x + R.s + pad && y >= R.y - pad && y <= R.y + R.s + pad;
+function hudSkillSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < 12; i++) if (hudInRect(hudSkillRect(i), x, y)) return i; return -1; }
+function hudQuickSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < 6; i++) if (hudInRect(hudQuickRect(i), x, y)) return i; return -1; }
 /* ---- 技能栏 / 消耗品栏的写入（窗口和 HUD 共用） ---- */
 function skillBarPut(i, id, from) {
   const B = game.skillBar; if (i < 0 || i >= B.length || !id) return;

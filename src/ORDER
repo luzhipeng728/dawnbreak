@@ -59,6 +59,7 @@ ui/items/status.js
 ui/items/shop.js
 ui/items/smith.js
 ui/items/storage.js
+ui/items/bulk.js
 game/save.js
 content/world/towns.js
 content/world/grand_flores.js
@@ -90,4 +91,8 @@ ui/artlab.js
 game/bot.js
 game/fighter_ai.js
 game/duel.js
+# 联机（账号 / 云存档 / 同屏 / 聊天 / 好友 / 组队 / 好友决斗）：放在所有玩法之后、boot.js 之前（启动时要先读登录状态、切到账号存档）
+net/net.js
+net/account.js
+ui/login.js
 boot.js

@@ -39,7 +39,12 @@ const save = {
     d.inv = inv.items; d.equip = inv.equip; d.quick = inv.quick; d.storage = inv.storage || d.storage || [];
     if (this.cur < 0) { this.chars.push(d); this.cur = this.chars.length - 1; }
     this.chars[this.cur] = d;
+    this.persist();
+  },
+  // 写进 localStorage；登录后同时通知云存档（net/account.js 防抖上传）
+  persist() {
     try { localStorage.setItem(this.key, JSON.stringify({ v: SAVE_V, cur: this.cur, chars: this.chars })); } catch (e) { /* 存储已满或无痕模式 */ }
+    if (typeof cloudSave !== 'undefined') cloudSave.changed();
   },
   // 旧版本存档升级
   migrate(d) {
@@ -80,7 +85,7 @@ const save = {
     inv.starter(cls);
     this.write();
   },
-  remove(i) { this.chars.splice(i, 1); if (i < this.cur) this.cur--; this.cur = Math.min(this.cur, this.chars.length - 1); this.data = null; try { localStorage.setItem(this.key, JSON.stringify({ v: SAVE_V, cur: this.cur, chars: this.chars })); } catch (e) { /* */ } },
+  remove(i) { this.chars.splice(i, 1); if (i < this.cur) this.cur--; this.cur = Math.min(this.cur, this.chars.length - 1); this.data = null; this.persist(); },
   useFatigue(n) { this.data.fatigue = Math.max(0, this.data.fatigue - n); },
   onClear(id, diff, rank) {
     const d = this.data; d.clears++;

@@ -8,7 +8,7 @@ const game = {
   combo: 0, comboT: 0, maxCombo: 0, comboDmg: 0, timeStop: 0, cutin: null, maxAttackers: 2,
   gold: 0, exp: 0, lvl: 1,
   onPlayerHit(t, dmg, crit, counter, back) { this.combo++; this.comboT = 1.6; this.comboDmg += dmg; this.maxCombo = Math.max(this.maxCombo, this.combo); if (this.dungeon) this.dungeon.onHit(t, dmg, counter, back); },
-  onPlayerHurt(p, dmg) { p.lastHurtT = this.t; p.invul = Math.max(p.invul, 0.2); if (this.dungeon) this.dungeon.hurt++; },
+  onPlayerHurt(p, dmg) { p.lastHurtT = this.t; p.invul = Math.max(p.invul, 0.2); if (this.dungeon) this.dungeon.hurt++; bus.emit('playerHurt', { dmg }); },
   onKill(t, a) { if (t.team === 'p') return; for (const e of ents) if (e !== t && !e.dead && e.def_ && e.def_.coward) cowardDrop(e); if (this.dungeon) this.dungeon.onKill(t, a); else { spawnCoins(t, rndi(t.gold ? t.gold[0] : 5, t.gold ? t.gold[1] : 15)); } },
   onSkill(id) { },
   timers: [],

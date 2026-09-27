@@ -6,6 +6,8 @@
      dungeonClear { id, diff, rank, time, hurt, maxCombo }  地下城通关（结算时）
      dungeonEnter { id, diff }                             进入地下城
      roomEnter    { id, room, type }                       进入地下城房间（type: normal/elite/boss）
+     playerHurt   { dmg }                                  玩家受到伤害
+     playerDeath  { dungeon }                              玩家在地下城里倒下（进入复活倒计时）
      levelUp      { lvl }                                  升级
      pickup       { item }                                 捡起物品（金币不算）
      gold         { n }                                    获得金币

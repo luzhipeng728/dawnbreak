@@ -104,7 +104,7 @@ class Dungeon {
     }
     if (this.state === 'dead') { this.deadT -= dt; if (this.deadT < 9.2 && input.hit('attack') && save.data.coins > 0) this.revive(); else if (this.deadT <= 0) this.fail(); return; }
     if (this.state === 'result') return;
-    if (p.dead && this.state === 'play') { this.state = 'dead'; this.deadT = 10; sfx.gameOver(); return; }
+    if (p.dead && this.state === 'play') { this.state = 'dead'; this.deadT = 10; sfx.gameOver(); bus.emit('playerDeath', { dungeon: this.def.id }); return; }
     // 连击统计：一段 ≥5 的连击结束时记一次操作分
     if (game.combo >= 5 && game.combo > this.lastComboCounted) this.pendingCombo = game.combo;
     if (game.combo === 0 && this.pendingCombo) { this.combos5++; this.pendingCombo = 0; }

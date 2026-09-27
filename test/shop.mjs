@@ -38,11 +38,11 @@ await page.selectOption('.cash-side select', 'cspd'); await wait(100);
 const c0 = await ev(() => save.data.cera);
 await page.click('.cash-side .btn.buy'); await wait(250);
 const hat = await ev(() => { const it = inv.items.find(x => x.key === 'av_hat_spring'); return it && { opt: it.opt, cspd: it.st.cspd, lock: it.optLock, cera: save.data.cera }; });
-check(hat && hat.opt === 'cspd' && hat.cspd === 0.025 && hat.lock, '单件时装：购买时自选“施放速度 +2.5%”', JSON.stringify(hat));
+check(hat && hat.opt === 'cspd' && hat.cspd === 0.02 && hat.lock, '单件时装：购买时自选“施放速度 +2%”', JSON.stringify(hat));
 check(hat && c0 - hat.cera === 1500, `扣点券 ${c0 - (hat ? hat.cera : 0)} = 1500`);
 await shot('02-avatar');
 const whole = await ev(() => { const r = cashBuy('set:av_summer', 1, { opts: { av_top_summer: 'int' } }); return { ok: r.ok, n: inv.items.filter(x => x.set === 'av_summer').length, top: (inv.items.find(x => x.key === 'av_top_summer') || {}).st }; });
-check(whole.ok && whole.n === 8 && whole.top.int === 15 + 5, '整套 8 件，上衣自选智力（固定四维 +5 + 智力 +15）', JSON.stringify(whole));
+check(whole.ok && whole.n === 8 && whole.top.int === 8 + 3, '整套 8 件，上衣自选智力（固定四维 +3 + 智力 +8）', JSON.stringify(whole));
 const lim = await ev(() => { const r = [1, 2, 3, 4].map(() => cashBuy('fatigue', 1)); return r.map(x => !!x.ok); });
 check(lim.join() === 'true,true,true,false', '抗疲劳秘药每天限购 3', lim.join());
 const free = await ev(() => { const a = cashBuy('pkg_newbie'), b = cashBuy('pkg_newbie'); return [!!a.ok, b.err]; });
@@ -58,9 +58,9 @@ check(deals.n === 3 && deals.week && deals.ok && deals.price < deals.base && dea
 /* ---------- 3. 穿戴时装 / 属性选择 ---------- */
 step('穿戴与属性选择');
 const wear = await ev(() => { const s0 = game.player.stats.cspd; const it = inv.items.find(x => x.key === 'av_hat_spring'); inv.wear(it); recalcStats(game.player); return { d: +(game.player.stats.cspd - s0).toFixed(3) }; });
-check(wear.d === 0.025, '穿上醒狮帽：施放速度 +2.5%', JSON.stringify(wear));
+check(wear.d === 0.02, '穿上醒狮帽：施放速度 +2%', JSON.stringify(wear));
 const opt = await ev(() => { const it = inv.items.find(x => x.key === 'av_shoes_summer'); const a = cashSetOpt(it, 'str'); const b = cashSetOpt(it, 'vit'); inv.add(makeItem('tk_avopt', 1)); const c = cashSetOpt(it, 'vit'); return { a: a.free, b: b.err, c: !!c.ok, st: it.st.vit, tk: inv.count('tk_avopt') }; });
-check(opt.a && opt.b && opt.c && opt.st === 12 && opt.tk === 0, '第一次换属性免费，之后需要变更券', JSON.stringify(opt));
+check(opt.a && opt.b && opt.c && opt.st === 6 && opt.tk === 0, '第一次换属性免费，之后需要变更券', JSON.stringify(opt));
 await ev(() => menus.open('avopt')); await wait(250); await shot('04-avopt'); await closeAll();
 
 /* ---------- 4. 天空套合成（固定种子） ---------- */
@@ -149,7 +149,7 @@ await ev(() => menus.open('cashx')); await wait(250); await shot('12-exchange');
 
 /* ---------- 9. 券 ---------- */
 step('强化券 / 兑换券');
-const tk = await ev(() => { const w = inv.equip.weapon; w.enh = 2; inv.add(makeItem('tk_enh7', 1)); const t = inv.items.find(x => x.key === 'tk_enh7'); const r = cashUseTicket(t, w); inv.add(makeItem('tk_sky', 1)); const s = inv.items.find(x => x.key === 'tk_sky'); const r2 = cashUseTicket(s, null, { set: 'av_sky1', slot: 'av_hat', opt: 'str' }); return { enh: w.enh, ok: !!r.ok, sky: r2.ok && r2.items[0].key === 'av_hat_sky1' && r2.items[0].st.str === 20 }; });
+const tk = await ev(() => { const w = inv.equip.weapon; w.enh = 2; inv.add(makeItem('tk_enh7', 1)); const t = inv.items.find(x => x.key === 'tk_enh7'); const r = cashUseTicket(t, w); inv.add(makeItem('tk_sky', 1)); const s = inv.items.find(x => x.key === 'tk_sky'); const r2 = cashUseTicket(s, null, { set: 'av_sky1', slot: 'av_hat', opt: 'str' }); return { enh: w.enh, ok: !!r.ok, sky: r2.ok && r2.items[0].key === 'av_hat_sky1' && r2.items[0].st.str === 10 }; });
 check(tk.ok && tk.enh === 7 && tk.sky, '+7 强化券把武器变为 +7；天空套部件兑换券自选部位和属性', JSON.stringify(tk));
 
 /* ---------- 10. 宠物跟随 / 光环 / 天空 8 件光效 ---------- */

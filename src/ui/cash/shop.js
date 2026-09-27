@@ -38,7 +38,7 @@ addStyle(`
 .ccard.big .ic{width:5.2em;height:5.2em}
 .ccard.big .nm{justify-content:flex-start;font-size:.95em;min-height:0}
 .ccard.big .ds{font-size:.7em;color:#d8c8a8;line-height:1.35}
-.ccard.wide{grid-column:1/-1;flex-direction:row;text-align:left;gap:.7em;min-height:0;padding:.5em .7em;background:linear-gradient(120deg,#2a1440,#16101e 60%)}
+.ccard.wide{grid-column:1/-1;flex-direction:row;text-align:left;gap:.7em;min-height:5.4em;padding:.5em .7em;background:linear-gradient(120deg,#2a1440,#16101e 60%)}
 .cpity{width:100%;height:.5em;background:#2a2230;border-radius:.3em;overflow:hidden;margin-top:.2em}
 .cpity i{display:block;height:100%;background:linear-gradient(90deg,#b36bff,#ff55ff,#ffd23a)}
 .cash-side{display:flex;flex-direction:column;gap:.35em;background:#0f0b13;border:.1em solid #3a3040;border-radius:.25em;padding:.5em;overflow:auto;min-height:0}
@@ -65,6 +65,7 @@ addStyle(`
 .cash-side .btn.buy:hover{background:linear-gradient(180deg,#e84a8a,#8a2a5a)}
 .cash-side .btn.off{opacity:.45;pointer-events:none}
 .cash-side .err{color:#ff7a6a;font-size:.74em}
+.cash-buy{position:sticky;bottom:-.5em;margin:auto -.5em -.5em;padding:.4em .5em .5em;background:linear-gradient(rgba(15,11,19,.92),#0f0b13 30%);border-top:.08em solid #3a3040;display:flex;flex-direction:column;gap:.3em}
 .cash-q{display:flex;align-items:center;gap:.2em}
 .cash-q b{min-width:2em;text-align:center}
 .codds{font-size:.74em;width:100%;border-collapse:collapse}
@@ -167,7 +168,7 @@ Object.assign(menus, {
       const tabs = h('div', { class: 'itabs' }, CASH_TABS.map(([id, nm]) => h('div', { class: 'itab' + (CW.tab === id ? ' on' : ''), onclick: () => { CW.tab = id; CW.sel = null; closeItemDialog(); sfx.click(); el._render(); } }, nm)));
       const grid = h('div', { class: 'cash-grid', 'data-sk': 'cg-' + CW.tab });
       cashFillGrid(grid, el);
-      if (!CW.sel || !cashGoods(CW.sel)) { const first = grid.querySelector('.ccard[data-pid]'); if (first) CW.sel = first.dataset.pid; }
+      if (!CW.sel || (!cashGoods(CW.sel) && !(CW.tab === 'sky' && CW.sel.startsWith('sky:')))) { const first = grid.querySelector('.ccard[data-pid]'); if (first) CW.sel = first.dataset.pid; }
       for (const c of grid.querySelectorAll('.ccard[data-pid]')) if (c.dataset.pid === CW.sel) c.classList.add('on');
       const side = h('div', { class: 'cash-side', 'data-sk': 'cs' }, ...cashDetail(cashGoods(CW.sel), el));
       return [top, tabs, h('div', { class: 'cash-body' }, grid, side), h('div', { class: 'ihint' }, `点券全部靠游戏获得：升级、首次通关、通关评价（S 以上更多）、每日任务、成就、金币兑换。每日特惠 ${cashResetIn()} 后刷新。`)];
@@ -255,7 +256,6 @@ function cashDetail(G, el) {
   // 箱子：概率公示 / 保底
   if (CASH_BOXES[G.key]) {
     if (G.key === 'box_magic') { const n = cashData().pity.box_magic || 0; out.push(h('div', { class: 'cash-note' }, `保底进度 ${n}/100（出大奖后归零）· 魔盒碎片 ${cashBal('shard')}`), h('div', { class: 'cpity' }, h('i', { style: `width:${n}%` }))); }
-    out.push(h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); cashOddsDialog(G.key, el); } }, '概率公示'));
   }
   // 时装自选属性
   const avs = G.whole ? AV_PIECE_SLOTS.map(s => avKey(G.whole, s)) : D.avOpt ? [G.key] : [];
@@ -273,15 +273,18 @@ function cashDetail(G, el) {
   const stack = D.kind !== 'equip' && !G.whole && !G.fest && !CASH_PACKS[G.key];
   const left = cashLimitLeft(G.pid, G.limit), maxQ = Math.max(1, Math.min(stack ? 99 : 1, left, G.price ? Math.floor(cashBal(G.cur) / G.price) || 1 : 1));
   CW.qty = clamp(CW.qty, 1, maxQ);
-  out.push(h('div', { class: 'pp' }, G.base ? h('s', {}, fmtNum(G.base)) : null, cashPriceTxt(G.price * CW.qty, G.cur), G.limit ? h('span', { class: 'st', style: 'margin-left:.5em' }, `${LIMIT_TXT[G.limit.per]}限购 ${Math.max(0, left)}/${G.limit.n}`) : null));
-  if (stack && maxQ > 1) out.push(h('div', { class: 'cash-q' }, h('span', { class: 'st' }, '数量'), ...[-10, -1].map(d => h('button', { class: 'btn sm', onclick: () => { CW.qty = clamp(CW.qty + d, 1, maxQ); el._render(); } }, String(d))), h('b', {}, String(CW.qty)), ...[1, 10].map(d => h('button', { class: 'btn sm', onclick: () => { CW.qty = clamp(CW.qty + d, 1, maxQ); el._render(); } }, '+' + d))));
-  if (block) out.push(h('div', { class: 'err' }, block));
+  const buy = h('div', { class: 'cash-buy' });
+  buy.append(h('div', { class: 'pp' }, G.base ? h('s', {}, fmtNum(G.base)) : null, cashPriceTxt(G.price * CW.qty, G.cur), G.limit ? h('span', { class: 'st', style: 'margin-left:.5em' }, `${LIMIT_TXT[G.limit.per]}限购 ${Math.max(0, left)}/${G.limit.n}`) : null));
+  if (stack && maxQ > 1) buy.append(h('div', { class: 'cash-q' }, h('span', { class: 'st' }, '数量'), ...[-10, -1].map(d => h('button', { class: 'btn sm', onclick: () => { CW.qty = clamp(CW.qty + d, 1, maxQ); el._render(); } }, String(d))), h('b', {}, String(CW.qty)), ...[1, 10].map(d => h('button', { class: 'btn sm', onclick: () => { CW.qty = clamp(CW.qty + d, 1, maxQ); el._render(); } }, '+' + d))));
+  if (block) buy.append(h('div', { class: 'err' }, block));
   const btns = h('div', { class: 'row2' });
   const off = block || cashBal(G.cur) < G.price * CW.qty ? ' off' : '';
   btns.append(h('button', { class: 'btn buy grow' + off, onclick: () => { sfx.click(); cashBuyAsk(G, el); } }, G.price === 0 ? '领取' : '购买'));
   if (CASH_BOXES[G.key] || CASH_PACKS[G.key] || (ITEMS[G.key].cashUse === 'box')) btns.append(h('button', { class: 'btn grow' + off, onclick: () => { sfx.click(); cashBuyAsk(G, el, true); } }, G.price === 0 ? '领取并打开' : '买下并打开'));
-  out.push(btns);
-  if (cashBal(G.cur) < G.price && !block) out.push(h('div', { class: 'err' }, `${CUR_NAME[G.cur]}不足。点上方“点券获取”看看怎么赚点券。`));
+  if (CASH_BOXES[G.key]) btns.append(h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); cashOddsDialog(G.key, el); } }, '概率公示'));
+  buy.append(btns);
+  if (cashBal(G.cur) < G.price && !block) buy.append(h('div', { class: 'err' }, `${CUR_NAME[G.cur]}不足。点上方“点券获取”看看怎么赚点券。`));
+  out.push(buy);
   return out;
 }
 function cashSkyDetail(set, el) {

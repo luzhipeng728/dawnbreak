@@ -20,12 +20,12 @@ const CASH_CUR = { cera: 'cera', shard_box: 'shard', coin_gift: 'gcoin' };
 /* ---- 时装（高级装扮 rar 1 / 稀有装扮 = 天空 rar 2）：可自选属性（官方装扮属性选择） ---- */
 // 每个部位的可选属性：[属性, 高级数值, 稀有数值]
 const AV_OPTS = {
-  head: [['int', 12, 20], ['spr', 12, 20], ['cspd', 0.025, 0.04], ['str', 12, 20]],
-  face: [['aspd', 0.02, 0.03], ['mdef', 60, 100], ['hardness', 20, 35], ['resAll', 6, 10]],
-  top: [['str', 15, 25], ['int', 15, 25], ['vit', 15, 25], ['spr', 15, 25]],
-  bottom: [['hp', 250, 420], ['mp', 200, 340], ['def', 60, 100]],
-  belt: [['evade', 0.02, 0.03], ['resAll', 6, 10], ['str', 12, 20], ['vit', 12, 20]],
-  shoes: [['mspd', 0.04, 0.06], ['str', 12, 20], ['vit', 12, 20]],
+  head: [['int', 6, 10], ['spr', 6, 10], ['cspd', 0.02, 0.03], ['str', 6, 10]],
+  face: [['aspd', 0.015, 0.025], ['mdef', 40, 70], ['hardness', 20, 35], ['resAll', 6, 10]],
+  top: [['str', 8, 14], ['int', 8, 14], ['vit', 8, 14], ['spr', 8, 14]],
+  bottom: [['hp', 200, 340], ['mp', 160, 270], ['def', 40, 70]],
+  belt: [['evade', 0.02, 0.03], ['resAll', 6, 10], ['str', 6, 10], ['vit', 6, 10]],
+  shoes: [['mspd', 0.04, 0.06], ['str', 6, 10], ['vit', 6, 10]],
 };
 const AV_OPT_OF = { av_hair: 'head', av_hat: 'head', av_face: 'face', av_chest: 'face', av_top: 'top', av_bottom: 'bottom', av_belt: 'belt', av_shoes: 'shoes' };
 const AV_PIECE_SLOTS = ['av_hair', 'av_hat', 'av_face', 'av_chest', 'av_top', 'av_bottom', 'av_belt', 'av_shoes'];
@@ -49,10 +49,10 @@ const avKey = (set, slot) => `${slot}_${set.slice(3)}`;   // av_spring + av_top 
 for (const set in CASH_SETS) {
   const S = CASH_SETS[set], rare = S.tier === 'rare';
   defineSet(set, { name: `${S.name}${rare ? '（稀有装扮）' : '（高级装扮）'}`, bonus: rare
-    ? { 3: { st: { str: 15, int: 15, vit: 15, spr: 15 }, desc: '四维 +15' }, 5: { st: { aspd: 0.03, cspd: 0.03, mspd: 0.03 }, desc: '攻击 / 施放 / 移动速度 +3%' }, 8: { st: { dmgUp: 0.04, crit: 0.02, mcrit: 0.02 }, desc: '伤害增加 4%，暴击率 +2%；激活套装光效' } }
-    : { 3: { st: { str: 8, int: 8, vit: 8, spr: 8 }, desc: '四维 +8' }, 5: { st: { aspd: 0.015, cspd: 0.015 }, desc: '攻击 / 施放速度 +1.5%' }, 8: { st: { dmgUp: 0.02, mspd: 0.02 }, desc: '伤害增加 2%，移动速度 +2%' } } });
+    ? { 3: { st: { str: 10, int: 10, vit: 10, spr: 10 }, desc: '四维 +10' }, 5: { st: { aspd: 0.02, cspd: 0.02, mspd: 0.02 }, desc: '攻击 / 施放 / 移动速度 +2%' }, 8: { st: { dmgUp: 0.03, crit: 0.015, mcrit: 0.015 }, desc: '伤害增加 3%，暴击率 +1.5%；激活套装光效' } }
+    : { 3: { st: { str: 5, int: 5, vit: 5, spr: 5 }, desc: '四维 +5' }, 5: { st: { aspd: 0.015, cspd: 0.015 }, desc: '攻击 / 施放速度 +1.5%' }, 8: { st: { dmgUp: 0.01, mspd: 0.02 }, desc: '伤害增加 1%，移动速度 +2%' } } });
   for (const slot of AV_PIECE_SLOTS) {
-    const key = avKey(set, slot), f = rare ? 8 : 5;
+    const key = avKey(set, slot), f = rare ? 5 : 3;
     defineItem(key, { kind: 'equip', slot, lvl: 1, rar: rare ? 2 : 1, price: rare ? 4000 : 800, name: S.parts[slot], set, avSet: set, avOpt: true, cash: true, cashIcon: key,
       st: slot === 'av_top' ? { str: f, int: f, vit: f, spr: f } : {}, durMax: 0, noEnhance: true, noDisassemble: true, noDrop: true,
       desc: `${rare ? '稀有装扮（天空）' : '高级装扮'} · ${S.desc}可以在商城“属性选择”里更换属性（第一次免费）。` });
@@ -73,18 +73,18 @@ const PETS = {
   pegasus: { name: '至尊·金翼天马', h: 58, fly: 1, col: '#ffd86a' },
 };
 const defPet = (key, def) => defineItem(key, { kind: 'equip', slot: 'av_pet', lvl: 1, price: 1000, cash: true, cashIcon: key, durMax: 0, noEnhance: true, noDisassemble: true, noDrop: true, ...def });
-defPet('pet_lion', { name: '福瑞小醒狮', rar: 2, pet: 'lion', st: { str: 12, int: 12, vit: 12, spr: 12, aspd: 0.015 }, desc: '舞狮队里最小的一只，跟着你到处讨红包。' });
-defPet('pet_seal', { name: '冲浪小海豹', rar: 2, pet: 'seal', st: { str: 12, int: 12, vit: 12, spr: 12, mspd: 0.03 }, desc: '抱着冲浪板的小海豹，走路一扭一扭的。' });
-defPet('pet_owl', { name: '学院小猫头鹰', rar: 2, pet: 'owl', st: { str: 12, int: 12, vit: 12, spr: 12, cspd: 0.02 }, desc: '星辉学院的吉祥物，戴着小小的学士帽。' });
-defPet('pet_pegasus', { name: '至尊·金翼天马', rar: 4, pet: 'pegasus', st: { str: 30, int: 30, vit: 30, spr: 30, dmgUp: 0.03, aspd: 0.02, cspd: 0.02, mspd: 0.02 }, desc: '至尊宠物。披着金色羽翼的小天马，据说能把主人带到天空之上。' });
+defPet('pet_lion', { name: '福瑞小醒狮', rar: 2, pet: 'lion', st: { str: 8, int: 8, vit: 8, spr: 8, aspd: 0.015 }, desc: '舞狮队里最小的一只，跟着你到处讨红包。' });
+defPet('pet_seal', { name: '冲浪小海豹', rar: 2, pet: 'seal', st: { str: 8, int: 8, vit: 8, spr: 8, mspd: 0.03 }, desc: '抱着冲浪板的小海豹，走路一扭一扭的。' });
+defPet('pet_owl', { name: '学院小猫头鹰', rar: 2, pet: 'owl', st: { str: 8, int: 8, vit: 8, spr: 8, cspd: 0.02 }, desc: '星辉学院的吉祥物，戴着小小的学士帽。' });
+defPet('pet_pegasus', { name: '至尊·金翼天马', rar: 4, pet: 'pegasus', st: { str: 15, int: 15, vit: 15, spr: 15, dmgUp: 0.02, aspd: 0.02, cspd: 0.02, mspd: 0.02 }, desc: '至尊宠物。披着金色羽翼的小天马，据说能把主人带到天空之上。' });
 // 宠物装备（红 攻击 / 蓝 速度 / 绿 属性）
 const defPetGear = (key, def) => defineItem(key, { kind: 'equip', lvl: 1, price: 800, cash: true, cashIcon: key, durMax: 0, noEnhance: true, noDisassemble: true, noDrop: true, ...def });
-defPetGear('petR_1', { slot: 'av_petR', name: '炽焰之心', rar: 2, st: { atkPct: 0.015 }, desc: '红色宠物装备。攻击力 +1.5%。' });
-defPetGear('petR_2', { slot: 'av_petR', name: '炎龙之心', rar: 3, st: { atkPct: 0.03 }, desc: '红色宠物装备。攻击力 +3%。' });
+defPetGear('petR_1', { slot: 'av_petR', name: '炽焰之心', rar: 2, st: { atkPct: 0.01 }, desc: '红色宠物装备。攻击力 +1%。' });
+defPetGear('petR_2', { slot: 'av_petR', name: '炎龙之心', rar: 3, st: { atkPct: 0.02 }, desc: '红色宠物装备。攻击力 +2%。' });
 defPetGear('petB_1', { slot: 'av_petB', name: '疾风之羽', rar: 2, st: { aspd: 0.015, cspd: 0.015, mspd: 0.015 }, desc: '蓝色宠物装备。攻击 / 施放 / 移动速度 +1.5%。' });
 defPetGear('petB_2', { slot: 'av_petB', name: '天穹之羽', rar: 3, st: { aspd: 0.025, cspd: 0.025, mspd: 0.025, crit: 0.01, mcrit: 0.01 }, desc: '蓝色宠物装备。攻击 / 施放 / 移动速度 +2.5%，暴击率 +1%。' });
-defPetGear('petG_1', { slot: 'av_petG', name: '翠玉之叶', rar: 2, st: { str: 8, int: 8, vit: 8, spr: 8, elemAll: 5 }, desc: '绿色宠物装备。四维 +8，所有属性强化 +5。' });
-defPetGear('petG_2', { slot: 'av_petG', name: '世界树之叶', rar: 3, st: { str: 15, int: 15, vit: 15, spr: 15, elemAll: 12 }, desc: '绿色宠物装备。四维 +15，所有属性强化 +12。' });
+defPetGear('petG_1', { slot: 'av_petG', name: '翠玉之叶', rar: 2, st: { str: 5, int: 5, vit: 5, spr: 5, elemAll: 5 }, desc: '绿色宠物装备。四维 +5，所有属性强化 +5。' });
+defPetGear('petG_2', { slot: 'av_petG', name: '世界树之叶', rar: 3, st: { str: 10, int: 10, vit: 10, spr: 10, elemAll: 10 }, desc: '绿色宠物装备。四维 +10，所有属性强化 +10。' });
 
 /* ---- 光环：画在脚下（game/shop_pet.js），art/final/aura/<id>.webp ---- */
 const AURAS = {
@@ -95,36 +95,36 @@ const AURAS = {
   supreme: { name: '至尊·天界圣环', col: '255,215,110', spin: 0.35 },
 };
 const defAura = (key, def) => defineItem(key, { kind: 'equip', slot: 'av_aura', lvl: 1, price: 1000, cash: true, cashIcon: key, durMax: 0, noEnhance: true, noDisassemble: true, noDrop: true, ...def });
-defAura('aura_spring', { name: '祥云瑞彩', rar: 2, aura: 'spring', st: { str: 8, int: 8, vit: 8, spr: 8, aspd: 0.01 }, desc: '脚下翻涌着红金色的祥云。' });
-defAura('aura_summer', { name: '浪花之环', rar: 2, aura: 'summer', st: { str: 8, int: 8, vit: 8, spr: 8, mspd: 0.02 }, desc: '清凉的浪花在脚边打着旋。' });
-defAura('aura_academy', { name: '星辉魔法阵', rar: 2, aura: 'academy', st: { str: 8, int: 8, vit: 8, spr: 8, cspd: 0.015 }, desc: '星辉学院入学考试用的魔法阵，一直亮着。' });
-defAura('aura_box', { name: '幻彩星轨', rar: 3, aura: 'box', st: { str: 15, int: 15, vit: 15, spr: 15, crit: 0.01, mcrit: 0.01 }, desc: '魔盒限定光环。彩色的星轨绕着脚下旋转。' });
-defAura('aura_supreme', { name: '至尊·天界圣环', rar: 4, aura: 'supreme', st: { str: 20, int: 20, vit: 20, spr: 20, aspd: 0.02, cspd: 0.02, mspd: 0.02, elemAll: 6 }, desc: '至尊光环。天界的圣光在脚下凝成圆环。' });
+defAura('aura_spring', { name: '祥云瑞彩', rar: 2, aura: 'spring', st: { str: 5, int: 5, vit: 5, spr: 5, aspd: 0.01 }, desc: '脚下翻涌着红金色的祥云。' });
+defAura('aura_summer', { name: '浪花之环', rar: 2, aura: 'summer', st: { str: 5, int: 5, vit: 5, spr: 5, mspd: 0.02 }, desc: '清凉的浪花在脚边打着旋。' });
+defAura('aura_academy', { name: '星辉魔法阵', rar: 2, aura: 'academy', st: { str: 5, int: 5, vit: 5, spr: 5, cspd: 0.015 }, desc: '星辉学院入学考试用的魔法阵，一直亮着。' });
+defAura('aura_box', { name: '幻彩星轨', rar: 3, aura: 'box', st: { str: 10, int: 10, vit: 10, spr: 10, crit: 0.01, mcrit: 0.01 }, desc: '魔盒限定光环。彩色的星轨绕着脚下旋转。' });
+defAura('aura_supreme', { name: '至尊·天界圣环', rar: 4, aura: 'supreme', st: { str: 12, int: 12, vit: 12, spr: 12, aspd: 0.02, cspd: 0.02, mspd: 0.02, elemAll: 6 }, desc: '至尊光环。天界的圣光在脚下凝成圆环。' });
 
 /* ---- 称号 ---- */
 const defCashTitle = (key, def) => defineTitle(key, { lvl: 1, price: 1000, cash: true, cashIcon: key, noDrop: true, shopOnly: true, ...def });
-defCashTitle('title_spring', { name: '锦鲤附体', rar: 3, st: { str: 15, int: 15, vit: 15, spr: 15, crit: 0.02, mcrit: 0.02 }, fx: { dmgUp: 0.02 }, desc: '新春礼包称号。好运连连，锦鲤附体！' });
-defCashTitle('title_summer', { name: '晴空之子', rar: 3, st: { str: 15, int: 15, vit: 15, spr: 15, mspd: 0.03 }, fx: { dmgUp: 0.02 }, desc: '夏日礼包称号。和晴空一样明朗。' });
-defCashTitle('title_academy', { name: '首席优等生', rar: 3, st: { str: 15, int: 15, vit: 15, spr: 15, cspd: 0.03 }, fx: { dmgUp: 0.02 }, desc: '学院礼包称号。星辉学院的首席。' });
+defCashTitle('title_spring', { name: '锦鲤附体', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12, crit: 0.02, mcrit: 0.02 }, fx: { dmgUp: 0.02 }, desc: '新春礼包称号。好运连连，锦鲤附体！' });
+defCashTitle('title_summer', { name: '晴空之子', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12, mspd: 0.03 }, fx: { dmgUp: 0.02 }, desc: '夏日礼包称号。和晴空一样明朗。' });
+defCashTitle('title_academy', { name: '首席优等生', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12, cspd: 0.03 }, fx: { dmgUp: 0.02 }, desc: '学院礼包称号。星辉学院的首席。' });
 defCashTitle('title_box', { name: '魔盒收藏家', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12 }, fx: { goldUp: 0.1 }, desc: '魔盒限定称号。金币获得量 +10%。' });
-defCashTitle('title_supreme', { name: '至尊·破晓之光', rar: 4, st: { str: 28, int: 28, vit: 28, spr: 28, crit: 0.02, mcrit: 0.02, mspd: 0.02 }, fx: { dmgUp: 0.04 }, desc: '至尊称号。多买多送奖励：在破晓时分照亮阿拉德的光。' });
+defCashTitle('title_supreme', { name: '至尊·破晓之光', rar: 4, st: { str: 20, int: 20, vit: 20, spr: 20, crit: 0.02, mcrit: 0.02, mspd: 0.02 }, fx: { dmgUp: 0.04 }, desc: '至尊称号。多买多送奖励：在破晓时分照亮阿拉德的光。' });
 
 /* ---- 宝珠（附魔：装备深化组实现，每件装备 1 个槽；on 可以写 slot 名或别名 armor / acc / special / avatar） ---- */
 const defOrb = (key, def) => defineItem(key, { kind: 'mat', price: 500, cash: true, cashIcon: def.cashIcon || key, ...def });
-defOrb('orb_spring', { name: '锦鲤宝珠', rar: 3, orb: { on: ['title'], st: { str: 10, int: 10, vit: 10, spr: 10, dmgUp: 0.01 } }, desc: '新春节日宝珠。附魔到称号：四维 +10，伤害增加 +1%。' });
-defOrb('orb_summer', { name: '晴空宝珠', rar: 3, orb: { on: ['title'], st: { str: 10, int: 10, vit: 10, spr: 10, dmgUp: 0.01 } }, desc: '夏日节日宝珠。附魔到称号：四维 +10，伤害增加 +1%。' });
-defOrb('orb_academy', { name: '星辉宝珠', rar: 3, orb: { on: ['title'], st: { str: 10, int: 10, vit: 10, spr: 10, dmgUp: 0.01 } }, desc: '学院节日宝珠。附魔到称号：四维 +10，伤害增加 +1%。' });
-defOrb('orb_title1', { name: '称号宝珠·力智', rar: 2, orb: { on: ['title'], st: { str: 8, int: 8 } }, desc: '附魔到称号：力量 / 智力 +8。' });
+defOrb('orb_spring', { name: '锦鲤宝珠', rar: 3, orb: { on: ['title'], st: { str: 8, int: 8, vit: 8, spr: 8, dmgUp: 0.01 } }, desc: '新春节日宝珠。附魔到称号：四维 +8，伤害增加 +1%。' });
+defOrb('orb_summer', { name: '晴空宝珠', rar: 3, orb: { on: ['title'], st: { str: 8, int: 8, vit: 8, spr: 8, dmgUp: 0.01 } }, desc: '夏日节日宝珠。附魔到称号：四维 +8，伤害增加 +1%。' });
+defOrb('orb_academy', { name: '星辉宝珠', rar: 3, orb: { on: ['title'], st: { str: 8, int: 8, vit: 8, spr: 8, dmgUp: 0.01 } }, desc: '学院节日宝珠。附魔到称号：四维 +8，伤害增加 +1%。' });
+defOrb('orb_title1', { name: '称号宝珠·力智', rar: 2, orb: { on: ['title'], st: { str: 6, int: 6 } }, desc: '附魔到称号：力量 / 智力 +6。' });
 defOrb('orb_title2', { name: '称号宝珠·会心', rar: 3, orb: { on: ['title'], st: { crit: 0.02, mcrit: 0.02 } }, desc: '附魔到称号：物理 / 魔法暴击率 +2%。' });
-defOrb('orb_title_supreme', { name: '至尊称号宝珠', rar: 4, orb: { on: ['title'], st: { str: 18, int: 18, vit: 18, spr: 18, dmgUp: 0.02 } }, desc: '至尊宝珠。附魔到称号：四维 +18，伤害增加 +2%。' });
+defOrb('orb_title_supreme', { name: '至尊称号宝珠', rar: 4, orb: { on: ['title'], st: { str: 12, int: 12, vit: 12, spr: 12, dmgUp: 0.015 } }, desc: '至尊宝珠。附魔到称号：四维 +12，伤害增加 +1.5%。' });
 defOrb('orb_weapon1', { name: '武器宝珠·锋锐', rar: 2, orb: { on: ['weapon'], st: { atk: 20, matk: 20, indep: 20 } }, desc: '附魔到武器：物理 / 魔法 / 独立攻击力 +20。' });
 defOrb('orb_weapon2', { name: '武器宝珠·元素', rar: 3, orb: { on: ['weapon'], st: { elemAll: 10 } }, desc: '附魔到武器：所有属性强化 +10。' });
 defOrb('orb_armor1', { name: '防具宝珠·坚韧', rar: 2, orb: { on: ['armor'], st: { vit: 8, spr: 8, hp: 80 } }, desc: '附魔到防具（上衣 / 头肩 / 下装 / 腰带 / 鞋）：体力 / 精神 +8，HP 上限 +80。' });
 defOrb('orb_acc1', { name: '首饰宝珠·灵巧', rar: 2, orb: { on: ['acc'], st: { str: 6, int: 6, hit: 0.01 } }, desc: '附魔到首饰：力量 / 智力 +6，命中率 +1%。' });
 defOrb('orb_av1', { name: '装扮宝珠·迅捷', rar: 2, orb: { on: ['avatar'], st: { aspd: 0.01, cspd: 0.01 } }, desc: '附魔到时装（含武器装扮 / 光环）：攻击 / 施放速度 +1%。' });
-defOrb('orb_av2', { name: '装扮宝珠·华丽', rar: 3, orb: { on: ['avatar'], st: { str: 8, int: 8, vit: 8, spr: 8 } }, desc: '附魔到时装（含武器装扮 / 光环）：四维 +8。' });
-defOrb('orb_pet1', { name: '宠物宝珠·灵气', rar: 3, orb: { on: ['av_pet'], st: { str: 10, int: 10 } }, desc: '附魔到宠物：力量 / 智力 +10。' });
-defOrb('orb_pet_supreme', { name: '至尊宠物宝珠', rar: 4, orb: { on: ['av_pet'], st: { str: 15, int: 15, vit: 15, spr: 15, aspd: 0.015, cspd: 0.015, mspd: 0.015 } }, desc: '至尊宝珠。附魔到宠物：四维 +15，攻击 / 施放 / 移动速度 +1.5%。' });
+defOrb('orb_av2', { name: '装扮宝珠·华丽', rar: 3, orb: { on: ['avatar'], st: { str: 5, int: 5, vit: 5, spr: 5 } }, desc: '附魔到时装（含武器装扮 / 光环）：四维 +5。' });
+defOrb('orb_pet1', { name: '宠物宝珠·灵气', rar: 3, orb: { on: ['av_pet'], st: { str: 8, int: 8 } }, desc: '附魔到宠物：力量 / 智力 +8。' });
+defOrb('orb_pet_supreme', { name: '至尊宠物宝珠', rar: 4, orb: { on: ['av_pet'], st: { str: 12, int: 12, vit: 12, spr: 12, aspd: 0.015, cspd: 0.015, mspd: 0.015 } }, desc: '至尊宝珠。附魔到宠物：四维 +12，攻击 / 施放 / 移动速度 +1.5%。' });
 const ORB_TIER = { rare: ['orb_title1', 'orb_weapon1', 'orb_armor1', 'orb_acc1', 'orb_av1'], art: ['orb_title2', 'orb_weapon2', 'orb_av2', 'orb_pet1', 'orb_spring', 'orb_summer', 'orb_academy'], supreme: ['orb_title_supreme', 'orb_pet_supreme'] };
 
 /* ---- 可以直接使用的商城道具（cashUse：由 game/shop.js 包装 inv.useItem 统一处理） ---- */

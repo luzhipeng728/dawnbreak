@@ -89,7 +89,7 @@ Object.assign(menus, {
     if (ids.some(id => !jobArtKey(cls, id))) jobArtPreload(() => { if (this.isOpen('job') && !ids.some(id => !jobArtKey(cls, id))) this.refresh('job', N); });
     body.append(h('div', { class: 'jobcards' }, ids.map(id => {
       const J = jobs[id], own = jobArtKey(cls, id), art = jobArt(cls, id);
-      const sks = (J.skills || []).filter(s => SKILLS[s] && !SKILLS[s].awaken).slice(0, 3);
+      const sks = (J.skills || []).filter(s => SKILLS[s] && !SKILLS[s].awaken).sort((a, b) => (SKILLS[a].passive ? 1 : 0) - (SKILLS[b].passive ? 1 : 0)).slice(0, 3);   // 主动技能优先
       return h('div', { class: 'jobcard' + (ui.sel === id ? ' sel' : ''), onclick: () => { ui.sel = id; sfx.click(); this.refresh('job', N); } },
         h('div', { class: 'art' }, art ? h('img', { src: art.src, style: own ? '' : `filter:hue-rotate(${ids.indexOf(id) * 140}deg) saturate(1.1)` }) : null),
         h('div', { class: 'nm' }, J.name), h('div', { class: 'role' }, J.role ? `定位：${J.role}` : `${C.name} · 转职`),

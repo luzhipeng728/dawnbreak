@@ -101,7 +101,7 @@ Object.assign(menus, {
       if (U.mode !== 'done') extra.append(h('div', { class: 'lbl' }, '任务目标'), questGoalsEl(q));
       extra.append(h('div', { class: 'lbl' }, '任务奖励'), questRewardsEl(q));
     }
-    if (!last) btns.append(h('button', { class: 'btn', onclick: () => npcAdvance() }, '下一页 ▶'));
+    if (!last) btns.append(h('button', { class: 'btn', onclick: () => npcAdvance() }, '下一页 ▶'), h('button', { class: 'btn blue', title: '跳过剧情，直接到接受 / 完成', onclick: () => npcSkip() }, `跳过 ${keyName('menu')}`));
     else if (q && U.mode === 'offer') btns.append(h('button', { class: 'btn big', onclick: () => { if (questAccept(q.id)) { npcSet(N, 'after', q.id); this.refresh('npc', N); } } }, '接受'), h('button', { class: 'btn blue', onclick: () => { sfx.click(); npcSet(N, 'greet', null, ['……是吗，那等你改变主意了再来找我吧。']); this.refresh('npc', N); } }, '拒绝'));
     else if (q && U.mode === 'done') btns.append(h('button', { class: 'btn big', onclick: () => npcFinish(N, q) }, '完成任务'));
     else if (U.mode !== 'greet') btns.append(h('button', { class: 'btn', onclick: () => { sfx.click(); npcSet(N, 'greet'); this.refresh('npc', N); } }, '确定'));
@@ -118,6 +118,18 @@ function npcAdvance() {
   if (npcUI.page < npcUI.pages.length - 1) { npcUI.page++; sfx.click(); menus.refresh('npc', npcUI.N); return; }
   if (npcUI.mode === 'talk' || npcUI.mode === 'after') { npcSet(npcUI.N, 'greet', null, [npcUI.mode === 'talk' ? '还有别的事吗？' : npcGreet(npcUI.N)]); menus.refresh('npc', npcUI.N); }
 }
+// 跳过剧情：直接翻到最后一页（接受 / 完成任务的那页）；已经在最后一页时返回 false
+function npcSkip() {
+  if (!menus.isOpen('npc') || !npcUI.N) return false;
+  if (npcUI.finishTyping) npcUI.finishTyping();
+  if (npcUI.page >= npcUI.pages.length - 1) return false;
+  npcUI.page = npcUI.pages.length - 1; sfx.click(); menus.refresh('npc', npcUI.N); return true;
+}
+// Esc：对话还没到最后一页时先跳到最后一页，不关窗口（捕获阶段，抢在窗口框架的 Esc 关闭之前）
+addEventListener('keydown', e => {
+  if (e.repeat || !(KEYMAP.menu || []).includes(e.code) || menus.top() !== 'npc') return;
+  if (npcSkip()) { e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);
 function npcFinish(N, q) {
   const got = questComplete(q.id); if (!got) { sfx.error(); return; }
   const next = typeof questsOfNpc === 'function' ? questsOfNpc(N.id).find(id => questState(id) === 'avail' && QUESTS[id].pre.includes(q.id)) : null;

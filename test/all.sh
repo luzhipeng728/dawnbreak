@@ -15,6 +15,7 @@ run items     node test/items.mjs
 run compare   node test/compare.mjs
 run quests    node test/quests.mjs
 run guide     node test/guide.mjs
+run quickquest node test/quickquest.mjs
 run world     node test/world.mjs
 run combat    node test/combat.mjs
 run avatar    node test/avatar.mjs

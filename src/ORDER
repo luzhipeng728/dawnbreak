@@ -75,6 +75,7 @@ content/quests/daily.js
 content/quests/job.js
 content/quests/sky.js
 ui/quest.js
+ui/quickquest.js
 ui/job.js
 ui/worldmap.js
 ui/guide.js

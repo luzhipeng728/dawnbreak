@@ -114,16 +114,27 @@ function fxText(txt, x, y, z, { col = '#ff5a3a', size = 13, dur = 0.7 } = {}) {
       c.restore();
     } });
 }
-/* ---- 残影（技能突进时） ---- */
+/* ---- 残影（技能突进 / 闪避时）：生成时把当前姿势画到离屏画布上，并蒙一层白色提亮成浅色剪影（只做一次）；
+   逐帧只是 lighter 贴图——不用 c.filter（每帧滤镜会让 GPU 满载） ---- */
+const GHOST = { list: [], i: 0, W: 280, H: 300, FY: 280 };
+function ghostSnap(ent) {
+  const G = GHOST; let cv = G.list[G.i % 8]; G.i++;
+  if (!cv) { cv = document.createElement('canvas'); cv.width = G.W; cv.height = G.H; G.list.push(cv); }
+  const g = cv.getContext('2d');
+  g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.clearRect(0, 0, G.W, G.H);
+  g.translate(G.W / 2, G.FY); g.scale(ent.face, 1);
+  ent.model.draw(g, { ...ent.pose, r: ent.pose.r ? ent.pose.r.slice() : undefined }, 0, {});
+  g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(235,245,255,.55)'; g.fillRect(0, 0, G.W, G.H);
+  g.globalCompositeOperation = 'source-over';
+  return cv;
+}
 function fxAfterimage(ent, col = '#6ad0ff') {
-  const snap = { x: ent.x, y: ent.y, z: ent.z, face: ent.face, pose: { ...ent.pose, r: ent.pose.r ? ent.pose.r.slice() : undefined } };
-  addFx({ y: ent.y - 0.2, dur: 0.22, snap, col, model: ent.model,
+  const img = ghostSnap(ent), x = ent.x, y = ent.y, z = ent.z;
+  addFx({ y: ent.y - 0.2, dur: 0.22, col, img,
     draw(c) {
       const k = this.t / this.dur;
       c.save(); c.globalAlpha = 0.45 * (1 - k); c.globalCompositeOperation = 'lighter';
-      c.translate(sx(this.snap.x), sy(this.snap.y, this.snap.z)); c.scale(this.snap.face, 1);
-      c.filter = 'brightness(1.8) saturate(0.4)';
-      this.model.draw(c, this.snap.pose, 0, {});
+      c.drawImage(this.img, sx(x) - GHOST.W / 2, sy(y, z) - GHOST.FY);
       c.restore();
     } });
 }

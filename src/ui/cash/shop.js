@@ -300,7 +300,10 @@ function cashSkyDetail(set, el) {
   const tip = itemTip(items[4], { cmp: false }); tip.style.width = '100%'; tip.style.fontSize = '.78em';
   // 8 件套光效叠在试穿小人上（动画画布，只在窗口开着时跑）
   const C = { sky8: set, parts: [], spawn: 0 }; let last = 0;
-  const glow = pv ? cashAnimCanvas(200, 250, (x, t) => { const dt = last ? Math.min(0.05, t - last) : 0; last = t; cashGlowStep(C, dt); cashDrawGlowAt(x, C, 100, 244, 1.5); }) : null;
+  // 按试穿小人的实际轮廓对齐光效（小人画好后量一次包围盒：中心 x、脚底 y、身高换算缩放）
+  let box = null, probe = 0;
+  const measure = () => { try { const d = pv.getContext('2d').getImageData(0, 0, pv.width, pv.height).data; let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1; for (let y = 0; y < pv.height; y += 2) for (let x = 0; x < pv.width; x += 2) if (d[(y * pv.width + x) * 4 + 3] > 40) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; } if (x1 > 0) box = { cx: (x0 + x1) / 2, by: y1, k: (y1 - y0) / 125 }; } catch (e) { box = { cx: 100, by: 244, k: 1.5 }; } };
+  const glow = pv ? cashAnimCanvas(200, 250, (x, t) => { const dt = last ? Math.min(0.05, t - last) : 0; last = t; if (!box && (probe -= dt) <= 0) { probe = 0.3; measure(); } if (!box) return; cashGlowStep(C, dt); cashDrawGlowAt(x, C, box.cx, box.by, box.k); }) : null;
   if (glow) glow.classList.add('try', 'glow');
   return [h('div', { class: 'cash-pv' }, pv || h('img', { class: 'bigic', src: cashIconOf(avKey(set, 'av_top'), 128) }), glow, pv ? h('span', { class: 'cls' }, '试穿（8 件 · 套装光效）') : null),
     h('div', { class: 't q2' }, `${CASH_SETS[set].name}（稀有装扮）`), h('div', { class: 'ds' }, CASH_SETS[set].desc), tip,

@@ -140,8 +140,10 @@ function sxaListAsk(el) {
   const S = SXA.s, it = S.it, p = +S.price || 0;
   if (!it) return;
   if (p < 1) { toastMsg('请填写价格', '#ffb0a0'); sfx.error(); return; }
-  const fee = sxAuctionFee(p, S.hours);
-  itemDialog(el, { title: '确认上架', msg: `${sxItemHtml({ ...it, n: it.kind === 'equip' ? 1 : S.n })}<br>一口价 <span class="gold">${fmtNum(p)} G</span>，上架 ${S.hours} 小时<br>保管费 <span class="gold">${fmtNum(fee)} G</span>（不退）`, okText: '上架', onOk: () => {
+  const fee = sxAuctionFee(p, S.hours), n = it.kind === 'equip' ? 1 : S.n, R = S.ref;
+  // 防手滑：单价远低于近期成交均价时提醒（官方也有类似的低价确认）
+  const low = R && R.avg && p / n < R.avg * 0.3 ? `<br><span style="color:#ff8a6a">⚠ 单价 ${fmtNum(p / n)} G，远低于近 7 天成交均价 ${fmtNum(R.avg)} G，确认没有少写一个 0？</span>` : '';
+  itemDialog(el, { title: '确认上架', msg: `${sxItemHtml({ ...it, n })}<br>一口价 <span class="gold">${fmtNum(p)} G</span>，上架 ${S.hours} 小时<br>保管费 <span class="gold">${fmtNum(fee)} G</span>（不退）${low}`, okText: '上架', danger: !!low, onOk: () => {
     if (SXA.busy) return;
     SXA.busy = true;
     sxAuctionList(it, S.n, p, S.hours).then(() => { sfx.coin(); toastMsg(`已上架：${it.name}`, '#8aff9a'); S.it = null; S.price = ''; }).catch(e => { toastMsg(e.message, '#ff6a6a'); sfx.error(); })

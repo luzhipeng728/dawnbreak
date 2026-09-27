@@ -74,6 +74,8 @@ for (const kind of KINDS) {
   }
   // 自由行动：玩家站着挨打，看怪物会不会主动出手
   await page.waitForTimeout(boss ? 5000 : 4000);
+  // 玩家可能刚好被打倒在地（怪物不会打倒地的人）：再多等一会儿，直到它自己出过手
+  if (kind !== 'dragonStatue') await page.waitForFunction(() => __acts.some(a => a.kind === __m.kind && a.i >= 0 && a.name !== 'statue'), null, { timeout: 8000 }).catch(() => {});
   await page.screenshot({ path: `${out}/${kind}.png` });
   const r = await page.evaluate(() => {
     const m = __m, acts = __acts.filter(a => a.kind === m.kind);

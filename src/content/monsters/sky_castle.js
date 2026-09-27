@@ -175,7 +175,7 @@ function skyLaser(e, y, o = {}) {
   const dir = o.dir || e.face, x0 = e.x + dir * 20, x1 = skyWall(e, dir), warn = o.warn || 1.2, col = o.col || '#fff2a0';
   telegraph({ x: x0, y, kind: 'line', len: (x1 - x0), face: 1, hw: 5, dur: warn, col });
   game.after(warn, () => {
-    if (e.dead || !game.dungeon) return;
+    if (e.dead) return;   // 离开地下城时 game.timers 会被清空，不会在城里放激光
     sfx.iai ? sfx.iai() : sfx.boom(0.6); cam.shake = Math.max(cam.shake, 5); skyBeamFx(x0, x1, y, 20, col, 0.55);
     skyLineHit(e, x0, x1, y, 20, { dmg: o.dmg || 1.8, down: true, knock: 220, hs: 0.1, snd: 'crit', shake: 6 });
   });
@@ -292,13 +292,13 @@ Object.assign(MON, {
       { clip: 'cast', range: [0, 300], dy: 50, cd: [2.2, 3.2], w: 1.4, act: { dur: 1.0, events: [evAt(0.4, e => shootStraight(e, { col: '#bfefff', dmg: 0.9, status: 'slow', speed: 300, pierce: true, glow: true, z: 50 }))] } },
       { clip: 'cast', range: [0, 440], dy: 440, cd: [4, 5.5], act: { dur: 1.2, events: [evAt(0.25, e => { const p = game.player; if (p) skySpikeAt(e, p.x, p.y, 1.1, { r: 38, dmg: 1.0, follow: p, col: '#8ad8ff', rock: '#bfe8f8', status: 'freeze', sdur: 0.8 }); })] } }] },
   // 泥土石巨人：双拳锤地（霸体），离得近才会打
-  golem: { name: '泥土石巨人', lvl: 16, hp: 13000, atk: 245, def: 420, w: 20, d: 15, h: 112, weight: 2.8, speed: 55, exp: 125, gold: [28, 56], shadowR: 26, pref: 60, clips: BEAST_CLIPS,
+  golem: { name: '泥土石巨人', lvl: 16, hp: 12000, atk: 245, def: 420, w: 20, d: 15, h: 112, weight: 2.8, speed: 55, exp: 125, gold: [28, 56], shadowR: 26, pref: 60, clips: BEAST_CLIPS,
     model: () => buildTau({ fur: '#8a6a4a', muzzle: '#a88a6a', horn: '#6a5a4a', eye: '#6ad0ff', cloth: '#5a4a3a' }, { weapon: 'none' }),
     attacks: [
       melee('club', 0.44, 0.52, [0, 84, 26, 10, 90], { range: [0, 80], cd: [1.8, 3], hit: { dmg: 1.0, knock: 150, stun: 0.45 } }),
       melee('slam', 0.7, 0.8, [-10, 108, 34, 0, 110], { range: [0, 95], cd: [2.8, 4.2], sa: true, hit: { dmg: 1.6, down: true, knock: 220, shake: 6 }, events: [evAt(0.7, e => { fxDust(e.x + e.face * 60, e.y, 12, 36, '#8a7a5a'); fxShock(e.x + e.face * 60, e.y, 70, '#c8a060'); sfx.boom(0.6); })] })] },
   // 青铜石巨人：多一招滚动冲撞
-  golemBronze: { name: '青铜石巨人', lvl: 18, hp: 15000, atk: 255, def: 460, w: 20, d: 15, h: 112, weight: 3, speed: 58, exp: 130, gold: [30, 60], shadowR: 26, pref: 60, clips: BEAST_CLIPS,
+  golemBronze: { name: '青铜石巨人', lvl: 18, hp: 13000, atk: 255, def: 460, w: 20, d: 15, h: 112, weight: 3, speed: 58, exp: 130, gold: [30, 60], shadowR: 26, pref: 60, clips: BEAST_CLIPS,
     model: () => buildTau({ fur: '#b0703a', muzzle: '#c89a6a', horn: '#8a5a2a', eye: '#6ad0ff', cloth: '#6a4a2a' }, { weapon: 'none' }),
     attacks: [
       melee('slam', 0.7, 0.8, [-10, 108, 34, 0, 110], { range: [0, 95], cd: [2.6, 4], sa: true, w: 1.5, hit: { dmg: 1.6, down: true, knock: 220, shake: 6 }, events: [evAt(0.7, e => { fxDust(e.x + e.face * 60, e.y, 12, 36, '#8a7a5a'); fxShock(e.x + e.face * 60, e.y, 70, '#d8a050'); sfx.boom(0.6); })] }),
@@ -322,19 +322,19 @@ Object.assign(MON, {
       { clip: 'throw', range: [100, 380], dy: 40, cd: [2.8, 4], w: 1.2, act: { dur: 0.9, events: [evAt(0.45, e => skyDart(e, 1))] } },
       { clip: 'throw', range: [120, 360], dy: 60, cd: [6, 8], w: 1, act: { dur: 0.9, events: [evAt(0.45, e => skySmokeBomb(e))] } }] },
   // 驱逐者：挥剑 + 短距离冲刺
-  expeller: { name: '驱逐者', lvl: 19, hp: 11000, atk: 245, def: 420, w: 15, d: 12, h: 116, weight: 1.6, speed: 95, exp: 125, gold: [28, 56], shadowR: 20, pref: 60, clips: BEAST_CLIPS,
+  expeller: { name: '驱逐者', lvl: 19, hp: 10000, atk: 245, def: 420, w: 15, d: 12, h: 116, weight: 1.6, speed: 95, exp: 125, gold: [28, 56], shadowR: 20, pref: 60, clips: BEAST_CLIPS,
     model: () => buildZombie({ skin: '#5a5a66', hair: '#2a2a32', eye: '#ff3a2a', cloth: '#3a3a4a', pants: '#2a2a32' }),
     attacks: [
       melee('club', 0.44, 0.52, [0, 96, 24, 10, 100], { range: [0, 88], cd: [1.6, 2.8], w: 1.5, hit: { dmg: 1.1, knock: 140, stun: 0.45, snd: 'slash' }, events: [slashAt(0.42, { a0: -2.2, a1: 0.8, r: 56, w: 12, off: [10, 50], col: '#ffb0a0', silent: true })] }),
       { clip: 'chargeW', range: [140, 300], dy: 24, cd: [4, 6], act: skyDashAct(240, 560, 1.1) }] },
   // 斧之驱逐者：挥斧时霸体
-  expellerAxe: { name: '斧之驱逐者', lvl: 20, hp: 13000, atk: 255, def: 460, w: 16, d: 12, h: 116, weight: 2, speed: 85, exp: 130, gold: [30, 58], shadowR: 21, pref: 65, clips: BEAST_CLIPS, scale: 1.05,
+  expellerAxe: { name: '斧之驱逐者', lvl: 20, hp: 11500, atk: 255, def: 460, w: 16, d: 12, h: 116, weight: 2, speed: 85, exp: 130, gold: [30, 58], shadowR: 21, pref: 65, clips: BEAST_CLIPS, scale: 1.05,
     model: () => buildZombie({ skin: '#6a5a4a', hair: '#2a2a32', eye: '#ff3a2a', cloth: '#4a3a2a', pants: '#2a2a32' }),
     attacks: [
       melee('axe', 0.62, 0.72, [0, 104, 30, 0, 120], { range: [0, 95], cd: [2.4, 3.6], sa: true, w: 1.5, hit: { dmg: 1.3, knock: 220, stun: 0.55, shake: 5 } }),
       melee('slam', 0.7, 0.8, [-80, 100, 40, 0, 110], { range: [0, 90], dy: 30, cd: [6, 8], sa: true, hit: { dmg: 1.2, down: true, knock: 200, shake: 5 }, events: [evAt(0.7, e => { fxShock(e.x, e.y, 110, '#ff8a6a'); sfx.boom(0.5); })] })] },
   // 侍剑骑兵（悬空城）：进房时是石像，走近或被打才会醒来
-  knight: { name: '侍剑骑兵', lvl: 22, hp: 13500, atk: 268, def: 480, w: 15, d: 12, h: 116, weight: 1.8, speed: 100, exp: 130, gold: [30, 60], shadowR: 20, pref: 60, clips: BEAST_CLIPS, scale: 1.05,
+  knight: { name: '侍剑骑兵', lvl: 22, hp: 11500, atk: 268, def: 480, w: 15, d: 12, h: 116, weight: 1.8, speed: 100, exp: 130, gold: [30, 60], shadowR: 20, pref: 60, clips: BEAST_CLIPS, scale: 1.05,
     model: () => buildZombie({ skin: '#8a8a9a', hair: '#3a3a4a', eye: '#6ad0ff', cloth: '#4a4a6a', pants: '#2a2a3a' }),
     attacks: [
       melee('club', 0.44, 0.52, [0, 100, 24, 10, 100], { range: [0, 90], cd: [1.5, 2.6], w: 1.5, hit: { dmg: 1.15, knock: 150, stun: 0.45, snd: 'slash' }, events: [slashAt(0.42, { a0: -2.2, a1: 0.8, r: 58, w: 12, off: [10, 50], col: '#bfe8ff', silent: true })] }),
@@ -355,7 +355,7 @@ Object.assign(MON, {
 
   /* ---- 领主 ---- */
   // 鲁卡斯（龙人之塔）：放电、囚笼、分身；被暴击时也会放电
-  lucas: { name: '鲁卡斯', lvl: 17, hp: 125000, atk: 295, def: 470, w: 17, d: 14, h: 124, weight: 3, speed: 105, exp: 1600, gold: [220, 420], shadowR: 25, pref: 80, clips: BEAST_CLIPS, scale: 1.2, bars: 22,
+  lucas: { name: '鲁卡斯', lvl: 17, hp: 112000, atk: 295, def: 470, w: 17, d: 14, h: 124, weight: 3, speed: 105, exp: 1600, gold: [220, 420], shadowR: 25, pref: 80, clips: BEAST_CLIPS, scale: 1.2, bars: 22,
     model: () => buildZombie({ skin: '#3a8aa0', hair: '#1a4a6a', eye: '#ffd23a', cloth: '#c8a040', pants: '#1a2a4a' }),
     onDamaged: (m, a, dmg, crit) => { if (!crit || m.dead || m.act || (m.lastZap && game.t - m.lastZap < 7)) return; m.lastZap = game.t; skyDischarge(m, 110, 0.9); },
     attacks: [
@@ -364,7 +364,7 @@ Object.assign(MON, {
       { clip: 'roar', range: [120, 800], dy: 800, cd: [7, 10], w: 1.2, act: { dur: 1.3, superArmor: true, events: [evAt(0.3, e => skyCage(e))] } },
       { clip: 'roar', range: [0, 900], dy: 900, cd: [16, 22], w: 0.8, cond: () => skyAlive('lucasClone') === 0, act: { dur: 1.4, superArmor: true, events: [evAt(0.6, e => skyClones(e))] } }] },
   // 人偶之王 道格里（人偶玄关）：三连石柱、提线拉扯、石化石弹
-  dogrey: { name: '人偶之王 道格里', lvl: 18, hp: 135000, atk: 300, def: 480, w: 17, d: 14, h: 124, weight: 3, speed: 95, exp: 1900, gold: [240, 450], shadowR: 25, pref: 120, clips: BEAST_CLIPS, scale: 1.2, bars: 24,
+  dogrey: { name: '人偶之王 道格里', lvl: 18, hp: 120000, atk: 300, def: 480, w: 17, d: 14, h: 124, weight: 3, speed: 95, exp: 1900, gold: [240, 450], shadowR: 25, pref: 120, clips: BEAST_CLIPS, scale: 1.2, bars: 24,
     model: () => buildGoblinVariant({ ...SKY_GOB, skin: '#f0e8e0', skin2: '#c8c0b8', eye: '#a060ff', band: null }, { weapon: 'staff', orb: '#c080ff', robe: '#5a2a7a', helmet: true }),
     attacks: [
       melee('club', 0.44, 0.52, [0, 100, 28, 10, 110], { range: [0, 90], cd: [1.4, 2.4], w: 2, hit: { dmg: 1.2, knock: 150, stun: 0.45 } }),
@@ -372,7 +372,7 @@ Object.assign(MON, {
       { clip: 'roar', range: [140, 800], dy: 800, cd: [9, 12], w: 1.1, act: { dur: 1.6, superArmor: true, events: [evAt(0.2, e => skyStrings(e))] } },
       { clip: 'throw', range: [100, 520], dy: 70, cd: [4, 6], w: 1.2, act: { dur: 1.0, events: [evAt(0.5, e => skyStoneShot(e, 3))] } }] },
   // 黄金巨人 普拉塔尼（石巨人塔）：几乎一直霸体；连续冲撞 1~3 次后会过热，这是反击的时机；地刺成列 / 围成一圈
-  platani: { name: '黄金巨人 普拉塔尼', lvl: 20, hp: 165000, atk: 310, def: 560, w: 22, d: 16, h: 140, weight: 6, speed: 80, exp: 2300, gold: [280, 520], shadowR: 30, pref: 90, clips: BEAST_CLIPS, scale: 1.15, bars: 28,
+  platani: { name: '黄金巨人 普拉塔尼', lvl: 20, hp: 132000, atk: 310, def: 560, w: 22, d: 16, h: 140, weight: 6, speed: 80, exp: 2300, gold: [280, 520], shadowR: 30, pref: 90, clips: BEAST_CLIPS, scale: 1.15, bars: 28,
     model: () => buildTau({ fur: '#d8a830', muzzle: '#f0d070', horn: '#b08020', eye: '#ff8a2a', cloth: '#8a6a1a' }, { weapon: 'none', armor: '#e8c050', big: true }),
     onDamaged: (m) => { if (!(m.overheat > game.t)) m.superArmor = Math.max(m.superArmor, 0.35); },
     attacks: [
@@ -387,7 +387,7 @@ Object.assign(MON, {
       })] } },
       { clip: 'cast', range: [0, 170], dy: 90, cd: [6, 9], w: 1, act: { dur: 1.4, superArmor: true, events: [evAt(0.1, e => skyNova(e, 150, 1.0, '#ffc040', { dmg: 1.5 }))] } }] },
   // 天之驱逐者（黑暗玄廊）：双剑斩、1~3 列落雷（总会留一条安全通道）、长距离冲刺
-  skyExpeller: { name: '天之驱逐者', lvl: 22, hp: 185000, atk: 310, def: 580, w: 17, d: 14, h: 124, weight: 3, speed: 110, exp: 2700, gold: [320, 580], shadowR: 25, pref: 80, clips: BEAST_CLIPS, scale: 1.18, bars: 30,
+  skyExpeller: { name: '天之驱逐者', lvl: 22, hp: 148000, atk: 310, def: 580, w: 17, d: 14, h: 124, weight: 3, speed: 110, exp: 2700, gold: [320, 580], shadowR: 25, pref: 80, clips: BEAST_CLIPS, scale: 1.18, bars: 30,
     model: () => buildZombie({ skin: '#d8d8e8', hair: '#8a8aa0', eye: '#ff3a2a', cloth: '#2a4aa0', pants: '#8a8aa0' }),
     attacks: [
       { clip: 'club', range: [0, 110], dy: 20, cd: [1.6, 2.6], w: 2, act: { dur: 1.3, hits: [{ t0: 0.44, t1: 0.52, box: [0, 118, 28, 10, 120], dmg: 1.1, knock: 110, stun: 0.45, hs: 0.07, snd: 'slash' }, { t0: 0.94, t1: 1.02, box: [0, 118, 28, 10, 120], dmg: 1.3, knock: 200, stun: 0.5, hs: 0.08, snd: 'slash', shake: 3 }],
@@ -396,7 +396,7 @@ Object.assign(MON, {
       { clip: 'chargeW', range: [160, 900], dy: 40, cd: [5, 7.5], w: 1.2, act: tauCharge(1.4) },
       { clip: 'roar', range: [0, 900], dy: 900, cd: [22, 28], w: 0.7, cond: m => m.hp < m.hpMax * 0.6 && skyAlive('expeller') + skyAlive('expellerAxe') < 2, act: { dur: 1.3, superArmor: true, events: [evAt(0.6, e => { fxText('亲卫队，上！', e.x, e.y, e.z + 40, { col: '#ff8a6a', size: 12 }); for (const k of ['expeller', 'expellerAxe']) spawnMonster(k, clamp(e.x + rnd(-200, 200), 80, (game.room ? game.room.x1 : 1400) - 80), rnd(20, DEPTH - 20), { lvl: e.lvl - 3, drop: true, ...skyMul() }); })] } }] },
   // 光之城主 赛格哈特（城主宫殿）：甩发、光环、雷电密布（贴身或远离都安全）、激光（先出细线）
-  seghart: { name: '光之城主 赛格哈特', lvl: 24, hp: 210000, atk: 328, def: 620, w: 16, d: 14, h: 128, weight: 3, speed: 105, exp: 3200, gold: [360, 660], shadowR: 25, pref: 110, clips: BEAST_CLIPS, scale: 1.18, bars: 34,
+  seghart: { name: '光之城主 赛格哈特', lvl: 24, hp: 168000, atk: 328, def: 620, w: 16, d: 14, h: 128, weight: 3, speed: 105, exp: 3200, gold: [360, 660], shadowR: 25, pref: 110, clips: BEAST_CLIPS, scale: 1.18, bars: 34,
     model: () => buildZombie({ skin: '#f0e0c0', hair: '#fff0b0', eye: '#ffd23a', cloth: '#f0f0f8', pants: '#d8c070' }),
     attacks: [
       melee('scratch', 0.3, 0.4, [-70, 104, 34, 10, 120], { range: [0, 95], dy: 30, cd: [1.4, 2.2], w: 2, hit: { dmg: 1.2, knock: 150, stun: 0.45 }, events: [slashAt(0.28, { a0: -2.6, a1: 1.2, r: 74, w: 14, off: [0, 60], col: '#ffe8a0', silent: true })] }),
@@ -404,7 +404,7 @@ Object.assign(MON, {
       { clip: 'cast', range: [0, 900], dy: 900, cd: [8, 11], w: 1.3, act: { dur: 2.2, superArmor: true, events: [evAt(0.1, e => skyLightField(e))] } },
       { clip: 'cast', range: [150, 900], dy: 40, cd: [5, 7], w: 1.4, act: { dur: 1.9, superArmor: true, events: [evAt(0.15, e => { skyLaser(e, e.y, { dmg: 1.9 }); if (e.enraged && game.player) { const y2 = game.player.y; if (Math.abs(y2 - e.y) > 50) skyLaser(e, y2, { dmg: 1.6, warn: 1.4 }); } })] } }] },
   // 罪恶之眼（悬空城，隐藏）：冲击波、追踪光柱、直线激光、石化眼球列（总有一条缝）
-  sinEye: { name: '罪恶之眼', lvl: 25, hp: 225000, atk: 330, def: 600, w: 22, d: 16, h: 118, weight: 8, speed: 50, exp: 3400, gold: [380, 700], shadowR: 30, pref: 200, clips: BEAST_CLIPS, scale: 1.15, bars: 36,
+  sinEye: { name: '罪恶之眼', lvl: 25, hp: 175000, atk: 330, def: 600, w: 22, d: 16, h: 118, weight: 8, speed: 50, exp: 3400, gold: [380, 700], shadowR: 30, pref: 200, clips: BEAST_CLIPS, scale: 1.15, bars: 36,
     model: () => buildCat({ fur: '#6a4a7a', belly: '#e8d8f0', ear: '#8a3a8a', eye: '#ff3a8a', cloth: '#3a1a4a' }),
     onDamaged: (m) => { m.superArmor = Math.max(m.superArmor, 0.3); },
     attacks: [

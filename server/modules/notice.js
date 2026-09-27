@@ -6,14 +6,14 @@ const int = (v, lo, hi) => { const n = Math.floor(Number(v)); return Number.isFi
 const itemName = it => it && typeof it === 'object' ? `${int(it.enh || 0, 0, 99) ? '+' + int(it.enh, 0, 99) + ' ' : ''}${txt(it.name, 30)}` : '';
 // 每种公告的文案（who = 「角色名」）；返回 null = 字段不全，丢弃
 const KINDS = {
-  epic: (b, who) => b.item && `勇士${who}${b.place ? ` 在 ${txt(b.place, 20)}` : ''} 获得了史诗装备 [${itemName(b.item)}]！`,
-  enhance: (b, who) => b.item && int(b.lvl, 0, 99) >= 10 && `勇士${who} 将 [${itemName({ ...b.item, enh: 0 })}] 强化到了 +${int(b.lvl, 0, 99)}！`,
-  amplify: (b, who) => b.item && int(b.lvl, 0, 99) >= 10 && `勇士${who} 将 [${itemName({ ...b.item, enh: 0 })}] 增幅到了 +${int(b.lvl, 0, 99)}！`,
-  skyset: (b, who) => (b.item || b.name) && `勇士${who} 合成出了 [${b.item ? itemName(b.item) : txt(b.name, 30)}]！`,
-  box: (b, who) => b.item && `勇士${who} 打开 ${txt(b.box, 20) || '箱子'} 获得了 [${itemName(b.item)}]！`,
-  job: (b, who) => b.job && `勇士${who} 转职成为了 ${txt(b.job, 16)}！`,
-  awaken: (b, who) => b.job && `勇士${who} 完成了觉醒：${txt(b.job, 16)}！`,
-  firstClear: (b, who) => b.place && `勇士${who} 首次通关了 ${txt(b.place, 20)}！`,
+  epic: (b, who) => b.item && `勇士${who}${b.place ? `在${txt(b.place, 20)}` : ''}获得了史诗装备 [${itemName(b.item)}]！`,
+  enhance: (b, who) => b.item && int(b.lvl, 0, 99) >= 10 && `勇士${who}将 [${itemName({ ...b.item, enh: 0 })}] 强化到了 +${int(b.lvl, 0, 99)}！`,
+  amplify: (b, who) => b.item && int(b.lvl, 0, 99) >= 10 && `勇士${who}将 [${itemName({ ...b.item, enh: 0 })}] 增幅到了 +${int(b.lvl, 0, 99)}！`,
+  skyset: (b, who) => (b.item || b.name) && `勇士${who}合成出了 [${b.item ? itemName(b.item) : txt(b.name, 30)}]！`,
+  box: (b, who) => b.item && `勇士${who}打开${txt(b.box, 20) || '箱子'}获得了 [${itemName(b.item)}]！`,
+  job: (b, who) => b.job && `勇士${who}转职成为了${txt(b.job, 16)}！`,
+  awaken: (b, who) => b.job && `勇士${who}完成了觉醒：${txt(b.job, 16)}！`,
+  firstClear: (b, who) => b.place && `勇士${who}首次通关了${txt(b.place, 20)}！`,
 };
 function show(ctx, o) {
   const t = now(ctx);

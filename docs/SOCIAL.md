@@ -13,11 +13,12 @@
 | `server/modules/rank.js` | 排行榜：角色数据上报、通关时间、决斗胜场、全部 / 好友榜 |
 | `server/modules/notice.js` | 全服公告：校验、生成文案、记录、广播 |
 | `server/modules/signin.js` | 每日签到：按服务器时间的月历、连续签到奖励（奖励通过邮件发放，客户端自动领取） |
-| `server/modules/gm.js` | 管理员后台：发邮件、邀请码、在线玩家、发公告、日志、强制下架 |
-| `server/modules/svclog.js` | 公共操作日志表 `svc_log`（拍卖 / 邮件 / 签到 / 管理员操作），供后台查询 |
+| `server/modules/gm.js` | 管理员后台：发邮件、邀请码、在线玩家、发公告、日志、强制下架；公共操作日志表 `svc_log`（`ctx.mods.gm.log()`，拍卖 / 邮件 / 签到 / 管理员操作都记在这里） |
 | `src/net/social.js` | 客户端逻辑：接口封装、待办对账（防复制 / 防丢失）、公告上报、排行榜上报、邮件领取入包 |
 | `src/ui/social/*.js` | 窗口：`auction` `mail` `rank` `signin` `gm`；顶部滚动公告条；社交按钮条和信封提示 |
-| `test/svc_*.mjs` | 自动测试：本机临时数据库起服务端，2 个无头浏览器模拟两个玩家 |
+| `test/svc_api.mjs` | 接口测试（不开浏览器）：拍卖、邮件、签到、排行榜、公告、管理员，共 88 项 |
+| `test/svc_host.mjs` | 接口测试用的最小宿主（按联机组的模块扩展点约定加载 `server/modules/*.js`，node:sqlite 临时库） |
+| `test/svc_play.mjs` | 端到端测试：本机起服务端（临时数据库），2 个无头浏览器模拟两个玩家 |
 
 窗口名：`auction`（拍卖行）、`mail`（邮件）、`rank`（排行榜）、`signin`（签到）、`gm`（管理员后台）。
 快捷键：拍卖行 `B`（可以在按键设置里改）；其他窗口从右侧的社交按钮条打开。

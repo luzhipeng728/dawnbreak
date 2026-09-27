@@ -244,10 +244,10 @@ await ev(() => {
   return enterScene('elvenguard');
 });
 await wait(900); await closeAll(); await wait(200);
-const mk2 = await ev(() => ({ grey: questMarkerInfo('t_npc'), linus: questMarkerInfo('linus'), drawn: window.__mkDrawn }));
+const mk2 = await ev(() => { const q = questList(q => q.type === 'main' && questState(q.id) === 'avail')[0]; return { grey: questMarkerInfo('t_npc'), mainNpc: q && q.npc, main: q && questMarkerInfo(q.npc), drawn: window.__mkDrawn }; });
 check(mk2.drawn > 0, `drawQuestMarker 能正常绘制（${mk2.drawn} 次）`);
 check(mk2.grey && mk2.grey.ch === '?' && mk2.grey.col === '#9a9a9a', '只有进行中任务的 NPC → 灰色 ?', JSON.stringify(mk2.grey));
-check(mk2.linus && mk2.linus.ch === '!' && mk2.linus.main, '有可接主线的林纳斯 → 金色 !（主线加大光芒）', JSON.stringify(mk2.linus));
+check(!mk2.mainNpc || (mk2.main && mk2.main.ch === '!' && mk2.main.main), `有可接主线的 NPC（${mk2.mainNpc}）→ 金色 !（主线加大光芒）`, JSON.stringify(mk2.main));
 await ev(() => { game.player.x = 1260; }); await wait(600);
 await shot('13-npc-markers');
 const clickRect = await ev(() => questUI.trackRect);

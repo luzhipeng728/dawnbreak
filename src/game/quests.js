@@ -120,7 +120,8 @@ const activeQuests = () => { const d = qdata(); return d ? Object.keys(d.quests)
 /* ---- 文本 ---- */
 const npcName = id => (NPCS[id] && NPCS[id].name) || id || '—';
 const sceneOfNpc = id => { for (const s of Object.values(SCENES)) if (s.npcs.some(n => n.npc === id)) return s; return null; };
-const npcWhere = id => { if (!id) return '—'; const S = sceneOfNpc(id); return S ? `${npcName(id)}（${S.name}）` : npcName(id); };
+const sceneLabel = S => S.area && S.area !== S.name ? (S.area.includes(S.name) ? S.area : `${S.name}·${S.area}`) : S.name;
+const npcWhere = id => { if (!id) return '—'; const S = sceneOfNpc(id); return S ? `${npcName(id)}（${sceneLabel(S)}）` : npcName(id); };
 const monName = k => (MON[k] && MON[k].name) || k;
 const dgName = id => (DUNGEONS[id] && DUNGEONS[id].name) || id;
 function questFmt(s) {

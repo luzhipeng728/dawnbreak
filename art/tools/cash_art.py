@@ -28,6 +28,8 @@ PETS = {
     'lion': dict(fly=0, desc='a tiny cute Chinese lion-dance cub (a baby festival lion): a round red body with golden swirl patterns, a big fluffy golden mane, a single tiny golden horn, big round sparkly eyes with long lashes, a wide happy smile, stubby little legs with golden paws, a short fluffy golden tail'),
     'seal': dict(fly=0, desc='a tiny cute chubby baby seal: soft white-grey fur, a round body, big shiny black eyes, little whiskers, small flippers, holding a small sky-blue surfboard with a white stripe under one front flipper'),
     'owl': dict(fly=1, desc='a tiny cute round brown baby owl: fluffy brown and cream feathers, huge round amber eyes behind small round glasses, a tiny black graduation mortarboard cap with a golden tassel on its head, small brown wings, tiny orange feet'),
+    'fox': dict(fly=0, desc='a tiny cute magical fox cub: soft lavender and white fur, big sparkly violet eyes, a huge fluffy tail with rainbow gradient tip and tiny glowing star patterns, a small star-shaped charm on its forehead'),
+    'panda': dict(fly=0, desc='a tiny cute chubby baby panda: black and white fur, round black ears, big shiny eyes inside black eye patches, holding a small green bamboo sprout in its paws, stubby legs'),
     'pegasus': dict(fly=1, desc='a tiny cute baby pegasus pony: white body, a flowing golden mane and tail, a pair of large golden feathered wings, golden hooves, big sparkly blue eyes, a tiny golden crown on its head'),
 }
 PET_FRAMES = {
@@ -227,7 +229,7 @@ def cut_pets(prev):
             f = f.resize((max(1, round(f.width * k)), max(1, round(f.height * k))), Image.LANCZOS)
             cv = Image.new('RGBA', (round(W * k) + 4, 174), (0, 0, 0, 0)); cv.paste(f, ((cv.width - f.width) // 2, cv.height - f.height - 2), f)   # 底对齐（脚在同一条线上）
             save_webp(cv, os.path.join(HERE, 'final', 'pet', f'{pid}_{i}.webp'), 90); prev.append((f'{pid}_{i}', cv))
-        key = {'lion': 'pet_lion', 'seal': 'pet_seal', 'owl': 'pet_owl', 'pegasus': 'pet_pegasus'}[pid]
+        key = 'pet_' + pid
         ic = square(frames[0], 128, 0.74); save_webp(ic, os.path.join(HERE, 'final', 'cash', f'{key}.webp'))
 
 def cut_auras(prev):

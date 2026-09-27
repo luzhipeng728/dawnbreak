@@ -27,7 +27,7 @@ defGoods('synth_dream', { key: 'synth_dream', price: 1200, tab: 'sky', tag: '保
 defGoods('box_avatar_sky', { key: 'box_avatar', price: 900, tab: 'sky', tag: '合成材料' });
 defGoods('box_avatar_sky5', { key: 'box_avatar', n: 5, price: 4200, tab: 'sky', tag: '合成材料' });
 // 宠物
-for (const k of ['pet_lion', 'pet_seal', 'pet_owl']) defGoods(k, { key: k, price: 3800, tab: 'pet' });
+for (const k of ['pet_lion', 'pet_seal', 'pet_owl', 'pet_panda']) defGoods(k, { key: k, price: 3800, tab: 'pet' });
 defGoods('egg_pet', { key: 'egg_pet', price: 1800, tab: 'pet', tag: '惊喜' });
 defGoods('box_petgear', { key: 'box_petgear', price: 1200, tab: 'pet' });
 for (const k of ['petR_1', 'petB_1', 'petG_1']) defGoods(k, { key: k, price: 2000, tab: 'pet' });
@@ -122,18 +122,18 @@ const CASH_EXCH = {
 /* ---- 箱子奖池：tiers 按权重（%），jackpot 档出货发全服公告；pity：连续 n-1 次不出大奖，第 n 次必出 ---- */
 const CASH_BOXES = {
   box_magic: { shard: 1, pity: 100, tiers: [
-    { name: '大奖', jackpot: true, items: [[0.5, { key: 'tk_sky' }], [0.5, { epic: true }], [0.4, { key: 'aura_box' }], [0.4, { key: 'title_box' }], [0.4, { key: 'tk_enh10' }], [0.3, { key: 'orb_pet_supreme' }], [0.5, { key: 'cera_l' }]] },
+    { name: '大奖', jackpot: true, items: [[0.5, { key: 'tk_sky' }], [0.5, { epic: true }], [0.4, { key: 'aura_box' }], [0.4, { key: 'title_box' }], [0.3, { key: 'tk_enh10' }], [0.3, { key: 'orb_pet_supreme' }], [0.3, { key: 'cera_l' }], [0.3, { key: 'pet_fox' }]] },
     { name: '稀有', items: [[3, { key: 'box_equip' }], [2.5, { key: 'box_orb' }], [2.5, { key: 'tk_enh7' }], [1.5, { key: 'egg_pet' }], [2, { key: 'tk_avatar' }], [2, { key: 'synth_gold' }], [1.5, { key: 'box_petgear2' }], [1.5, { key: 'cera_m' }], [0.5, { key: 'amp_purify' }]] },
     { name: '普通', items: [[10, { key: 'box_supply' }], [10, { key: 'coin', n: 2 }], [8, { key: 'synth_basic', n: 2 }], [8, { key: 'box_gold' }], [7, { key: 'fatigue' }], [5, { key: 'elixir', n: 2 }], [6, { key: 'box_avatar' }],
       [4, { key: 'crystal', n: 60 }], [2, { key: 'm_contra', n: 20 }], [5, { key: 'guard' }], [5, { key: 'cera_s' }], [3, { key: 'amp_guard' }], [3, { key: 'abyss_ticket', n: 2 }], [2, { key: 'amp_book' }], [2, { key: 'm_elem2', n: 3 }]] },
   ] },
   box_magic2: { shard: 3, pityOf: 'box_magic', tiers: [
-    { name: '大奖', jackpot: true, items: [[3, { key: 'tk_sky' }], [2.5, { epic: true }], [2, { key: 'aura_box' }], [2, { key: 'title_box' }], [2, { key: 'tk_enh10' }], [1.5, { key: 'orb_pet_supreme' }], [2, { key: 'cera_l' }]] },
+    { name: '大奖', jackpot: true, items: [[3, { key: 'tk_sky' }], [2.5, { epic: true }], [2, { key: 'aura_box' }], [2, { key: 'title_box' }], [2, { key: 'tk_enh10' }], [1.5, { key: 'orb_pet_supreme' }], [2, { key: 'cera_l' }], [1.5, { key: 'pet_fox' }]] },
     { name: '稀有', items: [[16, { key: 'box_equip' }], [12, { key: 'box_orb' }], [12, { key: 'tk_enh7' }], [10, { key: 'egg_pet' }], [10, { key: 'tk_avatar' }], [10, { key: 'synth_gold' }], [7, { key: 'box_petgear2' }], [8, { key: 'cera_m' }]] },
   ] },
   box_equip: { tiers: [{ name: '装备', items: [[50, { equip: true, rar: 1 }], [30, { equip: true, rar: 2 }], [14, { equip: true, rar: 3 }], [5, { equip: true, rar: 4 }], [1, { epic: true }]] }] },
   box_orb: { tiers: [{ name: '宝珠', items: [...ORB_TIER.rare.map(k => [70 / ORB_TIER.rare.length, { key: k }]), ...ORB_TIER.art.map(k => [27 / ORB_TIER.art.length, { key: k }]), ...ORB_TIER.supreme.map(k => [3 / ORB_TIER.supreme.length, { key: k }])] }] },
-  egg_pet: { tiers: [{ name: '宠物', items: [[30, { key: 'pet_lion' }], [30, { key: 'pet_seal' }], [30, { key: 'pet_owl' }], [8, { key: 'box_petgear2' }], [2, { key: 'pet_pegasus' }]] }] },
+  egg_pet: { tiers: [{ name: '宠物', items: [[22.5, { key: 'pet_lion' }], [22.5, { key: 'pet_seal' }], [22.5, { key: 'pet_owl' }], [22.5, { key: 'pet_panda' }], [5, { key: 'box_petgear2' }], [3, { key: 'pet_fox' }], [2, { key: 'pet_pegasus' }]] }] },
   box_petgear: { tiers: [{ name: '宠物装备', items: [[26, { key: 'petR_1' }], [26, { key: 'petB_1' }], [26, { key: 'petG_1' }], [22 / 3, { key: 'petR_2' }], [22 / 3, { key: 'petB_2' }], [22 / 3, { key: 'petG_2' }]] }] },
   box_petgear2: { tiers: [{ name: '神器宠物装备', items: [[1, { key: 'petR_2' }], [1, { key: 'petB_2' }], [1, { key: 'petG_2' }]] }] },
   box_supply: { rolls: 3, tiers: [{ name: '补给', items: [[18, { key: 'hpL', n: 5 }], [18, { key: 'mpL', n: 5 }], [18, { key: 'potStr', n: 2 }], [12, { key: 'elixir' }], [12, { key: 'essence', n: 2 }], [8, { key: 'coin' }], [7, { key: 'fatigue' }], [7, { key: 'abyss_ticket' }]] }] },

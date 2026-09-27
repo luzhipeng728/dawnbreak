@@ -10,7 +10,10 @@ export async function startServer(o = {}) {
   process.env.NODE_NO_WARNINGS = '1';
   const { start } = await import(new URL('../server/index.js', import.meta.url).href);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dnf-net-'));
-  const app = await start({ port: 0, db: path.join(tmp, 'net.db'), invites: ['NETTEST'], admins: ['alice'], static: path.join(ROOT, 'dist/web'), graceMs: 4000, ...o });
+  // LAG=毫秒：服务端发往每个客户端的消息都延迟这么久（模拟真实网络，JITTER=抖动毫秒）
+  const lag = +(process.env.LAG || 0), jitter = +(process.env.JITTER || 0);
+  const app = await start({ port: 0, db: path.join(tmp, 'net.db'), invites: ['NETTEST'], admins: ['alice'], static: path.join(ROOT, 'dist/web'), graceMs: 4000, lagMs: lag, jitterMs: jitter, ...o });
+  if (lag) console.log(`（模拟网络延迟：服务端下行 ${lag}ms + 抖动 ${jitter}ms）`);
   const url = `http://127.0.0.1:${app.port}/index.html`;
   return { app, url, tmp, stop: async () => { await app.stop(); fs.rmSync(tmp, { recursive: true, force: true }); } };
 }

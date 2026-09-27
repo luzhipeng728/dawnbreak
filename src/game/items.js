@@ -151,7 +151,7 @@ function makeItem(key, n = 1, opt = {}) {
   const D = ITEMS[key];
   if (!D) { console.warn('makeItem：物品库里没有', key); return null; }
   if (D.kind !== 'equip') return { id: itemSeq++, key, kind: D.kind, name: D.name, rar: D.rar, n: Math.max(1, n | 0), price: D.price };
-  const grade = D.slot === 'title' ? null : opt.grade ?? D.grade ?? randGrade();
+  const grade = D.slot === 'title' || isAvatar(D) ? null : D.rar === 5 ? 4 : opt.grade ?? D.grade ?? randGrade();   // 史诗固定最上级
   const it = { id: itemSeq++, key, kind: 'equip', slot: D.slot, name: D.name, rar: opt.rar ?? D.rar, lvl: D.lvl, grade, st: {}, enh: opt.enh || 0, durMax: D.durMax, dur: D.durMax, price: D.price };
   applyDef(it, D);
   return it;
@@ -160,7 +160,7 @@ function makeItem(key, n = 1, opt = {}) {
 function applyDef(it, D) {
   it.name = D.name; it.slot = D.slot; it.lvl = D.lvl; it.price = D.price; it.rar = D.rar;
   it.wtype = D.wtype || null; it.atype = D.atype || null; it.cls = D.cls || null; it.set = D.set || null;
-  it.fx = D.fx ? { ...D.fx } : undefined; it.desc = D.desc || undefined; it.epic = D.rar === 5 || undefined;
+  it.fx = D.fx ? { ...D.fx } : undefined; it.desc = D.desc || undefined; it.epic = D.rar === 5 || undefined; if (it.epic) it.grade = 4;
   const g = gradeMul(it.grade); it.st = {};
   for (const k in D.st) it.st[k] = FLAT_STATS.includes(k) ? Math.round(D.st[k] * g) : D.st[k];
   if (it.durMax !== D.durMax) { it.durMax = D.durMax; it.dur = Math.min(it.dur ?? D.durMax, D.durMax); }

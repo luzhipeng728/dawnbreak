@@ -77,7 +77,7 @@ for (const g of gates) {
   const bossKind = await page.evaluate(id => DUNGEONS[id].boss.kind, g.id);
   ok(bossRoom.boss === bossKind && bossRoom.adds > 0, `${g.id}：领主房有 ${bossRoom.boss} 和 ${bossRoom.adds} 只小怪`);
   if (g.id === 'temple_outskirts') {
-    ok(bossRoom.priest === 1 && bossRoom.shield === 0.5, `temple_outskirts：领主房有大祭司，大主教有护盾（受到伤害 ×${bossRoom.shield}）`);
+    ok(bossRoom.priest === 1 && bossRoom.shield === 0.6, `temple_outskirts：领主房有大祭司，大主教有护盾（受到伤害 ×${bossRoom.shield}）`);
     await wait(1500); await page.screenshot({ path: `${out}/route-temple_outskirts-shield.png` });
     const off = await page.evaluate(() => { const pr = ents.find(e => e.kind === 'gblHighPriest'); pr.hp = 1; applyHit(game.player, pr, { dmg: 50, sure: true }, { proj: true }); return new Promise(res => setTimeout(() => res(game.dungeon.boss.dmgTakenMul || 1), 600)); });
     ok(off === 1, `temple_outskirts：打倒大祭司后护盾消失（×${off}）`);

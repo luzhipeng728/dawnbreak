@@ -201,9 +201,9 @@ function bhRegen(m) {
 /* ---- 怪物表（数值是 1 级基数，按等级放大；参照天空之城的曲线） ---- */
 const BH_PAL = { skin: '#d8d0c8', hair: '#e8e8e0', eye: '#ffd23a', cloth: '#2a6a6a', pants: '#e8e0d0' };
 const gblMelee = (dmg = 1.0) => melee('club', 0.44, 0.52, [0, 72, 22, 10, 90], { range: [0, 64], cd: [1.6, 2.6], hit: { dmg, knock: 110, stun: 0.4, snd: 'stab' }, events: [slashAt(0.42, { a0: -1.6, a1: 0.4, r: 44, w: 9, off: [10, 44], col: '#fff2c0', silent: true })] });
-const gblShamanAtk = (col) => [gblMelee(0.9), { clip: 'throw', range: [110, 380], dy: 50, cd: [3, 4.2], w: 1.6, act: { dur: 0.9, events: [evAt(0.45, e => bhKnives(e, 3, { col }))] } }];
+const gblShamanAtk = (col) => [gblMelee(0.9), { clip: 'throw', range: [110, 380], dy: 50, cd: [4, 5.5], w: 1.6, cond: skyRangedOk, act: { dur: 0.9, onStart: skyRangedUse, events: [evAt(0.45, e => bhKnives(e, 3, { col }))] } }];
 const gblBishopAtk = (summon) => [
-  melee('slam', 0.7, 0.8, [-20, 90, 30, 0, 110], { range: [0, 84], cd: [2.2, 3.4], sa: true, w: 1.5, hit: { dmg: 1.3, down: true, knock: 200, shake: 4 }, events: [evAt(0.7, e => { fxShock(e.x + e.face * 40, e.y, 90, '#ffd060'); sfx.boom(0.4); })] }),
+  melee('slam', 0.7, 0.8, [-20, 90, 30, 0, 110], { range: [0, 84], cd: [2.8, 4], sa: true, w: 1.5, hit: { dmg: 1.3, down: true, knock: 200, shake: 4 }, events: [evAt(0.7, e => { fxShock(e.x + e.face * 40, e.y, 90, '#ffd060'); sfx.boom(0.4); })] }),
   { clip: 'cast', range: [0, 130], dy: 70, cd: [6, 8], act: { dur: 1.2, superArmor: true, events: [evAt(0.1, e => skyNova(e, 95, 0.9, '#ffd060', { dmg: 1.1 }))] } },
   { clip: 'roar', range: [0, 700], dy: 700, cd: [14, 18], w: 0.6, cond: () => skyAlive(summon) < 3, act: { dur: 1.2, superArmor: true, events: [evAt(0.6, e => bhSummon(e, summon, 1, null, '信徒们，出来！'))] } }];
 Object.assign(MON, {
@@ -227,14 +227,14 @@ Object.assign(MON, {
   octopus: { name: '章鱼怪', lvl: 24, hp: 7200, atk: 255, def: 470, w: 13, d: 12, h: 70, weight: 1, speed: 90, exp: 115, gold: [30, 60], shadowR: 17, pref: 60, clips: BEAST_CLIPS,
     model: () => buildCat({ fur: '#b85a9a', belly: '#f0c0e0', ear: '#8a3a6a', eye: '#ffd23a', cloth: '#6a2a5a' }),
     attacks: [melee('scratch', 0.3, 0.38, [0, 56, 20, 10, 70], { range: [0, 52], cd: [1.4, 2.4], hit: { dmg: 0.9, knock: 80, snd: 'blunt' } }),
-      { clip: 'throw', range: [100, 320], dy: 36, cd: [3, 4.5], act: { dur: 0.9, events: [evAt(0.45, e => shootStraight(e, { col: '#2a1a3a', dmg: 0.8, status: 'slow', speed: 240, z: 40 }))] } }] },
+      { clip: 'throw', range: [100, 320], dy: 36, cd: [4, 5.5], cond: skyRangedOk, act: { dur: 0.9, onStart: skyRangedUse, events: [evAt(0.45, e => shootStraight(e, { col: '#2a1a3a', dmg: 0.8, status: 'slow', speed: 240, z: 40 }))] } }] },
   octopusBlue: { name: '蓝章鱼', lvl: 27, hp: 7800, atk: 265, def: 500, w: 13, d: 12, h: 70, weight: 1, speed: 95, exp: 122, gold: [32, 62], shadowR: 17, pref: 70, clips: BEAST_CLIPS,
     model: () => buildCat({ fur: '#4a7ac8', belly: '#c0e0f0', ear: '#2a4a8a', eye: '#ffd23a', cloth: '#2a3a6a' }),
     attacks: [melee('scratch', 0.3, 0.38, [0, 56, 20, 10, 70], { range: [0, 52], cd: [1.4, 2.4], hit: { dmg: 0.95, knock: 80, snd: 'blunt' } }),
-      { clip: 'throw', range: [100, 340], dy: 36, cd: [3.4, 4.8], act: { dur: 1.1, events: [0.4, 0.7].map(t => evAt(t, e => shootStraight(e, { col: '#1a2a4a', dmg: 0.7, status: 'slow', speed: 260, z: 40 })))} }] },
+      { clip: 'throw', range: [100, 340], dy: 36, cd: [4.4, 5.8], cond: skyRangedOk, act: { dur: 1.1, onStart: skyRangedUse, events: [evAt(0.5, e => shootStraight(e, { col: '#1a2a4a', dmg: 0.8, status: 'slow', speed: 250, z: 40 }))] } }] },
   babyOcto: { name: '小八爪', lvl: 26, hp: 4200, atk: 250, def: 380, w: 10, d: 10, h: 52, weight: 0.7, speed: 160, exp: 90, gold: [20, 40], shadowR: 13, pref: 50, clips: BEAST_CLIPS, scale: 0.8,
     model: () => buildCat({ fur: '#e88a6a', belly: '#f8d0c0', ear: '#b85a3a', eye: '#ffd23a', cloth: '#8a3a2a' }),
-    attacks: [melee('scratch', 0.3, 0.38, [0, 46, 18, 0, 50], { range: [0, 42], cd: [1.2, 2], hit: { dmg: 0.7, knock: 60, snd: 'blunt' } }), { clip: 'pounce', range: [80, 240], dy: 30, cd: [2.6, 3.8], act: pounceAct(0.9) }] },
+    attacks: [melee('scratch', 0.3, 0.38, [0, 46, 18, 0, 50], { range: [0, 42], cd: [1.6, 2.6], hit: { dmg: 0.7, knock: 60, snd: 'blunt' } }), { clip: 'pounce', range: [80, 240], dy: 30, cd: [4.5, 6], act: pounceAct(0.85) }] },
   // 夜叉：双刀连斩 + 短冲刺
   yaksha: { name: '夜叉', lvl: 26, hp: 9000, atk: 268, def: 520, w: 14, d: 12, h: 100, weight: 1.3, speed: 115, exp: 125, gold: [32, 64], shadowR: 18, pref: 60, clips: BEAST_CLIPS,
     model: () => buildZombie({ skin: '#b83a2a', hair: '#f0f0f0', eye: '#ffd23a', cloth: '#1a1a1a', pants: '#2a1a1a' }),
@@ -260,14 +260,14 @@ Object.assign(MON, {
   // 龙头炮：慢慢推着走，远远地打炮（落点有红圈）；火焰龙头炮：近距离喷火；激光龙头：同一纵深的激光（先出细线）
   dragonCannon: { name: '龙头炮', lvl: 24, hp: 8000, atk: 260, def: 520, w: 16, d: 13, h: 66, weight: 2.4, speed: 45, exp: 118, gold: [30, 60], shadowR: 20, pref: 260, clips: BEAST_CLIPS, noGrab: true,
     model: () => buildTau({ fur: '#b8883a', muzzle: '#d8b060', horn: '#8a6a2a', eye: '#ff8a2a', cloth: '#6a4a2a' }, { weapon: 'none' }),
-    attacks: [{ clip: 'throw', range: [140, 540], dy: 200, cd: [3.2, 4.4], act: { dur: 0.9, events: [evAt(0.45, e => bhLob(e, { r: 46, dmg: 1.1 }))] } }] },
+    attacks: [{ clip: 'throw', range: [140, 540], dy: 200, cd: [4, 5.5], cond: skyRangedOk, act: { dur: 0.9, onStart: skyRangedUse, events: [evAt(0.45, e => bhLob(e, { r: 46, dmg: 1.1 }))] } }] },
   fireCannon: { name: '火焰龙头炮', lvl: 27, hp: 8600, atk: 268, def: 540, w: 16, d: 13, h: 66, weight: 2.4, speed: 55, exp: 124, gold: [32, 62], shadowR: 20, pref: 110, clips: BEAST_CLIPS, noGrab: true,
     model: () => buildTau({ fur: '#c8502a', muzzle: '#e8804a', horn: '#8a3a1a', eye: '#ffd23a', cloth: '#6a2a1a' }, { weapon: 'none' }),
     attacks: [{ clip: 'cast', range: [0, 160], dy: 22, cd: [3, 4.4], w: 1.4, act: bhFlame() },
-      { clip: 'throw', range: [180, 540], dy: 200, cd: [4.5, 6], act: { dur: 0.9, events: [evAt(0.45, e => bhLob(e, { r: 46, dmg: 1.1, status: 'burn', sdur: 2, dps: 0.06 }))] } }] },
+      { clip: 'throw', range: [180, 540], dy: 200, cd: [5, 6.5], cond: skyRangedOk, act: { dur: 0.9, onStart: skyRangedUse, events: [evAt(0.45, e => bhLob(e, { r: 46, dmg: 1.1, status: 'burn', sdur: 2, dps: 0.06 }))] } }] },
   laserCannon: { name: '激光龙头', lvl: 28, hp: 9000, atk: 272, def: 560, w: 16, d: 13, h: 66, weight: 2.4, speed: 50, exp: 126, gold: [32, 64], shadowR: 20, pref: 320, clips: BEAST_CLIPS, noGrab: true,
     model: () => buildTau({ fur: '#3a8ab8', muzzle: '#6ab0d8', horn: '#2a5a8a', eye: '#aef0ff', cloth: '#2a4a6a' }, { weapon: 'none' }),
-    attacks: [{ clip: 'cast', range: [140, 900], dy: 20, cd: [4.2, 6], act: { dur: 1.6, events: [evAt(0.1, e => skyLaser(e, e.y, { dmg: 1.3, warn: 1.2, col: '#9ae8ff' }))] } }] },
+    attacks: [{ clip: 'cast', range: [140, 900], dy: 20, cd: [6.5, 8.5], cond: skyRangedOk, act: { dur: 1.6, onStart: skyRangedUse, events: [evAt(0.1, e => skyLaser(e, e.y, { dmg: 1.1, warn: 1.3, col: '#9ae8ff' }))] } }] },
   // 锯角撞车：低头蓄力后直线冲撞（红色路线）；贴身时锯片连续切割
   sawCart: { name: '锯角撞车', lvl: 27, hp: 10500, atk: 270, def: 600, w: 18, d: 14, h: 74, weight: 2.6, speed: 70, exp: 128, gold: [32, 64], shadowR: 22, pref: 90, clips: BEAST_CLIPS, noGrab: true,
     model: () => buildTau({ fur: '#8a6a4a', muzzle: '#b8905a', horn: '#d8d8d8', eye: '#ff3a2a', cloth: '#5a3a2a' }, { weapon: 'none' }),
@@ -276,28 +276,28 @@ Object.assign(MON, {
   // 多尼尔：飞在空中的小飞艇，往玩家脚下扔炸弹（红圈 1.1 秒）
   donnier: { name: '多尼尔', lvl: 27, hp: 6500, atk: 262, def: 450, w: 14, d: 12, h: 70, weight: 1.2, speed: 100, exp: 120, gold: [30, 62], shadowR: 16, pref: 90, clips: BEAST_CLIPS, noGrab: true,
     model: () => buildCat({ fur: '#e8e0d0', belly: '#ffffff', ear: '#c8a040', eye: '#6ac8ff', cloth: '#3a6a9a' }),
-    attacks: [{ clip: 'cast', range: [0, 300], dy: 200, cd: [3.2, 4.6], act: { dur: 1.3, events: [evAt(0.2, e => { const p = game.player; if (!p) return; telegraph({ x: p.x, y: p.y, r: 44, dur: 1.1, col: '#ff5a3a', fire: g => { if (e.dead) return; meteorImpact(g, 0.45); areaHit(e, g.x, g.y, 44, 0, { dmg: 1.1, down: true, knock: 180, hs: 0.07, snd: 'fire' }); } }); })] } }] },
+    attacks: [{ clip: 'cast', range: [0, 300], dy: 200, cd: [4, 5.5], cond: skyRangedOk, act: { dur: 1.3, onStart: skyRangedUse, events: [evAt(0.2, e => { const p = game.player; if (!p) return; telegraph({ x: p.x, y: p.y, r: 44, dur: 1.1, col: '#ff5a3a', fire: g => { if (e.dead) return; meteorImpact(g, 0.45); areaHit(e, g.x, g.y, 44, 0, { dmg: 1.1, down: true, knock: 180, hs: 0.07, snd: 'fire' }); } }); })] } }] },
   // 精英：园丁鲁尔（会种混乱花的树精）、巨型黑章鱼（会旋转、喷墨、召唤小八爪；官方是第一脊椎的领主）
   blackOctopus: { name: '巨型黑章鱼', lvl: 29, hp: 12000, atk: 275, def: 600, w: 18, d: 14, h: 96, weight: 3, speed: 70, exp: 230, gold: [50, 100], shadowR: 24, pref: 70, clips: BEAST_CLIPS, scale: 1.5,
     model: () => buildCat({ fur: '#3a2a4a', belly: '#6a5a7a', ear: '#2a1a3a', eye: '#ff3a3a', cloth: '#1a0a2a' }),
     attacks: [
       { clip: 'roar', range: [0, 120], dy: 50, cd: [5, 7], w: 1.4, act: { dur: 2.0, superArmor: true, onStart: e => { e.spinTele = telegraph({ x: e.x, y: e.y, r: 110, dur: 0.8, col: '#ff5a8a', follow: e }); fxText('要转起来了！', e.x, e.y, e.z + 120, { col: '#ff9ad8', size: 12 }); },
-        onEnd: e => { if (e.spinTele) killTele(e.spinTele); }, hits: [{ t0: 0.8, t1: 1.9, rep: 0.3, box: [-110, 110, 50, 0, 90], dmg: 0.55, knock: 160, stun: 0.3, hs: 0.04, snd: 'blunt' }], events: [evAt(0.8, e => { sfx.swing(true); for (let i = 0; i < 4; i++) game.after(i * 0.28, () => { if (!e.dead) fxShock(e.x, e.y, 110, '#b060d0'); }); })] } },
+        onEnd: e => { if (e.spinTele) killTele(e.spinTele); }, hits: [{ t0: 0.8, t1: 1.7, rep: 0.45, box: [-110, 110, 50, 0, 90], dmg: 0.55, knock: 160, stun: 0.3, hs: 0.04, snd: 'blunt' }], events: [evAt(0.8, e => { sfx.swing(true); for (let i = 0; i < 4; i++) game.after(i * 0.28, () => { if (!e.dead) fxShock(e.x, e.y, 110, '#b060d0'); }); })] } },
       { clip: 'throw', range: [60, 360], dy: 60, cd: [5, 7], act: { dur: 1.2, events: [evAt(0.1, e => bhInk(e, 80))] } },
       { clip: 'cast', range: [0, 700], dy: 700, cd: [12, 16], w: 0.7, cond: () => skyAlive('babyOcto') < 3, act: { dur: 1.2, superArmor: true, events: [evAt(0.6, e => bhSummon(e, 'babyOcto', 2, null, '孩子们！', '#ff9ad8'))] } }] },
   // 大祭司：和大主教一起出现在神殿外围的领主房；她活着时大主教有圣光护盾（见下方 roomEnter）
-  gblHighPriest: { name: 'GBL教大祭司', lvl: 26, hp: 52000, atk: 300, def: 520, w: 13, d: 12, h: 116, weight: 2, speed: 90, exp: 900, gold: [120, 240], shadowR: 18, pref: 230, clips: BEAST_CLIPS, scale: 1.1, bars: 8,
+  gblHighPriest: { name: 'GBL教大祭司', lvl: 26, hp: 26000, atk: 290, def: 480, w: 13, d: 12, h: 116, weight: 2, speed: 90, exp: 900, gold: [120, 240], shadowR: 18, pref: 170, clips: BEAST_CLIPS, scale: 1.1, bars: 8,
     model: () => buildZombie({ ...BH_PAL, cloth: '#5a2a7a' }),
     attacks: [
-      { clip: 'cast', range: [0, 420], dy: 60, cd: [2.2, 3.2], w: 1.6, act: { dur: 1.0, events: [evAt(0.4, e => shootStraight(e, { col: '#b070ff', dmg: 0.9, status: 'slow', speed: 260, glow: true, z: 60 }))] } },
-      { clip: 'cast', range: [0, 700], dy: 700, cd: [5, 7], act: { dur: 1.2, events: [evAt(0.25, e => { const p = game.player; if (p) skySpikeAt(e, p.x, p.y, 1.2, { r: 40, dmg: 1.05, follow: p, col: '#b070ff', rock: '#8a6aa8' }); })] } },
-      { clip: 'heal', range: [0, 900], dy: 900, cd: [9, 12], w: 2, cond: m => { const b = game.dungeon && game.dungeon.boss; return !!(b && !b.dead && b.hp < b.hpMax * 0.9); },
+      { clip: 'cast', range: [0, 420], dy: 60, cd: [4, 5.5], w: 1.6, act: { dur: 1.0, events: [evAt(0.4, e => shootStraight(e, { col: '#b070ff', dmg: 0.8, status: 'slow', speed: 240, glow: true, z: 60 }))] } },
+      { clip: 'cast', range: [0, 700], dy: 700, cd: [7, 9], act: { dur: 1.2, events: [evAt(0.25, e => { const p = game.player; if (p) skySpikeAt(e, p.x, p.y, 1.2, { r: 40, dmg: 1.05, follow: p, col: '#b070ff', rock: '#8a6aa8' }); })] } },
+      { clip: 'heal', range: [0, 900], dy: 900, cd: [12, 16], w: 2, cond: m => { const b = game.dungeon && game.dungeon.boss; return !!(b && !b.dead && b.hp < b.hpMax * 0.9); },
         act: { dur: 2.2, breakable: 0.06, onStart: e => { e.breakDmg = 0; fxText('大祭司在祈祷——打断她！', e.x, e.y, e.z + 140, { col: '#e0a0ff', size: 13, dur: 1.8 }); sfx.charge(); },
-          events: [evAt(2.0, e => { const b = game.dungeon && game.dungeon.boss; if (!b || b.dead) return; const h = Math.round(b.hpMax * 0.06); b.hp = Math.min(b.hpMax, b.hp + h); addNumber(h, b.x, b.y, b.z + 40, { heal: true }); sfx.buff(); fxAura(b, '#8aff9a', 0.8); })] } }] },
+          events: [evAt(2.0, e => { const b = game.dungeon && game.dungeon.boss; if (!b || b.dead) return; const h = Math.round(b.hpMax * 0.04); b.hp = Math.min(b.hpMax, b.hp + h); addNumber(h, b.x, b.y, b.z + 40, { heal: true }); sfx.buff(); fxAura(b, '#8aff9a', 0.8); })] } }] },
 
   /* ---- 领主 ---- */
   // GBL教大主教（神殿外围）：杖击、圣光柱（跟随后锁定）、圣光环、召唤信徒；大祭司活着时有护盾
-  gblArchbishop: { name: 'GBL教大主教', lvl: 26, hp: 140000, atk: 320, def: 600, w: 16, d: 14, h: 124, weight: 3, speed: 85, exp: 3500, gold: [400, 720], shadowR: 24, pref: 110, clips: BEAST_CLIPS, scale: 1.15, bars: 24,
+  gblArchbishop: { name: 'GBL教大主教', lvl: 26, hp: 125000, atk: 320, def: 600, w: 16, d: 14, h: 124, weight: 3, speed: 85, exp: 3500, gold: [400, 720], shadowR: 24, pref: 110, clips: BEAST_CLIPS, scale: 1.15, bars: 24,
     model: () => buildZombie({ ...BH_PAL, cloth: '#e8e0c8', eye: '#ffd23a' }),
     attacks: [
       melee('club', 0.44, 0.52, [0, 110, 28, 10, 120], { range: [0, 100], cd: [1.5, 2.5], w: 2, hit: { dmg: 1.2, knock: 150, stun: 0.45 } }),
@@ -327,7 +327,7 @@ Object.assign(MON, {
     model: () => buildCat({ fur: '#f0e8d8', belly: '#ffffff', ear: '#c8a040', eye: '#ff4a3a', cloth: '#2a4a8a' }),
     onDamaged: (m) => { m.superArmor = Math.max(m.superArmor, 0.25); },
     attacks: [
-      { clip: 'cast', range: [0, 700], dy: 700, cd: [2.6, 3.6], w: 2, act: { dur: 1.2, events: [evAt(0.3, e => { const p = game.player; if (!p) return; bhLob(e, { r: 48, dmg: 1.2, z0: 90 }); bhLob(e, { r: 48, dmg: 1.2, z0: 90, x: p.x + rnd(-160, 160), y: p.y + rnd(-50, 50) }); })] } },
+      { clip: 'cast', range: [0, 700], dy: 700, cd: [3.4, 4.6], w: 2, act: { dur: 1.2, events: [evAt(0.3, e => { const p = game.player; if (!p) return; bhLob(e, { r: 48, dmg: 1.2, z0: 90 }); bhLob(e, { r: 48, dmg: 1.2, z0: 90, x: p.x + rnd(-160, 160), y: p.y + rnd(-50, 50) }); })] } },
       { clip: 'cast', range: [0, 900], dy: 900, cd: [7, 9], w: 1.4, act: { dur: 2.2, superArmor: true, events: [evAt(0.2, e => bhCarpetBomb(e))] } },
       { clip: 'cast', range: [120, 900], dy: 40, cd: [5, 7], w: 1.3, act: { dur: 1.9, superArmor: true, events: [evAt(0.15, e => skyLaser(e, e.y, { dmg: 1.6, col: '#ff8a8a' }))] } },
       { clip: 'cast', range: [0, 900], dy: 900, cd: [8, 11], w: 1.1, act: { dur: 1.6, superArmor: true, events: [evAt(0.2, e => bhMissiles(e, e.enraged ? 4 : 3))] } },
@@ -337,11 +337,11 @@ Object.assign(MON, {
     model: () => buildCat({ fur: '#4a2a5a', belly: '#8a5a9a', ear: '#2a1a3a', eye: '#ff3a3a', cloth: '#1a0a2a', eyeGlow: true }),
     onDamaged: (m) => { m.superArmor = Math.max(m.superArmor, 0.3); bhRegen(m); },
     attacks: [
-      melee('slam', 0.7, 0.8, [-60, 140, 50, 0, 120], { range: [0, 130], dy: 40, cd: [2, 3], sa: true, w: 2, hit: { dmg: 1.4, down: true, knock: 220, shake: 5 }, events: [evAt(0.7, e => { bhTentacleFx(e.x, e.y, e.x + e.face * 120, e.y, 0.4); sfx.boom(0.6); })] }),
+      melee('slam', 0.7, 0.8, [-60, 140, 50, 0, 120], { range: [0, 130], dy: 40, cd: [2.8, 3.8], sa: true, w: 2, hit: { dmg: 1.4, down: true, knock: 220, shake: 5 }, events: [evAt(0.7, e => { bhTentacleFx(e.x, e.y, e.x + e.face * 120, e.y, 0.4); sfx.boom(0.6); })] }),
       { clip: 'cast', range: [0, 900], dy: 900, cd: [5, 7], w: 1.6, act: { dur: 1.8, superArmor: true, events: [evAt(0.1, e => { const p = game.player; if (p) bhTentacleSweep(e, p.y); })] } },
       { clip: 'roar', range: [0, 900], dy: 900, cd: [6, 8], w: 1.3, act: { dur: 1.6, superArmor: true, events: [evAt(0.2, e => bhTentacleSlam(e, e.enraged ? 4 : 3))] } },
       { clip: 'throw', range: [0, 300], dy: 60, cd: [5, 7], w: 1.1, act: { dur: 1.3, superArmor: true, events: [evAt(0.1, e => bhInk(e))] } },
-      { clip: 'roar', range: [0, 900], dy: 900, cd: [15, 20], w: 0.8, cond: () => skyAlive('babyOcto') < 3, act: { dur: 1.3, superArmor: true, events: [evAt(0.6, e => bhSummon(e, 'babyOcto', 3, null, '去吧，小八爪们！', '#ff9ad8'))] } }] },
+      { clip: 'roar', range: [0, 900], dy: 900, cd: [20, 26], w: 0.8, cond: () => skyAlive('babyOcto') < 2, act: { dur: 1.3, superArmor: true, events: [evAt(0.6, e => bhSummon(e, 'babyOcto', 2, null, '去吧，小八爪们！', '#ff9ad8'))] } }] },
   // 审判者马塞尔（天帷禁地）：官方“全程霸体”——三连飞刀（上下错开）、拔刀刺、震飞、血色护罩（把他引出来）、复活教徒
   marcel: { name: '审判者马塞尔', lvl: 30, hp: 165000, atk: 340, def: 650, w: 16, d: 14, h: 122, weight: 3, speed: 95, exp: 4500, gold: [480, 860], shadowR: 24, pref: 120, clips: BEAST_CLIPS, scale: 1.15, bars: 30,
     model: () => buildZombie({ skin: '#e0d8e0', hair: '#1a1a1a', eye: '#ff3a3a', cloth: '#6a0a1a', pants: '#1a0a0a' }),
@@ -373,14 +373,14 @@ Object.assign(MON_ART, {
 });
 
 /* ---- 房间机关 ---- */
-// 神殿外围的领主房：大主教身边还有大祭司；大祭司活着时，大主教身上有圣光护盾（受到的伤害减半）
+// 神殿外围的领主房：大主教身边还有大祭司；大祭司活着时，大主教身上有圣光护盾（受到的伤害 ×0.6）
 bus.on('roomEnter', d => {
   if (d.id !== 'temple_outskirts' || d.type !== 'boss' || !game.dungeon) return;
   const b = game.dungeon.boss; if (!b || b.dead || b.remove) return;
   const W = game.room ? game.room.x1 : 1400;
   const pr = spawnMonster('gblHighPriest', W - 170, clamp(b.y + 60, 20, DEPTH - 20), { lvl: game.dungeon.def.boss.lvl, ...skyMul() });
   if (!pr || pr.dead || pr.remove) return;
-  b.dmgTakenMul = 0.5;
+  b.dmgTakenMul = 0.6;
   game.after(1.2, () => fxText('大祭司在守护大主教——先打倒大祭司！', b.x, b.y, b.z + 160, { col: '#ffe070', size: 14, dur: 2 }));
   addFx({ x: b.x, y: b.y + 1, z: 0, dur: 1e9, update() {
     this.x = b.x; this.y = b.y + 1;

@@ -16,7 +16,7 @@ defineDungeon('purgatory', { name: '炼狱', lvl: [26, 27], theme: 'bhPurgatory'
   desc: '熔岩流淌的地下神殿。夜叉王又快又常霸体：冲刺前地上会出现红线；听到“震地咆哮”就跳起来，冲击波是贴着地面扩散的。' });
 defineDungeon('polar_day', { name: '极昼', lvl: [27, 28], theme: 'bhDay', rooms: 7, branches: 3, rows: 4, mobs: [['gblBeliever', 2], ['gblBishop', 1], ['donnier', 2], ['sawCart', 2], ['fireCannon', 1.5], ['octopus', 1]], elite: 'sawCart', boss: { kind: 'donnierEX', lvl: 29 }, bossAdds: 2, clearExp: 14400, bgm: 'dungeon',
   desc: '太阳永不落下的金色神殿。飞艇多尼尔会往你脚下扔炸弹（有红圈）。多尼尔（EX）会地毯轰炸、放激光、发射追踪导弹，还会空投信徒。' });
-defineDungeon('second_spine', { name: '第二脊椎', lvl: [28, 30], theme: 'bhSpine', rooms: 8, branches: 3, rows: 4, mobs: [['octopus', 3], ['octopusBlue', 2], ['babyOcto', 2], ['gblBishop', 1], ['laserCannon', 1], ['gblShaman', 1]], elite: 'blackOctopus', boss: { kind: 'lotus', lvl: 30 }, bossAdds: 3, clearExp: 15600, bgm: 'abyss', bossBgm: 'boss',
+defineDungeon('second_spine', { name: '第二脊椎', lvl: [28, 30], theme: 'bhSpine', rooms: 7, branches: 3, rows: 4, mobs: [['octopus', 3], ['octopusBlue', 2], ['babyOcto', 1.5], ['gblBishop', 1], ['laserCannon', 0.6], ['gblShaman', 1]], elite: 'blackOctopus', boss: { kind: 'lotus', lvl: 30 }, bossAdds: 2, clearExp: 15600, bgm: 'abyss', bossBgm: 'boss',
   desc: '巨兽的脊椎深处，章鱼的巢穴。长脚罗特斯几乎不动，但触手能扫过整排——地上亮起细线时上下躲开；它 4 秒没挨打就会回血，要一直打。' });
 defineDungeon('forbidden_land', { name: '天帷禁地', lvl: [29, 30], theme: 'bhForbidden', rooms: 7, branches: 3, rows: 4, hidden: true, unlock: { quest: 'q_hidden_forbidden' }, mobs: [['gblRevPriest', 3], ['gblRevShaman', 2], ['gblRevBishop', 1], ['zombie', 1]], elite: 'gblRevBishop', boss: { kind: 'marcel', lvl: 30 }, bossAdds: 3, clearExp: 16000, bgm: 'abyss', bossBgm: 'boss',
   desc: '【隐藏地下城】GBL 教的禁地。审判者马塞尔全程霸体，会扔三把上下错开的飞刀；他升起血色护罩时，把他引出罩子再打。' });

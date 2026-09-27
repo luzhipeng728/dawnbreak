@@ -117,3 +117,9 @@
 - 注册函数：`defineScene` / `defineNpc` / `defineDungeon`（`game/world.js`）。
 - `game.scene === 'town'` 表示在城镇或区域场景里，当前场景是 `world.S`。
 - NPC 功能按钮在 `NPC_SERVICES` 里注册（`ui/npc.js`）。
+
+### 外观（换武器 / 时装，models/avatar.js）
+- 职业精灵 `art/final/spr/{sword,gun,mage}/` 的每一帧都**不含武器**。生成时手里拿纯绿占位棍，切帧时抠掉，同时把武器轨迹写进 `spr.json`（`wpn` / `wpn2` / 头部锚点）。运行时再按轨迹画武器图（`art/final/weapon/`）。
+- **新增角色动作帧必须走外观流水线**：`art/tools/avatar_gen.py wpn` → `avatar_frames.py`。不要用 `frames2.py` 直接覆盖这三个目录，否则会画出两把武器。
+- 时装是整套帧集：`art/final/spr/<职业>@<套装>/`，分包 `spr:<职业>@<套装>`。帽子 / 发饰 / 眼镜按头部锚点叠加。
+- 绘制规范（性能）：每帧的绘制里不要用 `imageSmoothingQuality = 'high'`、`filter`、`shadowBlur`，混合模式只用 `source-over` / `lighter`。实测前两项会让 GPU 满载，帧率从 60 掉到 20~40。

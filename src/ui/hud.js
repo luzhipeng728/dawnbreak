@@ -43,6 +43,8 @@ const HUD = {
   skill: { x: 1076, y: 962, s: 52, gap: 60, row: 58 },   // 技能栏 2×6
   dodge: { x: 912, y: 1018, r: 30 },
 };
+// 右上角小地图有 4 行时比较高：连击数和地下城里的任务追踪栏跟着往下挪，不和小地图重叠（小地图见 dungeon.drawUI：y0=70，格子 34）
+const hudComboDy = () => { const L = game.dungeon && game.dungeon.layout; return L ? Math.max(0, 70 + L.rows * 34 + 22 - 186) : 0; };
 const hudQuickRect = i => ({ x: HUD.quick.x + i * HUD.quick.gap, y: HUD.quick.y, s: HUD.quick.s });
 const hudSkillRect = i => ({ x: HUD.skill.x + (i % 6) * HUD.skill.gap, y: HUD.skill.y + Math.floor(i / 6) * HUD.skill.row, s: HUD.skill.s });
 const hudInRect = (R, x, y, pad = 3) => x >= R.x - pad && x <= R.x + R.s + pad && y >= R.y - pad && y <= R.y + R.s + pad;
@@ -189,9 +191,9 @@ const ui = {
     const shown = this.combo.shown; if (shown < 2 || this.combo.t > 0.6) return;
     const a = n >= 2 ? 1 : 1 - this.combo.t / 0.6, col = shown >= 20 ? '#ff4040' : shown >= 10 ? '#ffd23a' : '#ffffff';
     c.save(); c.globalAlpha = a;
-    const pop = game.comboT > 1.5 ? 1.15 : 1;
-    uiText(`${shown}`, 1780, 250, { size: 72 * pop, align: 'right', color: col, sw: 8, font: '"Arial Black",Impact,sans-serif', weight: 900 });
-    uiText('Hit Combo!', 1790, 290, { size: 28, align: 'right', color: col, sw: 5, font: '"Arial Black",sans-serif', weight: 900 });
+    const pop = game.comboT > 1.5 ? 1.15 : 1, dy = hudComboDy();
+    uiText(`${shown}`, 1780, 250 + dy, { size: 72 * pop, align: 'right', color: col, sw: 8, font: '"Arial Black",Impact,sans-serif', weight: 900 });
+    uiText('Hit Combo!', 1790, 290 + dy, { size: 28, align: 'right', color: col, sw: 5, font: '"Arial Black",sans-serif', weight: 900 });
     c.restore();
   },
   // 目标血条：最近被玩家打中的怪物（领主多管血条颜色循环 紫→蓝→绿→黄→红，旁边显示剩余管数 ×N）

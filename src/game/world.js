@@ -168,11 +168,26 @@ function revealGate(g) {
 /* =====================================================================
    NPC 立绘模型：脚底中心为原点；呼吸起伏、轻微摇摆、转身时的“翻面”、玩家走近时小跳一下打招呼
    ===================================================================== */
+// 眨眼：立绘里两只眼睛的位置（图片像素 [x0, y0, x1, y1]）和眼皮色，眨眼时用眼皮色盖住眼睛、画一道闭眼的睫毛线
+// 由 test/shots/eyes 的脚本从立绘自动找眼睛再人工修正；G.S.D（本来就闭着眼）、米内特（蒙面）、夏洛克（单片眼镜）、土罐（帽檐阴影）不眨眼
+const NPC_EYES = { albert: ['#ffdabe', [[63,70,81,88],[95,63,113,83]]], alice: ['#ffe9e1', [[101,64,119,84],[137,57,153,77]]], boken: ['#ffc39d', [[99,42,117,62],[129,37,148,57]]], daphne: ['#fdd9bc', [[68,76,86,97],[103,71,120,91]]], fengzhen: ['#f8c89d', [[83,78,101,97],[129,82,139,98]]], grandis: ['#fdf0e0', [[66,106,84,126],[107,103,123,123]]], kakun: ['#73676d', [[96,61,114,80],[131,72,148,92]]], kanina: ['#d49161', [[74,62,92,82],[102,60,120,80]]], kiri: ['#edbdad', [[104,78,122,98]]], lily: ['#fddbc0', [[61,71,80,92],[98,66,116,86]]], linus: ['#fcbe93', [[99,55,117,75],[131,53,149,73]]], lorian: ['#ffe9d9', [[90,76,108,96],[128,72,145,92]]], marin: ['#fee1c6', [[77,82,95,102],[115,79,130,99]]], norton: ['#fdceac', [[73,71,91,91],[107,67,125,87]]], nuoyu: ['#feebe2', [[91,90,109,113],[128,88,141,111]]], olan: ['#f5ccaf', [[66,75,84,95],[100,70,118,90]]], ophelia: ['#ffe7d4', [[78,76,95,95],[110,75,128,95]]], paris: ['#fed8b7', [[67,90,85,110],[105,87,117,107]]], ray: ['#f6d4ad', [[85,106,99,126],[116,102,134,122]]], roget: ['#ffc599', [[78,83,96,104],[109,79,127,99]]], seria: ['#feecde', [[105,73,123,93],[143,71,160,91]]], sharan: ['#bd8264', [[84,71,102,91],[122,70,139,90]]], sinda: ['#fbd2ab', [[58,73,76,93],[93,72,108,92]]], skadi: ['#fdebdd', [[95,83,113,101],[128,80,145,100]]], sosia: ['#fbdec1', [[73,68,89,85],[107,63,117,77]]], vier: ['#ffe1c9', [[70,75,88,96],[106,72,124,92]]] };
 class NpcModel {
-  constructor(key, h, still) { this.img = IMG[key]; this.h = h; this.still = still; this.skel = { map: {} }; this.turnT = 1; this.hopT = 1; this.seed = Math.random() * 9; }
+  constructor(key, h, still) { this.img = IMG[key]; this.h = h; this.still = still; this.skel = { map: {} }; this.turnT = 1; this.hopT = 1; this.seed = Math.random() * 9; this.eyes = NPC_EYES[key.replace('world/npc_', '')]; this.blinkIn = 1 + Math.random() * 4; this.blinkT = 0; }
   turn() { this.turnT = 0; }
   hop() { if (this.hopT >= 1 && !this.still) this.hopT = 0; }
-  tick(dt) { this.turnT = Math.min(1, this.turnT + dt / 0.2); this.hopT = Math.min(1, this.hopT + dt / 0.42); }
+  tick(dt) {
+    this.turnT = Math.min(1, this.turnT + dt / 0.2); this.hopT = Math.min(1, this.hopT + dt / 0.42);
+    if (this.blinkT > 0) this.blinkT -= dt;
+    else if ((this.blinkIn -= dt) <= 0) { this.blinkT = 0.13; this.blinkIn = Math.random() < 0.2 ? 0.25 : 2.5 + Math.random() * 4; }   // 偶尔连眨两下
+  }
+  drawBlink(c) {
+    const [lid, boxes] = this.eyes, im = this.img, ox = -im.width / 2, oy = -im.height;
+    c.fillStyle = lid; c.strokeStyle = '#2a1810'; c.lineWidth = 1.8; c.lineCap = 'round';
+    for (const [x0, y0, x1, y1] of boxes) {
+      c.beginPath(); c.ellipse(ox + (x0 + x1) / 2, oy + (y0 + y1) / 2 - 0.5, (x1 - x0) / 2 + 2, (y1 - y0) / 2 + 1.5, 0, 0, TAU); c.fill();
+      const yy = oy + y0 + (y1 - y0) * 0.62; c.beginPath(); c.moveTo(ox + x0, yy); c.quadraticCurveTo(ox + (x0 + x1) / 2, yy + 4.4, ox + x1, yy); c.stroke();
+    }
+  }
   draw(c, pose, t) {
     const im = this.img; if (!im) return;
     const k = this.h / im.height, s = this.seed, br = this.still ? 0 : Math.sin(t * 2.1 + s);
@@ -182,7 +197,9 @@ class NpcModel {
     c.save(); c.translate(0, -hp * 7);
     c.transform(1, 0, Math.sin(t * 0.8 + s * 2) * 0.012, 1, 0, 0);
     c.scale(k * turn * (1 - br * 0.005) * (2 - sq), k * (1 + br * 0.011) * sq);
-    c.drawImage(im, -im.width / 2, -im.height); c.restore();
+    c.drawImage(im, -im.width / 2, -im.height);
+    if (this.blinkT > 0 && this.eyes) this.drawBlink(c);
+    c.restore();
   }
 }
 /* =====================================================================

@@ -132,8 +132,131 @@ async function town() {
   await P.closeAll();
 }
 
+// ---- 中后期：先用 UI 创建角色，再跳级（testLoadout + 标记前置任务完成），之后全部用真实按键 ----
+async function quickStart() {
+  await page.goto(`${URL_BASE}?mute&fresh`); await page.waitForFunction(() => window.__READY); await wait(600);
+  await page.click('text=进入游戏'); await wait(400); await page.click('#charsel button:has-text("创建角色")'); await wait(400);
+  await page.click(`.clscard >> nth=${ci}`); await wait(200); await page.click('text=创建并开始'); await wait(1500);
+  if (await page.evaluate(() => menus.isOpen('help'))) await P.tap('Escape');
+  await wait(300);
+}
+async function skipTo(lv, done = []) {
+  const r = await page.evaluate(({ lv, done }) => {
+    testLoadout(lv); game.exp = 0;
+    const d = save.data; for (const q of Object.values(QUESTS)) if (q.type === 'main' && q.lvl < lv - 1 && q.chapter && !q.chapter.includes('天空')) d.questDone[q.id] = 1;
+    for (const id of done) d.questDone[id] = 1;
+    for (const id of Object.keys(d.quests)) if (d.questDone[id]) delete d.quests[id];
+    d.seen = d.seen || {}; for (const id in SCENES) if (!SCENES[id].name.includes('天空')) d.seen[id] = 1;
+    if (typeof questDirty === 'function') questDirty(); save.write();
+    return { lvl: game.lvl, next: questList(q => questState(q.id) === 'avail' && q.type === 'main').map(q => q.name).slice(0, 3) };
+  }, { lv, done });
+  step(`跳到 Lv.${r.lvl}，可接主线：${r.next.join('、')}`);
+}
+// 按场景出口广度优先找路，然后一段一段真实地走过去
+async function goScene(target) {
+  const path = await page.evaluate(t => { const from = world.S.id, prev = { [from]: null }, q = [from]; while (q.length) { const s = q.shift(); if (s === t) break; for (const ex of SCENES[s].exits) if (SCENES[ex.to] && !ex.locked && !(ex.minLv && game.lvl < ex.minLv) && !(ex.to in prev)) { prev[ex.to] = s; q.push(ex.to); } } if (!(t in prev)) return null; const p = []; for (let s = t; s !== from; s = prev[s]) p.unshift(s); return p; }, target);
+  if (!path) { P.note(`从 ${await page.evaluate(() => world.S.id)} 走不到 ${target}`); return false; }
+  for (const s of path) if (!(await P.exitTo(s))) return false;
+  return true;
+}
+const MENTOR = ['gsd', 'kiri', 'sharan'][ci];
+async function jobTrial() {
+  await quickStart();
+  await skipTo(15, ['q_job_kill', `q_job_visit_${CLS}`, ...[1, 2, 3, 4, 5, 6].map(i => `q_job_${CLS}_${i}`), 'q_hidden_frozen']);
+  await P.shot('lv15');
+  const mScene = await page.evaluate(id => qSceneOfNpc(id).id, MENTOR);
+  check(await goScene(mScene), `走不到导师所在的 ${mScene}`); await P.shot('mentor-scene');
+  check(await P.talk(MENTOR), '和导师对话失败'); await P.shot('mentor-talk');
+  const a = await P.dialogTo(['接受']); step('最后的试炼：' + a); await P.closeAll();
+  check(await goScene('gf_graca'), '走不到格拉卡区域'); await P.shot('graca-field');
+  check(await P.toGate('blazing_graca'), '烈焰格拉卡门口没弹窗'); await P.shot('blazing-gate');
+  let tries = 0, ok = false;
+  while (!ok && tries < 3) {
+    tries++;
+    if (tries > 1) { check(await P.toGate('blazing_graca'), '再次进入失败'); }
+    await P.enterDungeon(); let rooms = 0;
+    const r = await P.fightDungeon({ onRoom: async s => { rooms++; if (s.d.boss) await P.shot(`boss-${tries}`); } });
+    step(`烈焰格拉卡第 ${tries} 次：${JSON.stringify(r)}`);
+    if (r.state === 'result') { await P.shot(`trial-result-${tries}`); ok = r.hurt <= 15; await P.flipAndReturn(); }
+    else { await wait(3000); }
+    step('试炼任务：' + await page.evaluate(id => questState(id), `q_job_${CLS}_final`));
+  }
+  check(ok, `试炼 3 次都没做到被击 ≤15`);
+  check(await goScene(mScene), '回不到导师处');
+  check(await P.talk(MENTOR), '回来和导师对话失败');
+  const b = await P.dialogTo(['完成任务']); step('交试炼：' + b); if (await page.evaluate(() => menus.isOpen('npcquest'))) { await P.shot('trial-reward'); await P.tap('KeyX'); await wait(400); }
+  const c = await P.dialogTo(['接受']); step('转职任务：' + c); await P.shot('job-offer');
+  await P.closeAll(); check(await P.talk(MENTOR), '再次对话失败');
+  await P.npcService('转职'); await wait(500); await P.shot('job-window');
+  await page.click('.jobcard >> nth=0'); await wait(300); await P.shot('job-pick');
+  await page.click('.jobwin .btn:has-text("转职为")'); await wait(400); await P.shot('job-confirm');
+  const conf = page.locator('.askwin .btn:not(.blue)').first(); if (await conf.count()) await conf.click(); else { const c2 = page.locator('.jobwin .btn.red, .jobwin .btn:has-text("确定")').first(); if (await c2.count()) await c2.click(); }
+  for (let i = 0; i < 12; i++) { await wait(500); if (i === 2 || i === 6) await P.shot(`job-show-${i}`); }
+  step('转职后：job=' + await page.evaluate(() => game.job) + ' 窗口=' + await page.evaluate(() => menus.stack.join(',')));
+  await P.closeAll(); await P.tap('KeyK'); await wait(400); await page.click('.sktab:has-text("转职技能")').catch(() => {}); await wait(300); await P.shot('job-skills');
+  await P.closeAll();
+}
+async function awaken() {
+  await quickStart();
+  await skipTo(18, ['q_job_kill', `q_job_visit_${CLS}`, ...[1, 2, 3, 4, 5, 6].map(i => `q_job_${CLS}_${i}`), `q_job_${CLS}_final`, `q_job_${CLS}_change`, 'q_hidden_frozen', 'q_dark_1', 'q_dark_2', 'q_hidden_dark']);
+  await page.evaluate(() => { const j = Object.keys(CLASSES[game.player.cls].jobs)[0]; game.job = j; if (typeof onJobChange === 'function') onJobChange(game.player, j); save.write(); });
+  const mScene = await page.evaluate(id => qSceneOfNpc(id).id, MENTOR);
+  check(await goScene(mScene), '走不到导师处');
+  check(await P.talk(MENTOR), '和导师对话失败'); await P.shot('awaken-offer');
+  step('觉醒任务：' + await P.dialogTo(['接受'])); await P.closeAll(); await P.shot('awaken-accepted');
+  // 暗黑雷鸣废墟（隐藏地下城）打一次
+  check(await goScene('gf_thunder'), '走不到雷鸣废墟区域'); await P.shot('thunder-field');
+  check(await P.toGate('dark_thunder'), '暗黑雷鸣废墟门口没弹窗');
+  await P.enterDungeon(); const r = await P.fightDungeon({ onRoom: async s => { if (s.d.boss) await P.shot('dark-boss'); } });
+  step('暗黑雷鸣废墟：' + JSON.stringify(r)); if (r.state === 'result') { await P.shot('dark-result'); await P.flipAndReturn(); }
+  step('觉醒任务进度：' + await page.evaluate(c => JSON.stringify(save.data.quests[`q_awaken_${c}_1`]), CLS));
+}
+async function hidden() {
+  await quickStart();
+  await skipTo(10, ['q_job_kill']);
+  check(await goScene('hm_oldtown'), '走不到旧城区');
+  check(await P.talk('gsd'), '和 G.S.D 对话失败'); await P.shot('gsd');
+  if (await page.evaluate(() => npcUI.qid) !== 'q_hidden_frozen') await P.pickQuest('寒气的源头');
+  step('寒气的源头：' + await P.dialogTo(['接受'])); await P.closeAll();
+  let n = 0;
+  while (n++ < 4 && await page.evaluate(() => questState('q_hidden_frozen')) !== 'ready') {
+    check(await goScene('gf_thunder'), '走不到雷鸣废墟');
+    check(await P.toGate('thunder_ruins'), '雷鸣废墟门口没弹窗'); await P.enterDungeon();
+    const r = await P.fightDungeon(); step(`雷鸣废墟第 ${n} 次：${JSON.stringify(r)} 结晶 ${await page.evaluate(() => inv.count('q_frost_crystal'))}`);
+    if (r.state === 'result') await P.flipAndReturn();
+  }
+  check(await goScene('hm_oldtown'), '回不到旧城区'); check(await P.talk('gsd'), '回来和 G.S.D 对话失败');
+  step('交任务：' + await P.dialogTo(['完成任务'])); await wait(500); await P.shot('hidden-reward'); await P.closeAll();
+  check(await goScene('gf_forest'), '走不到幽暗密林');
+  const g = await page.evaluate(() => world.S.gates.find(g => g.dungeon === 'frozen_woods').x);
+  await P.walkTo(g + 150, 60); await wait(400); await P.shot('hidden-reveal-1'); await wait(900); await P.shot('hidden-reveal-2'); await wait(1600); await P.shot('hidden-reveal-3');
+  check(await P.toGate('frozen_woods'), '冰霜幽暗密林门口没弹窗'); await P.shot('frozen-gate');
+}
+async function sky() {
+  await quickStart();
+  await skipTo(16, []);
+  check(await goScene('sky_castle'), '走不到天空之城'); await P.shot('sky-field');
+  check(await P.toGate('dragon_tower'), '龙人之塔门口没弹窗'); await P.shot('sky-gate');
+  await P.enterDungeon(); let k = 0;
+  const r = await P.fightDungeon({ onRoom: async s => { if (k++ < 2 || s.d.boss) await P.shot(s.d.boss ? 'sky-boss' : `sky-room${k}`); } });
+  step('龙人之塔：' + JSON.stringify(r)); if (r.state === 'result') { await P.shot('sky-result'); await P.flipAndReturn(); }
+}
+async function duel() {
+  await quickStart(); await skipTo(15, []);
+  await P.tap('KeyP'); await wait(600); await P.shot('duel-window');
+  step('P 打开：' + await page.evaluate(() => menus.stack.join(',')));
+  await P.closeAll();
+  check(await goScene('hendon_myre'), '走不到市政街'); check(await P.talk('vier'), '和维尔·克鲁对话失败'); await P.shot('vier');
+  const sv = await page.evaluate(() => [...menus.wins.npc.querySelectorAll('.npcmenu .btn')].map(b => b.textContent)); step('维尔·克鲁菜单：' + sv.join(' '));
+}
+
 try {
   if (leg === 'newbie') { await newbie(); await town(); }
+  else if (leg === 'job') await jobTrial();
+  else if (leg === 'awaken') await awaken();
+  else if (leg === 'hidden') await hidden();
+  else if (leg === 'sky') await sky();
+  else if (leg === 'duel') await duel();
 } catch (e) { P.note('脚本异常：' + e.message.split('\n')[0]); await P.shot('crash').catch(() => {}); fail++; }
 console.log('\n问题清单：'); for (const n of P.notes) console.log(' -', n);
 console.log('页面报错：', JSON.stringify(errs().slice(0, 8), null, 1));

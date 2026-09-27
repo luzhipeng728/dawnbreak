@@ -103,7 +103,7 @@ export function kbPlayer(page, { out = 'test/shots/kb', log = console.log } = {}
       await wait(600);
     },
     // 用键盘打完整个地下城：找怪、对齐、普攻 / 技能、躲预警、捡东西、按路线走门；返回结算信息
-    async fightDungeon({ maxMs = 600000, skillRate = 0.18, onRoom, dodgeWarn = true, potAt = 0.35 } = {}) {
+    async fightDungeon({ maxMs = 420000, skillRate = 0.18, onRoom, dodgeWarn = true, potAt = 0.35 } = {}) {
       const t0 = Date.now(); let lastRoom = null, atkPh = 0, runDir = null, stuck = { x: 0, t: Date.now() }, deaths = 0, wasDead = false;
       while (Date.now() - t0 < maxMs) {
         const s = await P.st();
@@ -156,9 +156,10 @@ export function kbPlayer(page, { out = 'test/shots/kb', log = console.log } = {}
         }
         // 4) 走向下一扇门
         if (d.open && d.route) {
-          const pos = { left: [0, 98], right: [d.x1, 98], up: [p.x, 0], down: [p.x, 200] }[d.route];
-          const dx = pos[0] - p.x, dy = pos[1] - p.y;
-          const h = d.route === 'left' || d.route === 'right' ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : null, v = d.route === 'up' ? 'ArrowUp' : d.route === 'down' ? 'ArrowDown' : Math.abs(dy) > 8 ? (dy > 0 ? 'ArrowDown' : 'ArrowUp') : null;
+          const pos = { left: [0, 98], right: [d.x1, 98], up: [d.x1 / 2, 0], down: [d.x1 / 2, 200] }[d.route];   // 上下的门在房间正中
+          const dx = pos[0] - p.x, dy = pos[1] - p.y, side = d.route === 'left' || d.route === 'right';
+          const h = side ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : Math.abs(dx) > 30 ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : null;
+          const v = !side ? (Math.abs(dx) < 90 ? (d.route === 'up' ? 'ArrowUp' : 'ArrowDown') : null) : Math.abs(dy) > 8 ? (dy > 0 ? 'ArrowDown' : 'ArrowUp') : null;
           if (Date.now() - stuck.t > 6000) { if (Math.abs(p.x - stuck.x) < 20) P.note(`过门卡住：房间 x1=${d.x1} 方向 ${d.route} 玩家 (${Math.round(p.x)},${Math.round(p.y)})`); stuck = { x: p.x, t: Date.now() }; }
           await P.hold([h, v].filter(Boolean)); await wait(60); continue;
         }

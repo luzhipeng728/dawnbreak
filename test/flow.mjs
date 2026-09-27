@@ -6,7 +6,14 @@ const { browser, page, logs } = await launch({ width: 1280, height: 720 });
 const wait = ms => page.waitForTimeout(ms), shot = n => page.screenshot({ path: `${out}/${n}.png` });
 const key = async (k, ms = 60) => { await page.keyboard.down(k); await wait(ms); await page.keyboard.up(k); await wait(250); };
 const step = (s) => console.log('·', s);
-const world0Npcs = ['seria', 'linus'];
+const world0Npcs = ['seria'];   // 出生点：赛丽亚的房间（出门后在艾尔文防线集市再找林纳斯）
+const talk = async (n, name) => {
+  await page.evaluate(id => { const e = world.npcs.find(x => x.npc.id === id); game.player.x = e.x - 40; game.player.y = e.y; }, n);
+  await wait(200); await key('KeyX'); await wait(400);
+  const open = await page.evaluate(() => menus.stack.slice());
+  await shot(name); step(`NPC ${n} → ${open.join(',')}`);
+  await page.evaluate(() => { while (menus.stack.length) menus.close(menus.stack[menus.stack.length - 1]); });
+};
 await page.goto(`${URL_BASE}?mute`);
 await page.waitForFunction(() => window.__READY);
 await wait(800); await shot('01-title'); step('标题');
@@ -16,18 +23,18 @@ await page.click('.clscard >> nth=0'); await wait(300); await shot('02-newgame')
 await page.click('text=创建并开始'); await wait(1200); await shot('03-town-help'); step('进入城镇（操作说明）');
 if (await page.evaluate(() => menus.isOpen('help'))) { await key('Escape'); }
 step('出生点：' + await page.evaluate(() => world.S.id)); await shot('04-town');
-for (const n of world0Npcs) {
-  await page.evaluate(id => { const e = world.npcs.find(x => x.npc.id === id); game.player.x = e.x - 40; game.player.y = e.y; }, n);
-  await wait(200); await key('KeyX'); await wait(400);
-  const open = await page.evaluate(() => menus.stack.slice());
-  await shot(`05-npc-${n}`); step(`NPC ${n} → ${open.join(',')}`);
-  await page.evaluate(() => { while (menus.stack.length) menus.close(menus.stack[menus.stack.length - 1]); });
-}
+for (const n of world0Npcs) await talk(n, `05-npc-${n}`);
 for (const [k, n] of [['KeyI', 'inv'], ['KeyK', 'skills'], ['KeyM', 'status'], ['Escape', 'system']]) {
   await key(k); await wait(300); step(`${k} → ${await page.evaluate(() => menus.stack.join(','))}`); await shot(`06-${n}`);
   await page.evaluate(() => { while (menus.stack.length) menus.close(menus.stack[menus.stack.length - 1]); });
 }
-// 向右走出艾尔文防线 → 格兰之森（区域地图）
+// 走出赛丽亚的房间（向右）→ 艾尔文防线集市，和林纳斯对话
+await page.evaluate(() => { game.player.x = world.S.width - 90; game.player.y = 60; });
+await page.keyboard.down('ArrowRight'); await wait(900); await page.keyboard.up('ArrowRight');
+await page.waitForFunction(() => world.S.id === 'elvenguard', null, { timeout: 10000 }); await wait(400);
+step('出门 → ' + await page.evaluate(() => `${world.S.id} x=${Math.round(game.player.x)}`)); await shot('06b-elvenguard');
+await talk('linus', '06c-npc-linus');
+// 向右走出艾尔文防线 → 洛兰（区域地图）
 await page.evaluate(() => { game.player.x = world.S.width - 90; game.player.y = 40; });
 await page.keyboard.down('ArrowRight'); await wait(900); await page.keyboard.up('ArrowRight');
 await page.waitForFunction(() => world.S.id === 'gf_lorien', null, { timeout: 10000 }); await wait(400);

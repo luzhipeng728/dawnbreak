@@ -1,5 +1,5 @@
 /* =====================================================================
-   社交窗口公共部分：样式、窗口外框（异步加载）、社交按钮条（左上角：签到 / 邮件 / 拍卖行 / 排行榜 / 管理）、
+   社交窗口公共部分：样式、窗口外框（异步加载）、社交按钮条（屏幕左侧、任务指引下方竖排：签到 / 邮件 / 拍卖行 / 排行榜 / 管理）、
    NPC 功能（auction 拍卖行、mail 邮箱，挂在赫顿玛尔中央广场的诺顿身上）、拍卖行快捷键 B
    只在登录后出现（socialOn()）；单机模式下按钮条隐藏，NPC 按钮不显示，快捷键只提示“登录后可用”
    ===================================================================== */
@@ -28,9 +28,10 @@ addStyle(`
 .sxw .gold{color:#ffd24a}
 .sxw .cera{color:#8fe8ff}
 .sxw .rank1{color:#ffd23a;font-weight:900}.sxw .rank2{color:#d8e4f0;font-weight:900}.sxw .rank3{color:#e8a060;font-weight:900}
-/* 左上角社交按钮条 */
-#sxbar{position:absolute;left:calc(var(--u) * 14px);top:calc(var(--u) * 14px);display:flex;gap:calc(var(--u) * 6px);z-index:1}
-#sxbar button{position:relative;min-width:calc(var(--u) * 78px);height:calc(var(--u) * 50px);padding:0 .6em;border:.08em solid #6a5436;border-radius:.3em;background:linear-gradient(#3a2e22,#1a130d);color:#f0dcb0;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.3em;box-shadow:inset 0 .06em 0 rgba(255,230,170,.25),0 .1em .25em rgba(0,0,0,.6);font-weight:900;font-size:.95em;letter-spacing:.04em}
+/* 屏幕左侧的社交按钮条（任务指引 #qguide 在它上面） */
+#sxbar{position:absolute;left:calc(var(--u) * 14px);top:calc(var(--u) * 168px);display:flex;flex-direction:column;gap:calc(var(--u) * 6px);z-index:1}
+#sxbar button{position:relative;width:calc(var(--u) * 118px);height:calc(var(--u) * 46px);padding:0 .5em;border:.08em solid #6a5436;border-radius:.3em;background:linear-gradient(#3a2e22,#1a130d);color:#f0dcb0;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.3em;box-shadow:inset 0 .06em 0 rgba(255,230,170,.25),0 .1em .25em rgba(0,0,0,.6);font-weight:900;font-size:.95em;letter-spacing:.04em}
+#sxbar button[hidden]{display:none}
 #sxbar button:hover{border-color:#e8c26a;color:#fff6d8;background:linear-gradient(#5a4428,#2a1d10)}
 #sxbar button.on{border-color:#ffd23a;background:linear-gradient(#6a4e26,#2e2010)}
 #sxbar button.hot{border-color:#ffd23a;color:#fff6c0;animation:sxhot 1.1s ease-in-out infinite alternate}
@@ -95,7 +96,7 @@ ACTION_NAME.auction = '拍卖行';
 { const g = KEY_GROUPS.find(x => x[0] === '窗口'); if (g && !g[1].includes('auction')) g[1].push('auction'); }
 UI_WIN.auction = 'auction'; UI_ACTIONS.add('auction');
 
-/* ---- 左上角社交按钮条 ---- */
+/* ---- 屏幕左侧的社交按钮条 ---- */
 const SX_BAR = [
   ['signin', '签到'], ['mail', '邮件'], ['auction', '拍卖行'], ['rank', '排行榜'], ['gm', '管理'],
 ];

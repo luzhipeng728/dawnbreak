@@ -1,6 +1,6 @@
 /* =====================================================================
    邮件窗口（mail）：收件箱（系统 / 管理员 / 好友 / 拍卖行邮件，领取附件、删除、全部领取、清理已读）+ 写信（只能寄给好友，附带金币 / 物品，邮费 100 G）
-   附件领到当前角色身上；背包空间不够时整封不领。入口：左上角社交按钮条的“邮件”、诺顿（中央广场）的“邮箱”
+   附件领到当前角色身上；背包空间不够时整封不领。入口：屏幕左侧社交按钮条的“邮件”、诺顿（中央广场）的“邮箱”
    ===================================================================== */
 addStyle(`
 .sxmail .mbox{display:flex;gap:.5em;min-height:0;height:24em}
@@ -37,7 +37,7 @@ Object.assign(menus, {
       load: async () => { const [m, fr] = await Promise.all([sxApi('GET', '/api/mail'), SXM.tab === 'send' || !SXM.friends ? sxFriends() : Promise.resolve(SXM.friends)]); SXM.friends = fr; sxSetCounts(m); return m; },
       render: (el, d) => {
         const tabs = h('div', { class: 'itabs' }, [['in', `收件箱`], ['send', '写信']].map(([id, nm]) => h('div', { class: 'itab' + (SXM.tab === id ? ' on' : ''), onclick: () => { SXM.tab = id; sfx.click(); el._render(); } }, nm, id === 'in' ? h('span', { class: 'cnt' }, `${d.list.length}`) : null)));
-        return [tabs, SXM.tab === 'in' ? sxMailInbox(el, d) : sxMailCompose(el)];
+        return [tabs, ...(SXM.tab === 'in' ? sxMailInbox(el, d) : sxMailCompose(el))];
       },
     });
     el.classList.add('sxmail');

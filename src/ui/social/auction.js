@@ -1,7 +1,7 @@
 /* =====================================================================
    拍卖行窗口（auction）：购买（搜索 / 类别 / 品级 / 等级 / 职业筛选、排序、一口价购买）、出售（选背包物品、定价、时长、保管费、成交价参考）、我的拍卖（下架、成交记录）
    规则见 docs/SOCIAL.md：保管费 max(10, 价格×0.5%×时长系数) 不退，成交收 5% 手续费；买到的物品和卖出的金币都通过邮件到账
-   入口：快捷键 B、左上角社交按钮条、诺顿（赫顿玛尔中央广场）的“拍卖行”
+   入口：快捷键 B、屏幕左侧社交按钮条、诺顿（赫顿玛尔中央广场）的“拍卖行”
    ===================================================================== */
 addStyle(`
 .sxauc .afil{display:flex;flex-wrap:wrap;gap:.35em .6em;align-items:center}
@@ -32,7 +32,7 @@ Object.assign(menus, {
       render: (el, d) => {
         const tabs = h('div', { class: 'itabs' }, [['buy', '购买'], ['sell', '出售'], ['mine', '我的拍卖']].map(([id, nm]) => h('div', { class: 'itab' + (SXA.tab === id ? ' on' : ''), onclick: () => { if (SXA.tab === id) return; const was = SXA.tab === 'buy'; SXA.tab = id; sfx.click(); if (was || id === 'buy') { el._data = undefined; el._reload(); } el._render(); } }, nm)));
         const body = SXA.tab === 'buy' ? sxaBuy(el, d) : SXA.tab === 'sell' ? sxaSell(el, d) : sxaMine(el, d);
-        return [tabs, ...body, h('div', { class: 'ibar' }, h('span', { class: 'igold' }, `${fmtNum(game.gold)} G`), h('span', { class: 'sp' }), h('span', { class: 'ihint' }, '买到的物品、卖出的金币都会通过邮件送达（左上角“邮件”）。'))];
+        return [tabs, ...body, h('div', { class: 'ibar' }, h('span', { class: 'igold' }, `${fmtNum(game.gold)} G`), h('span', { class: 'sp' }), h('span', { class: 'ihint' }, '买到的物品、卖出的金币都会通过邮件送达（屏幕左侧的“邮件”）。'))];
       },
     });
     el.classList.add('sxauc');

@@ -50,6 +50,10 @@ export async function startHost({ admins = ['gm'], users = ['alice', 'bob', 'gm'
   const srv = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x'), send = (st, o) => { res.writeHead(st, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(o)); };
     let body = ''; for await (const c of req) body += c;
+    if (!url.pathname.startsWith('/api/')) {   // 其余路径：网页版静态文件（dist/web），和线上一样同源
+      const f = path.join(ROOT, 'dist/web', decodeURIComponent(url.pathname).replace(/\/$/, '/index.html'));
+      return fs.readFile(f, (err, buf) => { if (err) { res.writeHead(404); res.end(); return; } res.writeHead(200, { 'Content-Type': { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.js': 'text/javascript' }[path.extname(f)] || 'application/octet-stream' }); res.end(buf); });
+    }
     const tok = (req.headers.authorization || '').replace(/^Bearer /, ''), user = byName(tok) || null;
     const rt = routes.find(x => x.method === req.method && x.re.test(url.pathname));
     if (!rt) return send(404, { error: '没有这个接口' });

@@ -38,8 +38,8 @@ await page.waitForFunction(() => window.__READY, null, { timeout: 30000 }); awai
 step('任务数量');
 const cnt = await ev(() => Object.values(QUESTS).reduce((m, q) => (m[q.type] = (m[q.type] || 0) + 1, m), {}));
 check(cnt.main >= 15, `主线 ${cnt.main} 个（≥15）`); check(cnt.side >= 15, `支线 ${cnt.side} 个（≥15）`); check(cnt.daily >= 3 && cnt.daily <= 5, `每日 ${cnt.daily} 个（3~5）`); check(cnt.job >= 3, `转职 ${cnt.job} 个`); check(cnt.hidden >= 2, `隐藏 ${cnt.hidden} 个`);
-const bad = await ev(() => { const B = []; for (const q of Object.values(QUESTS)) { for (const p of q.pre) if (!QUESTS[p]) B.push(`${q.id} 前置 ${p} 不存在`); for (const g of q.goals) { if (g.dungeon && g.dungeon !== 'any') for (const d of [].concat(g.dungeon)) if (!DUNGEONS[d]) B.push(`${q.id} 地下城 ${d}`); for (const k of [].concat(g.kind || [], g.from || [])) if (!MON[k]) B.push(`${q.id} 怪物 ${k}`); if (g.type === 'reach' && !SCENES[g.scene]) B.push(`${q.id} 场景 ${g.scene}`); } } return B; });
-check(bad.length === 0, '任务数据引用的地下城 / 怪物 / 场景 / 前置都存在', bad.slice(0, 5).join('；'));
+const bad = await ev(() => { const B = []; for (const q of Object.values(QUESTS)) { if (q.cond && !q.cond()) continue; for (const p of q.pre) if (!QUESTS[p]) B.push(`${q.id} 前置 ${p} 不存在`); for (const n of [q.npc, q.to]) if (!NPCS[n]) B.push(`${q.id} NPC ${n}`); for (const g of q.goals) { if (g.type === 'talk' && !NPCS[g.npc]) B.push(`${q.id} 对话 NPC ${g.npc}`); if (g.dungeon && g.dungeon !== 'any') for (const d of [].concat(g.dungeon)) if (!DUNGEONS[d]) B.push(`${q.id} 地下城 ${d}`); for (const k of [].concat(g.kind || [], g.from || [])) if (!MON[k]) B.push(`${q.id} 怪物 ${k}`); if (g.type === 'reach' && !SCENES[g.scene]) B.push(`${q.id} 场景 ${g.scene}`); } } return B; });
+check(bad.length === 0, '任务数据引用的 NPC / 地下城 / 怪物 / 场景 / 前置都存在', bad.slice(0, 5).join('；'));
 
 step('1. 接取 → 交付（赛丽亚 → 林纳斯）');
 check(await ev(() => questMarker('seria')) === '!', '赛丽亚头顶是黄色 !（可接）');
@@ -209,6 +209,28 @@ await closeAll();
 await page.keyboard.press('KeyL'); await wait(300);
 check(await ev(() => menus.isOpen('quests')), 'L 也能打开任务日志');
 await closeAll();
+
+step('9b. 天空之城篇（区域未合并时用桩数据模拟 sky_castle / 悬空城）');
+const skyReal = await ev(() => !!SCENES.sky_castle);
+await ev(() => {
+  if (!SCENES.sky_castle) {
+    for (const [id, name, lv] of [['dragon_tower', '龙人之塔', [14, 16]], ['dark_corridor', '黑暗玄廊', [18, 21]]]) defineDungeon(id, { name, lvl: lv, theme: 'ruins', rooms: 5, mobs: [['goblin', 1]], boss: { kind: 'goblinChief', lvl: lv[1] + 1 } });
+    defineDungeon('floating_castle', { name: '悬空城', lvl: [21, 24], theme: 'ruins', rooms: 5, hidden: true, unlock: { quest: 'q_hidden_floating' }, mobs: [['goblin', 1]], boss: { kind: 'goblinChief', lvl: 25 } });
+    defineScene('sky_castle', { name: '天空之城', area: '天空之城', kind: 'field', width: 2400, theme: 'ruins', exits: [{ side: 'left', to: 'west_coast' }], gates: [{ dungeon: 'dragon_tower', x: 500 }, { dungeon: 'dark_corridor', x: 1100 }, { dungeon: 'floating_castle', x: 1700 }] });
+  }
+  game.lvl = 14; save.data.questDone.q_m17 = 1;
+});
+check(await ev(() => questState('q_c01')) === 'locked', '前往天空之城之前，天空之城主线不可接');
+await ev(() => { questAccept('q_m21'); bus.emit('kill', { kind: 'flameMage', boss: true, dungeon: 'blazing_graca' }); questComplete('q_m21'); });
+check(await ev(() => questState('q_c01')) === 'avail' && await ev(() => questMarker('seria')) === '!', '交付「前往天空之城」后，赛丽亚给出「精灵的魔法阵」');
+await ev(() => { questAccept('q_c01'); questComplete('q_c01'); questAccept('q_c02'); bus.emit('dungeonClear', { id: 'dragon_tower', diff: 0, rank: 'B', time: 200, hurt: 9 }); });
+check((await Q('q_c02')).st === 'ready', '调查力量减弱的魔法阵：通关龙人之塔 → 可交付');
+await ev(() => { game.lvl = 21; for (const id of ['q_c02', 'q_c11', 'q_fl1', 'q_fl2']) save.data.questDone[id] = 1; delete save.data.quests.q_c02; });
+check(await ev(() => !gateVisible(SCENES.sky_castle.gates.find(g => g.dungeon === 'floating_castle'))), '悬空城：任务完成前门不可见');
+await ev(() => { questAccept('q_hidden_floating'); bus.emit('dungeonClear', { id: 'dark_corridor', diff: 0, rank: 'S', time: 200, hurt: 3 }); });
+check((await Q('q_hidden_floating')).st === 'active', '悬空城：普通难度通关黑暗玄廊不算（要冒险级以上）');
+await ev(() => { bus.emit('dungeonClear', { id: 'dark_corridor', diff: 1, rank: 'A', time: 200, hurt: 5 }); questComplete('q_hidden_floating'); });
+check(await ev(() => gateVisible(SCENES.sky_castle.gates.find(g => g.dungeon === 'floating_castle')) && dungeonUnlocked(DUNGEONS.floating_castle)), `悬空城：完成 q_hidden_floating 后门出现${skyReal ? '' : '（桩数据）'}`);
 
 step('10. NPC 头顶标记（模拟世界组在 world.js 里调用 drawQuestMarker 的钩子）');
 await ev(() => {

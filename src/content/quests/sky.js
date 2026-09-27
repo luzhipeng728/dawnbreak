@@ -21,7 +21,7 @@ skyQuest('q_c01', { type: 'main', chapter: CH5, name: '精灵的魔法阵', npc:
 skyQuest('q_c02', { type: 'main', chapter: CH5, name: '调查力量减弱的魔法阵', npc: 'sharan', lvl: 14, pre: 'q_c01',
   desc: '魔法阵力量减弱的原因恐怕在天空之城那边。先去第一座塔——龙人之塔看看。',
   goals: [{ type: 'clear', dungeon: 'dragon_tower' }],
-  talk: { offer: ['魔法阵力量减弱的原因，恐怕在天空之城那边。', '第一座塔是龙人之塔——翼龙和龙人的巢穴。去看看那里发生了什么。', '天空之城的入口在西海岸的高处，Lv.14 以上才上得去。'],
+  talk: { offer: ['魔法阵力量减弱的原因，恐怕在天空之城那边。', '第一座塔是龙人之塔——翼龙和龙人的巢穴。去看看那里发生了什么。', '去天空之城要走西海岸商贸区东端的云梯，Lv.14 以上才上得去。'],
     doing: ['龙人之塔，就在天空之城的最下层。'], done: ['龙人们变得很狂暴？……果然，城的深处有东西在吸取魔力。'] },
   reward: QR(14, 0.12, 800) });
 skyQuest('q_c03', { type: 'main', chapter: CH5, name: '行踪不明的罗莉安', npc: 'sharan', to: ['lorian', 'roget'], lvl: 15, pre: 'q_c02',

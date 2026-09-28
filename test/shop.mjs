@@ -134,7 +134,8 @@ check(sel.n > 0 && sel.ok, `史诗自选礼盒：${sel.n} 件可选，开出史�
 
 /* ---------- 6. 多买多送 ---------- */
 step('多买多送');
-const multi = await ev(() => { const S = cashData(); const m0 = S.multi; for (let i = 0; i < 5; i++) cashBuy(['pkg_spring', 'pkg_summer', 'pkg_academy'][i % 3]); return { multi: S.multi - m0, aura: inv.count('aura_supreme'), title: inv.count('title_supreme'), pet: inv.count('pet_pegasus'), got: Object.keys(S.multiGot) }; });
+const multi = await ev(() => { const S = cashData(); const m0 = S.multi, n0 = k => inv.count(k), a0 = n0('aura_supreme'), t0 = n0('title_supreme'), p0 = n0('pet_pegasus');   // 前面开箱可能随机开出同样的东西：按增量算
+  for (let i = 0; i < 5; i++) cashBuy(['pkg_spring', 'pkg_summer', 'pkg_academy'][i % 3]); return { multi: S.multi - m0, aura: n0('aura_supreme') - a0, title: n0('title_supreme') - t0, pet: n0('pet_pegasus') - p0, got: Object.keys(S.multiGot) }; });
 check(multi.multi === 5 && multi.aura === 1 && multi.title === 1 && multi.pet === 1, '累计 5 套：送至尊光环 / 称号 / 宠物', JSON.stringify(multi));
 
 /* ---------- 7. 不放回抽奖 ---------- */

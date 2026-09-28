@@ -58,4 +58,6 @@ run mpdrop    node test/mp_coop_drop.mjs
 run mpduel    node test/mp_duel.mjs
 run mpmore    node test/mp_coop_more.mjs
 run mprestart node test/mp_restart.mjs
+run findfriend node test/findfriend.mjs
+run partyhud  node test/mp_party_hud.mjs
 echo; cat $LOG/summary.txt

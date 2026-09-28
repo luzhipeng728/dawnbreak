@@ -11,8 +11,10 @@
 //   默认 tap：按一下；动作带蓄力（act.charge）时自动按住到满蓄；动作有追加窗口（act.follow）时自动再按，直到没有追加
 //   hold：按住 holdT 秒（默认到动作结束，最多 4 秒）   mash：动作期间每 0.1 秒连按一次
 //   pre：先放这些技能（例：狂暴之力、无尽波动）   hp：施放前把 HP 设成最大值的这个比例   dir：'f' / 'b' 施放全程按住前 / 后
-//   presses：[秒…] 在这些时刻再按一次技能键（再按 / 引爆）   watch：最多观察多少秒（默认 8；召唤阵持续更久时加大）
-//   at：木桩离人物多远（默认 70px；空中下砸类可以放近一点）   air：先起跳再放（airDelay 帧后按键，默认 8）
+//   presses：[秒…] 在这些时刻再按一次技能键（再按 / 引爆）   watch：最多观察多少秒（默认 8；召唤阵持续更久时加大）   minWatch：至少观察多少秒
+//   （动作结束后，木桩落地、投射物 / 召唤物 / game.after 定时器 / 地面效果都结束才停）
+//   at：木桩离人物多远（默认 70px；空中下砸类可以放近一点）   air：先起跳再放（airDelay 帧后按键，默认 8）   set：{ 字段: 值 } 施放前写到人物身上（结束后还原）
+//   随机数每次施放都从同一个种子开始（结果可复现，和技能顺序无关）
 // 输出：test/shots/audit/<职业>-<转职>.json（每个技能每种摆法的全部数据）+ 终端里一张表；--compare 时再打印不一致清单
 // 用法：node test/skillaudit.mjs sword,sword:berserker [--compare[=docs/skills/sword.json]] [--only id1,id2] [--weapon katana] [--setups light,air]
 //   --compare：和规格对比（规格默认 docs/skills/<职业>.json），有“没写理由”的不一致时退出码为 1（all.sh 用）
@@ -56,6 +58,8 @@ function pageInit() {
     }
     return r;
   };
+  // 固定随机数（每次施放从同一个种子开始），结果可复现
+  A.seed = n => { let a = n >>> 0; Math.random = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
   A.reset = () => {
     for (const k in input.virt) delete input.virt[k];
     input.buf.length = 0; input.dirHist.length = 0; input.down.clear();
@@ -80,13 +84,15 @@ function pageInit() {
   };
   // 施放一次并测量
   A.run = (id, setup, o) => {
-    const S = SKILLS[id]; A.reset();
+    const S = SKILLS[id]; A.seed(0x5eed); A.reset();
     for (let i = 0; i < game.skillBar.length; i++) game.skillBar[i] = null;
     game.skillBar[0] = id;
     for (const pid of o.pre || []) A.castPre(pid);
     for (const e of ents) if (e !== p && !e.summon) e.remove = true;
     A.step(1); projs.length = 0;
     Object.assign(p, { x: 300, y: 100, vx: 0, vy: 0, face: 1, cool: {}, invul: 0, superArmor: 0 }); p.mp = p.mpMax; p.hp = p.hpMax * (o.hp || 1);
+    const setK = o.set || {}, setOld = {}; for (const k in setK) { setOld[k] = p[k]; p[k] = setK[k]; }   // 规格的 set：施放前改人物字段（结束后还原）
+    const unset = () => { for (const k in setOld) { if (setOld[k] === undefined) delete p[k]; else p[k] = setOld[k]; } };
     const D = [];
     if (setup === 'light') D.push(A.dummy('goblin', 300 + (o.at || 70), 100, 'main'));
     else if (setup === 'heavy') D.push(A.dummy('tauBeast', 310 + (o.at || 70), 100, 'main'));
@@ -94,13 +100,13 @@ function pageInit() {
     else for (const dx of [-80, 70, 170, 300, 450]) D.push(A.dummy('goblin', 300 + dx, 100, String(dx)));
     if (S.airOnly || o.air) { p.vz = 420; p.z = 1; p.setState('jump'); A.step(o.airDelay ?? 8); }
     if (typeof S.whenHit === 'function' ? S.whenHit(p) : S.whenHit) { p.setState('hit'); p.stun = 0.8; p.hurtT = game.t; }
-    if (S.req) { const r = S.req(p); if (r !== true) return { skip: 'req:' + r }; }
+    if (S.req) { const r = S.req(p); if (r !== true) { unset(); return { skip: 'req:' + r }; } }
     A.hits = []; A.t = 0;
     const x0 = p.x, y0 = p.y, mp0 = p.mp, seenS = new Set(SUMMONS), seenP = new WeakSet(projs), seenG = new WeakSet(groundFx);
     const R = { actF: 0, saF: 0, invF: 0, acts: 0, zMax: 0, summons: 0, projs: 0, fields: 0, err: null };
     const dm = {}; for (const d of D) dm[d.__aud] = { zMax: 0, down: false, held: false, bounce: 0, downT: null, x0: d.x, nb: d.cmb.bounce || 0, bn: 0 };
     const dirKey = o.dir === 'f' ? 'right' : o.dir === 'b' ? 'left' : null;
-    const maxF = Math.round((o.watch || 8) * 60), presses = (o.presses || []).map(t => Math.round(t * 60));
+    const maxF = Math.round((o.watch || 8) * 60), minF = Math.round((o.minWatch || 0) * 60), presses = (o.presses || []).map(t => Math.round(t * 60));
     let lastAct = null, lastMine = -1, cdReal = null, mpUsed = null, endPos = null, followed = new WeakSet(), morph = null, instant = !!S.instant, f = 0;
     A.tap('s0'); if (dirKey) input.virt[dirKey] = 1;
     try {
@@ -141,11 +147,13 @@ function pageInit() {
           m.bn = d.bounceNext || 0;
         }
         // 结束：技能动作结束 1 秒后，木桩落地、没有自己的投射物、召唤物都走了（或到观察上限）
-        const busy = mine || (lastMine < 0 && f < 30) || D.some(d => d.st === 'air' || d.st === 'held' || d.z > 1) || projs.some(q => q && q.owner === p) || SUMMONS.some(s => s.owner === p && !s.gone && s.life < 60);
+        const busy = mine || (lastMine < 0 && f < 30) || f < minF || D.some(d => d.st === 'air' || d.st === 'held' || d.z > 1) || projs.some(q => q && q.owner === p) || SUMMONS.some(s => s.owner === p && !s.gone && s.life < 60)
+          || game.timers.length > 0 || groundFx.some(g => g && g.t < g.dur);   // 延迟伤害（game.after / 地面效果）还没结算完
         if (!busy && f - Math.max(lastMine, 0) > 60) break;
       }
     } catch (e) { R.err = String(e && e.message || e).slice(0, 120); }
     for (const k in input.virt) delete input.virt[k];
+    unset();
     if (!endPos) endPos = { dx: Math.round(p.x - x0), dy: Math.round(p.y - y0) };
     const res = { cast: R.actF > 0 || instant, instant, acts: R.acts, dur: +(R.actF / 60).toFixed(2), sa: R.actF ? +(R.saF / R.actF).toFixed(2) : 0, invul: R.actF ? +(R.invF / R.actF).toFixed(2) : 0,
       dx: endPos.dx, dy: endPos.dy, zMax: Math.round(R.zMax), cd: cdReal, mp: mpUsed, summons: R.summons, projs: R.projs, fields: R.fields, watchT: +(f / 60).toFixed(2), err: R.err, morph };
@@ -226,7 +234,7 @@ for (const item of list) {
   const rows = [];
   for (const s of skills) {
     const sp = specS[`${s.id}@${job}`] || specS[s.id] || {};
-    const o = { pre: sp.pre, hp: sp.hp, input: sp.input, holdT: sp.holdT, mashT: sp.mashT, dir: sp.dir, presses: sp.presses, watch: sp.watch, air: sp.air, at: sp.at, airDelay: sp.airDelay };
+    const o = { pre: sp.pre, hp: sp.hp, input: sp.input, holdT: sp.holdT, mashT: sp.mashT, dir: sp.dir, presses: sp.presses, watch: sp.watch, minWatch: sp.minWatch, air: sp.air, at: sp.at, airDelay: sp.airDelay, set: sp.set };
     const R = { static: s };
     for (const su of SETUPS) R[su] = await page.evaluate(({ id, su, o }) => AUD.run(id, su, o), { id: s.id, su, o });
     res.skills[s.id] = R;

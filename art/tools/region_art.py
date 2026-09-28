@@ -228,6 +228,7 @@ def st_review(spec, only):
         theme_of.setdefault(D['boss'], D['theme']); theme_of.setdefault(D.get('elite'), D['theme'])
     mons = [(k, M, False) for k, M in spec['monsters'].items()] + [(k, M, True) for k, M in spec['bosses'].items()]
     for k, M, boss in mons:
+        if 'art' not in M: continue   # 手画模型（没有逐帧精灵）的怪不进总审图
         art = M['art'] if isinstance(M['art'], str) else M['art'][0]; tint = {} if isinstance(M['art'], str) else (M['art'][1] if len(M['art']) > 1 else {})
         d = os.path.join(spr, art)
         if not os.path.exists(os.path.join(d, 'spr.json')): warns.append(f'{k}: 没有精灵 {art}'); continue

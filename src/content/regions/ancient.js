@@ -38,7 +38,7 @@ defineRegion({
         { use: 'aoe', shape: 'circle', at: 'self', r: 120, windup: 0.9, dmg: 1.2, cd: [8, 10] }] },
     ivan: { name: '疯狂伊凡', tier: 'swarm', arch: 'aggressive', size: [12, 10, 80], speed: 125, art: 'bmIvan',
       skills: [{ use: 'swipe', n: 2, reach: 56, dmg: 0.8, cd: [1.4, 2.4] }] },
-    ivanColonel: { name: '疯狂伊凡上校', tier: 'elite', arch: 'aggressive', size: [14, 12, 96], scale: 1.25, speed: 120, art: ['bmIvan', { hue: 160, sat: 0.8, bright: 0.9 }],
+    ivanColonel: { name: '疯狂伊凡上校', tier: 'elite', arch: 'aggressive', size: [14, 12, 96], scale: 1.25, speed: 120, art: ['bmIvan', { hue: -15, sat: 1.25, bright: 0.85 }],
       skills: [{ use: 'swipe', n: 3, reach: 70, dmg: 1.0, cd: [1.6, 2.4], w: 2 }, { use: 'dash', len: 320, speed: 680, windup: 0.7, dmg: 1.2, cd: [4.5, 6] }, { use: 'shot', clip: 'throw', mode: 'arc', r: 56, dmg: 1.0, cd: [5, 7] }] },
     tauCalf: { name: '幼小牛头', tier: 'swarm', arch: 'swarm', size: [13, 11, 80], scale: 0.72, speed: 160, art: ['tau', { hue: 10, bright: 1.1 }],
       skills: [{ use: 'swipe', clip: 'axe', reach: 56, dmg: 0.8, cd: [1.4, 2.4], w: 2 }, { use: 'dash', clip: 'charge', len: 260, speed: 720, windup: 0.6, dmg: 0.9, cd: [4, 6] }] },

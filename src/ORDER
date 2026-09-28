@@ -111,7 +111,7 @@ game/mon_skills.js
 game/region.js
 content/regions/siroco_bosses.js
 content/regions/siroco.js
-# 装备深化：深渊派对（深渊地下城、封印之门与三波派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
+# 装备深化：深渊派对（深渊地下城、深渊柱与两轮派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
 content/abyss.js
 ui/quest.js
 ui/quickquest.js

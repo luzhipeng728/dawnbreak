@@ -31,7 +31,12 @@ function drawTownMinimap(c) {
     }
   }
   // 地下城门
-  for (const gt of S.gates) { if (!gateVisible(gt)) continue; const X = mx(gt.x); c.fillStyle = '#b070ff'; c.beginPath(); c.arc(X, top + 3, 5, 0, TAU); c.fill(); c.strokeStyle = '#e0c0ff'; c.lineWidth = 1.5; c.stroke(); }
+  for (const gt of S.gates) {
+    if (!gateVisible(gt)) continue; const X = mx(gt.x), ab = DUNGEONS[gt.dungeon] && DUNGEONS[gt.dungeon].abyss;   // 深渊门：粉紫色菱形 + “深渊”
+    c.fillStyle = ab ? '#ff5ae0' : '#b070ff'; c.beginPath(); if (ab) { c.moveTo(X, top - 5); c.lineTo(X + 7, top + 3); c.lineTo(X, top + 11); c.lineTo(X - 7, top + 3); c.closePath(); } else c.arc(X, top + 3, 5, 0, TAU);
+    c.fill(); c.strokeStyle = '#e0c0ff'; c.lineWidth = 1.5; c.stroke();
+    if (ab) uiText('深渊', X, top - 8, { size: 11, align: 'center', color: '#ffb0f0', sw: 3 });
+  }
   // NPC（有任务标记的用标记颜色，并画上 ! / ?）
   for (const e of world.npcs || []) {
     const m = typeof questMarkerInfo === 'function' ? questMarkerInfo(e.npc.id) : null, X = mx(e.x), Y = my(e.y);

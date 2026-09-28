@@ -78,14 +78,14 @@ const res = await page.evaluate(({ N, TARGET, OFF }) => {
       if (!base && !log.spineUnlocked && DUNGEONS.abyss_spine && game.lvl >= 29 && log.seen && log.seen.second_spine) { log.spineUnlocked = true; inv.add(makeItem('abyss_ticket', 3)); }
       const ab = abyssOpen() && inv.count('abyss_ticket') > 0 ? abyssOpen() : null;
       const def = ab || normalDgs.filter(d => d.lvl[0] <= game.lvl).pop();
-      if (ab) { inv.take('abyss_ticket', 1); def.boss = { kind: pick(ABYSS[def.id].lords), lvl: ABYSS[def.id].lordLvl }; log.abyssRuns++; }
+      if (ab) { inv.take('abyss_ticket', 1); def.abyssLord = pick(ABYSS[def.id].lords); def.boss = { kind: pick(ABYSS[def.id].lords), lvl: def.lvl[1] + 1 }; log.abyssRuns++; }
       (log.seen = log.seen || {})[def.id] = 1;
       const dg = { def, D: DIFFS[0], diff: 0, state: 'play' }; game.dungeon = dg; game.scene = 'dungeon';
       let exp = 0;
       const kill = (kind, lv, o = {}) => {
         const M = MON[kind]; exp += Math.round(M.exp * (1 + (lv - 1) * 0.4));
         game.gold += Math.round(rndi(M.gold ? M.gold[0] : 5, M.gold ? M.gold[1] : 15) * (1 + lv * 0.15) * (o.elite ? 3 : 1) * (o.boss ? 8 : 1));
-        rollDrop({ kind, lvl: lv, x: 500, y: 50, z: 0, boss: !!o.boss, elite: !!o.elite, guardian: !!o.guardian }, dg); collect();
+        rollDrop({ kind, lvl: lv, x: 500, y: 50, z: 0, boss: !!o.boss, elite: !!o.elite, abyssLord: !!o.abyssLord, abyssMob: !!o.abyssMob }, dg); collect();
       };
       const tot = def.mobs.reduce((s, m) => s + m[1], 0), pickMob = () => { let r = Math.random() * tot; for (const m of def.mobs) { r -= m[1]; if (r <= 0) return m[0]; } return def.mobs[0][0]; };
       const main = def.rooms, rooms = main + Math.round((def.branches ?? 1) / 2);
@@ -95,9 +95,11 @@ const res = await page.evaluate(({ N, TARGET, OFF }) => {
         for (let i = 0; i < cnt; i++) kill(pickMob(), lv);
         if (!start && !boss && Math.random() < 0.5) for (let i = 0; i < 3; i++) kill(pickMob(), lv);
         if (elite) kill(def.elite || pickMob(), lv + 1, { elite: true });
-        if (boss && def.abyss) {   // 深渊之间：封印之门 + 堕落守护者 + 三波 + 深渊领主
-          kill('abyssSeal', def.lvl[1]); kill(def.elite, def.lvl[1] + 2, { elite: true, guardian: true });
-          for (let n = 1; n <= 3; n++) { for (let i = 0; i < 4 + n; i++) kill(pickMob(), def.lvl[1] + 1); for (let i = 0; i < (n === 3 ? 2 : 1); i++) kill(def.elite, def.lvl[1] + 2, { elite: true }); }
+        if (boss && def.abyss) {   // 深渊柱（官方：某个普通房间）：打破后两轮——深渊怪物 + 1 精英，然后 2 精英 + 深渊领主
+          kill('abyssPillar', def.lvl[1]);
+          for (let i = 0; i < 6; i++) kill(pickMob(), def.lvl[1] + 1, { abyssMob: true });
+          for (let i = 0; i < 3; i++) kill(def.elite, def.lvl[1] + 2, { elite: true, abyssMob: true });
+          kill(def.abyssLord, ABYSS[def.id].lordLvl, { abyssLord: true, abyssMob: true });
         }
         if (boss) kill(def.boss.kind, def.boss.lvl, { boss: true });
       }

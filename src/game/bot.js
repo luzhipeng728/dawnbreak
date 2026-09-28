@@ -22,7 +22,7 @@ const bot = {
     }
     // 2) 打怪
     let tgt = null, best = 1e9;
-    for (const e of ents) if (e.team === 'e' && !e.dead && !e.remove) { const d = Math.abs(e.x - p.x) + Math.abs(e.y - p.y) * 2 + (e.boss ? -200 : 0); if (d < best) { best = d; tgt = e; } }
+    for (const e of ents) if (e.team === 'e' && !e.dead && !e.remove && !e.botSkip) { const d = Math.abs(e.x - p.x) + Math.abs(e.y - p.y) * 2 + (e.boss ? -200 : 0); if (d < best) { best = d; tgt = e; } }
     if (tgt) {
       const side = p.x < tgt.x ? -1 : 1, reach = 50 + tgt.w;
       const ax = Math.abs(tgt.x - p.x), ay = Math.abs(tgt.y - p.y);

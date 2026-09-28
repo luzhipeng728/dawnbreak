@@ -151,8 +151,9 @@ const HELPERS = () => {
 }
 
 // ================= 2. 游戏里：玩家换武器 / 穿脱时装 / 刷新后仍然正确 =================
-const PLAYER_LOOK = () => {
+const PLAYER_LOOK = async () => {
   const p = __G.player, L = p.model.av; L.sync();
+  if (L.A && !L.wim) { await loadArtKey('weapon/' + L.look.wpn); L.wim = IMG['weapon/' + L.look.wpn]; }   // 武器图按需加载（weapon 包）：等这把加载完再画
   const cv = document.createElement('canvas'); cv.width = 220; cv.height = 240; const x = cv.getContext('2d');
   x.translate(110, 228); x.scale(1.6, 1.6); p.model.draw(x, { __c: 'idle', __t: 0 }, 0, NO_OPTS);
   return { wpn: L.look.wpn, set: L.look.set, parts: L.look.parts, S2: !!L.S2, acc: L.look.acc, hash: __av.hash(cv), green: __av.green(cv) };

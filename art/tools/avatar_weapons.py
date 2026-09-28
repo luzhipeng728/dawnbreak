@@ -4,8 +4,9 @@
 武器图横放、握柄在左、尖端 / 枪口在右（art/tools/avatar_gen.py weapons 生成，原图在主仓库 art/src/avatar/weapons/）。
 握点自动求（按武器类别），需要微调的写在 art/tools/avatar_weapons.json：{ "<key>": { "gx": 0.3, "gy": 0.5 } }（相对图片宽高）；
   另可写 size（握点→尖端长度）、mul（相对类型长度的倍数）、wide（只加宽的倍数，如巨剑 1.3）、cut / solo（去掉特效碎块）。
-图片按“握点→尖端 = SIZE × 1.25 像素”缩放保存，运行时再缩到 SIZE（角色帧像素，res 1.8）。
-预览写到主仓库 art/src/avatar/cut/weapons_<表>.png（黄圈 = 握点，红线 = 朝向）。
+v2（weapon_gen.py）：一把武器一张图 art/src/avatar/weapons2/<key>.png，有就优先用它（json 里 "v2": {...} 是只对 v2 图生效的微调；旧表的 wide / cut / solo 不再生效）。
+在手里的长度 = SIZE × HAND（按类型放大，1 倍画面也看得清）× 品级 / 史诗倍数；图片按 OVER 倍存（高分屏也清楚），运行时再缩到这个长度（角色帧像素，res 1.8）。
+预览写到主仓库 art/src/avatar/cut/weapons_<表>.png / weapons_v2.png（黄圈 = 握点，红线 = 朝向）。
 """
 import os, sys, json
 import numpy as np
@@ -17,12 +18,17 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(HERE)
 FIXF = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'avatar_weapons.json')
 LAST = {k: n for n, its in WEAPON_SHEETS.items() for k, _, _ in its}   # 同一把武器出现在多张表里时，用最后那张
-OVER = 1.25   # 图片比游戏里画出来的大一点，缩小绘制更清晰
+OVER = 3.0   # 图片按游戏里画出来的 3 倍存：高分屏（2 倍）上还是缩小绘制，线条清楚
+V2 = os.path.join(OUT, 'weapons2')
 
 # 在角色帧里的长度（握点→尖端，帧像素）。太刀 ≈ 原来画死在帧里的太刀长度
 SIZE = {'shortsword': 72, 'katana': 100, 'club': 70, 'greatsword': 112, 'lightsaber': 98,
         'revolver': 40, 'autopistol': 38, 'rifle': 70, 'handcannon': 52, 'bowgun': 50,
         'spear': 95, 'pole': 85, 'rod': 50, 'staff': 88, 'broom': 88}   # 长杆（握点在图里 35% 处）：全长 ≈ size / 0.65，画的时候再按占位棍截短
+# 拿在手里再放大（v2 武器重做：原来 1 倍画面里短剑只有 75 像素，改了设计也看不出来）
+HAND = {'shortsword': 1.35, 'katana': 1.35, 'lightsaber': 1.25, 'greatsword': 1.15, 'club': 1.2,
+        'revolver': 1.6, 'autopistol': 1.6, 'rifle': 1.2, 'handcannon': 1.25, 'bowgun': 1.25,   # 小手枪 1 倍下原来只有 40 像素，放得最多
+        'staff': 1.2, 'rod': 1.3, 'broom': 1.15, 'pole': 1.1, 'spear': 1.1}
 # 握法：grip = 握点在握柄上（剑、枪、魔杖）；tip = 长杆按杖头对齐（魔法师的长武器，握在杆子中段哪里都行）
 KIND = {'shortsword': 'blade', 'katana': 'blade', 'greatsword': 'blade', 'lightsaber': 'saber', 'club': 'club',
         'revolver': 'gun', 'autopistol': 'gun', 'handcannon': 'gun', 'bowgun': 'gun', 'rifle': 'rifle',
@@ -37,6 +43,7 @@ EP_TYPE = {'ep_shortsword': 'shortsword', 'ep_katana': 'katana', 'ep_katana2': '
 TIER_MUL = {2: 1.02, 3: 1.06, 4: 1.14}   # 普通武器的品级外观 <类型>_r2/r3/r4：稀有 / 神器 / 传说，一级比一级长（传说长 10~15%）
 EPIC_MUL = {'greatsword': 1.12, 'revolver': 1.15, 'autopistol': 1.15, 'handcannon': 1.1, 'bowgun': 1.1, 'rod': 1.1}   # 史诗默认比普通武器长 5%；巨剑更夸张，小枪 / 魔杖放大一点才看得清
 WIDE = {'katana': 1.2, 'lightsaber': 1.15, 'greatsword': 1.1}   # 史诗 / 品级外观只加宽不加长：太刀、光剑在游戏里别细成一根线
+WIDE_V2 = {'katana': 1.25}   # v2 图：太刀刀身画得细，1 倍下像一根线，加宽 25%
 def tier_type(key):
     t, _, r = key.rpartition('_r')
     return t if t in SIZE and r in ('2', '3', '4') else None
@@ -140,6 +147,42 @@ def epic_icon(sub, kind, out):
     glow = Image.new('RGBA', (128, 128), (255, 196, 64, 0)); glow.putalpha(a.point(lambda v: min(255, int(v * 1.1))))
     glow.alpha_composite(cv); glow.save(out, 'WEBP', quality=90, method=6)
 
+def demarker(sub):
+    """纯绿 / 品红是切帧工具的标记色：v2 图里零星的品红高光（粉色宝石）压一点蓝，变成玫红"""
+    rgb = sub[..., :3].astype(np.int16); r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    M = (r > 200) & (b > 200) & (g < 70); rgb[..., 2] = np.where(M, b * 0.8, b)
+    G = (g > 200) & (r < 70) & (b < 70); rgb[..., 0] = np.where(G, r + 50, r); rgb[..., 2] = np.where(G, rgb[..., 2] + 50, rgb[..., 2])
+    sub[..., :3] = rgb.clip(0, 255).astype(np.uint8); return sub
+
+def weapon_type(key):
+    return EP_TYPE.get(key) or EP2_CODE.get(key.split('_')[1] if key.startswith('ep_') else '') or tier_type(key) or (key.split('_', 1)[1] if '_' in key and key.split('_', 1)[1] in SIZE else key)   # 装扮：<装扮>_<武器类型>
+
+def sources(pres, fixes):
+    """→ {组名: [(key, 武器图, 微调)]}：有 weapons2/<key>.png 的用它（一把一张，组名 v2），没有的从旧表切。pres：key 或表名前缀"""
+    want = lambda key, name='': not pres or any(key.startswith(p) or name.startswith(p) for p in pres)
+    v2 = {f[:-4] for f in os.listdir(V2) if f.endswith('.png') and f != 'style_ref.png'} if os.path.isdir(V2) else set()
+    out = {}
+    for key in sorted(v2):
+        if key not in LAST or not want(key): continue
+        f = fixes.get(key, {}); f = {**{k: v for k, v in f.items() if k in ('size', 'mul')}, **f.get('v2', {})}
+        out.setdefault('v2', []).append((key, demarker(cut_rows(os.path.join(V2, f'{key}.png'), 1)[0][0]), f))
+    for name, items in WEAPON_SHEETS.items():
+        todo = [k for k, _, _ in items if LAST[k] == name and k not in v2 and want(k, name)]   # 后面的表重画过的（巨剑加厚），以后面的为准
+        if not todo: continue
+        path = os.path.join(OUT, 'weapons', f'{name}.png')
+        if not os.path.exists(path): print('缺原图', path); continue
+        subs = cut_rows(path, len(items))
+        if len(subs) != len(items): print(f'{name}: 切出 {len(subs)} 把，应为 {len(items)}  <-- CHECK')
+        for (key, _, _), (sub, solo) in zip(items, subs):
+            if key not in todo: continue
+            f = {k: v for k, v in fixes.get(key, {}).items() if k != 'v2'}
+            if f.get('solo'):   # 去掉并进来的小碎块（别的武器的火焰碎片等）
+                sub = solo; ys, xs = np.where(sub[..., 3] > 40); sub = sub[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+            if 'cut' in f:   # 只保留左边这么多（去掉枪口的火焰等特效）
+                sub = sub[:, :int(sub.shape[1] * f['cut'])]; cols = np.where((sub[..., 3] > 40).any(0))[0]; sub = sub[:, :cols.max() + 1]
+            out.setdefault(name, []).append((key, sub, f))
+    return out
+
 def main():
     pres = sys.argv[1:]
     fixes = json.load(open(FIXF)) if os.path.exists(FIXF) else {}
@@ -147,53 +190,42 @@ def main():
     pv_dir = os.path.join(OUT, 'cut'); os.makedirs(pv_dir, exist_ok=True)
     jsf = os.path.join(ROOT, 'src', 'content', 'avatar', 'weapon_art.js')
     data = {}
-    if os.path.exists(jsf):   # 只重切一部分表时保留其他武器的数据
+    if os.path.exists(jsf):   # 只重切一部分时保留其他武器的数据
         txt = open(jsf).read(); data = json.loads(txt[txt.index('{'):txt.rindex('}') + 1])
-    for name, items in WEAPON_SHEETS.items():
-        if pres and not any(name.startswith(p) for p in pres): continue
-        path = os.path.join(OUT, 'weapons', f'{name}.png')
-        if not os.path.exists(path): print('缺原图', path); continue
-        subs = cut_rows(path, len(items))
-        if len(subs) != len(items): print(f'{name}: 切出 {len(subs)} 把，应为 {len(items)}  <-- CHECK')
+    for name, items in sources(pres, fixes).items():
         tiles = []
-        for (key, _, _), (sub, solo) in zip(items, subs):
-            if LAST[key] != name: continue   # 后面的表重画过这把（巨剑加厚），以后面的为准
-            f = fixes.get(key, {})
-            if f.get('solo'):   # 去掉并进来的小碎块（别的武器的火焰碎片等）
-                sub = solo; ys, xs = np.where(sub[..., 3] > 40); sub = sub[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
-            if 'cut' in f:   # 只保留左边这么多（去掉枪口的火焰等特效）
-                sub = sub[:, :int(sub.shape[1] * f['cut'])]; cols = np.where((sub[..., 3] > 40).any(0))[0]; sub = sub[:, :cols.max() + 1]
-            wt = EP_TYPE.get(key) or EP2_CODE.get(key.split('_')[1] if key.startswith('ep_') else '') or tier_type(key) or (key.split('_', 1)[1] if '_' in key and key.split('_', 1)[1] in SIZE else key)   # 装扮：<装扮>_<武器类型>
-            kind = KIND[wt]; H, W = sub.shape[:2]
+        for key, sub, f in items:
+            wt = weapon_type(key); kind = KIND[wt]; H, W = sub.shape[:2]
             gx, gy = auto_grip(sub, kind)
             if 'gx' in f: gx = f['gx'] * W
             if 'gy' in f: gy = f['gy'] * H
             tx = W - 1.0   # 尖端：最右边
-            reach = tx - gx if kind != 'pole' else tx - gx
-            size = f.get('size', SIZE[wt]) * (1.0 if key == wt else f.get('mul', default_mul(key, wt)))
-            k = size * OVER / reach; ky = k * f.get('wide', 1.0 if key == wt else WIDE.get(wt, 1.0))   # wide：只加宽（刀身 / 杖头更粗），长度不变
+            reach = tx - gx
+            size = f.get('size', SIZE[wt]) * HAND[wt] * (1.0 if key == wt else f.get('mul', default_mul(key, wt)))
+            wide = f.get('wide', WIDE_V2.get(wt, 1.0) if name == 'v2' else 1.0 if key == wt else WIDE.get(wt, 1.0))   # wide：只加宽（旧表的细刀身）；v2 图只有太刀加宽一点
+            k = size * OVER / reach; ky = k * wide
             im = Image.fromarray(sub, 'RGBA'); sm = im.resize((max(1, round(W * k)), max(1, round(H * ky))), Image.LANCZOS)
             gy *= ky / k
-            sm.save(os.path.join(outd, f'{key}.webp'), 'WEBP', quality=88, method=6)
+            sm.save(os.path.join(outd, f'{key}.webp'), 'WEBP', quality=86, method=6)
             data[key] = {'w': sm.width, 'h': sm.height, 'gx': round(gx * k, 1), 'gy': round(gy * k, 1), 'tx': round(tx * k, 1), 'ty': round(gy * k, 1),
                          'size': round(size, 1), 'kind': kind, 'type': wt}
             if wt in SINGLE: data[key]['dual'] = 0
             tiles.append((key, sm, data[key]))
             ic = os.path.join(HERE, 'final', 'icon', f'item_{key}.webp')
             if key.startswith('ep_') and (not os.path.exists(ic) or key in ICON_FROM_ART): epic_icon(sub, kind, ic)
-            print(f'  {key:14s} {sm.width}x{sm.height} 握点 ({gx * k:.0f},{gy * k:.0f}) {kind}')
-        # 预览
-        Z = 2; wmax = max(t[1].width for t in tiles) * Z + 40; hsum = sum(t[1].height * Z + 30 for t in tiles) + 10
+            print(f'  {key:18s} {sm.width}x{sm.height} 握点 ({gx * k:.0f},{gy * k:.0f}) 长度 {size:.0f} {kind}')
+        # 预览（缩到一半；黄圈 = 握点，红线 = 朝向）
+        Z = 0.5; wmax = int(max(t[1].width for t in tiles) * Z) + 40; hsum = int(sum(t[1].height * Z + 30 for t in tiles)) + 10
         pv = Image.new('RGBA', (wmax, hsum), (70, 74, 84, 255)); d = ImageDraw.Draw(pv); y = 10
         for key, sm, D in tiles:
-            pv.alpha_composite(sm.resize((sm.width * Z, sm.height * Z), Image.NEAREST), (20, y)); gx, gy = 20 + D['gx'] * Z, y + D['gy'] * Z
+            pv.alpha_composite(sm.resize((max(1, int(sm.width * Z)), max(1, int(sm.height * Z))), Image.LANCZOS), (20, y)); gx, gy = 20 + D['gx'] * Z, y + D['gy'] * Z
             d.line([gx, gy, 20 + D['tx'] * Z, gy], fill=(255, 60, 60), width=1); d.ellipse([gx - 6, gy - 6, gx + 6, gy + 6], outline=(255, 230, 0), width=2)
-            d.text((22, y), key, fill=(255, 230, 120)); y += sm.height * Z + 30
+            d.text((22, y), key, fill=(255, 230, 120)); y += int(sm.height * Z) + 30
         pv.save(os.path.join(pv_dir, f'weapons_{name}.png'))
     os.makedirs(os.path.dirname(jsf), exist_ok=True)
     body = ',\n'.join(f'  {json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}' for k, v in sorted(data.items()))
     open(jsf, 'w').write('/* 由 art/tools/avatar_weapons.py 生成，请勿手改（握点微调写在 art/tools/avatar_weapons.json 后重跑）\n'
-                         '   武器图 IMG[\'weapon/<key>\']：w h 图片尺寸；gx gy 握点；tx ty 尖端；size 在角色帧里握点→尖端的长度（帧像素）；kind 握法；type 武器类型；dual 0 = 不双持 */\n'
+                         '   武器图 IMG[\'weapon/<key>\']：w h 图片尺寸；gx gy 握点；tx ty 尖端；size 在角色帧里握点→尖端的长度（帧像素，已含按类型放大的 HAND）；kind 握法；type 武器类型；dual 0 = 不双持 */\n'
                          'const WEAPON_IMG = {\n' + body + '\n};\n')
     print('->', jsf)
 

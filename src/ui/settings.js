@@ -46,7 +46,10 @@ Object.assign(menus, {
       slider('按钮大小', 'touchSize', 0.7, 1.4, 0.05, pct, () => touch.applyPrefs && touch.applyPrefs()),
       slider('按钮不透明度', 'touchAlpha', 0.3, 1, 0.05, pct, () => touch.applyPrefs && touch.applyPrefs()),
       toggle('左右互换', 'touchSwap', '摇杆放右边、按键放左边（左撇子）'),
-      h('button', { class: 'btn', style: 'align-self:flex-start', onclick: () => { setPref('touchSize', 1); setPref('touchAlpha', 1); setPref('touchSwap', false); if (touch.applyPrefs) touch.applyPrefs(); sfx.click(); rf(); } }, '恢复默认布局'));
+      toggle('固定摇杆', 'touchStickFixed', '关闭时摇杆跟着手指走（按左半屏任意位置）'),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn', 'data-act': 'touch-edit', onclick: () => { if (!touch.on) return; this.closeAll(); touch.edit(true); sfx.click(); } }, '拖动调整按钮位置'),
+        h('button', { class: 'btn', onclick: () => { for (const [k, v] of [['touchSize', 1], ['touchAlpha', 1], ['touchSwap', false], ['touchStickFixed', false], ['touchPos', {}]]) setPref(k, v); if (touch.applyPrefs) touch.applyPrefs(); sfx.click(); rf(); } }, '恢复默认布局')));
     const body = h('div', { class: 'col setwin' }, tabs, h('div', { class: 'setpage' }, page));
     return this.win('游戏设置', body, { w: tab === 'keys' ? 50 : 34 });
   },

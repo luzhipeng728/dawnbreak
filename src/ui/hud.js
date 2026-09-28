@@ -73,8 +73,8 @@ const hudComboDy = () => { const L = game.dungeon && game.dungeon.layout; return
 const hudQuickRect = i => ({ x: HUD.quick.x + i * HUD.quick.gap, y: HUD.quick.y, s: HUD.quick.s });
 const hudSkillRect = i => { const col = i < 12 ? i % 6 : 6, row = i < 12 ? Math.floor(i / 6) : i - 12; return { x: HUD.skill.x + col * HUD.skill.gap, y: HUD.skill.y + row * HUD.skill.row, s: HUD.skill.s }; };
 const hudInRect = (R, x, y, pad = 3) => x >= R.x - pad && x <= R.x + R.s + pad && y >= R.y - pad && y <= R.y + R.s + pad;
-function hudSkillSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < SKILL_SLOTS; i++) if (hudInRect(hudSkillRect(i), x, y)) return i; return -1; }
-function hudQuickSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < 6; i++) if (hudInRect(hudQuickRect(i), x, y)) return i; return -1; }
+function hudSkillSlotAt(x, y) { if (!ui.panelOn() || touch.on) return -1; for (let i = 0; i < SKILL_SLOTS; i++) if (hudInRect(hudSkillRect(i), x, y)) return i; return -1; }
+function hudQuickSlotAt(x, y) { if (!ui.panelOn() || touch.on) return -1; for (let i = 0; i < 6; i++) if (hudInRect(hudQuickRect(i), x, y)) return i; return -1; }
 /* ---- 技能栏 / 消耗品栏的写入（窗口和 HUD 共用） ---- */
 function skillBarPut(i, id, from) {
   const B = game.skillBar; if (i < 0 || i >= B.length || !id) return;
@@ -150,6 +150,7 @@ const ui = {
   },
   drawPanel(c) {
     const p = game.player; if (!p) return;
+    if (touch.on) return this.drawTouchPanel(c, p);
     const { y0, x0, x1 } = HUD, lite = uiPref('hudMode') === 'lite', hot = this.hot || {};
     if (!lite) {
       const g = c.createLinearGradient(0, y0, 0, 1080); g.addColorStop(0, 'rgba(34,26,22,.96)'); g.addColorStop(1, 'rgba(12,9,8,.98)');
@@ -212,7 +213,23 @@ const ui = {
       uiText(`SP ${fmtNum(game.sp || 0)}`, HUD.dodge.x, 1072, { size: 16, align: 'center', color: (game.sp || 0) > 0 ? '#8aff9a' : '#c8c0b0', sw: 3 });
     }
     // BUFF 图标（剩余秒数）
-    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b || b.hide) continue; c.drawImage(buffIcon(k, b), bx, y0 - 84, 34, 34); c.strokeStyle = b.hl || '#ffd23a'; c.lineWidth = b.hl ? 2.5 + Math.sin(game.t * 6) : 1.5; c.strokeRect(bx, y0 - 84, 34, 34); if (b.n > 1) uiText('×' + b.n, bx + 33, y0 - 53, { size: 13, align: 'right', color: '#fff6c0', sw: 3 }); if (b.t < 900) uiText(Math.ceil(b.t) + '', bx + 17, y0 - 38, { size: 14, align: 'center', sw: 3 }); bx += 40; } }
+    this.drawBuffs(c, p, x0 + 10, y0 - 84);
+  },
+  drawBuffs(c, p, bx, by) {
+    if (p.buffs) for (const k in p.buffs) { const b = p.buffs[k]; if (!b || b.hide) continue; c.drawImage(buffIcon(k, b), bx, by, 34, 34); c.strokeStyle = b.hl || '#ffd23a'; c.lineWidth = b.hl ? 2.5 + Math.sin(game.t * 6) : 1.5; c.strokeRect(bx, by, 34, 34); if (b.n > 1) uiText('×' + b.n, bx + 33, by + 31, { size: 13, align: 'right', color: '#fff6c0', sw: 3 }); if (b.t < 900) uiText(Math.ceil(b.t) + '', bx + 17, by + 46, { size: 14, align: 'center', sw: 3 }); bx += 40; }
+  },
+  // 触屏：左上角精简状态（等级 / HP / MP / 经验 / BUFF）；技能栏、消耗品栏、后跳由虚拟按键显示（engine/touch.js）
+  drawTouchPanel(c, p) {
+    const X = touch.hudX || 30, x = X + 110, w = 400, bar = (y, hh, f, c1, c2, txt) => {
+      c.fillStyle = 'rgba(10,8,8,.78)'; c.fillRect(x - 3, y - 3, w + 6, hh + 6);
+      const g = c.createLinearGradient(0, y, 0, y + hh); g.addColorStop(0, c1); g.addColorStop(1, c2); c.fillStyle = g; c.fillRect(x, y, w * clamp(f, 0, 1), hh);
+      if (txt) uiText(txt, x + w / 2, y + hh - 4, { size: hh - 3, align: 'center', color: '#fff', sw: 4 });
+    };
+    uiText(`Lv.${game.lvl}`, X + 100, 50, { size: 32, align: 'right', color: '#ffe8a8', sw: 5 });
+    bar(16, 28, p.hp / p.hpMax, '#ff7a6a', '#a01820', `${fmtNum(Math.max(0, p.hp))} / ${fmtNum(p.hpMax)}`);
+    bar(52, 24, p.mp / p.mpMax, '#7ac0ff', '#1840a0', `${fmtNum(Math.max(0, p.mp))} / ${fmtNum(p.mpMax)}`);
+    bar(84, 6, game.exp / expNeed(game.lvl), '#ffe070', '#c89020');
+    this.drawBuffs(c, p, x, 100);
   },
   drawCombo(c) {
     const n = game.combo;

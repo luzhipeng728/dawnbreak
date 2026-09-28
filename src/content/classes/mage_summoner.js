@@ -12,7 +12,7 @@ const smMul = (p, lv) => lvMul(lv, 0.1);
 function smDef(key, spr, o) {
   return defSummon(key, { kind: 'follower', bundle: spr, model: () => summonSprite(spr, o.tint || {}, o.col), w: o.w || 12, d: o.d || 11, h: o.h || 80, speed: o.speed ?? 170, runSpeed: o.runSpeed || 330, pref: o.pref ?? 40,
     sight: o.sight || 560, aggro: o.aggro || 1, life: o.life ?? Infinity, max: o.max ?? 1, col: o.col, tags: o.tags || [], enterAt: o.enterAt, attacks: o.attacks || [], cmds: o.cmds || {},
-    onSpawn: s => { if (o.sa) s.superArmor = Infinity; if (o.scale) s.scale = o.scale; fxSpr('hexagram', s.x, s.y, 0, { w: 90 + (o.h || 80) * 0.4, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: o.col }); fxBurst(s.x, s.y, 40, 90, o.col || '#d8c0ff'); if (o.onSpawn) o.onSpawn(s); },
+    onSpawn: s => { if (o.sa) s.superArmor = Infinity; if (o.scale) s.scale = o.scale; fxSigil('hexagram', s.x, s.y, 0, { w: 90 + (o.h || 80) * 0.4, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: o.col }); fxBurst(s.x, s.y, 40, 90, o.col || '#d8c0ff'); if (o.onSpawn) o.onSpawn(s); },
     onEnd: o.onEnd, update: o.update });
 }
 // 近战判定 / 远程投射物的简写（dmg = 主人攻击力的倍数，summonAI 会再乘 s.mul）
@@ -82,7 +82,7 @@ smDef('sm_luise', 'luise', { h: 112, speed: 160, pref: 120, tags: ['contract'], 
   onEnd: (s, why) => { if (why === 'life' || why === 'dead' || why === 'cmd') luiseMeteor(s, why === 'dead' ? 2 : 1); } });
 // 库鲁塔：复用牛头王的整套美术（缩小一点）
 defSummon('sm_kuruta', { kind: 'follower', bundle: 'tauKing', model: () => summonSprite('tauKing', {}, '#e0a060'), w: 20, d: 15, h: 140, scale: 0.82, speed: 140, runSpeed: 300, pref: 60, sight: 560, life: Infinity, max: 1, col: '#e0a060', tags: ['contract'],
-  onSpawn: s => { s.superArmor = Infinity; fxSpr('hexagram', s.x, s.y, 0, { w: 160, dur: 0.6, ay: 0.5, grow: [0.3, 1] }); cam.shake = Math.max(cam.shake, 3); },
+  onSpawn: s => { s.superArmor = Infinity; fxSigil('hexagram', s.x, s.y, 0, { w: 160, dur: 0.6, ay: 0.5, grow: [0.3, 1] }); cam.shake = Math.max(cam.shake, 3); },
   attacks: [{ clip: 'axe', range: [0, 100], dy: 22, cd: [1.8, 2.6], w: 2, act: { dur: 1.25, hits: [mH(0.62, 0.72, [-10, 105, 30, 0, 140], 1.2, { knock: 200, heavy: true, hs: 0.08, shake: 2 })], events: [evAt(0.58, s => sfx.swing(true))] } },
     { clip: 'charge', range: [100, 320], dy: 24, cd: [5, 7], w: 1, act: { dur: 0.9, move: [[0.1, 0.7, 420]], hits: [mH(0.1, 0.7, [0, 60, 26, 0, 130], 0.9, { knock: 220, launch: 260, hs: 0.06 })] } },
     { clip: 'roar', range: [0, 200], dy: 80, cd: [9, 12], w: 0.8, act: { dur: 1.2, events: [evAt(0.5, s => { sfx.boom(0.6); cam.shake = Math.max(cam.shake, 4); summonArea(s, s.x, s.y, 150, { dmg: 0.4, stun: 0.6, knock: 60, hs: 0.04 }, { status: 'stun', sdur: 1.2 }); })] } }],
@@ -145,7 +145,7 @@ defSkill('sm_frit', { name: '契约召唤：弗利特', cls: 'mage', job: SM, lv
 defSkill('sm_sacrifice', { name: '精灵献祭', cls: 'mage', job: SM, lvReq: 16, mp: 40, cd: 20, type: 'mag', col: '#e0a0ff', cast: true,
   desc: '在前方画出魔法阵，引爆阵内的下级精灵，各按属性造成爆炸（火：灼烧 / 冰：冰刺 / 暗：诅咒 / 光：落雷）。按住技能键时，先把全图的下级精灵传送到阵里再引爆。', pow: lv => skillDmg(2.0, 0.2, lv) * 4, ai: { kind: 'aoe', r: [40, 260], dy: 60 },
   act: (lv, p) => ({ name: 'sm_sacrifice', clip: 'smSac', dur: 0.8, cancelFrom: 0.6, noCounter: true, charge: { at: 0.1, max: 0.4, min: 0, dmg: 0, clip: 'smSac' },
-    events: [evAt(0.2, e => { const cx = e.x + e.face * 130, cy = e.y; fxSpr('hexagram', cx, cy, 0, { w: 240, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: '#e0a0ff' });
+    events: [evAt(0.2, e => { const cx = e.x + e.face * 130, cy = e.y; fxSigil('hexagram', cx, cy, 0, { w: 240, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: '#e0a0ff' });
       const L = summonsOf(e, { tag: 'lesser' }); if ((e.act.chargeK || 0) > 0.2) L.forEach((s, i) => s.warp(cx + (i - 1.5) * 26, cy + ((i % 2) - 0.5) * 20));
       for (const s of L) { if (Math.hypot(s.x - cx, (s.y - cy) * 2) > 130) continue; const x = s.x, y = s.y, key = s.skey; dismissOne(s, 'cmd'); fxBurst(x, y, 40, 130, s.sdef.col); sfx.boom(0.5);
         const el = { sm_ador: 'fire', sm_naias: 'ice', sm_stalker: 'dark', sm_wisp: 'light' }[key];
@@ -249,7 +249,8 @@ defSummon('sm_casillas', { kind: 'follower', name: '征服者卡西利亚斯', b
         evAt(0.5, e => { sfx.iai(); cam.shake = Math.max(cam.shake, 6); fxStreak({ x: e.act.x0, y: e.y, z: e.z + 90, face: e.face, len: Math.abs(e.x - e.act.x0) + 60, w: 14, col: CAS_COL, dur: 0.3 }); }),
         ...[0.66, 0.76, 0.86, 0.96, 1.06].map((t, i) => evAt(t, e => { const x = e.act.x0 + (e.x - e.act.x0) * (0.15 + i * 0.18); sfx.swing(i === 4);
           fxSlash({ x, y: e.y, z: 0, face: i % 2 ? -e.face : e.face, col: CAS_COL, a0: -1.2, a1: 1.2, r: 110, w: 18, off: [0, 80], dur: 0.2 });
-          summonArea(e, x, e.y, 110, { dmg: 1.4 * k, stun: 0.6, knock: 10, hs: 0.05, type: 'mag', col: CAS_COL, downHit: true }, { zMax: 220 }); })),
+          const lo = Math.min(e.x, e.act.x0) - 40, hi = Math.max(e.x, e.act.x0) + 40;   // 剑气补在整条冲斩路径上：路径上的每个敌人都吃满 5 段
+          for (const t of ents) if (foe(e.owner, t) && !t.dead && t.invul <= 0 && t.x + t.w >= lo && t.x - t.w <= hi && Math.abs(t.y - e.y) < 56 && t.z < 220) summonHit(e, t, { dmg: 1.4 * k, stun: 0.6, knock: 10, hs: 0.05, type: 'mag', col: CAS_COL, downHit: true }); })),
         evAt(1.25, e => { sfx.boom(1.1); cam.shake = Math.max(cam.shake, 10); const cx = (e.x + e.act.x0) / 2; fxShock(cx, e.y, 320, CAS_COL);
           for (const t of ents) if (foe(e.owner, t) && inGround(t, cx, e.y, Math.abs(e.x - e.act.x0) / 2 + 80) && t.z < 220) summonHit(e, t, { dmg: 5.0 * k, launch: 380, knock: 120, hs: 0.12, big: 1.8, type: 'mag', col: CAS_COL, downHit: true }, { hitGroup: G }); })] }); } } });
 defSkill('sm_awaken', { name: '契约召唤：征服者卡西利亚斯', cls: 'mage', job: SM, lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'mag', awaken: true, col: CAS_COL,

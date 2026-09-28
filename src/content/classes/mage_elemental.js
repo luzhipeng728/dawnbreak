@@ -53,18 +53,19 @@ defSkill('mg_void', { name: '虚无之球', cls: 'mage', job: EL, lvReq: 16, mp:
   act: (lv, p) => ({ name: 'mg_void', clip: 'void', dur: 0.6, cancelFrom: 0.42, charge: mCharge(p, 0.8, '#c79aff', { at: 0.1, clip: 'mchan' }),
     events: [evAt(0.26, e => { sfx.charge(); const k = e.act.chargeK || 0, sc = 1 + k * 0.4;
       shootProj(e, { img: 'darkorb', w: 74 * sc, speed: 170, life: (1150 + k * 250) / 170, z: 38, dx: 40, bw: 26 * sc, bh: 60 * sc, bd: 20 * sc, pierce: true, spin: 2, noFlip: true,
-        hit: { dmg: skillDmg(0.3, 0.03, lv), stun: 0.35, knock: 10, airLift: 60, hs: 0.03, rep: 0.3, elem: 'dark', type: 'mag', col: '#c79aff' },
+        hit: { dmg: skillDmg(0.3, 0.03, lv), stun: 0.35, knock: 10, airLift: 60, hs: 0.03, rep: 0.25, elem: 'dark', type: 'mag', col: '#c79aff' },
+        onHitT: (pr, t) => { if (hasSA(t) || t.weight > 2 || t.fixed) return; t.x += clamp(pr.x - t.x, -10, 10); t.vx = pr.vx; },   // 缓慢的球把轻的敌人卷着走（多段）
         onEnd: pr => { fxBurst(pr.x, pr.y, pr.z + 30, 100 * sc, '#b070ff'); } }); })] }) });
 // 冰墙：周身冰墙，把敌人推到圈外；敌人穿过冰墙会被减速；站在圈内自己获得霸体和减伤；再按一次技能键撤掉
 defSkill('mg_icewall', { name: '冰墙', cls: 'mage', job: EL, lvReq: 17, mp: 45, cd: 15, type: 'mag', elem: 'ice', col: '#6ab8e8', cast: true,
   desc: '在自身周围升起一圈冰墙，造成伤害并把敌人推到圈外；冰墙持续 5 秒，敌人穿过时减速 50%。站在圈内时自己获得霸体，受到的伤害降低。再按一次技能键撤掉冰墙。', pow: lv => skillDmg(3.0, 0.3, lv), ai: { kind: 'aoe', r: [0, 110], dy: 50 },
-  recast: { ok: p => !!(p._icewall && p._icewall.alive), cd: 0.3, mp: 0, act: () => ({ name: 'mg_icewall', clip: 'wall', dur: 0.2, noCounter: true, onStart: e => { if (e._icewall) e._icewall.dur = 0; } }) },
+  recast: { ok: p => { const w = p._icewall, d = w ? game.t - w.lastT : -1; return !!(w && w.alive && d >= 0 && d < 0.5); }, cd: 0.3, mp: 0, act: () => ({ name: 'mg_icewall', clip: 'wall', dur: 0.2, noCounter: true, onStart: e => { if (e._icewall) e._icewall.dur = 0; } }) },
   act: (lv) => ({ name: 'mg_icewall', clip: 'wall', dur: 0.6, cancelFrom: 0.45, superArmor: true, noCounter: true,
     events: [evAt(0.2, e => { sfx.ice(); sfx.boom(0.5); cam.shake = Math.max(cam.shake, 4); const cx = e.x, cy = e.y;
       blast(e, cx, cy, 110, { dmg: skillDmg(3.0, 0.3, lv), launch: 240, knock: 200, hs: 0.08, elem: 'ice', type: 'mag', col: '#bfefff' }, { zMax: 150 });
       const wall = e._icewall = { t: 0, dur: 5, alive: true, fx: [] };
       for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; wall.fx.push(fxSpr('icewall', cx + Math.cos(a) * 95, cy + Math.sin(a) * 40, 0, { w: 70, dur: 5, ay: 0.9, add: false, grow: [0.3, 1], fadeIn: 0.03 })); }
-      game.after(0.01, function tick() { wall.t += 0.1; const inside = !e.dead && Math.hypot(e.x - cx, (e.y - cy) * 2.2) < 100;
+      wall.lastT = game.t; game.after(0.01, function tick() { wall.t += 0.1; wall.lastT = game.t; const inside = !e.dead && Math.hypot(e.x - cx, (e.y - cy) * 2.2) < 100;
         if (inside) { e.superArmor = Math.max(e.superArmor, 0.15); e.buffs.mg_icewall = { t: 0.15, taken: -0.3 }; }
         for (const t of ents) if (foe(e, t) && Math.abs(Math.hypot(t.x - cx, (t.y - cy) * 2.2) - 100) < 22) addStatus(t, 'slow', 3, { src: e });
         if (wall.t < wall.dur && !e.dead && ents.indexOf(e) >= 0) game.after(0.1, tick);
@@ -91,7 +92,7 @@ defSkill('mg_thunder', { name: '天雷', cls: 'mage', job: EL, lvReq: 19, mp: 60
       const auto = isHuman(e) ? e.actT - a.lastT > 0.9 : e.actT > 0.5 + a.n * 0.35;   // 一段时间不按 X 就自动落雷
       if ((I.buffered('attack') || auto) && e.actT > a.cd && a.n < 3) { I.consume('attack'); a.n++; a.cd = e.actT + 0.25; a.lastT = e.actT; const big = (a.chargeK || 0) > 0.95, r = big ? 62 : 50;
         lightningStrike({ x: a.cx, y: a.cy }); sfx.zap();
-        blast(e, a.cx, a.cy, r, { dmg: skillDmg(2.2, 0.22, lv), stun: 0.6, launch: 220, knock: 20, hs: 0.08, snd: 'crit', col: '#fff6a0', elem: 'light', type: 'mag' }, { zMax: 220, status: big ? 'stun' : null, sdur: 1.2 });
+        blast(e, a.cx, a.cy, r, { dmg: skillDmg(2.2, 0.22, lv), stun: 0.6, knock: 20, hs: 0.08, snd: 'crit', col: '#fff6a0', elem: 'light', type: 'mag' }, { zMax: 220, status: big ? 'stun' : null, sdur: 1.2 });
         if (a.n >= 3) a.dur = e.actT + 0.35; }
       return true; },
     update: e => { const a = e.act; if (!a.chargeDone) return; addFx({ x: a.cx, y: a.cy + 1, z: 0, dur: 0.02, draw(c) { const X = sx(this.x), Y = sy(this.y, 0); c.strokeStyle = 'rgba(255,240,120,.85)'; c.lineWidth = 2; c.beginPath(); c.ellipse(X, Y, 26, 26 * GR, 0, 0, TAU); c.stroke(); c.beginPath(); c.moveTo(X - 32, Y); c.lineTo(X + 32, Y); c.moveTo(X, Y - 14); c.lineTo(X, Y + 14); c.stroke(); } }); } }) });
@@ -108,7 +109,7 @@ defSkill('mg_icefeast', { name: '极冰盛宴', cls: 'mage', job: EL, lvReq: 19,
       if (!a.tele) { a.tele = true; sfx.ice(); telegraph({ x: a.cx, y: a.cy, r: 120, dur: 2.8, kind: 'frost', col: '#bfefff', friendly: true }); if ((a.chargeK || 0) > 0.95) for (const t of ents) if (foe(e, t) && inGround(t, a.cx, a.cy, 120)) addStatus(t, 'slow', 4, { src: e }); }
       if (e.actT >= a.next && a.n < 8) { a.n++; a.next = e.actT + 0.26; const x = a.cx + rnd(-90, 90), y = clamp(a.cy + rnd(-40, 40), 6, DEPTH - 6); sfx.ice();
         addFx({ x, y: y + 1, z: 0, dur: 0.35, draw(c) { const q = this.t / this.dur; drawSpr(c, 'icespike', sx(this.x), sy(this.y, 0) - 30 * (1 - Math.min(1, q * 4)), 0, 90, { rot: -Math.PI / 2, ay: 0.5, add: true, alpha: 1 - Math.max(0, q - 0.6) / 0.4 }); } });
-        blast(e, a.cx, a.cy, 125, { dmg: skillDmg(1.0, 0.1, lv), stun: 0.4, launch: 200, knock: 10, hs: 0.04, elem: 'ice', type: 'mag', col: '#bfefff', downHit: true }, { zMax: 200 });
+        blast(e, a.cx, a.cy, 125, { dmg: skillDmg(1.0, 0.1, lv), stun: 0.4, airLift: 140, knock: 10, hs: 0.04, elem: 'ice', type: 'mag', col: '#bfefff', downHit: true }, { zMax: 200 });
         for (const t of ents) if (foe(e, t) && inGround(t, a.cx, a.cy, 125) && Math.random() < 0.08) addStatus(t, 'freeze', 1.2, { src: e });
         if (a.n >= 8) a.dur = e.actT + 0.3; } } }) });
 // 湮灭黑洞：身前生成黑洞，4 秒内持续把敌人吸向中心、15 段伤害，最后爆炸把敌人炸飞；蓄气提高吸附速度；再按一次技能键提前引爆

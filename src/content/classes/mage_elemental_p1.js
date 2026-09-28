@@ -14,7 +14,7 @@ function elCurtainFx(x, y, r, dur) {
     c.save(); c.globalCompositeOperation = 'lighter';
     for (let i = 0; i < 9; i++) { const u = (i / 8 - 0.5) * 2 * r, w = 9 + 5 * Math.sin(game.t * 9 + i);
       c.globalAlpha = 0.32 * a * (0.7 + 0.3 * Math.sin(game.t * 13 + i * 1.7)); c.fillStyle = ELC[i % 4]; c.fillRect(X + u - w / 2, Y - 290, w, 290); }
-    c.globalAlpha = 0.8 * a; drawSpr(c, fxTint('hexagram', '#ffe8ff'), X, Y - 290, r * 2.4, r * 0.7, { rot: game.t }); c.restore(); } });
+    c.globalAlpha = 0.8 * a; drawSpr(c, fxTint('hexagram', '#ffe8ff'), X, Y - 290, r * 2.4, r * 0.7, { ground: true, rot: game.t }); c.restore(); } });
 }
 function elRingFx(x, y, r, dur, col) {
   addFx({ x, y: y - 1, z: 0, dur, draw(c) { const k = this.t / this.dur, a = k < 0.1 ? k * 10 : k > 0.85 ? (1 - k) / 0.15 : 1;
@@ -32,7 +32,7 @@ function elGateFx(t, col, dur) {
   addFx({ x: t.x, y: t.y + 0.5, z: 0, dur, tg: t,
     draw(c) { const g = this.tg, k = this.t / this.dur, a = k < 0.1 ? k * 10 : k > 0.85 ? (1 - k) / 0.15 : 1; if (!g) return; this.x = g.x; this.y = g.y + 0.5;
       const X = sx(g.x), Y = sy(g.y, g.z + g.h * (g.scale || 1) + 55); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.85 * a;
-      drawSpr(c, fxTint('hexagram', col), X, Y, 64, 22, { rot: game.t * 2 }); c.globalAlpha = 0.5 * a; drawSpr(c, fxTint('orb', col), X, Y, 30, 30, {}); c.restore(); } });
+      drawSpr(c, fxTint('hexagram', col), X, Y, 64, 22, { ground: true, rot: game.t * 2 }); c.globalAlpha = 0.5 * a; drawSpr(c, fxTint('orb', col), X, Y, 30, 30, {}); c.restore(); } });
 }
 function elShardDrop(t, col) {
   addFx({ tg: t, x: t.x, y: t.y + 0.6, z: 0, dur: 0.16, draw(c) { const g = this.tg, k = this.t / this.dur, top = g.z + g.h * (g.scale || 1) + 50, z = top - (top - g.z - g.h * 0.5) * k;
@@ -62,14 +62,14 @@ function elCosmosFx(cx, cy, dur, hit) {
       c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.9; drawSpr(c, fxTint('orb', col), X, Y, R * 2.2, R * 2.2, {}); c.globalAlpha = 0.5; drawSpr(c, fxTint('orb', core), X - side * 20, Y - 20, R, R, {}); c.restore(); } } });
 }
 // ---- 一觉段 ----
-defSkill('el_curtain', { name: '元素之幕', cls: 'mage', job: EL, tier: 1, lvReq: 23, mp: 60, cd: 20, type: 'mag', elemNote: 'all', col: '#e0a0ff', cast: true,
+defSkill('el_curtain', { name: '元素之幕', cls: 'mage', job: EL, tier: 1, lvReq: 23, mp: 60, cd: 30, type: 'mag', elemNote: 'all', col: '#e0a0ff', cast: true,
   desc: '在前方上空展开魔法阵，倾泻彩虹光幕：3 秒 20 段伤害，最后结晶碎裂再打一次大伤害。蓄气（最长 1 秒）扩大范围。放出后马上就能行动。', pow: lv => skillDmg(12, 1.2, lv), ai: { kind: 'aoe', r: [60, 320], dy: 60 },
   act: (lv, p) => ({ name: 'el_curtain', clip: 'elCurtain', dur: 0.55, cancelFrom: 0.4, noCounter: true, charge: mCharge(p, 1.0, '#e0a0ff', { at: 0.08 }),
     events: [evAt(0.2, e => { const at = aimAhead(e, 200, 340), r = 90 * (1 + (e.act.chargeK || 0) * 0.3); sfx.magic(); elCurtainFx(at.x, at.y, r, 3.25);
       for (let i = 0; i < 20; i++) mgAfter(e, 0.1 + i * 0.15, () => blast(e, at.x, at.y, r, { dmg: skillDmg(0.4, 0.04, lv), stun: 0.25, knock: 0, hs: 0.02, type: 'mag', col: ELC[i % 4], elem: ELEM4[i % 4][0] }, { zMax: 260 }));
       mgAfter(e, 3.2, () => { sfx.ice(); fxBurst(at.x, at.y, 80, 220, '#e0f0ff'); fxShock(at.x, at.y, r * 1.6, '#e0a0ff');
-        blast(e, at.x, at.y, r * 1.2, { dmg: skillDmg(4, 0.4, lv), launch: 300, knock: 80, hs: 0.08, big: 1.3, type: 'mag', col: '#ffffff', downHit: true }, { zMax: 260 }); }); })] }) });
-defSkill('el_quake', { name: '元素震荡', cls: 'mage', job: EL, tier: 1, lvReq: 25, mp: 80, cd: 30, type: 'mag', elemNote: 'all', col: '#c08aff', cast: true,
+        blast(e, at.x, at.y, r * 1.2, { dmg: skillDmg(4, 0.4, lv), launch: 240, knock: 80, hs: 0.08, big: 1.3, type: 'mag', col: '#ffffff', downHit: true }, { zMax: 260 }); }); })] }) });
+defSkill('el_quake', { name: '元素震荡', cls: 'mage', job: EL, tier: 1, lvReq: 25, mp: 80, cd: 50, type: 'mag', elemNote: 'all', col: '#c08aff', cast: true,
   desc: '在身前展开巨大的魔法阵引发地震：3 段伤害并把范围内的敌人定住约 2.5 秒，最后从地下爆发。施法约 1.75 秒，期间霸体。蓄气（最长 1.5 秒）扩大范围。', pow: lv => skillDmg(14, 1.4, lv), ai: { kind: 'aoe', r: [0, 220], dy: 80 },
   act: (lv, p) => ({ name: 'el_quake', clip: 'elQuake', dur: 1.95, superArmor: true, noCounter: true, charge: mCharge(p, 1.5, '#c08aff', { at: 0.08 }),
     events: [...[0.3, 0.75, 1.2].map((t, i) => evAt(t, e => { const a = e.act; if (!a.r) { a.r = 190 * (1 + (a.chargeK || 0) * 0.3); a.cx = e.x + e.face * 60; a.cy = e.y; elRingFx(a.cx, a.cy, a.r, 1.6, '#c08aff'); }
@@ -102,7 +102,7 @@ defSkill('el_gate', { name: '元素之门', cls: 'mage', job: EL, tier: 2, lvReq
       const per = skillDmg(1.6, 0.16, lv) * 3 / (2 + L.length); sfx.magic(); elNote(e, el);
       for (const t of L) { elGateFx(t, col, 2.25); for (let i = 0; i < 10; i++) mgAfter(e, 0.2 + i * 0.2, () => { if (t.dead || t.remove) return; elShardDrop(t, col);
         applyHit(e, t, { dmg: per, stun: 0.3, knock: 0, hs: 0.02, type: 'mag', elem: el, col, box: null }, { proj: true, src: { x: t.x - e.face * 10, y: t.y, z: t.z + 120, face: e.face } }); }); } })] }) });
-defSkill('el_awaken2', { name: '第六元素', cls: 'mage', job: EL, tier: 2, lvReq: 27, maxLv: 3, mp: 200, cd: 140, pvp: 0.45, type: 'mag', elemNote: 'all', awaken: true, col: '#ffffff',
+defSkill('el_awaken2', { name: '第六元素', cls: 'mage', job: EL, tier: 2, lvReq: 27, maxLv: 3, mp: 200, cd: 170, pvp: 0.45, type: 'mag', elemNote: 'all', awaken: true, col: '#ffffff',
   desc: '【二次觉醒】把火、冰、光、暗全部元素聚到身前的一点，吸附周围的敌人，20 段伤害后引发超大爆炸。全程无敌。', pow: lv => skillDmg(34, 9, lv), ai: { kind: 'awaken', r: [0, 380], dy: 100 },
   act: (lv) => ({ name: 'el_awaken2', clip: 'elSixth', dur: 3.3, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '第六元素', who: cutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); const R = game.room, x = e.x + e.face * 170; e.act.cx = R ? clamp(x, R.x0 + 60, R.x1 - 60) : x; e.act.cy = e.y; },
@@ -122,7 +122,7 @@ defSkill('el_symphony', { name: '光与暗的交响', cls: 'mage', job: EL, tier
       if (n === a.n || n >= 15) return; a.n = n; if (n === 0) { sfx.zap(); cam.shake = Math.max(cam.shake, 4); }
       fxBeam(e.x + e.face * 34, e.y, e.z + 72, 470, e.face, { w: w * 1.6, col: '#fff6c0', dur: 0.14 }); fxBeam(e.x + e.face * 34, e.y, e.z + 72, 470, e.face, { w: w * 0.8, col: '#8a4ad0', dur: 0.14 });
       instantHit(e, { box: [20, 490, w, 20, 130], dmg: skillDmg(1.73, 0.17, lv), stun: 0.3, knock: 6, hs: 0.02, type: 'mag', elem: n % 2 ? 'dark' : 'light', col: n % 2 ? '#c79aff' : '#fff6c0', downHit: true, last: n === 14 }); } }) });
-defSkill('el_awaken3', { name: '宇宙寂灭：冰火之歌', cls: 'mage', job: EL, tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 180, pvp: 0.45, type: 'mag', elemNote: 'all', awaken: true, col: '#ff8a5a',
+defSkill('el_awaken3', { name: '宇宙寂灭：冰火之歌', cls: 'mage', job: EL, tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 270, pvp: 0.45, type: 'mag', elemNote: 'all', awaken: true, col: '#ff8a5a',
   desc: '【三次觉醒】把身边的一块大地掀进宇宙：燃烧的行星和冰冻的行星从两边撞上来把它粉碎，最后 7 段爆炸余波。范围内的敌人全程被困住。全程无敌。', pow: lv => skillDmg(46, 12, lv), ai: { kind: 'awaken', r: [0, 420], dy: 120 },
   act: (lv) => ({ name: 'el_awaken3', clip: 'elCosmos', dur: 5.0, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.2, name: '宇宙寂灭：冰火之歌', who: cutinWho(e, 3) }; game.timeStop = 1.0; sfx.awaken(); const R = game.room, x = e.x + e.face * 150; e.act.cx = R ? clamp(x, R.x0 + 80, R.x1 - 80) : x; e.act.cy = e.y; },

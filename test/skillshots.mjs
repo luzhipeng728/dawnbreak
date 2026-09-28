@@ -37,11 +37,13 @@ for (const item of list) {
     const nErr0 = logs.filter(l => l.type === 'pageerror').length;
     // 前置技能（规格 docs/skills/<职业>.json 的 pre，例：狂暴之力、无尽波动）：先放出来再拍
     const SS = (SPEC[cls] || {}).skills || {}, pre = (SS[`${id}@${job}`] || SS[id] || {}).pre;
-    if (pre) { await page.evaluate(pre => { const p = game.player; p.buffs = {}; p.cool = {}; for (const k of pre) { p.setState('idle'); p.act = null; castSkill(p, k, false, null); } }, pre); await page.waitForTimeout(700); }
+    if (pre) { await page.evaluate(pre => { const p = game.player; p.buffs = {}; p.cool = {}; if (typeof summonsOf === 'function') for (const s of summonsOf(p) || []) dismissOne(s, 'round'); for (const k of pre) { p.setState('idle'); p.act = null; castSkill(p, k, false, null); } }, pre);
+      await page.waitForTimeout(700); await page.waitForFunction(() => game.player.st !== 'act' && !(game.timeStop > 0), null, { timeout: 5000 }).catch(() => { }); await page.waitForTimeout(300); }   // 前置是觉醒召唤（卡西利亚斯等）时要等召唤兽真正出场
     const setup = await page.evaluate(({ id, keep }) => {
       const p = game.player; p.x = 380; p.y = 100; p.z = 0; p.vz = 0; p.face = 1; p.setState('idle'); p.act = null; p.cool = {}; if (!keep) p.buffs = {}; p.chasers = [];
       for (let i = 0; i < game.skillBar.length; i++) game.skillBar[i] = null; game.skillBar[0] = id; __dummy(); projs.length = 0; window.__hits = 0;
-      if (typeof summonsOf === 'function') for (const s of summonsOf(p) || []) s.remove = true;
+      if (typeof summonsOf === 'function' && !keep) for (const s of summonsOf(p) || []) dismissOne(s, 'round');   // 有前置时保留前置放出的召唤兽（咒令类技能要它在场）
+      p.summonMode = null;   // 上一行技能留下的“伺机而动 / 跟随 / 集火”开关不带到下一行
       const S = SKILLS[id];
       if (S.airOnly) { p.vz = 420; p.z = 1; p.setState('jump'); }
       if (typeof S.whenHit === 'function' ? S.whenHit(p) : S.whenHit) { p.setState('hit'); p.stun = 0.8; }

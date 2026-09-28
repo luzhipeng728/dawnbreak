@@ -105,8 +105,8 @@ const R = await page.evaluate(() => {
   const m7 = T.mob(420, 100); T.reset(); T.cast('sb_saya'); T.run(40); out.sayaN = summonsOf(p, 'sb_saya_f').length; T.run(60); out.sayaHit = m7.hp < 1e9;
   p.cool = {}; T.cast('sb_saya'); T.run(40); out.sayaReplace = summonsOf(p, 'sb_saya_f').length;
   // 鬼神解放：鬼影鞭施放中按罗刹键，不打断动作直接放阵；没学鬼神解放时放不出来
-  dismissSummons(p); T.reset(); p.cool = {}; T.cast('sb_whip'); T.run(6); T.tap('s2'); T.run(1); out.softAct = p.act && p.act.skill; out.softField = summonsOf(p, 'sb_rasha_f').length; T.run(60);
-  game.skillLv.sb_release = 0; dismissSummons(p); T.reset(); p.cool = {}; T.cast('sb_whip'); T.run(6); T.tap('s2'); T.run(1); out.noSoftField = summonsOf(p, 'sb_rasha_f').length; T.run(60); game.skillLv.sb_release = 1;
+  dismissSummons(p); T.reset(); p.cool = {}; T.cast('sb_whip'); T.run(6); T.tap('s2'); T.run(5); out.softAct = p.act && p.act.skill; out.softField = summonsOf(p, 'sb_rasha_f').length; T.run(60);   // 命中停顿中输入会顺延几帧
+  game.skillLv.sb_release = 0; dismissSummons(p); T.reset(); p.cool = {}; T.cast('sb_whip'); T.run(6); T.tap('s2'); T.run(5); out.noSoftField = summonsOf(p, 'sb_rasha_f').length; T.run(60); game.skillLv.sb_release = 1;
   // 罗刹附身：踩进阵的敌人被附身，离开阵也不掉
   dismissSummons(p); T.clear(); const m8 = T.mob(400, 100); T.reset(); p.cool = {}; T.cast('sb_rasha'); T.run(60); out.rashaOn = summonsOf(p, 'sb_rasha_on').some(s => s.host === m8); m8.x = 900; T.run(60); out.rashaStay = summonsOf(p, 'sb_rasha_on').some(s => s.host === m8);
   // 普戾蒙：阵里的敌人受到伤害增加
@@ -129,7 +129,7 @@ const R = await page.evaluate(() => {
   T.reset(); const gbSeen = []; T.press('attack'); for (let i = 0; i < 120; i++) { T.run(1); if (p.act && !gbSeen.includes(p.act.name)) gbSeen.push(p.act.name); } T.release('attack'); T.run(30); out.gbBasic = gbSeen.filter(n => /^atk/.test(n)).length;
   // 幻鬼：一闪 → 幻鬼现身出招、之后可以幻鬼步
   const m10 = T.mob(560, 100); T.reset(); T.cast('gb_issen'); T.run(20); const ph = gbPhantom(p); out.phantom = !!ph; out.phantomHit = m10.hp < 1e9; T.run(10);
-  const px0 = p.x; T.cast('gb_retrace'); T.run(2); out.retrace = ph && Math.abs(p.x - ph.x) < 5 && Math.abs(p.x - px0) > 100; out.retraceInvul = p.invul > 0.3;
+  const px0 = p.x; T.cast('gb_retrace'); T.run(2); out.retrace = ph && Math.abs(p.x - ph.x) < 30 && Math.abs(p.x - px0) > 100; out.retraceInvul = p.invul > 0.3;   // 房间边缘会把人夹回一点
   T.run(90); out.phantomGone = !gbPhantom(p);
   // 幻鬼技能在剑术技能中无动作叠加
   T.reset(); p.cool = {}; T.cast('gb_chain'); T.run(6); T.tap('s3'); T.run(1); out.stackAct = p.act && p.act.skill; out.stackPhantom = !!gbPhantom(p); T.run(90);

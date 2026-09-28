@@ -2,10 +2,27 @@
    17. 成长：经验 / 等级 / SP / 四维与属性计算（recalcStats）
    属性语义见协作板“战斗与动作 第 4 节”：面板值写到玩家实体上，伤害结算读取
    ===================================================================== */
-const MAX_LVL = 30;
+// 满级：2026-09-28 从 30 提到 60（官方 1~100 压缩进 1~30 的老内容不动，31~60 是官方 60 版本区域的新成长段；觉醒仍是 21 / 26 / 30）
+const MAX_LVL = 60, OLD_CAP = 30;
 // 升级所需经验（2026-09-27 主线程拍板 ×1.8：每个地下城约打 1.5~2 次，Lv1→20 约 15 次，见 test/econ.mjs）
-const EXP_CURVE_MUL = 1.8;
-const expNeed = lv => Math.round((200 * Math.pow(lv, 1.85) + 300) * EXP_CURVE_MUL);
+const EXP_CURVE_MUL = 1.8, EXP_HI_POW = 1.25;
+const expNeedLo = lv => Math.round((200 * Math.pow(lv, 1.85) + 300) * EXP_CURVE_MUL);
+// Lv30 以后：从 Lv30 的值接着按 (lv / 30)^EXP_HI_POW 平滑增长（31~60 约是 1~30 的 1.5~2 倍时间，推算见 docs/GEAR.md「等级段」）
+const expNeed = lv => lv < OLD_CAP ? expNeedLo(lv) : Math.round(expNeedLo(OLD_CAP) * Math.pow(lv / OLD_CAP, EXP_HI_POW));
+// 技能等级上限随满级继续涨（SKILLS_OFFICIAL_common.md 的 lvStep 规则往 Lv60 延伸）：普通主动技能（maxLv ≥ 5，不含被动 / BUFF / 觉醒）
+// Lv30 以后每 3 级上限 +1（Lv60 时 +10）；第 n 级（n > maxLv）的学习等级 = max(lvReq + (n−1)×lvStep, 30 + 3×(n − maxLv))。
+// 决斗按固定 Lv30 + S.maxLv（fighter_ai.js），不受影响
+const SKILL_HI_STEP = 3;
+const skillGrows = S => !!S && (S.maxLv || 1) >= 5 && !S.passive && !S.buff && !S.awaken;
+function skillLvReq(S, lv) {
+  const base = (S.lvReq || 1) + (lv > 1 && S.lvStep ? (lv - 1) * S.lvStep : 0), m = S.maxLv || 1;
+  return lv > m && skillGrows(S) ? Math.max(base, OLD_CAP + SKILL_HI_STEP * (lv - m)) : base;
+}
+function skillMaxLv(S) {
+  const m = S.maxLv || 1; if (!skillGrows(S)) return m;
+  let n = m; while (n < m + (MAX_LVL - OLD_CAP) / SKILL_HI_STEP && skillLvReq(S, n + 1) <= MAX_LVL) n++;
+  return n;
+}
 function gainExp(n) {
   if (game.lvl >= MAX_LVL) return;
   const p = game.player;
@@ -19,7 +36,7 @@ function onLevelUp() {
   if (p) { recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax;
     (fxAura(p, '#ffd23a', 1.6), fxBurst(p.x, p.y, p.z + 60, 200, '#ffd23a'));
   }
-  toastMsg(`等级提升到 Lv.${game.lvl}！获得 SP ${28 + game.lvl}`, '#ffe070');
+  toastMsg(`等级提升到 Lv.${game.lvl}！获得 SP ${28 + game.lvl}${game.lvl >= MAX_LVL ? '（已达到满级）' : ''}`, '#ffe070');
   bus.emit('levelUp', { lvl: game.lvl });
 }
 // 勇者加成：整体降低难度（2026-09-27 调整）

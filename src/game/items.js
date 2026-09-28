@@ -106,7 +106,8 @@ function gearStats(D, R) {
     if (D.atype === 'cloth') add('mp', Math.round((10 + 6 * L) * m));
   } else if (D.slot === 'neck') { add('str', Math.round((2 + L * 0.9) * m)); add('int', Math.round((2 + L * 0.9) * m)); add('mp', Math.round((15 + 8 * L) * m)); add('mdef', Math.round((6 + 3 * L) * m)); }
   else if (D.slot === 'bracelet') { add('str', Math.round((2 + L * 0.8) * m)); add('int', Math.round((2 + L * 0.8) * m)); add('atk', Math.round((8 + 5 * L) * m)); add('matk', Math.round((8 + 5 * L) * m)); add('mdef', Math.round((5 + 2.5 * L) * m)); }
-  else if (D.slot === 'ring') { add('str', Math.round((2 + L * 0.8) * m)); add('int', Math.round((2 + L * 0.8) * m)); add('crit', 0.01 + 0.002 * L * m); add('mcrit', 0.01 + 0.002 * L * m); add('mdef', Math.round((5 + 2.5 * L) * m)); }
+  else if (D.slot === 'ring') { const cL = Math.min(L, 30) + Math.max(0, L - 30) * 0.5;   // 暴击率：Lv30 以后成长减半（满级 60 时一枚戒指不超过 ~18%）
+    add('str', Math.round((2 + L * 0.8) * m)); add('int', Math.round((2 + L * 0.8) * m)); add('crit', 0.01 + 0.002 * cL * m); add('mcrit', 0.01 + 0.002 * cL * m); add('mdef', Math.round((5 + 2.5 * L) * m)); }
   else if (D.slot === 'support') { for (const k of ['str', 'int', 'vit', 'spr']) add(k, Math.round((1 + L * 0.45) * m)); add('hp', Math.round((10 + 6 * L) * m)); }
   else if (D.slot === 'stone') { add('str', Math.round((1 + L * 0.5) * m)); add('int', Math.round((1 + L * 0.5) * m)); add('elemAll', Math.round((2 + L * 0.35) * m)); add('mp', Math.round((8 + 5 * L) * m)); }
   // 稀有以上附加 1~2 条随机属性（按 key 固定）

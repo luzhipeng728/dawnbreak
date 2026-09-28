@@ -4,8 +4,8 @@ import { launch, URL_BASE } from '../../test/lib.mjs';
 //   <工作目录>/cloud.json（{ data }）→ <工作目录>/maxed.json；没转职的角色按第 2 个参数转职（例 sword=soulbender,gun=ranger,mage=elemental）
 const S = process.argv[2], cloud = JSON.parse(fs.readFileSync(S + '/cloud.json', 'utf8')).data;
 const JOBS = Object.fromEntries((process.argv[3] || '').split(',').filter(Boolean).map(x => x.split('='))), BONUS = +(process.argv[4] || 0);
-// 第 5 个参数：新建角色（只处理新建的，已有角色不动），多个用逗号：职业:转职:等级:装备(max|normal):名字   例 sword:berserker:30:max:血狱狂战,sword:berserker:20:normal:狂战练级
-const NEW = (process.argv[5] || '').split(',').filter(Boolean).map(x => { const [cls, job, lv, gear, name] = x.split(':'); return { cls, job, lv: +lv || 30, gear: gear || 'max', name }; });
+// 第 5 个参数：新建角色（只处理新建的，已有角色不动），多个用逗号：职业:转职:等级:装备(max|normal):名字   例 sword:berserker:60:max:血狱狂战（等级省略 = 满级 60）,sword:berserker:20:normal:狂战练级
+const NEW = (process.argv[5] || '').split(',').filter(Boolean).map(x => { const [cls, job, lv, gear, name] = x.split(':'); return { cls, job, lv: +lv || 60, gear: gear || 'max', name }; });
 const { browser, page, logs } = await launch({ width: 1280, height: 720 });
 await page.goto(`${URL_BASE}?town&mute&cls=gun`); await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 60000 });
 const out = await page.evaluate(async ({ cloud, JOBS, BONUS, NEW }) => {

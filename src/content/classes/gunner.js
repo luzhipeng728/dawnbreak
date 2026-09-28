@@ -49,7 +49,7 @@ const isRevolver = p => !wtypeOf(p) || wtypeOf(p) === 'revolver';   // 没装备
 const shotsOf = p => feelOf(p).n;
 // 空中射击（Buff）增加的跳射发数：1 级到 10 级之间按等级插值
 function aerialBonus(p) { const b = p.buffs && p.buffs.g_aerial; if (!b) return 0; const [a0, a1] = feelOf(p).bonus; return Math.round(lerp(a0, a1, clamp((b.lv - 1) / 9, 0, 1))); }
-// o: { dmg, up（格林机枪 / BBQ 的斜上射）, down（跳射斜下）, low（↓X 低射，可打倒地）, knock, lift, life, pierce, vol, quiet, hit, basic（普攻：吃银弹）,
+// o: { fx（只做表现，不判定：伤害由技能自己结算）, dmg, up（格林机枪 / BBQ 的斜上射）, down（跳射斜下）, low（↓X 低射，可打倒地）, knock, lift, life, pierce, vol, quiet, hit, basic（普攻：吃银弹）,
 //      speedMul（子弹速度倍率）, col（子弹染色，银弹优先）}
 // 转职的普攻子弹钩子 CLASSES.gun.shotMod(e, o) → 新的 o（弹药专家的子弹种类：改 dmg / life / pierce / hit / speedMul / col）
 function fireBullet(e, o = {}) {
@@ -64,7 +64,7 @@ function fireBullet(e, o = {}) {
   if (silver) { silver.n--; if (silver.n <= 0) delete e.buffs.g_silver; }
   spawnProj({ owner: e, x: e.x + e.face * 34, y: e.y, z: e.z + zz, vx: e.face * sp * ang, vz: dn ? -sp * 0.72 : up ? sp * 0.72 : 0, face: e.face, life: o.life || 0.52, w: 7, d: 12, h: o.low ? 10 : 14,
     pierce: !!o.pierce || (o.basic && isRevolver(e) && Math.random() < 0.04 * skLv(e, 'g_revmaster')),   // 左轮奥义：普攻穿透几率
-    hit: { dmg: (o.dmg || 0.5) * (silver ? 1 + silver.shot : 1), stun: 0.22, knock: o.knock ?? 25, airLift: o.lift ?? 120, hs: 0.025, snd: 'stab', col: silver ? '#fff6c0' : '#ffe0a0', downHit: !!o.low, elem: silver ? 'light' : undefined, ...(o.hit || {}) },
+    hit: o.fx ? null : { dmg: (o.dmg || 0.5) * (silver ? 1 + silver.shot : 1), stun: 0.22, knock: o.knock ?? 25, airLift: o.lift ?? 120, hs: 0.025, snd: 'stab', col: silver ? '#fff6c0' : '#ffe0a0', downHit: !!o.low, elem: silver ? 'light' : undefined, ...(o.hit || {}) },
     update(pr) { if (pr.z <= 0 && pr.vz < 0) { pr.t = pr.life; fxDust(pr.x, pr.y, 2, 4, '#a89878'); } },
     draw(c, pr) { drawSpr(c, silver ? fxTint('bullet', '#fff8d0') : o.col ? fxTint('bullet', o.col) : 'bullet', sx(pr.x), sy(pr.y, pr.z), 52, 8, { ax: 0.9, rot: Math.atan2(-pr.vz, pr.vx) }); } });
 }
@@ -227,7 +227,7 @@ defSkill('g_bbq', { name: 'BBQ', cls: 'gun', lvReq: 15, sp: 20, mp: 45, cd: 8, t
     hits: [HB(0.08, 0.18, [0, 68, 26, 20, 135], skillDmg(1.2, 0.12, lv), { grab: true, launch: 420, knock: 30, hs: 0.08, snd: 'blunt' })],
     onGrab: (e, t) => { const a = e.act; a.gT = e.actT; a.dur = e.actT + 1.3; t.heldClip = 'air';
       a.update = e2 => { const k = e2.actT - a.gT; if (k > 0.25 && !a.fire) { a.fire = true; e2.play('bbq', true); }
-        if (a.fire && Math.floor((k - 0.25) / 0.08) !== a.n && (a.shots || 0) < 10) { a.n = Math.floor((k - 0.25) / 0.08); a.shots = (a.shots || 0) + 1; fireBullet(e2, { up: true, dmg: skillDmg(0.3, 0.03, lv), lift: 120, knock: 5, vol: 0.55, quiet: a.n % 2 === 1 });
+        if (a.fire && Math.floor((k - 0.25) / 0.08) !== a.n && (a.shots || 0) < 10) { a.n = Math.floor((k - 0.25) / 0.08); a.shots = (a.shots || 0) + 1; fireBullet(e2, { fx: true, up: true, dmg: skillDmg(0.3, 0.03, lv), lift: 120, knock: 5, vol: 0.55, quiet: a.n % 2 === 1 });
           const g = e2.grabbed; if (g) applyHit(e2, g, { dmg: skillDmg(0.3, 0.03, lv), hs: 0.01, sure: true, snd: 'stab' }, { proj: true }); }
         if (k > 1.1 && !a.done) { a.done = true; throwGrab(e2, { dmg: skillDmg(1.0, 0.1, lv), launch: 380, knock: 120, hs: 0.1, big: 1.4 }); } }; },
     hold: (e, t) => { const k = clamp((e.actT - e.act.gT) / 0.3, 0, 1); t.x = e.x + e.face * 46; t.y = e.y + 0.5; t.z = e.z + 30 + k * 70 + Math.sin(game.t * 40) * 2; t.face = -e.face; },

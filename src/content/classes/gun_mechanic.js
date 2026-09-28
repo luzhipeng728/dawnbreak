@@ -613,7 +613,8 @@ defSkill('gm_camo', { name: '伪装', cls: 'gun', job: MC, lvReq: 18, mp: 60, cd
   infoExtra: lv => [['持续', camoDur(lv) + ' 秒'], ['回避率', '+' + pct(camoEv(lv))], ['常驻减伤', pct(camoDr(lv))]], ai: { kind: 'buff' },
   act: (lv) => ({ name: 'gm_camo', clip: mclip('mRemote'), dur: 0.7, noCounter: true,
     events: [evAt(0.35, e => { e.cloakT = game.t + camoDur(lv); e.cloakRevT = 0; e.cloakLv = lv; cloakWrap(e); dismissSummons(e, 'mech_cloak', 'cmd'); e.cloakT = game.t + camoDur(lv);
-      summon(e, 'mech_cloak', { life: camoDur(lv) }); sfx.buff(); fxSpr('rune', e.x, e.y, 0, { w: 140, dur: 0.6, col: '#bfe8ff', ay: 0.5, grow: [0.3, 1.2] }); })] }) });
+      summon(e, 'mech_cloak', { life: camoDur(lv) }); sfx.buff(); addFx({ x: e.x, y: e.y - 0.5, z: 0, dur: 0.6, draw(c) { const k = this.t / this.dur;   // 地面法阵：躺在地上
+        drawSpr(c, fxTint('rune', '#bfe8ff'), sx(this.x), sy(this.y + 0.5, 0), 140 * lerp(0.3, 1.2, easeOut(k)), 52 * lerp(0.3, 1.2, easeOut(k)), { ground: true, rot: k * 0.8, alpha: k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1, add: true }); } }); })] }) });
 
 /* =====================================================================
    空战机械：狂风（跟着你的飞行机甲：机枪 + 导弹，60 秒；到时 / 再按技能键 / 放新的时自爆）

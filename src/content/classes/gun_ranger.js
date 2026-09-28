@@ -103,21 +103,21 @@ defSkill('g_revmaster', { name: '左轮奥义', cls: 'gun', job: 'ranger', lvReq
   desc: '【被动】精通左轮：普通射击的攻击力、穿透几率提高，装填更快；暴击率、攻击速度、移动速度小幅提高。只在装备左轮（或没装备武器）时生效。',
   infoExtra: lv => [['射击伤害', '+' + pct(0.02 * lv)], ['穿透几率', pct(0.04 * lv)], ['装填速度', '+' + pct(0.1 * lv)], ['暴击 / 攻速 / 移速', '+' + pct(0.01 * lv)]] });
 defSkill('g_blade', { name: '双枪极舞刃', cls: 'gun', job: 'ranger', lvReq: 15, maxLv: 1, sp: 0, mp: 0, cd: 0, type: 'phys', passive: true, col: '#c83a4a', cmdNote: 'C C / 空中 Z / 滑铲中 Z / 上旋踢中 Z',
-  desc: '【被动，转职时自动学会】左轮装上枪刃，多出 4 个派生：地面连按 C C = 飞燕射击（向前空翻，向下射击）；跳跃中按 Z = 俯冲斩；滑铲（跑攻）中按 Z = 起身斩（再按 Z 把敌人挑飞，落地前可以接浮空弹或致命射击）；上旋踢中按 Z = 翻腾攻击。' });
+  desc: '【被动，转职时自动学会】左轮装上枪刃，多出 4 个派生：地面连按 C C = 飞燕射击（向前空翻，向下射击）；跳跃中按 Z = 俯冲斩；滑铲（跑攻）中按 Z = 起身斩（再按 Z 把敌人挑飞，落地前可以接浮空弹或致命射击）；上旋踢中按 Z = 翻腾攻击。每个派生发动瞬间短暂霸体。' });
 // 双枪极舞刃的 4 个派生（不单独学，等级跟双枪极舞刃走）
 const bladeSub = (id, o) => defSkill(id, { cls: 'gun', job: 'ranger', lvReq: 15, lvFrom: 'g_blade', maxLv: 1, sp: 0, hidden: true, type: 'phys', col: '#c83a4a', ...o });
 bladeSub('g_bl_flip', { name: '飞燕射击', mp: 6, cd: 2, air: true, airOnly: true, req: p => p.st === 'jump' && p.stT < 0.4 ? true : '起跳后马上再按 C',
   desc: '起跳后马上再按 C：向前空翻，同时向下连开 3 枪。',
-  act: () => ({ name: 'g_bl_flip', clip: 'rainbow', dur: 0.55, airOnly: true, lowGrav: 0.45, noCounter: true,
+  act: () => ({ name: 'g_bl_flip', clip: 'rainbow', dur: 0.55, airOnly: true, lowGrav: 0.45, noCounter: true superArmor: [0, 0.1],
     onStart: e => { e.vz = Math.max(e.vz, 300); e.vx = e.face * 230; sfx.jump(); },
     update: e => { const a = e.act, n = Math.floor((e.actT - 0.1) / 0.1); if (e.actT > 0.1 && n !== a.n && n < 3) { a.n = n; fireBullet(e, { down: true, dmg: 0.9 * shotDmgOf(e), life: 0.5, vol: 0.7 }); } } }) });
 bladeSub('g_bl_dive', { name: '俯冲斩', mp: 6, cd: 1, air: true, airOnly: true, desc: '跳跃中按 Z：挥着枪刃沿斜线向下俯冲斩击。',
-  act: () => ({ name: 'g_bl_dive', clip: 'airBlade', dur: 0.7, airOnly: true, noCounter: true,
+  act: () => ({ name: 'g_bl_dive', clip: 'airBlade', dur: 0.7, airOnly: true, noCounter: true superArmor: [0, 0.1],
     onStart: e => { e.vz = -560; e.vx = e.face * 380; bladeSlash(e, { a0: -1.3, a1: 1.7, r: 62, heavy: true }); },
     hits: [HB(0, 0.7, [-6, 62, 26, -50, 70], 1.4, { stun: 0.4, knock: 80, airLift: 160, hs: 0.05, snd: 'slash', col: '#ff9aa8' })],
     onLand: e => { fxDust(e.x, e.y, 5, 12); e.vx *= 0.2; e.endAct(); } }) });
 bladeSub('g_bl_rush', { name: '起身斩', mp: 6, cd: 1, desc: '滑铲（跑攻）中按 Z：顺势起身斩击；再按 Z 把敌人挑飞，落地前可以接浮空弹或致命射击。',
-  act: () => ({ name: 'g_bl_rush', clip: 'rushBlade', dur: 0.46, noCounter: true, move: [[0, 0.12, 140]], follow: () => bladeRush2(), followWin: [0.16, 0.46],
+  act: () => ({ name: 'g_bl_rush', clip: 'rushBlade', dur: 0.46, noCounter: true superArmor: [0, 0.1], move: [[0, 0.12, 140]], follow: () => bladeRush2(), followWin: [0.16, 0.46],
     hits: [HB(0.05, 0.16, [0, 72, 28, 0, 110], 1.3, { stun: 0.5, knock: 60, launch: 220, hs: 0.06, snd: 'slash', col: '#ff9aa8' })],
     events: [evAt(0.04, e => bladeSlash(e, { a0: 1.5, a1: -1.6, r: 60 }))] }) });
 function bladeRush2() {
@@ -126,13 +126,13 @@ function bladeRush2() {
     events: [evAt(0.05, e => bladeSlash(e, { a0: 1.8, a1: -1.2, r: 66, heavy: true }))] };
 }
 bladeSub('g_bl_up', { name: '翻腾攻击', mp: 6, cd: 1.5, desc: '上旋踢中按 Z：原地向上一记翻腾踢，把敌人挑飞。',
-  act: () => ({ name: 'g_bl_up', clip: 'kick', dur: 0.42, noCounter: true, links: ['g_launch', 'g_head', 'g_flash'],
+  act: () => ({ name: 'g_bl_up', clip: 'kick', dur: 0.42, noCounter: true superArmor: [0, 0.1], links: ['g_launch', 'g_head', 'g_flash'],
     hits: [HB(0.06, 0.16, [-10, 66, 28, 10, 150], 1.2, { launch: 560, knock: 20, hs: 0.07, snd: 'blunt', big: 1.2 })],
     events: [evAt(0.05, e => bladeSlash(e, { a0: 2.0, a1: -1.4, r: 60 }))] }) });
 defSkill('g_head', { name: '致命射击', cls: 'gun', job: 'ranger', lvReq: 15, mp: 25, cd: 6.5, type: 'phys', icon: 'g_head', col: '#8a2a3a',
   desc: '瞬间射出一发贯穿直线的精准子弹，命中率、暴击率都很高。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'burst', r: [0, 540], dy: 12 },
   act: (lv) => ({ name: 'g_head', clip: 'headShot', dur: 0.42, events: [evAt(0.06, e => preciseShot(e, skillDmg(4.0, 0.4, lv) * shotDmgOf(e)))] }) });
-defSkill('g_guard', { name: '远程格挡', cls: 'gun', job: 'ranger', lvReq: 16, mp: 8, cd: 5, type: 'phys', col: '#6a8aa8', cmdNote: '只能用快捷栏',
+defSkill('g_guard', { name: '远程格挡', cls: 'gun', job: 'ranger', lvReq: 16, mp: 8, cd: 3, type: 'phys', col: '#6a8aa8', cmdNote: '只能用快捷栏',
   desc: '举枪挡住正面的远程攻击（飞行道具），吸收一部分伤害，不会被打僵。按住技能键持续格挡。格挡成功后，短时间内攻击速度、移动速度提高。',
   infoExtra: lv => [['吸收伤害', pct(Math.min(0.8, 0.3 + 0.05 * lv))]], ai: { kind: 'guard' },
   act: (lv) => ({ name: 'g_guard', clip: 'dualAim', dur: 3, noCounter: true, guardProj: Math.min(0.8, 0.3 + 0.05 * lv),
@@ -156,10 +156,10 @@ defSkill('g_revenge', { name: '心灵反击', cls: 'gun', job: 'ranger', lvReq: 
     onStart: e => { fxAfterimage(e, '#ff9ab0'); e.vx = -e.face * 80; },
     events: [evAt(0.22, e => { e.play('headShot', true); preciseShot(e, skillDmg(4.0, 0.4, skLv(e, 'g_head') || 1) * shotDmgOf(e), { knock: game.pvp ? 320 : 120, hit: { onHit: (a, t) => { if (!game.pvp) addStatus(t, 'stun', 3, { src: a }); } } }); })] }) });
 defSkill('g_chain', { name: '锁链截击', cls: 'gun', job: 'ranger', lvReq: 17, mp: 35, cd: 5, type: 'phys', col: '#a8a098',
-  desc: '把枪刃连着锁链竖着甩出去旋转，多段攻击并把周围的敌人聚到身前。旋转中再按技能键：第 2 击把敌人推开，第 3 击把敌人拉回身边。', pow: lv => skillDmg(4.2, 0.42, lv), ai: { kind: 'aoe', r: [0, 150], dy: 40 },
+  desc: '把枪刃连着锁链竖着甩出去旋转，多段攻击并把周围的敌人聚到身前。旋转中再按技能键：第 2 击把敌人推开，第 3 击把敌人拉回身边。全程霸体。', pow: lv => skillDmg(4.2, 0.42, lv), ai: { kind: 'aoe', r: [0, 150], dy: 40 },
   act: (lv) => chainStage(lv, 1) });
 function chainStage(lv, n) {
-  const base = { name: 'g_chain' + n, clip: n === 1 ? 'chainSnatch' : 'shoot2', noCounter: true, follow: n < 3 ? () => chainStage(lv, n + 1) : null, followWin: [0.3, 0.8] };
+  const base = { name: 'g_chain' + n, clip: n === 1 ? 'chainSnatch' : 'shoot2', noCounter: true, superArmor: true, follow: n < 3 ? () => chainStage(lv, n + 1) : null, followWin: [0.3, 0.8] };
   if (n === 1) return { ...base, dur: 0.8,
     update: e => { const a = e.act, k = Math.floor((e.actT - 0.08) / 0.1), cx = e.x + e.face * 80;
       if (e.actT > 0.08 && e.actT < 0.7 && k !== a.k) { a.k = k; chainLine(e, cx, 70, 0.2); bladeSlash(e, { a0: -Math.PI + k, a1: k + 0.5, r: 46, off: [70, 70], silent: k % 2 === 1 });
@@ -212,26 +212,26 @@ defSkill('g_moving', { name: '移动射击', cls: 'gun', job: 'ranger', lvReq: 1
     update: e => { e.play(e.act.walking ? 'moveShot' : 'dualAim'); },
     onEnd: e => { e.vx = 0; e.vy = 0; } }) });
 defSkill('g_multi', { name: '多重射击', cls: 'gun', job: 'ranger', lvReq: 19, mp: 60, cd: 15, type: 'phys', col: '#a02a3a', noWtype: ['handcannon'], pre: { g_backshot: 1, g_rapid: 1 },
-  desc: '朝一片区域连续精准射击 9 发，暴击率提高。施放时按住方向键决定朝哪边打（前方、上方纵深、下方纵深、身后），有敌人时优先打敌人。手炮不能用。需要致命回射、枪舞各 Lv1。', pow: lv => skillDmg(9.0, 0.9, lv), ai: { kind: 'burst', r: [0, 480], dy: 80 },
-  act: (lv) => ({ name: 'g_multi', clip: 'aimShot', dur: 1.25, noCounter: true, superArmor: [0, 0.3],
+  desc: '朝一片区域连续精准射击 5 发，暴击率提高。施放时按住方向键决定朝哪边打（前方、上方纵深、下方纵深、身后），有敌人时优先打敌人。全程霸体。手炮不能用。需要致命回射、枪舞各 Lv1。', pow: lv => skillDmg(9.0, 0.9, lv), ai: { kind: 'burst', r: [0, 480], dy: 80 },
+  act: (lv) => ({ name: 'g_multi', clip: 'aimShot', dur: 1.0, noCounter: true, superArmor: true,
     onStart: e => { const I = e.pad, dx = I ? I.dx() : 0, dy = I ? I.dy() : 0; if (dx) e.face = dx; e.act.dy = dy; sfx.charge(); },
-    update: e => { const a = e.act, n = Math.floor((e.actT - 0.3) / 0.1);
-      if (e.actT > 0.3 && n !== a.n && n < 9) { a.n = n;
+    update: e => { const a = e.act, n = Math.floor((e.actT - 0.3) / 0.12);
+      if (e.actT > 0.3 && n !== a.n && n < 5) { a.n = n;
         const ys = a.dy < 0 ? [e.y - 90, e.y + 10] : a.dy > 0 ? [e.y - 10, e.y + 90] : [e.y - 50, e.y + 50];
         const L = ents.filter(t => hittable(e, t) && (t.x - e.x) * e.face > 0 && Math.abs(t.x - e.x) < 660 && t.y > ys[0] && t.y < ys[1]);
         const t = L.length ? L[n % L.length] : null, px = t ? t.x : e.x + e.face * rnd(120, 560), py = t ? t.y : clamp(rnd(ys[0], ys[1]), 8, DEPTH - 8), pz = t ? t.z + t.hurtH() * 0.75 : 60;
         muzzle(e); sfx.gun(1.1); e.play('headShot', true);
         addFx({ x: e.x + e.face * 34, y: Math.max(e.y, py) + 1, z: e.z + 64, tx: px, ty: py, tz: pz, dur: 0.1, add: true, draw(c) { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(255,220,120,${1 - this.t / this.dur})`; c.lineWidth = 3; c.beginPath(); c.moveTo(sx(this.x), sy(this.y, this.z)); c.lineTo(sx(this.tx), sy(this.ty, this.tz)); c.stroke(); c.restore(); } });
-        if (t && hittable(e, t)) applyHit(e, t, { dmg: skillDmg(1.0, 0.1, lv) * shotDmgOf(e), stun: 0.45, knock: 60, hs: 0.05, critBonus: 0.3, snd: 'stab', col: '#ffe0a0', sure: true }, { proj: true });
+        if (t && hittable(e, t)) applyHit(e, t, { dmg: skillDmg(1.8, 0.18, lv) * shotDmgOf(e), stun: 0.45, knock: 60, hs: 0.05, critBonus: 0.3, snd: 'stab', col: '#ffe0a0', sure: true }, { proj: true });
         else fxDust(px, py, 3, 8, '#a89878'); } } }) });
-defSkill('g_hawk', { name: '双鹰回旋', cls: 'gun', job: 'ranger', lvReq: 20, mp: 60, cd: 25, type: 'phys', icon: 'g_hawk', col: '#2aa0a0', pre: { g_multi: 1 },
-  desc: '把两把左轮旋转着掷出，飞出去再飞回来，一路自动开火。接住飞回来的枪后可以再按技能键再掷（最多 3 次），每掷一次范围更大、转得更快；接枪和掷枪时霸体。需要多重射击 Lv1。', pow: lv => skillDmg(4.5, 0.45, lv) * 3, ai: { kind: 'proj', r: [0, 360], dy: 20 },
+defSkill('g_hawk', { name: '双鹰回旋', cls: 'gun', job: 'ranger', lvReq: 20, mp: 60, cd: 45, type: 'phys', icon: 'g_hawk', col: '#2aa0a0', pre: { g_multi: 1 },
+  desc: '把两把左轮旋转着掷出，飞出去再飞回来，一路自动开火。接住飞回来的枪后可以再按技能键再掷（最多 3 次），每掷一次范围更大、转得更快；接枪和掷枪时霸体。需要多重射击 Lv1。', pow: lv => skillDmg(8.1, 0.81, lv) * 3, ai: { kind: 'proj', r: [0, 360], dy: 20 },
   recast: { ok: p => !!p._hawk && game.t - p._hawk.t < 1.5 && p._hawk.n <= 3, act: (lv, p) => { const n = p._hawk.n; p._hawk = null; return hawkThrow(lv, n); }, cd: 0.2, mp: 0 },
   act: (lv) => hawkThrow(lv, 1) });
 function hawkThrow(lv, n) {
   return { name: 'g_hawk' + n, clip: 'ghawk', dur: 0.5, superArmor: [0, 0.3], noCounter: true,
     onStart: e => { e._hawk = null; e._hawkOut = 2; },
-    events: [evAt(0.2, e => { sfx.swing(true); for (let i = 0; i < 2; i++) game.after(i * 0.1, () => { if (!e.dead) hawkGun2(e, i, skillDmg(1.5, 0.15, lv) * (1 + 0.15 * (n - 1)), n); }); })] };
+    events: [evAt(0.2, e => { sfx.swing(true); for (let i = 0; i < 2; i++) game.after(i * 0.1, () => { if (!e.dead) hawkGun2(e, i, skillDmg(2.7, 0.27, lv) * (1 + 0.15 * (n - 1)), n); }); })] };
 }
 // 回旋手枪：飞出去再飞回来（范围随第几掷变大）；两把都回来了就算“接住”，可以再掷
 function hawkGun2(e, i, dmg, n) {
@@ -256,11 +256,11 @@ CLASSES.gun.onHit = (p, t, h, dmg, act, opt) => {
   applyHit(p, t, { dmg: skillDmg(0.8, 0.08, lv), hs: 0.01, sure: true, snd: 'slash', col: '#ff8a9a', stun: 0.1, knock: 0 }, { proj: true, hidecut: true });
   rangerBleed(p, t);
 };
-defSkill('g_awaken', { name: '绯红盛宴', cls: 'gun', job: 'ranger', tier: 1, lvReq: 21, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'phys', awaken: true, col: '#c0102a',
-  desc: '【觉醒】用枪刃向前方一片区域连续斩击、投掷，连按 X 或 Z 增加轮数（最多 6 轮，每轮 4 段），最后聚起一把灵魂巨刃升空斩终结；按住前方向键会多冲一段。全程无敌，全部附加出血。', pow: lv => skillDmg(22, 6, lv), ai: { kind: 'awaken', r: [0, 260], dy: 60 },
+defSkill('g_awaken', { name: '绯红盛宴', cls: 'gun', job: 'ranger', tier: 1, lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'phys', awaken: true, col: '#c0102a',
+  desc: '【觉醒】用枪刃向前方一片区域连续斩击、投掷，连按 X、Z 或技能键增加轮数（最多 6 轮，每轮 4 段），最后聚起一把灵魂巨刃升空斩终结；按住前方向键会多冲一段。全程无敌，全部附加出血。', pow: lv => skillDmg(22, 6, lv), ai: { kind: 'awaken', r: [0, 260], dy: 60 },
   act: (lv) => ({ name: 'g_awaken', clip: 'carnival', dur: 4, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '绯红盛宴', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.act.rounds = 1; e.act.finT = 0.4 + 0.45; },
-    onInput: (e, I) => { const a = e.act; if (!a.fin && (I.buffered('attack') || I.buffered('cmd')) && a.rounds < 6) { I.consume('attack'); I.consume('cmd'); a.rounds++; a.finT = 0.4 + a.rounds * 0.45; } return true; },
+    onInput: (e, I) => { const a = e.act; if (!a.fin && (I.buffered('attack') || I.buffered('cmd') || (a.key && I.buffered(a.key))) && a.rounds < 6) { I.consume('attack'); I.consume('cmd'); if (a.key) I.consume(a.key); a.rounds++; a.finT = 0.4 + a.rounds * 0.45; } return true; },
     update: e => { const a = e.act, k = Math.floor((e.actT - 0.4) / 0.11);
       if (!a.fin && e.actT > 0.4 && e.actT < a.finT && k !== a.k) { a.k = k; e.play(k % 2 ? 'carnival' : 'carnival2', true); bladeSlash(e, { a0: k % 2 ? 1.2 : -2.4, a1: k % 2 ? -2.4 : 1.2, r: 90, w: 18, off: [30, 70], silent: k % 3 !== 0 });
         instantHit(e, { box: [0, 230, 60, 0, 150], dmg: skillDmg(0.9, 0.3, lv), stun: 0.4, knock: 0, airLift: 60, hs: 0.02, sure: true, downHit: true, snd: 'slash', col: '#ff5a6a', onHit: (a2, t) => rangerBleed(a2, t, 1.5) }); }
@@ -282,17 +282,17 @@ function bloodSpikeDown(lv) {
     onLand: e => { if (e.act.landed) return; e.act.landed = true; e.vx = 0; e.act.dur = e.actT + 0.3; cam.shake = 6; sfx.boom(0.8); fxDust(e.x, e.y, 10, 26); fxShock(e.x, e.y, 150, '#ff5a6a');
       blast(e, e.x + e.face * 20, e.y, 110, { dmg: skillDmg(4.0, 0.4, lv), launch: 420, knock: 140, hs: 0.1, downHit: true, col: '#ff6a7a', onHit: (a, t) => rangerBleed(a, t) }, { zMax: 120 }); } };
 }
-defSkill('g_suppress', { name: '压制射击', cls: 'gun', job: 'ranger', tier: 1, lvReq: 25, mp: 80, cd: 30, type: 'phys', col: '#d86a2a',
-  desc: '向前方疯狂乱射。连按 X 或技能键加快，按 C 中断。全程霸体。', pow: lv => skillDmg(12, 1.2, lv), ai: { kind: 'burst', r: [0, 380], dy: 40 },
-  act: (lv) => ({ name: 'g_suppress', clip: 'gunDance', dur: 2.2, noCounter: true, superArmor: true,
-    onInput: (e, I) => { const a = e.act; if (I.buffered('attack') || (a.key && I.buffered(a.key))) { I.consume('attack'); if (a.key) I.consume(a.key); a.fast = Math.min(0.5, (a.fast || 0) + 0.05); } if (I.buffered('jump')) { I.consume('jump'); a.dur = Math.min(a.dur, e.actT + 0.05); } return false; },
-    update: e => { const a = e.act, n = Math.floor(e.actT / (0.06 * (1 - (a.fast || 0))));
-      if (n !== a.n && e.actT > 0.15 && e.actT < a.dur - 0.1) { a.n = n; fireBullet(e, { up: n % 5 === 1, low: n % 5 === 3, dmg: skillDmg(0.36, 0.036, lv) * shotDmgOf(e), lift: 160, knock: 30, life: 0.5, vol: 0.45, quiet: n % 2 === 1 }); } } }) });
+defSkill('g_suppress', { name: '压制射击', cls: 'gun', job: 'ranger', tier: 1, lvReq: 25, mp: 80, cd: 50, type: 'phys', col: '#d86a2a',
+  desc: '向前方疯狂乱射 1.5 秒。连按 X 或技能键加快，按 C 中断。全程霸体。', pow: lv => skillDmg(20, 2.0, lv), ai: { kind: 'burst', r: [0, 380], dy: 40 },
+  act: (lv) => ({ name: 'g_suppress', clip: 'gunDance', dur: 1.75, noCounter: true, superArmor: true,
+    onInput: (e, I) => { const a = e.act; if (I.buffered('attack') || (a.key && I.buffered(a.key))) { I.consume('attack'); if (a.key) I.consume(a.key); a.fast = Math.min(0.27, (a.fast || 0) + 0.05); } if (I.buffered('jump')) { I.consume('jump'); a.dur = Math.min(a.dur, e.actT + 0.05); } return false; },
+    update: e => { const a = e.act, n = Math.floor(e.actT / (0.11 * (1 - (a.fast || 0))));
+      if (n !== a.n && e.actT > 0.15 && e.actT < a.dur - 0.1) { a.n = n; fireBullet(e, { up: n % 5 === 1, low: n % 5 === 3, dmg: skillDmg(1.4, 0.14, lv) * shotDmgOf(e), lift: 160, knock: 30, life: 0.5, vol: 0.45, quiet: n % 2 === 1 }); } } }) });
 /* ---- 二次觉醒：绯红玫瑰（官方 75~85 级 → 本作 26~27 级）---- */
 defSkill('g_bladeup', { name: '枪刃改良', cls: 'gun', job: 'ranger', tier: 2, lvReq: 26, sp: 30, mp: 0, cd: 0, type: 'phys', passive: true, col: '#b01a3a',
   desc: '【二觉被动】普通攻击和技能的攻击力提高，出血持续更久、伤害更高。', infoExtra: lv => [['攻击力', '+' + pct(0.02 * lv)], ['出血', '+' + pct(0.03 * lv)]] });
 defSkill('g_deathchain', { name: '死亡锁链', cls: 'gun', job: 'ranger', tier: 2, lvReq: 26, mp: 90, cd: 40, type: 'phys', col: '#8a1a2a', superArmor: true,
-  desc: '向前掷出锁链枪刃，最多钉住 6 个敌人 5 秒。钉住期间再按技能键：朝被钉住的敌人快速连开 5 枪，再补一发终结射击。', pow: lv => skillDmg(16, 1.6, lv), ai: { kind: 'burst', r: [0, 420], dy: 40 },
+  desc: '向前掷出锁链枪刃，最多钉住 6 个敌人 5 秒。钉住期间再按技能键：朝每个被钉住的敌人快速连开 9 枪，再补一发终结射击（共 10 连击）。', pow: lv => skillDmg(16, 1.6, lv), ai: { kind: 'burst', r: [0, 420], dy: 40 },
   recast: { ok: p => !!p._dchain && game.t - p._dchain.t < 5, act: (lv, p) => deathChainFire(lv, p), cd: 0.3, mp: 0 },
   act: (lv) => ({ name: 'g_deathchain', clip: 'chainSnatch', dur: 0.7, noCounter: true, superArmor: true,
     events: [evAt(0.18, e => { sfx.swing(true); const L = ents.filter(t => hittable(e, t) && (t.x - e.x) * e.face > 0 && Math.abs(t.x - e.x) < 440 && Math.abs(t.y - e.y) < 50).sort((a, b) => Math.abs(a.x - e.x) - Math.abs(b.x - e.x)).slice(0, 6);
@@ -301,11 +301,11 @@ defSkill('g_deathchain', { name: '死亡锁链', cls: 'gun', job: 'ranger', tier
         if (!t.dead) addStatus(t, STATUS_NAME.root ? 'root' : 'stun', 5, { src: e }); } })] }) });   // 定身 root（不能动也不能出招；领主会自动变成减速）
 function deathChainFire(lv, p) {
   const L = (p._dchain && p._dchain.list) || []; p._dchain = null;
-  return { name: 'g_deathchain2', clip: 'headShot', dur: 0.9, noCounter: true, superArmor: true,
-    update: e => { const a = e.act, n = Math.floor((e.actT - 0.05) / 0.1);
-      if (e.actT > 0.05 && n !== a.n && n < 6) { a.n = n; muzzle(e); sfx.gun(n === 5 ? 1.8 : 1); e.play('headShot', true);
-        for (const t of L) if (hittable(e, t)) { if (n === 5 && t.status) { delete t.status.root; delete t.status.stun; }   // 终结射击前先解开定身（定身中的目标不会被击飞）
-          applyHit(e, t, { dmg: skillDmg(n === 5 ? 5 : 1.4, n === 5 ? 0.5 : 0.14, lv) * shotDmgOf(e), stun: 0.3, knock: n === 5 ? 240 : 0, down: n === 5, hs: 0.04, critBonus: 0.2, snd: 'stab', col: '#ffe0a0', sure: true }, { proj: true }); } } } };
+  return { name: 'g_deathchain2', clip: 'headShot', dur: 0.95, noCounter: true, superArmor: true,
+    update: e => { const a = e.act, n = Math.floor((e.actT - 0.05) / 0.07);
+      if (e.actT > 0.05 && n !== a.n && n < 10) { a.n = n; muzzle(e); sfx.gun(n === 9 ? 1.8 : 1); e.play('headShot', true);
+        for (const t of L) if (hittable(e, t)) { if (n === 9 && t.status) { delete t.status.root; delete t.status.stun; }   // 终结射击前先解开定身（定身中的目标不会被击飞）
+          applyHit(e, t, { dmg: skillDmg(n === 9 ? 5 : 0.78, n === 9 ? 0.5 : 0.078, lv) * shotDmgOf(e), stun: 0.3, knock: n === 9 ? 240 : 0, down: n === 9, hs: 0.04, critBonus: 0.2, snd: 'stab', col: '#ffe0a0', sure: true }, { proj: true }); } } } };
 }
 defSkill('g_chaincut', { name: '锁链切割', cls: 'gun', job: 'ranger', tier: 2, lvReq: 26, mp: 90, cd: 45, type: 'phys', col: '#a01a2a',
   desc: '连着锁链大幅挥两次枪刃，把前方的敌人拉到身前，再斩一刀。', pow: lv => skillDmg(15, 1.5, lv), ai: { kind: 'aoe', r: [0, 260], dy: 50 },
@@ -314,7 +314,7 @@ defSkill('g_chaincut', { name: '锁链切割', cls: 'gun', job: 'ranger', tier: 
       instantHit(e, { box: [0, 280, 60, 0, 140], dmg: skillDmg(4.0, 0.4, lv), stun: 0.6, knock: 200, pull: true, hs: 0.07, snd: 'slash', col: '#ff6a7a', onHit: (a, t) => rangerBleed(a, t, 1.5) }); })).concat([
       evAt(0.7, e => { bladeSlash(e, { a0: -2.8, a1: 1.3, r: 80, w: 22, heavy: true }); cam.shake = 7; sfx.boom(0.7);
         instantHit(e, { box: [0, 120, 44, 0, 140], dmg: skillDmg(7.0, 0.7, lv), launch: 460, knock: 120, hs: 0.1, big: 1.6, snd: 'slash', col: '#ff6a7a', onHit: (a, t) => rangerBleed(a, t, 2) }); })]) }) });
-defSkill('g_awaken2', { name: '血舞祭', cls: 'gun', job: 'ranger', tier: 2, lvReq: 27, maxLv: 3, mp: 200, cd: 90, pvp: 0.45, type: 'phys', awaken: true, col: '#d0103a',
+defSkill('g_awaken2', { name: '血舞祭', cls: 'gun', job: 'ranger', tier: 2, lvReq: 27, maxLv: 3, mp: 200, cd: 170, pvp: 0.45, type: 'phys', awaken: true, col: '#d0103a',
   desc: '【二次觉醒】向四周撒出大量枪刃并向前突进，把大范围的敌人聚到一起，最后一发强力射击收尾。全程无敌，全部附加出血。', pow: lv => skillDmg(30, 8, lv), ai: { kind: 'awaken', r: [0, 360], dy: 90 },
   act: (lv) => ({ name: 'g_awaken2', clip: 'bloodDance', dur: 3.0, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '血舞祭', who: cutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); },
@@ -329,15 +329,17 @@ defSkill('g_awaken2', { name: '血舞祭', cls: 'gun', job: 'ranger', tier: 2, l
 defSkill('g_chainwill', { name: '锁链意志', cls: 'gun', job: 'ranger', tier: 3, lvReq: 29, sp: 40, mp: 0, cd: 0, type: 'phys', passive: true, col: '#c03a5a',
   desc: '【三觉被动】普通攻击和转职技能的攻击力提高，花式枪术的柔化次数 +1。', infoExtra: lv => [['攻击力', '+' + pct(0.03 * lv)], ['柔化次数', '+1']] });
 defSkill('g_ruin', { name: '毁灭风暴', cls: 'gun', job: 'ranger', tier: 3, lvReq: 29, mp: 120, cd: 60, type: 'phys', col: '#e0304a',
-  desc: '挥着连着锁链的枪刃大范围快斩 4 次，第 5 斩带一发终结射击，碎裂的锁链再伤害周围的敌人。连按技能键斩得更快。全程霸体。', pow: lv => skillDmg(26, 2.6, lv), ai: { kind: 'aoe', r: [0, 300], dy: 70 },
+  desc: '挥着连着锁链的枪刃大范围快斩 4 次（每次 3 段，前后都能砍到），第 5 斩带一发终结射击，碎裂的锁链再伤害四周的敌人。连按技能键斩得更快。全程霸体。', pow: lv => skillDmg(26, 2.6, lv), ai: { kind: 'aoe', r: [0, 300], dy: 70 },
   act: (lv) => ({ name: 'g_ruin', clip: 'carnival', dur: 1.8, noCounter: true, superArmor: true,
     onInput: (e, I) => { const a = e.act; if (a.key && I.buffered(a.key)) { I.consume(a.key); a.fast = Math.min(0.35, (a.fast || 0) + 0.07); } return false; },
     update: e => { const a = e.act, step = 0.26 * (1 - (a.fast || 0)), n = Math.floor((e.actT - 0.1) / step);
       if (e.actT > 0.1 && n !== a.n && n < 4) { a.n = n; e.play(n % 2 ? 'carnival2' : 'carnival', true); bladeSlash(e, { a0: n % 2 ? 1.5 : -2.7, a1: n % 2 ? -2.7 : 1.5, r: 130, w: 22, off: [40, 70], heavy: true }); cam.shake = Math.max(cam.shake, 4);
-        instantHit(e, { box: [-40, 300, 70, 0, 150], dmg: skillDmg(4.0, 0.4, lv), stun: 0.5, knock: 60, airLift: 120, hs: 0.06, snd: 'slash', col: '#ff6a7a', onHit: (a2, t) => rangerBleed(a2, t, 1.5) }); }
-      if (n >= 4 && !a.fin) { a.fin = true; a.dur = e.actT + 0.6; e.play('headShot', true); preciseShot(e, skillDmg(6.0, 0.6, lv) * shotDmgOf(e), { len: 600 });
-        game.after(0.2, () => { if (e.dead) return; fxShock(e.x + e.face * 150, e.y, 220, '#ff5a6a'); blast(e, e.x + e.face * 150, e.y, 170, { dmg: skillDmg(6.0, 0.6, lv), launch: 420, knock: 160, hs: 0.1, downHit: true, col: '#ff6a7a' }, { zMax: 160 }); }); } } }) });
-defSkill('g_awaken3', { name: '盛放·绯红花园', cls: 'gun', job: 'ranger', tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 120, pvp: 0.45, type: 'phys', awaken: true, col: '#ff1a4a',
+        bladeSlash(e, { a0: n % 2 ? -1.6 : 1.6, a1: n % 2 ? 1.6 : -1.6, r: 110, w: 18, off: [-60, 70], silent: true });   // 身后也扫到（官方判定覆盖前后）
+        for (let j = 0; j < 3; j++) game.after(j * 0.05, () => { if (!e.dead && e.act && e.act.name === 'g_ruin') instantHit(e, { box: [-220, 300, 70, 0, 150], dmg: skillDmg(1.35, 0.135, lv), stun: 0.5, knock: j === 2 ? 60 : 0, airLift: 120, hs: 0.03, snd: 'slash', col: '#ff6a7a', onHit: (a2, t) => rangerBleed(a2, t, 1.5) }); }); }
+      if (n >= 4 && !a.fin) { a.fin = true; a.dur = e.actT + 0.7; e.play('headShot', true); preciseShot(e, skillDmg(6.0, 0.6, lv) * shotDmgOf(e), { len: 600 });
+        for (let j = 0; j < 4; j++) game.after(0.2 + j * 0.08, () => { if (e.dead) return; if (!j) fxShock(e.x, e.y, 300, '#ff5a6a'); bladeShards(e.x, e.y, 90, 4);   // 锁链和枪刃碎裂：四周 4 段
+          blast(e, e.x, e.y, 300, { dmg: skillDmg(1.5, 0.15, lv), launch: j === 3 ? 420 : 0, airLift: 140, stun: 0.4, knock: j === 3 ? 160 : 20, radial: true, hs: j === 3 ? 0.1 : 0.03, downHit: true, col: '#ff6a7a' }, { zMax: 160 }); }); } } }) });
+defSkill('g_awaken3', { name: '盛放·绯红花园', cls: 'gun', job: 'ranger', tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 270, pvp: 0.45, type: 'phys', awaken: true, col: '#ff1a4a',
   desc: '【三次觉醒】向四面八方掷出枪刃，用锁链织成一座绯红花园，在里面体术与射击连携攻击，最后切断所有锁链，一记终结斩击。全程无敌。', pow: lv => skillDmg(44, 12, lv), ai: { kind: 'awaken', r: [0, 420], dy: 100 },
   act: (lv) => ({ name: 'g_awaken3', clip: 'garden', dur: 4.2, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.2, name: '盛放·绯红花园', who: cutinWho(e, 3) }; game.timeStop = 1.0; sfx.awaken(); e.act.cx = e.x + e.face * 200; },

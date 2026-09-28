@@ -234,12 +234,12 @@ pmSkill('pm_lockshot', { name: '近战·锁定连射', lvReq: 5, lvStep: 2, sp: 
   act: (lv) => ({ name: 'pm_lockshot', clip: 'pmShot', dur: 0.34, noCounter: true,
     onStart: e => { const t = pmNearest(e, 640, 120); e.act.tg = t; if (t) e.face = t.x >= e.x ? 1 : -1; },
     events: [0.05, 0.16].map(tt => evAt(tt, e => pmShot(e, e.act.tg && !e.act.tg.dead ? e.act.tg : pmNearest(e, 640, 120), skillDmg(1.1, 0.11, lv)))) }) });
-pmSkill('pm_assault', { name: '战服·强袭目标', lvReq: 15, mp: 30, cd: 8, col: '#3a7ac8', pmInfo: 20,
-  desc: '单膝跪地向前滑行，边滑边连开 5 枪。施放后全队获得 8 秒强化保护罩（受到的伤害 −20%、霸体，外加一层小护盾）。', pow: lv => skillDmg(0.9, 0.09, lv) * 5, ai: { kind: 'poke', r: [0, 420], dy: 30 },
+pmSkill('pm_assault', { name: '战服·强袭目标', lvReq: 15, mp: 30, cd: 6, col: '#3a7ac8', pmInfo: 20,
+  desc: '单膝跪地向前滑行，边滑边连开 5 枪。施放后全队获得 8 秒强化保护罩（受到的伤害 −20%、霸体，外加一层小护盾）。', pow: lv => skillDmg(0.68, 0.068, lv) * 5, ai: { kind: 'poke', r: [0, 420], dy: 30 },
   infoExtra: () => [['强化保护罩', '8 秒']],
   act: (lv) => ({ name: 'pm_assault', clip: 'pmSlide', dur: 0.62, noCounter: true, move: [[0.02, 0.45, 300]],
     update: e => { if (e.actT < 0.45 && Math.random() < 0.6) fxDust(e.x - e.face * 12, e.y, 1, 5); },
-    events: [...[0.08, 0.16, 0.24, 0.32, 0.4].map((tt, i) => evAt(tt, e => pmShot(e, pmNearest(e, 460, 40), skillDmg(0.9, 0.09, lv), { quiet: i % 2 === 1, hit: { stun: 0.35, knock: 60 } }))),
+    events: [...[0.08, 0.16, 0.24, 0.32, 0.4].map((tt, i) => evAt(tt, e => pmShot(e, pmNearest(e, 460, 40), skillDmg(0.68, 0.068, lv), { quiet: i % 2 === 1, hit: { stun: 0.35, knock: 60 } }))),
       evAt(0.45, e => pmRedShield(e))] }) });
 // 机动打击：突进 → 回旋后踢；命中后再按一次追加第二击（学了“系统·临战编程”自动追加）
 function pmStrike2(lv) {
@@ -248,12 +248,12 @@ function pmStrike2(lv) {
     events: [evAt(0.05, () => sfx.swing(true))] };
 }
 pmSkill('pm_strike', { name: '战服·机动打击', lvReq: 16, mp: 35, cd: 8, col: '#2a6ab8',
-  desc: '推进器点火向前突进，接一记回旋后踢把敌人踢上天。命中后再按一次技能键追加一记下劈踢（学会“系统·临战编程”后自动追加）。', pow: lv => skillDmg(1.2, 0.12, lv) + skillDmg(2.2, 0.22, lv) * 2, ai: { kind: 'gap', r: [40, 280], dy: 22 },
+  desc: '推进器点火向前突进，接一记回旋后踢把敌人踢上天。命中后再按一次技能键追加一记下劈踢（学会“系统·临战编程”后自动追加）。', pow: lv => skillDmg(3.4, 0.34, lv) + skillDmg(2.2, 0.22, lv), ai: { kind: 'gap', r: [40, 280], dy: 22 },
   act: (lv, p) => ({ name: 'pm_strike', clip: 'pmStrike', dur: 0.62, noCounter: true, superArmor: [0, 0.2], move: [[0, 0.2, 520]],
     follow: e => e.hitsDone.size ? pmStrike2(lv) : null, followWin: [0.3, 0.62],
-    hits: [HB(0.02, 0.2, [0, 60, 26, 20, 100], skillDmg(1.2, 0.12, lv), { stun: 0.4, knock: 40, hs: 0.04, snd: 'blunt' }),
-      HB(0.24, 0.32, [-10, 90, 30, 20, 130], skillDmg(2.2, 0.22, lv), { launch: 420, knock: 80, hs: 0.08, shake: 3, big: 1.3, snd: 'blunt', col: '#bff4ff' })],
-    update: e => { if (e.actT < 0.2) { if (Math.random() < 0.7) fxDust(e.x - e.face * 16, e.y, 1, 6, '#9fd8ff'); } },
+    hits: [HB(0.24, 0.32, [-10, 90, 30, 20, 130], skillDmg(3.4, 0.34, lv), { launch: 420, knock: 80, hs: 0.08, shake: 3, big: 1.3, snd: 'blunt', col: '#bff4ff' })],
+    update: e => { if (e.actT < 0.2) { if (Math.random() < 0.7) fxDust(e.x - e.face * 16, e.y, 1, 6, '#9fd8ff');   // 突进到敌人面前就停，接回旋踢
+      if (e.act.move && ents.some(t => foe(e, t) && !t.dead && (t.x - e.x) * e.face > 0 && (t.x - e.x) * e.face < 64 && Math.abs(t.y - e.y) < 26)) { e.act.move = null; e.vx = 0; } } },
     events: [evAt(0.02, () => { sfx.jump(); sfx.pmZap(0.5); }), evAt(0.22, () => sfx.swing(true)),
       // 系统·临战编程：命中后自动追加第二击（走 follow，联机时队友那边的影子也重放第二击）
       evAt(0.4, e => { const a = e.act; if (hasSkill(e, 'pm_program') && e.hitsDone.size && a && a.follow && !e.ghost) { const nx = a.follow(e); if (nx) e.doAct(nx, { skill: a.skill, lv: a.lv, key: a.key, type: a.type }); } })] }) });
@@ -296,21 +296,21 @@ function pmHexShield(e, dur) {
     if (IMG['fx/pm_hexshield']) drawSpr(c, 'pm_hexshield', X, Y, 0, 120, { flip: o.face < 0, alpha: a * 0.9 });
     else { c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = a * 0.6; c.strokeStyle = '#8fe8ff'; c.lineWidth = 3; c.beginPath(); c.ellipse(X, Y, 14, 56, 0, 0, TAU); c.stroke(); c.restore(); } } });
 }
-pmSkill('pm_bash', { name: '战服·护盾冲击', lvReq: 19, mp: 45, cd: 12, col: '#2a5aa8', pmInfo: 25,
-  desc: '在身前展开能量护盾向前冲撞，把路上的敌人撞飞。冲撞中霸体。施放后全队获得 8 秒强化保护罩。', pow: lv => skillDmg(5.5, 0.55, lv), ai: { kind: 'gap', r: [0, 300], dy: 30 },
+pmSkill('pm_bash', { name: '战服·护盾冲击', lvReq: 19, mp: 45, cd: 25, col: '#2a5aa8', pmInfo: 25,
+  desc: '在身前展开能量护盾向前冲撞，把路上的敌人撞飞。冲撞中霸体。施放后全队获得 8 秒强化保护罩。', pow: lv => skillDmg(11.5, 1.15, lv), ai: { kind: 'gap', r: [0, 300], dy: 30 },
   act: (lv) => ({ name: 'pm_bash', clip: 'pmBash', dur: 0.62, noCounter: true, superArmor: true, move: [[0.06, 0.42, 380]],
     onStart: e => { pmHexShield(e, 0.55); sfx.pmZap(0.8); },
-    hits: [HB(0.06, 0.44, [0, 74, 34, 0, 130], skillDmg(5.5, 0.55, lv), { knock: 280, stun: 0.6, airLift: 120, heavy: true, hs: 0.09, shake: 4, big: 1.4, snd: 'blunt', col: '#bff4ff' })],
+    hits: [HB(0.06, 0.44, [0, 74, 34, 0, 130], skillDmg(11.5, 1.15, lv), { knock: 280, stun: 0.6, airLift: 120, heavy: true, hs: 0.09, shake: 4, big: 1.4, snd: 'blunt', col: '#bff4ff' })],
     events: [evAt(0.46, e => pmRedShield(e))] }) });
 // 开拓射线：战斗服手炮向前发射激光（多段），扫过的地面随后依次爆炸
-pmSkill('pm_ray', { name: '战服·开拓射线', lvReq: 20, mp: 60, cd: 18, col: '#3a9ae0', elem: 'light',
-  desc: '把护臂变形成手炮，向前发射贯穿的激光（6 段），激光扫过的地面随后从近到远依次爆炸。施放中霸体。', pow: lv => skillDmg(0.9, 0.09, lv) * 6 + skillDmg(1.0, 0.1, lv) * 5, ai: { kind: 'burst', r: [0, 600], dy: 16 },
+pmSkill('pm_ray', { name: '战服·开拓射线', lvReq: 20, mp: 60, cd: 45, col: '#3a9ae0', elem: 'light',
+  desc: '把护臂变形成手炮，向前发射贯穿的激光（6 段），激光扫过的地面随后从近到远依次爆炸。施放中霸体。', pow: lv => skillDmg(2.25, 0.225, lv) * 6 + skillDmg(2.5, 0.25, lv) * 5, ai: { kind: 'burst', r: [0, 600], dy: 16 },
   act: (lv) => ({ name: 'pm_ray', clip: 'pmRay', dur: 1.3, noCounter: true, superArmor: true,
     update: e => { if (e.actT < 0.34 && Math.random() < 0.6 && typeof fxCharge === 'function') fxCharge(e, '#8fe8ff'); },
     events: [evAt(0.02, () => sfx.charge()), evAt(0.34, e => { sfx.pmZap(1.3); sfx.iai(); cam.shake = 5; fxBeam(e.x + e.face * 52, e.y, e.z + 58, 620, e.face, { w: 44, dur: 0.6, col: '#8fe8ff' }); }),
-      ...[0.36, 0.44, 0.52, 0.6, 0.68, 0.76].map(tt => evAt(tt, e => instantHit(e, { box: [40, 640, 16, 24, 90], dmg: skillDmg(0.9, 0.09, lv), stun: 0.4, knock: 30, airLift: 140, hs: 0.03, col: '#bff4ff', elem: 'light' }))),
+      ...[0.36, 0.44, 0.52, 0.6, 0.68, 0.76].map(tt => evAt(tt, e => instantHit(e, { box: [40, 640, 16, 24, 90], dmg: skillDmg(2.25, 0.225, lv), stun: 0.4, knock: 30, airLift: 140, hs: 0.03, col: '#bff4ff', elem: 'light' }))),
       ...[0, 1, 2, 3, 4].map(i => evAt(0.82 + i * 0.08, e => { const x = e.x + e.face * (110 + i * 120); fxBurst(x, e.y, 20, 150, '#8fe8ff'); fxShock(x, e.y, 70, '#9fe8ff'); sfx.boom(0.4); cam.shake = Math.max(cam.shake, 3);
-        blast(e, x, e.y, 70, { dmg: skillDmg(1.0, 0.1, lv), type: 'indep', launch: 300, knock: 60, hs: 0.05, col: '#bff4ff', snd: 'fire', pmTok: e.act }, { zMax: 150 }); }))] }) });
+        blast(e, x, e.y, 70, { dmg: skillDmg(2.5, 0.25, lv), type: 'indep', launch: 300, knock: 60, hs: 0.05, col: '#bff4ff', snd: 'fire', pmTok: e.act }, { zMax: 150 }); }))] }) });
 // ---- BUFF（无动作施放、全队同步）----
 pmBuff('pm_mobility', { name: '机动强化', lvReq: 15, mp: 30, cd: 15, col: '#3ac0d8', req: pmReqStacks(1),
   desc: '【BUFF · 无动作】消耗 1 层战场信息：12 秒内全队攻击速度、移动速度、施放速度提高。可以在任何动作中施放，不打断当前动作。', infoExtra: lv => [['三速', '+' + pct(0.08 + 0.006 * (lv - 1))], ['持续', '12 秒'], ['消耗', '战场信息 1 层']],

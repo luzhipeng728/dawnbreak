@@ -102,7 +102,7 @@ const R = await page.evaluate(() => {
   game.skillLv.gs_02x = 5;
   out.openfire = dmgOf('gs_openfire', 440, 140); out.photon = dmgOf('gs_photon', 480, 160); out.dday = dmgOf('gs_dday', 460, 360); out.final = dmgOf('gs_final', 480, 320);
   for (const k of ['openfire', 'photon', 'dday', 'final', 'emp']) if (out[k]) delete out[k].m;
-  T.clear(); T.reset(); T.mob(500); T.cast('gs_standby'); T.run(80); const sb = { z: Math.round(p.z), on: standbyOn(p) }; const nS = p.nitro; p.cool = {}; castSkill(p, 'gs_cross'); T.run(40);
+  T.clear(); T.reset(); T.mob(500); T.cast('gs_standby'); T.run(40); const sb = { z: Math.round(p.z), on: standbyOn(p) }; const nS = p.nitro; p.cool = {}; castSkill(p, 'gs_cross'); T.run(40);
   sb.noNitro = p.nitro === nS; sb.airMax = airMaxOf(p); p.cool = {}; const sm = summonsOf(p).length; castSkill(p, 'gs_standby'); T.run(5); sb.ended = !standbyOn(p); T.run(120); out.standby = sb; T.land();
   // ---- 11) 被动：空中射击常驻、兵器研究（步枪） ----
   T.reset(); inv.equip.weapon = { wtype: 'rifle', slot: 'weapon' }; T.run(30); out.passive = { aerial: !!p.buffs.g_aerial, aerialLv: p.buffs.g_aerial && p.buffs.g_aerial.lv, firearm: p.buffs.gs_firearm && p.buffs.gs_firearm.aspd }; inv.equip.weapon = null;

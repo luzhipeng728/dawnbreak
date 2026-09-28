@@ -34,6 +34,7 @@ run witch     node test/witch.mjs
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs
+run audit_gun node test/skillaudit.mjs gun,gun:ranger,gun:launcher,gun:mechanic,gun:spitfire,gun:paramedic --compare   # 神枪手技能对官方规格 docs/skills/gun.json
 run avatar    node test/avatar.mjs
 run hatcheck  python3 art/tools/avatar_hatcheck.py   # 神枪手 / 魔法师原装帧不能把帽子画丢
 run shop      node test/shop.mjs

@@ -6,7 +6,7 @@
 //   scenes   每个场景能进、背景加载、出口能走通（含从已有世界接进来的入口）
 //   quest    主线任务链从头做到尾
 //   abyss    深渊派对（spec.abyss）：所有深渊的数据、进图扣票、封印之门 → 配置的几波 → 深渊领主（机制 / 循环机制）→ 保底 → 深渊宝藏翻牌
-//   bot      机器人以区域等级（Lv30 全身 +12 史诗）通关每个地下城，统计用时 / 被击 / 死亡（BOT=abyss_<id>:sword 也能跑深渊）
+//   bot      机器人以区域等级（Lv30 全身 +12 史诗）通关每个地下城，统计用时 / 被击 / 死亡（BOT=abyss_<id>:sword 也能跑深渊；GEAR=base 只穿稀有装备、LV=等级，用来和老区域对照难度）
 // 默认全跑；环境变量 SPEED（默认 3）、BOT=地下城:职业,...（覆盖机器人的分配）。截图在 test/shots/region_<id>/
 // 整个测试只开一个无头浏览器（各部分用同一个页面换地址）
 import { launch, URL_BASE } from './lib.mjs';
@@ -107,7 +107,7 @@ if (parts.includes('skills')) {
 /* ---------------- 3. 领主机制 ---------------- */
 if (parts.includes('mechs')) {
   await reset();
-  const boss = R.bosses.find(b => b === 'siroco') || R.bosses[R.bosses.length - 1];
+  const boss = R.bosses.find(b => b === 'siroco') || R.bosses.find(b => R.shades.includes(b + 'Shade')) || R.bosses[R.bosses.length - 1];   // 分身机制要用领主的暗影：挑一个有暗影的
   const fresh = () => page.evaluate(boss => {
     for (let k = ents.length - 1; k >= 0; k--) if (ents[k].team === 'e') ents.splice(k, 1);
     groundFx.length = 0; game.timers.length = 0; const p = game.player; p.x = 300; p.y = 100; p.invul = 0; if (p.heldBy) releaseHeld(p);
@@ -144,7 +144,7 @@ if (parts.includes('mechs')) {
   check(hp1.hp === hp0 && hp1.mul === 0 && surv.ended && surv.mul === 1, `无敌阶段（撑过）不对：${JSON.stringify(S.invulnSurvive)}`);
   // 可破护盾
   await clearMechs();
-  await page.evaluate(() => { window.__st = msMechStart(__b, { use: 'shield', hp: 0.004 }); });
+  await page.evaluate(() => { window.__st = msMechStart(__b, { use: 'shield', hits: 3 }); });
   const sh0 = await page.evaluate(() => __b.hp); await hit(20);
   const sh1 = await page.evaluate(() => ({ hp: __b.hp, left: __st.hp, max: __st.max }));
   await page.evaluate(() => { let n = 0; while (!__st.done && n++ < 2000) { __b.invul = 0; applyHit(game.player, __b, { dmg: 30, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); } });
@@ -191,9 +191,9 @@ if (parts.includes('mechs')) {
   check(c1 === 2 && c2.ended && c2.left === 0 && c3 > 0, `分身机制不对：${JSON.stringify(S.clones)}`);
   // 属性切换：站错位置伤害打折，站进相克的法阵里全额
   await clearMechs();
-  await page.evaluate(() => { const p = game.player; p.x = (game.room.x1) / 2; p.y = 100; window.__st = msMechStart(__b, { use: 'element', mul: 0.3, every: 999 }); });
+  await page.evaluate(() => { const p = game.player; if (p.act) p.endAct(); p.x = (game.room.x1) / 2; p.y = 100; p.z = 0; p.vx = p.vy = p.vz = 0; p.setState('idle'); window.__st = msMechStart(__b, { use: 'element', mul: 0.3, every: 999 }); });
   await simWait(0.3); const e1 = await page.evaluate(() => __b.dmgTakenMul);
-  await page.evaluate(() => { const z = __st.zones.find(z => z.md !== __st.p.modes[__st.mode]); const p = game.player; p.x = z.x; p.y = z.y; });
+  await page.evaluate(() => { const z = __st.zones.find(z => z.md !== __st.p.modes[__st.mode]); const p = game.player; if (p.act) p.endAct(); p.x = z.x; p.y = z.y; p.z = 0; p.vx = p.vy = p.vz = 0; p.setState('idle'); });
   await simWait(0.3); const e2 = await page.evaluate(() => __b.dmgTakenMul);
   S.element = { wrong: e1, right: e2 };
   check(Math.abs(e1 - 0.3) < 1e-6 && e2 === 1, `属性切换不对：${JSON.stringify(S.element)}`);
@@ -419,14 +419,14 @@ if (parts.includes('bot')) {
   const rows = [];
   for (const [did, cls] of plan) {
     await open(`town&mute&cls=${cls}`);
-    const setup = await page.evaluate(({ did, lv }) => {
+    const setup = await page.evaluate(({ did, lv, base }) => {
       testLoadout(lv); const p = game.player, eq = [], A = typeof ABYSS !== 'undefined' && ABYSS[did];
       if (A) { save.data.questDone[A.quest] = Date.now(); inv.add(makeItem('abyss_ticket', A.cost)); }
-      for (const s of Object.keys(SLOT_WEIGHT)) { const it = rollEquip({ slot: s, lvl: lv, rar: 5, cls: p.cls }) || inv.equip[s]; if (it) { it.enh = 12; inv.equip[s] = it; eq.push(it.rar); } }
+      if (!base) for (const s of Object.keys(SLOT_WEIGHT)) { const it = rollEquip({ slot: s, lvl: lv, rar: 5, cls: p.cls }) || inv.equip[s]; if (it) { it.enh = 12; inv.equip[s] = it; eq.push(it.rar); } }
       recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax; save.data.fatigue = 999; bot.on = true; window.__botDone = null;
       enterDungeon(did, 0);
       return { epics: eq.filter(r => r === 5).length, slots: eq.length, atk: Math.round(p.atk || 0), hp: p.hpMax };
-    }, { did, lv: R.lvl });
+    }, { did, lv: +(process.env.LV || R.lvl), base: process.env.GEAR === 'base' });
     const limit = did.includes('coffin') ? 900 : 600, t0 = Date.now(); let done = null, n = 0, last = null;
     while (!done && (Date.now() - t0) / 1000 * speed < limit) {
       await wait(3000); done = await page.evaluate(() => window.__botDone || null);

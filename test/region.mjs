@@ -5,13 +5,14 @@
 //   monsters 区域的每个怪物 / 领主：有逐帧精灵、会出手、每招都能放、能打死
 //   scenes   每个场景能进、背景加载、出口能走通（含从已有世界接进来的入口）
 //   quest    主线任务链从头做到尾
-//   bot      机器人以区域等级（Lv30 全身 +12 史诗）通关每个地下城，统计用时 / 被击 / 死亡
+//   abyss    深渊派对（spec.abyss）：所有深渊的数据、进图扣票、封印之门 → 配置的几波 → 深渊领主（机制 / 循环机制）→ 保底 → 深渊宝藏翻牌
+//   bot      机器人以区域等级（Lv30 全身 +12 史诗）通关每个地下城，统计用时 / 被击 / 死亡（BOT=abyss_<id>:sword 也能跑深渊）
 // 默认全跑；环境变量 SPEED（默认 3）、BOT=地下城:职业,...（覆盖机器人的分配）。截图在 test/shots/region_<id>/
 // 整个测试只开一个无头浏览器（各部分用同一个页面换地址）
 import { launch, URL_BASE } from './lib.mjs';
 import fs from 'fs';
 const id = process.argv[2] || 'siroco';
-const parts = (process.argv[3] || 'data,skills,mechs,monsters,scenes,quest,bot').split(',');
+const parts = (process.argv[3] || 'data,skills,mechs,monsters,scenes,quest,abyss,bot').split(',');
 const out = `test/shots/region_${id}`; fs.mkdirSync(out, { recursive: true });
 const speed = +(process.env.SPEED || 3);
 let fail = 0;
@@ -320,6 +321,97 @@ if (parts.includes('quest')) {
   for (const r of res.rows) check(r.done, `任务 ${r.q} ${r.name} 没有完成（${r.before} → ${r.accepted}，ready=${r.ready}）`);
 }
 
+/* ---------------- 8. 深渊派对（spec.abyss 块，content/abyss.js）---------------- */
+if (parts.includes('abyss')) {
+  await open('town&mute&cls=sword'); await page.evaluate(() => { for (const w of ['help', 'guide']) if (menus.isOpen(w)) menus.close(w); });
+  // 数据：本区域的深渊 + 所有深渊（含老区域的 ABYSS_LEGACY）
+  const errs = await page.evaluate(id => {
+    const E = [], has = k => !!ASSET_SRC[k];
+    for (const [aid, A] of Object.entries(ABYSS)) {
+      const D = DUNGEONS[aid], Q = QUESTS[A.quest], S = SCENES[A.scene];
+      if (!D || !D.abyss || !D.hidden) { E.push(`${aid}: 不是隐藏的深渊地下城`); continue; }
+      if (!Q || !NPCS[Q.npc] || !(Q.goals[0] && DUNGEONS[Q.goals[0].dungeon])) E.push(`${aid}: 资格任务 ${A.quest} 不完整`);
+      if (!S || !S.gates.some(g => g.dungeon === aid)) E.push(`${aid}: 门没有放进 ${A.scene}`);
+      for (const k of A.lords) if (!MON[k] || !MON_ART[k] && !MON[k].model) E.push(`${aid}: 深渊领主 ${k} 不存在`);
+      for (const W of A.waves) for (const k of [...(W.mobs || []).map(m => m[0]), ...(W.elites || [])]) if (!D.mobs.some(m => m[0] === k)) E.push(`${aid}: 派对的怪 ${k} 没进地下城的怪物表（精灵不会加载）`);
+      for (const M of [...A.lord.mechs, ...A.lord.cycle.map(c => c.mech)]) if (!BOSS_MECHS[M.use]) E.push(`${aid}: 领主机制 ${M.use} 不存在`);
+      if (!has(`bg/${D.theme}_far`)) E.push(`${aid}: 背景 ${D.theme} 没有借到图`);
+      if (A.region && !abyssPool(A).length) E.push(`${aid}: 区域 ${A.region} 没有深渊专属史诗`);
+      for (const k of abyssPool(A)) if (!has('icon/item_' + k)) E.push(`${aid}: 深渊专属 ${k} 没有图标`);
+    }
+    if (!(REGIONS[id].abyss || []).length) E.push(`区域 ${id} 没有 abyss 块`);
+    return E;
+  }, id);
+  for (const e of errs) check(false, e);
+  const AB = await page.evaluate(id => REGIONS[id].abyss, id);
+  for (const aid of AB) {
+    // 进图：扣 cost 张邀请函
+    const e0 = await page.evaluate(aid => {
+      const A = ABYSS[aid], Q = QUESTS[A.quest]; save.data.questDone[A.quest] = Date.now(); game.lvl = 30; testLoadout(30); recalcStats(game.player);
+      inv.items = inv.items.filter(x => x.kind !== 'equip'); inv.take('abyss_ticket', inv.count('abyss_ticket')); inv.add(makeItem('abyss_ticket', A.cost + 1)); save.data.fatigue = 999;
+      abyssData().pity[aid] = A.pity - 1;
+      const ok = enterDungeon(aid, 0);
+      return { ok, cost: A.cost, pity: A.pity, quest: Q.name, npc: Q.npc };
+    }, aid);
+    await page.waitForFunction(aid => game.scene === 'dungeon' && game.dungeon && game.dungeon.def.id === aid, aid, { timeout: 20000 });
+    await wait(300);
+    const e1 = await page.evaluate(() => ({ tk: inv.count('abyss_ticket'), lord: game.dungeon.def.boss.kind, theme: game.room.theme }));
+    check(e0.ok && e1.tk === 1, `${aid}: 进图消耗 ${e0.cost} 张邀请函（剩 ${e1.tk}）`);
+    // 深渊之间：封印之门 → 堕落守护者 → 配置的几波 → 深渊领主
+    await page.evaluate(() => { window.__keepA ??= setInterval(() => { const q = game.player; q.hp = q.hpMax; q.mp = q.mpMax; q.dead = false; }, 40); const dg = game.dungeon, p = game.player; p.invul = 1e9; for (const r of dg.layout.rooms) if (r !== dg.layout.boss) { r.visited = true; r.cleared = true; } dg.enter(dg.layout.boss, 'left'); });
+    await wait(500);
+    const seal = await page.evaluate(() => { const s = ents.find(e => e.kind === 'abyssSeal'); if (s) { s.hp = Math.round(s.hpMax * 0.45); s.onDamaged(s); } return { seal: !!s, phase: game.dungeon.abyssRun && game.dungeon.abyssRun.phase }; });
+    check(seal.seal && seal.phase === 'seal', `${aid}: 封印之门`);
+    await wait(200);
+    check(await page.evaluate(() => ents.some(e => e.guardian)), `${aid}: 堕落守护者`);
+    const seen = [];
+    for (let i = 0; i < 60; i++) {
+      const r = await page.evaluate(() => { const kinds = []; for (const e of ents) if (e.team === 'e' && !e.dead && !e.boss) { if (e.abyssMob) kinds.push(e.kind + (e.elite ? '*' : '')); e.hp = 0; killEnt(e, game.player, {}); } drops.length = 0; const R = game.dungeon.abyssRun; return { ph: R.phase, w: R.wave, kinds }; });
+      if (r.kinds.length) seen.push({ w: r.w, kinds: r.kinds });
+      if (r.ph === 'lord') break;
+      await wait(250);
+    }
+    await wait(1200);
+    const lord = await page.evaluate(aid => { const A = ABYSS[aid], b = game.dungeon.boss, want = [...A.lord.mechs.map(m => m.use)]; return { in: !!b && ents.includes(b) && b.name.startsWith('深渊领主'), waves: game.dungeon.abyssRun.wave, n: A.waves.length, mechs: (b.msMechs || []).map(s => s.id), want, hp: b.hp / b.hpMax }; }, aid);
+    const waveOk = await page.evaluate(({ aid, seen }) => { const A = ABYSS[aid], dg = game.dungeon; return seen.every(s => { const W = A.waves[s.w - 1] || {}, ok = new Set([...(W.mobs || dg.def.mobs).map(m => m[0]), ...(W.elites || []), dg.def.elite]); return s.kinds.every(k => ok.has(k.replace('*', ''))); }); }, { aid, seen });
+    check(lord.in && lord.waves === lord.n, `${aid}: ${lord.n} 波深渊派对之后深渊领主降临（${lord.waves} 波）`);
+    check(waveOk, `${aid}: 每一波的怪物和配置一致 ${JSON.stringify(seen.map(s => s.w + ':' + [...new Set(s.kinds)].join('/')))}`);
+    check(lord.want.every(u => lord.mechs.includes(u)), `${aid}: 深渊领主带上了机制 ${lord.want}（实际 ${lord.mechs}）`);
+    await page.screenshot({ path: `${out}/abyss-${aid}-lord.png` });
+    // 领主的循环机制（cycle）：撑 30 秒（游戏时间），至少触发一次
+    const m0 = await page.evaluate(() => ({ ...MS_STATS.mech }));
+    await page.evaluate(() => { const b = game.dungeon.boss; b.hp = Math.round(b.hpMax * 0.4); });
+    await simWait(32);
+    const m1 = await page.evaluate(() => ({ ...MS_STATS.mech }));
+    const cyc = await page.evaluate(aid => ABYSS[aid].lord.cycle.map(c => c.mech.use), aid);
+    check(!cyc.length || cyc.some(u => (m1[u] || 0) > (m0[u] || 0)), `${aid}: 领主的循环机制触发了（${cyc.map(u => `${u} ${(m0[u] || 0)}→${(m1[u] || 0)}`).join('，')}）`);
+    // 保底：这一趟没出过史诗 + 已经连续 pity-1 次 → 领主必掉本区域的深渊专属（压住随机数，让普通几率不出）
+    const pity = await page.evaluate(aid => {
+      const dg = game.dungeon, b = dg.boss, A = ABYSS[aid]; dg.abyssEpics = 0; drops.length = 0; dg._fin = dg.finish; dg.finish = () => {}; b.invul = 0;
+      const R = Math.random; Math.random = () => 0.9; try { b.hp = 0; killEnt(b, game.player, {}); } finally { Math.random = R; }
+      const ep = drops.filter(d => d.item && d.item.rar >= 5);
+      // 再模拟一趟没出史诗的：计数 +1
+      const before = abyssData().pity[aid]; Math.random = () => 0.9; try { abyssExtraDrops({ kind: b.kind, boss: true, x: b.x, y: b.y, z: 0 }, { def: dg.def, diff: 0, D: dg.D }); } finally { Math.random = R; }
+      return { epics: ep.map(d => ({ key: d.item.key, abyss: !!d.abyss, own: ITEMS[d.item.key].abyssRegion === A.region })), after: before, next: abyssData().pity[aid] };
+    }, aid);
+    check(pity.epics.length >= 1 && pity.epics[0].abyss && pity.epics[0].own, `${aid}: 保底掉落本区域的深渊专属 ${pity.epics.map(e => e.key)}`);
+    check(pity.after === 0 && pity.next === 1, `${aid}: 出了史诗保底清零，没出 +1（${pity.after} → ${pity.next}）`);
+    // 结算：深渊宝藏（三张紫卡，免费翻一张）
+    await page.evaluate(() => { const dg = game.dungeon; dg.finish = dg._fin; dg.finish(); });
+    await page.waitForFunction(() => menus.isOpen('result'), null, { timeout: 10000 });
+    await wait(400);
+    const c0 = await page.evaluate(() => ({ n: document.querySelectorAll('#result .abyrow .card').length, first: document.querySelector('#result .card') && !document.querySelector('#result .card').closest('.abyrow'), items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));
+    check(c0.n === 3 && c0.first, `${aid}: 结算界面有三张「深渊宝藏」（${c0.n}），普通翻牌仍在最前面`);
+    await page.screenshot({ path: `${out}/abyss-${aid}-result.png` });
+    await page.click('#result .abyrow .card >> nth=1'); await wait(900);
+    const c1 = await page.evaluate(() => ({ flip: document.querySelectorAll('#result .abyrow .card.flip').length, items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));
+    check(c1.flip === 3 && (c1.items > c0.items || c1.gold > c0.gold), `${aid}: 翻开一张拿到奖励，另外两张亮出来（物品 ${c0.items}→${c1.items}，金币 ${c0.gold}→${c1.gold}）`);
+    await page.screenshot({ path: `${out}/abyss-${aid}-flip.png` });
+    await page.evaluate(() => { menus.close('result'); lootAll(); return goTown(); }); await wait(500);
+  }
+  console.log(`深渊：${AB.join(', ')}（${errs.length ? errs.length + ' 个数据问题' : '数据通过'}）`);
+}
+
 /* ---------------- 7. 机器人通关（Lv30 全身 +12 史诗）---------------- */
 if (parts.includes('bot')) {
   const CLS = ['sword', 'gun', 'mage'];
@@ -328,7 +420,8 @@ if (parts.includes('bot')) {
   for (const [did, cls] of plan) {
     await open(`town&mute&cls=${cls}`);
     const setup = await page.evaluate(({ did, lv }) => {
-      testLoadout(lv); const p = game.player, eq = [];
+      testLoadout(lv); const p = game.player, eq = [], A = typeof ABYSS !== 'undefined' && ABYSS[did];
+      if (A) { save.data.questDone[A.quest] = Date.now(); inv.add(makeItem('abyss_ticket', A.cost)); }
       for (const s of Object.keys(SLOT_WEIGHT)) { const it = rollEquip({ slot: s, lvl: lv, rar: 5, cls: p.cls }) || inv.equip[s]; if (it) { it.enh = 12; inv.equip[s] = it; eq.push(it.rar); } }
       recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax; save.data.fatigue = 999; bot.on = true; window.__botDone = null;
       enterDungeon(did, 0);

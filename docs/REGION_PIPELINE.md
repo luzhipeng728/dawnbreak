@@ -74,6 +74,25 @@ siroco: { ...怪物字段, tier: 'raid', hook: 'siroco',
 **主线** `story: { chapter, prefix, pre, npc, scene, steps }`，每一步 `t`：`arrive`（`scene`）| `talk`（`with`, `lines`）| `clear`（`dungeon`, `diff`）| `boss` / `raid`（`dungeon`，可带 `collect: { key, item, icon, desc }`）| `handin`。都可以写 `name desc talk lvl npc to reward: { exp, gold, items, coins }`。任务 id 自动是 `<prefix>01…`，前后串成一条链。
 
 **史诗**：`epics: [{ key, slot, lvl, name, fx, st, proc, desc, look }]`；`sets: [{ id, name, lvl, bonus, pieces: [{ key, slot, name, look }] }]`；`quest: [{ key, look }]`（任务道具图标 `icon/<key>`）。
+史诗 / 套装写 `abyss: true` = 本区域的**深渊专属**（只在本区域的深渊派对掉落、宇宙灵魂兑换；图标照样由 `region_art.py <id> icons` 出，只出还没有的）。
+
+### 2.1 深渊派对（`abyss` 块，由 `content/abyss.js` 展开）
+每个区域都应该有自己的深渊。写法（希洛克的见 `siroco.js`；老区域格兰之森 / 天空之城 / 天帷巨兽写在 `content/abyss.js` 的 `ABYSS_LEGACY`，格式相同）：
+```js
+abyss: {
+  abyss_<id>: { name, lvl: [30, 31], lordLvl: 33, lords: [领主 / 已有怪物],       // 深渊领主每次随机
+    from: 已有地下城（复制怪物表 / 精英 / 背景）| mobs + elite + themeFrom（借背景）, theme, tint, layout | rooms,
+    gate: { scene, x },            // 隐藏门（资格任务完成后现身）
+    cost: 1, pity: 6, seal: 1,     // 每次消耗的邀请函；保底（连续 pity-1 次没出史诗，第 pity 次领主必掉，优先图鉴里没有的本区域专属）；封印之门血量倍率
+    waves: [{ n, mobs?, elite?（精英数）| elites?: [kind], say? }, ...],   // 深渊派对：几波就写几项；只在派对出场的怪自动以权重 0 进怪物表（加载精灵）
+    lord: { hp: 1.35, atk: 1.1, mechs: [机制...],                        // 降临时启动（领主机制库；领主自带的同种机制不重复加）
+      cycle: [{ every: [20, 26], at: 0.6, say, mech: { use: 'safezone', ... } }] },   // 按间隔反复启动（at = 血量低于多少才开始）；老领主（手写 AI）也能用
+    quest: { name, lvl, clear, pre, npc?, gold, desc, offer, done },   // 资格任务（默认歌兰蒂斯，id 默认 q_<地下城 id>，奖励邀请函 ×3）
+    clearExp, desc } }
+```
+- 流程（通用）：扣 cost 张邀请函 → 普通房间 → 深渊之间：封印之门（过半出堕落守护者）→ waves → 深渊领主降临（紫色光柱）→ 结算多一排「深渊宝藏」（三张紫卡免费翻一张：宇宙灵魂 / 矛盾的结晶体 / 邀请函 / 异界精髓 / 金币 / 小几率史诗；没翻就离开随机给一张）。
+- 史诗几率：深渊领主 28%（每档难度 +5%）、堕落守护者 8%、派对精英 3%；每次掉史诗一半出本区域的深渊专属，一半按领主等级随机（含其他深渊专属）。保底计数存 `save.data.abyss.pity[地下城 id]`，歌兰蒂斯的深渊窗口和结算界面都显示。
+- 测试：`node test/region.mjs <id> abyss`（所有深渊的数据 + 本区域深渊的进图扣票 / 几波派对 / 领主机制 / 循环机制 / 保底 / 翻牌）；机器人：`BOT=abyss_<id>:sword node test/region.mjs <id> bot`。
 
 ## 3. 怪物技能库（`skills: [{ use, ... }]`）
 

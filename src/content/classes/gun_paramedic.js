@@ -121,7 +121,7 @@ function pmSuitSync(p) {
   if (want && !p._pmSuit) {
     if (!pmSuitReady()) { pmSuitLoad(() => pmSuitSync(p)); return; }
     p._pmNorm = { model: p.model, acts: p.acts };
-    p.model = new SpriteModel('pmsuit', SPR_FALLBACK, pmAnims(), skLv(p, 'pm_suit2') > 0 && p._pmAlt ? { hue: 200, sat: 1.1 } : {});
+    p.model = new SpriteModel('pmsuit', SPR_FALLBACK, pmAnims(), isHuman(p) && save.data && save.data.pmAlt ? { hue: 175, bright: 0.82, sat: 1.1 } : {});
     p.acts = PM_ACTS; p._pmSuit = true;
     if (!p.ghost && p.st !== 'act') { fxAura(p, PM_COL, 0.7); if (isHuman(p)) sfx.pmBeep(); }
   } else if (!want && p._pmSuit) {
@@ -353,8 +353,7 @@ function pmMedic(e, dur) {
 }
 
 /* ---------------- 23 级以后（二觉 / 三觉那一段）---------------- */
-// 二觉 / 三觉技能解锁：通用组提供 awakenTierUnlocked(n) 时按任务标记，否则只看等级（和一觉一样要先完成一觉任务）
-const pmAwkTier = n => p => !isHuman(p) || typeof awakenTierUnlocked !== 'function' || awakenTierUnlocked(n) || `需要完成${n === 2 ? '二' : '三'}次觉醒任务`;
+// 二觉 / 三觉技能：写 tier: 2 / 3（通用组按 flags.awaken2 / awaken3 解锁，二觉任务 26 级、三觉 30 级）
 const pmCutin = (e, n) => { const k = 'paramedic' + (n > 1 ? n : ''); return jobOf(e) === PM && IMG['cutin/' + k] ? { cls: k, model: e.model, x: e.x } : cutinWho(e); };
 // 保护模件（黄金复苏）：倒下的队员在死亡倒计时（黄金时间）里原地复苏；单人时改为除颤电击（周身电击 + 自己一层保护罩）
 pmBuff('pm_revive', { name: '保护模件（黄金复苏）', lvReq: 23, mp: 50, cd: 30, col: '#ffd23a', req: pmReqStacks(1),
@@ -401,7 +400,7 @@ pmSkill('pm_annihilate', { name: '战服·歼灭行动', lvReq: 25, mp: 80, cd: 
       evAt(0.95, e => { e.play('pmFlip', true); e.vz = 320; e.vx = -e.face * 120; sfx.jump(); }),
       evAt(1.3, e => { e.play('pmSwing', true); sfx.pmBlade(); sfx.swing(true); cam.shake = 6; fxSlashOn(e, { a0: -2.9, a1: 1.3, r: 110, w: 30, off: [20, 60], squash: 0.6, col: '#dffaff', heavy: true });
         instantHit(e, { box: [-20, 220, 40, 0, 150], dmg: skillDmg(4.0, 0.4, lv), launch: 420, knock: 220, hs: 0.12, big: 1.8, col: '#dffaff', sure: true }); })] }) });
-pmSkill('pm_limit', { name: '系统·限制解除', lvReq: 26, passive: true, col: '#d05ae0',
+pmSkill('pm_limit', { name: '系统·限制解除', lvReq: 26, tier: 2, passive: true, col: '#d05ae0',
   desc: '【被动 · 二觉】解除战斗服的输出限制：攻击力提高；保护罩总量上限提高到最大 HP 的 70%，强化保护罩的减伤提高到 30%。', infoExtra: lv => [['攻击力', '+' + pct(0.05 + 0.01 * (lv - 1))], ['保护罩上限', '70%'], ['强化保护罩减伤', '30%']] });
 CLASSES.gun.passives.push(p => { if (!isPM(p)) return; const lv = skLv(p, 'pm_limit'); setPassive(p, 'pm_limit', lv > 0, { atk: 0.05 + 0.01 * (lv - 1), col: '#d05ae0' }); });
 // 战服·超限压制：追踪前方所有敌人逐个斩击（最多 8 个），然后回到原位；施放中无敌
@@ -438,7 +437,7 @@ function pmRemote(e, lv) {
     pmHitAt(owner, x, y, face, { box: [20, 640, 40, 0, 160], dmg: skillDmg(8.0, 0.8, lv), type: 'indep', launch: 480, knock: 300, hs: 0.14, big: 2, sure: true, downHit: true, col: '#ffd0c0', pmTok: tok }); });
 }
 // ---- 二觉：绝境策略：极限歼灭（战勤统帅）----
-pmSkill('pm_awk2', { name: '绝境策略：极限歼灭', lvReq: 27, maxLv: 3, mp: 200, cd: 180, pvp: 0.45, awaken: true, col: '#6a3ae0', req: pmAwkTier(2),
+pmSkill('pm_awk2', { name: '绝境策略：极限歼灭', lvReq: 27, maxLv: 3, mp: 200, cd: 180, pvp: 0.45, awaken: true, tier: 2, col: '#6a3ae0',
   desc: '【二觉】调用战斗服的全部兵器发动歼灭连段：手炮连射 → 能量刃乱斩 → 无人机齐射 → 合体大剑终结。全部命中时获得 2 层战场信息。施放中无敌。', pow: lv => skillDmg(30, 9, lv), ai: { kind: 'awaken', r: [0, 420], dy: 80 },
   act: (lv) => ({ name: 'pm_awk2', clip: 'pmAwk2', dur: 3.3, superArmor: true, noCounter: true, invul: [0, 3.3],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '绝境策略：极限歼灭', who: pmCutin(e, 2) }; game.timeStop = 0.9; sfx.awaken(); e.act.hitN = 0; e.act.need = 0; },
@@ -469,7 +468,7 @@ pmSkill('pm_breakout', { name: '系统·孤军突破', lvReq: 29, mp: 80, cd: 45
       evAt(1.4, e => { e.play('pmField', true); cam.shake = 9; sfx.boom(1.2); fxShock(e.x, e.y, 240, '#ffe07a'); fxBurst(e.x, e.y, 60, 320, '#ffe07a');
         blast(e, e.x, e.y, 240, { dmg: skillDmg(5.0, 0.5, lv), type: 'indep', launch: 420, knock: 200, hs: 0.1, big: 1.6, sure: true, downHit: true, col: '#fff0a0' }, { zMax: 220 }); pmGain(e, 100); })] }) });
 // ---- 三觉：空袭策略：神兵天降（重霄·协战师）：超高空速降，全队强化 + 激光 10 段 + 连锁爆炸 15 段；和一觉共享冷却 ----
-pmSkill('pm_awk3', { name: '空袭策略：神兵天降', lvReq: 30, maxLv: 3, mp: 250, cd: 160, pvp: 0.45, awaken: true, col: '#ffd23a', req: pmAwkTier(3),
+pmSkill('pm_awk3', { name: '空袭策略：神兵天降', lvReq: 30, maxLv: 3, mp: 250, cd: 160, pvp: 0.45, awaken: true, tier: 3, col: '#ffd23a',
   desc: '【三觉】从超高空的医神设备上速降：全队（含自己）攻击力、三速大幅提高 40 秒，医神设备进行 10 段激光轰炸，落地时引发 15 段连锁爆炸。和“强袭策略：区域肃清”共享冷却。施放中无敌。',
   pow: lv => skillDmg(2.5, 0.8, lv) * 10 + skillDmg(1.4, 0.45, lv) * 15, ai: { kind: 'awaken', r: [0, 520], dy: 140 },
   infoExtra: lv => [['全队攻击力', '+' + pct(0.15 + 0.03 * (lv - 1))], ['全队三速', '+12%'], ['持续', '40 秒'], ['共享冷却', '强袭策略：区域肃清']],

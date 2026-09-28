@@ -151,10 +151,131 @@ def cmd_cut(a):
     sys.argv = ['frames2.py', '--src', src] + (['--keep'] if a.keep else []) + ['pmsuit']
     frames2.main()
 
+# ---- 技能图标（3 张表 × 4 列；画风同战斗组 ICON_STYLE，配色白 / 藏青 / 天蓝，BUFF 类用暖色区分）----
+ICONS = {
+    'pm_icons_a': [('pm_suit', 'a sleek white-and-navy armored battle suit chest plate with glowing sky-blue light lines'),
+                   ('pm_lockshot', 'a compact white sci-fi pistol firing two quick sky-blue shots at a red target lock reticle'),
+                   ('pm_sync', 'two white tactical headsets linked by a glowing sky-blue data wave'),
+                   ('pm_info', 'a small white hovering scout drone projecting a sky-blue holographic hexagon data screen'),
+                   ('pm_mobility', 'a pair of white armored boots with sky-blue speed streaks and a small up arrow'),
+                   ('pm_assault', 'a figure sliding low on one knee firing a white pistol, a red hexagon shield glowing behind'),
+                   ('pm_purge', 'a teal-white medical capsule module dissolving purple poison bubbles'),
+                   ('pm_strike', 'an armored white boot doing a spinning back kick with a sky-blue thruster flame'),
+                   ('pm_evade', 'a sky-blue energy blade slash arc with a figure hopping backward and two bullet streaks'),
+                   ('pm_armor', 'a white-and-navy armor shoulder plate with a bright blue shield emblem glowing'),
+                   ('pm_arms', 'a white sci-fi pistol and an energy blade crossed, glowing golden power aura'),
+                   ('pm_mark', 'a red crosshair locked on a target with six bullet marks around it')],
+    'pm_icons_b': [('pm_raid', 'a long sky-blue energy blade stretching forward in a flurry of slashes'),
+                   ('pm_buffer', 'a translucent sky-blue hexagon-pattern shield bubble'),
+                   ('pm_armsx', 'a white sci-fi pistol overcharged with orange-gold lightning, a plus sign'),
+                   ('pm_bash', 'a large translucent sky-blue hexagonal energy shield ramming forward with motion lines'),
+                   ('pm_ray', 'a white arm cannon firing a thick sky-blue laser beam with explosions on the ground'),
+                   ('pm_tactic', 'a holographic tactical map with glowing sky-blue unit markers and arrows'),
+                   ('pm_awk1', 'a large white flying medical support platform in the sky firing many sky-blue laser beams down'),
+                   ('pm_revive', 'a golden defibrillator paddle pair crackling with yellow electricity and a heartbeat line'),
+                   ('pm_field', 'a white drone projecting a big dome-shaped sky-blue force field'),
+                   ('pm_annihilate', 'six small white drones in a row firing lasers downward, a big mechanical greatsword'),
+                   ('pm_limit', 'a white battle suit core glowing violet with a broken limiter chain'),
+                   ('pm_overlimit', 'a blurred sky-blue afterimage dash with several slash marks')],
+    'pm_icons_c': [('pm_overload', 'a white remote weapon turret charging a huge red-orange energy blast'),
+                   ('pm_awk2', 'an array of white suit weapons (arm cannon, energy blades, drones, mechanical greatsword) all attacking at once, violet glow'),
+                   ('pm_suit2', 'a black-and-gold battle suit chest plate next to a white-and-blue one, two-way arrows'),
+                   ('pm_program', 'a glowing sky-blue code program window with a lightning bolt'),
+                   ('pm_breakout', 'a golden medical support platform raining yellow energy strikes around a kneeling figure'),
+                   ('pm_awk3', 'a figure diving from a golden sky platform with golden lasers and a huge chain explosion below')],
+}
+# ---- 特效（发光类黑底 → 运行时叠加；实体类白底 → 抠图）：名字 → (描述, 尺寸, 发光?, 最长边像素) ----
+FX = {
+    'pm_laser': ('A single vertical beam of light shooting straight DOWN from the top edge to the bottom edge: a bright white core with sky-blue glow edges, a small burst where it hits the ground, tall narrow composition', '1024x1536', True, 512),
+    'pm_bubble': ('A single translucent protective energy bubble: an upright oval dome made of faint sky-blue hexagon cells with a bright rim, mostly transparent in the middle', '1024x1024', True, 256),
+    'pm_hexshield': ('A single tall curved energy shield wall seen from the side: glowing sky-blue hexagon cells forming a tall narrow convex barrier, bright edges', '1024x1536', True, 256),
+    'pm_field': ('A single circular force field seen from directly above: a ring of glowing sky-blue hexagon cells with a bright rim and faint inner glow', '1024x1024', True, 384),
+    'pm_drone': ('A single small cute white scout drone seen from the side facing RIGHT: a rounded white shell with navy parts, a glowing sky-blue lens eye, two tiny rotor pods', '1024x1024', False, 96),
+    'pm_minidrone': ('A single tiny cute white attack drone seen from the side facing RIGHT: a small flat white body with a sky-blue light strip and a small laser emitter underneath', '1024x1024', False, 64),
+    'pm_medic': ('A single large white flying medical support platform seen from the side: a wide rounded white hull with navy panels, sky-blue glowing thrusters underneath and a big lens in the middle', '1536x1024', False, 320),
+    'pm_remote': ('A single compact white remote weapon turret on small legs seen from the side facing RIGHT: a chunky white box body with navy panels and a wide barrel with an orange glowing core', '1024x1024', False, 128),
+}
+JOB = ('Using this exact chibi character in her assault battle suit (same face, hair, suit design, colors and art style), draw a full-body standing portrait for a class selection screen: '
+       'confident heroic pose facing slightly to the right, the compact sci-fi pistol held up beside her face, the energy blade extended from the gauntlet pointing down, '
+       'a small white scout drone hovering near her shoulder. Plain pure white background, no text.')
+CUTIN = {   # 觉醒插图（HUD cut-in）：paramedic = 一觉、paramedic2 = 二觉、paramedic3 = 三觉
+    'paramedic': 'pointing up to the sky calling in air support, a large white flying medical support platform above firing sky-blue lasers, confident look',
+    'paramedic2': 'surrounded by all her suit weapons (a white arm cannon, sky-blue energy blades, small drones and a huge white mechanical greatsword) unleashing them at once, fierce look, violet glow',
+    'paramedic3': 'diving down from a golden flying platform high in the sky, hair streaming upward, golden light beams around her, determined look',
+}
+
+def cmd_icons(a):
+    from combatgen import icon_prompt
+    for n, items in ICONS.items():
+        if a.only and n not in a.only.split(','): continue
+        out = os.path.join(OUT, 'icons', f'{n}.png')
+        if os.path.exists(out) and not a.force: print('skip', n); continue
+        post(icon_prompt([d for _, d in items]), [], out, '2048x2048' if len(items) > 8 else '2048x1152')
+
+def cmd_fx(a):
+    from combatgen import GLOW, SOLID
+    for n, (d, size, glow, _) in FX.items():
+        if a.only and n not in a.only.split(','): continue
+        out = os.path.join(OUT, 'fx', f'{n}.png')
+        if os.path.exists(out) and not a.force: print('skip', n); continue
+        post(f'{d}. {GLOW if glow else SOLID}', [], out, size)
+
+def cmd_job(a):
+    out = os.path.join(OUT, 'job_paramedic.png')
+    if os.path.exists(out) and not a.force: print('skip job'); return
+    post(JOB, [REF], out, '1024x1536')
+
+def cmd_cutin(a):
+    for k, d in CUTIN.items():
+        if a.only and k not in a.only.split(','): continue
+        out = os.path.join(OUT, 'cutin', f'{k}.png')
+        if os.path.exists(out) and not a.force: print('skip', k); continue
+        post(f'Using this exact chibi character (same face, hair, assault battle suit design, colors and cute art style), draw a dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Plain pure white background, no text.',
+             [REF], out, '1536x1024')
+
+def cmd_prep(a):
+    """图标切块 → art/final/icon/<技能id>.webp；特效 → art/final/fx；立绘 → art/final/job/paramedic.webp；插图 → art/final/cutin"""
+    import numpy as np
+    from PIL import Image
+    from prep import remove_bg, components
+    from fxprep import glow_to_rgba, fit
+    fin = os.path.join(HERE, 'final')
+    for n, items in ICONS.items():
+        p = os.path.join(OUT, 'icons', f'{n}.png')
+        if not os.path.exists(p): continue
+        arr = np.array(remove_bg(Image.open(p))); lab, comps = components(arr[..., 3], min_cells=200)
+        boxes = []
+        for c, _ in comps:
+            ys, xs = np.where(lab == c)
+            if ys.max() - ys.min() > 80 and xs.max() - xs.min() > 80: boxes.append((ys.min(), ys.max() + 1, xs.min(), xs.max() + 1, c))
+        boxes.sort(key=lambda b: (b[0] + b[1]) / 2); rows, cur = [], []
+        for b in boxes:
+            if cur and (b[0] + b[1]) / 2 - (cur[-1][0] + cur[-1][1]) / 2 > (b[1] - b[0]) * 0.5: rows.append(cur); cur = []
+            cur.append(b)
+        if cur: rows.append(cur)
+        order = [b for r in rows for b in sorted(r, key=lambda b: b[2])]
+        print(n, 'found', len(order), 'expected', len(items))
+        for (y0, y1, x0, x1, c), (name, _) in zip(order, items):
+            crop = arr[y0:y1, x0:x1].copy(); crop[..., 3] = np.where(lab[y0:y1, x0:x1] == c, crop[..., 3], 0)
+            ic = Image.fromarray(crop, 'RGBA'); s = max(ic.size); sq = Image.new('RGBA', (s, s), (0, 0, 0, 0)); sq.paste(ic, ((s - ic.width) // 2, (s - ic.height) // 2))
+            sq.resize((104, 104), Image.LANCZOS).save(os.path.join(fin, 'icon', f'{name}.webp'), 'WEBP', quality=84, method=6)
+    for n, (_, _, glow, m) in FX.items():
+        p = os.path.join(OUT, 'fx', f'{n}.png')
+        if not os.path.exists(p): continue
+        im = glow_to_rgba(Image.open(p)) if glow else remove_bg(Image.open(p))
+        fit(im, m).save(os.path.join(fin, 'fx', f'{n}.webp'), 'WEBP', quality=80, method=6); print('fx', n)
+    p = os.path.join(OUT, 'job_paramedic.png')
+    if os.path.exists(p):
+        im = remove_bg(Image.open(p)); bb = im.getchannel('A').getbbox(); im = im.crop(bb); k = 720 / im.height
+        os.makedirs(os.path.join(fin, 'job'), exist_ok=True); im.resize((round(im.width * k), 720), Image.LANCZOS).save(os.path.join(fin, 'job', 'paramedic.webp'), 'WEBP', quality=82, method=6); print('job')
+    for k in CUTIN:
+        p = os.path.join(OUT, 'cutin', f'{k}.png')
+        if os.path.exists(p): remove_bg(Image.open(p)).resize((720, 480), Image.LANCZOS).save(os.path.join(fin, 'cutin', f'{k}.webp'), 'WEBP', quality=82, method=6); print('cutin', k)
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('cmd'); ap.add_argument('--only', default=''); ap.add_argument('--force', action='store_true'); ap.add_argument('--keep', action='store_true')
     a = ap.parse_args()
-    {'ref': cmd_ref, 'sheets': cmd_sheets, 'cut': cmd_cut}[a.cmd](a)
+    {'ref': cmd_ref, 'sheets': cmd_sheets, 'cut': cmd_cut, 'icons': cmd_icons, 'fx': cmd_fx, 'job': cmd_job, 'cutin': cmd_cutin, 'prep': cmd_prep}[a.cmd](a)
 
 if __name__ == '__main__':
     main()

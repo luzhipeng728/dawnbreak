@@ -175,7 +175,6 @@ const coop = {
     const m = { k: 'a', f: p.face };
     if (extra && extra.skill) { m.s = extra.skill; m.lv = extra.lv || 1; if (prev && prev.skill === extra.skill && prev.follow) m.fo = 1; if (typeof extra.speed === 'number') m.sp = +extra.speed.toFixed(2); }
     else if (def === BACKSTEP || (p.acts && def === p.acts.back)) m.b = 'back';
-    else if (def && def.name === 'dodge') m.dg = 1;
     else { let key = null; if (p.acts) for (const k in p.acts) if (p.acts[k] === def) { key = k; break; } if (key) m.b = key; else { m.c = def.clip || def.name; m.du = +(def.dur || 0.5).toFixed(2); } }
     this.send(m, 'all');
   },
@@ -409,7 +408,6 @@ const coop = {
         g.kit.lv[d.s] = d.lv || 1; extra = { skill: d.s, lv: d.lv || 1, type: SKILLS[d.s].type || g.dmgType, speed: d.sp || (SKILLS[d.s].cast ? 'cspd' : 1) };
         if (d.fo && g.act && g.act.follow) def = g.act.follow(g); else def = SKILLS[d.s].act(d.lv || 1, g);
       } else if (d.b) def = d.b === 'back' ? (g.acts && g.acts.back) || BACKSTEP : g.acts && g.acts[d.b];
-      else if (d.dg) { doDodge(g, false); return; }
       if (!def) def = { name: d.c || 'idle', clip: d.c || 'idle', dur: d.du || 0.4 };
       g.doAct(def, extra);
     });

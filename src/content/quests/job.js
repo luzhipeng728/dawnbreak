@@ -1,5 +1,5 @@
 /* =====================================================================
-   转职任务链（官方经典版：格兰之森 - 杀手 → 拜访导师 → 七次修炼 → 在导师处转职；本作转职 Lv.15，觉醒 Lv.18）
+   转职任务链（官方经典版：格兰之森 - 杀手 → 拜访导师 → 七次修炼 → 在导师处转职；本作转职 Lv.15，觉醒 Lv.21——官方一觉 50 级按统一等级表换算，见 docs/SKILLS_OFFICIAL_common.md 第 7 节）
    - 鬼剑士：G.S.D「鬼剑士之路」；神枪手：凯丽「弹无虚发」；魔法师：莎兰「神奇的魔法」
    - 最后的试炼：被击不超过 40 次通关烈焰格拉卡（试玩核查：原来的 15 次太苛刻，远程哥布林的小伤害也算被击；机器人 45~60 次、只躲地面预警的键盘试玩 27~50 次）
    - 觉醒：两步任务，完成后 save.data.flags.awaken = true（awakenUnlocked() 为真）
@@ -63,14 +63,14 @@ for (const [cls, C] of Object.entries(JOB_CHAINS)) {
     goals: [{ type: 'job', text: `在${qNpcName(M)}处完成转职` }],
     talk: { offer: C.changeOffer, accept: '准备好了，就选择右边的「转职」吧。', doing: ['选好你的道路了吗？（在对话菜单里选择「转职」）'], done: C.changeDone },
     reward: QR(15, 0.08, 1500, { items: [QI('elixir', 2)] }) });
-  defineQuest(`q_awaken_${cls}_1`, { type: 'job', cls, job: true, name: C.aw1, npc: M, lvl: 18, pre: [`q_job_${cls}_change`, 'q_hidden_dark'],
+  defineQuest(`q_awaken_${cls}_1`, { type: 'job', cls, job: true, name: C.aw1, npc: M, lvl: 21, pre: [`q_job_${cls}_change`, 'q_hidden_dark'],
     desc: '在暗黑雷鸣废墟磨砺自己，通关 3 次。',
     goals: [{ type: 'clear', dungeon: 'dark_thunder', n: 3 }],
     talk: { offer: C.awOffer, doing: ['还不够。'], done: ['……瓶颈，已经出现裂缝了。'] },
-    reward: QR(18, 0.12, 2500) });
-  defineQuest(`q_awaken_${cls}_2`, { type: 'job', cls, job: true, name: C.aw2, npc: M, lvl: 18, pre: `q_awaken_${cls}_1`,
+    reward: QR(21, 0.12, 2500) });
+  defineQuest(`q_awaken_${cls}_2`, { type: 'job', cls, job: true, name: C.aw2, npc: M, lvl: 21, pre: `q_awaken_${cls}_1`,
     desc: '以 S 以上的评价通关勇士级烈焰格拉卡，并带来 30 个无色小晶块。完成后解锁觉醒技能。',
     goals: [{ type: 'clear', dungeon: 'blazing_graca', diff: 2, rank: 'S' }, { type: 'item', key: 'crystal', n: 30 }],
     talk: { offer: C.aw2Offer, doing: ['勇士级，S 以上。还有 30 块无色小晶块。'], done: C.awDone },
-    reward: QR(18, 0.17, 4000, { flag: 'awaken', title: 'title_awaken' }) });
+    reward: QR(21, 0.17, 4000, { flag: 'awaken', title: 'title_awaken' }) });
 }

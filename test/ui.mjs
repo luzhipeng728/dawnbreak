@@ -184,6 +184,7 @@ ok(await ev(() => save.data.name === '测试剑士'), '选角界面 Enter = 开�
 await closeAll();
 
 sec('技能窗口 K：学习 / 降级 / 拖到技能栏 / 右键锁定指令');
+await ev(() => { game.lvl = Math.max(game.lvl, 10); });   // 技能等级上限跟角色等级挂钩（官方：初始技能 Lv.2 要角色 3~4 级），先把角色升到 10 级
 await page.keyboard.press('KeyK'); await wait(200);
 const learnable = await ev(() => skillPages().base.find(id => !skillUpBlock(id) && game.skillLv[id] === 1 && skMin(id) === 1));   // 初始技能：升一级再降回来
 if (learnable) {

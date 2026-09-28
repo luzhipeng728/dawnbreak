@@ -31,6 +31,7 @@ content/classes/sword_berserker.js
 content/classes/gunner.js
 content/classes/gun_ranger.js
 content/classes/gun_launcher.js
+content/classes/gun_mechanic.js
 content/classes/mage.js
 content/classes/mage_elemental.js
 content/classes/mage_battle.js

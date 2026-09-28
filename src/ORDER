@@ -116,6 +116,7 @@ content/regions/snow.js
 content/regions/gent.js
 content/regions/ancient.js
 content/regions/ancient_rooms.js
+content/regions/train.js
 # 装备深化：深渊派对（深渊地下城、深渊柱与两轮派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
 content/abyss.js
 ui/quest.js

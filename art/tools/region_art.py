@@ -28,7 +28,7 @@ import sky_art as A
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(TOOLS))
-A.PAR = 2
+A.PAR = int(os.environ.get("PAR", 2))   # 生图并发（PAR=5 python3 ... 可调高）
 A.BACKOFF = 90
 NOFX = (' No visual effects at all: no smoke, no sparks, no magic glow trails, no beams, no motion lines or speed lines (the game adds effects at runtime).'
         ' Do not use pure green or magenta anywhere.')
@@ -58,7 +58,7 @@ def load_spec(rid):
 
 def setup(spec):
     """把 spec 灌进 sky_art 的全局表（M / BG / FLOOR_W / HOVER / SRC），后面直接用 sky_art 的函数。"""
-    A.PAR, A.BACKOFF = 2, 90
+    A.PAR, A.BACKOFF = int(os.environ.get("PAR", 2)), 90
     A.SRC = os.path.join(A.MAIN, 'src', 'regions', spec['id'])
     os.makedirs(A.SRC, exist_ok=True)
     A.M = {}

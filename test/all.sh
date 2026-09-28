@@ -31,6 +31,7 @@ run summoner  node test/summoner.mjs
 run paramedic node test/paramedic.mjs
 run enchant   node test/enchantress.mjs
 run witch     node test/witch.mjs
+run spitfire  node test/spitfire.mjs
 run gunjobs   node test/gunner_jobs.mjs
 run avatar    node test/avatar.mjs
 run hatcheck  python3 art/tools/avatar_hatcheck.py   # 神枪手 / 魔法师原装帧不能把帽子画丢

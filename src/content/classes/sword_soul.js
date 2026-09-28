@@ -84,9 +84,9 @@ defSkill('sb_release', { name: '鬼神解放', cls: 'sword', job: 'soulbender', 
 defSkill('sb_devour', { name: '噬灵鬼斩', cls: 'sword', job: 'soulbender', lvReq: 17, maxLv: 1, mp: 0, cd: 0, type: 'mag', passive: true, col: '#a06aff',
   desc: '【被动】鬼斩可以按住蓄力（很短）：蓄满时伤害提高、霸体并向前突进；鬼斩之后再按一次技能键，放出最后召唤的鬼神的冲击波（萨亚附带冰冻，普戾蒙附带睡眠，没有召唤过则是卡赞）。' });
 
-/* ---- 残影之凯贾：自身 BUFF。暴击伤害、移速、回避提高；普攻变成 4 连暗属性魔法攻击 + 冲刺斩（冲刺开始时短暂无敌，可以接鬼影闪）---- */
+/* ---- 残影之凯贾：自身 BUFF。暴击伤害、移速、回避提高；普攻变成 4 连暗属性魔法攻击，跑攻变成凯贾冲刺斩（冲刺开始时短暂无敌，冲刺中可以接鬼影闪）---- */
 defSkill('sb_kaiga', { name: '残影之凯贾', cls: 'sword', job: 'soulbender', lvReq: 16, mp: 30, cd: 5, type: 'mag', buff: true, col: '#8a8aff',
-  desc: '【BUFF · 持续时间无限】鬼神凯贾附身：暴击伤害、移动速度提高，身后跟着凯贾的鬼影；开始冲刺（跑动）时 1 秒无敌、身体变得半透明（每 3 秒最多一次）；普攻变为 4 连暗属性魔法攻击，第 4 下是带短暂无敌的冲刺斩（冲刺中可以接鬼影闪）。',
+  desc: '【BUFF · 持续时间无限】鬼神凯贾附身：暴击伤害、移动速度提高，身后跟着凯贾的鬼影；开始冲刺（跑动）时 1 秒无敌、身体变得半透明（每 3 秒最多一次）；普攻变为 4 连暗属性魔法攻击，跑动攻击变为凯贾冲刺斩（冲刺开始时短暂无敌，冲刺中可以接鬼影闪）。',
   ai: { kind: 'buff', core: true }, infoExtra: lv => [['暴击伤害 / 移速', '+' + pct(0.05)]],
   act: (lv) => ({ name: 'sb_kaiga', clip: 'sbSummon', dur: 0.45, noCounter: true, onStart: e => { e.buffs.sb_kaiga = { t: 9999, critDmg: 0.05, mspd: 0.05, lv }; sfx.buff(); fxAura(e, '#8a8aff', 1); fxAfterimage(e, '#8a8aff'); } }) });
 const sbHit = (t0, t1, box, dmg, o) => HB(t0, t1, box, dmg, { type: 'mag', elem: 'dark', hs: 0.05, ...o });
@@ -97,28 +97,40 @@ const SWORD_ACTS_KAIGA = { ...SWORD_ACTS,
     hits: [sbHit(0.06, 0.12, [0, 80, 30, 10, 110], 1.05, { stun: 0.32, knock: 55 })], events: [slashAt(0.05, { a0: 1.0, a1: -2.1, r: 56, w: 15, off: [12, 56], col: '#a89aff' })] },
   atk3: { name: 'atk3', dur: 0.4, basic: true, speed: 'aspd', chain: [0.18, 0.4], next: 'atk4', move: [[0.04, 0.12, 160]], type: 'mag',
     hits: [sbHit(0.1, 0.16, [0, 88, 32, 0, 120], 1.3, { stun: 0.45, knock: 120 })], events: [slashAt(0.09, { a0: -2.7, a1: 1.1, r: 66, w: 20, off: [10, 56], col: '#a89aff', heavy: true })] },
-  atk4: { name: 'atk4', clip: 'dash', dur: 0.42, basic: true, speed: 'aspd', move: [[0, 0.24, 520]], type: 'mag', kaigaDash: true, invul: [0, 0.22], links: ['sb_flash'],
+  atk4: { name: 'atk4', dur: 0.46, basic: true, speed: 'aspd', move: [[0.04, 0.14, 180]], type: 'mag',
+    hits: [sbHit(0.08, 0.16, [0, 92, 34, 0, 120], 1.5, { stun: 0.5, knock: 200, heavy: true, shake: 2 })], events: [slashAt(0.07, { a0: -2.8, a1: 1.2, r: 70, w: 22, off: [10, 56], col: '#a89aff', heavy: true })] },
+  dash: { name: 'dash', clip: 'dash', dur: 0.42, basic: true, speed: 'aspd', move: [[0, 0.24, 520]], type: 'mag', kaigaDash: true, invul: [0, 0.3], links: ['sb_flash'], noCounter: true,
     hits: [sbHit(0.02, 0.24, [-10, 70, 30, 10, 110], 1.4, { stun: 0.5, knock: 160, heavy: true })],
     events: [evAt(0.01, e => { fxAfterimage(e, '#8a8aff'); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 58, face: e.face, len: 160, w: 14, col: '#a89aff', dur: 0.22 }); sfx.swing(true); })] },
 };
-/* ---- 冥炎之卡洛：开关 BUFF（再按一次解除）。普攻改为发射卡洛的分身（空中和后跳中也能发），命中附加冥炎；有凯贾时 3 连发。解锁冥炎剑 ---- */
+/* ---- 冥炎之卡洛：召唤卡洛飘在身后（持续时间无限）。普攻、跳攻、跑攻出手时卡洛额外发射分身（有凯贾时 3 连发），命中附加冥炎；
+   再按一次切换冥炎 / 紫焰：紫焰的分身不附加冥炎（配合冥炎剑、鬼影闪引爆的节奏）。解锁冥炎剑 ---- */
 defSkill('sb_karo', { name: '冥炎之卡洛', cls: 'sword', job: 'soulbender', lvReq: 20, mp: 40, cd: 3, type: 'mag', elem: 'dark', buff: true, col: '#7a3aff',
-  desc: '【开关 BUFF · 再按一次解除】鬼神卡洛附身：普攻改为向前发射卡洛的分身（空中和后跳中也能发射），命中的敌人被附加冥炎（每秒 1 跳，共 5 跳，鬼影闪命中时一次引爆）。有残影之凯贾时一次发射 3 个。只有卡洛附身时才能施放冥炎剑。',
+  desc: '【BUFF · 持续时间无限】召唤鬼神卡洛飘在身后：普攻、跳攻、跑攻出手时，卡洛额外向前发射分身（有残影之凯贾时一次 3 个），命中的敌人被附加冥炎（每秒 1 跳，共 5 跳，鬼影闪命中时一次引爆）。再按一次切换冥炎 / 紫焰：紫焰的分身不附加冥炎。只有卡洛在场时才能施放冥炎剑。',
   ai: { kind: 'buff', core: true }, pow: lv => skillDmg(0.8, 0.08, lv), infoExtra: lv => [['冥炎每跳', pct(skillDmg(0.25, 0.025, lv))]],
-  act: (lv) => ({ name: 'sb_karo', clip: 'sbKaro', dur: 0.45, noCounter: true, onStart: e => { if (toggleBuff(e, 'sb_karo', 9999, { lv, hl: '#8a3aff' })) { sfx.buff(); fxAura(e, '#7a3aff', 1); } e.acts = swordActs(e); } }) });
+  act: (lv) => ({ name: 'sb_karo', clip: 'sbKaro', dur: 0.45, noCounter: true, onStart: e => { const B = e.buffs.sb_karo;
+    if (B) { B.purple = !B.purple; B.lv = lv; fxText(B.purple ? '紫焰' : '冥炎', e.x, e.y, e.z + 24, { col: B.purple ? '#d08aff' : '#9a5aff', size: 12 }); sfx.buff(); fxAura(e, B.purple ? '#c06aff' : '#7a3aff', 0.6); }
+    else { e.buffs.sb_karo = { t: 9999, lv, hl: '#8a3aff' }; sfx.buff(); fxAura(e, '#7a3aff', 1); }
+    sbKaroFx(e); e.acts = swordActs(e); } }) });
+// 卡洛飘在身后（紫焰模式变成亮紫色）；换房间清掉特效后由被动刷新补上
+function sbKaroFx(e) {
+  if (e._karoFx && fxList.includes(e._karoFx)) return;
+  e._karoFx = addFx({ x: e.x - e.face * 40, y: e.y - 0.4, z: 0, dur: 1e9, add: true,
+    update(dt) { this.x = damp(this.x, e.x - e.face * 40, 6, dt); this.y = e.y - 0.4; if (!e.buffs.sb_karo || e.dead || e.remove) this.t = this.dur; },
+    draw(c) { const B = e.buffs.sb_karo, T = game.t; if (!B) return; drawSpr(c, B.purple ? fxTint('sb_karo', '#d08aff') : 'sb_karo', sx(this.x), sy(e.y, e.z + 100 + Math.sin(T * 3) * 5), 62, 0, { flip: e.face < 0, alpha: 0.9 }); } });
+}
 function sbKaroShot(e, n = 1) {
   const lv = (e.buffs.sb_karo && e.buffs.sb_karo.lv) || 1;
   for (let i = 0; i < n; i++) game.after(i * 0.06, () => { if (e.dead) return; sfx.swing(false);
     spawnProj({ owner: e, x: e.x + e.face * 30, y: e.y + (i - (n - 1) / 2) * 8, z: e.z + 60, vx: e.face * 560, face: e.face, life: 0.55, w: 14, d: 14, h: 24, pierce: false,
       hit: { dmg: skillDmg(0.8, 0.08, lv) / Math.sqrt(n), stun: 0.25, knock: 40, hs: 0.03, type: 'mag', elem: 'dark', col: '#9a5aff' },
-      onHitT: (pr, t) => sbKaroBurn(e, t),
-      draw(c, pr) { drawSpr(c, IMG['fx/sb_karo'] ? 'sb_karo' : fxTint('fireball', '#7a3aff'), sx(pr.x), sy(pr.y, pr.z), 36, 0, { flip: pr.face < 0 }); } }); });
+      onHitT: (pr, t) => { if (!pr.purple) sbKaroBurn(e, t); }, purple: !!(e.buffs.sb_karo && e.buffs.sb_karo.purple),
+      draw(c, pr) { drawSpr(c, pr.purple ? fxTint('sb_karo', '#d08aff') : 'sb_karo', sx(pr.x), sy(pr.y, pr.z), 36, 0, { flip: pr.face < 0 }); } }); });
 }
-const karoAct = (name, n, next) => ({ name, clip: 'asOrb', dur: 0.3, basic: true, speed: 'aspd', chain: next ? [0.12, 0.3] : null, next, events: [evAt(0.08, e => sbKaroShot(e, n))] });
-function sbKaroActs(kaiga) {
-  const n = kaiga ? 3 : 1;
-  return { ...(kaiga ? SWORD_ACTS_KAIGA : SWORD_ACTS), atk1: karoAct('atk1', n, 'atk2'), atk2: karoAct('atk2', n, 'atk3'), atk3: karoAct('atk3', n, null),
-    jatk: { ...karoAct('jatk', n, null), airOnly: true, lowGrav: 0.6, clip: 'jatk' } };
+function sbKaroActs(kaiga) {   // 原来的普攻（或凯贾普攻）照常出手，出手瞬间卡洛额外发射分身
+  const n = kaiga ? 3 : 1, base = kaiga ? SWORD_ACTS_KAIGA : SWORD_ACTS, out = { ...base };
+  for (const k of ['atk1', 'atk2', 'atk3', 'atk4', 'dash', 'jatk', 'jatk2', 'jatk3']) if (base[k]) out[k] = { ...base[k], events: [...(base[k].events || []), evAt(0.05, e => sbKaroShot(e, n))] };
+  return out;
 }
 const SWORD_ACTS_KARO = sbKaroActs(false), SWORD_ACTS_KARO_K = sbKaroActs(true);
 SWORD_ACT_PICK.push(p => !sbJob(p) ? null : p.buffs.sb_karo ? (p.buffs.sb_kaiga ? SWORD_ACTS_KARO_K : SWORD_ACTS_KARO) : p.buffs.sb_kaiga ? SWORD_ACTS_KAIGA : null);
@@ -166,8 +178,8 @@ defSkill('sb_tomb', { name: '死亡墓碑', cls: 'sword', job: 'soulbender', lvR
 
 /* ---- 鬼影闪：向前冲刺斩击，命中的敌人先被定住，随后暗属性爆发并强制倒地；引爆冥炎。二觉前只能在凯贾的冲刺中施放 ---- */
 defSkill('sb_flash', { name: '鬼影闪', cls: 'sword', job: 'soulbender', lvReq: 19, mp: 45, cd: 20, type: 'mag', elem: 'dark', col: '#9a6aff',
-  desc: '向前冲刺约 370 像素并斩击，命中的敌人先被短暂定住，随后暗属性爆发并强制倒地；会一次引爆敌人身上的冥炎。只能在残影之凯贾的冲刺斩（普攻第 4 下）中施放。', pow: lv => skillDmg(7.0, 0.7, lv), ai: { kind: 'gap', r: [0, 260], dy: 26 },
-  req: p => (p.act && p.act.kaigaDash) || sbLv(p, 'sb_mastery') ? true : swordNeed(p, 'sb_kaiga', '凯贾的冲刺', `${swordHowTo(p, 'sb_kaiga')} 开启残影之凯贾，普攻第 4 下冲刺时再按`),
+  desc: '向前冲刺约 370 像素并斩击，命中的敌人先被短暂定住，随后暗属性爆发并强制倒地；会一次引爆敌人身上的冥炎。只能在残影之凯贾的冲刺斩（凯贾附身时的跑动攻击）中施放；学了御鬼之极后随时可用。', pow: lv => skillDmg(7.0, 0.7, lv), ai: { kind: 'gap', r: [0, 260], dy: 26 },
+  req: p => (p.act && p.act.kaigaDash) || sbLv(p, 'sb_mastery') ? true : swordNeed(p, 'sb_kaiga', '凯贾的冲刺', `${swordHowTo(p, 'sb_kaiga')} 开启残影之凯贾，跑动攻击冲刺时再按`),
   act: (lv) => ({ name: 'sb_flash', clip: 'dragon', dur: 0.9, superArmor: true, noCounter: true, move: [[0, 0.2, 1100]], invul: [0, 0.2],
     onStart: e => { e.act.victims = []; fxAfterimage(e, '#9a6aff'); sfx.iai(); },
     hits: [HB(0.02, 0.22, [-30, 60, 32, 0, 120], skillDmg(1.5, 0.15, lv), { stun: 1.0, knock: 0, hs: 0.04, col: '#b08aff', onHit: (a, t) => { if (a.act) a.act.victims.push(t); addStatus(t, 'root', 0.6, { src: a }); } })],
@@ -195,7 +207,7 @@ defSkill('sb_karoblade', { name: '冥炎剑', cls: 'sword', job: 'soulbender', l
 
 /* ---- 一觉：第7鬼神：怖拉修。沼泽在前方扩大 → 巨口鬼神破土而出（冲击波击倒）→ 合嘴吞噬（主要伤害）；场上每有一只鬼神伤害 +20%（最多 4 只）。施放中无敌 ---- */
 defSkill('sb_awaken', { name: '第7鬼神：怖拉修', cls: 'sword', job: 'soulbender', lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'mag', elem: 'dark', awaken: true, col: '#5a2a9a',
-  desc: '【觉醒】唤出禁断的第 7 鬼神怖拉修：前方的沼泽逐渐扩大，巨口鬼神破土而出把敌人震倒，随即合嘴吞噬一切。场上每有一只鬼神（卡赞、普戾蒙、萨亚、罗刹、凯贾、卡洛），伤害提高 20%（最多 4 只）。施放中无敌。',
+  desc: '【觉醒】唤出禁断的第 7 鬼神怖拉修：挥剑砸地召出沼泽，沼泽逐渐扩大，巨口鬼神破土而出、张口放出冲击波，随即合嘴吞噬一切。命中的敌人被大幅减速，自身回避率提高 15 秒。场上每有一只鬼神（卡赞、普戾蒙、萨亚、罗刹、凯贾、卡洛），伤害提高 20%（最多 4 只）。施放中无敌。',
   pow: lv => skillDmg(24, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
   act: (lv) => ({ name: 'sb_awaken', clip: 'sbSummon', dur: 2.6, superArmor: true, noCounter: true, invul: [0, 2.6],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '第7鬼神：怖拉修', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); const a = e.act; a.cx = e.x + e.face * 200; a.cy = e.y;
@@ -204,10 +216,13 @@ defSkill('sb_awaken', { name: '第7鬼神：怖拉修', cls: 'sword', job: 'soul
         drawSpr(c, fxTint('darkorb', '#3a1a6a'), sx(A.cx), sy(A.cy, 0), 80 + 320 * sw, 30 + 110 * sw, { alpha: 0.8, add: false });
         if (k > 1.6) { const q = Math.min(1, (k - 1.6) * 3), bite = k > 2.1; drawSpr(c, IMG['fx/sb_brasha'] ? 'sb_brasha' : fxTint('ghost', '#7a3aff'), sx(A.cx), sy(A.cy, 0) + 10, 0, (bite ? 230 : 260) * q, { ay: 1, alpha: Math.min(1, (2.6 - k) * 3), add: !IMG['fx/sb_brasha'] }); } } }); },
     events: [evAt(1.6, e => { const a = e.act; cam.shake = Math.max(cam.shake, 10); sfx.boom(1.2); fxShock(a.cx, a.cy, 300, '#8a5aff');
-        blast(e, a.cx, a.cy, 230, { dmg: skillDmg(6, 1.5, lv) * a.m, down: true, knock: 60, hs: 0.1, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 260 }); }),
+        blast(e, a.cx, a.cy, 230, { dmg: skillDmg(6, 1.5, lv) * a.m, stun: 0.8, knock: 60, hs: 0.1, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 260, status: 'slow', sdur: 6 });
+        e.buffs.sb_blasha = { t: 15 }; fxAura(e, '#8a5aff', 0.8); }),
       evAt(2.1, e => { const a = e.act; cam.flash = 0.3; cam.flashCol = '#c8a8ff'; cam.shake = 14; sfx.boom(1.4); sfx.iai();
         for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 260) { t.x = lerp(t.x, a.cx, 0.6); t.y = lerp(t.y, a.cy, 0.6); }
-        blast(e, a.cx, a.cy, 250, { dmg: skillDmg(18, 4.5, lv) * a.m, launch: 520, knock: 120, hs: 0.2, big: 2.2, critBonus: 0.2, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 320 }); })] }) });
+        blast(e, a.cx, a.cy, 250, { dmg: skillDmg(18, 4.5, lv) * a.m, stun: 1.0, knock: 80, hs: 0.2, big: 2.2, critBonus: 0.2, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 320, status: 'slow', sdur: 6 }); })] }) });
+// 怖拉修的余威：15 秒内受到攻击时 15% 几率回避（官方：自身回避率提高）
+SWORD_HOOKS.beforeHurt.push((p, a, h) => { if (!p.buffs.sb_blasha || !sbJob(p) || h.sure || h.grab || Math.random() >= 0.15) return null; fxText('MISS', p.x, p.y, p.z, { col: '#d8d8d8', size: 12, dur: 0.5 }); return { block: true }; });
 
 /* ---- 基础技能的鬼泣强化：鬼斩（噬灵鬼斩：蓄力 + 追加鬼神冲击波）、月光斩（普攻取消后摇 + 满月斩）、卡赞（转职后变被动）---- */
 {
@@ -223,8 +238,8 @@ defSkill('sb_awaken', { name: '第7鬼神：怖拉修', cls: 'sword', job: 'soul
   G.act._sb = true;
 }
 function sbGhostWave(lv, p) {   // 噬灵鬼斩的追加：最后召唤的鬼神冲击波
-  const last = summonsOf(p, { tag: 'field' }).slice(-1)[0], k = last ? last.skey : 'kazan';
-  const col = k === 'sb_saya_f' ? SB_ICE : k === 'sb_plemon_f' ? '#6aff9a' : k === 'sb_rasha_f' ? '#c06aff' : '#ff5a4a';
+  const last = summonsOf(p, { tag: 'field' }).slice(-1)[0], k = sbLv(p, 'sb_crown') ? 'sb_blade_f' : last ? last.skey : 'kazan';   // 鬼神冠冕（三觉被动）后固定为布雷德之气
+  const col = k === 'sb_saya_f' ? SB_ICE : k === 'sb_plemon_f' ? '#6aff9a' : k === 'sb_rasha_f' ? '#c06aff' : k === 'sb_blade_f' ? '#cfd8ff' : '#ff5a4a';
   const back = p.pad.dx() * p.face < 0;
   return { name: 'sb_ghostwave', clip: 'sbSummon', dur: 0.45, noCounter: true, move: back ? [] : [[0.02, 0.1, 80]],
     events: [evAt(0.1, e => { sfx.boom(0.6); projWave(e, { speed: 520, life: 0.5, h: 110, col, hit: { dmg: skillDmg(2.0, 0.2, lv), knock: 160, launch: 240, hs: 0.06, downHit: true, type: 'mag', elem: k === 'sb_saya_f' ? 'ice' : 'dark',
@@ -258,14 +273,14 @@ defSkill('sb_mastery', { name: '御鬼之极', cls: 'sword', job: 'soulbender', 
 defSkill('sb_crown', { name: '鬼神冠冕', cls: 'sword', job: 'soulbender', lvReq: 29, mp: 0, cd: 0, type: 'mag', passive: true, col: '#c0a0ff',
   desc: '【被动 · 三觉】九大鬼神之王的冠冕：技能攻击力提高；满月斩附带失明。', infoExtra: lv => [['技能攻击力', '+' + pct(0.06 + 0.012 * lv)]] });
 
-/* ---- 鬼斩：炼狱：斩裂地面，冥界之刃从地下升起定住敌人 2 秒，随后爆炸（同一敌人最多 2 段）---- */
+/* ---- 鬼斩：炼狱：斩裂地面，冥界之刃从地下升起定住敌人 2 秒，随后刀刃崩碎再斩一次（同一敌人最多 2 段；现版没有爆炸）---- */
 defSkill('sb_purgatory', { name: '鬼斩：炼狱', cls: 'sword', job: 'soulbender', lvReq: 23, mp: 70, cd: 30, type: 'mag', elem: 'dark', col: '#8a3aff',
-  desc: '斩裂前方的地面，冥界之刃从地下升起定住敌人 2 秒，随后爆炸。', pow: lv => skillDmg(14, 1.4, lv), ai: { kind: 'aoe', r: [0, 260], dy: 50 },
+  desc: '斩裂前方的地面，6 把冥界之刃从地下升起，刺中的敌人被强制定住 2 秒，随后冥界之刃崩碎再斩一次（同一个敌人最多 2 段）。', pow: lv => skillDmg(14, 1.4, lv), ai: { kind: 'aoe', r: [0, 260], dy: 50 },
   act: (lv) => ({ name: 'sb_purgatory', clip: 'a3slam', dur: 0.9, superArmor: true, noCounter: true,
     events: [evAt(0.3, e => { const x0 = e.x, f = e.face, y = e.y; cam.shake = 8; sfx.boom(1); fxShock(x0 + f * 60, y, 120, '#8a3aff');
       const L = []; for (let i = 0; i < 6; i++) game.after(i * 0.05, () => { if (e.dead) return; const x = x0 + f * (60 + i * 45); fxSpr('swordrain', x, y, 0, { h: 150, dur: 2.1, ay: 1, col: '#9a4aff', grow: [0.2, 1], rot: Math.PI });
         for (const t of ents) if (hittable(e, t) && Math.abs(t.x - x) < 36 && Math.abs(t.y - y) < 50 && !L.includes(t)) { L.push(t); addStatus(t, 'root', 2, { src: e }); applyHit(e, t, { dmg: skillDmg(5, 0.5, lv), stun: 0.5, knock: 0, hs: 0.05, sure: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { proj: true }); } });
-      game.after(2.0, () => { if (e.dead) return; cam.shake = Math.max(cam.shake, 9); sfx.boom(1.2); for (const t of L) if (!t.dead) { fxBurst(t.x, t.y, t.z + 40, 140, '#9a4aff'); applyHit(e, t, { dmg: skillDmg(9, 0.9, lv), launch: 420, knock: 100, hs: 0.12, big: 1.6, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { proj: true }); } }); })] }) });
+      game.after(2.0, () => { if (e.dead) return; cam.shake = Math.max(cam.shake, 9); sfx.boom(1.2); for (const t of L) if (!t.dead) { fxSlashX(t.x, t.y, t.z + 50, 150, '#9a4aff'); fxSpr('swordrain', t.x, t.y, 0, { h: 150, dur: 0.3, ay: 1, col: '#9a4aff', grow: [1, 0.2], rot: Math.PI }); applyHit(e, t, { dmg: skillDmg(9, 0.9, lv), launch: 420, knock: 100, hs: 0.12, big: 1.6, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { proj: true }); } }); })] }) });
 
 /* ---- 冥祭之沼：身边升起 3 块封印墓碑，强开冥界之门把敌人往中心吸 5 秒；到时间或再按一次，墓碑自爆（按前 / 后方向键移动位置）---- */
 defSummon('sb_swamp_f', { kind: 'field', tags: ['ghost', 'field'], max: 1, over: 'oldest', life: 5, r: 150, zMax: 200, type: 'mag',
@@ -378,6 +393,7 @@ CLASSES.sword.cmds.push(['dd', 'sb_plemon', 'buff'], ['ud', 'sb_kaiga', 'buff'],
 // 被动：封印解除（魔暴、施放速度）、暗月降临（暗强）、暗之亲和（抗性）、卡赞（鬼泣被动：技能攻击力）
 CLASSES.sword.passives.push(p => {
   const on = sbJob(p);
+  if (on && p.buffs.sb_karo) sbKaroFx(p);   // 卡洛飘在身后（换房间后补回）
   setPassive(p, 'sb_unseal', on && sbLv(p, 'sb_unseal') > 0, { crit: 0.01 + 0.004 * sbLv(p, 'sb_unseal'), cspd: 0.2 });
   setPassive(p, 'kazan_psv', on && sbLv(p, 'kazan') > 0, { dmg: 0.05 + 0.01 * (sbLv(p, 'kazan') - 1) });
   setPassive(p, 'sb_darkmoon', on && sbLv(p, 'sb_darkmoon') > 0, { dmg: 0.02 + 0.004 * sbLv(p, 'sb_darkmoon') });   // 暗属性强化 → 本作折算成伤害加成（鬼泣技能几乎全是暗属性）

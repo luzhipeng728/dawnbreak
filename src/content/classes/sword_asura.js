@@ -4,7 +4,7 @@
    核心：波动刻印（开启后每 7 秒生成 1 个波动印，最多 5 个；鬼印珠 / 不动明王阵一次消耗全部，印越多越痛）、
    无尽波动（开关光环：持续耗 MP，周围敌人每 0.5 秒受伤并被挑衅；无双波的前置）。
    技能：裂波斩 / 地裂·波动剑强化、鬼印珠、绝对感知、邪光斩（+ 修罗邪光斩蓄力）、挫折意志、波动爆发（倒地也能用）、
-   冰刃·波动剑、爆炎·波动剑、无双波、邪光波动阵、不动明王阵；觉醒（暗天波动眼等）见 P1
+   冰刃·波动剑、爆炎·波动剑、无双波、邪光波动阵、不动明王阵、一觉 暗天波动眼；48 级以后（心眼、二觉、三觉等）在文件后半
    ===================================================================== */
 const asOn = p => !!(p && p.buffs && p.buffs.as_mark);
 const asMarks = p => (asOn(p) && p.buffs.as_mark.n) || 0;
@@ -283,8 +283,9 @@ defSkill('as_vajra', { name: '天雷·降魔杵', cls: 'sword', job: 'asura', lv
 
 /* ---- 波动慧眼：无为法：沿着敌人看不见的波纹移动并画出法阵（无敌），法阵引爆（5 段 + 终结）；按 → 移动到法阵对侧 ---- */
 defSkill('as_mui', { name: '波动慧眼：无为法', cls: 'sword', job: 'asura', lvReq: 29, mp: 120, cd: 60, type: 'indep', elem: 'light', col: '#e8e0ff',
-  desc: '沿着敌人看不见的波纹移动，在前方画出法阵（无敌），法阵随即引爆（5 段 + 终结）。按 → 时移动到法阵的另一侧。', pow: lv => skillDmg(22, 2.2, lv), ai: { kind: 'aoe', r: [40, 280], dy: 60 },
+  desc: '沿着敌人看不见的波纹移动，在前方画出法阵（无敌），法阵随即引爆（5 段 + 终结）。施放时按住 →，或者在重新现身之前再按一次技能键 / →，会出现在法阵的另一侧。', pow: lv => skillDmg(22, 2.2, lv), ai: { kind: 'aoe', r: [40, 280], dy: 60 },
   act: (lv) => ({ name: 'as_mui', clip: 'asSeal', dur: 1.6, noCounter: true, invul: true,
+    onInput: (e, I) => { const a = e.act; if (e.actT < 0.3 && !a.cross && (I.dx() * e.face > 0 || (a.key && I.buffered(a.key)))) { if (a.key) I.consume(a.key); a.cross = true; } return false; },   // 再现身之前追加输入：移到法阵另一侧
     onStart: e => { const a = e.act; a.cx = e.x + e.face * 150; a.cy = e.y; a.cross = e.pad.dx() * e.face > 0; sfx.charge(); fxAfterimage(e, '#e8e0ff');
       addFx({ x: a.cx, y: a.cy - 40, z: 0, dur: 1.5, draw(c) { const k = Math.min(1, this.t * 2); drawSpr(c, fxTint('hexagram', '#e8e0ff'), sx(a.cx), sy(a.cy, 0), 280 * k, 100 * k, { ground: true, rot: this.t * 1.5, alpha: 0.8 }); } }); },
     events: [evAt(0.3, e => { const a = e.act; if (a.cross) { e.x = a.cx + e.face * 150; e.face = -e.face; fxAfterimage(e, '#e8e0ff'); } }),
@@ -313,7 +314,7 @@ defSkill('as_awaken2', { name: '雷神降世：裁决', cls: 'sword', job: 'asur
 
 /* ---- 波动神诀：万空（三觉）：以雷神之力凝成雷剑向下斩，闪电沿波纹向四方扩散后爆炸（约 10 段）。无敌；与暗天波动眼共享冷却 ---- */
 defSkill('as_awaken3', { name: '波动神诀：万空', cls: 'sword', job: 'asura', lvReq: 30, maxLv: 3, mp: 250, cd: 135, pvp: 0.45, type: 'indep', elem: 'light', awaken: true, col: '#fffbe0',
-  desc: '【三觉】用慧眼看见波动的流向，以雷神之力凝成雷剑向下斩：闪电沿着波纹向四方扩散，最后一起爆炸（约 10 段）。全程无敌。与暗天波动眼共享冷却。', pow: lv => skillDmg(48, 12, lv), ai: { kind: 'awaken', r: [0, 400], dy: 90 },
+  desc: '【三觉】用慧眼看见波动的流向，以雷神之力凝成雷剑向下斩：闪电沿着波纹向四方扩散，最后一起爆炸（约 10 段）。全程无敌。与暗天波动眼共享冷却；暗天波动眼的领域还在时施放，会代替天穹之眼作为收尾。', pow: lv => skillDmg(48, 12, lv), ai: { kind: 'awaken', r: [0, 400], dy: 90 },
   act: (lv) => ({ name: 'as_awaken3', clip: 'asEvil', dur: 3.0, superArmor: true, noCounter: true, invul: [0, 3.0],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '波动神诀：万空', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.cool.as_awaken = Math.max(e.cool.as_awaken || 0, e.cool.as_awaken3 || 0); e.act.cx = e.x + e.face * 120; e.act.cy = e.y; },
     events: [evAt(0.95, e => { const a = e.act; e.play('a3slam', true); cam.shake = 12; sfx.iai(); sfx.boom(1.2); fxSpr('thunderbolt', a.cx, a.cy, 0, { h: 360, dur: 0.4, ay: 1 }); fxShock(a.cx, a.cy, 200, AS_LIGHT);
@@ -323,6 +324,8 @@ defSkill('as_awaken3', { name: '波动神诀：万空', cls: 'sword', job: 'asur
       ...[0, 1, 2].map(i => evAt(2.1 + i * 0.18, e => { const a = e.act; cam.flash = 0.2 + i * 0.1; cam.flashCol = '#fffbe0'; cam.shake = 14 + i * 2; sfx.boom(1.2 + i * 0.2); fxBurst(a.cx, a.cy, 50, 300 + i * 60, AS_LIGHT);
         blast(e, a.cx, a.cy, 260 + i * 40, { dmg: skillDmg(i === 2 ? 16 : 6, i === 2 ? 4 : 1.5, lv), launch: i === 2 ? 560 : 300, knock: 160, hs: 0.16, big: 2.2, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 360 }); }))] }) });
 { const A = SKILLS.as_awaken, a0 = A.act; A.act = (lv, p) => { const a = a0(lv, p); if (p && p.cool) p.cool.as_awaken3 = Math.max(p.cool.as_awaken3 || 0, p.cool.as_awaken || 0); return a; }; }
+// 暗天波动眼的领域还在时放三觉：万空代替天穹之眼的收尾（官方：两者共享冷却，三觉替代一觉的终结），领域随之结束
+swordAwk3Finish('as_awaken3', p => asDomain(p), e => { delete e.buffs.as_domain; });
 // 心眼：充能式回避；进入地下城自动开启波动刻印
 SWORD_HOOKS.beforeHurt.push((p, a, h) => {
   const lv = jobOf(p) === 'asura' ? skLv(p, 'as_mind') : 0; if (!lv || h.sure || h.grab || (p._asMindT || 0) > game.t) return null;

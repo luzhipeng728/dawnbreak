@@ -184,19 +184,6 @@ SWORD_HOOKS.onHurt.push(p => {
   B.shield = true; B.t = 3; p.superArmor = Math.max(p.superArmor, 0.3); sfx.boom(0.6); fxAura(p, '#ff2a3a', 1.2); fxText('血盾', p.x, p.y, p.z + 24, { col: '#ff4a5a', size: 13 });
 });
 
-/* ---- 一觉：魔狱血刹（现版的“背后召唤血剑 → 再按一次劈下”改动放在 P1；这里仍是一次性演出）---- */
-defSkill('bz_awaken', { name: '魔狱血刹', cls: 'sword', job: 'berserker', lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'indep', awaken: true, noHitCheck: true, col: '#8a0010',
-  desc: '【觉醒】召唤吸满血气的魔剑，劈向大地引发血气爆炸，血气柱贯穿整个画面。施放中无敌。', pow: lv => skillDmg(24, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
-  act: (lv) => ({ name: 'bz_awaken', clip: 'bzAwk', dur: 2.6, superArmor: true, noCounter: true, invul: [0, 2.0],
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '魔狱血刹', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); },
-    update: e => { if (e.actT > 0.95 && e.actT < 1.7) { e.drawOpts = { glow: (e.actT - 0.95) * 1.3 }; if (Math.random() < 0.7) fxCharge(e, '#ff3040', 2); } },
-    onEnd: e => { e.drawOpts = {}; },
-    events: [evAt(0.95, e => { sfx.charge(); fxAura(e, '#ff2030', 1.2); for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < WW) applyHit(e, t, { dmg: skillDmg(1.5, 0.5, lv), stun: 0.8, hs: 0.05, sure: true, col: '#ff4a5a' }, { proj: true }); }),
-      evAt(1.75, e => { cam.flash = 0.35; cam.flashCol = '#ff4a4a'; cam.shake = 14; sfx.boom(1.4); sfx.iai();
-        fxShock(e.x + e.face * 60, e.y, 360, '#ff3040'); fxBurst(e.x + e.face * 60, e.y, 40, 300, '#ff2030');
-        for (let i = 0; i < 9; i++) game.after(i * 0.05, () => fxSpr('bloodpillar', e.x + e.face * (60 + i * 95), e.y + rnd(-20, 20), 0, { h: 260, dur: 0.6, ay: 1, grow: [0.3, 1.05] }));
-        for (const t of ents) if (hittable(e, t) && (t.x - e.x) * e.face > -80 && Math.abs(t.x - e.x) < 900) applyHit(e, t, { dmg: skillDmg(18, 5, lv), launch: 560, knock: 160, hs: 0.2, big: 2.2, critBonus: 0.3, downHit: true, sure: true, col: '#ff4a5a' }, { proj: true }); })] }) });
-
 CLASSES.sword.jobs.berserker = { art: 'job/berserker', name: '狂战士', role: '近战 · 爆发', armor: 'heavy', awaken: 'bz_awaken', awakenName: '暗狱魔神',
   desc: '以自身鲜血换取力量的鬼剑士。狂暴之力下双刀乱舞，出血链越滚越强，HP 越低越凶猛。',
   skills: ['bz_vigor', 'bz_madness', 'bloodwake', 'frenzy', 'bz_defy', 'bz_scratch', 'rampage', 'outrage', 'bz_whirl', 'bz_thirst', 'bz_enrage', 'bz_twister', 'bloodblade', 'quake', 'bz_awaken', 'bz_surge', 'bz_memory', 'bz_snatch', 'bz_crusher', 'bz_incarnate', 'bz_boom', 'bz_fatal', 'bz_awaken2', 'bz_limit', 'bz_rampant', 'bz_awaken3'] };
@@ -224,7 +211,7 @@ SWORD_HOOKS.onHit.push((p, t, h, dmg, act) => {
 });
 
 /* =====================================================================
-   狂战士 P1（官方 48–100 级 → 本作 21–30 级）：鲜血之忆、魔狱血刹（现版：背后血剑 → 再按一次劈下）、狂怒暴掠、强悍碾压、汲血之力、
+   狂战士 P1（官方 48–100 级 → 本作 21–30 级）：鲜血之忆、魔狱血刹（背后血剑吸血成形 → 再按甩进地面）、狂怒暴掠、强悍碾压、汲血之力、
    浴血之怒、致命血陨、血魔·弑天（二觉）、血气界限、疯魔血魂斩、血魔极道：灭世（三觉）
    ===================================================================== */
 const bzImg = (name, fb, col) => IMG['fx/' + name] ? name : fxTint(fb, col);
@@ -235,27 +222,82 @@ defSkill('bz_incarnate', { name: '汲血之力', cls: 'sword', job: 'berserker',
 defSkill('bz_limit', { name: '血气界限', cls: 'sword', job: 'berserker', lvReq: 29, mp: 0, cd: 0, type: 'indep', passive: true, col: '#e0303a',
   desc: '【被动 · 三觉】普攻和转职技能攻击力提高；十字刃改为交叉斩直接射出血十字；嗜魂之手的血气向四个方向喷发，没抓到也会生成血块爆炸。', infoExtra: lv => [['攻击力', '+' + pct(0.06 + 0.012 * lv)]] });
 
-/* ---- 魔狱血刹（现版）：背后召唤完整形态的血剑（约 55 秒，期间攻速、移速提高）→ 再按一次或时间到：血剑劈下，血气爆炸强控 25 段 ---- */
-defSummon('bz_bloodsword', { kind: 'attach', host: 'owner', tags: ['sword'], max: 1, over: 'refresh', life: 55,
-  onSpawn: s => { s.owner.buffs.bz_bloodsword = { t: 55, aspd: 0.15, mspd: 0.15 }; },
-  onEnd: (s, why) => { const p = s.owner; if (p.buffs) delete p.buffs.bz_bloodsword; if (why === 'life' && !p.dead) bzSwordFall(p, s.lv); },
-  draw: (c, s) => { const p = s.host, k = Math.min(1, s.lifeT * 3); drawSpr(c, bzImg('bz_bloodsword', 'swordrain', '#ff3040'), sx(p.x - p.face * 24), sy(p.y - 0.3, p.z + 60 + Math.sin(game.t * 2) * 4), 0, 150 * k, { rot: p.face * 0.25, alpha: 0.9 }); } });
-function bzSwordFall(e, lv) {
-  cam.flash = 0.3; cam.flashCol = '#ff4a4a'; cam.shake = 14; sfx.boom(1.4); sfx.iai(); const x = e.x + e.face * 120;
-  fxSpr(bzImg('bz_bloodsword', 'swordrain', '#ff3040'), x, e.y, 0, { h: 300, dur: 0.5, ay: 1, grow: [1.4, 1] }); fxShock(x, e.y, 320, '#ff3040'); fxBurst(x, e.y, 40, 300, '#ff2030');
-  const L = ents.filter(t => hittable(e, t) && Math.abs(t.x - x) < 360 && Math.abs(t.y - e.y) < 110);
-  for (const t of L) addStatus(t, 'root', 2.2, { src: e });
-  for (let i = 0; i < 25; i++) game.after(0.05 + i * 0.07, () => { if (e.dead) return; if (i % 5 === 0) fxSpr('bloodpillar', x + rnd(-200, 200), e.y + rnd(-30, 30), 0, { h: 200, dur: 0.4, ay: 1 });
-    for (const t of L) if (!t.dead) applyHit(e, t, { dmg: skillDmg(i === 24 ? 8 : 0.8, i === 24 ? 2.5 : 0.25, lv), stun: 0.3, knock: 0, launch: i === 24 ? 520 : 0, hs: 0.02, sure: true, downHit: true, col: '#ff4a5a', type: 'indep' }, { proj: true }); });
+/* ---- 一觉：魔狱血刹。施放时无敌，在背后召唤血剑（约 55 秒，期间攻速、移速提高）；
+   攻击敌人时血剑吸收血气（血滴飞向背后），剑身从剑柄开始一点点凝成完整的血剑，吸满后剑身发光；剩最后 10 秒剑身闪白提醒。
+   再按一次技能键：拔下背后的血剑，朝指定方向（按住 ←→ 转向，↑↓ 调整纵深）甩进地面 → 大地裂开，血气冲天的血浪从落点向前涌出，
+   把范围里的敌人牢牢定住并连续打击 25 次；吸收的血气越多伤害越高。时间到时血剑自己劈向前方。血剑在背上时放三觉 = 用三觉代替收尾 ---- */
+const BZ_SWORD_LIFE = 55;
+defSkill('bz_awaken', { name: '魔狱血刹', cls: 'sword', job: 'berserker', lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'indep', awaken: true, noHitCheck: true, col: '#8a0010',
+  desc: '【觉醒】在背后召唤血剑（约 55 秒，期间攻击速度、移动速度提高）。攻击敌人时血剑吸收血气，剑身一点点凝成完整的血剑。再按一次技能键（可以按方向键选方向），拔下血剑甩进地面：大地裂开，冲天的血浪从落点涌出，把范围里的敌人牢牢定住并连续打击 25 次，吸收的血气越多伤害越高。时间到时血剑自动劈下。血剑在背上时施放血魔极道：灭世，会用它代替收尾。召唤时无敌。',
+  pow: lv => skillDmg(24, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 }, cmdNote: '再按：甩下血剑（←→ 选方向）',
+  recast: { ok: p => summonsOf(p, 'bz_bloodsword').length > 0, cd: 0.5, act: lv => bzSwordThrow(lv) },
+  act: (lv) => ({ name: 'bz_awaken', clip: 'roar', dur: 1.2, superArmor: true, noCounter: true, invul: [0, 1.2],
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '魔狱血刹', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); },
+    events: [evAt(0.95, e => { summon(e, 'bz_bloodsword', { lv }); sfx.charge(); fxAura(e, '#ff2030', 1.2); fxBurst(e.x - e.face * 18, e.y, e.z + 80, 200, '#ff3040');
+      for (let i = 0; i < 10; i++) bzBloodDrop(e, e.x + rnd(-120, 120), e.y + rnd(-20, 20), rnd(10, 90), i * 0.03); })] }) });
+defSummon('bz_bloodsword', { kind: 'attach', host: 'owner', tags: ['sword'], max: 1, over: 'refresh', life: BZ_SWORD_LIFE, keepRoom: true,
+  onSpawn: s => { s.blood = 0; s.owner.buffs.bz_bloodsword = { t: BZ_SWORD_LIFE, aspd: 0.15, mspd: 0.15 }; bzSwordFx(s); },
+  update: s => bzSwordFx(s),
+  onEnd: (s, why) => { const p = s.owner; if (p.buffs) delete p.buffs.bz_bloodsword; if (why === 'life' && !p.dead) bzSwordFall(p, s.lv, s.blood || 0, p.face, p.y); } });
+// 背上的血剑：画在人物身后（y 比人物小一点）；轮廓先淡淡地在，吸到的血气从剑柄往剑尖“长”出实体
+function bzSwordFx(s) {
+  if (s.fx && fxList.includes(s.fx)) return;
+  s.fx = addFx({ x: s.owner.x, y: s.owner.y - 0.35, z: 0, dur: 1e9, s,
+    update() { const S = this.s, p = S.owner; this.x = p.x; this.y = p.y - 0.35; if (S.gone || p.dead) this.t = this.dur; },
+    draw(c) {
+      const S = this.s, p = S.owner, img = IMG['fx/bz_bloodsword']; if (S.gone || !img) return;
+      const b = S.blood || 0, full = b >= 1, H = 200, W = H * img.width / img.height, k = Math.min(1, S.lifeT * 3), f = 0.28 + 0.72 * b;
+      const warn = S.life - S.lifeT < 10 && Math.floor(game.t * 4) % 2 === 0;   // 最后 10 秒剑身闪白
+      c.save(); c.translate(sx(p.x - p.face * 36), sy(p.y, p.z + 86 + Math.sin(game.t * 2) * 3)); c.rotate(p.face * 0.55); c.scale(k, k); c.globalCompositeOperation = 'lighter';
+      c.globalAlpha = 0.35; c.drawImage(img, -W / 2, -H / 2, W, H);   // 还没凝成的部分：淡淡的轮廓（发光）
+      c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.drawImage(   // 已凝成的部分：实体（不叠加，亮背景上也看得清）
+        warn ? fxTint('bz_bloodsword', '#ffffff') : img, 0, 0, img.width, img.height * f, -W / 2, -H / 2, W, H * f);
+      if (full) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.35 + 0.25 * Math.sin(game.t * 6); c.drawImage(img, -W * 0.6, -H * 0.55, W * 1.2, H * 1.1); }
+      c.restore();
+    } });
 }
-{
-  const S = SKILLS.bz_awaken;
-  Object.assign(S, { cd: 135, desc: '【觉醒】在背后召唤完整形态的血剑（约 55 秒，期间攻击速度、移动速度提高）。再按一次技能键（或时间到），血剑劈向前方，血气爆炸把范围内的敌人牢牢定住并连续打击 25 次。召唤时无敌。',
-    recast: { ok: p => summonsOf(p, 'bz_bloodsword').length > 0, cd: 0.5, act: lv => ({ name: 'bz_swordfall', clip: 'bzAwk', dur: 1.2, superArmor: true, noCounter: true, invul: [0, 1.2],
-      onStart: e => { e.animT = 1.7; const s = summonsOf(e, 'bz_bloodsword')[0], L = s ? s.lv : lv; dismissSummons(e, 'bz_bloodsword', 'cmd'); bzSwordFall(e, L); } }) },
-    act: (lv) => ({ name: 'bz_awaken', clip: 'roar', dur: 1.2, superArmor: true, noCounter: true, invul: [0, 1.2],
-      onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '魔狱血刹', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); },
-      events: [evAt(0.95, e => { summon(e, 'bz_bloodsword', { lv }); sfx.charge(); fxAura(e, '#ff2030', 1.2); fxBurst(e.x, e.y, e.z + 80, 200, '#ff3040'); })] }) });
+// 血滴：从 (x, y, z) 飞向背上的血剑
+function bzBloodDrop(p, x, y, z, delay = 0) {
+  addFx({ x, y: y + 0.5, z, dur: 0.35 + delay, p, draw(c) {
+    const k = Math.max(0, (this.t - delay) / 0.35); if (k <= 0) return; const e = easeIn(k), P = this.p;
+    const X = lerp(x, P.x - P.face * 36, e), Z = lerp(z, P.z + 92, e) + Math.sin(k * Math.PI) * 30;
+    drawSpr(c, fxTint('orb', '#ff2030'), sx(X), sy(lerp(y, P.y, e), Z), 14 * (1 - k * 0.4), 0, { alpha: 0.95 });
+  } });
+}
+// 攻击命中时血剑吸收血气：普攻每次 2.5%，技能 4.5%（同一帧多个目标只算一次）
+SWORD_HOOKS.onHit.push((p, t, h, dmg, act) => {
+  if (h.bzFall || jobOf(p) !== 'berserker') return; const S = summonsOf(p, 'bz_bloodsword')[0]; if (!S || S.blood >= 1 || S._absT === game.t) return;
+  S._absT = game.t; const A = act || p.act; S.blood = Math.min(1, (S.blood || 0) + (A && A.basic ? 0.025 : 0.045));
+  if (game.t - (S._dropT ?? -9) > 0.06) { S._dropT = game.t; bzBloodDrop(p, t.x, t.y, t.z + t.h * 0.6); }
+  if (S.blood >= 1) { sfx.buff(); fxAura(p, '#ff2030', 0.8); fxText('血剑成形', p.x, p.y, p.z + 30, { col: '#ff5a5a', size: 13 }); }
+});
+// 再按一次：拔下血剑（bzAwk1 举剑）→ 甩进地面（bzAwk2）；方向键：←→ 在 castSkill 里已经转向，↑↓ 让落点往纵深偏
+function bzSwordThrow(lv) {
+  return { name: 'bz_swordfall', clip: 'bzAwk', dur: 1.25, superArmor: true, noCounter: true, invul: [0, 1.25],
+    onStart: e => { const s = summonsOf(e, 'bz_bloodsword')[0], a = e.act; a.L = s ? s.lv : lv; a.blood = s ? s.blood || 0 : 0; a.ty = clamp(e.y + e.pad.dy() * 70, 8, DEPTH - 8); a.face = e.face;
+      dismissSummons(e, 'bz_bloodsword', 'cmd'); sfx.charge();
+      a.fx = addFx({ x: e.x, y: e.y + 0.4, z: 0, dur: 0.32, e, draw(c) { const k = easeOut(this.t / this.dur), E = this.e;   // 血剑从背后拔到头顶
+        drawSpr(c, 'bz_bloodsword', sx(E.x + E.face * lerp(-30, 6, k)), sy(E.y, E.z + lerp(84, 150, k)), 0, lerp(190, 230, k), { rot: E.face * lerp(0.5, Math.PI, k), alpha: 0.95 }); } }); },
+    update: e => { e.vx = e.vy = 0; },
+    events: [evAt(0.3, e => { e.play('bzAwk', true); e.animT = 1.72; const a = e.act; bzSwordFall(e, a.L, a.blood, a.face, a.ty, true); })] };
+}
+// 血剑甩进地面：剑从头顶 / 背后飞向落点插进地里 → 裂地 → 冲天血浪从落点向前涌出（25 段，定身）
+function bzSwordFall(e, lv, blood, face, ty, thrown) {
+  const x = e.x + face * 150, y = ty ?? e.y, mul = 0.8 + 0.35 * clamp(blood, 0, 1), x0 = e.x - face * (thrown ? -6 : 30), z0 = e.z + (thrown ? 150 : 84);
+  addFx({ x, y: y + 0.6, z: 0, dur: 0.12, draw(c) { const k = easeIn(this.t / this.dur);   // 飞行
+    drawSpr(c, 'bz_bloodsword', sx(lerp(x0, x, k)), sy(lerp(e.y, y, k), lerp(z0, 60, k)), 0, 240, { rot: face * lerp(thrown ? Math.PI * 0.75 : 0.5, 0, k), alpha: 0.95 }); } });
+  game.after(0.12, () => {
+    cam.flash = 0.3; cam.flashCol = '#ff4a4a'; cam.shake = 14; sfx.boom(1.4); sfx.iai();
+    fxSpr('bz_bloodsword', x, y, 0, { h: 260, dur: 2.0, ay: 0.85, fadeIn: 0.01, alpha: 0.95 });   // 插在地上的血剑
+    fxShock(x, y, 340, '#ff3040'); fxBurst(x, y, 30, 300, '#ff2030'); fxDust(x, y, 14, 50, '#6a1a1a');
+    const L = ents.filter(t => hittable(e, t) && (t.x - x) * face > -200 && Math.abs(t.x - x) < 420 && Math.abs(t.y - y) < 110);
+    for (const t of L) addStatus(t, 'root', 2.2, { src: e });
+    for (let j = 0; j < 7; j++) game.after(0.06 + j * 0.07, () => { const X = x + face * (j * 55 - 30);   // 血浪：冲天的血柱从落点一排排向前涌
+      fxSpr('bloodpillar', X, y + rnd(-14, 14), 0, { h: 300 + j * 20, dur: 0.7, ay: 1, grow: [0.3, 1.05] }); fxSpr('bloodwave', X, y, 0, { h: 200, dur: 0.5, ay: 1, flip: face < 0, grow: [0.5, 1.1] }); if (j % 2 === 0) sfx.boom(0.6); });
+    game.after(0.2, () => fxSpr('bloodpillar', x, y, 0, { h: 460, w: 200, dur: 1.2, ay: 1, grow: [0.4, 1.1] }));
+    for (let i = 0; i < 25; i++) game.after(0.05 + i * 0.07, () => { if (e.dead) return; if (i % 6 === 5) fxSpr('bloodpillar', x + face * rnd(-60, 320), y + rnd(-30, 30), 0, { h: 240, dur: 0.4, ay: 1 });
+      for (const t of L) if (!t.dead) applyHit(e, t, { dmg: skillDmg(i === 24 ? 8 : 0.8, i === 24 ? 2.5 : 0.25, lv) * mul, stun: 0.3, knock: 0, launch: i === 24 ? 520 : 0, hs: 0.02, sure: true, downHit: true, col: '#ff4a5a', type: 'indep', bzFall: true }, { proj: true }); });
+  });
 }
 
 /* ---- 狂怒暴掠：抓住前方的敌人（按 → 突进去抓），跳起把它摔在地上，血气爆炸。施放时霸体，抓住后无敌 ---- */
@@ -356,6 +398,8 @@ defSkill('bz_awaken3', { name: '血魔极道：灭世', cls: 'sword', job: 'bers
         for (let i = 0; i < 12; i++) fxSpr('bloodpillar', e.x + rnd(-320, 320), e.y + rnd(-50, 50), 0, { h: 280, dur: 0.7, ay: 1, grow: [0.3, 1.05] });
         for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < WW * 0.6) applyHit(e, t, { dmg: skillDmg(26, 7, lv), launch: 560, knock: 200, hs: 0.24, big: 2.4, critBonus: 0.3, sure: true, downHit: true, col: '#ff5a5a' }, { proj: true }); })] }) });
 { const A = SKILLS.bz_awaken, a0 = A.act; A.act = (lv, p) => { const a = a0(lv, p); if (p && p.cool) p.cool.bz_awaken3 = Math.max(p.cool.bz_awaken3 || 0, p.cool.bz_awaken || 0); return a; }; }
+// 血剑还在背上时放三觉：用三觉代替魔狱血刹的收尾（官方：两者共享冷却，三觉可以替代血剑劈下）；背上的血剑被拔出来用掉
+swordAwk3Finish('bz_awaken3', p => summonsOf(p, 'bz_bloodsword').length > 0, e => dismissSummons(e, 'bz_bloodsword', 'cmd'));
 // 鲜血之忆：攻击出血的敌人后 20 秒强化；血气界限：十字刃射出血十字、嗜魂之手四向喷发
 SWORD_HOOKS.onHit.push((p, t) => { const lv = jobOf(p) === 'berserker' ? skLv(p, 'bz_memory') : 0; if (lv && t.status && t.status.bleed) p.buffs.bz_memory = { t: 20, atk: 0.04 + 0.008 * lv, crit: 0.02 + 0.003 * lv }; });
 {

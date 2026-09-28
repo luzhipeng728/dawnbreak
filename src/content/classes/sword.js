@@ -113,8 +113,8 @@ function tripleStage(lv, n) {
     hits: [HB(0.02, 0.2, [-10, 60, 28, last ? -10 : 10, last ? 130 : 105], skillDmg(1.3, 0.14, lv) * (last ? 1.4 : 1), { stun: 0.45, knock: last ? 120 : 120, hs: 0.06, shake: last ? 3 : 1.5, launch: last ? 420 : 0, onHit: (a, t) => { if (a._tri) a._tri.add(t); } })],
     events: [evAt(0.01, e => { fxAfterimage(e); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 58, face: e.face, len: 110, w: 12, col: '#7ff0e0' }); sfx.swing(last); })] };
 }
-function projWave(p, o) {   // 地面剑气：沿地面推进
-  spawnProj({ owner: p, x: p.x + p.face * 30, y: p.y, z: 0, vx: p.face * (o.speed || 380), face: p.face, life: o.life || 0.7, w: 26, d: 26, h: 90,
+function projWave(p, o) {   // 地面剑气：沿地面推进（o.vy：斜着往纵深走）
+  return spawnProj({ owner: p, x: p.x + p.face * 30, y: p.y, z: 0, vx: p.face * (o.speed || 380), vy: o.vy || 0, face: p.face, life: o.life || 0.7, w: 26, d: 26, h: 90,
     hit: { knock: 170, hs: 0.05, col: '#9fe6ff', shake: 1.5, ...o.hit },
     draw(c, pr) {
       const X = sx(pr.x), Y = sy(pr.y, 0), k = pr.t / pr.life, a = k > 0.75 ? (1 - k) / 0.25 : Math.min(1, k * 10);
@@ -140,16 +140,25 @@ function crossStage(lv, p, n) {
     onStart: e => { if (vig) { const c = Math.round(e.hpMax * 0.01); e.hp = Math.max(1, e.hp - c); } },
     hits: [HB(0.05, 0.1, [0, 76, 30, 10, 110], skillDmg(0.9, 0.09, lv), { stun: fast ? 0.7 : 0.4, knock: 40, hs: 0.05 }), HB(0.17, 0.22, [0, 76, 30, 10, 110], skillDmg(0.9, 0.09, lv), { stun: fast ? 0.7 : 0.45, knock: 60, hs: 0.06 })],
     events: [slashAt(0.04, { a0: -2.2, a1: 1.0, r: 58, w: 16, off: [10, 55], col: '#ff8a8a' }), slashAt(0.16, { a0: 1.0, a1: -2.2, r: 58, w: 16, off: [10, 55], col: '#ff8a8a' }),
-      evAt(0.24, e => { const x = e.x + e.face * 58; fxSpr('crossx', x, e.y, e.z + 60, { w: 110 * big, dur: 0.5, grow: [0.5, 1.1], col: '#ff4a4a' }); sfx.hit('crit', false);
-        blast(e, x, e.y, 55 * big, { dmg: skillDmg(1.0, 0.1, lv) * big, stun: 0.5, knock: 90, hs: 0.07, col: '#ff6a6a' }, vig ? { zMax: 120, status: 'bleed', sdur: 7, dps: 0.05 } : { zMax: 120 }); })] };
+      evAt(0.24, e => { sfx.hit('crit', false);   // 血十字：交叉斩的轨迹化成血十字，向前飞一小段（官方投射物），每个敌人只打一次
+        spawnProj({ owner: e, x: e.x + e.face * 40, y: e.y, z: 20, vx: e.face * 300, face: e.face, life: 0.4, w: 42 * big, d: 30, h: 100, pierce: true,
+          hit: { dmg: skillDmg(1.0, 0.1, lv) * big, stun: 0.5, knock: 90, hs: 0.07, col: '#ff6a6a' }, onHitT: vig ? (q, t) => addStatus(t, 'bleed', 7, { dps: e.atk * 0.05, src: e }) : undefined,
+          draw(c, q) { const k = q.t / q.life; drawSpr(c, fxTint('crossx', '#ff4a4a'), sx(q.x), sy(q.y, q.z + 40), 110 * big * (0.6 + 0.5 * Math.min(1, k * 4)), 0, { alpha: k > 0.7 ? (1 - k) / 0.3 : 1 }); } }); })] };
 }
 // 刀魂之卡赞（通用 BUFF）：召唤鬼神卡赞，力量、智力提升 120 秒；鬼泣转职后改为被动，剑影不能学
 defSkill('kazan', { name: '刀魂之卡赞', cls: 'sword', lvReq: 5, mp: 30, cd: 6, type: 'phys', buff: true, col: '#c0302a', excl: ['ghostblade'],
   desc: '【BUFF】召唤鬼神卡赞，120 秒内力量、智力提升（攻击力提升）。再次施放会重新召唤。', ai: { kind: 'buff' },
   infoExtra: lv => [['攻击力', '+' + pct(kazanAtk(lv))], ['持续时间', '120 秒']],
   act: (lv) => ({ name: 'kazan', clip: 'focus', dur: 0.5, noCounter: true,
-    onStart: e => { e.buffs.kazan = { t: 120, atk: kazanAtk(lv) }; sfx.buff(); fxAura(e, '#ff5a4a', 1); fxSpr('ghost', e.x - e.face * 10, e.y, e.z + 70, { w: 90, dur: 0.6, alpha: 0.7, grow: [0.5, 1.1], col: '#ff6a5a' }); } }) });
+    onStart: e => { e.buffs.kazan = { t: 120, atk: kazanAtk(lv) }; sfx.buff(); fxAura(e, '#ff5a4a', 1); fxSpr('ghost', e.x - e.face * 10, e.y, e.z + 70, { w: 90, dur: 0.6, alpha: 0.7, grow: [0.5, 1.1], col: '#ff6a5a' }); swKazanFx(e); } }) });
 const kazanAtk = lv => 0.03 + 0.005 * (lv - 1);
+// 刀魂卡赞现身跟随（官方：召唤卡赞跟随施放者）：BUFF 期间半透明的卡赞飘在身后，慢半拍跟着走；换房间清掉特效后由被动刷新补上
+function swKazanFx(e) {
+  if (e._kzFx && fxList.includes(e._kzFx)) return;
+  e._kzFx = addFx({ x: e.x - e.face * 44, y: e.y - 0.4, z: 0, dur: 1e9, add: true,
+    update(dt) { this.x = damp(this.x, e.x - e.face * 44, 5, dt); this.y = e.y - 0.4; if (!e.buffs.kazan || e.dead || e.remove) this.t = this.dur; },
+    draw(c) { const T = game.t; drawSpr(c, IMG['fx/sb_kazan'] ? 'sb_kazan' : fxTint('ghost', '#ff5a4a'), sx(this.x), sy(e.y, e.z + 74 + Math.sin(T * 2.2) * 5), 0, 100, { flip: e.face < 0, alpha: 0.4 + 0.06 * Math.sin(T * 3) }); } });
+}
 // 月光斩：左手月形斩（对空浮空），再按技能键追加单手上斩；按 → 前进更远、按 ← 原地
 defSkill('moon', { name: '月光斩', cls: 'sword', lvReq: 15, mp: 22, cd: 4, type: 'mag', elem: 'dark', col: '#8a7ae0',
   desc: '左手挥出月牙形斩击（打到空中的敌人会浮空），再按技能键追加单手上斩。方向键控制前进距离。', pow: lv => skillDmg(3.0, 0.3, lv), ai: { kind: 'poke', r: [0, 90], dy: 22 },
@@ -165,26 +174,31 @@ function moonStage(lv, n) {
     events: [evAt(0.07, e => { fxSpr('slash', e.x + e.face * 40, e.y, e.z + 62, { w: 120, dur: 0.25, flip: e.face < 0, col: '#b8a8ff', grow: [0.7, 1.1] }); sfx.swing(true); })] };
 }
 // 嗜魂之手（男鬼剑通用，现版）：带吸附的抓取 → 吸取能量（多段）→ 喷发打飞（身后的敌人也吃伤害）。抓到时无敌；抓不动的敌人改为向前喷血；
-// 对出血的敌人增伤。狂战士：饥渴满蓄时吸取次数 +3，学血气旺盛附出血，二觉被动加霸体（P1）
+// 对出血的敌人增伤。狂战士：饥渴满蓄时吸取次数 +3，学血气旺盛附出血，汲血之力（二觉被动）全程霸体，血气界限（三觉被动）血气向四个方向喷发、没抓到也会凝成血块爆炸
 defSkill('soulhand', { name: '嗜魂之手', cls: 'sword', lvReq: 17, mp: 35, cd: 6, type: 'phys', col: '#b01a2a',
   desc: '伸出鬼手抓住前方稍远处的敌人（可以抓住霸体和格挡中的敌人），吸取能量后喷发，把敌人和它身后的敌人一起打飞。抓住时无敌；抓不动的敌人改为向前喷血。对出血的敌人伤害提高。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'grab', r: [20, 150], dy: 22 },
   act: (lv, p) => {
     const bz = p && jobOf(p) === 'berserker', vig = !!(p && hasSkill(p, 'bz_vigor')), extra = bz && p.buffs.bz_thirst && p.buffs.bz_thirst.full ? 3 : 0;
+    const inc = bz && hasSkill(p, 'bz_incarnate'), lim = bz && hasSkill(p, 'bz_limit');
     const ts = [0.5, 0.62, 0.74]; for (let i = 0; i < extra; i++) ts.push(0.86 + i * 0.1);
     const endT = ts[ts.length - 1] + 0.16, bleedMul = t => t.status && t.status.bleed ? 1.3 : 1;
-    return { name: 'soulhand', clip: 'soulhand', dur: endT + 0.25, noCounter: true, superArmor: [0.1, endT + 0.2],
+    return { name: 'soulhand', clip: 'soulhand', dur: endT + 0.25, noCounter: true, superArmor: inc ? true : [0.1, endT + 0.2],
       hits: [HB(0.12, 0.3, [10, 160, 30, 0, 110], skillDmg(0.8, 0.08, lv), { grab: true, stun: 0.4, hs: 0.05 })],
       hold: (e, t) => { e.invul = Math.max(e.invul, 0.05); const k = clamp((e.actT - 0.2) / 0.25, 0, 1); t.x = damp(t.x, e.x + e.face * lerp(120, 42, k), 12, 1 / 60); t.y = e.y + 0.5; t.z = e.z + k * 55; t.face = -e.face; },
       events: [evAt(0.1, e => { sfx.swing(true); fxSpr('bloodhand', e.x + e.face * 70, e.y, e.z + 62, { w: 150, dur: 0.3, flip: e.face < 0, grow: [0.4, 1], alpha: 0.9 }); }),
         evAt(0.36, e => { if (e.grabbed) return; const x = e.x + e.face * 90;   // 没抓到（抓不动的敌人 / 落空）：向前喷血
           fxSpr('bloodpillar', x, e.y, 0, { h: 110, dur: 0.35, ay: 1, grow: [0.4, 1] }); sfx.boom(0.5);
-          blast(e, x, e.y, 70, { dmg: skillDmg(2.4, 0.24, lv), knock: 160, launch: 300, hs: 0.07, col: '#ff4a5a' }, vig ? { zMax: 150, status: 'bleed', sdur: 7, dps: 0.05 } : { zMax: 150 }); e.act.dur = Math.min(e.act.dur, e.actT + 0.3); }),
+          blast(e, x, e.y, 70, { dmg: skillDmg(2.4, 0.24, lv), knock: 160, launch: 300, hs: 0.07, col: '#ff4a5a' }, vig ? { zMax: 150, status: 'bleed', sdur: 7, dps: 0.05 } : { zMax: 150 }); e.act.dur = Math.min(e.act.dur, e.actT + 0.3);
+          if (lim) game.after(0.18, () => { if (e.dead) return; fxSpr('darkorb', x, e.y, 60, { w: 120, dur: 0.3, col: '#ff2030', grow: [0.4, 1.2] }); fxBurst(x, e.y, 60, 200, '#ff2030'); sfx.boom(0.7);   // 血气界限：血块爆炸
+            blast(e, x, e.y, 100, { dmg: skillDmg(1.6, 0.16, lv), launch: 360, knock: 120, hs: 0.07, col: '#ff4a5a' }, { zMax: 180 }); }); }),
         ...ts.map(t => evAt(t, e => { const g = e.grabbed; if (!g) return; applyHit(e, g, { dmg: skillDmg(0.55, 0.055, lv) * bleedMul(g), hs: 0.04, sure: true, snd: 'blunt', col: '#ff4a5a' }, { proj: true });
           fxSpr('bloodpillar', g.x, g.y, 0, { h: 70, dur: 0.3, ay: 1, alpha: 0.7 }); })),
         evAt(endT, e => { cam.shake = Math.max(cam.shake, 6); sfx.boom(0.8); const g = e.grabbed;
           if (g) { fxSpr('bloodpillar', g.x, g.y, 0, { h: 190, dur: 0.5, ay: 1, grow: [0.4, 1] }); fxBurst(g.x, g.y, g.z + 30, 170, '#ff3040');
             blast(e, g.x + e.face * 60, g.y, 70, { dmg: skillDmg(1.0, 0.1, lv), launch: 380, knock: 140, hs: 0.05, col: '#ff4a5a' }, { zMax: 150 });   // 身后的敌人
-            if (vig) addStatus(g, 'bleed', 7, { dps: e.atk * 0.05, src: e }); }
+            if (vig) addStatus(g, 'bleed', 7, { dps: e.atk * 0.05, src: e });
+            if (lim) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = g.x + dx * 110, Y = clamp(g.y + dy * 45, 6, DEPTH - 6);   // 血气界限：血气向四个方向喷发
+              fxSpr('bloodpillar', X, Y, 0, { h: 170, dur: 0.45, ay: 1, grow: [0.3, 1] }); blast(e, X, Y, 60, { dmg: skillDmg(0.8, 0.08, lv), launch: 320, knock: 60, hs: 0.04, col: '#ff4a5a' }, { zMax: 160 }); } }
           throwGrab(e, { dmg: skillDmg(1.4, 0.14, lv) * (g ? bleedMul(g) : 1), launch: 520, knock: 60, hs: 0.1, big: 1.5, col: '#ff4a5a' }); })] };
   } });
 
@@ -249,6 +263,13 @@ function swordGateBar(p = game.player) {
   }
 }
 bus.on('jobChange', () => swordGateBar()); bus.on('sceneEnter', () => swordGateBar());
+// 三觉代替一觉 / 二觉的收尾（官方：真觉醒可以替代魔狱血刹、暗天波动眼、万剑归宗的终结）：ok(p) 为真时按三觉 = 用三觉收尾，
+// consume(p) 清掉原来的状态（背上的血剑、领域、飞剑）；三觉照常进冷却（和一觉共享）
+function swordAwk3Finish(id, ok, consume) {
+  const S = SKILLS[id];
+  S.recast = { ok, mp: S.mp, cd: 0.5, act: (lv, p) => { const a = S.act(lv, p), s0 = a.onStart;
+    a.onStart = e => { consume(e); e.cool[id] = Math.max(e.cool[id] || 0, S.cd * (e.cdMul || 1)); if (s0) s0(e); }; return a; } };
+}
 function swordAttackIds() { return Object.keys(SKILLS).filter(id => { const S = SKILLS[id]; return S.cls === 'sword' && S.act && !S.passive && !S.buff && !S.awaken; }); }
 // 普攻动作表按转职 / BUFF 挑选（狂战士狂暴之力 = 二刀流等）：各转职文件往 SWORD_ACT_PICK 里登记 p => 动作表 | null
 const SWORD_ACT_PICK = [];
@@ -256,4 +277,5 @@ function swordActs(p) { for (const f of SWORD_ACT_PICK) { const A = f(p); if (A)
 CLASSES.sword.passives.push(p => {
   if (!(p.st === 'act' && p.act && p.act.basic)) p.acts = swordActs(p);   // 普攻连段中途不切换（next 指向的动作在另一张表里可能不存在）
   p.airBonus = hasSkill(p, 'aircut') ? 2 : 0;                             // 空之连刃：空中最多 3 斩
+  if (p.buffs.kazan) swKazanFx(p);                                        // 卡赞跟随（换房间后补回）
 });

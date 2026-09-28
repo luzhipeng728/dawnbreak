@@ -28,7 +28,8 @@
    "official / src / en / conf": "官方行为一句话 / 来源 / 英文名 / 置信度（高 = 技能页写明，中 = 推断或单一弱来源）",
    "输入": "pre（先放的技能）、input（tap / hold / mash）、holdT、mashT、hp（施放前 HP 比例）、dir（'f'/'b' 全程按住）、presses（再按时刻）、watch（观察秒数）、at（木桩距离）、air / airDelay（先起跳）",
    "key": "“<id>@<转职>” = 基础技能在该转职下的强化版，只在该转职的表里比对",
-   "剑魂命中数": "默认武器太刀：武器奥义 10 级的刺伤每 3 秒引爆一次，剑魂技能的命中数里多算 1 段"
+   "剑魂命中数": "默认武器太刀：武器奥义 10 级的刺伤每 3 秒引爆一次，剑魂技能的命中数里多算 1 段",
+   "src2": "行为级核对（2026-09-29，docs/skills/sword_behavior.md）用的补充来源"
   }
  },
  "skills": {
@@ -99,7 +100,7 @@
    "cd": 4
   },
   "kazan": {
-   "official": "召唤刀魂卡赞跟随施放者，250px 内队友力量 / 智力提升 120s；再放一次收回重召；鬼泣转为被动、剑影不能学；CD 6s",
+   "official": "召唤刀魂卡赞（本作：卡赞灵体跟在身后），250px 内队友力量 / 智力提升 120s；再放一次收回重召；鬼泣转为被动、剑影不能学；CD 6s",
    "src": "https://wiki.dfo.world/view/Khazan",
    "en": "Khazan",
    "conf": "高",
@@ -179,7 +180,7 @@
    "cd": 3
   },
   "cross": {
-   "official": "交叉两斩 + 召唤血十字（投射物）；血十字出现时再按一次追加推击（可击倒）；可被其他技能取消；CD 3s",
+   "official": "交叉两斩 + 召唤血十字（投射物，向前飞一小段）；血十字出现时再按一次追加推击（可击倒）；可被其他技能取消；CD 3s",
    "src": "https://wiki.dfo.world/view/Gore_Cross",
    "en": "Gore Cross",
    "conf": "中",
@@ -394,7 +395,7 @@
    "cd": 15
   },
   "dragon": {
-   "official": "猛龙断空斩：高速突进斩（现版最多 2 段、可改向）→ 单手上斩浮空；突进中霸体、改向时没有；CD 20s",
+   "official": "猛龙断空斩：高速突进斩 2 段（起手时 ↑↓ 调第一斩的斜向角度，第 2 段沿同一方向）→ 单手上斩浮空；突进中霸体",
    "src": "https://wiki.dfo.world/view/Raging_Dragon_Slash",
    "en": "Raging Dragon Slash",
    "conf": "高",
@@ -408,7 +409,8 @@
     200,
     520
    ],
-   "cd": 20
+   "cd": 20,
+   "src2": "https://namu.wiki/w/%EC%9B%A8%ED%8E%80%EB%A7%88%EC%8A%A4%ED%84%B0(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "wm_dragonrush": {
    "official": "破军斩龙击：肩撞前冲（眩晕）→ 转身回冲连刺 → 聚到一处上挑浮空；CD 25s",
@@ -424,7 +426,7 @@
    "cd": 25
   },
   "phantom": {
-   "official": "幻影剑舞：原地连斩（太刀 / 光剑 20–24 次）每斩飞出剑气，连打加速；最后一击向前放巨大剑气；全程霸体；CD 45s",
+   "official": "幻影剑舞：原地连斩（太刀 / 光剑 20–24 次）每斩飞出剑气，连打加速（约 5 次到顶）；最后向前放巨大剑气，放出前按住 ↑↓ 调剑气角度；全程霸体；CD 45s",
    "src": "https://wiki.dfo.world/view/Illusion_Sword_Dance",
    "en": "Illusion Sword Dance",
    "conf": "高",
@@ -439,10 +441,11 @@
     -20,
     40
    ],
-   "cd": 45
+   "cd": 45,
+   "src2": "https://namu.wiki/w/%EC%9B%A8%ED%8E%80%EB%A7%88%EC%8A%A4%ED%84%B0(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "awaken@blade": {
-   "official": "一觉 极·鬼剑术（暴风式）：抛出 24 把剑成阵强控 → 拔剑乱舞（连打加速）→ 上斩收尾；约 5s；施放中无敌",
+   "official": "一觉 极·鬼剑术（暴风式）：8 颗剑魂珠吸起定身 → 炸成 24 把剑的剑阵 → 在剑阵里闪身拔剑斩击、轮换武器（连打加速约 2 倍）→ 回到起点上挑收尾；施放中无敌",
    "src": "https://wiki.dfo.world/view/Ultimate_Slay:_Tempest",
    "en": "Ultimate Slay: Tempest",
    "conf": "高",
@@ -455,10 +458,11 @@
    "cd": 145,
    "why": {
     "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
-   }
+   },
+   "src2": "https://namu.wiki/w/%EC%9B%A8%ED%8E%80%EB%A7%88%EC%8A%A4%ED%84%B0(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "wm_meteor": {
-   "official": "极·神剑术（流星落）：带冲击波高跳 → 移动准星 → 投下约 38 把流星剑 → 下砸；施放中无敌；CD 35s",
+   "official": "极·神剑术（流星落）：带冲击波高跳（无敌）→ 落点在左 / 中 / 右三档里选 → 投下约 38 把流星剑 → 下砸；CD 35s",
    "src": "https://wiki.dfo.world/view/Omnislay:_Shooting_Star",
    "en": "Omnislay: Shooting Star",
    "conf": "高",
@@ -467,7 +471,8 @@
     60
    ],
    "invul": "part",
-   "cd": 35
+   "cd": 35,
+   "src2": "https://namu.wiki/w/%EC%9B%A8%ED%8E%80%EB%A7%88%EC%8A%A4%ED%84%B0(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "wm_kuubatto": {
    "official": "破空拔刀斩：按住蓄力；大范围拔刀斩 + 向前射出圆形剑气（约 850px，击倒）；CD 50s",
@@ -517,7 +522,7 @@
    "cd": 50
   },
   "wm_awaken2": {
-   "official": "二觉 万剑归宗：念力飞剑 30s，普攻 / 指定技能附带穿云刺 → 再按或到时间 → 御剑术抓目标乱斩 → 万剑诀爆炸",
+   "official": "二觉 万剑归宗：5 把念力飞剑 40s，普攻 / 技能命中附带穿刺剑 → 再按或到时间 → 御剑术抓目标乱斩 → 爆炸",
    "src": "https://wiki.dfo.world/view/Telekinetic_Swords",
    "en": "Telekinetic Swords",
    "conf": "中",
@@ -525,7 +530,8 @@
    "cd": 180,
    "why": {
     "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
-   }
+   },
+   "src2": "https://namu.wiki/w/%EC%9B%A8%ED%8E%80%EB%A7%88%EC%8A%A4%ED%84%B0(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "wm_mukei": {
    "official": "极·神剑术（无形斩）：强力拔刀射出无形剑，在区域内连斩（约 13 段）后爆炸；离开区域会被追斩；CD 60s",
@@ -539,7 +545,7 @@
    "cd": 60
   },
   "wm_awaken3": {
-   "official": "三觉 万剑极诣·开天斩：钝器砸地 → 巨剑重斩 → 跃起短剑 / 太刀剑气 → 光剑终结；无敌",
+   "official": "三觉 万剑极诣·开天斩：钝器砸地 → 巨剑重斩 → 跃起短剑 / 太刀剑气 → 多段 → 光剑终结；无敌；万剑归宗的飞剑在时可代替其收尾",
    "src": "https://wiki.dfo.world/view/Pentastrike",
    "en": "Pentastrike",
    "conf": "中",
@@ -551,7 +557,8 @@
    "cd": 290,
    "why": {
     "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
-   }
+   },
+   "src2": "https://namu.wiki/w/%EC%9B%A8%ED%8E%80%EB%A7%88%EC%8A%A4%ED%84%B0(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "frenzy": {
    "official": "狂暴之力：开关 BUFF，以血换力；普攻变二刀流；5 个技能的前置；CD 10s",
@@ -736,7 +743,7 @@
    "cd": 40
   },
   "bz_awaken": {
-   "official": "一觉 魔狱血刹：背后召唤完整形态的血剑（攻速移速提高）→ 再按一次或到时间 → 血剑劈下，血气爆炸强控 25 段",
+   "official": "一觉 魔狱血刹：背后召唤血剑（攻速移速提高），攻击时吸收血气、剑身慢慢成形 → 再按一次（←→ 选方向）拔剑甩进地面 → 冲天血浪，定身连击 25 段；时间到自动劈下；血剑在背上时三觉可代替收尾（行为按用户描述；namu 记中天版起召唤即完全体）",
    "src": "https://wiki.dfo.world/view/Extreme_Overkill",
    "en": "Extreme Overkill",
    "conf": "高",
@@ -752,7 +759,8 @@
    "cd": 145,
    "why": {
     "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
-   }
+   },
+   "src2": "https://namu.wiki/w/%EB%B2%84%EC%84%9C%EC%BB%A4(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "bz_surge": {
    "official": "狂气涌动：几乎任何状态瞬发；10s 内 HP 不会被打到 50% 以下，触发时 3s 血盾；CD 固定 45s",
@@ -857,7 +865,7 @@
    "cd": 60
   },
   "bz_awaken3": {
-   "official": "三觉 血魔极道：灭世：化身血魔追踪最强敌人连斩 4–5 次 → 插剑再拔出，血气喷发；约 6s；无敌",
+   "official": "三觉 血魔极道：灭世：化身血魔追踪最强敌人连斩 4–5 次 → 插剑再拔出，血气喷发；约 6s；无敌；魔狱血刹的血剑在背上时可代替其收尾",
    "src": "https://wiki.dfo.world/view/Blood_Majin_Strike:_Destruction",
    "en": "Blood Majin Strike: Destruction",
    "conf": "高",
@@ -929,14 +937,15 @@
    ]
   },
   "sb_kaiga": {
-   "official": "残影之凯贾：自身 BUFF，普攻变 4 连暗属性魔法攻击 + 冲刺（冲刺开始后短暂无敌）",
+   "official": "残影之凯贾：自身 BUFF，普攻变 4 连暗属性魔法攻击；跑动攻击变凯贾冲刺（开头短暂无敌），冲刺中可接鬼影闪",
    "src": "https://wiki.dfo.world/view/Afterimage_of_Keiga",
    "en": "Afterimage of Keiga",
    "conf": "中",
    "hits": [
     0,
     0
-   ]
+   ],
+   "src2": "https://namu.wiki/w/%EC%86%8C%EC%9A%B8%EB%B8%8C%EB%A7%81%EC%96%B4(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "sb_purge": {
    "official": "泯灭仪式：清除自己的普戾蒙 / 萨亚 / 罗刹；CD 1s",
@@ -1036,14 +1045,15 @@
    "atkCancel": true
   },
   "sb_karo": {
-   "official": "冥炎之卡洛：变身 BUFF，普攻改为发射卡洛分身火球（空中 / 后跳中也能发），命中附冥炎 5 跳",
+   "official": "冥炎之卡洛：召唤卡洛飘在身后，普攻出手时额外发射卡洛分身（有凯贾 3 个），命中附冥炎 5 跳；再按一次切换紫焰（不附冥炎）",
    "src": "https://wiki.dfo.world/view/Kalla_of_Dark_Flame",
    "en": "Kalla of Dark Flame",
    "conf": "高",
    "hits": [
     0,
     0
-   ]
+   ],
+   "src2": "https://namu.wiki/w/%EC%86%8C%EC%9A%B8%EB%B8%8C%EB%A7%81%EC%96%B4(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "sb_karoblade@soulbender": {
    "official": "冥炎剑（仅卡洛中）：双持冥炎剑向前突进多段斩，伤害逐段递增，方向键调距离，附冥炎；CD 45s",
@@ -1065,7 +1075,7 @@
    "atkCancel": true
   },
   "sb_awaken": {
-   "official": "一觉 第7鬼神：怖拉修：沼泽扩大 → 巨口鬼神破土而出（冲击波）→ 合嘴吞噬；场上每只鬼神 +20%",
+   "official": "一觉 第7鬼神：怖拉修：沼泽扩大 → 巨口鬼神破土张口冲击波 → 合嘴吞噬；命中减速、自身回避提高（不击倒）；场上每只鬼神 +20%",
    "src": "https://wiki.dfo.world/view/Ghost_7:_Furious_Blache",
    "en": "Ghost 7: Furious Blache",
    "conf": "高",
@@ -1077,10 +1087,11 @@
    "cd": 140,
    "why": {
     "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
-   }
+   },
+   "src2": "https://namu.wiki/w/%EC%86%8C%EC%9A%B8%EB%B8%8C%EB%A7%81%EC%96%B4(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "sb_purgatory": {
-   "official": "鬼斩：炼狱：斩裂地面，冥界之刃升起定身 2s → 爆炸；可用普攻取消；CD 30s",
+   "official": "鬼斩：炼狱：斩裂地面，6 把冥界之刃升起强制定身 2s → 崩碎再斩（最多 2 段，现版没有爆炸）；可用普攻取消；CD 30s",
    "src": "https://wiki.dfo.world/view/Ghost_Slash:_Abyss",
    "en": "Ghost Slash: Abyss",
    "conf": "高",
@@ -1089,7 +1100,8 @@
     3
    ],
    "cd": 30,
-   "atkCancel": true
+   "atkCancel": true,
+   "src2": "https://namu.wiki/w/%EC%86%8C%EC%9A%B8%EB%B8%8C%EB%A7%81%EC%96%B4(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "sb_swamp": {
    "official": "冥祭之沼：3 块封印墓碑把 380px 内的敌人往中心吸 5s → 到时间或再按一次自爆；前后方向键移 100px；CD 40s",
@@ -1179,7 +1191,7 @@
    "atkCancel": true
   },
   "ghost@soulbender": {
-   "official": "鬼斩（鬼泣）：噬灵鬼斩 —— 按住蓄力 0.15s（满蓄霸体并前冲），追加输入放出最后召唤的鬼神冲波",
+   "official": "鬼斩（鬼泣）：噬灵鬼斩 —— 按住蓄力 0.15s（满蓄霸体并前冲），追加输入放出最后召唤的鬼神冲波；鬼神冠冕（三觉被动）后固定为布雷德之气",
    "src": "https://wiki.dfo.world/view/Ghost_Slash",
    "en": "Ghost Slash",
    "conf": "高",
@@ -1196,7 +1208,8 @@
     30,
     260
    ],
-   "cd": 6
+   "cd": 6,
+   "src2": "https://namu.wiki/w/%EC%86%8C%EC%9A%B8%EB%B8%8C%EB%A7%81%EC%96%B4(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "moon@soulbender": {
    "official": "月光斩（鬼泣）：可用普攻取消；满月斩再追加一记双手上挑（共 3 击）",
@@ -1428,7 +1441,7 @@
    "pull": true
   },
   "as_mui": {
-   "official": "波动慧眼：无为法：沿无形波动生成阵，5 段 + 终结爆炸；按 → 瞬移到阵的另一侧；CD 60s",
+   "official": "波动慧眼：无为法：沿无形波动瞬移画阵，5 段 + 终结爆炸；施放时按 → 或重新现身前追加输入 → 出现在阵的另一侧；CD 60s",
    "src": "https://wiki.dfo.world/view/Wave_Exchange:_Blast",
    "en": "Wave Exchange: Blast",
    "conf": "高",
@@ -1440,7 +1453,7 @@
    "atkCancel": true
   },
   "as_awaken3": {
-   "official": "三觉 波动神诀：万空：冲击波造剑 → 雷电 6 段 → 波动爆炸 → 雷电爆炸",
+   "official": "三觉 波动神诀：万空：冲击波造剑 → 雷电 6 段 → 波动爆炸 → 雷电爆炸；暗天波动眼领域还在时可代替天眼收尾",
    "src": "https://wiki.dfo.world/view/Wave_Weaver:_Heaven%27s_Thunder",
    "en": "Wave Weaver: Heaven's Thunder",
    "conf": "高",
@@ -1452,7 +1465,8 @@
    "why": {
     "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
    },
-   "atkCancel": true
+   "atkCancel": true,
+   "src2": "https://namu.wiki/w/%EC%95%84%EC%88%98%EB%9D%BC(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "gb_step": {
    "official": "鬼步：进入准备姿势（霸体，最长 3s）→ 瞬移斩穿前方，路径上的敌人吃 3 段；可换剑术技能收尾；CD 6s",
@@ -1470,7 +1484,7 @@
    "cd": 6
   },
   "gb_chain": {
-   "official": "鬼连击（剑术）：快速向前 3 连斩；学了鬼连击：极再追加 3 段交叉上斩（满级角色共 6 段）；CD 5s",
+   "official": "鬼连击（剑术）：快速向前 3 连斩；学了鬼连击：极再召出灵魂刀追加一记上挑（共 4 段）；CD 5s",
    "src": "https://wiki.dfo.world/view/Phantom_Slash",
    "en": "Phantom Slash",
    "conf": "高",
@@ -1478,7 +1492,8 @@
     3,
     6
    ],
-   "cd": 5
+   "cd": 5,
+   "src2": "https://namu.wiki/w/%EA%B2%80%EA%B7%80(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "gb_retrace@ghostblade": {
    "official": "幻鬼步：瞬移到幻鬼所在位置，移动中无敌",
@@ -1658,7 +1673,7 @@
    "cd": 40
   },
   "gb_dance": {
-   "official": "裂魂乱舞（剑术）：3 斩 + 回旋斩 + 终结斩；按住 ← 原地施放；CD 45s",
+   "official": "裂魂乱舞（剑术）：3 斩 + 与灵魂刀合体回旋 1 次 + 终结斩；按住 ← 原地施放；CD 45s",
    "src": "https://wiki.dfo.world/view/Fiend_Dance",
    "en": "Fiend Dance",
    "conf": "高",
@@ -1666,7 +1681,8 @@
     5,
     8
    ],
-   "cd": 45
+   "cd": 45,
+   "src2": "https://namu.wiki/w/%EA%B2%80%EA%B7%80(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "gb_awaken2": {
    "official": "二觉 鬼隐·夜奈落：本体与幻鬼消失（画面变暗）→ 幻鬼出现在最强敌人上方：下劈 + 两次横斩 + 交叉终结",

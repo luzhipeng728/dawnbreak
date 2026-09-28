@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """外观与换装：时装帧对齐原装同名帧（大小 + 位置）。
-  avatar_align.py <套装...> [--apply] [--report 输出json]
+  avatar_align.py <套装...> [--apply] [--report 输出json] [--frames a,b,...]
 时装表是改图重画的，个别格子会画大 / 画小、在格子里偏一点，切帧后：
   - 大小和原装不一样（帧高 / 宽偏差）；
   - 脚底锚点和原装不一样（换时装后人在原地挪一下；同一片段里帧与帧之间位置跳）。
@@ -49,12 +49,13 @@ def align(mb, ms, scales=np.arange(0.84, 1.161, 0.02)):
     # 时装（缩到原装大小后）像素 p' 放在原装的 p' + d 处 → 原装像素 p 对应缩放后时装的 p - d → 时装原图 s·(p - d)
     return s, -dx * D * s, -dy * D * s, iou
 
-def run(sid, apply):
+def run(sid, apply, only=None):
     rep = []
     for cls in ('sword', 'gun', 'mage'):
         bd, sd = os.path.join(HERE, 'final', 'spr', cls), os.path.join(HERE, 'final', 'spr', f'{cls}@{sid}')
         if not os.path.isdir(sd): continue
         BA = json.load(open(os.path.join(bd, 'spr.json'))); SA = json.load(open(os.path.join(sd, 'spr.json')))
+        if only and not any(n in SA['frames'] for n in only): continue
         res = {}
         for n in SA['frames']:
             if n not in BA['frames']: continue
@@ -70,7 +71,7 @@ def run(sid, apply):
             ent = {'set': sid, 'cls': cls, 'frame': n, 's': round(s, 3), 'rel': round(rel, 3), 'iou': round(iou, 3),
                    'dax': round(s * G['ax'] + tx - F['ax'], 1), 'day': round(s * G['ay'] + ty - F['ay'], 1)}
             rep.append(ent)
-            if not apply or iou < IOU_OK: continue
+            if not apply or iou < IOU_OK or (only and n not in only): continue
             k = 1.0
             if abs(rel - 1) > SCALE_TOL:   # 按比例缩回去：时装图缩放 1/rel
                 k = 1 / rel; p = os.path.join(sd, n + '.webp'); im = Image.open(p).convert('RGBA')
@@ -98,8 +99,10 @@ def main():
     args = sys.argv[1:]; apply = '--apply' in args; rp = None
     if apply: args.remove('--apply')
     if '--report' in args: i = args.index('--report'); rp = args[i + 1]; del args[i:i + 2]
+    only = None
+    if '--frames' in args: i = args.index('--frames'); only = set(args[i + 1].split(',')); del args[i:i + 2]   # 只改这几帧（新加的帧；系统比例仍按全部帧算）
     rep = []
-    for sid in args: rep += run(sid, apply)
+    for sid in args: rep += run(sid, apply, only)
     if rp: json.dump(rep, open(rp, 'w'), ensure_ascii=False, indent=1)
 
 if __name__ == '__main__':

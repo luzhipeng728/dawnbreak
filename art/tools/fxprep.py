@@ -27,8 +27,8 @@ def fit(im, m):
 
 # 战斗组新增的技能特效（原图在主仓库 art/src/combat/fx，生成见 combatgen.py）
 COMBAT_GLOW = {'ghost': 320, 'crossx': 256, 'swordrain': 256, 'bloodwave': 320, 'bloodhand': 320, 'bloodpillar': 384, 'lava': 320, 'dragonfang': 384,
-               'chaser': 96, 'laser': 512, 'flame': 256, 'shell': 128, 'quantum': 256, 'darkorb': 192, 'eel': 128, 'petal': 256, 'thunderbolt': 512, 'elemmeteor': 256}
-COMBAT_SOLID = {'icewall': 192, 'jack': 96, 'jackbig': 256, 'snowman': 128, 'rx78': 96}
+               'chaser': 96, 'laser': 512, 'flame': 256, 'shell': 128, 'quantum': 256, 'darkorb': 192, 'eel': 128, 'petal': 256, 'thunderbolt': 512, 'elemmeteor': 256, 'cannonball': 192}
+COMBAT_SOLID = {'icewall': 192, 'jack': 96, 'jackbig': 256, 'snowman': 128, 'rx78': 96, 'gunblade': 96}
 
 def main():
     """fxprep.py            处理 art/src/fx 下的特效原图

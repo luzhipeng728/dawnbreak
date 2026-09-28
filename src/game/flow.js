@@ -30,7 +30,7 @@ function boot() {
   const tcls = PARAMS.get('cls') || 'sword';
   if (PARAMS.has('test')) {
     const kinds = PARAMS.has('mon') ? PARAMS.get('mon').split(',') : ['goblin', 'goblinThrower'];
-    return withLoading(['spr:' + tcls, 'bg:forest', ...monBundles(kinds)], () => { save.newGame(tcls); (save.data.flags ??= {}).awaken = true; /* 测试房间：觉醒视为已完成觉醒任务 */ game.player = makePlayer(tcls); cmdLabel(tcls); for (const id of CLASSES[tcls].skills) game.skillLv[id] = Math.max(game.skillLv[id] || 0, 1); game.skillBar = CLASSES[tcls].skills.filter(id => !SKILLS[id].passive).concat(Array(SKILL_SLOTS).fill(null)).slice(0, SKILL_SLOTS); startTestRoom(); });
+    return withLoading(['spr:' + tcls, 'bg:forest', ...monBundles(kinds)], () => { save.newGame(tcls); Object.assign((save.data.flags ??= {}), { awaken: true, awaken2: true, awaken3: true }); /* 测试房间：一 / 二 / 三次觉醒都视为已完成觉醒任务 */ game.player = makePlayer(tcls); cmdLabel(tcls); for (const id of CLASSES[tcls].skills) game.skillLv[id] = Math.max(game.skillLv[id] || 0, 1); game.skillBar = CLASSES[tcls].skills.filter(id => !SKILLS[id].passive).concat(Array(SKILL_SLOTS).fill(null)).slice(0, SKILL_SLOTS); startTestRoom(); });
   }
   const alias = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
   const devSave = () => { save.loadAll(); const i = PARAMS.has('cls') ? save.chars.findIndex(c => c.cls === tcls) : save.chars.length - 1; if (i >= 0) save.select(i); else save.newGame(tcls); save.apply(); };

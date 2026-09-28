@@ -212,7 +212,7 @@ const ui = {
       uiText(`SP ${fmtNum(game.sp || 0)}`, HUD.dodge.x, 1072, { size: 16, align: 'center', color: (game.sp || 0) > 0 ? '#8aff9a' : '#c8c0b0', sw: 3 });
     }
     // BUFF 图标（剩余秒数）
-    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b) continue; c.drawImage(buffIcon(k, b), bx, y0 - 84, 34, 34); c.strokeStyle = '#ffd23a'; c.lineWidth = 1.5; c.strokeRect(bx, y0 - 84, 34, 34); if (b.n > 1) uiText('×' + b.n, bx + 33, y0 - 53, { size: 13, align: 'right', color: '#fff6c0', sw: 3 }); if (b.t < 900) uiText(Math.ceil(b.t) + '', bx + 17, y0 - 38, { size: 14, align: 'center', sw: 3 }); bx += 40; } }
+    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b || b.hide) continue; c.drawImage(buffIcon(k, b), bx, y0 - 84, 34, 34); c.strokeStyle = '#ffd23a'; c.lineWidth = 1.5; c.strokeRect(bx, y0 - 84, 34, 34); if (b.n > 1) uiText('×' + b.n, bx + 33, y0 - 53, { size: 13, align: 'right', color: '#fff6c0', sw: 3 }); if (b.t < 900) uiText(Math.ceil(b.t) + '', bx + 17, y0 - 38, { size: 14, align: 'center', sw: 3 }); bx += 40; } }
   },
   drawCombo(c) {
     const n = game.combo;
@@ -274,7 +274,7 @@ const ui = {
     if (x > x0 + 18 && x < x1 - 18 && y > ey - 6 && y < ey + 15) { const need = expNeed(game.lvl); return `<b>Lv.${game.lvl}</b> 经验 ${fmtNum(game.exp)} / ${fmtNum(need)}（${(game.exp / need * 100).toFixed(2)}%）`; }
     const fw = HUD.quick.gap * 5 + HUD.quick.s;
     if (!lite && save.data && x > HUD.quick.x && x < HUD.quick.x + fw && y > 1016 && y < 1044) return `<b>疲劳值</b> ${save.data.fatigue} / ${FATIGUE_MAX}<br><span class="small dim">进入新房间消耗 1 点，每天 06:00 恢复</span>`;
-    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b) continue; if (x >= bx && x <= bx + 34 && y >= y0 - 84 && y <= y0 - 50) return `<b>${SKILLS[k] ? SKILLS[k].name : (b.name || k)}</b><br>剩余 ${Math.ceil(b.t)} 秒`; bx += 40; } }
+    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b || b.hide) continue; if (x >= bx && x <= bx + 34 && y >= y0 - 84 && y <= y0 - 50) return `<b>${SKILLS[k] ? SKILLS[k].name : (b.name || k)}</b><br>剩余 ${Math.ceil(b.t)} 秒`; bx += 40; } }
     return null;
   },
   toUI(ev) { const r = stage.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * UW, (ev.clientY - r.top) / r.height * UH]; },

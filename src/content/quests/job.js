@@ -2,7 +2,8 @@
    转职任务链（官方经典版：格兰之森 - 杀手 → 拜访导师 → 七次修炼 → 在导师处转职；本作转职 Lv.15，觉醒 Lv.21——官方一觉 50 级按统一等级表换算，见 docs/SKILLS_OFFICIAL_common.md 第 7 节）
    - 鬼剑士：G.S.D「鬼剑士之路」；神枪手：凯丽「弹无虚发」；魔法师：莎兰「神奇的魔法」
    - 最后的试炼：被击不超过 50 次通关烈焰格拉卡（试玩核查：原来的 15 次太苛刻，远程哥布林的小伤害、多段攻击的每一段都算被击；机器人 45~60 次；只躲地面预警的键盘试玩：鬼剑士 27~58、神枪手 37、魔法师 40~56）
-   - 觉醒：两步任务，完成后 save.data.flags.awaken = true（awakenUnlocked() 为真）
+   - 转职任务链（拜访导师 → 七次修炼 → 最后的试炼）只给还没转职的角色（job: false）；创建角色时就选好转职的（协战师）不会出现
+   - 觉醒：两步任务，完成后 save.data.flags.awaken = true（awakenUnlocked() 为真）；二次觉醒 26 级 / 三次觉醒 30 级各两步，完成后 flags.awaken2 / awaken3（tierUnlocked(2 / 3)）
    ===================================================================== */
 defineQuest('q_job_kill', { type: 'job', name: '格兰之森 - 杀手', npc: 'linus', lvl: 2,
   desc: '林纳斯的考验：被击不超过 30 次通关洛兰深处。通过了，他就把你介绍给职业导师。',
@@ -30,6 +31,15 @@ const JOB_CHAINS = {
     change: '魔法的真理', changeOffer: ['一旦选择，就无法回头。', '想好了，就在我这里完成转职的仪式。'], changeDone: ['仪式完成了。从今往后，你就是一名{job}。'],
     aw1: '觉醒 - 魔力的瓶颈', aw2: '觉醒 - 魔力觉醒', awOffer: ['你的魔力，已经触到了容器的边缘。', '去暗黑雷鸣废墟，在死亡的气息中感受魔力的极限，三次。'], aw2Offer: ['容器开始出现裂缝了。', '最后，在冒险级以上的烈焰格拉卡以 C 以上的评价战斗，再带 30 块无色小晶块来，我用它们为你刻下觉醒的魔法阵。'], awDone: ['……感觉到了吗？你的魔力，已经没有边界了。', '觉醒吧，魔法师。'] },
 };
+// 二次 / 三次觉醒的台词（各职业导师）
+const AWAKEN_MORE = {
+  sword: { n2: '超越极限', n2b: '鬼神的真名', o2: ['觉醒只是开始。', '你的剑已经碰到了新的墙——去天帷巨兽的炼狱，打三次。'], d2: ['……鬼神在你的剑里低语了它的真名。', '二次觉醒，完成了。'],
+    o3: ['到了这一步，已经没有人能教你了。', '剩下的，只有你自己。去第二脊椎，打两次。'], d3: ['……剑与鬼神，已经没有分别了。', '这才是真正的觉醒。'] },
+  gun: { n2: '更强的火力', n2b: '暴风的中心', o2: ['觉醒了还不够哦~', '天帷巨兽的炼狱，打三次！火力还能再往上提！'], d2: ['哇——这枪声，连天界都听得见了！', '二次觉醒，完成！'],
+    o3: ['接下来的路，凯丽也没走过呢。', '去第二脊椎打两次吧，我在这儿等你的好消息~'], d3: ['……你已经比我强了。', '这就是真正的觉醒，神枪手！'] },
+  mage: { n2: '魔力的深渊', n2b: '元素的真理', o2: ['觉醒之后，魔力还会继续生长。', '去天帷巨兽的炼狱，打三次。'], d2: ['……魔力的深渊，你已经看到底了。', '二次觉醒，完成了。'],
+    o3: ['魔法的尽头是什么？没有人知道。', '去第二脊椎，打两次，然后亲自去看看。'], d3: ['……原来如此，尽头就是你自己。', '这才是真正的觉醒。'] },
+};
 // 七次修炼（官方模板，按本作的地下城和 15 级转职调整）
 const JOB_STEPS = [
   { lvl: 4, goals: [{ type: 'kill', kind: 'tauSoldier', dungeon: 'dark_woods', n: 4, text: '在幽暗密林击败牛头兵' }], desc: '在幽暗密林击败 4 只牛头兵。', line: '牛头兵有霸体，别跟它比力气。' },
@@ -41,19 +51,19 @@ const JOB_STEPS = [
 ];
 for (const [cls, C] of Object.entries(JOB_CHAINS)) {
   const M = C.mentor;
-  defineQuest(`q_job_visit_${cls}`, { type: 'job', cls, name: C.visit, npc: 'linus', to: M, lvl: 3, pre: 'q_job_kill',
+  defineQuest(`q_job_visit_${cls}`, { type: 'job', cls, job: false, name: C.visit, npc: 'linus', to: M, lvl: 3, pre: 'q_job_kill',
     desc: `去拜访${qNpcName(M)}，开始${CLASSES[cls] ? CLASSES[cls].name : ''}的修炼。`,
     talk: { offer: C.visitOffer, done: C.visitDone }, reward: QR(3, 0.04, 250) });
   let prev = `q_job_visit_${cls}`;
   JOB_STEPS.forEach((S, i) => {
     const id = `q_job_${cls}_${i + 1}`;
-    defineQuest(id, { type: 'job', cls, name: `${C.path} - ${C.step(i + 1)}`, npc: M, lvl: S.lvl, pre: [prev].concat(S.pre || []), desc: S.desc,
+    defineQuest(id, { type: 'job', cls, job: false, name: `${C.path} - ${C.step(i + 1)}`, npc: M, lvl: S.lvl, pre: [prev].concat(S.pre || []), desc: S.desc,
       goals: S.goals.map(g => ({ ...g, key: g.key && g.key + '_' + cls, icon: g.key })),
       talk: { offer: [`${C.path}，${C.step(i + 1)}。`, S.desc, S.line], doing: [S.line], done: [i < 5 ? '很好，继续保持。' : '……你离转职只差最后一步了。'] },
       reward: QR(S.lvl, 0.08, 200 + S.lvl * 60, { items: [QI(i % 2 ? 'mpM' : 'hpM', 3)] }) });
     prev = id;
   });
-  defineQuest(`q_job_${cls}_final`, { type: 'job', cls, name: `${C.path} - ${C.last}`, npc: M, lvl: 15, pre: prev,
+  defineQuest(`q_job_${cls}_final`, { type: 'job', cls, job: false, name: `${C.path} - ${C.last}`, npc: M, lvl: 15, pre: prev,
     desc: '最后的试炼：被击不超过 50 次，通关烈焰格拉卡。',
     goals: [{ type: 'clear', dungeon: 'blazing_graca', hurt: 50 }],
     talk: { offer: [`${C.path}——${C.last}。`, '烈焰格拉卡。被击不超过 50 次，活着走出来。', '做到了，你就有资格选择自己的道路。'], doing: ['50 次。多一次都不行。先收拾扔火瓶的赤哥布林，看到地上的红色六芒星就躲开。'], done: C.finalDone },
@@ -63,7 +73,7 @@ for (const [cls, C] of Object.entries(JOB_CHAINS)) {
     goals: [{ type: 'job', text: `在${qNpcName(M)}处完成转职` }],
     talk: { offer: C.changeOffer, accept: '准备好了，就选择右边的「转职」吧。', doing: ['选好你的道路了吗？（在对话菜单里选择「转职」）'], done: C.changeDone },
     reward: QR(15, 0.08, 1500, { items: [QI('elixir', 2)] }) });
-  defineQuest(`q_awaken_${cls}_1`, { type: 'job', cls, job: true, name: C.aw1, npc: M, lvl: 21, pre: [`q_job_${cls}_change`, 'q_hidden_dark'],
+  defineQuest(`q_awaken_${cls}_1`, { type: 'job', cls, job: true, name: C.aw1, npc: M, lvl: 21, pre: 'q_hidden_dark',   // 已转职就行（不要求交了转职任务：协战师这类创建角色时就选好转职、不走转职任务链）
     desc: '在暗黑雷鸣废墟磨砺自己，通关 3 次。',
     goals: [{ type: 'clear', dungeon: 'dark_thunder', n: 3 }],
     talk: { offer: C.awOffer, doing: ['还不够。'], done: ['……瓶颈，已经出现裂缝了。'] },
@@ -73,4 +83,35 @@ for (const [cls, C] of Object.entries(JOB_CHAINS)) {
     goals: [{ type: 'clear', dungeon: 'blazing_graca', diff: 1, rank: 'C' }, { type: 'item', key: 'crystal', n: 30 }],   // 试玩核查：原来是勇士级 S——Lv.18 机器人勇士级要 5~7 分钟、被击 68~100 次、评价 F，S 几乎做不到；冒险级：机器人 S、只躲地面预警的键盘试玩 C~D（被击 57~69）；按“宁可偏简单”取 C（被击 ≤ 约 60 次）
     talk: { offer: C.aw2Offer, doing: ['冒险级以上，C 以上的评价——少挨打，评价就高。还有 30 块无色小晶块。'], done: C.awDone },
     reward: QR(21, 0.17, 4000, { flag: 'awaken', title: 'title_awaken' }) });
+  // 二次觉醒（官方 75 级任务、85 级技能 → 本作 26 级）/ 三次觉醒（官方 100 级「真正的觉醒」→ 本作 30 级）：完成后解锁该阶段的技能（S.tier 2 / 3）
+  const A = AWAKEN_MORE[cls];
+  defineQuest(`q_awaken2_${cls}_1`, { type: 'job', cls, job: true, name: `二次觉醒 - ${A.n2}`, npc: M, lvl: 26, pre: `q_awaken_${cls}_2`,
+    desc: '以冒险级以上的难度通关天帷巨兽的炼狱 3 次。',
+    goals: [{ type: 'clear', dungeon: 'purgatory', diff: 1, n: 3 }],
+    talk: { offer: A.o2, doing: ['炼狱，冒险级以上，三次。'], done: ['……还差最后一步。'] },
+    reward: QR(26, 0.12, 5000) });
+  defineQuest(`q_awaken2_${cls}_2`, { type: 'job', cls, job: true, name: `二次觉醒 - ${A.n2b}`, npc: M, lvl: 26, pre: `q_awaken2_${cls}_1`,
+    desc: '以冒险级以上的难度、C 以上的评价通关极昼。完成后解锁二次觉醒的技能。',
+    goals: [{ type: 'clear', dungeon: 'polar_day', diff: 1, rank: 'C' }],
+    talk: { offer: ['去极昼吧。在那片不落的阳光下，把你的力量再推高一层。'], doing: ['极昼，冒险级以上，C 以上的评价。'], done: A.d2 },
+    reward: QR(26, 0.17, 8000, { flag: 'awaken2' }) });
+  defineQuest(`q_awaken3_${cls}_1`, { type: 'job', cls, job: true, name: `真正的觉醒 - 上`, npc: M, lvl: 30, pre: `q_awaken2_${cls}_2`,
+    desc: '以冒险级以上的难度通关第二脊椎 2 次。',
+    goals: [{ type: 'clear', dungeon: 'second_spine', diff: 1, n: 2 }],
+    talk: { offer: A.o3, doing: ['第二脊椎，冒险级以上，两次。'], done: ['……你看见那面镜子了吗？'] },
+    reward: QR(30, 0.12, 8000) });
+  defineQuest(`q_awaken3_${cls}_2`, { type: 'job', cls, job: true, name: `真正的觉醒 - 下`, npc: M, lvl: 30, pre: `q_awaken3_${cls}_1`,
+    desc: '以冒险级以上的难度通关天帷禁地，战胜镜子里的自己。完成后解锁三次觉醒的技能。',
+    goals: [{ type: 'clear', dungeon: 'forbidden_land', diff: 1 }],
+    talk: { offer: ['天帷禁地的最深处，有一个和你一模一样的人在等你。', '打败她——打败过去的自己，才是真正的觉醒。'], doing: ['天帷禁地，冒险级以上。'], done: A.d3 },
+    reward: QR(30, 0.2, 12000, { flag: 'awaken3' }) });
 }
+/* ---- 转职专属任务线（官方：在导师处选一个转职方向，接它的转职任务，做完才能转成这个方向）----
+   数据写在转职定义上（职业文件比任务引擎早加载，不能直接 defineQuest）：
+     CLASSES[cls].jobs[job].quests = [[任务id, def], …]   def 同 defineQuest（type / cls 可省），第一步一般 pre: 'q_job_<职业>_final'
+     CLASSES[cls].jobs[job].trial  = 最后一步的任务 id（转职窗口：没完成就不能转成这个方向）
+   玩家在转职窗口里点「接受 X 的转职任务」→ save.data.jobPick = job，这条任务线才出现（同一时间只接一条，换方向会放弃进行中的那一步）。
+   只有 trial、没有 quests 的转职（任务在别的文件里定义）：窗口只提示去做这个任务 ---- */
+const jobPickOf = () => (save.data && save.data.jobPick) || null;
+for (const cls in CLASSES) for (const [jid, J] of Object.entries(CLASSES[cls].jobs || {})) for (const [id, d] of J.quests || [])
+  defineQuest(id, { type: 'job', cls, ...d, cond: () => jobPickOf() === jid && (!d.cond || d.cond()) });

@@ -106,7 +106,7 @@ sxAddKey('guild', 'KeyJ', '公会');
 
 /* ---- 屏幕左侧的社交按钮条 ---- */
 const SX_BAR = [
-  ['signin', '签到'], ['mail', '邮件'], ['guild', '公会'], ['auction', '拍卖行'], ['rank', '排行榜'], ['gm', '管理'],
+  ['friends', '好友'], ['signin', '签到'], ['mail', '邮件'], ['guild', '公会'], ['auction', '拍卖行'], ['rank', '排行榜'], ['gm', '管理'],
 ];
 const SX_ENV_SVG = '<svg viewBox="0 0 24 18"><rect x="1" y="1" width="22" height="16" rx="2" fill="#f4e6c0" stroke="#3a2a1a" stroke-width="1.6"/><path d="M1.8 2.4 12 10.2 22.2 2.4" fill="none" stroke="#a0302a" stroke-width="1.8"/></svg>';
 const sxbar = {
@@ -135,6 +135,7 @@ const sxbar = {
     if (now - this.t < 500) return; this.t = now;
     const B = this.btns;
     B.gm.hidden = !sxAdmin();
+    if (B.friends && typeof netFriends !== 'undefined') { const n = (netFriends.incoming || []).length; B.friends._badge.hidden = !n; B.friends._badge.textContent = n ? String(n) : ''; B.friends.title = n ? `好友（${n} 个好友申请待处理）` : '好友：加好友、查看在线好友'; }   // 有好友申请时亮红点
     if (B.auction._kb) B.auction._kb.textContent = keyName('auction');
     const n = SX.unread + (SX.unread ? 0 : SX.pending);
     B.mail._badge.hidden = !n; B.mail._badge.textContent = n > 99 ? '99+' : String(n);

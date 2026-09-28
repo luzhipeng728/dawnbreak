@@ -39,9 +39,15 @@ try {
   await A.evaluate(() => enterDungeon('lorien', 0));
   ok(await until(B, () => coop.state === 'play' && game.scene === 'dungeon', null, 30000), '组队进图');
   await sleep(1500);
-  // ---- 1) 队员打浮空：本地预测 ----
-  const pick = await B.evaluate(() => { const m = ents.find(e => e.puppet && !e.dead && !e.boss && e.st !== 'act'); if (!m) return null; m.hp = m.hpMax; return m.nid; });
-  ok(!!pick, '找到一只怪');
+  // 测试用的怪：主机在队员身边刷几只血很厚、不会动的哥布林（不受房间里其他怪和 AI 干扰）
+  const mk = await A.evaluate(() => {
+    const g = [...coop.mates.values()][0], R = game.room, ids = [];
+    game.player.x = R.x1 - 60; game.player.y = 20;
+    for (let i = 0; i < 4; i++) { const m = spawnMonster('goblin', clamp(g.x + 120 + i * 90, 60, R.x1 - 60), clamp(g.y + (i % 2 ? 30 : -30), 20, DEPTH - 20), { lvl: 3, mul: 60 }); m.control = null; ids.push(m.nid); }
+    return ids;
+  });
+  ok(await until(B, ids => ids.every(id => coop.puppets.has(id)), mk, 5000), '队员那边出现了测试用的怪');
+  const [pick, jugId, gid0, nid0] = mk;
   const hit = await B.evaluate(async id => {
     const m = ents.find(e => e.nid === id), t0 = performance.now(); game.player.x = m.x - 60; game.player.y = m.y; game.player.face = 1;
     applyHit(game.player, m, { dmg: 1, launch: 520, sure: true, noCounterBonus: true, box: [0, 60, 20, 0, 100] });
@@ -51,7 +57,7 @@ try {
   }, pick);
   // 单机基准：主机上对一只真怪打同样的一下（有打击停顿，所以也不是 0ms）
   const base = await A.evaluate(async () => {
-    const m = ents.find(e => e.team === 'e' && !e.dead && !e.boss && e.st !== 'act' && e.z <= 0); if (!m) return null;
+    const m = spawnMonster('goblin', game.player.x - 200, 100, { lvl: 3, mul: 60 }); m.control = null; m.invul = 0;
     const t0 = performance.now(); game.player.x = m.x - 60; game.player.y = m.y; game.player.face = 1;
     applyHit(game.player, m, { dmg: 1, launch: 520, sure: true, noCounterBonus: true, box: [0, 60, 20, 0, 100] });
     for (let i = 0; i < 60; i++) { await new Promise(r => requestAnimationFrame(r)); if (m.z > 10) return performance.now() - t0; }
@@ -66,12 +72,12 @@ try {
   await sleep(2500);
   await A.evaluate(id => { const m = coop.puppets.get(id); if (m) { m.control = null; m.vx = m.vy = 0; } }, pick);   // 让主机上这只怪停下，好比较位置
   await sleep(1500);
-  const pos = [await A.evaluate(id => { const m = coop.puppets.get(id); return m && [m.x, m.y, m.st, m.hp]; }, pick), await B.evaluate(id => { const m = coop.puppets.get(id); return m && [m.x, m.y, m.st, m.hp, !!m.pred, m.netSt, m.z, m.netBuf.length, m.netBuf.length && m.netBuf[m.netBuf.length - 1].x, performance.now() - (m.seenT || 0), m.act && m.act.name, m.heldBy ? 1 : 0, ents.includes(m), coop.stats.kills, m.predMax - performance.now(), m.hitstop, m.st]; }, pick), await A.evaluate(() => game.dungeon.kills)];
+  const pos = [await A.evaluate(id => { const m = coop.puppets.get(id); return m && [m.x, m.y, m.st, m.hp]; }, pick), await B.evaluate(id => { const m = coop.puppets.get(id); return m && [m.x, m.y, m.st, m.hp, !!m.pred, m.netSt, m.z, m.netBuf.length, m.netBuf.length && m.netBuf[m.netBuf.length - 1].x, performance.now() - (m.seenT || 0), m.act && m.act.name]; }, pick)];
   ok(pos[0] && pos[1] && Math.abs(pos[0][0] - pos[1][0]) < 12 && Math.abs(pos[0][1] - pos[1][1]) < 8, '预测结束后平滑回到主机的位置', pos);
   // 浮空连击：挑空后在空中连续追打 4 下，傀儡一直在空中、位置没有跳变（手感和单机一样）
-  const jug = await B.evaluate(async () => {
-    const m = ents.find(e => e.puppet && !e.dead && !e.boss && !e.heldBy); if (!m) return null;
-    m.hp = m.hpMax; const p = game.player; p.x = m.x - 60; p.y = m.y; p.face = 1;
+  const jug = await B.evaluate(async id => {
+    const m = ents.find(e => e.nid === id); if (!m) return null;
+    const p = game.player; p.x = m.x - 60; p.y = m.y; p.face = 1;
     const H = { dmg: 1, sure: true, noCounterBonus: true, box: [0, 60, 20, 0, 200] };
     applyHit(p, m, { ...H, launch: 520 });
     const zs = [], xs = [];
@@ -82,10 +88,10 @@ try {
     }
     const jumps = xs.slice(1).map((x, i) => Math.abs(x - xs[i]));
     return { minZ: Math.min(...zs.slice(8, 72)), maxJump: Math.max(...jumps), st: m.st };
-  });
+  }, jugId);
   ok(jug && jug.minZ > 2 && jug.maxJump < 40, '浮空连击：追打期间一直在空中，位置不跳', jug);
   // ---- 2) 队员抓取 ----
-  const gid = await B.evaluate(() => { const m = ents.find(e => e.puppet && !e.dead && !e.boss && e.weight <= 2.2 && e.st !== 'down'); if (!m) return null; const p = game.player; p.x = m.x - 40; p.y = m.y; p.face = 1; p.doAct({ name: 'holdtest', clip: 'idle', dur: 2.5 }); startGrab(p, m, {}); return m.heldBy === p ? m.nid : null; });
+  const gid = await B.evaluate(id => { const m = ents.find(e => e.nid === id); if (!m) return null; const p = game.player; p.x = m.x - 40; p.y = m.y; p.face = 1; p.doAct({ name: 'holdtest', clip: 'idle', dur: 2.5 }); startGrab(p, m, {}); return m.heldBy === p ? m.nid : null; }, gid0);
   ok(!!gid, '队员本地抓住了一只怪');
   ok(await until(A, id => { const m = coop.puppets.get(id), g = [...coop.mates.values()][0]; return m && m.st === 'held' && m.heldBy === g; }, gid, 3000), '主机那边：怪物被挂到队员身上（被抓状态）');
   const near = await A.evaluate(id => { const m = coop.puppets.get(id), g = [...coop.mates.values()][0]; return Math.abs(m.x - g.x) < 60 && Math.abs(m.y - g.y) < 5; }, gid);
@@ -93,7 +99,7 @@ try {
   await B.evaluate(() => dropGrab(game.player));
   ok(await until(A, id => { const m = coop.puppets.get(id); return m && !m.heldBy && m.st !== 'held'; }, gid, 3000), '队员放开 → 主机那边也放开');
   // 主机判定抓不住（这里在主机上把怪标成不可抓）→ 队员那边也放开
-  const nid = await B.evaluate(gid => { const m = ents.find(e => e.puppet && !e.dead && !e.boss && e.nid !== gid && e.weight <= 2.2 && e.st !== 'down'); return m ? m.nid : null; }, gid);
+  const nid = nid0;
   if (nid) {
     await A.evaluate(id => { const m = coop.puppets.get(id); if (m) m.noGrab = true; }, nid);
     await B.evaluate(id => { const m = ents.find(e => e.nid === id), p = game.player; p.x = m.x - 40; p.y = m.y; p.doAct({ name: 'holdtest', clip: 'idle', dur: 2.5 }); m.grabProt = 0; startGrab(p, m, {}); }, nid);

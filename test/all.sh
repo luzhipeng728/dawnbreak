@@ -38,6 +38,7 @@ run duel      node test/duel.mjs sword:gun,gun:mage,mage:sword 3
 run mobile    node test/mobile.mjs
 run botrun    env SPEED=3 node test/botrun.mjs lorien:3:0:sword,lorien_deep:4:0:gun,dark_woods:6:0:mage,dark_woods_deep:8:0:sword,thunder_ruins:10:0:gun,venom_ruins:11:0:mage,graca:14:0:sword,blazing_graca:16:0:gun,frozen_woods:12:0:mage,dark_thunder:19:0:sword,dragon_tower:15:0:gun,puppet_hall:16:0:mage,golem_tower:17:0:sword,dark_corridor:19:0:gun,lord_palace:21:0:mage,floating_castle:22:0:sword
 run serverapi node server/test/api.mjs
+run restore   node --disable-warning=ExperimentalWarning server/test/restore.mjs
 run netacct   node test/net_account.mjs
 # 社交组、联机组后续的测试加在这里
 run svcapi    node test/svc_api.mjs
@@ -50,4 +51,6 @@ run mptown    node test/mp_town.mjs
 run mpcoop    node test/mp_coop.mjs 2
 run mpdrop    node test/mp_coop_drop.mjs
 run mpduel    node test/mp_duel.mjs
+run mpmore    node test/mp_coop_more.mjs
+run mprestart node test/mp_restart.mjs
 echo; cat $LOG/summary.txt

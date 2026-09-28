@@ -203,7 +203,7 @@ const coop = {
   /* ---------------- 主机：怪物 ---------------- */
   // 主机上生成的怪物：编号、广播、换目标（game.player 在怪物 AI / 动作期间临时换成它的目标）
   hostMonster(m) {
-    m.nid = ++this.nid; this.puppets.set(m.nid, m);
+    m.nid = ++this.nid; m.nrk = this.rk(); this.puppets.set(m.nid, m);
     const C = this, upd = m.update;
     // AI：每次都先在全队活着的人里选目标，AI 执行期间 game.player 临时换成目标。
     // 用访问器包住 control：生成之后再换 AI 的怪（龙之雕像 m.control = skyStatueAI 等）也照样走这一层，不会只盯着队长
@@ -215,7 +215,7 @@ const coop = {
     m.doAct = function (def, extra) { Ent.prototype.doAct.call(this, def, extra); this.actSeq = (this.actSeq || 0) + 1; C.monAct(this, def); };
     this.spawnQ.push(this.spawnRow(m));
   },
-  spawnRow(m) { return { id: m.nid, rk: this.rk(), kind: m.kind, lvl: m.lvl, boss: m.boss ? 1 : 0, elite: m.elite ? 1 : 0, hp: Math.round(m.hp), hpMax: Math.round(m.hpMax), atk: Math.round(m.atk), def: Math.round(m.def), exp: m.exp, sc: +(m.scale || 1).toFixed(3), x: Math.round(m.x), y: Math.round(m.y), z: Math.round(m.z), f: m.face, name: m.name }; },
+  spawnRow(m) { m._sent = m.hpMax + '|' + m.name + '|' + (m.scale || 1); return { id: m.nid, rk: this.rk(), kind: m.kind, lvl: m.lvl, boss: m.boss ? 1 : 0, elite: m.elite ? 1 : 0, hp: Math.round(m.hp), hpMax: Math.round(m.hpMax), atk: Math.round(m.atk), def: Math.round(m.def), exp: m.exp, sc: +(m.scale || 1).toFixed(3), x: Math.round(m.x), y: Math.round(m.y), z: Math.round(m.z), f: m.face, name: m.name }; },
   pickTarget(m) {
     const now = game.t, cur = m.tgt;
     const ok = e => e && !e.dead && e.hp > 0 && !e.away && !e.lag && !(e.ghost && !net.connected);   // 自己断线期间队友的影子是旧的，不当目标
@@ -244,7 +244,7 @@ const coop = {
   // 队员打中了怪（队员客户端算好的伤害和受击反应）→ 主机扣血、做受击反应
   remoteHit(uid, r) {
     const m = this.puppets.get(r.id), g = this.mates.get(uid);
-    if (!m || m.dead || !g || !ents.includes(m)) return;
+    if (!m || m.dead || !g || !ents.includes(m)) { const S = this.stats; S.hitDrop = S.hitDrop || {}; const k = !m ? 'none' : m.dead ? 'dead' : !g ? 'nomate' : 'gone'; S.hitDrop[k] = (S.hitDrop[k] || 0) + 1; return; }
     const h = coopCleanHit(r.h), tm = clamp(+r.tm || 1, 0.05, 20), dmg = clamp(Math.round((+r.dmg || 0) * coopTakenMul(m) / tm), 1, 5e7); this.stats.remoteHits++;
     m.hp -= dmg; m.lastDmg = dmg; m.lastHitBy = g;
     const c = m.cmb; c.hits++; c.dmg += dmg; if (m.st === 'air' || m.z > 2) c.airDmg += dmg; if (m.st === 'down') c.downDmg += dmg;
@@ -274,6 +274,7 @@ const coop = {
     const rows = [];
     for (const m of ents) {
       if (!m.nid || m.dead || m.team !== 'e') continue;
+      if (m._sent !== m.hpMax + '|' + m.name + '|' + (m.scale || 1)) this.spawnQ.push(this.spawnRow(m));   // 血量上限 / 名字 / 体型变了（深渊领主降临等）：重发一次生成信息
       rows.push([m.nid, Math.round(m.x), Math.round(m.y), Math.round(m.z), m.face < 0 ? -1 : 1, Math.max(0, COOP_ST.indexOf(m.st)), Math.max(0, Math.round(m.hp)), m.actSeq || 0]);
     }
     const d = { k: 's', rk: this.rk(), m: rows };
@@ -283,7 +284,10 @@ const coop = {
   flushSpawns() { if (!this.spawnQ.length) return; this.send({ k: 'spawn', rk: this.rk(), l: this.spawnQ }); this.spawnQ = []; },
   /* ---------------- 队员：怪物傀儡 ---------------- */
   onSpawn(d, replay) {
-    for (const s of d.l) { s.rk = s.rk || d.rk; this.spawnInfo.set(s.id, s); }
+    for (const s of d.l) {
+      s.rk = s.rk || d.rk; this.spawnInfo.set(s.id, s);
+      const m = this.puppets.get(s.id); if (m && !m.dead) Object.assign(m, { hpMax: s.hpMax, name: s.name, scale: s.sc, lvl: s.lvl, atk: s.atk, boss: !!s.boss });   // 已有的傀儡：更新属性
+    }
     if (!replay && this.dg && !this.dg.transition) for (const s of d.l) if (s.rk === this.rk()) this.makePuppet(s);
   },
   makePuppet(s) {
@@ -338,6 +342,8 @@ const coop = {
   },
   onMonAct(d) {
     const m = this.puppets.get(d.id); if (!m || m.dead) return;
+    // 我刚把它打飞 / 打倒（本地预测中）：主机那边这一招会被我的命中打断，不在空中 / 地上重播
+    if (m.pred && (m.st === 'air' || m.st === 'down' || m.st === 'hit' || m.z > 2) && !d.sa) return;
     this.stats.monActs++; if (d.tg === this.me()) this.stats.monActsMe = (this.stats.monActsMe || 0) + 1; m.face = d.f; m.tgt = d.tg === this.me() ? game.player : (this.mates.get(d.tg) || game.player);
     if (d.c === 'idle' && d.nm === 'statue' && typeof skyMakeStatue === 'function') {   // 石像：用同一套表现（灰色石像，本地按最近的人苏醒）
       const live = m.model; skyMakeStatue(m); m.statueLive = live; m.replaySq = d.sq; return;
@@ -757,7 +763,8 @@ Dungeon.prototype.enter = function (room, from) {
   _coopDgEnter.call(this, room, from);
   if (coop.dg === this && coop.role === 'guest' && coop.afterEnter) { const f = coop.afterEnter; coop.afterEnter = null; f(); }
   if (coop.dg === this) for (const g of coop.mates.values()) { g.x = game.player.x; g.y = game.player.y; g.netBuf.length = 0; }
-  if (coop.dg === this && coop.role === 'host') for (const [id, m] of coop.puppets) if (!ents.includes(m)) coop.puppets.delete(id);
+  // 主机：清掉别的房间 / 已死的怪的登记（不能按“在不在 ents 里”判断：深渊领主会先藏起来，派对结束后才回到 ents）
+  if (coop.dg === this && coop.role === 'host') { const rk = coop.rk(); for (const [id, m] of coop.puppets) if (m.dead || m.nrk !== rk) coop.puppets.delete(id); }
 };
 /* ---------------- 界面：队友头顶名字和血条、左侧队伍血条、队长掉线提示 ---------------- */
 netUiHooks.push((c) => {

@@ -24,10 +24,16 @@ try {
   // 队员在别的城镇也能被拉进来；队长走到地下城门口
   const scene = await A.evaluate(id => { for (const s in SCENES) if (SCENES[s].gates.some(g => g.dungeon === id)) return s; }, DG);
   await A.evaluate(s => worldTravel(s), scene); await until(A, s => world && world.S.id === s, scene);
-  await A.evaluate(id => { const g = world.S.gates.find(g => g.dungeon === id); game.player.x = g.x; game.player.y = 60; }, DG);
-  await A.keyboard.down('ArrowUp'); await sleep(900); await A.keyboard.up('ArrowUp');
-  ok(await until(A, () => menus.isOpen('dungeon'), null, 5000), '队长走到门口弹出地下城选择');
-  await A.click('text=进入地下城');
+  const hidden = await A.evaluate(id => !!DUNGEONS[id].hidden, DG);
+  if (hidden) {   // 隐藏 / 深渊地下城（门要做完任务才出现）：测试里直接从门口的流程进（组队流程一样）
+    for (const P of pages) await P.evaluate(() => { inv.add(makeItem('abyss_ticket', 2)); save.write(); });
+    await A.evaluate(id => enterDungeon(id, 0), DG);
+  } else {
+    await A.evaluate(id => { const g = world.S.gates.find(g => g.dungeon === id); game.player.x = g.x; game.player.y = 60; }, DG);
+    await A.keyboard.down('ArrowUp'); await sleep(900); await A.keyboard.up('ArrowUp');
+    ok(await until(A, () => menus.isOpen('dungeon'), null, 5000), '队长走到门口弹出地下城选择');
+    await A.click('text=进入地下城');
+  }
   ok(await until(A, () => menus.isOpen('nd_coopwait') || coop.state === 'play', null, 5000), '等待队友加载');
   await A.screenshot({ path: `${out}/01-wait.png` });
   const allIn = await Promise.all(pages.map(P => until(P, () => game.scene === 'dungeon' && coop.state === 'play', null, 30000)));
@@ -64,6 +70,8 @@ try {
   const st = await Promise.all(pages.map(P => P.evaluate(() => ({ stats: coop.stats, kills: game.dungeon && game.dungeon.kills, hurt: game.dungeon && game.dungeon.hurt, exp: game.exp, lvl: game.lvl, items: inv.items.length, gold: game.gold, result: menus.isOpen('result'), state: coop.state }))));
   console.log(JSON.stringify(st));
   ok(st[0].stats.remoteHits > 0, `主机收到队员的命中 ${st[0].stats.remoteHits} 次`);
+  const drop = st[0].stats.hitDrop || {};
+  ok(!drop.none && !drop.gone && !drop.nomate, '队员的命中没有因为主机找不到怪而丢掉（只有打在刚死的怪上的会作废）', drop);
   ok(st.slice(1).every(s => s.stats.sentHits > 0 && s.stats.kills > 0 && s.stats.monActs > 0), '队员：自己打中傀儡、收到击杀事件、看到怪物出招', st.slice(1).map(s => s.stats));
   ok(st.every(s => s.kills === st[0].kills), `击杀数一致（${st[0].kills}）`, st.map(s => s.kills));
   ok(st.every((s, i) => s.exp !== exp0[i].exp || s.lvl > exp0[i].lvl), '每个人都拿到了经验');

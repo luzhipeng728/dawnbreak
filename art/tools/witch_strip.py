@@ -19,7 +19,10 @@ SEQ = {
     'ouro': ['build', 'idle', 'move1', 'move2', 'grab1', 'grab2', 'boom'],
     'coaster': ['ride1', 'ride2', 'derail'],
     'wtAwk': ['field1', 'field2', 'pumpkin1', 'pumpkin2', 'snow1', 'snow2', 'cat1', 'cat2'],
+    'candyDoll': ['idle', 'walk1', 'walk2', 'walk3', 'walk4', 'hop1', 'hop2', 'pop'],
 }
+SEQ['coaster'] = ['idle', 'ride1', 'ride2', 'ride3', 'climb', 'dive', 'derail', 'boom']; SEQ['shaved'].append('idle2'); SEQ['ouro'].append('idle2')
+for h in ('helperJack', 'helperSnow', 'helperEel', 'helperCat'): SEQ[h] = ['idle', 'walk1', 'walk2', 'walk3', 'walk4', 'atk1', 'atk2', 'cast1']
 
 if __name__ == '__main__':
     a = sys.argv[1:]; theme = 'town'

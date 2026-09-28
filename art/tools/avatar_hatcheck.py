@@ -16,6 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from avatar_head import head_template, HEAD_FRAC
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HAT_CLS = ('gun', 'mage')
+# 人工看过、确实戴着帽子的帧（头部大角度：抬头 / 低头 / 俯冲，帽子区按头部锚点映射过去会偏，颜色判断不准）；新增前先放大看原装帧
+HAT_OK = {'gun': {'sfBomb', 'sfDashAtk', 'sfFlare', 'sfLand', 'sfHover', 'sfSoar', 'sfEmp1', 'sfCross'}}   # 弹药专家组确认
 SETS = ['academy', 'festival', 'sky1', 'sky2', 'spring', 'summer']
 
 def load(d, f):
@@ -72,7 +74,7 @@ def check(cls, only=None):
     p5, n95 = float(np.percentile(list(pos.values()), 5)), float(np.percentile(neg, 95)) if neg else 0.0
     thr = (p5 + n95) / 2   # 正例最低的 5% 和反例最高的 5% 之间（实测：神枪手 0.32 / 0.19，魔法师 0.42 / 0.09）
     names = [f for f in pos if not only or f in only]
-    bad = sorted((pos[f], f) for f in names if pos[f] < thr)
+    bad = sorted((pos[f], f) for f in names if pos[f] < thr and f not in HAT_OK.get(cls, ()))
     lo = sorted(pos[f] for f in pos)
     print(f'{cls}: 帽子色 {int(cap.sum())} 档；原装帽子区帽子色占比 中位数 {mp:.2f}（最低 {lo[0]:.2f}），时装（摘帽）中位数 {mn:.2f}（95% {n95:.2f}），阈值 {thr:.2f}；'
           f'检查 {len(names)} 帧，疑似丢帽子 {len(bad)} 帧 {" ".join(f"{f}({s:.2f})" for s, f in bad) or ""}')

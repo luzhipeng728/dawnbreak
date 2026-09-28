@@ -15,6 +15,8 @@ function duelStats(p) {
   const B = DUEL_BASE[p.cls], C = CLASSES[p.cls];
   Object.assign(p, { hpMax: B.hp, hp: B.hp, mpMax: B.mp, mp: B.mp, atk: B.atk, matk: B.matk, indep: B.atk, def: B.def, mdef: B.mdef, crit: 0.12, mcrit: 0.12, baseCrit: 0.12, critDmg: 1.5,
     aspd: 1, cspd: 1, mspd: 1, hitRate: 0.05, evade: 0.03, hardness: 0, stagger: 0, elem: null, res: null, cdMul: 1, dmgUp: 0, dmgTaken: 1, atkElem: null, lvl: DUEL_CFG.lv });
+  const J = C.jobs && p.kit && C.jobs[p.kit.job];
+  if (J && J.dmgType === 'mag') { p.matk = Math.max(B.matk, B.atk); p.dmgType = 'mag'; }   // 神枪手里的魔法转职（机械师）：决斗魔攻不低于同职业物理转职的物攻
   p.baseStats = { atk: B.atk, speed: C.speed * 1.1, runSpeed: C.runSpeed * 1.1 };
   applyBuffs(p);
 }

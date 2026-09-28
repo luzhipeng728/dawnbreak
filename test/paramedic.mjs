@@ -29,7 +29,7 @@ const onlySolo = process.argv[2] === 'solo';
     const L = game.skillLv; for (const k in L) delete L[k];
     for (const id of classSkills('gun', 'paramedic')) if (SKILLS[id]) L[id] = SKILLS[id].awaken ? 1 : SKILLS[id].passive ? 1 : 5;
     game.skillBar = ['pm_lockshot', 'pm_assault', 'pm_strike', 'pm_evade', 'pm_mark', 'pm_raid', 'pm_bash', 'pm_ray', 'pm_arms', 'pm_armor', 'pm_mobility', 'pm_buffer', 'pm_awk1', 'g_knee'];
-    (save.data.flags ??= {}).awaken = true;
+    Object.assign(save.data.flags ??= {}, { awaken: true, awaken2: false, awaken3: false });
   });
   const R = await page.evaluate(() => {
     const out = {}, p = game.player; T.clear(); T.reset(); T.run(20);
@@ -70,7 +70,9 @@ const onlySolo = process.argv[2] === 'solo';
     T.run(30);
     // 9) 强化保护罩（强袭目标 / 护盾冲击）：受到的伤害 −20%、霸体
     T.reset(); castSkill(p, 'pm_assault'); T.run(60); out.red = { buff: !!p.buffs.pm_red, taken: p.buffs.pm_red && p.buffs.pm_red.taken, sa: p.superArmor > 0, shield: absorbOf(p) > 0 };
-    // 10) 全部技能都能放、不报错（BUFF 的层数先给满）
+    // 10) 二觉 / 三觉：没完成对应觉醒任务放不出来（tier）；完成后全部技能都能放、不报错（BUFF 的层数先给满）
+    T.clear(); T.reset(); out.tierLocked = { awk2: castSkill(p, 'pm_awk2') && !!p.act && p.act.skill === 'pm_awk2', awk3: castSkill(p, 'pm_awk3') && !!p.act && p.act.skill === 'pm_awk3' };
+    Object.assign(save.data.flags, { awaken2: true, awaken3: true }); T.run(10);
     const casted = {}; for (const id of classSkills('gun', 'paramedic')) { const S = SKILLS[id]; if (!S || S.passive) continue; T.clear(); T.reset(); T.mob(380, 100); T.mob(460, 110); p.pmInfo = 300; p.mp = p.mpMax;
       casted[id] = castSkill(p, id) && (S.instant ? true : !!p.act && p.act.skill === id); T.run(240); }
     out.casted = casted; out.castFail = Object.keys(casted).filter(k => !casted[k]);
@@ -88,6 +90,7 @@ const onlySolo = process.argv[2] === 'solo';
   report('单人专属加成：独立攻击 +32%、冷却 −20%', R.solo.solo && R.solo.atk === 0.32 && Math.abs(R.solo.cdMul - 0.8) < 0.01 && Math.abs(R.solo.lockCd - 2.4) < 0.05, R.solo);
   report('保护罩：一层约 12%，叠加总量不超过最大 HP 的 60%，挨打时先扣护盾（HP 不掉）', R.shield.one >= 10 && R.shield.one <= 15 && R.shield.cap <= 70 && R.shield.cap >= 55 && R.shield.hpSame && R.shield.absorbed > 0, R.shield);
   report('强化保护罩：受到的伤害 −20%、霸体、外加小护盾', R.red.buff && R.red.taken <= -0.2 && R.red.sa && R.red.shield, R.red);
+  report('二觉 / 三觉没完成觉醒任务时放不出来', !R.tierLocked.awk2 && !R.tierLocked.awk3, R.tierLocked);
   report('全部技能都能放', R.castFail.length === 0, R.castFail.length ? R.castFail : Object.keys(R.casted).length);
   report('回城变回原来的样子（原模型、原普攻）', !R.town.on && R.town.acts, R.town);
   const errs = logs.filter(l => l.type !== 'warning'); report('单机无报错', errs.length === 0, errs.slice(0, 3));

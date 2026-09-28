@@ -390,6 +390,7 @@ defSkill('gs_lockon', { name: '镭射狙击', cls: 'gun', job: SF, lvReq: 20, mp
     events: [evAt(0.2, e => { let t = null, bh = -1;
       for (const o of ents) if (foe(e, o) && (o.x - e.x) * e.face > -30 && Math.abs(o.x - e.x) < 460 && Math.abs(o.y - e.y) < 120) { const v = o.hp + (o.boss ? 1e9 : o.elite ? 1e8 : 0); if (v > bh) { bh = v; t = o; } }
       sfx.swing(false); if (!t) { fxText('没有目标', e.x, e.y, e.z + 20, { col: '#ccc', size: 10 }); return; }
+      if (IMG['fx/sf_beacon']) lobProj(e, t.x, t.y, 0.3, { img: 'sf_beacon', h: 18, z0: 60, vz: 160 });
       const s = summon(e, 'gs_lock', { target: t, lv }); if (s) s.dmg = skillDmg(3.0, 0.3, lv); sfx.sfBeep(); })] }) });
 // 从天而降的支援火力光束（竖直的激光素材）
 function sfSkyBeam(x, y, col) {
@@ -520,7 +521,7 @@ defSkill('gs_dday', { name: '决战之日', cls: 'gun', job: SF, lvReq: 27, tier
   act: lv => sfAct({ name: 'gs_dday', clip: 'sfFlare', dur: 1.0, superArmor: true, noCounter: true, invul: [0, 1.0],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '决战之日', who: sfCutin(e, 2) }; game.timeStop = 0.9; sfx.awaken(); },
     events: [evAt(0.55, e => { sfx.swing(true); const at = aimAhead(e, 240, 420), D = skillDmg(60, 12, lv);
-      lobProj(e, at.x, at.y, 0.45, { img: fxTint('orb', '#ff5a3a'), h: 14, z0: e.z > 2 ? 20 : 70, vz: e.z > 2 ? 60 : 300, onLand: pr => { const s = summon(e, 'gs_dday', { x: pr.x, y: pr.y, lv }); if (s) s.dmg = D; } }); })] }) });
+      lobProj(e, at.x, at.y, 0.45, { img: IMG['fx/sf_flare'] ? 'sf_flare' : fxTint('orb', '#ff5a3a'), h: IMG['fx/sf_flare'] ? 22 : 14, z0: e.z > 2 ? 20 : 70, vz: e.z > 2 ? 60 : 300, onLand: pr => { const s = summon(e, 'gs_dday', { x: pr.x, y: pr.y, lv }); if (s) s.dmg = D; } }); })] }) });
 defSummon('gs_dday', { kind: 'field', life: 4.2, r: 0, max: 1, keepRoom: false, type: 'indep',
   update(s) { const D = s.dmg || 60, o = s.owner; if (s.lifeT < 3.6 && Math.random() < 0.3) fxDust(s.x, s.y, 1, 6, '#e06a5a');
     // 炮击：0.6~2.4 秒 20 发
@@ -533,7 +534,7 @@ defSummon('gs_dday', { kind: 'field', life: 4.2, r: 0, max: 1, keepRoom: false, 
     if (s.lifeT > 3.6 && !s.fin) { s.fin = true; for (let i = 0; i < 5; i++) game.after(i * 0.08, () => { const x = s.x + (i - 2) * 70; meteorImpact({ x, y: s.y }, 1.1); });
       game.after(0.35, () => { if (ents.indexOf(o) < 0) return; cam.shake = 14; cam.flash = 0.2; cam.flashCol = '#fff0c0'; sfx.boom(1.6);
         summonArea(s, s.x, s.y, 280, { dmg: D * 0.25, type: 'indep', launch: 560, knock: 220, hs: 0.15, big: 2.2, downHit: true, snd: 'fire', col: '#ffe0a0' }, { zMax: 300 }); }); } },
-  draw(c, s) { if (s.lifeT > 3.6) return; drawSpr(c, fxTint('orb', '#ff4a2a'), sx(s.x), sy(s.y, 0) - 6, 26 + Math.sin(game.t * 20) * 4, 0, {}); } });
+  draw(c, s) { if (s.lifeT > 3.6) return; if (IMG['fx/sf_flare']) drawSpr(c, 'sf_flare', sx(s.x), sy(s.y, 0) - 4, 0, 18, { rot: 1.2, add: false }); drawSpr(c, fxTint('orb', '#ff4a2a'), sx(s.x) + 6, sy(s.y, 0) - 10, 26 + Math.sin(game.t * 20) * 4, 0, {}); } });
 // 战争女神机动队：一架从画面后方低空飞过、沿途扫射的空降兵（有素材 fx/sf_valk 时用素材）
 function sfJet(s, face, i, D) {
   const o = s.owner, y = clamp(s.y + (i - 1) * 24, 8, DEPTH - 8), x0 = s.x - face * 520, x1 = s.x + face * 520, T = 1.2, t0 = i * 0.25;

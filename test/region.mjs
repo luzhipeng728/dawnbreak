@@ -122,7 +122,7 @@ if (parts.includes('mechs')) {
   await fresh();
   S.groggy = await page.evaluate(async () => { const m = __b, st = m.msMechs.find(s => s.id === 'groggy'); let n = 0; while (!(st.stun > 0) && n++ < 3000) { m.invul = 0; applyHit(game.player, m, { dmg: 20, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); } return { hits: n, stun: st.stun, broke: MS_STATS.mech.groggyBreak || 0 }; });
   await simWait(0.2);
-  S.groggy.mul = await page.evaluate(() => __b.dmgTakenMul);
+  S.groggy.mul = await page.evaluate(() => __b.msMul.groggy);   // 只看破招这一项（领主出场自带连线等机制时总倍率会再乘别的）
   check(S.groggy.stun > 0 && S.groggy.broke > 0 && S.groggy.mul > 1, `破招槽没有破：${JSON.stringify(S.groggy)}`);
   // 无敌阶段：水晶（领主藏起来 → 打碎水晶 → 现身）
   await clearMechs();

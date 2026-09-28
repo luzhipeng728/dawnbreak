@@ -1,5 +1,5 @@
 /* =====================================================================
-   转职：机械师（女）—— 国服现版，见 docs/SKILLS_OFFICIAL_gun.md 第 6 节（技能树）与第 17 节（本作的决定）。
+   转职：机械师（女）—— 国服现版，见 docs/SKILLS_OFFICIAL_gun.md 第 6 节（技能树）与第 6.4 节（本作的实现与决定）。
    百分比魔法职业（J.dmgType = 'mag'，吃智力），布甲；机器人全部“脱手”打伤害，都走召唤框架 src/game/summon.js（tag 'mech'）：
      RX-78 追击者（基础技能，所有转职都走这里）、空投的银色破坏者：追着最近的敌人跑，贴上后自爆
      EZ-8 自爆者：原地定时炸弹，按住技能键延长引信
@@ -10,7 +10,7 @@
    指令类：机械引爆（点按 = 就地引爆范围内的 RX-78 / EZ-8；按住 = 准星，方向键移动，松开后机器人冲向准星自爆）、机械改良（开关，持续耗 MP）、
      机械指令（停火开关）、伪装（隐身：怪物丢失目标，出招时暂时现形）
    再按技能键（S.recast）：G-1 连按加快射速 / 其他形态时改装回 G-1、G-2 发射电磁波、G-3 缠绕 / 召回、狂风立即自爆
-   机器人在地下城里不会被攻击（官方有 HP，见第 17 节决定）；伤害按主人的魔攻实时结算
+   机器人在地下城里不会被攻击（官方有 HP，见第 6.4 节）；伤害按主人的魔攻实时结算
    ===================================================================== */
 const MC = 'mechanic';
 const isMech = p => !!p && jobOf(p) === MC;
@@ -22,7 +22,7 @@ const OUTL = '#1b1e28';
 sfx.mech = function (v = 1) { this.tone('square', 520, 880, 0.06, 0.05 * v); this.tone('square', 880, 660, 0.05, 0.04 * v, { delay: 0.06 }); };
 sfx.beep = function (v = 1) { this.tone('square', 1320, 1320, 0.05, 0.04 * v); };
 
-/* ---- 数值（本作单位：攻击力的倍数；按官方各技能的相对比例压缩，见第 17 节） ---- */
+/* ---- 数值（本作单位：攻击力的倍数；按官方各技能的相对比例压缩，见第 6.4 节） ---- */
 const MECH_DMG = {
   rx78: lv => skillDmg(3.2, 0.32, lv),              // 和基础技能 g_rx78 一样
   ez8: lv => skillDmg(6.0, 0.6, lv),
@@ -558,10 +558,10 @@ defSkill('gm_gext', { name: 'G 系扩张', cls: 'gun', job: MC, lvReq: 21, sp: 3
    另有常驻的被动减伤（学了就有）
    ===================================================================== */
 const cloakOn = p => !!(p && p.cloakT > game.t);
-const cloakShown = p => cloakOn(p) && !(p.cloakRevT > game.t);
+const cloakHidden = p => cloakOn(p) && !(p.cloakRevT > game.t);   // 隐身中且没有暂时现形（和 bestiary.js 的 cloaked(e) 一样）
 function cloakWrap(p) {
   const m = p.model; if (!m || m.__cloak) return;
-  const d = m.draw; m.draw = function (c, pose, t, o) { if (cloakOn(p)) c.globalAlpha *= cloakShown(p) ? 0.28 + 0.06 * Math.sin(game.t * 6) : 0.75; return d.call(this, c, pose, t, o); }; m.__cloak = true;
+  const d = m.draw; m.draw = function (c, pose, t, o) { if (cloakOn(p)) c.globalAlpha *= cloakHidden(p) ? 0.28 + 0.06 * Math.sin(game.t * 6) : 0.75; return d.call(this, c, pose, t, o); }; m.__cloak = true;
 }
 defSummon('mech_cloak', { kind: 'attach', host: 'owner', life: 12, keepRoom: true, tags: [],
   update: (s, dt) => { const p = s.owner; if (!cloakOn(p)) { dismissOne(s, 'cmd'); return; } cloakWrap(p);
@@ -629,7 +629,7 @@ defSkill('gm_gale', { name: '空战机械：狂风', cls: 'gun', job: MC, lvReq:
    空投支援：在指定位置（施放时方向键微调标记）呼叫轰炸机，投下一批银色破坏者（最快、爆炸更大的 RX-78），追着敌人自爆
    ===================================================================== */
 function mechDropRun(e, lv, P) {
-  const n = 12, dir = e.face;
+  const n = 12, dir = e.face, room = game.room;
   // 轰炸机飞过：天上的机影 + 地上的大影子
   addFx({ x: P.x - dir * 700, y: P.y, z: 0, dur: 1.6, dir, add: false, draw(c) { const k = this.t / this.dur, x = this.x + this.dir * 1400 * k, X = sx(x), Y = sy(this.y, 0);
     c.save(); c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(X, Y, 120, 24, 0, 0, TAU); c.fill(); c.restore();
@@ -639,9 +639,9 @@ function mechDropRun(e, lv, P) {
     c.beginPath(); c.moveTo(-70, 0); c.lineTo(-96, -30); c.lineTo(-80, -30); c.lineTo(-50, 0); c.closePath(); c.fill(); c.stroke(); c.restore(); } });
   sfx.charge(); cam.shake = Math.max(cam.shake, 3);
   for (let i = 0; i < n; i++) game.after(0.55 + i * 0.07, () => {
-    if (e.dead) return; const x = P.x + rnd(-110, 110), y = clamp(P.y + rnd(-40, 40), 6, DEPTH - 6);
+    if (e.dead || game.room !== room) return; const x = P.x + rnd(-110, 110), y = clamp(P.y + rnd(-40, 40), 6, DEPTH - 6);
     addFx({ x, y, z: 320, dur: 0.35, draw(c) { const k = this.t / this.dur; c.save(); c.translate(sx(this.x), sy(this.y, 320 * (1 - k))); c.scale(0.9, 0.9); drawRx78(c, 0, 0, 1, game.t); c.restore(); } });
-    game.after(0.35, () => { if (e.dead) return; const s = summon(e, 'mech_buster', { lv, x, y }); if (s) { s.base = MECH_DMG.drop(lv); fxDust(x, y, 4, 12); } });
+    game.after(0.35, () => { if (e.dead || game.room !== room) return; const s = summon(e, 'mech_buster', { lv, x, y }); if (s) { s.base = MECH_DMG.drop(lv); fxDust(x, y, 4, 12); } });
   });
 }
 defSkill('gm_drop', { name: '空投支援', cls: 'gun', job: MC, lvReq: 19, mp: 90, cd: 40, type: 'mag', elem: 'fire', col: '#8a6a4a',
@@ -717,11 +717,11 @@ defSkill('gm_factory', { name: '拦截机工厂', cls: 'gun', job: MC, lvReq: 20
     events: [evAt(0.2, e => { const s = summon(e, 'mech_factory', { lv, x: e.x + e.face * 50, y: e.y }); if (s && hasSkill(e, 'gm_solar')) { s.solar = true; s.life = 2.6; } sfx.mech(1.2); })] }) });
 
 /* =====================================================================
-   一觉：改装：G-0 战争领主（需要 G 系列在场）。锁定前方的敌人（最多 5 个，3 级 7 个，等级高的优先），
-   G 系列合体成战争领主：格林机枪 30 发 → 导弹 24 发 → 激光 12 段，集中攻击锁定目标；施放时无敌，G 系列消失并重置 G-1 冷却
+   一觉：改装：G-0 战争领主（需要 G 系列在场）。锁定前方的敌人（最多 5 个，等级高的优先），
+   G 系列合体成战争领主：格林机枪 30 发 → 导弹 24 发 → 激光 12 段，集中攻击锁定目标（3 级：单个目标的锁定上限增加）；施放时无敌，G 系列消失并重置 G-1 冷却
    ===================================================================== */
 function g0Lock(e, lv) {
-  const n = lv >= 3 ? 7 : 5, L = ents.filter(t => foe(e, t) && !t.dead && (t.x - e.x) * e.face > -60 && Math.abs(t.x - e.x) < 700 && Math.abs(t.y - e.y) < 160).sort((a, b) => foeGrade(b) - foeGrade(a)).slice(0, n);
+  const L = ents.filter(t => foe(e, t) && !t.dead && (t.x - e.x) * e.face > -60 && Math.abs(t.x - e.x) < 700 && Math.abs(t.y - e.y) < 160).sort((a, b) => foeGrade(b) - foeGrade(a)).slice(0, 5);
   for (const t of L) addFx({ ent: t, y: t.y + 0.4, dur: 5.6, draw(c) { const T = this.ent; if (T.dead || T.remove) { this.t = this.dur; return; } const k = Math.min(1, this.t / 0.35), X = sx(T.x), Y = sy(T.y, T.z + T.hurtH() * 0.55), r = 34 - 14 * easeOut(k);
     this.y = T.y + 0.4; c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#ff4a3a'; c.lineWidth = 2.5; c.globalAlpha = 0.9; c.beginPath(); c.arc(X, Y, r, 0, TAU); c.stroke();
     c.beginPath(); for (const q of [0, 1, 2, 3]) { const a = q * Math.PI / 2 + this.t * 3; c.moveTo(X + Math.cos(a) * (r - 6), Y + Math.sin(a) * (r - 6)); c.lineTo(X + Math.cos(a) * (r + 8), Y + Math.sin(a) * (r + 8)); } c.stroke(); c.restore(); } });
@@ -731,7 +731,8 @@ function g0AI(s, dt) {
   const o = s.owner, lv = s.lv, T = s.timers, k = s.lifeT;
   s.vx = s.vy = 0; s.face = s.face || o.face;
   const alive = () => { s.locks = (s.locks || []).filter(t => !t.dead && !t.remove); if (!s.locks.length) { const t = nearestFoe(s, 800); if (t) s.locks = [t]; } return s.locks; };
-  const pickT = i => { const L = alive(); return L.length ? L[i % L.length] : null; };
+  // 3 级：单个目标的锁定上限增加（等级最高的目标占两份火力）
+  const pickT = i => { const L = alive(); if (!L.length) return null; const W = lv >= 3 && L.length > 1 ? [L[0], ...L] : L; return W[i % W.length]; };
   const main = () => { const L = alive(); return L.length ? L.slice().sort((a, b) => foeGrade(b) - foeGrade(a))[0] : null; };
   if (k < 0.7) { s.phase = 'build'; if (Math.random() < 0.5) fxCharge({ x: s.x, y: s.y, z: 40 }, '#ffd070'); return; }
   if (k < 2.2) { s.phase = 'gat'; T.g = (T.g ?? 0) - dt; while (T.g <= 0 && (s.nGat || 0) < 30) { T.g += 0.05; const i = s.nGat = (s.nGat || 0) + 1, t = pickT(i); if (!t) break;
@@ -760,8 +761,8 @@ function g0Missile(s, t, i) {
 defSummon('mech_g0', { kind: 'follower', tags: ['mech'], max: 1, life: 5.1, keepRoom: false, speed: 0, w: 30, d: 16, h: 150, shadowR: 40, type: 'mag', noHold: true,
   model: () => MECH_NULL, onSpawn: s => { mechSpawn(s, 'g0', { puff: false }); s.timers = {}; }, ai: g0AI });
 defSkill('gm_g0', { name: '改装：G-0 战争领主', cls: 'gun', job: MC, lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'mag', elem: 'light', awaken: true, col: '#ff6a3a',
-  desc: '【觉醒】需要 G 系列在场。锁定前方的敌人（最多 5 个，3 级时 7 个；等级高的优先），把 G 系列合体改装成战争领主，用格林机枪（30 发）、导弹（24 发）、激光（12 段）三重轰炸锁定的目标。施放时无敌；G 系列消失，G-1 科罗纳的冷却立刻重置。',
-  pow: lv => MECH_DMG.g0Gat(lv) * 30 + MECH_DMG.g0Mis(lv) * 24 + MECH_DMG.g0Las(lv) * 12, infoExtra: lv => [['锁定', (lv >= 3 ? 7 : 5) + ' 个']], ai: { kind: 'awaken', r: [0, 650], dy: 140 },
+  desc: '【觉醒】需要 G 系列在场。锁定前方的敌人（最多 5 个，等级高的优先；3 级时对单个目标的锁定上限增加），把 G 系列合体改装成战争领主，用格林机枪（30 发）、导弹（24 发）、激光（12 段）三重轰炸锁定的目标。施放时无敌；G 系列消失，G-1 科罗纳的冷却立刻重置。',
+  pow: lv => MECH_DMG.g0Gat(lv) * 30 + MECH_DMG.g0Mis(lv) * 24 + MECH_DMG.g0Las(lv) * 12, infoExtra: lv => [['锁定', '5 个'], ['单个目标锁定', lv >= 3 ? '2 份' : '1 份']], ai: { kind: 'awaken', r: [0, 650], dy: 140 },
   req: p => gsUnits(p).length ? true : '需要 G 系列在场',
   act: (lv) => ({ name: 'gm_g0', clip: mclip('mAwk'), dur: 0.9, superArmor: true, invul: true, noCounter: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: 'G-0 战争领主', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.act.locks = g0Lock(e, lv); },

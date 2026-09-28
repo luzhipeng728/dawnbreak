@@ -128,6 +128,13 @@ Object.assign(menus, {
       h('b', {}, J.name), J.role ? h('span', { class: 'small gold' }, ` · ${J.role}`) : null, h('div', { class: 'small' }, J.desc || ''),
       J.awakenName ? h('div', { class: 'small dim' }, `觉醒：${J.awakenName}`) : null)))
       : h('div', { class: 'small dim' }, '达到 Lv.15 后可以在城镇导师处转职，选择自己的发展方向。');
+    // 创建时就能选的转职（官方：协战师在创建角色时直接选）：默认按基础职业开局
+    const pre = jobs.filter(([, J]) => J.atCreate);
+    if (this.ngJob && !pre.some(([jid]) => jid === this.ngJob)) this.ngJob = null;
+    const preEl = pre.length ? h('div', { class: 'row', style: 'gap:.4em;flex-wrap:wrap;margin-top:.3em' },
+      h('span', { class: 'small gold' }, '开局职业'),
+      ...[[null, C.name + '（Lv.15 再转职）'], ...pre.map(([jid, J]) => [jid, J.name + '（直接开局）'])].map(([jid, label]) =>
+        h('button', { class: 'btn sm' + ((this.ngJob || null) === jid ? '' : ' blue'), onclick: () => { this.ngJob = jid; sfx.click(); this.refresh('newgame'); } }, label))) : null;
     const skills = (C.skills || []).filter(id => SKILLS[id] && !SKILLS[id].job).slice(0, 6);
     const field = h('input', { class: 'txt', type: 'text', maxlength: 12, placeholder: '输入角色名', autocomplete: 'off', spellcheck: 'false' });
     field.value = this.ngName || suggestName(cls);
@@ -140,6 +147,8 @@ Object.assign(menus, {
       this.ngBusy = true; sfx.click(); field.blur();
       const name = field.value.trim(); this.ngName = null; this.ngTyped = false;
       this.close('newgame'); save.newGame(cls, name); this.csSel = save.cur;
+      const pj = this.ngJob && C.jobs && C.jobs[this.ngJob] && C.jobs[this.ngJob].atCreate ? this.ngJob : null; this.ngJob = null;
+      if (pj) { save.data.job = pj; game.job = pj; }
       Promise.resolve(startGame(cls)).finally(() => { this.ngBusy = false; });
     };
     field.addEventListener('input', () => { this.ngName = field.value; this.ngTyped = true; check(); });
@@ -152,7 +161,7 @@ Object.assign(menus, {
         h('div', { class: 'ngdesc' },
           h('div', { class: 'ngname' }, C.name), h('div', { class: 'ngtxt' }, C.desc || ''),
           skills.length ? h('div', { class: 'ngskills' }, h('div', { class: 'small gold' }, '初始技能'), h('div', { class: 'row', style: 'flex-wrap:wrap;gap:.3em' }, skills.map(id => this.tipOn(h('img', { class: 'ngsk', src: skillIcon(id, 48).toDataURL() }), () => `<b>${SKILLS[id].name}</b><br><span class="small">${SKILLS[id].desc || ''}</span>`)))) : null,
-          h('div', { class: 'small gold', style: 'margin-top:.5em' }, '转职方向（Lv.15）'), jobsEl,
+          h('div', { class: 'small gold', style: 'margin-top:.5em' }, '转职方向（Lv.15）'), jobsEl, preEl,
           h('div', { class: 'ngform' }, h('div', { class: 'small' }, `角色名（${NAME_RULE.min}~${NAME_RULE.max} 个字符，汉字算 2 个）`), h('div', { class: 'row' }, field, h('button', { class: 'btn', title: '随机名字', onclick: () => { field.value = suggestName(cls); this.ngName = field.value; this.ngTyped = false; check(); sfx.click(); } }, '随机')), err))),
       h('div', { class: 'row csbtns' },
         h('button', { class: 'btn big' + (full ? ' off' : ''), onclick: create }, '创建并开始'),

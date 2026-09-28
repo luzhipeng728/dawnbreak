@@ -116,13 +116,14 @@ const R = await page.evaluate(() => {
   p.cool = {}; m8.x = 400; T.cast('sb_plemon'); T.run(60); out.plemon = !!(m8.buffs && m8.buffs.sb_plemon);
   // 泯灭仪式：清掉自己的阵
   T.cast('sb_purge'); T.run(20); out.purged = summonsOf(p, { tag: 'field' }).length; T.clear();
-  // 残影之凯贾：普攻第 4 下是冲刺斩，冲刺中可以接鬼影闪；平时放不出鬼影闪
+  // 残影之凯贾：跑动攻击变成凯贾冲刺斩，冲刺中可以接鬼影闪；平时放不出鬼影闪
   game.skillLv.sb_mastery = 0; T.reset(); out.flashNoKaiga = T.cast('sb_flash') || null; T.run(20);   // 二觉被动（御鬼之极）之前
-  T.cast('sb_kaiga'); T.run(30); p._psvT = 0; T.run(2); for (let i = 0; i < 80 && !(p.act && p.act.kaigaDash); i++) { if (i % 6 === 0) T.tap('attack'); else T.run(1); }
+  T.cast('sb_kaiga'); T.run(30); p._psvT = 0; T.run(2); p.face = 1; T.hold('right'); p.setState('run'); T.tap('attack'); T.release('right'); T.run(2);
   out.kaigaDash = !!(p.act && p.act.kaigaDash); T.cast('sb_flash'); out.flashKaiga = p.act && p.act.skill; T.run(80); game.skillLv.sb_mastery = 1;
   // 冥炎之卡洛：普攻改为发射分身（投射物），命中附加冥炎；冥炎剑只能在卡洛中施放
   T.clear(); T.reset(); out.bladeNoKaro = T.cast('sb_karoblade') || null; T.run(10); const m9 = T.mob(420, 100);
   T.cast('sb_karo'); T.run(30); p._psvT = 0; T.run(2); const pj0 = projs.length; T.tap('attack'); T.run(6); out.karoShot = projs.length > pj0; T.run(40); out.karoBurn = summonsOf(p, 'sb_karo_burn').some(s => s.host === m9);
+  p.cool = {}; T.cast('sb_karo'); T.run(30); out.karoPurple = !!(p.buffs.sb_karo && p.buffs.sb_karo.purple);   // 再按一次切换紫焰（卡洛还在）
   p.cool = {}; out.bladeKaro = T.cast('sb_karoblade'); T.run(90); T.clear();
   // 卡赞：鬼泣转职后变被动（不能施放）
   T.reset(); out.kazanSb = T.cast('kazan') || null;
@@ -157,8 +158,10 @@ const R = await page.evaluate(() => {
   const pj1 = projs.length; p.doAct(p.acts.atk1); T.run(12); out.thrust = projs.length > pj1 || summonsOf(p, 'wm_swords').length === 1; T.run(30); p.cool = {}; castSkill(p, 'wm_awaken2', false, 's0'); T.run(2); out.swordsEnd = summonsOf(p, 'wm_swords').length; T.run(120);
   T.reset(); p.cool = {}; castSkill(p, 'wm_awaken3', false, 's0'); T.run(2); out.awkShared = (p.cool.awaken || 0) > 100; T.run(260); T.clear();
   // 魔狱血刹（现版）：背后血剑 → 再按一次劈下
-  T.job('berserker'); T.reset(); p.cool = {}; castSkill(p, 'bz_awaken', false, 's0'); T.run(120); out.bloodSword = summonsOf(p, 'bz_bloodsword').length === 1 && !!p.buffs.bz_bloodsword;
-  p.cool.bz_awaken = 99; castSkill(p, 'bz_awaken', false, 's0'); T.run(2); out.bloodSwordFall = summonsOf(p, 'bz_bloodsword').length === 0; T.run(160); T.clear();
+  T.job('berserker'); T.reset(); p.cool = {}; const mBz = T.mob(p.x + 60, p.y); castSkill(p, 'bz_awaken', false, 's0'); T.run(120); out.bloodSword = summonsOf(p, 'bz_bloodsword').length === 1 && !!p.buffs.bz_bloodsword;
+  { const bs = summonsOf(p, 'bz_bloodsword')[0], b0 = bs ? bs.blood : -1; mBz.x = p.x + 60; mBz.y = p.y; p.doAct(p.acts.atk1); T.run(15); out.bloodAbsorb = !!bs && bs.blood > b0; }   // 攻击吸收血气
+  p.cool.bz_awaken = 99; castSkill(p, 'bz_awaken', false, 's0'); T.run(2); out.bloodSwordFall = summonsOf(p, 'bz_bloodsword').length === 0; T.run(160);
+  p.cool = {}; castSkill(p, 'bz_awaken', false, 's0'); T.run(120); castSkill(p, 'bz_awaken3', false, 's0'); T.run(2); out.awk3Finish = summonsOf(p, 'bz_bloodsword').length === 0 && !!p.act && p.act.skill === 'bz_awaken3'; T.run(300); T.clear();
   // 阿修罗：心眼挡下一次攻击；雷神之息让转职技能命中附带感电
   T.job('asura'); T.reset(); const m13 = T.mob(360, 100); m13.face = -1; const hpM = p.hp; out.mind = applyHit(m13, p, { dmg: 5 }, {}) === false && p.hp === hpM; out.mind2 = applyHit(m13, p, { dmg: 5 }, {}) !== false;
   T.reset(); p.cool = {}; p.buffs.as_mark = { t: 9999, n: 0, gen: 7 }; castSkill(p, 'as_burst', false, 's0'); T.run(30); out.thunderShock = !!(m13.status && m13.status.shock); T.clear();
@@ -219,8 +222,8 @@ report('阿修罗 →→+Z = 邪光斩', R.ffZ === 'as_evil', R.ffZ);
 report('鬼泣：萨亚之阵生成、命中，再放替换旧阵', R.sayaN === 1 && R.sayaHit && R.sayaReplace === 1, [R.sayaN, R.sayaHit, R.sayaReplace]);
 report('鬼神解放：鬼影鞭中按罗刹不打断直接放阵；没学时放不出', R.softAct === 'sb_whip' && R.softField === 1 && R.noSoftField === 0, [R.softAct, R.softField, R.noSoftField]);
 report('罗刹附身，离开阵也不掉；普戾蒙减益；泯灭仪式清阵', R.rashaOn && R.rashaStay && R.plemon && R.purged === 0, [R.rashaOn, R.rashaStay, R.plemon, R.purged]);
-report('凯贾冲刺中才能接鬼影闪', R.flashNoKaiga === null && R.kaigaDash && R.flashKaiga === 'sb_flash', [R.flashNoKaiga, R.kaigaDash, R.flashKaiga]);
-report('卡洛：普攻发射分身并附加冥炎；冥炎剑需要卡洛', R.bladeNoKaro === null && R.karoShot && R.karoBurn && R.bladeKaro === 'sb_karoblade', [R.bladeNoKaro, R.karoShot, R.karoBurn, R.bladeKaro]);
+report('凯贾：跑攻 = 冲刺，冲刺中才能接鬼影闪', R.flashNoKaiga === null && R.kaigaDash && R.flashKaiga === 'sb_flash', [R.flashNoKaiga, R.kaigaDash, R.flashKaiga]);
+report('卡洛：普攻额外发射分身并附加冥炎；再按切换紫焰；冥炎剑需要卡洛', R.bladeNoKaro === null && R.karoShot && R.karoBurn && R.karoPurple && R.bladeKaro === 'sb_karoblade', [R.bladeNoKaro, R.karoShot, R.karoBurn, R.karoPurple, R.bladeKaro]);
 report('鬼泣的卡赞是被动（不能施放）', R.kazanSb === null, R.kazanSb);
 report('剑影：鬼人化普攻 4 段', R.gbBasic === 4, R.gbBasic);
 report('幻鬼：一闪现身出招、幻鬼步瞬移并无敌、之后消失', R.phantom && R.phantomHit && R.retrace && R.retraceInvul && R.phantomGone, [R.phantom, R.phantomHit, R.retrace, R.retraceInvul, R.phantomGone]);
@@ -231,7 +234,7 @@ report('剑影不能学卡赞', R.gbKazan === false, R.gbKazan);
 const p1bad = Object.entries(R.p1).filter(([, v]) => !v).map(([k]) => k);
 report('P1：五个转职的觉醒与 48–100 级主动技能都能正常施放', p1bad.length === 0, p1bad.length ? p1bad : Object.keys(R.p1).length);
 report('万剑归宗：飞剑、穿云刺、再按御剑术；开天斩与暴风式共享冷却', R.swords === 1 && R.thrust && R.swordsEnd === 0 && R.awkShared, [R.swords, R.thrust, R.swordsEnd, R.awkShared]);
-report('魔狱血刹（现版）：背后血剑、再按劈下', R.bloodSword && R.bloodSwordFall, [R.bloodSword, R.bloodSwordFall]);
+report('魔狱血刹：背后血剑、攻击吸收血气、再按甩下；血剑在背上时三觉代替收尾', R.bloodSword && R.bloodAbsorb && R.bloodSwordFall && R.awk3Finish, [R.bloodSword, R.bloodAbsorb, R.bloodSwordFall, R.awk3Finish]);
 report('阿修罗：心眼挡一次；雷神之息附带感电', R.mind && R.mind2 && R.thunderShock, [R.mind, R.mind2, R.thunderShock]);
 report('吉格降临处决低 HP 敌人', R.jigExec, R.jigExec);
 report('鬼步中的无式·极影剑 = 鬼步形态', /^gbStep_gb_mushiki/.test(R.mushikiStep || ''), R.mushikiStep);

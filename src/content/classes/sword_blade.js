@@ -89,7 +89,7 @@ function flowStance() {
       return false;
     } };
 }
-defSkill('flow', { name: '流心', cls: 'sword', job: 'blade', lvReq: 16, maxLv: 1, mp: 5, cd: 1, type: 'phys', col: '#3a8ab0',
+defSkill('flow', { name: '流心', cls: 'sword', job: 'blade', lvReq: 16, maxLv: 1, mp: 5, cd: 1, type: 'phys', col: '#3a8ab0', noHitCheck: true,
   desc: '收剑凝神进入流心架势（再按一次解除）：按 X 流心：刺，按 C 流心：跃，按 Z 流心：升，按 Space 流心：狂。可以取消普攻、里·鬼剑术、三段刃和逆转反击。', ai: { kind: 'stance' },
   act: () => flowStance() });
 defSkill('flow_stab', { name: '流心：刺', cls: 'sword', job: 'blade', lvReq: 16, mp: 15, cd: 8, type: 'phys', col: '#4aa0e0', cmdNote: '流心中 X',
@@ -180,18 +180,19 @@ defSkill('iai', { name: '拔刀斩', cls: 'sword', job: 'blade', lvReq: 19, mp: 
       events: [evAt(0.05, e => { sfx.iai(); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 60, face: e.face, len: 220, w: 18, col: w === 'lightsaber' ? '#fff38a' : '#ff9a9a', dur: 0.25 }); })] }); a.followWin = [0.5, 0.95]; }
     return a; } });
 
-/* ---- 猛龙断空斩：预备时 ↑↓ 选方向，化作剑光高速突进（现版 2 段，第 1 段后可再改方向），最后单手上斩浮空。突进中霸体 ---- */
+/* ---- 猛龙断空斩：施放时按 ↑↓ 调整突进的斜向角度，化作剑光沿同一方向高速突进 2 段（现版），最后单手上斩浮空。突进中霸体 ---- */
 defSkill('dragon', { name: '猛龙断空斩', cls: 'sword', job: 'blade', lvReq: 19, mp: 60, cd: 20, type: 'phys', col: '#2a6ad0',
-  desc: '化作一道剑光高速突进斩击 2 次（每次都可以用方向键改变方向，包括纵深），最后单手上斩把敌人打上天。突进中霸体。', pow: lv => skillDmg(7.0, 0.7, lv), ai: { kind: 'gap', r: [0, 240], dy: 60 },
+  desc: '化作一道剑光高速突进斩击 2 次（施放时按住 ↑↓ 可以斜着往纵深突进），最后单手上斩把敌人打上天。突进中霸体。', pow: lv => skillDmg(7.0, 0.7, lv), ai: { kind: 'gap', r: [0, 240], dy: 60 },
   act: (lv) => ({ name: 'dragon', clip: 'dragon', dur: 1.0, noCounter: true,
     onStart: e => { e.act.seg = -1; },
     update: e => {
       const a = e.act, SEG = 0.3, seg = Math.floor(e.actT / SEG);
       if (seg !== a.seg && seg < 2) {
         a.seg = seg; e.hitsDone.clear();
-        let dx = e.pad.dx(), dy = e.pad.dy(); if (!dx && !dy) dx = e.face; if (dx) e.face = dx;
-        if (e.pad !== input) { const t = nearestFoe(e, 400); if (t) { dx = Math.sign(t.x - e.x) || e.face; dy = Math.sign(t.y - e.y) * (Math.abs(t.y - e.y) > 10 ? 1 : 0); e.face = dx; } }
-        const l = Math.hypot(dx, dy * 1.3) || 1; a.vx = dx / l * 720; a.vy = dy / l * 420;
+        if (seg === 0) {   // 方向只在起手时定（←→ 已在施放时转向，↑↓ 斜向），第 2 段沿同一方向继续
+          let dx = e.face, dy = e.pad.dy();
+          if (e.pad !== input) { const t = nearestFoe(e, 400); if (t) { dx = Math.sign(t.x - e.x) || e.face; dy = Math.sign(t.y - e.y) * (Math.abs(t.y - e.y) > 10 ? 1 : 0); e.face = dx; } }
+          const l = Math.hypot(1, dy * 1.3); a.vx = dx / l * 720; a.vy = dy / l * 420; }
         fxAfterimage(e, '#8fb8ff'); sfx.swing(true); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 58, face: e.face, len: 170, w: 14, col: '#8fb8ff', dur: 0.2 });
       }
       if (seg < 2) { const k = (e.actT % SEG) < 0.22; e.superArmor = Math.max(e.superArmor, k ? 0.02 : 0); e.vx = k ? a.vx : a.vx * 0.2; e.vy = k ? a.vy : a.vy * 0.2;
@@ -214,46 +215,74 @@ defSkill('wm_dragonrush', { name: '破军斩龙击', cls: 'sword', job: 'blade',
         instantHit(e, { box: [-10, 90, 36, 0, 140], dmg: skillDmg(2.6, 0.26, lv), launch: 540, knock: 60, hs: 0.1, big: 1.5 }); })],
     update: e => { if (e.actT > 0.34 && e.actT < 0.8 && Math.floor(e.actT / 0.07) !== e._wr) { e._wr = Math.floor(e.actT / 0.07); fxStreak({ x: e.x + e.face * 12, y: e.y + rnd(-4, 4), z: e.z + rnd(50, 70), face: e.face, len: rnd(45, 65), w: 5, col: '#ffb060', dur: 0.1 }); } } }) });
 
-/* ---- 幻影剑舞：原地连斩（连打技能键 / X 加速），每斩飞出短剑气，最后放出巨大剑气（↑↓ 调方向）。霸体 ---- */
+/* ---- 幻影剑舞：原地连斩（连打技能键 / X 加速，约 5 次到顶），每斩飞出短剑气，最后放出巨大剑气（按住 ↑↓ 斜着往纵深飞；人不动）。霸体 ---- */
 defSkill('phantom', { name: '幻影剑舞', cls: 'sword', job: 'blade', lvReq: 20, mp: 80, cd: 45, type: 'phys', col: '#4a50c8',
-  desc: '原地舞出幻影般的连斩（太刀 / 光剑斩得更快更多），连打技能键或 X 可以加速，最后向前放出巨大剑气（↑↓ 调整方向）击飞敌人。全程霸体。', pow: lv => skillDmg(9.0, 0.9, lv), ai: { kind: 'burst', r: [0, 100], dy: 24 },
+  desc: '原地舞出幻影般的连斩（太刀 / 光剑斩得更快更多），连打技能键或 X 可以加速（连打约 5 次就到最快），最后向前放出巨大剑气击飞敌人（放出前按住 ↑↓ 让剑气斜着往纵深飞）。全程霸体。', pow: lv => skillDmg(9.0, 0.9, lv), ai: { kind: 'burst', r: [0, 100], dy: 24 },
   act: (lv, p) => { const fast = ['katana', 'lightsaber'].includes(swWt(p)), step = fast ? 0.06 : 0.1;
     return { name: 'phantom', clip: 'phantom', dur: 2.0, superArmor: true, noCounter: true,
       onStart: e => { e.act.end = 1.3; e.act.rate = 1; },
-      onInput: (e, I) => { if (I.buffered('attack') || (e.act.key && I.buffered(e.act.key))) { I.consume('attack'); if (e.act.key) I.consume(e.act.key); e.act.rate = Math.min(1.8, e.act.rate + 0.12); } e.vy = I.dy() * 60; return false; },
+      onInput: (e, I) => { if (I.buffered('attack') || (e.act.key && I.buffered(e.act.key))) { I.consume('attack'); if (e.act.key) I.consume(e.act.key); e.act.rate = Math.min(1.8, e.act.rate + 0.16); } e.act.aim = I.dy(); return false; },
       update: (e, dt) => {
         const a = e.act; a.dur = a.end + 0.5; a.rate = Math.max(1, a.rate - dt * 0.6);   // 连打加速：斩击间隔按 rate 缩短
         a.tk = (a.tk || 0) + dt * a.rate;
         if (e.actT < a.end && a.tk >= step) { a.tk = 0; a.k = (a.k || 0) + 1; e.hitsDone.clear(); fxSlashOn(e, { col: '#b0c0ff', a0: rnd(-3, 0), a1: rnd(0, 3), r: rnd(50, 72), w: 10, off: [16, rnd(35, 70)], squash: rnd(0.4, 0.9), dur: 0.1, silent: a.k % 2 === 1 });
           if (a.k % 3 === 0) projWave(e, { speed: 480, life: 0.25, h: 50, hit: { dmg: skillDmg(0.15, 0.015, lv), knock: 20, stun: 0.25 } }); }
         if (e.actT >= a.end && !a.fin) { a.fin = true; e.play('atk3', true); sfx.iai(); cam.shake = Math.max(cam.shake, 5);
-          projWave(e, { speed: 520, life: 0.6, hit: { dmg: skillDmg(3.0, 0.3, lv), down: true, downLift: 240, knock: 260, hs: 0.1, big: 1.6, rep: 0 } }); }   // 收尾巨大剑气把敌人吹倒（不浮空）
+          projWave(e, { speed: 520, vy: (a.aim || 0) * 190, life: 0.6, hit: { dmg: skillDmg(3.0, 0.3, lv), down: true, downLift: 240, knock: 260, hs: 0.1, big: 1.6, rep: 0 } }); }   // 收尾巨大剑气把敌人吹倒（不浮空）；↑↓ 调纵深角度
       },
       hits: [HB(0, 2.4, [-20, 88, 34, 0, 120], skillDmg(0.3, 0.03, lv) * (fast ? 0.6 : 1), { rep: step, stun: 0.3, knock: 10, airLift: 140, hs: 0.02, snd: 'slash' })],
       onEnd: e => { e.vy = 0; } }; } });
 
-/* ---- 一觉：极·鬼剑术（暴风式）（觉醒被动 / 更高等级技能见 P1）---- */
+/* ---- 一觉：极·鬼剑术（暴风式）。施放中无敌：抬手放出 8 颗剑魂珠，把范围里的敌人吸起定住 → 珠子炸开化成 24 把剑（一半插在地上、一半悬在空中）→
+   本体在剑阵里来回闪身，一把一把拔剑斩击（光剑 → 短剑 → 太刀 → 巨剑 → 钝器轮换），敌人被吸向阵中心；连打技能键 / X 加速（最多约 2 倍）→
+   24 把剑拔完后回到起点，上斩收尾引爆剑阵 ---- */
+const WM_TEMPEST_COL = ['#fff38a', '#e8f4ff', '#ff9a9a', '#bfe8ff', '#e8d8b8'];   // 光剑、短剑、太刀、巨剑、钝器
+const WM_TEMPEST_CLIP = ['rk1', 'rk2', 'dual1', 'rk4', 'dual3'];
 defSkill('awaken', { name: '极·鬼剑术（暴风式）', cls: 'sword', job: 'blade', lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'phys', awaken: true, icon: 'awaken', col: '#ffd23a',
-  desc: '【觉醒】向空中和地面抛出 24 把剑组成剑阵，把敌人吸到阵中心反复斩击（连打技能键 / X 加速），最后上斩收尾引爆剑阵。施放中无敌。', pow: lv => skillDmg(22, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
-  act: (lv) => ({ name: 'awaken', clip: 'awkB', dur: 2.9, superArmor: true, noCounter: true, invul: [0, 2.9],
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '极·鬼剑术', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.act.cx = e.x + e.face * 130; e.act.cy = e.y; e.act.rate = 1; },
-    onInput: (e, I) => { if (I.buffered('attack') || (e.act.key && I.buffered(e.act.key))) { I.consume('attack'); if (e.act.key) I.consume(e.act.key); e.act.rate = Math.min(1.6, e.act.rate + 0.1); } return false; },
+  desc: '【觉醒】放出 8 颗剑魂珠把敌人吸起定住，珠子炸开化成 24 把剑组成剑阵；随后在剑阵里来回闪身，一把一把拔剑斩击（光剑、短剑、太刀、巨剑、钝器轮换，连打技能键 / X 加速），敌人被吸向阵中心；拔完 24 把剑后回到起点，上斩引爆剑阵。施放中无敌。',
+  pow: lv => skillDmg(22, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
+  act: (lv) => ({ name: 'awaken', clip: 'awkB', dur: 3.0, superArmor: true, noCounter: true, invul: [0, 3.0],
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '极·鬼剑术', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); const a = e.act;
+      a.cx = e.x + e.face * 130; a.cy = e.y; a.x0 = e.x; a.y0 = e.y; a.f0 = e.face; a.rate = 1; a.n = 0; a.swords = []; },
+    onInput: (e, I) => { if (I.buffered('attack') || (e.act.key && I.buffered(e.act.key))) { I.consume('attack'); if (e.act.key) I.consume(e.act.key); e.act.rate = Math.min(2, e.act.rate + 0.2); } return false; },
     update: (e, dt) => {
       const a = e.act; if (e.actT < 0.95) return;
-      a.rate = Math.max(1, a.rate - dt * 0.5);
       for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.5) < 280 && !(t.boss && hasSA(t))) { t.x = damp(t.x, a.cx, 4, dt); t.y = damp(t.y, a.cy, 4, dt); }
-      a.tk = (a.tk || 0) + dt * a.rate;
-      if (e.actT < 2.4 && a.tk >= 0.08) {
-        a.tk = 0; a.k = (a.k || 0) + 1; const ang = a.k * 2.4, r = 70 + (a.k % 3) * 40;
-        fxSpr('swordrain', a.cx + Math.cos(ang) * r, a.cy + Math.sin(ang) * r * 0.4, 30, { h: 110, dur: 0.35, ay: 1, grow: [1.2, 1], alpha: 0.9 });
-        if (a.k % 2) { fxSlashX(a.cx + rnd(-60, 60), a.cy + rnd(-20, 20), rnd(40, 90), rnd(90, 140), '#bfe8ff'); sfx.swing(false); }
-        blast(e, a.cx, a.cy, 170, { dmg: skillDmg(0.6, 0.18, lv), airLift: 160, stun: 0.3, knock: 0, hs: 0.02, downHit: true, sure: true }, { zMax: 260 });
-      }
+      if (e.actT < 1.25 || a.done) return;
+      a.rate = Math.max(1, a.rate - dt * 0.8); a.tk = (a.tk || 0) + dt * a.rate;
+      if (a.tk < 0.05) return; a.tk = 0;
+      const i = a.n++, s = a.swords[i]; if (!s) return;
+      const w = Math.floor(i / 5) % 5, col = WM_TEMPEST_COL[w], side = Math.sign(s.x - a.cx) || 1;   // 每 5 刀换一种武器
+      fxAfterimage(e, col); const ox = e.x;
+      e.x = a.cx + side * Math.max(50, Math.abs(s.x - a.cx) - 20); e.y = clamp(s.y, 6, DEPTH - 6); e.face = -side; s.taken = true;
+      fxStreak({ x: ox, y: e.y, z: e.z + 58, face: Math.sign(e.x - ox) || e.face, len: Math.abs(e.x - ox) + 20, w: 8, col, dur: 0.12 });
+      e.play(WM_TEMPEST_CLIP[w], true); fxSlashOn(e, { col, a0: i % 2 ? 1.0 : -2.4, a1: i % 2 ? -2.4 : 1.0, r: rnd(60, 80), w: 16, off: [10, 56], dur: 0.12, silent: i % 2 === 1 });
+      fxSlashX(lerp(e.x, a.cx, 0.6), a.cy + rnd(-12, 12), rnd(50, 90), rnd(90, 130), col); if (i % 2 === 0) sfx.swing(false);
+      blast(e, a.cx, a.cy, 170, { dmg: skillDmg(0.45, 0.135, lv), airLift: 160, stun: 0.3, knock: 0, hs: 0.02, downHit: true, sure: true, col }, { zMax: 260 });
+      if (a.n >= 24) { a.done = true; game.after(0.12, () => wmTempestEnd(e, lv, a)); }
     },
-    events: [evAt(0.95, e => { cam.flash = 0.2; cam.flashCol = '#dff4ff'; fxShock(e.act.cx, e.act.cy, 300, '#9fe8ff'); }),
-      evAt(2.45, e => { const a = e.act; cam.flash = 0.35; cam.flashCol = '#ffffff'; cam.shake = 12; sfx.iai(); sfx.boom(1.2);
-        fxBurst(a.cx, a.cy, 60, 320, '#bfe8ff'); fxShock(a.cx, a.cy, 280, '#ffffff');
-        blast(e, a.cx, a.cy, 240, { dmg: skillDmg(8, 2.5, lv), launch: 520, knock: 200, hs: 0.2, big: 2.2, critBonus: 0.3, downHit: true, sure: true, col: '#ffe070' }, { zMax: 300 }); })] }) });
+    events: [evAt(0.95, e => { const a = e.act; sfx.charge(); cam.flash = 0.06; cam.flashCol = '#dff4ff';   // 8 颗剑魂珠：吸起并定住敌人
+        a.orbs = addFx({ x: a.cx, y: a.cy + 0.5, z: 0, dur: 0.32, draw(c) { const k = this.t / this.dur; for (let j = 0; j < 8; j++) { const g = j * TAU / 8 + k * 2;
+          drawSpr(c, fxTint('orb', '#b88aff'), sx(a.cx + Math.cos(g) * 150 * (0.4 + k * 0.6)), sy(a.cy + Math.sin(g) * 50, 60 + k * 60), 36, 0, { alpha: 0.95 }); } } });
+        for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.5) < 280) { if (!t.boss) addStatus(t, 'root', 1.4, { src: e }); }
+        blast(e, a.cx, a.cy, 240, { dmg: skillDmg(0.8, 0.2, lv), launch: 200, stun: 0.6, knock: 0, hs: 0.04, sure: true, downHit: true, col: '#d8c8ff' }, { zMax: 260 }); }),
+      evAt(1.22, e => { const a = e.act; cam.shake = Math.max(cam.shake, 6); sfx.boom(0.8); fxShock(a.cx, a.cy, 300, '#9fe8ff');   // 珠子炸开 → 24 把剑的剑阵
+        for (let j = 0; j < 24; j++) { const air = j % 2 === 1, g = j * TAU / 24 + (air ? 0.13 : 0), r = air ? 120 : 160;
+          a.swords.push({ x: a.cx + Math.cos(g) * r, y: clamp(a.cy + Math.sin(g) * r * 0.32, 6, DEPTH - 6), z: air ? 130 + (j % 4) * 14 : 0, rot: air ? 0 : rnd(-0.25, 0.25) }); }
+        const L = a.swords.filter(s => s.x < a.cx), R = a.swords.filter(s => s.x >= a.cx); a.swords = []; for (let j = 0; j < 24; j++) {   // 左右交替着拔
+          const s = (j % 2 ? L : R).shift() || L.shift() || R.shift(); if (s) a.swords.push(s); }
+        for (const s of a.swords) fxBurst(s.x, s.y, s.z + 30, 60, '#bfe8ff');
+        a.fx = addFx({ x: a.cx, y: a.cy - 60, z: 0, dur: 1.9, draw(c) { for (const s of a.swords) if (!s.taken) drawSpr(c, 'swordrain', sx(s.x), sy(s.y, s.z), 0, s.z ? 96 : 110, { ay: s.z ? 0.5 : 0.9, rot: s.rot, alpha: 0.9 }); } }); })],
+    onEnd: e => { const a = e.act; if (a && a.fx) a.fx.t = a.fx.dur; } }) });
+function wmTempestEnd(e, lv, a) {   // 回到起点，上斩引爆剑阵
+  if (e.dead || e.act !== a) return;
+  fxAfterimage(e, '#ffe070'); e.x = a.x0; e.y = a.y0; e.face = a.f0; e.play('up', true); a.dur = e.actT + 0.55; if (a.fx) a.fx.t = a.fx.dur;
+  cam.flash = 0.35; cam.flashCol = '#ffffff'; cam.shake = 12; sfx.iai(); sfx.boom(1.2);
+  fxSlashOn(e, { col: '#ffe070', a0: 1.4, a1: -1.9, r: 90, w: 26, off: [10, 50], heavy: true });
+  for (const s of a.swords) fxSpr('swordrain', s.x, s.y, s.z, { h: 150, dur: 0.4, ay: 0.9, grow: [1.2, 0.6], col: '#ffe070' });
+  fxBurst(a.cx, a.cy, 60, 320, '#bfe8ff'); fxShock(a.cx, a.cy, 280, '#ffffff');
+  blast(e, a.cx, a.cy, 240, { dmg: skillDmg(8, 2.5, lv), launch: 520, knock: 200, hs: 0.2, big: 2.2, critBonus: 0.3, downHit: true, sure: true, col: '#ffe070' }, { zMax: 300 });
+}
 
 /* =====================================================================
    剑魂 P1（官方 48–100 级 → 本作 21–30 级）：斩铁式、流星落、破空拔刀斩、极·神剑术（二觉被动）、破空斩、瞬斩、
@@ -270,17 +299,20 @@ const WM_FORMLESS = { shortsword: ['flow_stab', 'flow_leap'], katana: ['flow_lea
 function wmFormlessHit(e, lv) { const x = e.x + e.face * 60; fxSpr('swordrain', x, e.y, 90, { h: 120, dur: 0.3, col: '#e8f4ff', rot: -0.6 * e.face, alpha: 0.7 }); fxSlashX(x, e.y, 60, 120, '#e8f4ff');
   blast(e, x, e.y, 70, { dmg: skillDmg(1.4, 0.2, lv), stun: 0.4, knock: 60, hs: 0.05, col: '#e8f4ff', sure: true }, { zMax: 200 }); }
 
-/* ---- 流星落：带冲击波高高跃起，方向键移动地面上的准星，约 38 把流星剑落向准星，最后自己砸下 ---- */
+/* ---- 流星落：带冲击波高高跃起，在空中按 ←→ 把落点在左 / 中 / 右三档之间切换，约 38 把流星剑落向落点，最后自己砸下 ---- */
 defSkill('wm_meteor', { name: '极·神剑术（流星落）', cls: 'sword', job: 'blade', lvReq: 23, mp: 80, cd: 35, type: 'phys', col: '#9fd0ff',
-  desc: '带着冲击波高高跃起，用方向键移动地面上的准星，约 38 把流星剑接连落向准星，最后自己挥剑砸下。跃起期间无敌。学了极·神剑术，最后再投下 3 把定住敌人的天剑。', pow: lv => skillDmg(12, 1.2, lv), ai: { kind: 'aoe', r: [60, 260], dy: 60 },
+  desc: '带着冲击波高高跃起，在空中按 ←→ 把落点在左 / 中 / 右三档之间切换，约 38 把流星剑接连落向落点，最后自己挥剑砸下。跃起期间无敌。学了极·神剑术，最后再投下 3 把定住敌人的天剑。', pow: lv => skillDmg(12, 1.2, lv), ai: { kind: 'aoe', r: [60, 260], dy: 60 },
   act: (lv) => ({ name: 'wm_meteor', clip: 'meteorAim', dur: 2.4, superArmor: true, noCounter: true, invul: [0, 1.6],
-    onStart: e => { const a = e.act, t = nearestFoe(e, 500); a.rx = t ? t.x : e.x + e.face * 180; a.ry = t ? t.y : e.y; e.vz = 760; e.z = Math.max(e.z, 1); sfx.jump(); fxShock(e.x, e.y, 130, '#9fd0ff');
+    onStart: e => { const a = e.act, c = e.x + e.face * 90; a.slots = [c - 230, c, c + 230]; a.si = 1; a.rx = c; a.ry = e.y; e.vz = 760; e.z = Math.max(e.z, 1); sfx.jump(); fxShock(e.x, e.y, 130, '#9fd0ff');
       blast(e, e.x, e.y, 100, { dmg: skillDmg(1.2, 0.12, lv), launch: 300, knock: 60, hs: 0.05 }, { zMax: 80 });
-      addFx({ x: a.rx, y: a.ry, z: 0, dur: 1.7, a, update() { this.x = this.a.rx; this.y = this.a.ry - 0.5; }, draw(c) { drawSpr(c, fxTint('rune', '#9fd0ff'), sx(this.a.rx), sy(this.a.ry, 0), 150, 56, { ground: true, rot: game.t * 2, alpha: 0.7 }); } }); },
-    onInput: (e, I, dt) => { const a = e.act, d = dt || 1 / 60; if (e.actT < 1.5) { a.rx += I.dx() * 320 * d; a.ry = clamp(a.ry + I.dy() * 160 * d, 8, DEPTH - 8); } return false; },
+      addFx({ x: a.rx, y: a.ry, z: 0, dur: 1.7, a, update() { this.x = this.a.rx; this.y = this.a.ry - 0.5; }, draw(c) { const A = this.a;   // 三档落点：选中的一档是亮的准星
+        for (const x of A.slots) drawSpr(c, fxTint('rune', '#9fd0ff'), sx(x), sy(A.ry, 0), 110, 40, { ground: true, rot: -game.t, alpha: 0.18 });
+        drawSpr(c, fxTint('rune', '#9fd0ff'), sx(A.rx), sy(A.ry, 0), 150, 56, { ground: true, rot: game.t * 2, alpha: 0.75 }); } }); },
+    onInput: (e, I) => { const a = e.act, d = Math.sign(I.dx()); if (e.actT < 1.5 && d !== a.lastD) { a.lastD = d; if (d) a.si = clamp(a.si + d, 0, 2); } return false; },   // 按一下 ←→ 换一档
     update: (e, dt) => { const a = e.act;
       if (e.actT > 0.35 && e.actT < 1.5) { e.vz = 0; e.vx = 0; }
-      if (e.pad !== input && e.actT < 1.5) { const t = nearestFoe(e, 500); if (t) { a.rx = damp(a.rx, t.x, 4, dt); a.ry = damp(a.ry, t.y, 4, dt); } }
+      if (e.pad !== input && e.actT < 1.5) { const t = nearestFoe(e, 500); if (t) { a.si = [0, 1, 2].reduce((b, i) => Math.abs(a.slots[i] - t.x) < Math.abs(a.slots[b] - t.x) ? i : b, 1); a.ry = damp(a.ry, t.y, 4, dt); } }
+      if (e.actT < 1.5) a.rx = damp(a.rx, a.slots[a.si], 12, dt);
       a.tk = (a.tk || 0) + dt;
       if (e.actT > 0.35 && e.actT < 1.5 && a.tk >= 0.03) { a.tk = 0; a.n = (a.n || 0) + 1; const x = a.rx + rnd(-80, 80), y = clamp(a.ry + rnd(-26, 26), 6, DEPTH - 6), n = a.n;
         addFx({ x, y: y + 0.5, z: 320, dur: 0.22, vz: -1500, update(d) { this.z = Math.max(0, this.z + this.vz * d); }, draw(c) { drawSpr(c, 'swordrain', sx(this.x), sy(this.y, this.z), 0, 90, { ay: 1, alpha: 0.9 }); } });
@@ -333,10 +365,10 @@ defSkill('wm_shunzan', { name: '极·神剑术（瞬斩）', cls: 'sword', job: 
     events: [evAt(0.08, e => { fxAfterimage(e, '#8fe0ff'); fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 380, w: 20, col: '#8fe0ff', dur: 0.3 }); sfx.iai(); }),
       ...[0.38, 0.46, 0.54, 0.62, 0.7].map((tt, i) => evAt(tt, e => { for (const t of e.act.victims || []) if (!t.dead) { fxSlashX(t.x + rnd(-10, 10), t.y, t.z + 50, 110, '#8fe0ff'); applyHit(e, t, { dmg: skillDmg(1.8, 0.18, lv), stun: 0.6, knock: i === 4 ? 180 : 10, launch: i === 4 ? 300 : 0, hs: 0.04, sure: true, col: '#bfe8ff' }, { proj: true }); } if (i % 2 === 0) sfx.swing(false); }))] }) });
 
-/* ---- 万剑归宗（二觉）：召唤念力飞剑约 30 秒（期间普攻 / 跳攻 / 跑攻和部分技能命中时射出穿云刺）；再按一次或时间到 → 御剑术：飞剑按领主 > 精英 > 高 HP 抓住目标乱斩 → 万剑诀爆炸 ---- */
-defSummon('wm_swords', { kind: 'attach', host: 'owner', tags: ['sword'], max: 1, over: 'refresh', life: 30,
+/* ---- 万剑归宗（二觉）：召唤 5 把念力飞剑约 40 秒（期间普攻 / 跳攻 / 跑攻和部分技能命中时射出穿云刺）；再按一次或时间到 → 御剑术：飞剑按领主 > 精英 > 高 HP 抓住目标乱斩 → 万剑诀爆炸 ---- */
+defSummon('wm_swords', { kind: 'attach', host: 'owner', tags: ['sword'], max: 1, over: 'refresh', life: 40,
   onEnd: (s, why) => { if (why === 'life' && !s.owner.dead) wmSwordFinale(s.owner, s.lv); },
-  draw: (c, s) => { const p = s.host, T = game.t; for (let i = 0; i < 8; i++) { const a = T * 1.6 + i * TAU / 8; drawSpr(c, 'swordrain', sx(p.x - p.face * 20 + Math.cos(a) * 34), sy(p.y + Math.sin(a) * 8, p.z + 90 + Math.sin(a * 2) * 6), 0, 38, { alpha: 0.75, rot: 0.3 * Math.cos(a) }); } } });
+  draw: (c, s) => { const p = s.host, T = game.t; for (let i = 0; i < 5; i++) { const a = T * 1.6 + i * TAU / 5; drawSpr(c, 'swordrain', sx(p.x - p.face * 20 + Math.cos(a) * 34), sy(p.y + Math.sin(a) * 8, p.z + 90 + Math.sin(a * 2) * 6), 0, 38, { alpha: 0.75, rot: 0.3 * Math.cos(a) }); } } });
 const WM_THRUST = new Set(['triple', 'dragon', 'flow_stab', 'flow_leap', 'flow_rise', 'phantom', 'wm_hakuu', 'wm_dragonrush']);
 function wmSwordFinale(e, lv) {   // 御剑术 → 万剑诀
   const val = t => (t.boss ? 2e12 : t.elite ? 1e12 : 0) + t.hp;
@@ -349,8 +381,8 @@ function wmSwordFinale(e, lv) {   // 御剑术 → 万剑诀
     for (let i = 0; i < 12; i++) fxSpr('swordrain', e.x + e.face * (60 + i * 60), e.y + rnd(-30, 30), 0, { h: 160, dur: 0.5, ay: 1, grow: [1.3, 1] });
     for (const t of ents) if (hittable(e, t) && (t.x - e.x) * e.face > -100 && Math.abs(t.x - e.x) < 820) applyHit(e, t, { dmg: skillDmg(10, 3, lv), launch: 520, knock: 200, hs: 0.2, big: 2.2, critBonus: 0.2, sure: true, downHit: true, col: '#ffe070' }, { proj: true }); });
 }
-defSkill('wm_awaken2', { name: '万剑归宗', cls: 'sword', job: 'blade', lvReq: 27, maxLv: 3, mp: 180, cd: 170, pvp: 0.45, type: 'phys', awaken: true, col: '#bfe8ff',
-  desc: '【二觉】召唤念力飞剑约 30 秒：期间普攻、跳攻、跑攻以及三段刃、猛龙、流心、剑舞、破空斩、破军斩龙击命中时，飞剑射出穿云刺追击。再按一次技能键（或时间到）→ 御剑术：飞剑按领主 > 精英 > 高 HP 的顺序抓住目标乱斩，最后万剑诀爆炸横扫前方。',
+defSkill('wm_awaken2', { name: '万剑归宗', cls: 'sword', job: 'blade', lvReq: 27, maxLv: 3, mp: 180, cd: 170, pvp: 0.45, type: 'phys', awaken: true, noHitCheck: true, col: '#bfe8ff',
+  desc: '【二觉】召唤 5 把念力飞剑约 40 秒：期间普攻、跳攻、跑攻以及三段刃、猛龙、流心、剑舞、破空斩、破军斩龙击命中时，飞剑射出穿云刺追击。再按一次技能键（或时间到）→ 御剑术：飞剑按领主 > 精英 > 高 HP 的顺序抓住目标乱斩，最后万剑诀爆炸横扫前方。',
   pow: lv => skillDmg(30, 9, lv), ai: { kind: 'awaken', r: [0, 400], dy: 90 },
   recast: { ok: p => summonsOf(p, 'wm_swords').length > 0, cd: 0.5, act: lv => ({ name: 'wm_swordsend', clip: 'awkB', dur: 1.4, superArmor: true, noCounter: true, invul: [0, 1.4],
     onStart: e => { const s = summonsOf(e, 'wm_swords')[0], L = s ? s.lv : lv; dismissSummons(e, 'wm_swords', 'cmd'); wmSwordFinale(e, L); } }) },
@@ -379,7 +411,7 @@ defSkill('wm_mukei', { name: '极·神剑术（无形斩）', cls: 'sword', job:
 
 /* ---- 万剑极诣·开天斩（三觉）：钝器砸地 → 巨剑重斩 → 跃起放短剑 / 太刀剑气 → 落地多段斩 → 光剑终结大爆炸。无敌；和暴风式共享冷却 ---- */
 defSkill('wm_awaken3', { name: '万剑极诣·开天斩', cls: 'sword', job: 'blade', lvReq: 30, maxLv: 3, mp: 250, cd: 135, pvp: 0.45, type: 'phys', awaken: true, col: '#fff0a0',
-  desc: '【三觉】无形剑依次化为五种武器：钝器砸地 → 巨剑重斩（大地碎裂）→ 跃起用短剑、太刀放出剑气 → 落地多段斩 → 凝聚成光剑的终结一击大爆炸。施放中无敌。与极·鬼剑术（暴风式）共享冷却。',
+  desc: '【三觉】无形剑依次化为五种武器：钝器砸地 → 巨剑重斩（大地碎裂）→ 跃起用短剑、太刀放出剑气 → 落地多段斩 → 凝聚成光剑的终结一击大爆炸。施放中无敌。与极·鬼剑术（暴风式）共享冷却；万剑归宗的飞剑还在时施放，会代替御剑术作为收尾。',
   pow: lv => skillDmg(45, 12, lv), ai: { kind: 'awaken', r: [0, 360], dy: 90 },
   act: (lv) => ({ name: 'wm_awaken3', clip: 'awkB', dur: 3.6, superArmor: true, noCounter: true, invul: [0, 3.6],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '万剑极诣·开天斩', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.cool.awaken = Math.max(e.cool.awaken || 0, e.cool.wm_awaken3 || 0); e.act.cx = e.x + e.face * 150; e.act.cy = e.y; },
@@ -398,6 +430,8 @@ defSkill('wm_awaken3', { name: '万剑极诣·开天斩', cls: 'sword', job: 'bl
       evAt(3.05, e => { const a = e.act; e.play('iaiSpin', true); cam.flash = 0.4; cam.flashCol = '#fff6c0'; cam.shake = 16; sfx.iai(); sfx.boom(1.5);   // 光剑终结
         fxSpr('swordrain', a.cx, a.cy, 0, { h: 360, dur: 0.6, ay: 1, col: '#fff38a', grow: [0.4, 1.1] }); fxBurst(a.cx, a.cy, 60, 360, '#fff38a'); fxShock(a.cx, a.cy, 340, '#ffffff');
         blast(e, a.cx, a.cy, 280, { dmg: skillDmg(18, 5, lv), launch: 560, knock: 200, hs: 0.22, big: 2.4, critBonus: 0.3, sure: true, downHit: true, elem: 'light', col: '#fff38a' }, { zMax: 360 }); })] }) });
+// 万剑归宗的飞剑还在时放三觉：开天斩代替御剑术 / 万剑诀收尾，飞剑被收走（官方）
+swordAwk3Finish('wm_awaken3', p => summonsOf(p, 'wm_swords').length > 0, e => dismissSummons(e, 'wm_swords', 'cmd'));
 { // 暴风式与开天斩共享冷却
   const A = SKILLS.awaken, a0 = A.act; A.act = (lv, p) => { const a = a0(lv, p); if (p && p.cool) p.cool.wm_awaken3 = Math.max(p.cool.wm_awaken3 || 0, p.cool.awaken || 0); return a; };
 }

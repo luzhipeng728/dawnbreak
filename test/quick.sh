@@ -17,11 +17,11 @@ run() { g=$1; name=$2; shift 2
 g1() { for t in flow ui mobile polish; do run 1 $t node test/$t.mjs; done; }
 g2() { for t in items compare bulk gear guide quickquest; do run 2 $t node test/$t.mjs; done; run 2 gearsim node test/gear_sim.mjs 20; }
 g3() { for t in combat summon avatar shop acct bag skyguide; do run 3 $t node test/$t.mjs; done
-  run 3 skillsa node test/skill_sa.mjs; run 3 shopecon node test/shop_econ.mjs; run 3 shopsynth node test/shop_synth.mjs; run 3 vanity node test/vanity.mjs; }
+  run 3 skillsa node test/skill_sa.mjs; run 3 shopecon node test/shop_econ.mjs; run 3 shopsynth node test/shop_synth.mjs; run 3 vanity node test/vanity.mjs; run 3 juggle node test/juggle.mjs; }
 g4() { for t in sword gunner mage enchantress summoner; do run 4 $t node test/$t.mjs; done
   run 4 region node test/region.mjs siroco data,skills,mechs,scenes,quest,abyss; }   # 区域流水线的快速部分（怪物逐个 / 机器人通关在 all.sh）
 g5() { for t in paramedic witch spitfire mechanic; do run 5 $t node test/$t.mjs; done; run 5 classes node test/classes.mjs sword,gun,mage; }
-g6() { run 6 serverapi node server/test/api.mjs; run 6 restore node --disable-warning=ExperimentalWarning server/test/restore.mjs
+g6() { run 6 serverapi node server/test/api.mjs; run 6 restore node --disable-warning=ExperimentalWarning server/test/restore.mjs; run 6 arenasrv node --disable-warning=ExperimentalWarning server/test/arena.mjs
   run 6 netacct node test/net_account.mjs; run 6 svcapi node test/svc_api.mjs; run 6 svcplay node test/svc_play.mjs
   run 6 mptown node test/mp_town.mjs; run 6 mpcoop node test/mp_coop.mjs 2; run 6 mpmore node test/mp_coop_more.mjs
   run 6 findfriend node test/findfriend.mjs; run 6 partyhud node test/mp_party_hud.mjs; }

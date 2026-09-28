@@ -55,6 +55,9 @@
 | 完整回归 | `sh test/all.sh`（约 70 分钟，后台跑，跑的时候别重新构建） |
 | 技能连拍体检 | `node test/skillshots.mjs <职业:转职,...>` 或 `all` |
 | 技能机制体检（命中数 / 浮空 / 追加浮空 / 倒地 / 弹地 / 抓取 / 原生霸体·无敌比例 / 位移 / 范围 / 冷却 / 召唤物，逐帧确定性，约 1 秒一个转职） | `node test/skillaudit.mjs <职业:转职,...> [--compare] [--only id,...] [--weapon 武器]`；和官方规格 `docs/skills/<职业>.json` 对比用 `--compare`（没写理由的不一致 → 退出码 1）。规格字段、输入方式（pre / input / hp / dir / presses / watch / at / air）见脚本头注释和 `docs/skills/sword.json` 的 `_meta`；输出 `test/shots/audit/<职业>-<转职>.json` |
+| 决斗场排位服务端自测 / 联机实测 | `node --disable-warning=ExperimentalWarning server/test/arena.mjs`（约 10 秒）/ `node test/arena.mjs`（2 个页面） |
+| 决斗平衡（18 职业 AI 循环赛，无渲染快进约 40 秒） | `node test/pvp_balance.mjs 8 all`；自动调 `PVP_JOB`：`node test/pvp_balance.mjs 6 all 4` |
+| 浮空 / 受身蹲伏定量测试 | `node test/juggle.mjs`（参数表 `JUGGLE`，docs/COMBAT_JUGGLE.md） |
 | 数据库备份 | `ssh cc 'sudo /opt/dawnbreak-server/backup.sh'`（每天 04:17 也会自动备份） |
 
 改完存档让玩家**刷新页面**，弹“存档冲突”时选**使用云端存档**。
@@ -79,3 +82,5 @@
 - **2026-09-28 深渊派对进区域 spec（阶段 1）**：复用 content/abyss.js 的整套流程（封印之门 / 派对 / 光柱 / 邀请函）和领主机制库；新做的是 spec 的 `abyss` 块（REGION_PIPELINE §2.1）、老区域改写成同格式的 `ABYSS_LEGACY`、每波派对配置、深渊领主机制（老领主包一层 control 驱动机制库，不改引擎）、保底计数、「深渊宝藏」翻牌、`test/region.mjs <id> abyss`；美术只出 2 个图标（1 次生图）。约 25 万 token（大头是读 abyss / 掉落 / 结算的老代码）。下个区域的深渊只写 spec，预计 2~3 万 token。
   - 坑：生图的图标表偶尔带一圈细边框 → 切图把边框算进包围盒、图标缩成一小点；`region_art.py icons` 现在先把表的边缘刷白，并且只出还没有图标的物品（新表按第一个物品命名，不打乱已有的表）。
 - **2026-09-28 面子系统（强化光效 / 时装城镇移速 / 天空套特效）**：光效阶梯做成一张表（`game/vanity.js` 的 GLOW_ENH / GLOW_AMP），外观层只加 3 行钩子；亮的城镇背景上纯“叠加”发光几乎看不见 → 先用正常混合画一圈外轮廓再叠加；审图按角色切小图拼总览（`node test/vanity.mjs shots`）一次看清 +7~+16。城镇 8 人全开 60fps。
+- **2026-09-28 武器外观重做**（73 把史诗含 17 件新官方史诗 + 15 类 × 稀有 / 神器 / 传说外观，33 张表、共生图 35 次）：同类型武器画在同一张表里，模型自己会拉开差别；样图直接用正式批次的表，不另抽；拿在手里的效果用 `node test/weapons.mjs shots all <输出> 1x` 出一张图审；主线程的两条意见（阿波菲斯剪影要独一份，品级要改剪影、不能只换颜色）在批量前就改进了提示词。唯一返工：钝器 6 把一张时锤头上下粘连，切不开 → 大头武器改成一张 3 把。
+- **2026-09-28 决斗场排位 + 公正决斗 + 浮空重做**：平衡别靠手调——AI 循环赛直接调 `step()` 快进（153 对 × 8 场只要 40 秒），加个自动迭代调参，几轮就把 3%~87% 收到 46%~59%；浮空问题先写定量测试（滞空 / 再挑 / 连击上限）量出“以前”的数，再改模型。改完浮空、霸体窗口这类全局规则后，一定重跑循环赛。

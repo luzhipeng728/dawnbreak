@@ -1,11 +1,9 @@
 {
- "ep_handcannon": {
-  "cut": 0.72
- },
- "ep_rifle": {
-  "solo": 1
- },
  "summer_club": {
   "size": 56
+ },
+ "ep_gs_apophis": {
+  "mul": 1.3,
+  "wide": 1.3
  }
 }

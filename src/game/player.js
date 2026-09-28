@@ -28,8 +28,8 @@ const BACKSTEP = { name: 'back', clip: 'back', dur: 0.36, move: [[0, 0.3, -340, 
 /* ---- 后跳-强化（通用被动 c_bsup，Lv10）：技能中 ↓+C 强制后跳（冷却 40 秒）；受击 / 倒地中 ↓+C 脱身（冷却 30 秒）；两种共用冷却，不受冷却缩减影响 ---- */
 const BSUP_CD_SKILL = 40, BSUP_CD_HIT = 30;
 const bsupReady = p => lvOf(p, 'c_bsup') > 0 && !(p.bsCd > 0);
-// 受身蹲伏：冷却（决斗场更长）、按住 C 最长蹲伏时间、松开起身后的霸体
-const TECH_CD = 5, TECH_CD_PVP = 20, TECH_HOLD_MAX = 3, TECH_SA = 0.3;
+// 受身蹲伏（docs/COMBAT_JUGGLE.md）：冷却 地下城 5 秒 / 决斗 20 秒；按住 C 最长蹲 3 秒 / 决斗 1.5 秒（全程无敌，可以慢慢挪动）；松开起身后霸体 0.3 秒 / 决斗 0.1 秒
+const TECH_CD = 5, TECH_CD_PVP = 20, TECH_HOLD_MAX = 3, TECH_HOLD_PVP = 1.5, TECH_SA = 0.3, TECH_SA_PVP = 0.1, TECH_DRIFT = 0.35;
 /* ---- 职业基础属性（随等级成长；具体职业内容见 content/classes/*） ---- */
 const CLASSES = {
   sword: { name: '鬼剑士', hp0: 1800, hpPer: 150, mp0: 700, mpPer: 40, atk0: 480, atkPer: 58, str0: 7, strPer: 2.2, def0: 300, defPer: 28, crit: 0.08, speed: 165, runSpeed: 300, cmds: [] },
@@ -147,7 +147,7 @@ function tryKeyLinks(p, L, I) {
   }
   return false;
 }
-/* ---- 受身蹲伏（官方现版：倒地后按 C 蹲伏，蹲着时无敌；按住 C 最长 3 秒，松开才起身，起身后 0.3 秒霸体；冷却 5 秒 / 决斗场 20 秒；耗 1 MP）---- */
+/* ---- 受身蹲伏（官方：倒地后按 C 蹲伏，蹲着时无敌；按住 C 延长（地下城最长 3 秒 / 决斗 1.5 秒），可以慢慢挪；松开才起身，起身后霸体 0.3 / 0.1 秒；冷却 5 / 20 秒；耗 1 MP）---- */
 function tryTech(p) {
   const I = p.pad;
   if (p.st !== 'down' || p.dead) return false;
@@ -158,8 +158,14 @@ function tryTech(p) {
   return true;
 }
 function holdTech(p, I) {
-  if (I.is('jump') && p.stT < TECH_HOLD_MAX) { p.getupDur = Math.max(p.getupDur, p.stT + 0.1); p.invul = Math.max(p.invul, 0.15); return; }
-  p.techHold = false; p.getupDur = p.stT + 0.12; p.invul = Math.max(p.invul, 0.12); p.superArmor = Math.max(p.superArmor, TECH_SA + 0.12);
+  if (I.is('jump') && p.stT < (game.pvp ? TECH_HOLD_PVP : TECH_HOLD_MAX)) {
+    p.getupDur = Math.max(p.getupDur, p.stT + 0.1); p.invul = Math.max(p.invul, 0.15);
+    const dx = I.dx ? I.dx() : (I.is('right') ? 1 : 0) - (I.is('left') ? 1 : 0);   // 蹲着可以慢慢挪（选起身位置）
+    if (dx) { p.x += dx * CLASSES[p.cls].speed * TECH_DRIFT / 60; p.face = dx; }
+    if (game.t - (p._crFx || -9) > 0.22) { p._crFx = game.t; fxAura(p, '#8fd8ff', 0.28); }   // 蹲伏无敌的提示（淡蓝光）
+    return;
+  }
+  p.techHold = false; p.getupDur = p.stT + 0.12; p.invul = Math.max(p.invul, 0.12); p.superArmor = Math.max(p.superArmor, (game.pvp ? TECH_SA_PVP : TECH_SA) + 0.12);
 }
 /* ---- 后跳 ---- */
 // 当前能否后跳：'free'（站立 / 普攻 / 后跳本身不行）、'up'（技能中，用后跳-强化）、null

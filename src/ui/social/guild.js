@@ -169,7 +169,7 @@ function sxgMembers(el, d, G, me, off) {
   });
   const out = [h('div', { class: 'sxscroll', style: 'max-height:15em', 'data-sk': 'gm' }, h('table', { class: 'sxtbl' }, h('thead', {}, h('tr', {}, ['职位', '角色', '累计贡献', '状态', ''].map(t => h('th', {}, t)))), h('tbody', {}, rows)))];
   if (off) {
-    const inp = sxInput({ placeholder: '玩家用户名', style: 'width:10em' });
+    const inp = sxInput({ placeholder: '账号名或角色名', style: 'width:10em' });
     const fr = typeof netFriends !== 'undefined' ? netFriends.list.filter(f => !GD.tags.get(f.id)) : [];
     out.push(h('div', { class: 'row', style: 'flex-wrap:wrap' }, h('span', { class: 'sxlbl' }, '邀请加入'), inp, h('button', { class: 'btn sm', onclick: () => { const v = inp.value.trim(); if (v) guildInvite(v); } }, '邀请'),
       fr.length ? h('span', { class: 'small dim' }, '好友：') : null, ...fr.slice(0, 6).map(f => h('button', { class: 'btn sm blue', onclick: () => guildInvite(f.name) }, f.char && f.char.name ? f.char.name : f.name))));

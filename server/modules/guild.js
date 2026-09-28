@@ -228,7 +228,7 @@ export default {
     r.post('/api/guild/cancelApply', { auth: true }, req => { db.run("DELETE FROM guild_req WHERE guild_id = ? AND user_id = ? AND kind = 'apply'", int(req.body.id, 0, 1e12), req.user.id); return { ok: true }; });
     r.post('/api/guild/invite', { auth: true, rate: [30, 60] }, req => {
       const m = officer(req), g = G.guild(m.guild_id);
-      const u = ctx.findUser(typeof req.body.user === 'number' ? req.body.user : txt(req.body.user, 40));
+      const u = ctx.findPlayer(typeof req.body.user === 'number' ? req.body.user : txt(req.body.user, 40));   // 账号名或角色名
       if (!u) throw ctx.err(404, '没有这个玩家');
       if (u.id === req.user.id) throw ctx.err(400, '不能邀请自己');
       const t = G.memberOf(u.id); if (t) throw ctx.err(400, t.guild_id === g.id ? `${u.name} 已经是本公会成员了` : `${u.name} 已经加入了别的公会`);

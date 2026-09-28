@@ -45,6 +45,8 @@ function spawnMonster(kind, x, y, o = {}) {
   return m;
 }
 function monsterAI(m, dt) {
+  // 挑衅：这一帧把施加者当成目标（和联机组的 m.tgt 同样的做法）
+  const T = m.status && tauntSrc(m); if (T && game.player !== T) { const P = game.player; game.player = T; try { monsterAI(m, dt); } finally { game.player = P; } return; }
   const p = game.player;
   if (m.dead || !p) return;
   if (m.st === 'jump') return;
@@ -59,8 +61,10 @@ function monsterAI(m, dt) {
   // 领主残血狂暴：出手更频繁
   if (m.boss && !m.enraged && m.hp < m.hpMax * 0.3) { m.enraged = true; fxText('狂暴！', m.x, m.y, m.z + 40, { col: '#ff3a2a', size: 16, dur: 1.2 }); sfx.boom(0.6); m.speed *= 1.2; }
   const rage = m.enraged ? 0.85 : 1;
+  // 混乱：乱走、不出招
+  if (m.status && m.status.confuse) { if (m.think <= 0) { m.think = rnd(0.3, 0.7); m.goalX = m.x + rnd(-120, 120); m.goalY = clamp(m.y + rnd(-50, 50), 8, DEPTH - 8); } }
   // ---- 出手：在距离内、冷却好、满足条件的招式里按权重随机 ----
-  if (m.aiCd <= 0 && p.st !== 'down') {
+  else if (m.aiCd <= 0 && p.st !== 'down') {
     const ok = D.attacks.filter((A, i) => adx >= A.range[0] && adx <= A.range[1] && ady <= A.dy && m.acd[i] <= 0 && (!A.cond || A.cond(m)));
     const attacking = ok.length && !m.boss ? ents.filter(e => e.team === 'e' && e.st === 'act' && !e.dead).length : 0;
     if (ok.length && (m.boss || attacking < (game.maxAttackers || 3))) {
@@ -75,8 +79,9 @@ function monsterAI(m, dt) {
       return;
     }
   }
+  if (m.status && (m.status.bind || m.status.root)) { m.vx = m.vy = 0; m.setState('idle'); return; }   // 束缚 / 定身：不能移动（束缚还能出招）
   // ---- 走位：朝首选距离靠近，并对齐纵深；偶尔横向游走 ----
-  if (m.think <= 0) {
+  if (m.think <= 0 && !(m.status && m.status.confuse)) {
     m.think = rnd(0.35, 0.9);
     const want = D.pref + rnd(-10, 20);
     m.goalX = p.x - Math.sign(dx || 1) * want + rnd(-15, 15);

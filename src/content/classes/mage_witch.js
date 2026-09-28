@@ -60,18 +60,6 @@ const wtLv = (lv, base, per) => skillDmg(base, per, lv);
 // 空中施放技能后，扫把的空中冲刺次数刷新
 const airRefresh = e => { if (e.z > 2) { e._dashN = 0; e._glideN = 0; } };
 /* =====================================================================
-   动作帧：魔道学者的新帧（mage_witch1 骑扫把 / mage_witch2 道具）登记进魔法师的逐帧动画表
-   CLIPS.mage 在 mage.js 里，这里直接补；SPR_ANIMS 在 content/sprites.js（加载顺序在后），第一次用到时再补
-   ===================================================================== */
-const WITCH_SPR = {
-  brIdle: [['brIdle', 0]], brDash: [['brDash', 0]], brFall: [['brFall', 0]], brAtk: [['brAtk1', 0]], brAtkB: [['brAtk2', 0]], brSpin: [['brSpin', 0]],
-  faceplant: [['faceplant', 0]], sooty: [['sooty', 0]], potion: [['potion1', 0], ['potion2', 0.14]], potionHold: [['potion1', 0]],
-  swat: [['swat1', 0], ['swat2', 0.18]], swatAir: [['brAtk2', 0], ['swat2', 0.12]], fling: [['fling', 0]], hammer: [['hammer', 0]], hammerRun: { fps: 10, frames: ['hammer', 'run3', 'hammer', 'run7'] },
-  candy: [['candy1', 0], ['potion2', 0.36]], wtCheer: [['cheer', 0]],
-};
-for (const n in WITCH_SPR) { const A = WITCH_SPR[n]; if (!CLIPS.mage[n]) CLIPS.mage[n] = A.frames ? { dur: A.frames.length / A.fps, loop: true, keys: [k(0, POSE.idle)] } : { dur: A[A.length - 1][1] + 3, keys: [k(0, POSE.idle)] }; }
-function witchAnims() { if (typeof SPR_ANIMS !== 'undefined' && SPR_ANIMS.mage && !SPR_ANIMS.mage.brIdle) Object.assign(SPR_ANIMS.mage, WITCH_SPR); }
-/* =====================================================================
    扫把飞行（扫把掌握）
    ===================================================================== */
 // 骑扫把的条件：魔道学者、学了扫把掌握且没关掉、装备扫把（AI 格斗者没有武器信息时默认有扫把）
@@ -160,7 +148,8 @@ function wtSprite(id, col) {
 function machDef(key, o) {
   return defSummon('wt_' + key, { kind: 'follower', name: o.name, bundle: key, model: () => wtSprite(key, o.col), clips: WT_CLIPS[key], w: o.w || 22, d: o.d || 14, h: o.h || 100, scale: o.scale || 1, speed: 0, pref: 0, sight: 0,
     life: o.life || 14, max: o.max || 1, col: o.col, type: 'indep', attacks: [], shadowR: o.shadowR || 30, tags: ['machine'].concat(o.tags || []),
-    onSpawn: s => { s.setState('act'); s.act = null; s.play('build', true); if (o.onSpawn) o.onSpawn(s); }, ai: () => { }, onEnd: o.onEnd, update: o.update });
+    onSpawn: s => { s.setState('act'); s.act = null; s.play('build', true); if (o.onSpawn) o.onSpawn(s); }, ai: () => { }, onEnd: o.onEnd,
+    update: (s, dt) => { if (s.auto) s.auto(s, dt); if (o.update) o.update(s, dt); } });
 }
 const mClip = (m, c) => { if (m && !m.gone && m.clipName !== c) m.play(c, true); };
 machDef('furnace', { name: '暴炎加热炉', h: 112, w: 26, col: '#ff9a50' });
@@ -624,7 +613,7 @@ defSkill('wt_shaved', { name: '雪人刨冰', cls: 'mage', job: WT, lvReq: 26, m
 defSummon('wt_candy', { kind: 'follower', name: '糖果人偶', bundle: 'candyDoll', model: () => candyModel(false), clips: BEAST_CLIPS, w: 9, d: 9, h: 46, speed: 220, runSpeed: 300, pref: 0, sight: 600,
   life: 25, max: 10, col: '#ff9ad0', type: 'indep', attacks: [], shadowR: 10,
   onSpawn: s => { s.clips = monClips(); },
-  ai: (s, dt) => { const t = nearestFoe(s, 700); if (!t) { const o = s.owner, gx = o.x - o.face * (40 + (s.slot % 5) * 12), dx = gx - s.x; s.vx = Math.abs(dx) > 10 ? Math.sign(dx) * 200 : 0; s.vy = (o.y - s.y) * 2; s.setState(s.vx ? 'walk' : 'idle'); if (s.vx) s.face = Math.sign(s.vx); return; }
+  ai: (s, dt) => { s.arm = (s.arm ?? 0.7) - dt; if (s.arm > 0) { s.vx = s.vy = 0; s.setState('idle'); s.z = Math.max(0, Math.sin(s.arm / 0.7 * Math.PI) * 30); return; } const t = nearestFoe(s, 700); if (!t) { const o = s.owner, gx = o.x - o.face * (40 + (s.slot % 5) * 12), dx = gx - s.x; s.vx = Math.abs(dx) > 10 ? Math.sign(dx) * 200 : 0; s.vy = (o.y - s.y) * 2; s.setState(s.vx ? 'walk' : 'idle'); if (s.vx) s.face = Math.sign(s.vx); return; }
     const dx = t.x - s.x, dy = t.y - s.y, l = Math.hypot(dx, dy * 1.4) || 1; s.vx = dx / l * 230; s.vy = dy / l * 160; s.face = Math.sign(dx) || s.face; s.setState('run');
     if (l < 30 && !s.pop) { s.pop = true; const w = s.white; fxBurst(s.x, s.y, 30, 110, w ? '#fff6c0' : '#8a5ab0'); sfx.boom(0.35);
       summonArea(s, s.x, s.y, 64, { dmg: s.dmg, launch: 260, knock: 80, hs: 0.05, type: 'indep', elem: w ? 'light' : 'dark', downHit: true }, { zMax: 140, status: w ? 'shock' : 'blind', sdur: 4 }); dismissOne(s, 'cmd'); } } });
@@ -636,7 +625,7 @@ defSkill('wt_lollipop', { name: '超级棒棒糖', cls: 'mage', job: WT, lvReq: 
       fxSpr(IMG['fx/wt_lollipop'] ? 'wt_lollipop' : 'orb', e.x + e.face * 110, e.y, 0, { w: 190 * K, dur: 0.5, ay: 0.95, add: !IMG['fx/wt_lollipop'], col: IMG['fx/wt_lollipop'] ? null : '#ff9ad0', grow: [1.2, 1] }); fxShock(e.x + e.face * 110, e.y, 240 * K, '#ff9ad0');
       const hit = []; instantHit(e, HB(0, 1, [-20, 200 * K, 60 * K, -10, 220], wtLv(lv, 7.0, 0.7) * (r === 'fail' ? 0.7 : 1), { launch: 300, knock: 120, hs: 0.12, big: 2, shake: 6, snd: 'blunt', downHit: true, type: 'indep', elem: 'dark', onHit: (A, t) => hit.push(t) }));
       const n = Math.min(10, r === 'fail' ? Math.ceil(hit.length / 2) : hit.length);
-      for (let i = 0; i < n; i++) { const t = hit[i], s = summon(e, 'wt_candy', { x: t.x + rnd(-20, 20), y: t.y, lv }); if (s) { s.white = i % 2 === 1; s.dmg = wtLv(lv, 1.0, 0.1); s.model = candyModel(s.white); } } })] }) });
+      for (let i = 0; i < n; i++) { const t = hit[i], s = summon(e, 'wt_candy', { x: e.x + e.face * rnd(40, 110), y: clamp(e.y + rnd(-30, 30), 6, DEPTH - 6), lv }); if (s) { s.white = i % 2 === 1; s.dmg = wtLv(lv, 1.0, 0.1); s.model = candyModel(s.white); } } })] }) });
 // 糖果人偶的模型：黑色 = 原图，白色 = 提亮去饱和（同一套帧）
 function candyModel(white) { if (typeof SPR_DATA === 'undefined' || !SPR_DATA.candyDoll || !IMG['spr/candyDoll/idle']) return wtSprite('', white ? '#fff6c0' : '#8a5ab0');
   return new SpriteModel('candyDoll', { ...SPR_FALLBACK }, SPR_ANIMS.monster, white ? { sat: 0.15, bright: 1.9 } : {}); }
@@ -713,7 +702,7 @@ CLASSES.mage.passives.push(p => {
   else if (p.acts === WITCH_ACTS || p.acts === WITCH_ACTS_P) p.acts = MAGE_ACTS;
   p._ride = wt && witchRides(p);
   if (!wt) { p.airBonus = p._wtAir ? 0 : p.airBonus; p._wtAir = false; return; }
-  witchAnims(); witchModel(p);
+  witchModel(p);
   const br = skLv(p, 'wt_broom'); setPassive(p, 'wt_broom', br > 0, { cspd: 0.1 + 0.015 * br }); if (br > 0) p.hitRate = Math.max(p.hitRate || 0, 0.05);
   p.airBonus = p._ride ? 5 : 0; p._wtAir = true;
   if (p.z <= 0.01) { p._dashN = 0; p._glideN = 0; p._gliding = false; }

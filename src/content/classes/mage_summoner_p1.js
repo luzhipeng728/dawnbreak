@@ -9,7 +9,7 @@ smDef('sm_hilun', 'hilun', { h: 52, speed: 300, pref: 0, tags: ['spirit', 'fusio
 SUMMON_DEFS.sm_hilun.ai = s => { const o = s.owner, gx = o.x - o.face * 30, gy = o.y - 6, dx = gx - s.x, dy = gy - s.y;
   if (Math.abs(dx) > 400) { s.warp(gx, gy); return; }
   if (Math.abs(dx) > 4 || Math.abs(dy) > 3) { s.vx = dx * 6; s.vy = dy * 6; s.setState('walk'); } else { s.vx = s.vy = 0; s.setState('idle'); } s.face = o.face; };
-defSkill('sm_hilun', { name: '融合精灵海伊伦', cls: 'mage', job: SM, tier: 1, lvReq: 23, mp: 60, cd: 10, type: 'mag', col: '#ffc0ff', cast: true,
+defSkill('sm_hilun', { noHitCheck: true, name: '融合精灵海伊伦', cls: 'mage', job: SM, tier: 1, lvReq: 23, mp: 60, cd: 10, type: 'mag', col: '#ffc0ff', cast: true,
   desc: '召唤融合精灵海伊伦（常驻，不攻击），贴在你身边：提高你的技能攻击力；600px 内的你和队友攻击速度、移动速度、施放速度提高；上级精灵获得霸体；全部召唤兽免疫异常状态。',
   ai: { kind: 'buff', summon: 'sm_hilun' }, infoExtra: lv => [['技能攻击力', '+' + pct(0.05 + 0.01 * lv)], ['攻速 / 移速 / 施放速度', '+' + pct(0.06 + 0.01 * lv)]],
   act: (lv) => smSummonAct('sm_hilun', lv) });
@@ -35,8 +35,8 @@ defSkill('sm_roar', { name: '咒令：愤怒咆哮', cls: 'mage', job: SM, tier:
 defSkill('sm_eclipse', { name: '蚀月附灵', cls: 'mage', job: SM, tier: 2, lvReq: 26, passive: true, type: 'mag', col: ECL,
   desc: '【被动·二觉】技能攻击力提高。解锁附灵：上级精灵、精灵王、拉莫斯在场时再按一次召唤键，它瞬移到你前方放专属招（按住 ↓ 再按则瞬移到你脚下）。默克尔：五片暗区；格雷林：巨型落雷；阿奎利斯：七重冰导弹；赫瑞克：火焰爆剑；伊伽贝拉：四属性旋转激光；拉莫斯：蚀旋（大范围聚怪）。',
   infoExtra: lv => [['技能攻击力', '+' + pct(0.15 + 0.02 * lv)]] });
-const smPossess = (key, cd) => ({ ok: p => jobOf(p) === SM && hasSkill(p, 'sm_eclipse') && summonsOf(p, key).length > 0, cd, mp: 20,
-  act: () => ({ name: 'sm_cmd', clip: 'smCmd', dur: 0.3, noCounter: true, onStart: e => { summonCmd(e, key, 'special', smCmdArg(e)); fxText('附灵', e.x, e.y, e.z + 30, { col: '#e0c0ff', size: 10, dur: 0.5 }); } }) });
+const smPossess = (key, cd) => ({ ok: p => jobOf(p) === SM && hasSkill(p, 'sm_eclipse') && summonsOf(p, key).length > 0, cd, mp: 20, instant: true,
+  act: (lv, p) => { smOrderNow(p, key, 'special', '附灵'); } });
 for (const id of ['sm_merkle', 'sm_glarelin', 'sm_aqueris', 'sm_flamehulk', 'sm_echeverria']) SKILLS[id].recast = smPossess(id, 15);
 SUMMON_DEFS.sm_merkle.cmds = { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'cast', dur: 0.9, events: [evAt(0.4, e => { sfx.magic(); const o = e.owner, cx = o.x + o.face * 130;
   for (const [dx, dy] of [[0, 0], [110, 0], [-110, 0], [0, 50], [0, -50]]) { const f = summon(o, 'sm_darkfield', { x: cx + dx, y: clamp(o.y + dy, 8, DEPTH - 8) }); if (f) { f.dmg = 0.45 * e.mul; f.life = 4; } } })] }); } };
@@ -48,9 +48,22 @@ SUMMON_DEFS.sm_aqueris.cmds = { special(s, arg) { smFront(s, arg); summonAct(s, 
 SUMMON_DEFS.sm_flamehulk.cmds = { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'club', dur: 1.0, superArmor: true, events: [evAt(0.42, e => { sfx.hit('fire', true); cam.shake = Math.max(cam.shake, 6);
   fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#ff8a3a', a0: -1.6, a1: 1.2, r: 170, w: 26, off: [10, 80], dur: 0.26 }); fxBurst(e.x + e.face * 110, e.y, 50, 220, '#ffb060');
   summonArea(e, e.x + e.face * 110, e.y, 150, { dmg: 3.2, launch: 320, knock: 120, hs: 0.1, big: 1.4, elem: 'fire', type: 'mag', downHit: true }, { zMax: 200, status: 'burn', sdur: 3, dps: 0.08 }); })] }); } };
-SUMMON_DEFS.sm_echeverria.cmds = { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'cast', dur: 1.6, superArmor: true, events: [...Array.from({ length: 8 }, (_, i) => evAt(0.3 + i * 0.14, e => { const [el, col] = ELEM4[i % 4], f = i % 2 ? -e.face : e.face;
-  sfx.zap(); fxBeam(e.x + f * 30, e.y + ((i % 4) - 1.5) * 12, e.z + 80, 420, f, { w: 26, col, dur: 0.2 });
-  for (const t of ents) if (foe(e.owner, t) && !t.dead && (t.x - e.x) * f > 0 && Math.abs(t.x - e.x) < 440 && Math.abs(t.y - e.y) < 70 && t.z < 200) summonHit(e, t, { dmg: 0.9, stun: 0.4, knock: 20, hs: 0.03, elem: el, type: 'mag', col }); }))] }); } };
+// 伊伽贝拉附灵“四属性旋转激光”：火 / 冰 / 光 / 暗四道激光（相隔 90°）从她身上射出，绕着她在地面平面上转一圈；每道激光扫过敌人时打一下
+function echeRotBeams(e, o) {
+  const L = o.len || 420, n = o.n || 4, dur = o.dur || 1.2, spin = (o.turns || 1) * TAU / dur, a0 = e.face > 0 ? 0 : Math.PI, last = new Map();
+  const beam = (i, t) => a0 + i * TAU / n + spin * t * (e.face > 0 ? 1 : -1);
+  addFx({ x: e.x, y: e.y + 1, z: 0, dur, e, update() { const t = this.t, E = this.e; if (E.gone) return;
+      for (const tg of ents) { if (!foe(E.owner, tg) || tg.dead || tg.z > 220) continue; const dx = tg.x - E.x, dy = (tg.y - E.y) / GR, d = Math.hypot(dx, dy); if (d > L + tg.w || d < 1) continue;
+        const phi = Math.atan2(dy, dx);
+        for (let i = 0; i < n; i++) { let da = (phi - beam(i, t)) % TAU; if (da > Math.PI) da -= TAU; if (da < -Math.PI) da += TAU;
+          const k = tg.id * 8 + i; if (Math.abs(da) < 0.16 + tg.w / Math.max(d, 40) && !(game.t - (last.get(k) ?? -9) < dur * 0.6)) { last.set(k, game.t); const [el, col] = o.elems[i % o.elems.length];
+            summonHit(E, tg, { dmg: o.dmg, stun: 0.4, knock: 10, hs: 0.03, elem: el, type: 'mag', col }); } } } },
+    draw(c) { const E = this.e, k = this.t / this.dur, X = sx(E.x), Y = sy(E.y, E.z + 70), a = k < 0.1 ? k / 0.1 : k > 0.88 ? (1 - k) / 0.12 : 1;
+      for (let i = 0; i < n; i++) { const th = beam(i, this.t), vx = Math.cos(th) * L, vy = Math.sin(th) * L * GR, [, col] = o.elems[i % o.elems.length];
+        drawSpr(c, fxTint('laser', col), X, Y, Math.hypot(vx, vy), o.w || 30, { ax: 0, ay: 0.5, rot: Math.atan2(vy, vx), alpha: a }); } } });
+}
+SUMMON_DEFS.sm_echeverria.cmds = { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'cast', dur: 1.6, superArmor: true, events: [evAt(0.3, e => { sfx.zap(); fxShock(e.x, e.y, 120, '#ffd070'); echeRotBeams(e, { elems: ELEM4, dmg: 0.9, dur: 1.2 }); }),
+  ...[0.55, 0.85, 1.15].map(t => evAt(t, () => sfx.zap()))] }); } };
 // ---- 狂化黑月（露易丝暴走 15 秒）：霸体、换色，招式换成蚀枪 / 月之破碎 / 追踪月光 ----
 const luiseFrenzy = s => s.frenzyT > game.t;
 for (const A of SUMMON_DEFS.sm_luise.attacks) { const c0 = A.cond; A.cond = (s, t) => !luiseFrenzy(s) && (!c0 || c0(s, t)); }
@@ -89,7 +102,7 @@ function eclipseMoonFx(x, y, dur, fall) {
     c.fillStyle = '#0a0612'; c.beginPath(); c.arc(X, Y, R, 0, TAU); c.fill(); c.strokeStyle = '#d0b0ff'; c.lineWidth = 3; c.stroke(); c.restore(); } });
 }
 defSummon('sm_lamos', { kind: 'follower', name: '逆月者拉莫斯', bundle: 'lamos', model: () => summonSprite('lamos', {}, ECL, lamAnims()), clips: () => summonClipsFor(lamAnims()),
-  w: 18, d: 14, h: 172, shadowR: 22, speed: 170, runSpeed: 360, pref: 70, sight: 720, life: 200, max: 1, col: ECL, tags: ['awaken'],
+  w: 18, d: 14, h: 172, shadowR: 22, speed: 170, runSpeed: 360, pref: 70, sight: 720, life: 200, max: 1, col: ECL, tags: ['awaken'], ai: smAI,
   onSpawn: s => { s.superArmor = Infinity; s.statusImmune = BM_FORM_IMMUNE; },
   update: s => { if (!s.upGo && s.life - s.lifeT < 1.2 && s.life > 5) { s.upGo = true; summonAct(s, { clip: 'lamRise', dur: 1.2, superArmor: true, events: [evAt(0.5, e => lamPillar(e.owner, e.x, e.y, e.mul))] }); } },
   onEnd: (s, why) => { if (!s.upGo && (why === 'cmd' || why === 'replaced' || why === 'dead')) lamPillar(s.owner, s.x, s.y, s.mul); },
@@ -142,21 +155,53 @@ SUMMON_DEFS.sm_echeverria.cmds.supreme = (s, arg) => { const o = s.owner, k = (a
     summonArea(e, o.x, o.y, 220, { dmg: 6 * k, launch: 420, knock: 160, hs: 0.12, big: 1.8, elem: 'dark', type: 'mag', downHit: true }, { zMax: 260 }); })] }); };
 defSkill('sm_supreme', { name: '至高精灵王', cls: 'mage', job: SM, tier: 3, lvReq: 29, mp: 150, cd: 50, type: 'mag', col: '#ffd070', req: p => summonsOf(p, 'sm_echeverria').length > 0 || '伊伽贝拉不在场',
   desc: '伊伽贝拉在场时才能用：她被注入“蚀”，向两侧放出多束超高密度激光，最后和你一起引爆。', pow: lv => skillDmg(30, 3, lv), ai: { kind: 'aoe', r: [0, 460], dy: 80 }, act: smOrder('sm_echeverria', 'supreme', '至高精灵王') });
-// ---- 三觉：魔月·德拉里昂（插图式演出：召唤阵 → 把敌人逆召唤到月面 → 德拉里昂喷出蚀之波涛 → 张开巨口吞掉月亮；全程无敌） ----
+// ---- 三觉：魔月·德拉里昂（插图式演出，官方四步：召唤阵 → 敌人被逆召唤到月面 → 德拉里昂现身、喷出蚀之波涛 → 蚀化成牙齿，张开巨口吞掉整个月亮；全程无敌） ----
+// 演出层画在所有实体后面（y = -20）：敌人和你照常画在上面，看起来就是站在月面上被波涛卷过、最后连同月亮一起被吞掉
 function delarionFx(cx, cy, dur) {
   const stars = Array.from({ length: 60 }, () => [Math.random(), Math.random() * 0.6, 0.5 + Math.random()]);
-  addFx({ x: cx, y: -20, z: 0, dur, draw(c) { const t = this.t, k = t / this.dur, a = Math.min(1, t / 0.4) * (k > 0.93 ? (1 - k) / 0.07 : 1), W = c.canvas.width, H = c.canvas.height;
-    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 0.86 * a; c.fillStyle = '#05030c'; c.fillRect(0, 0, W, H);
+  const craters = Array.from({ length: 16 }, () => [Math.random(), Math.random(), 0.02 + Math.random() * 0.05]);
+  const worms = Array.from({ length: 28 }, () => [Math.random(), 0.9 + Math.random() * 0.7, rnd(0.6, 1.5), Math.random() < 0.5 ? -1 : 1]);
+  addFx({ x: cx, y: -20, z: 0, dur, draw(c) { const t = this.t, k = t / this.dur, a = Math.min(1, t / 0.35) * (k > 0.93 ? (1 - k) / 0.07 : 1), W = c.canvas.width, H = c.canvas.height;
+    const hor = H * (FLOOR_Y - 26) / WH, zoom = easeOut(clamp((t - 1.7) / 0.5, 0, 1)), bite = t >= 2.6;
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 0.92 * a; c.fillStyle = '#05030c'; c.fillRect(0, 0, W, H);
     c.globalCompositeOperation = 'lighter'; c.fillStyle = '#ffffff'; for (const [u, v, s] of stars) { c.globalAlpha = a * (0.3 + 0.5 * Math.abs(Math.sin(game.t * 2 + u * 30))); c.fillRect(u * W, v * H, s * 2, s * 2); }
-    // 月亮
-    const mx = W * 0.5, my = H * 0.3, mr = H * 0.2, eat = clamp((t - 2.6) / 0.5, 0, 1);
-    c.globalCompositeOperation = 'source-over'; c.globalAlpha = a * (1 - eat); c.fillStyle = '#e8e4f0'; c.beginPath(); c.arc(mx, my, mr, 0, TAU); c.fill();
-    c.fillStyle = '#bdb6cc'; for (const [dx, dy, r] of [[-0.3, -0.2, 0.18], [0.25, 0.1, 0.22], [-0.05, 0.35, 0.12], [0.35, -0.35, 0.1]]) { c.beginPath(); c.arc(mx + dx * mr, my + dy * mr, r * mr, 0, TAU); c.fill(); }
-    // 巨口：上下两排黑色的颚，1.4 秒张开，2.6 秒合上
-    const open = t < 1.4 ? 0 : t < 2.1 ? (t - 1.4) / 0.7 : Math.max(0, 1 - (t - 2.6) / 0.35), gap = mr * 1.6 * open, show = clamp((t - 1.2) / 0.3, 0, 1) * a;
-    if (show > 0) { c.globalAlpha = show; c.fillStyle = '#120618';
-      for (const s of [-1, 1]) { const jy = my + s * (gap / 2 + 20); c.beginPath(); c.moveTo(mx - W * 0.45, jy + s * H * 0.5); c.lineTo(mx - W * 0.45, jy); for (let i = 0; i <= 12; i++) { const x = mx - W * 0.45 + (W * 0.9) * i / 12; c.lineTo(x - W * 0.0375, jy); c.lineTo(x, jy - s * 34); } c.lineTo(mx + W * 0.45, jy + s * H * 0.5); c.closePath(); c.fill(); }
-      c.globalCompositeOperation = 'lighter'; c.globalAlpha = show * 0.8; c.fillStyle = '#c050ff'; for (const s of [-1, 1]) c.fillRect(mx - W * 0.1 + s * W * 0.22, my - gap / 2 - 60, 26, 10); }
+    c.globalCompositeOperation = 'source-over';
+    // 德拉里昂：从月平线后面升起的巨大魔物，身体由“蚀”（黑紫色的虫）聚成，两只发光的眼睛；0.9 秒起张开嘴喷出蚀之波涛（先画它，月面再盖住它的下半身）
+    const rise = easeOut(clamp((t - 0.35) / 0.7, 0, 1)), headA = a * rise * (1 - clamp((t - 1.75) / 0.25, 0, 1));
+    if (headA > 0 && zoom < 1) { const S = H * 0.3, hx = W / 2, hy = hor - S * 0.5 + (1 - rise) * S * 1.4, open = clamp((t - 0.85) / 0.2, 0, 1) * (t < 1.7 ? 1 : 0);
+      c.globalAlpha = headA; c.fillStyle = '#1a0a28'; c.beginPath();
+      for (let i = 0; i < 9; i++) { const u = -1.1 + i * 0.275, bx = hx + u * S, by = hy - Math.sqrt(Math.max(0, 1 - (u / 1.3) ** 2)) * S * 0.8; c.moveTo(bx - S * 0.12, by + 10); c.lineTo(bx + u * S * 0.1, by - S * (0.3 + 0.14 * Math.abs(Math.sin(i * 2.3)))); c.lineTo(bx + S * 0.12, by + 10); } c.fill();
+      c.fillStyle = '#12061c'; c.beginPath(); c.ellipse(hx, hy, S * 1.3, S * 0.85, 0, 0, TAU); c.fill();
+      c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#8a4ad0'; c.lineWidth = 3; c.beginPath(); c.ellipse(hx, hy, S * 1.3, S * 0.85, 0, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
+      c.fillStyle = '#e070ff'; for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(hx + sd * S * 0.2, hy - S * 0.12); c.lineTo(hx + sd * S * 0.72, hy - S * 0.36); c.lineTo(hx + sd * S * 0.62, hy - S * 0.08); c.closePath(); c.fill();
+        c.globalAlpha = headA * 0.3; c.beginPath(); c.arc(hx + sd * S * 0.5, hy - S * 0.2, S * 0.24, 0, TAU); c.fill(); c.globalAlpha = headA; }
+      c.globalCompositeOperation = 'source-over';
+      if (open > 0) { const my2 = hy + S * 0.36, mw = S * 0.85 * open, mh = S * 0.26 * open; c.fillStyle = '#3a0a50'; c.beginPath(); c.ellipse(hx, my2, mw, mh, 0, 0, TAU); c.fill();
+        c.fillStyle = '#d8c8f0'; c.beginPath(); for (let i = 0; i < 8; i++) { const x = hx - mw * 0.85 + mw * 1.7 * (i + 0.5) / 8; c.moveTo(x - 7, my2 - mh * 0.75); c.lineTo(x, my2 - mh * 0.75 + 16 * open); c.lineTo(x + 7, my2 - mh * 0.75); } c.fill();
+        c.globalCompositeOperation = 'lighter'; c.globalAlpha = headA * 0.6; c.fillStyle = '#c070ff'; c.beginPath(); c.ellipse(hx, my2 + mh * 0.2, mw * 0.6, mh * 0.45, 0, 0, TAU); c.fill(); c.globalCompositeOperation = 'source-over'; c.globalAlpha = headA; }
+      c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#7a3ab8'; c.lineWidth = 2.5; for (const [u, r, v, d] of worms) { const an = u * TAU + game.t * v * d, wx = hx + Math.cos(an) * S * 1.4 * r, wy = hy - S * 0.15 + Math.sin(an) * S * 0.75 * r;
+        c.beginPath(); c.moveTo(wx - 7, wy); c.quadraticCurveTo(wx - 2, wy - 6 * d, wx + 2, wy); c.quadraticCurveTo(wx + 6, wy + 6 * d, wx + 10, wy); c.stroke(); }
+      c.globalCompositeOperation = 'source-over'; }
+    // 月面（被逆召唤过来的地面，敌人和你站在上面）：1.7 秒后镜头拉远，月面缩成一颗月亮
+    if (zoom < 1) { c.globalAlpha = a * (1 - zoom); const g = c.createLinearGradient(0, hor, 0, H); g.addColorStop(0, '#b8b3c6'); g.addColorStop(1, '#5a566a'); c.fillStyle = g;
+      c.beginPath(); c.moveTo(0, hor + 18); c.quadraticCurveTo(W / 2, hor - 22, W, hor + 18); c.lineTo(W, H); c.lineTo(0, H); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(70,64,90,0.55)'; for (const [u, v, r] of craters) { c.beginPath(); c.ellipse(u * W, hor + 30 + v * (H - hor - 40), r * W, r * W * 0.32, 0, 0, TAU); c.fill(); } }
+    const mx = W * 0.5, my = H * 0.42, mr = H * (0.2 + 0.5 * (1 - zoom));
+    if (zoom > 0 && !bite) { c.globalAlpha = a * zoom; c.fillStyle = '#e8e4f0'; c.beginPath(); c.arc(mx, my, mr, 0, TAU); c.fill();
+      c.fillStyle = '#bdb6cc'; for (const [dx, dy, r] of [[-0.3, -0.2, 0.18], [0.25, 0.1, 0.22], [-0.05, 0.35, 0.12], [0.35, -0.35, 0.1]]) { c.beginPath(); c.arc(mx + dx * mr, my + dy * mr, r * mr, 0, TAU); c.fill(); } }
+    // 蚀之波涛：从德拉里昂嘴里涌出，沿着月面从远处向镜头滚过来（伤害按波涛经过的节奏结算，见技能 update）
+    const wp = clamp((t - 0.95) / 0.75, 0, 1);
+    if (wp > 0 && wp < 1 && zoom < 1) { const wy = hor + (H - hor + 80) * easeIn(wp), th = 40 + 90 * wp; c.globalAlpha = a * (1 - zoom);
+      const g = c.createLinearGradient(0, wy - th * 2.2, 0, wy); g.addColorStop(0, 'rgba(40,8,60,0)'); g.addColorStop(0.6, 'rgba(70,16,110,0.75)'); g.addColorStop(1, 'rgba(90,24,140,0.95)'); c.fillStyle = g; c.fillRect(0, wy - th * 2.2, W, th * 2.2);
+      c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#d090ff'; c.lineWidth = 6; c.beginPath(); for (let x = 0; x <= W; x += 20) c.lineTo(x, wy - 12 * Math.abs(Math.sin(x * 0.018 + game.t * 9))); c.stroke();
+      c.strokeStyle = '#8a4ad0'; c.lineWidth = 3; c.beginPath(); for (let x = 0; x <= W; x += 20) c.lineTo(x, wy - th * 0.7 - 8 * Math.abs(Math.sin(x * 0.025 - game.t * 7))); c.stroke(); c.globalCompositeOperation = 'source-over'; }
+    // 蚀化成的牙齿：上下两排从月亮两侧合拢（1.9 秒张开，2.35~2.6 秒咬合 = 技能的最后一击），咬住之后月亮消失
+    const show = clamp((t - 1.85) / 0.2, 0, 1) * a, gap = show > 0 ? (t < 2.2 ? (mr * 2.4) * clamp((t - 1.85) / 0.35, 0, 1) : t < 2.35 ? mr * 2.4 : mr * 2.4 * Math.max(0, 1 - (t - 2.35) / 0.25)) : 0;
+    if (show > 0 && t < 3.0) { const ja = show * (t > 2.7 ? Math.max(0, 1 - (t - 2.7) / 0.3) : 1);
+      for (const s of [-1, 1]) { const jy = my + s * gap / 2; c.globalAlpha = ja; c.fillStyle = '#2a0c3c'; c.beginPath(); c.moveTo(mx - W * 0.45, jy + s * H * 0.6); c.lineTo(mx - W * 0.45, jy);
+        for (let i = 0; i <= 12; i++) { const x = mx - W * 0.45 + (W * 0.9) * i / 12; c.lineTo(x - W * 0.0375, jy); c.lineTo(x, jy - s * 40); } c.lineTo(mx + W * 0.45, jy + s * H * 0.6); c.closePath(); c.fill();
+        c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#b060ff'; c.lineWidth = 3; c.stroke(); c.globalCompositeOperation = 'source-over'; }
+      c.globalCompositeOperation = 'lighter'; c.globalAlpha = ja; c.fillStyle = '#e070ff'; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(mx + s * W * 0.2, my - gap / 2 - 70, 30, 9, s * 0.25, 0, TAU); c.fill(); } }
     c.restore(); } });
 }
 defSkill('sm_awaken3', { name: '魔月·德拉里昂', cls: 'mage', job: SM, tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 270, pvp: 0.45, type: 'mag', awaken: true, col: '#c050ff',

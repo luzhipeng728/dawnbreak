@@ -63,7 +63,7 @@ const R = await page.evaluate(() => {
   { const S0 = skills.wt_shululu, hp = S0.ms[0].hp; S0.recast = castSkill(p, 'wt_shululu'); run(20); S0.boomed = summonsOf(p, 'wt_shululu').length === 0; S0.dmg = Math.round(hp - S0.ms[0].hp); }
   cast('wt_missile', { force: 'great', mobs: [[420, 100], [520, 110], [600, 90]], frames: 150, after: s => { s.shock = ents.filter(e => e.status && e.status.shock).length; } });
   cast('wt_missile', { force: 'ok', air: true, frames: 120, tag: 'wt_missile_air' });
-  cast('wt_cloak', { mobs: [[360, 100]], frames: 70, during: s => { run(12); s.grab = !!p.grabbed; s.invul = p.invul > 0 ? true : { invul: p.invul, actT: p.actT, act: p.act && p.act.name, st: p.st, hs: p.hitstop }; } });
+  cast('wt_cloak', { mobs: [[360, 100]], frames: 70, during: s => { run(12); s.grab = !!(p.grabbed || (p.act && p.act.tg && p.act.tg.length)); s.invul = p.invul > 0 ? true : { invul: p.invul, actT: p.actT, act: p.act && p.act.name, st: p.st, hs: p.hitstop }; } });
   Math.random = () => 0.01; cast('wt_swatter', { force: 'ok', mobs: [[350, 100]], frames: 50, after: s => { s.mutant = summonsOf(p, 'wt_mut_gob').length; } }); Math.random = stub;
   Math.random = () => 0.01; cast('wt_swatter', { force: 'fail', tag: 'wt_swatter_fail', mobs: [[350, 100]], frames: 50, after: s => { s.enemyGoblin = ents.filter(e => e.team === 'e' && e.name === '变异哥布林').length; } }); Math.random = stub;
   cast('wt_swatter', { force: 'ok', air: true, tag: 'wt_swatter_air', mobs: [[350, 100]], frames: 60 });
@@ -123,7 +123,7 @@ report('远古魔法书 / 扫把粉末：BUFF 生效、普攻换成粉末版', S
 report('扫把粉末：普攻变独立攻击并附带中毒', o.powderHit.poison && o.powderHit.type === 'indep', o.powderHit);
 report('舒露露：嘲讽敌人、再按一次引爆', S.wt_shululu.alive && S.wt_shululu.taunt && S.wt_shululu.recast && S.wt_shululu.boomed, S.wt_shululu);
 report('改良魔法星弹：大成功附加感电、连锁跳到多个敌人', S.wt_missile.shock >= 2, S.wt_missile);
-report('暗影斗篷：抓取 + 无敌', S.wt_cloak.grab && S.wt_cloak.invul, S.wt_cloak);
+report('暗影斗篷：卷住敌人（多目标特殊抓取）+ 无敌', S.wt_cloak.grab && S.wt_cloak.invul, S.wt_cloak);
 report('苍蝇拍：成功召出友方哥布林弓手、失败召出敌方哥布林', S.wt_swatter.mutant === 1 && S.wt_swatter_fail.enemyGoblin === 1, { ok: S.wt_swatter, fail: S.wt_swatter_fail, air: S.wt_swatter_air });
 report('熔岩药瓶：成功生成熔岩；失败熏黑', S.wt_lava.field === 1 && S.wt_lava_fail.sooty, [S.wt_lava, S.wt_lava_fail]);
 report('旋转扫把（空中）：落地', S.wt_spin_air.landed, S.wt_spin_air);

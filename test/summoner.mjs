@@ -27,7 +27,13 @@ const R = await page.evaluate(() => {
   // 交感：心灵感应 6 级时，库鲁塔的专属招（recast 钩子还没进 main 时直接下命令）
   const ku = summonsOf(p, 'sm_kuruta')[0]; const n = summonCmd(p, 'sm_kuruta', 'special', {}); run(2); out.cmd = { n, acting: !!(ku && ku.act) };
   // 伺机而动：停火
-  cast('sm_wait'); run(120); out.hold = !!(p.summonMode && p.summonMode.hold); out.holdActing = ents.filter(e => e.summon && e.st === 'act' && !e.act.name.startsWith('sm_')).length; cast('sm_wait');
+  cast('sm_wait'); run(120); out.hold = !!(p.summonMode && p.summonMode.hold); out.holdActing = ents.filter(e => e.summon && e.st === 'act' && !e.act.name.startsWith('sm_')).length;
+  // 伺机而动：原地停下（你走开也不跟过来）
+  { const F = summonsOf(p).filter(s => s.kind === 'follower' && s.skey !== 'sm_hilun'), x0 = F.map(s => s.x), px = p.x; p.x -= 250; run(90); out.holdStay = F.every((s, i) => Math.abs(s.x - x0[i]) < 2); p.x = px; }
+  cast('sm_wait');
+  // 交感是无动作下令：放别的技能的过程中也能下令，不打断自己的动作
+  { p.setState('idle'); p.act = null; p.cool = {}; castSkill(p, 'mg_orb', false, 's0'); run(3); const a0 = p.act && p.act.name, fr = summonsOf(p, 'sm_frit')[0], cc = canCancelInto(p, 'sm_frit'); castSkill(p, 'sm_frit', false, 's1'); run(2);
+    out.instant = { a0, cc, a: p.act && p.act.name, fritAct: !!(fr && fr.act && fr.act.name === 'roar') }; }
   // 魔力印记：挂上印记、成为集火目标
   p.x = m.x - 200; p.y = m.y; p.face = 1;
   cast('sm_mark'); out.mark = { attached: summonsOf(p, 'sm_markT').length, target: !!(p.summonMode && p.summonMode.mark)};
@@ -66,7 +72,8 @@ report('全部召唤兽都能召出', Object.values(o.spawned).every(n => n >= 1
 report('召唤兽用正式精灵美术（不是兜底光球）', Object.values(o.sprite).every(Boolean), o.sprite);
 report('召唤兽会出手、打得出伤害', o.dealt && o.attackers >= 5, { dealt: o.dealt, attackers: o.attackers, total: o.total });
 report('交感 / 命令：库鲁塔放专属招', o.cmd.n === 1 && o.cmd.acting, o.cmd);
-report('伺机而动：停火', o.hold && o.holdActing === 0, { hold: o.hold, acting: o.holdActing });
+report('伺机而动：停火、原地停下', o.hold && o.holdActing === 0 && o.holdStay, { hold: o.hold, acting: o.holdActing, stay: o.holdStay });
+report('交感：放技能中也能下令、不打断自己', o.instant.a0 === 'mg_orb' && o.instant.cc && o.instant.a === 'mg_orb' && o.instant.fritAct, o.instant);
 report('魔力印记：挂上并成为集火目标', o.mark.attached === 1 && o.mark.target, o.mark);
 report('精灵献祭：阵里的下级精灵被引爆', o.sacrifice.after < o.sacrifice.before, o.sacrifice);
 report('绝对支配：远处的召唤兽吃到 40 秒鞭挞增益、再按追加上挑', o.domin.cancel && o.domin.whipT >= 39 && o.domin.up === 'mg_whipUp', o.domin);

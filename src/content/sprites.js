@@ -17,17 +17,27 @@ const SPR_ANIMS = {
     atk1: [['a1_1', 0], ['a1_2', 0.05], ['a1_3', 0.12]], atk2: [['a2_1', 0], ['a2_2', 0.05], ['a2_3', 0.14]], atk3: [['a3_1', 0], ['a3_2', 0.12]],
     atk4: [['a2_1', 0], ['atk4', 0.05], ['a1_3', 0.24]], dash: [['dash1', 0], ['dash2', 0.06]], flurry: { fps: 12.5, frames: ['stab1', 'stab2'] },
     jatk: [['jatk1', 0], ['jatk2', 0.06], ['jatk3', 0.16]], up: [['up1', 0], ['up2', 0.09], ['up3', 0.2]], rise: [['rise1', 0], ['rise2', 0.08]],
-    a3slam: [['slam1', 0], ['slam2', 0.3]], iai: [['iai1', 0], ['iai2', 0.4]], focus: [['focus', 0]],
+    a3slam: [['slam1', 0], ['slam2', 0.3]], focus: [['focus', 0]],
     ghost: [['ghost1', 0], ['ghost2', 0.13]], guard: [['guard', 0]], silver: [['silver', 0]], silverLand: [['slam2', 0]],
     aircut: [['jatk1', 0], ['jatk2', 0.03], ['jatk4', 0.13], ['jatk2', 0.23], ['jatk4', 0.33], ['jatk3', 0.43]],
     rip: [['rip1', 0], ['rip2', 0.2]], cross: [['cross1', 0], ['cross2', 0.15]],
     leap: [['leap1', 0]], leapLand: [['leap2', 0]], dragon: [['dragon', 0]], phantom: { fps: 14, frames: ['phantom1', 'phantom2', 'atk4'] }, backslash: [['backslash', 0]],
     awkB: [['awkB1', 0], ['awk1', 0.95], ['iai2', 1.2], ['awk2', 2.4]],
     roar: [['roar', 0]], soulhand: [['grab1', 0], ['grab2', 0.4]], outrage: [['charge', 0], ['burst', 0.18]], bloodblade: [['dash1', 0], ['dragon', 0.08], ['bladeW', 0.4]],
-    quake: [['quake1', 0]], quakeLand: [['slam2', 0]], bzAwk: [['bzAwk1', 0], ['bzAwk2', 1.72]] },
+    quake: [['quake1', 0]], quakeLand: [['slam2', 0]], bzAwk: [['bzAwk1', 0], ['bzAwk2', 1.72]],
+    // 官方对齐（剑士第 1 阶段）：空之连刃、剑魂里·鬼剑术 / 肩撞 / 拔刀回旋、狂战士二刀流与新技能
+    jatkB: [['jatk2', 0], ['jatk4', 0.04]], jatkC: [['jatk1', 0], ['jatk3', 0.07]],
+    rk1: [['a1_1', 0], ['rk1', 0.04]], rk2: [['rk1', 0], ['rk2', 0.04]], rk3: [['a3_1', 0], ['rk3', 0.05]], rk4: [['rk3', 0], ['rk4', 0.07]],
+    rush: [['rush1', 0]], iai: [['iai1', 0], ['iaiSpin', 0.4]], meteorAim: [['meteorAim', 0]], hakuu: [['hakuu', 0]],
+    bzA1: [['dual3', 0], ['dual1', 0.05]], bzA2: [['dual1', 0], ['dual2', 0.05]], bzA3: [['dual2', 0], ['dual3', 0.06]], bzA4: [['dual3', 0], ['dual4', 0.07]],
+    dual1: [['dual1', 0]], dual2: [['dual2', 0]], whirl: [['whirl', 0]], thirst: [['thirst', 0]], twister: [['twister', 0]], enrage: [['enrage', 0], ['dual4', 0.12]],
+    // 阿修罗
+    asBurst: [['asBurst', 0]], asOrb: [['asOrb1', 0], ['asOrb2', 0.2]], asPlant: [['asPlant', 0]], asEvil: [['rk1', 0], ['asEvil', 0.08]], asPull: [['asPull', 0]], asSeal: [['asSeal', 0]], asAura: [['asAura', 0]],
+    // 鬼泣
+    sbSummon: [['sbSummon', 0]], sbPlace: [['sbPlace', 0]], sbWhip: [['sbWhip1', 0], ['sbWhip2', 0.26]], sbTomb: [['sbTomb', 0]], sbKaro: [['sbKaro', 0]], sbDescent: [['sbDescent', 0]], sbFerry: [['sbFerry', 0]] },
   gun: { ...BASE_ANIMS,
     gshot: [['shoot1', 0], ['shoot2', 0.03], ['shoot1', 0.12]], gup: { fps: 14, frames: ['shootUp1', 'shootUp2'] }, gdown: [['jatk1', 0], ['jatk2', 0.03], ['jatk3', 0.14]],
-    gaim: [['snipe', 0]], kick: [['kick1', 0], ['kick2', 0.08]], spinkick: { fps: 12, frames: ['sk1', 'sk2', 'kick3'] }, slide: [['slide1', 0], ['slide2', 0.06]],
+    gaim: [['snipe', 0]], holster: [['reload', 0]], kick: [['kick1', 0], ['kick2', 0.08]], spinkick: { fps: 12, frames: ['sk1', 'sk2', 'kick3'] }, slide: [['slide1', 0], ['slide2', 0.06]],
     gthrow: [['throw1', 0], ['throw2', 0.26]], ghawk: [['hawk1', 0], ['hawk2', 0.3]], gatling: { fps: 20, frames: ['gat1', 'gat2'] }, gbuff: [['twirl', 0]],
     flame: [['flame', 0]], flashKick: [['knee1', 0], ['flash', 0.06]], stomp: [['stomp1', 0], ['stomp2', 0.12]], bbq: [['bbq', 0]],
     aimShot: [['multi', 0], ['shoot2', 0.3], ['shoot1', 0.4]], gunDance: { fps: 12, frames: ['rapid1', 'backshot', 'rapid2', 'dual'] },
@@ -57,6 +67,8 @@ const SPR_ANIMS = {
     chargeW: { fps: 3, frames: ['low1', 'low1'] }, charge: { fps: 8, frames: ['low2', 'low1'] }, roar: [['cast1', 0], ['cast2', 0.45]],
     cast: { fps: 5, frames: ['cast1', 'cast2'] }, heal: { fps: 5, frames: ['cast1', 'cast2'] } },
 };
+// 通用技能（后跳-强化等）挂到每个职业的技能表：这里所有职业 / 转职文件都已加载
+addCommonSkills();
 // 没有骨骼片段的动画自动补一个（时长覆盖所有帧，循环动画按帧数 / fps）
 for (const c of ['sword', 'gun', 'mage']) {
   CLIPS[c] = CLIPS[c] || { ...HUMAN_CLIPS };

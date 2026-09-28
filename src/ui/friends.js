@@ -1,5 +1,5 @@
 /* =====================================================================
-   好友：好友列表窗口（在线状态、在哪、私聊 / 邀请组队 / 决斗 / 删除）、好友申请、按名字加好友
+   好友：好友列表窗口（在线状态、在哪、前往 / 私聊 / 邀请组队 / 决斗 / 删除）、好友申请、按名字加好友
    玩家菜单：城镇里点其他玩家（或好友列表 / 队伍窗口里的名字）弹出：查看信息、私聊、加好友、邀请组队、发起决斗
    ===================================================================== */
 const netFriends = {
@@ -15,7 +15,7 @@ const netFriends = {
     } catch (e) { /* 断网时保留旧列表 */ }
   },
   async add(name) {
-    try { const r = await net.api('POST', '/api/friends', { user: name }); toastMsg(r.state === 'ok' ? `你和 ${name} 成为了好友` : `已向 ${name} 发送好友申请`, '#8aff9a'); this.load(); return true; }
+    try { const r = await net.api('POST', '/api/friends', { user: name }); const who = r.name && r.name !== name ? `${name}（${r.name}）` : name; toastMsg(r.state === 'ok' ? `你和 ${who} 成为了好友` : `已向 ${who} 发送好友申请`, '#8aff9a'); this.load(); return true; }
     catch (e) { toastMsg(e.message, '#ff9a6a'); return false; }
   },
   async accept(name) { try { await net.api('POST', '/api/friends/accept', { user: name }); toastMsg(`你和 ${name} 成为了好友`, '#8aff9a'); this.load(); } catch (e) { toastMsg(e.message, '#ff9a6a'); } },
@@ -45,7 +45,7 @@ Object.assign(menus, {
   w_friends() {
     if (!netOn()) return null;
     if (!netFriends.loaded) netFriends.load();
-    const addIn = h('input', { class: 'txt', placeholder: '输入用户名加好友', maxlength: 16, spellcheck: 'false' });
+    const addIn = h('input', { class: 'txt', placeholder: '账号名或角色名', maxlength: 16, spellcheck: 'false' });
     const doAdd = () => { const n = addIn.value.trim(); if (!n) return; netFriends.add(n).then(ok => { if (ok) addIn.value = ''; }); };
     addIn.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') doAdd(); if (e.key === 'Escape') this.close('friends'); });
     const rows = [];
@@ -64,6 +64,7 @@ Object.assign(menus, {
         h('div', { class: 'col', style: 'gap:0;min-width:0;flex:1' },
           h('span', {}, h('b', { class: 'frname', onclick: ev => netPlayerMenu({ id: f.id, name: f.name, char: f.char }, ev) }, f.name), f.char ? h('span', { class: 'small dim' }, '  ' + netCharLine(f.char)) : null),
           h('span', { class: 'small', style: `color:${f.online ? '#8aff9a' : '#8a8a8a'}` }, where)),
+        f.online && f.scene && SCENES[f.scene] ? h('button', { class: 'btn', style: 'border-color:#ffd23a;color:#ffe070', title: '自动走到好友身边（按方向键取消；聊天里也可以用 /找 名字）', onclick: () => { sfx.click(); if (guide.goFriend(f)) this.close('friends'); } }, '前往') : null,
         f.online ? h('button', { class: 'btn', title: '私聊', onclick: () => chat.whisper(f.name) }, '私聊') : null,
         f.online ? h('button', { class: 'btn', title: '邀请组队', onclick: () => netPartyInvite(f.id, f.name) }, '组队') : null,
         f.online ? h('button', { class: 'btn', title: '好友决斗', onclick: () => netDuelAsk({ id: f.id, name: f.name, char: f.char }) }, '决斗') : null,
@@ -78,7 +79,7 @@ Object.assign(menus, {
   w_pmenu(p) {
     if (!p) return null;
     const B = (label, fn, cls = '') => h('button', { class: 'btn ' + cls, onclick: () => { sfx.click(); this.close('pmenu'); fn(); } }, label);
-    const inParty = netParty.has(p.id), friend = netFriends.isFriend(p.id);
+    const inParty = netParty.has(p.id), friend = netFriends.isFriend(p.id), lead = inParty && netParty.isLeader();
     const body = h('div', { class: 'col pmenu' },
       p.char ? h('div', { class: 'small', style: 'text-align:center;color:#ffe8a8' }, netCharLine(p.char)) : null,
       h('div', { class: 'small dim', style: 'text-align:center' }, `账号 ${p.name}${friend ? ' · 好友' : ''}${inParty ? ' · 队友' : ''}`),
@@ -86,6 +87,8 @@ Object.assign(menus, {
       B('私聊', () => chat.whisper(p.name)),
       friend ? null : B('加为好友', () => netFriends.add(p.name)),
       inParty ? null : B('邀请组队', () => netPartyInvite(p.id, p.name)),
+      lead ? B('移交队长', () => net.send({ t: 'party:lead', id: p.id })) : null,
+      lead ? B('请离队伍', () => net.send({ t: 'party:kick', id: p.id }), 'red') : null,
       B('发起决斗', () => netDuelAsk(p)));
     return this.win(p.char ? p.char.name : p.name, body, { w: 12, drag: false });
   },

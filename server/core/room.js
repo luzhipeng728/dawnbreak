@@ -145,8 +145,8 @@ export default {
     'room:close'(c, msg, ctx) { const A = ctx.mods.room, R = A.of(c.user.id); if (R && R.host === c.user.id) A.close(R, str(msg.why, 20) || 'end'); },
     'duel:ask'(c, msg, ctx) {
       const A = ctx.mods.room, me = c.user.id;
-      const to = typeof msg.to === 'number' ? ctx.findUser(msg.to) : ctx.findUser(str(msg.to, 32));
       const fail = text => c.send({ t: 'duel:note', text });
+      let to; try { to = typeof msg.to === 'number' ? ctx.findUser(msg.to) : ctx.findPlayer(str(msg.to, 32)); } catch (e) { return fail(e.message); }   // 账号名或角色名
       if (!to || to.id === me) return fail('没有这个玩家');
       if (!ctx.isOnline(to.id)) return fail(`${to.name} 不在线`);
       if (A.of(me)) return fail('你正在地下城或决斗中');

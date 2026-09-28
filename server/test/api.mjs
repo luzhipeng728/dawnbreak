@@ -80,6 +80,14 @@ try {
   ok((await api('POST', '/api/friends/accept', { user: 'alice' }, B)).status === 200, 'bob 同意');
   ok((await api('GET', '/api/friends', null, A)).data.friends[0].name === 'bob', '成为好友');
   ok(app.ctx.mods.social.friendsOf(1).includes(2), 'ctx.mods.social.friendsOf');
+  // 按角色名加好友（存档里的角色名）；同名多个时要求账号名；通配符不生效
+  const C = (await api('POST', '/api/login', { user: 'carol', pass: 'secret3' })).data.token;
+  const byChar = await api('POST', '/api/friends', { user: '测试剑' }, C);
+  ok(byChar.status === 200 && byChar.data.state === 'out' && byChar.data.name === 'alice', '按角色名“测试剑”找到 alice 并发出申请');
+  ok((await api('POST', '/api/friends', { user: '%' }, C)).status === 404, '通配符 % 不会匹配到任何人');
+  await api('PUT', '/api/saves', { data: { v: 4, cur: 0, chars: [{ cls: 'gun', name: '测试剑', lvl: 1, inv: [], equip: {} }] }, baseUpdatedAt: 0 }, C);
+  const dup = await api('POST', '/api/friends', { user: '测试剑' }, B);
+  ok(dup.status === 400 && /账号名/.test(dup.data.error), '同名角色有多个：提示输入账号名');
   // ---- WS ----
   const ca = await conn(A), cb = await conn(B);
   ok(!!(await ca.wait(m => m.t === 'welcome')), 'WS 鉴权 alice');

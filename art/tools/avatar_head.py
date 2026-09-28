@@ -154,8 +154,10 @@ def preview(d, out, path):
     M.save(path)
 
 def main():
-    for key in sys.argv[1:]:
-        meta, out, d = heads_for_dir(key)
+    args, only = sys.argv[1:], None
+    if '--frames' in args: i = args.index('--frames'); only = args[i + 1].split(','); args = args[:i] + args[i + 2:]   # --frames a,b,c：只补这几帧（不动已有帧的锚点）
+    for key in args:
+        meta, out, d = heads_for_dir(key, only)
         for fn, H in out.items():
             if H['q'] <= Q_MAX:
                 meta['frames'][fn]['head'] = {k: H[k] for k in ('x', 'y', 'a')}

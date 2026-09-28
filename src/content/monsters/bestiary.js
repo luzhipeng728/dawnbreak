@@ -84,6 +84,8 @@ function statusOnHit(t, a, dmg, h) {
     if (t.hp <= 0 && !t.dead) { t.hp = 0; killEnt(t, src || t, {}); }
   }
 }
+// 隐身（机械师「伪装」等）：cloakT = 隐身结束时间，cloakRevT = 出招暂时现形结束时间；隐身的目标怪物找不到（乱走、不出招），挑衅优先
+function cloaked(e) { return !!(e && e.cloakT > game.t && !(e.cloakRevT > game.t)); }
 // 挑衅：怪物 AI 的目标
 const tauntSrc = m => { const s = m.status && m.status.taunt && m.status.taunt.src; return s && !s.dead && !s.remove ? s : null; };
 function updateStatus(t, dt) {

@@ -88,12 +88,11 @@ function resolveHits() {
       for (const t of ents) {
         if (!canHit(a, t, h) || !overlaps(B, t)) continue;
         const key = t.id * 100 + hi, last = a.hitsDone.get(key);
-        if (last !== undefined) {
-          if (!h.rep || a.actT - last < h.rep) continue;
-          if (h.max) { const nk = key + 50, n = a.hitsDone.get(nk) || 1; if (n >= h.max) continue; a.hitsDone.set(nk, n + 1); }
-        }
-        const G = act.hitGroup;   // 共享“已命中”表（召唤框架 hitGroup：本体和召唤物同时出招，同一目标只结算一次）
-        if (G) { const l = G.last.get(t.id); if (l !== undefined && game.t - l < G.win) continue; G.last.set(t.id, game.t); }
+        if (last !== undefined && (!h.rep || a.actT - last < h.rep)) continue;
+        const G = act.hitGroup;   // 共享“已命中”表（召唤框架 hitGroup：本体和召唤物同时出招，同一目标只结算一次）；在 max 计数之前判断，被去重的那一下不占次数
+        if (G) { const l = G.last.get(t.id); if (l !== undefined && game.t - l < G.win) continue; }
+        if (last !== undefined && h.max) { const nk = key + 50, n = a.hitsDone.get(nk) || 1; if (n >= h.max) continue; a.hitsDone.set(nk, n + 1); }
+        if (G) G.last.set(t.id, game.t);
         a.hitsDone.set(key, a.actT);
         applyHit(a, t, h);
         if (a.act !== act || (h.grab && a.grabbed)) break;

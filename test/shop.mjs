@@ -17,7 +17,7 @@ try {
 await page.goto(`${URL_BASE}?town&fresh&cls=${cls}&mute`);
 await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 30000 });
 await wait(500); await closeAll();
-await ev(() => { cashData(); save.data.cera = 200000; game.gold = 500000; game.lvl = 20; recalcStats(game.player); inv.cap = 200; save.write(); });
+await ev(() => { cashData(); save.acct.cera = 200000; game.gold = 500000; game.lvl = 20; recalcStats(game.player); inv.cap = 200; save.write(); });
 
 /* ---------- 1. 入口：菜单按钮栏 + 快捷键 ] ---------- */
 step('入口：菜单按钮 / 快捷键');
@@ -37,16 +37,17 @@ step('购买');
 await page.click('.cashwin .itab:has-text("时装")'); await wait(200);
 await page.click('.cashwin .ccard:has-text("锦鲤贺岁醒狮帽")'); await wait(200);
 await page.selectOption('.cash-side select', 'cspd'); await wait(100);
-const c0 = await ev(() => save.data.cera);
+const c0 = await ev(() => save.acct.cera);
 await page.click('.cash-side .btn.buy'); await wait(250);
-const hat = await ev(() => { const it = inv.items.find(x => x.key === 'av_hat_spring'); return it && { opt: it.opt, cspd: it.st.cspd, lock: it.optLock, cera: save.data.cera }; });
+const hat = await ev(() => { const it = inv.items.find(x => x.key === 'av_hat_spring'); return it && { opt: it.opt, cspd: it.st.cspd, lock: it.optLock, cera: save.acct.cera }; });
 check(hat && hat.opt === 'cspd' && hat.cspd === 0.02 && hat.lock, '单件时装：购买时自选“施放速度 +2%”', JSON.stringify(hat));
 check(hat && c0 - hat.cera === 1500, `扣点券 ${c0 - (hat ? hat.cera : 0)} = 1500`);
 await shot('02-avatar');
 const whole = await ev(() => { const r = cashBuy('set:av_summer', 1, { opts: { av_top_summer: 'int' } }); return { ok: r.ok, n: inv.items.filter(x => x.set === 'av_summer').length, top: (inv.items.find(x => x.key === 'av_top_summer') || {}).st }; });
 check(whole.ok && whole.n === 8 && whole.top.int === 8 + 3, '整套 8 件，上衣自选智力（固定四维 +3 + 智力 +8）', JSON.stringify(whole));
+const CASH_NO_LIMIT_T = await ev(() => typeof CASH_NO_LIMIT !== 'undefined' && CASH_NO_LIMIT);
 const lim = await ev(() => { const r = [1, 2, 3, 4].map(() => cashBuy('fatigue', 1)); return r.map(x => !!x.ok); });
-check(lim.join() === 'true,true,true,false', '抗疲劳秘药每天限购 3', lim.join());
+check(CASH_NO_LIMIT_T ? lim.join() === 'true,true,true,true' : lim.join() === 'true,true,true,false', CASH_NO_LIMIT_T ? '房主要求不限购：抗疲劳秘药可以一直买' : '抗疲劳秘药每天限购 3', lim.join());
 const free = await ev(() => { const a = cashBuy('pkg_newbie'), b = cashBuy('pkg_newbie'); return [!!a.ok, b.err]; });
 check(free[0] && free[1], '新手礼包免费领取 1 次，第二次被拦', JSON.stringify(free));
 const lvp = await ev(() => { game.lvl = 25; const a = cashBuy('pkg_lv30'), b = cashBuy('pkg_lv20'); game.lvl = 20; return [a.err, !!b.ok]; });
@@ -54,8 +55,8 @@ check(lvp[0] && lvp[1], '等级礼包：Lv30 未到级不能领，Lv20 可以领
 const pack = await ev(() => { const it = inv.items.find(x => x.key === 'pkg_lv20'); const n0 = inv.count('box_magic'); inv.useItem(it); return { magic: inv.count('box_magic') - n0, egg: inv.count('egg_pet'), left: inv.count('pkg_lv20') }; });
 check(pack.magic === 10 && pack.egg >= 1 && pack.left === 0, '右键打开礼包得到全部内容', JSON.stringify(pack));
 await wait(300); await shot('03-pack-got'); await closeAll();
-const deals = await ev(() => { const D = cashDeals(); const g = D.day[0]; const r = cashBuy(g.pid, 1); const r2 = cashBuy(g.pid, 9); return { n: D.day.length, week: !!D.week, ok: !!r.ok, price: g.price, base: g.base, lim2: g.limit.n > 1 ? 'skip' : r2.err }; });
-check(deals.n === 3 && deals.week && deals.ok && deals.price < deals.base && deals.lim2, '每日特惠 3 个 + 每周特惠，打折且限购', JSON.stringify(deals));
+const deals = await ev(() => { const D = cashDeals(); const g = D.day[0]; const r = cashBuy(g.pid, 1); const r2 = cashBuy(g.pid, 9); return { n: D.day.length, week: !!D.week, ok: !!r.ok, price: g.price, base: g.base, lim2: !g.limit ? (r2.ok ? 'nolimit' : r2.err) : g.limit.n > 1 ? 'skip' : r2.err }; });
+check(deals.n === 3 && deals.week && deals.ok && deals.price < deals.base && deals.lim2, CASH_NO_LIMIT_T ? '每日特惠 3 个 + 每周特惠，打折（不限购，可以连续买）' : '每日特惠 3 个 + 每周特惠，打折且限购', JSON.stringify(deals));
 
 /* ---------- 3. 穿戴时装 / 属性选择 ---------- */
 step('穿戴与属性选择');
@@ -133,7 +134,8 @@ check(sel.n > 0 && sel.ok, `史诗自选礼盒：${sel.n} 件可选，开出史�
 
 /* ---------- 6. 多买多送 ---------- */
 step('多买多送');
-const multi = await ev(() => { const S = cashData(); const m0 = S.multi; for (let i = 0; i < 5; i++) cashBuy(['pkg_spring', 'pkg_summer', 'pkg_academy'][i % 3]); return { multi: S.multi - m0, aura: inv.count('aura_supreme'), title: inv.count('title_supreme'), pet: inv.count('pet_pegasus'), got: Object.keys(S.multiGot) }; });
+const multi = await ev(() => { const S = cashData(); const m0 = S.multi, n0 = k => inv.count(k), a0 = n0('aura_supreme'), t0 = n0('title_supreme'), p0 = n0('pet_pegasus');   // 前面开箱可能随机开出同样的东西：按增量算
+  for (let i = 0; i < 5; i++) cashBuy(['pkg_spring', 'pkg_summer', 'pkg_academy'][i % 3]); return { multi: S.multi - m0, aura: n0('aura_supreme') - a0, title: n0('title_supreme') - t0, pet: n0('pet_pegasus') - p0, got: Object.keys(S.multiGot) }; });
 check(multi.multi === 5 && multi.aura === 1 && multi.title === 1 && multi.pet === 1, '累计 5 套：送至尊光环 / 称号 / 宠物', JSON.stringify(multi));
 
 /* ---------- 7. 不放回抽奖 ---------- */
@@ -147,8 +149,8 @@ await shot('11-lotto'); await closeAll();
 
 /* ---------- 8. 兑换商店 ---------- */
 step('兑换商店');
-const ex = await ev(() => { const S = cashData(); S.shard = 400; S.gcoin = 50; const i = CASH_EXCH.shard.goods.findIndex(g => g.key === 'box_epic'); const a = cashExchange('shard', i), b = cashExchange('shard', i); const j = CASH_EXCH.gcoin.goods.findIndex(g => g.key === 'tk_lotto'); const t0 = inv.count('tk_lotto'); const c = cashExchange('gcoin', j); return { a: !!a.ok, b: b.err, shard: S.shard, lotto: inv.count('tk_lotto') - t0, gcoin: S.gcoin }; });
-check(ex.a && ex.b && ex.shard === 200 && ex.lotto === 1 && ex.gcoin === 45, '碎片换史诗自选（每周 1）、礼包币换抽奖券', JSON.stringify(ex));
+const ex = await ev(() => { const S = cashData(); save.acct.shard = 400; save.acct.gcoin = 50; const i = CASH_EXCH.shard.goods.findIndex(g => g.key === 'box_epic'); const a = cashExchange('shard', i), b = cashExchange('shard', i); const j = CASH_EXCH.gcoin.goods.findIndex(g => g.key === 'tk_lotto'); const t0 = inv.count('tk_lotto'); const c = cashExchange('gcoin', j); return { a: !!a.ok, b: b.err, shard: save.acct.shard, lotto: inv.count('tk_lotto') - t0, gcoin: save.acct.gcoin }; });
+check(ex.a && ex.lotto === 1 && ex.gcoin === 45 && (CASH_NO_LIMIT_T ? ex.shard === 0 : ex.b && ex.shard === 200), CASH_NO_LIMIT_T ? '碎片换史诗自选（不限购，连换两次）、礼包币换抽奖券' : '碎片换史诗自选（每周 1）、礼包币换抽奖券', JSON.stringify(ex));
 await ev(() => menus.open('cashx')); await wait(250); await shot('12-exchange'); await closeAll();
 
 /* ---------- 9. 券 ---------- */
@@ -205,13 +207,13 @@ await wait(1500); await shot('16b-looks-sky2');
 /* ---------- 11. 点券产出 ---------- */
 step('点券产出');
 const earn = await ev(() => {
-  const S = cashData(), c0 = save.data.cera; S.today.rank = 0;
+  const S = cashData(), c0 = save.acct.cera; S.today.rank = 0;
   bus.emit('dungeonClear', { id: 'lorien', diff: 0, rank: 'SSS', time: 60, hurt: 0, maxCombo: 30 });
-  const c1 = save.data.cera; bus.emit('dungeonClear', { id: 'lorien', diff: 0, rank: 'S', time: 60, hurt: 0, maxCombo: 30 });
-  const c2 = save.data.cera; S.lvlPaid = 20; game.lvl = 21; bus.emit('levelUp', { lvl: 21 }); const c3 = save.data.cera;
-  const q = Object.values(QUESTS).find(Q => Q.type === 'daily'); bus.emit('questDone', { id: q.id }); const c4 = save.data.cera;
-  S.today.exch = 0; const g0 = game.gold; const x = cashExchGold(600); const c5 = save.data.cera;
-  S.today.rank = 990; bus.emit('dungeonClear', { id: 'lorien', diff: 0, rank: 'SSS', time: 60, hurt: 0, maxCombo: 30 }); const c6 = save.data.cera;
+  const c1 = save.acct.cera; bus.emit('dungeonClear', { id: 'lorien', diff: 0, rank: 'S', time: 60, hurt: 0, maxCombo: 30 });
+  const c2 = save.acct.cera; S.lvlPaid = 20; game.lvl = 21; bus.emit('levelUp', { lvl: 21 }); const c3 = save.acct.cera;
+  const q = Object.values(QUESTS).find(Q => Q.type === 'daily'); bus.emit('questDone', { id: q.id }); const c4 = save.acct.cera;
+  S.today.exch = 0; const g0 = game.gold; const x = cashExchGold(600); const c5 = save.acct.cera;
+  S.today.rank = 990; bus.emit('dungeonClear', { id: 'lorien', diff: 0, rank: 'SSS', time: 60, hurt: 0, maxCombo: 30 }); const c6 = save.acct.cera;
   const sys = typeof ACHIEVEMENTS !== 'undefined' && typeof achData === 'function';
   if (sys && typeof achCheck === 'function') achCheck();   // 成就在事件后 0.4 秒批量检查，这里直接触发一次
   const ad = sys && achData();
@@ -227,11 +229,11 @@ await ev(() => menus.open('cashlog', { tab: 'earn' })); await wait(250); await s
 
 /* ---------- 12. 刷新后数据仍在 ---------- */
 step('刷新后数据仍在');
-const before = await ev(() => { save.write(); const S = cashData(); return { cera: save.data.cera, shard: S.shard, multi: S.multi, pity: S.pity.box_magic, pet: inv.equip.av_pet && inv.equip.av_pet.key, hatOpt: (inv.equip.av_hat || {}).opt, lotto: S.lotto.got.length, buys: S.buys.length }; });
+const before = await ev(() => { save.write(); const S = cashData(); return { cera: save.acct.cera, shard: save.acct.shard, multi: S.multi, pity: S.pity.box_magic, pet: inv.equip.av_pet && inv.equip.av_pet.key, hatOpt: (inv.equip.av_hat || {}).opt, lotto: S.lotto.got.length, buys: S.buys.length }; });
 await page.goto(`${URL_BASE}?town&cls=${cls}&mute`);
 await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 30000 });
 await wait(800);
-const after = await ev(() => { inv.ensure(); const S = cashData(); return { cera: save.data.cera, shard: S.shard, multi: S.multi, pity: S.pity.box_magic, pet: inv.equip.av_pet && inv.equip.av_pet.key, hatOpt: (inv.equip.av_hat || {}).opt, lotto: S.lotto.got.length, buys: S.buys.length }; });
+const after = await ev(() => { inv.ensure(); const S = cashData(); return { cera: save.acct.cera, shard: save.acct.shard, multi: S.multi, pity: S.pity.box_magic, pet: inv.equip.av_pet && inv.equip.av_pet.key, hatOpt: (inv.equip.av_hat || {}).opt, lotto: S.lotto.got.length, buys: S.buys.length }; });
 check(JSON.stringify(before) === JSON.stringify(after), '点券、碎片、多买多送、保底、宠物、时装属性、抽奖进度、购买记录都在', JSON.stringify(after));
 const petBack = await ev(() => { const C = game.player._cash; return !!(C && fxList.includes(C.petFx)); });
 check(petBack, '刷新后宠物继续跟随');

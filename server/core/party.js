@@ -40,8 +40,13 @@ export default {
         api.push(P);
       },
       create(a, b) {
-        const P = { id: 'p' + (seq++), leader: a, members: [a, b], created: Date.now() };
+        const P = { id: 'p' + ctx.cfg.boot + '_' + (seq++), leader: a, members: [a, b], created: Date.now() };
         parties.set(P.id, P); byUser.set(a, P.id); byUser.set(b, P.id); return P;
+      },
+      // 服务端重启后由队长重新登记：先只有队长一个人，队员登记（restore:claim）后陆续加入
+      restoreCreate(leader) {
+        const P = { id: 'p' + ctx.cfg.boot + '_' + (seq++), leader, members: [leader], created: Date.now(), restored: true };
+        parties.set(P.id, P); byUser.set(leader, P.id); return P;
       },
       join(uid, P) { if (!P.members.includes(uid)) P.members.push(uid); byUser.set(uid, P.id); },
       invites, grace,

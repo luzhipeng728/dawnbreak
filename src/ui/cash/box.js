@@ -133,7 +133,7 @@ Object.assign(menus, {
         if (left > 0) foot.append(h('button', { class: 'btn buy', onclick: () => { sfx.click(); cashBoxUI(o.key, 1); } }, `再开 1 个（剩 ${left}）`));
         if (left >= 10 && !CASH_BOXES[o.key].rolls) foot.append(h('button', { class: 'btn buy', onclick: () => { sfx.click(); cashBoxUI(o.key, 10); } }, '十连'));
         if (o.key === 'box_magic') { const pg = cashGoods('box_magic'); if (left === 0 && cashBal('cera') >= pg.price) foot.append(h('button', { class: 'btn buy', onclick: () => { sfx.click(); const r = cashBuy('box_magic', 1); if (r.err) { toastMsg(r.err, '#ff6a6a'); return; } cashBoxUI('box_magic', 1); } }, `买 1 个再开（${pg.price} 点券）`)); }
-        const S = cashData(); if (o.key === 'box_magic' || o.key === 'box_magic2') sub.textContent = `${o.res.results.some(R => R.forced) ? '保底触发！第 100 次必出大奖 · ' : ''}魔盒碎片 +${o.res.shards}（共 ${S.shard}）· 保底进度 ${S.pity.box_magic || 0}/100`;
+        const S = cashData(); if (o.key === 'box_magic' || o.key === 'box_magic2') sub.textContent = `${o.res.results.some(R => R.forced) ? '保底触发！第 100 次必出大奖 · ' : ''}魔盒碎片 +${o.res.shards}（共 ${cashBal('shard')}）· 保底进度 ${S.pity.box_magic || 0}/100`;
       }
       el._onConfirm = () => menus.close('boxopen');
     };
@@ -210,6 +210,7 @@ Object.assign(menus, {
       const left = h('div', { class: 'col' },
         h('div', { class: 'h' }, '① 合成器'), pick(synths, CSY.synth, v => { CSY.synth = v; CSY.ins = []; }),
         h('div', { class: 'h' }, '② 目标天空套'), pick(CASH_SKY_SETS.map(s => [s, CASH_SETS[s].name]), CSY.set, v => { CSY.set = v; }),
+        (() => { const miss = cashSkyState(CSY.set).filter(s => s.st === 'miss'); return h('div', { class: 'small', style: 'color:#c8b890' }, `已收集 ${8 - miss.length}/8`, miss.length ? h('span', { style: 'color:#ffd23a' }, ` · 缺：${miss.map(s => SLOT_NAME[s.slot]).join('、')}`) : h('span', { style: 'color:#6aff7a' }, ' · 已集齐')); })(),
         Y.any ? h('div', { class: 'h' }, '③ 指定部位') : null, Y.any ? pick(AV_PIECE_SLOTS.map(s => [s, SLOT_NAME[s]]), CSY.slot, v => { CSY.slot = v; }) : null,
         h('div', { class: 'h' }, `${Y.any ? '④' : '③'} 放入${Y.need} 件${Y.any ? '任意' : '同部位的'}高级装扮`), inBox,
         T ? h('div', { class: 'h' }, '成品属性') : null,
@@ -224,7 +225,29 @@ Object.assign(menus, {
             if (r.err) { toastMsg(r.err, '#ff6a6a'); sfx.error(); return; }
             CSY.ins = []; itemsRefresh(); cashOverlay({ mode: 'synth', ok: r.ok, item: r.item, rate: r.rate });
           } }, '合成'),
-          inv.count(CSY.synth) ? null : h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); menus.show('cash', { tab: 'sky' }); } }, '购买合成器')));
+          inv.count(CSY.synth) ? null : h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); menus.show('cash', { tab: 'sky' }); } }, '购买合成器')),
+        // 自动放入 / 一键合成：自动找能配对的部位，优先合目标天空套还没有的部位
+        h('div', { class: 'row', style: 'gap:.4em;align-items:center;flex-wrap:wrap;margin-top:.2em' },
+          h('button', { class: 'btn sm', onclick: () => {
+            const P = cashSynthAutoPick(CSY.synth, CSY.set, CSY.skip !== false);
+            if (!P) { toastMsg(Y.any ? `背包里的高级装扮不足 ${Y.need} 件，或目标天空套已经集齐` : '没有能配对的部位（需要 2 件同部位的高级装扮；已有天空套的部位会跳过）', '#ffb0a0'); sfx.error(); return; }
+            CSY.ins = P.inputs; if (Y.any) CSY.slot = P.slot; sfx.click(); el._render();
+          } }, '自动放入'),
+          (() => {
+            const n = inv.count(CSY.synth), P = cashSynthAutoPick(CSY.synth, CSY.set, CSY.skip !== false);
+            return h('button', { class: 'btn sm' + (n && P ? '' : ' off'), style: n && P ? 'border-color:#ffd23a;color:#ffe070' : 'opacity:.45', onclick: () => {
+              if (!n || !P) { toastMsg(n ? '没有能配对的高级装扮了' : `没有${ITEMS[CSY.synth].name}`, '#ffb0a0'); sfx.error(); return; }
+              menus.ask({ title: '一键合成', okText: '开始合成', text: `用手上的 <b style="color:#ffd23a">${ITEMS[CSY.synth].name} ×${n}</b> 连续合成「${CASH_SETS[CSY.set].name}」，每次 ${Y.need} 件高级装扮，优先合还没有的部位${CSY.skip !== false ? '，已有天空的部位跳过' : ''}。<br><span class="small dim">合成失败退回的高级装扮会继续参与；装扮不够配对时自动停止。身上穿着的装扮不会动。</span>`,
+                ok: () => {
+                  const r = cashSynthBatch(CSY.synth, CSY.set, { skipOwned: CSY.skip !== false, opt: CSY.opt });
+                  CSY.ins = []; itemsRefresh();
+                  if (!r.n) { toastMsg('没有进行合成', '#ffb0a0'); return; }
+                  toastMsg(`一键合成：共 ${r.n} 次，成功 ${r.ok} 次`, r.ok ? '#ffd23a' : '#e8dcc0');
+                  if (r.got.length) cashShowGot(`一键合成 · 成功 ${r.ok}/${r.n}`, r.got); else sfx.card();
+                } });
+            } }, `一键合成（合成器 ${n}）`);
+          })(),
+          h('label', { class: 'small', style: 'display:flex;align-items:center;gap:.25em;cursor:pointer;color:#c8b890', onclick: e => { e.preventDefault(); CSY.skip = CSY.skip === false; sfx.click(); el._render(); } }, itemCheckBox(CSY.skip !== false, () => {}), '已有天空的部位跳过')));
       const S = cashData().synth;
       return [h('div', { class: 'csy' }, left, right), h('div', { class: 'ihint' }, `官方规则：2 件同部位高级装扮合成稀有装扮（天空）；梦想合成器用任意 8 件保底。${S ? `已合成 ${S.n} 次，成功 ${S.ok} 次。` : ''}`)];
     }, { w: 44, at: 'center' });

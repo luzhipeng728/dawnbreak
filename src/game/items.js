@@ -222,6 +222,7 @@ function makeConsumable(key, n = 1) { return makeItem(key, n); }
 
 /* ---------------- 背包 / 装备栏 / 仓库 ---------------- */
 const INV_TABS = [['equip', '装备'], ['use', '消耗品'], ['mat', '材料'], ['quest', '任务'], ['title', '称号'], ['avatar', '时装']];
+const INV_NOCAP = { equip: true, use: true, mat: true, title: true, avatar: true };   // 背包各页签暂时不限格子（任务道具本来就不限）；仓库仍按格子算
 const inv = {
   items: [], equip: {}, quick: ['hpS', 'mpS', null, null, null, null], storage: [], cap: 48, potCd: 0, _norm: null,
   // 读档后第一次用到时补全旧物品（save.apply 直接替换了数组，这里按数组身份判断）
@@ -236,13 +237,13 @@ const inv = {
     if (save.data) save.data.storage = this.storage;
   },
   tabCount(tab, list = this.items) { let n = 0; for (const x of list) if (TAB_OF(x) === tab) n++; return n; },
-  free(tab, list = this.items, cap = this.cap) { return cap - this.tabCount(tab, list); },
+  free(tab, list = this.items, cap = this.cap) { return INV_NOCAP[tab] && list === this.items ? Infinity : cap - this.tabCount(tab, list); },
   add(it, list = this.items, cap = this.cap) {
     if (!it) return false;
     normalizeItem(it);
     if (it.key === 'coin' && list === this.items) { if (save.data) save.data.coins += it.n || 1; return true; }
     if (it.kind !== 'equip') { const ex = list.find(x => x.key === it.key && x.kind !== 'equip'); if (ex) { ex.n += it.n || 1; return true; } }
-    if (it.kind !== 'quest' && this.tabCount(TAB_OF(it), list) >= cap) return false;   // 任务道具不占格子上限（不能丢，也不能因为满了消失）
+    if (it.kind !== 'quest' && this.free(TAB_OF(it), list, cap) <= 0) return false;   // 任务道具不占格子上限（不能丢，也不能因为满了消失）
     list.push(it);
     if (it.kind === 'equip' && list === this.items && typeof codexRecord === 'function') codexRecord(it);   // 装备图鉴：第一次获得时登记
     return true;

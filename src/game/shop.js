@@ -1,7 +1,7 @@
 /* =====================================================================
    商城核心（商城组）：点券与兑换货币、购买 / 限购 / 购买记录、限时特惠、多买多送、不放回抽奖、兑换商店、
    点券产出（升级 / 首通 / 评价 / 每日任务 / 成就 / 金币兑换）、自选属性、券的使用
-   数据：save.data.cera（点券）+ save.data.shop（其余，懒初始化，随云存档同步）
+   数据：点券 / 魔盒碎片 / 礼包币是账号共享的，存在 save.acct（随云存档同步）；其余在 save.data.shop（懒初始化）
    随机数：cashRng()（测试可以用 cashSeed(种子) 固定）
    对外：addCera(n, 来源) / spendCera(n, 原因) / cashBal(cur) / cashBuy(pid, n, opt) / giveItem(makeItem('cera', n))
    ===================================================================== */
@@ -14,7 +14,7 @@ const cashDayNo = () => Math.floor((Date.now() - 6 * 3600 * 1000 - new Date().ge
 const cashWeekKey = () => 'w' + Math.floor((cashDayNo() + 3) / 7);
 function cashData() {
   const d = save.data; if (!d) return null;
-  d.cera ??= 0;
+  const A = save.acct || (save.acct = {}); A.cera ??= 0; A.shard ??= 0; A.gcoin ??= 0;
   const S = d.shop ??= {};
   S.shard ??= 0; S.gcoin ??= 0; S.log ??= []; S.buys ??= []; S.lim ??= {}; S.pity ??= {}; S.stat ??= {}; S.ach ??= {}; S.first ??= {};
   S.multi ??= 0; S.multiGot ??= {}; S.lotto ??= { got: [], resets: 0, done: 0 }; S.today ??= {}; S.opened ??= 0;
@@ -23,15 +23,15 @@ function cashData() {
 }
 /* ---- 货币 ---- */
 const CUR_NAME = { cera: '点券', shard: '魔盒碎片', gcoin: '礼包币' };
-function cashBal(cur = 'cera') { const S = cashData(); if (!S) return 0; return cur === 'cera' ? save.data.cera : S[cur] || 0; }
+function cashBal(cur = 'cera') { const S = cashData(); if (!S) return 0; return save.acct[cur] || 0; }   // 账号共享
 function cashAdd(cur, n, why) {
   const S = cashData(); if (!S || !n) return false;
   n = Math.round(n);
   if (cur === 'cera') {
-    save.data.cera = Math.max(0, save.data.cera + n);
+    save.acct.cera = Math.max(0, (save.acct.cera || 0) + n);
     S.log.unshift({ t: Date.now(), n, why: why || '' }); if (S.log.length > 50) S.log.length = 50;
     if (n > 0) bus.emit('ceraGain', { n, why });
-  } else S[cur] = Math.max(0, (S[cur] || 0) + n);
+  } else save.acct[cur] = Math.max(0, (save.acct[cur] || 0) + n);
   return true;
 }
 const addCera = (n, why) => cashAdd('cera', Math.abs(n), why);
@@ -92,6 +92,13 @@ function cashGive(items) {
   }
 }
 
+/* ---- 不限购（房主要求 2026-09-28）：商城里花钱买的东西全部不限购、每周轮换礼包随时能买；
+   免费领取的新手 / 等级礼包仍然每角色一次（否则可以无限白领）。改回限购：把 CASH_NO_LIMIT 设为 false ---- */
+const CASH_NO_LIMIT = true;
+if (CASH_NO_LIMIT) {
+  for (const G of Object.values(CASH_GOODS)) if (G.limit && G.price > 0) delete G.limit;
+  for (const E of Object.values(CASH_EXCH)) for (const G of E.goods || []) if (G.limit && G.cost > 0) delete G.limit;
+}
 /* ---- 限购 ---- */
 const cashLimKey = per => per === 'day' ? dayKey() : per === 'week' ? cashWeekKey() : 'life';
 function cashLimitLeft(id, limit) {
@@ -108,7 +115,7 @@ function cashDeals() {
   for (let i = 0; i < 3 && pool.length; i++) out.push(pool.splice(Math.floor(R() * pool.length), 1)[0]);
   const wk = +cashWeekKey().slice(1), W = CASH_DEALS_WEEK.filter(d => ITEMS[d.key]);
   const week = W.length ? W[wk % W.length] : null;
-  const toG = (d, per) => ({ pid: `deal:${per}:${d.key}:${d.n}`, key: d.key, n: d.n, price: Math.round(d.base * d.off / 10) * 10, base: d.base, off: d.off, cur: 'cera', tab: 'rec', tag: `${Math.round(d.off * 10)} 折`, limit: { per, n: d.limit }, deal: per });
+  const toG = (d, per) => ({ pid: `deal:${per}:${d.key}:${d.n}`, key: d.key, n: d.n, price: Math.round(d.base * d.off / 10) * 10, base: d.base, off: d.off, cur: 'cera', tab: 'rec', tag: `${Math.round(d.off * 10)} 折`, limit: CASH_NO_LIMIT ? undefined : { per, n: d.limit }, deal: per });
   return { day: out.map(d => toG(d, 'day')), week: week ? toG(week, 'week') : null };
 }
 const cashLtdPack = () => CASH_LTD[+cashWeekKey().slice(1) % CASH_LTD.length];
@@ -122,7 +129,7 @@ function cashGoods(pid) {
 // 商品现在能不能买（返回原因文字；null = 可以）
 function cashGoodsBlock(G) {
   if (!G || !ITEMS[G.key]) return '商品不存在';
-  if (G.ltd && cashLtdPack() !== G.pid) return '本周不出售';
+  if (G.ltd && !CASH_NO_LIMIT && cashLtdPack() !== G.pid) return '本周不出售';
   if (G.lvl && game.lvl < G.lvl) return `达到 Lv.${G.lvl} 后可以领取`;
   if (cashLimitLeft(G.pid, G.limit) <= 0) return G.limit.per === 'life' ? '已经领取过了' : `${LIMIT_TXT[G.limit.per]}限购已满`;
   return null;

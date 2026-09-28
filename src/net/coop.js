@@ -63,9 +63,10 @@ const coop = {
     const def = DUNGEONS[id]; if (!def) return false;
     save.daily();
     if (save.data.fatigue < def.rooms) { toastMsg(`疲劳值不足：${def.name} 至少需要 ${def.rooms} 点疲劳`, '#ff6a6a'); sfx.error(); return false; }
-    if (typeof def.beforeEnter === 'function' && def.beforeEnter(diff) === false) return false;
+    const cost = coopEntryCost(() => typeof def.beforeEnter === 'function' ? def.beforeEnter(diff) : true);
+    if (cost === false) return false;
     const others = netParty.others().filter(m => m.online);
-    this.reset(); this.role = 'host'; this.state = 'prep'; this.def = def; this.diff = diff; this.hostId = this.me();
+    this.reset(); this.entryCost = cost; this.role = 'host'; this.state = 'prep'; this.def = def; this.diff = diff; this.hostId = this.me();
     const seed = (Math.random() * 1e9) | 0, tmp = genLayout(def, seed);
     this.prep = { id, diff, seed, rs: tmp.rooms.map(() => (Math.random() * 1e9) | 0), resp: new Map(), mem: others.map(m => m.id) };
     net.send({ t: 'room:open', kind: 'dungeon', meta: { id, diff } });
@@ -95,7 +96,7 @@ const coop = {
     clearTimeout(this.waitT); if (menus.isOpen('nd_coopwait')) menus.close('nd_coopwait');
     const go = P.mem.filter(id => P.resp.get(id) === true);
     for (const id of P.mem) if (!go.includes(id)) this.send({ k: 'drop', why: P.resp.get(id) || '加载超时' }, id);
-    if (!go.length) { toastMsg('没有队友能一起进，按单人进入', '#ffb08a'); this.end('solo'); return withLoading(dungeonBundles(this.def), () => new Dungeon(this.def, this.diff).start()); }
+    if (!go.length) { toastMsg('没有队友能一起进，按单人进入', '#ffb08a'); this.entryCost = null; this.end('solo'); return withLoading(dungeonBundles(this.def), () => new Dungeon(this.def, this.diff).start()); }
     const n = go.length + 1, mul = COOP_HP[n] || 2.8;
     this.send({ k: 'go', mem: [this.me(), ...go], mul, seed: P.seed, rs: P.rs, id: P.id, diff: P.diff });
     this.start({ seed: P.seed, roomSeeds: P.rs, hpMul: mul }, [this.me(), ...go]);
@@ -108,8 +109,10 @@ const coop = {
     if (game.scene !== 'town' || !game.player || !save.live || game.duel) return no(game.scene === 'dungeon' ? '正在别的地下城里' : '现在不在城镇里');
     save.daily();
     if (save.data.fatigue < def.rooms) return no(`疲劳不足（需要 ${def.rooms}）`);
-    if (typeof def.beforeEnter === 'function' && def.beforeEnter(d.diff) === false) return no('没有入场道具');
-    const room = this.room; this.reset(); this.room = room; this.role = 'guest'; this.state = 'load'; this.def = def; this.diff = d.diff; this.hostId = from;
+    const cost = coopEntryCost(() => typeof def.beforeEnter === 'function' ? def.beforeEnter(d.diff) : true);
+    if (cost === false) return no('没有入场道具');
+    if (d.boss && MON[d.boss.kind]) def.boss = { ...d.boss };   // 深渊领主等“进图时随机”的设定以队长为准（素材也按它加载）
+    const room = this.room; this.reset(); this.room = room; this.entryCost = cost; this.role = 'guest'; this.state = 'load'; this.def = def; this.diff = d.diff; this.hostId = from;
     menus.closeAll(); input.clearAll();
     toastMsg(`队长带队进入 ${def.name}（${DIFFS[d.diff].name}）`, '#ffe8a8');
     this.gateLoc(def.id);
@@ -127,6 +130,7 @@ const coop = {
   // 全队开始（主机和队员都走这里）
   start(o, mem) {
     const guest = this.role === 'guest';
+    this.entryCost = null;   // 真的进去了：入场道具不退
     this.state = 'play'; this.mem = mem;
     game.maxCombo = 0; game.combo = 0;
     const dg = new Dungeon(this.def, this.diff, { ...o, guest });
@@ -199,17 +203,22 @@ const coop = {
   /* ---------------- 主机：怪物 ---------------- */
   // 主机上生成的怪物：编号、广播、换目标（game.player 在怪物 AI / 动作期间临时换成它的目标）
   hostMonster(m) {
-    m.nid = ++this.nid; this.puppets.set(m.nid, m);
-    const C = this, ctl = m.control, upd = m.update;
-    m.control = function (e, dt) { const P = game.player, tg = C.pickTarget(e); if (tg) game.player = tg; try { if (ctl) ctl(e, dt); } finally { game.player = P; } };
+    m.nid = ++this.nid; m.nrk = this.rk(); this.puppets.set(m.nid, m);
+    const C = this, upd = m.update;
+    // AI：每次都先在全队活着的人里选目标，AI 执行期间 game.player 临时换成目标。
+    // 用访问器包住 control：生成之后再换 AI 的怪（龙之雕像 m.control = skyStatueAI 等）也照样走这一层，不会只盯着队长
+    let ctl = m.control;
+    const wrapped = function (e, dt) { const P = game.player, tg = C.pickTarget(e); if (tg) game.player = tg; try { if (ctl) ctl(e, dt); } finally { game.player = P; } };
+    Object.defineProperty(m, 'control', { configurable: true, enumerable: true, get() { return ctl ? wrapped : null; }, set(f) { ctl = f; } });
+    Object.defineProperty(m, 'aiInner', { configurable: true, get() { return ctl; } });
     m.update = function (dt) { const P = game.player, tg = this.tgt && !this.tgt.dead ? this.tgt : null; if (tg) game.player = tg; try { (upd || Ent.prototype.update).call(this, dt); } finally { game.player = P; } };
     m.doAct = function (def, extra) { Ent.prototype.doAct.call(this, def, extra); this.actSeq = (this.actSeq || 0) + 1; C.monAct(this, def); };
     this.spawnQ.push(this.spawnRow(m));
   },
-  spawnRow(m) { return { id: m.nid, rk: this.rk(), kind: m.kind, lvl: m.lvl, boss: m.boss ? 1 : 0, elite: m.elite ? 1 : 0, hp: Math.round(m.hp), hpMax: Math.round(m.hpMax), atk: Math.round(m.atk), def: Math.round(m.def), exp: m.exp, sc: +(m.scale || 1).toFixed(3), x: Math.round(m.x), y: Math.round(m.y), z: Math.round(m.z), f: m.face, name: m.name }; },
+  spawnRow(m) { m._sent = m.hpMax + '|' + m.name + '|' + (m.scale || 1); return { id: m.nid, rk: this.rk(), kind: m.kind, lvl: m.lvl, boss: m.boss ? 1 : 0, elite: m.elite ? 1 : 0, hp: Math.round(m.hp), hpMax: Math.round(m.hpMax), atk: Math.round(m.atk), def: Math.round(m.def), exp: m.exp, sc: +(m.scale || 1).toFixed(3), x: Math.round(m.x), y: Math.round(m.y), z: Math.round(m.z), f: m.face, name: m.name }; },
   pickTarget(m) {
     const now = game.t, cur = m.tgt;
-    const ok = e => e && !e.dead && e.hp > 0 && !e.away && !e.lag;
+    const ok = e => e && !e.dead && e.hp > 0 && !e.away && !e.lag && !(e.ghost && !net.connected);   // 自己断线期间队友的影子是旧的，不当目标
     if (ok(cur) && now - (m.tgtT || 0) < 2.2) return cur;
     const list = [game.player, ...this.mates.values()].filter(ok);
     if (!list.length) return cur && !cur.dead ? cur : game.player;
@@ -228,13 +237,15 @@ const coop = {
     if (!m.nid || this.state !== 'play') return;
     const D = m.def_, i = D && D.attacks ? D.attacks.findIndex(A => A.clip === def.clip && A.act.dur === def.dur) : -1;
     const tg = m.tgt && m.tgt.uid ? m.tgt.uid : this.me();
-    this.send({ k: 'ma', id: m.nid, i, c: def.clip || def.name, du: +(def.dur || 1).toFixed(2), sa: def.superArmor === true ? 1 : 0, f: m.face, tg, sq: m.actSeq, x: Math.round(m.x), y: Math.round(m.y) });
+    // 自带 AI 的怪（龙之雕像等）的招式不在招式表里：告诉队员是哪个 AI 函数，队员那边用同一个函数现场出招（事件、投射物都一样）
+    const f = i < 0 ? m.aiInner : null, ai = f && f !== monsterAI && f.name && typeof globalThis[f.name] === 'function' ? f.name : undefined;
+    this.send({ k: 'ma', id: m.nid, i, ai, c: def.clip || def.name, nm: def.name, du: +Math.min(999, def.dur || 1).toFixed(2), sa: def.superArmor === true ? 1 : 0, f: m.face, tg, sq: m.actSeq, x: Math.round(m.x), y: Math.round(m.y) });
   },
   // 队员打中了怪（队员客户端算好的伤害和受击反应）→ 主机扣血、做受击反应
   remoteHit(uid, r) {
     const m = this.puppets.get(r.id), g = this.mates.get(uid);
-    if (!m || m.dead || !g || !ents.includes(m)) return;
-    const h = coopCleanHit(r.h), dmg = clamp(Math.round(+r.dmg || 0), 1, 5e7); this.stats.remoteHits++;
+    if (!m || m.dead || !g || !ents.includes(m)) { const S = this.stats; S.hitDrop = S.hitDrop || {}; const k = !m ? 'none' : m.dead ? 'dead' : !g ? 'nomate' : 'gone'; S.hitDrop[k] = (S.hitDrop[k] || 0) + 1; return; }
+    const h = coopCleanHit(r.h), tm = clamp(+r.tm || 1, 0.05, 20), dmg = clamp(Math.round((+r.dmg || 0) * coopTakenMul(m) / tm), 1, 5e7); this.stats.remoteHits++;
     m.hp -= dmg; m.lastDmg = dmg; m.lastHitBy = g;
     const c = m.cmb; c.hits++; c.dmg += dmg; if (m.st === 'air' || m.z > 2) c.airDmg += dmg; if (m.st === 'down') c.downDmg += dmg;
     addNumber(dmg, m.x, m.y, m.z, { crit: !!r.cr });
@@ -247,10 +258,23 @@ const coop = {
     try { react(g, m, h, { x: +r.x || g.x, y: m.y, z: +r.z || 0, face: r.f < 0 ? -1 : 1 }, !!r.co, false); } finally { game.player = P; }
     if (m.onHurt) { try { m.onHurt(g, h); } catch (e) { /* */ } }
   },
+  // 队员抓住 / 放开了怪：主机把怪挂到这个队员的影子上（被抓状态照样同步给其他人）；抓取规则（领主、体重、刚被抓过、倒地）在主机上再判一次
+  remoteGrab(uid, r) {
+    const m = this.puppets.get(r.id), g = this.mates.get(uid);
+    if (!m || m.dead || !g || !ents.includes(m)) return;
+    if (r.g) {
+      const h = { grabBoss: !!r.bw, grabMaxW: clamp(+r.mw || 2.2, 0.5, 9) };
+      if (m.heldBy === g) return;
+      if (m.heldBy || !canGrab(g, m, h)) { this.send({ k: 'gbx', id: m.nid }, uid); return; }
+      if (g.grabbed && g.grabbed !== m) dropGrab(g);
+      startGrab(g, m, h); this.stats.grabs = (this.stats.grabs || 0) + 1;
+    } else if (m.heldBy === g) releaseHeld(m);
+  },
   snapshot() {
     const rows = [];
     for (const m of ents) {
       if (!m.nid || m.dead || m.team !== 'e') continue;
+      if (m._sent !== m.hpMax + '|' + m.name + '|' + (m.scale || 1)) this.spawnQ.push(this.spawnRow(m));   // 血量上限 / 名字 / 体型变了（深渊领主降临等）：重发一次生成信息
       rows.push([m.nid, Math.round(m.x), Math.round(m.y), Math.round(m.z), m.face < 0 ? -1 : 1, Math.max(0, COOP_ST.indexOf(m.st)), Math.max(0, Math.round(m.hp)), m.actSeq || 0]);
     }
     const d = { k: 's', rk: this.rk(), m: rows };
@@ -260,7 +284,10 @@ const coop = {
   flushSpawns() { if (!this.spawnQ.length) return; this.send({ k: 'spawn', rk: this.rk(), l: this.spawnQ }); this.spawnQ = []; },
   /* ---------------- 队员：怪物傀儡 ---------------- */
   onSpawn(d, replay) {
-    for (const s of d.l) { s.rk = s.rk || d.rk; this.spawnInfo.set(s.id, s); }
+    for (const s of d.l) {
+      s.rk = s.rk || d.rk; this.spawnInfo.set(s.id, s);
+      const m = this.puppets.get(s.id); if (m && !m.dead) Object.assign(m, { hpMax: s.hpMax, name: s.name, scale: s.sc, lvl: s.lvl, atk: s.atk, boss: !!s.boss });   // 已有的傀儡：更新属性
+    }
     if (!replay && this.dg && !this.dg.transition) for (const s of d.l) if (s.rk === this.rk()) this.makePuppet(s);
   },
   makePuppet(s) {
@@ -270,19 +297,26 @@ const coop = {
     Object.assign(m, { nid: s.id, puppet: true, lvl: s.lvl, hp: s.hp, hpMax: s.hpMax, atk: s.atk, def: s.def, exp: s.exp, scale: s.sc, name: s.name, z: s.z, face: s.f, control: null, netBuf: [], netSt: 'idle', invul: 0 });
     m.update = coopPuppetUpdate;
     const od = m.onDamaged, C = this;
-    m.onDamaged = function (t, a, dmg, crit, h) { C.localHit(t, a, dmg, crit, h); };   // 本地打中傀儡：报给主机（傀儡自己的特殊受击逻辑由主机执行）
-    m.onHurt = null; m.onDeath = null; void od;
+    // 本地打中傀儡：报给主机；怪物自带的受击效果（冰冻反击、毒雾、放电……）也在本地跑一遍，打到的是我自己（谁挨打谁结算）
+    m.onDamaged = function (t, a, dmg, crit, h) { C.localHit(t, a, dmg, crit, h); if (od && a === game.player) { try { od(t, a, dmg, crit, h); } catch (e) { /* 表现用 */ } } };
+    m.onHurt = null; m.onDeath = null;
+    const need = typeof monBundles === 'function' ? monBundles([s.kind]).filter(b => !IMG[b.replace(/^spr:/, 'spr/') + '/idle']) : [];
+    if (need.length) loadBundles(need).then(() => { if (!m.dead && MON[s.kind]) { const md = MON[s.kind].model(); if (md) m.model = md; } });   // 队长那边房间机关刷出来的怪（素材没预载）
     if (m.boss && this.dg) { this.dg.boss = m; game.lastTarget = m; game.lastTargetT = game.t; }
     this.puppets.set(s.id, m);
   },
   localHit(t, a, dmg, crit, h) {
     if (a !== game.player && !(a && a.owner === game.player)) return;
     t.hp = Math.max(1, t.hp);   // 傀儡不在本地死亡，等主机的击杀事件
-    t.lockSt = performance.now() + Math.max(200, net.rtt + 100);
+    const now = performance.now();
+    t.lockSt = now + Math.max(200, net.rtt + 100);
+    // 本地预测：打中以后傀儡立刻按单机的受击规则动起来（浮空 / 弹地 / 倒地 / 起身），不等主机快照；恢复行动后再平滑回主机的位置
+    if (!t.pred) t.predMax = now + 4000;
+    t.pred = now + 350 + Math.min(300, net.rtt || 60);
     const H = {}; for (const k of COOP_HIT_KEYS) if (h[k] !== undefined && h[k] !== null) H[k] = typeof h[k] === 'boolean' ? (h[k] ? 1 : 0) : h[k];
     if (h.grab) H.stun = Math.max(H.stun || 0, 0.6);
     const counter = isCounter(t); this.stats.sentHits++;
-    this.hitQ.push({ id: t.nid, dmg, cr: crit ? 1 : 0, co: counter ? 1 : 0, x: Math.round(a.x), z: Math.round(a.z || 0), f: a.face, h: H });   // 每 25ms 打包发一次
+    this.hitQ.push({ id: t.nid, dmg, cr: crit ? 1 : 0, co: counter ? 1 : 0, x: Math.round(a.x), z: Math.round(a.z || 0), f: a.face, h: H, tm: +coopTakenMul(t).toFixed(3) });   // 每 25ms 打包发一次
   },
   onSnap(d, recvT) {
     if (!this.dg || this.dg.transition) { this.misT = 0; return; }
@@ -302,12 +336,25 @@ const coop = {
       m.netBuf.push({ t: recvT, x, y, z, f }); if (m.netBuf.length > 20) m.netBuf.splice(0, m.netBuf.length - 20); m.seenT = recvT;
       m.hp = hp; m.netSt = COOP_ST[sti] || 'idle'; m.netSq = sq;
       if (m.act && m.netSt !== 'act' && sq >= (m.replaySq || 0)) { const a = m.act; m.act = null; if (a.onEnd) { const P = game.player; if (m.tgt) game.player = m.tgt; try { a.onEnd(m, true); } finally { game.player = P; } } }
+      if (m.statue && m.statueLive && m.netSt !== 'act') { m.model = m.statueLive; m.statue = false; m.noGrab = false; m.statueLive = null; }
     }
     if (d.d) for (const [id, dmg, cr, uid] of d.d) { if (uid === this.me()) continue; const m = this.puppets.get(id); if (m && !m.dead) { addNumber(dmg, m.x, m.y, m.z, { crit: !!cr }); m.flash = 0.06; } }
   },
   onMonAct(d) {
     const m = this.puppets.get(d.id); if (!m || m.dead) return;
+    // 我刚把它打飞 / 打倒（本地预测中）：主机那边这一招会被我的命中打断，不在空中 / 地上重播
+    if (m.pred && (m.st === 'air' || m.st === 'down' || m.st === 'hit' || m.z > 2) && !d.sa) return;
     this.stats.monActs++; if (d.tg === this.me()) this.stats.monActsMe = (this.stats.monActsMe || 0) + 1; m.face = d.f; m.tgt = d.tg === this.me() ? game.player : (this.mates.get(d.tg) || game.player);
+    if (d.c === 'idle' && d.nm === 'statue' && typeof skyMakeStatue === 'function') {   // 石像：用同一套表现（灰色石像，本地按最近的人苏醒）
+      const live = m.model; skyMakeStatue(m); m.statueLive = live; m.replaySq = d.sq; return;
+    }
+    if (d.i < 0 && d.ai && typeof globalThis[d.ai] === 'function' && /AI$/.test(d.ai)) {   // 自带 AI：让同一个 AI 函数在傀儡身上立刻出一招
+      const P = game.player; game.player = m.tgt;
+      const was = m.act, aiCd = m.aiCd;
+      try { if (m.act) { m.act = null; } m.setState('idle'); m.aiCd = 0; globalThis[d.ai](m, 1 / 60); } catch (e) { console.error('傀儡自带 AI 出招出错', e); } finally { game.player = P; }
+      m.vx = m.vy = 0; if (aiCd !== undefined && m.act === was) m.aiCd = aiCd;
+      if (m.act && m.act !== was) { m.replaySq = d.sq; m.lockSt = 0; return; }
+    }
     const A = d.i >= 0 && m.def_ && m.def_.attacks ? m.def_.attacks[d.i] : null;
     const def = A ? { name: A.clip, clip: A.clip, ...A.act, hits: A.act.hits && A.act.hits.map(h => ({ ...h })) } : { name: d.c, clip: d.c, dur: d.du, superArmor: !!d.sa, noCounter: true };
     const P = game.player; game.player = m.tgt;
@@ -403,7 +450,7 @@ const coop = {
     if (this.role === 'host') {
       if (d.k === 'ready') this.onResp(from, true);
       else if (d.k === 'nope') this.onResp(from, false, d.why);
-      else if (d.k === 'hb' && this.state === 'play' && Array.isArray(d.l)) { for (const r of d.l.slice(0, 80)) this.remoteHit(from, r); }
+      else if (d.k === 'hb' && this.state === 'play' && Array.isArray(d.l)) { for (const r of d.l.slice(0, 80)) if (r.g !== undefined) this.remoteGrab(from, r); else this.remoteHit(from, r); }
       else if (d.k === 'resync' && this.state === 'play') this.onResync(from, +d.last || 0);
       else if (d.k === 'st' && this.state === 'play') { const m = this.puppets.get(d.id); if (m && !m.dead && ents.includes(m) && STATUS_COL[d.kind]) _coopAddStatus(m, d.kind, clamp(+d.dur || 0, 0, 30), { dps: clamp(+d.dps || 0, 0, 1e7), src: this.mates.get(from) || null, force: !!d.fo }); }
       else if (d.k === 'door' && this.state === 'play' && this.dg && this.dg.doorsOpen && !this.dg.transition && this.dg.room.doors[d.dir]) this.dg.go(d.dir);
@@ -421,6 +468,7 @@ const coop = {
         else if (d.k === 'room') this.onRoom(d);
         else if (d.k === 'clear') this.onClear(d);
         else if (d.k === 'sync') this.onSync(d);
+        else if (d.k === 'gbx') { const t = this.puppets.get(d.id); if (t && t.heldBy === game.player) dropGrab(game.player); }   // 主机那边抓不住（领主 / 刚被抓过等）：本地也放开
         else if (d.k === 'replay') this.onReplay(d);
       }
     }
@@ -438,7 +486,7 @@ const coop = {
     }
     if (this.role === 'host' && this.state === 'prep' && R.host === this.me()) {
       const P = this.prep; P.mem = R.members.map(x => x.id).filter(id => id !== this.me());
-      this.send({ k: 'prep', id: P.id, diff: P.diff });
+      this.send({ k: 'prep', id: P.id, diff: P.diff, boss: this.def.boss ? { ...this.def.boss } : null });
       withLoading(this.bundles(this.def), () => { P.selfReady = true; if (P.goWhenReady || P.mem.every(id => P.resp.has(id))) this.goNow(); else this.waitDialog(); });
       if (!P.mem.length) this.goNow();
     } else if (R.host !== this.me()) { this.hostId = R.host; }
@@ -467,14 +515,16 @@ const coop = {
     else if (g) chatSys(`${this.nameOf(m.user)} ${m.on ? '连接中断，等待重连…' : '重新连上了'}`);
   },
   // 自己掉线重连后：服务端会补发 room { resume }；没有就说明房间已经没了
-  onReconnect() {
-    if (this.state !== 'play' && this.state !== 'load' && this.state !== 'prep') return;
+  onReconnect(restarted) {
+    if (this.state === 'prep' || this.state === 'load') { if (restarted) this.abort('服务器重启了，这次进图取消了（入场道具已退还），请重新带队进入'); return; }
+    if (this.state !== 'play') return;
     clearTimeout(this.resumeT);
+    if (restarted) { chatSys(this.role === 'host' ? '服务器重启了，正在把队伍重新登记回服务器…' : '服务器重启了，正在重新加入队伍，稍等…'); this.hostLag = this.role === 'guest'; this.lagSince = performance.now(); }
     this.resumeT = setTimeout(() => {
       if (!this.room || this.state === 'none') return;
-      if (this.role === 'guest') this.leaveToTown('和队伍的连接断开太久，已离开队伍，返回城镇（奖励保留）');
-      else { chatSys('和队友的联机断开太久，地下城继续（单人）'); this.detach(); }
-    }, 4000);
+      if (this.role === 'guest') this.leaveToTown(restarted ? '服务器重启后没能重新加入队伍，返回城镇（这次拿到的经验和物品都保留）' : '和队伍的连接断开太久，已离开队伍，返回城镇（奖励保留）');
+      else { chatSys(restarted ? '服务器重启后队友没有回来，地下城继续（单人）' : '和队友的联机断开太久，地下城继续（单人）'); this.detach(); }
+    }, restarted ? 30000 : 4000);
   },
   leaveToTown(msg) {
     const dg = this.dg;
@@ -499,11 +549,27 @@ const coop = {
   },
   abort(msg) { if (msg) chatSys(msg); this.end('abort'); },
   reset() {
+    if (this.entryCost && (this.state === 'prep' || this.state === 'load')) coopRefund(this.entryCost);   // 进图没成功：退还入场道具（深渊邀请函）
+    this.entryCost = null;
     clearTimeout(this.waitT); clearTimeout(this.resumeT); clearTimeout(this.roomT);
     Object.assign(this, { role: null, room: null, state: 'none', dg: null, def: null, prep: null, hostLag: false, nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, mem: null });
     this.mates.clear(); this.puppets.clear(); this.spawnInfo.clear();
   },
 };
+// 入场消耗（深渊邀请函等）：对比 beforeEnter 前后的背包，记下扣掉了什么；进图没成功就原样退还
+function coopEntryCost(fn) {
+  const cnt = () => { const m = {}; for (const it of inv.items || []) if (it && it.key) m[it.key] = (m[it.key] || 0) + (it.n || 1); return m; };
+  const a = cnt(), r = fn(); if (r === false) return false;
+  const b = cnt(), used = [];
+  for (const k in a) if ((b[k] || 0) < a[k]) used.push([k, a[k] - (b[k] || 0)]);
+  return used.length ? used : null;
+}
+function coopRefund(list) {
+  for (const [k, n] of list) { try { giveItem(makeItem(k, n)); toastMsg(`没有进入地下城：已退还 ${ITEMS[k] ? ITEMS[k].name : k} ×${n}`, '#bfe8ff'); } catch (e) { console.error('退还入场道具失败', e); } }
+  if (save.data && save.live) save.write();
+}
+// 怪物当前的受伤倍率（圣光护盾、过热等临时效果）：队员看不到的由主机按比例补上
+const coopTakenMul = t => (t.dmgTaken ?? 1) * (t.dmgTakenMul || 1) * (1 + buffVal(t, 'taken'));
 const COOP_RELIABLE = new Set(['spawn', 'kill', 'room', 'clear', 'go', 'drop']);
 const COOP_LOGGED = new Set(['spawn', 'kill', 'room', 'clear']);   // 带序号、主机保留最近的记录，给重连的队员补发
 const COOP_HIT_KEYS = ['stun', 'knock', 'launch', 'airLift', 'down', 'downHit', 'spike', 'bounce', 'heavy', 'hs', 'radial', 'pull', 'otgLift', 'downLift', 'throwHit'];
@@ -547,9 +613,16 @@ function coopActStep(e, dt) {
 }
 // 队员这边的怪物傀儡
 function coopPuppetUpdate(dt) {
-  if (this.flash > 0) this.flash -= dt;
+  if (this.flash > 0 && !this.pred) this.flash -= dt;
   if (this.dead) { this.deadT = (this.deadT || 0) + dt; this.animate(dt); return; }
   if (this.heldBy) { this.stT += dt; this.animT += dt; updateHeld(this, dt); this.animate(dt); return; }   // 被我抓住：位置由我的抓取动作决定
+  if (this.pred) {   // 本地预测中：完整跑一遍单机的实体逻辑（重力、浮空、落地、倒地起身），位置暂时不跟快照
+    const P = game.player; if (this.tgt) game.player = this.tgt;
+    try { Ent.prototype.update.call(this, dt); } catch (e) { console.error('傀儡预测出错', e); this.pred = 0; } finally { game.player = P; }
+    const now = performance.now();
+    if ((now > this.pred && this.z <= 0 && (this.free || this.st === 'act')) || now > this.predMax) { this.pred = 0; this.settle = now + 450; this.vx = this.vy = this.vz = 0; }
+    return;
+  }
   let spd = 1;
   if (this.hitstop > 0) this.hitstop -= dt;
   else {
@@ -560,9 +633,12 @@ function coopPuppetUpdate(dt) {
     try { spd = coopActStep(this, dt); } catch (e) { console.error('傀儡动作出错', e); this.act = null; } finally { game.player = P; }
     this.animT += dt * spd;
   }
-  coopInterp(this, dt, 16);
-  // 状态：本地出招中 / 刚被我打中（先显示本地的受击反应）时不覆盖，其余跟着主机
-  if (!this.act && !(this.lockSt > performance.now())) { const s = this.netSt || 'idle'; if (this.st !== s) this.setState(s); }
+  const settling = this.settle > performance.now();
+  coopInterp(this, dt, settling ? 7 : 16);
+  // 状态：本地出招中 / 刚被我打中（先显示本地的受击反应）时不覆盖，其余跟着主机；
+  // 预测刚结束的一小段时间里，快照里“还在浮空 / 倒地”的是主机那边晚一拍的同一次受击，不再重播一遍
+  const echo = settling && (this.netSt === 'air' || this.netSt === 'down' || this.netSt === 'getup' || this.netSt === 'hit');
+  if (!this.act && !(this.lockSt > performance.now()) && !echo) { const s = this.netSt || 'idle'; if (this.st !== s) this.setState(s); }
   else if (!this.act && this.st === 'act') this.setState(this.netSt || 'idle');
   this.animate(dt);
 }
@@ -576,6 +652,7 @@ function coopGhostUpdate(dt) {
   let spd = 1;
   if (this.act) coopSafe(() => { spd = coopActStep(this, dt); });
   coopInterp(this, dt, 18);
+  if (this.grabbed) holdGrabbed(this);   // 主机上：队员抓住的怪跟着队员的影子走
   if (this.act) { this.animT += dt * spd; this.animate(dt); return; }
   // 没在重放动作：动画直接用队友那边的片段和时间
   const want = this.dead ? 'dead' : this.netSt || 'idle';
@@ -601,9 +678,16 @@ spawnMonster = function (kind, x, y, o) {
   return m;
 };
 function netIsGuest() { return coop.isGuest(); }
+// 队员的抓取：抓住 / 放开（含投掷）都按顺序排进命中包，主机照做
+const _coopStartGrab = startGrab, _coopReleaseHeld = releaseHeld, _coopThrowGrab = throwGrab;
+const coopGrabMine = (a, t) => coop.role === 'guest' && coop.state === 'play' && t && t.puppet && a === game.player;
+startGrab = function (a, t, h) { _coopStartGrab(a, t, h); if (coopGrabMine(a, t) && t.heldBy === a) coop.hitQ.push({ id: t.nid, g: 1, bw: h && h.grabBoss ? 1 : 0, mw: h && h.grabMaxW !== undefined ? h.grabMaxW : 2.2 }); };
+releaseHeld = function (t) { const a = t.heldBy; _coopReleaseHeld(t); if (coopGrabMine(a, t)) coop.hitQ.push({ id: t.nid, g: 0 }); };
+throwGrab = function (a, h) { const t = a.grabbed; if (coopGrabMine(a, t)) coop.hitQ.push({ id: t.nid, g: 0 }); return _coopThrowGrab(a, h); };
 // 队员给傀儡上的异常状态（灼烧 / 眩晕等）：转给主机结算，本地只保留表现（持续伤害由主机扣）
 const _coopAddStatus = addStatus;
 addStatus = function (t, kind, dur, o = {}) {
+  if (t && t.ghost) return;   // 队友影子：异常状态由队友自己的客户端结算
   if (t && t.puppet && coop.role === 'guest' && coop.state === 'play') {
     coop.send({ k: 'st', id: t.nid, kind, dur: +(+dur || 0).toFixed(2), dps: Math.round(o.dps || 0), fo: o.force ? 1 : 0 });
     return _coopAddStatus(t, kind, dur, { ...o, dps: 0 });
@@ -650,7 +734,28 @@ net.on('room', m => coop.onRoomMsg(m));
 net.on('room:closed', m => coop.onRoomClosed(m));
 net.on('room:left', m => coop.onRoomLeft(m));
 net.on('room:lag', m => coop.onRoomLag(m));
-bus.on('netOpen', () => coop.onReconnect());
+bus.on('netOpen', e => coop.onReconnect(e && e.restarted));
+// 服务端重启后：队长 / 决斗发起方把队伍和房间重新登记回去，其他人认领自己的队长（服务端两边都对上才算数）
+function netRestore() {
+  if (!net.user) return;
+  const me = net.user.id, P = netParty.prev;
+  let room = null, host = 0;
+  if (coop.state === 'play' && coop.room) {
+    if (coop.role === 'host') room = { kind: 'dungeon', meta: coop.room.meta || {}, members: [...coop.mates.keys()] };
+    else host = coop.hostId;
+  } else if (netDuel.active() && netDuel.room && netDuel.peer) {
+    if (netDuel.role === 'host') room = { kind: 'duel', meta: {}, members: [netDuel.peer.id] };
+    else host = netDuel.room.host;
+  }
+  // 队友回来之前先当作“断线中”（怪物不追旧影子；决斗暂停）
+  if (room && room.kind === 'dungeon') for (const g of coop.mates.values()) g.lag = true;
+  if (room && room.kind === 'duel') netDuel.peerLag = true;
+  const lead = P && P.leader === me;
+  if (room || lead) net.send({ t: 'restore:host', party: lead ? P.members.map(m => m.id).filter(id => id !== me) : [], room });
+  else if (host || P) net.send({ t: 'restore:claim', host: host || P.leader });
+  netParty.restoredNote = false;
+}
+bus.on('netRestart', () => netRestore());
 setInterval(() => coop.tick(), 25);
 // 换房间以后（本地 enter 执行完）补建新房间的傀儡
 const _coopDgEnter = Dungeon.prototype.enter;
@@ -658,7 +763,8 @@ Dungeon.prototype.enter = function (room, from) {
   _coopDgEnter.call(this, room, from);
   if (coop.dg === this && coop.role === 'guest' && coop.afterEnter) { const f = coop.afterEnter; coop.afterEnter = null; f(); }
   if (coop.dg === this) for (const g of coop.mates.values()) { g.x = game.player.x; g.y = game.player.y; g.netBuf.length = 0; }
-  if (coop.dg === this && coop.role === 'host') for (const [id, m] of coop.puppets) if (!ents.includes(m)) coop.puppets.delete(id);
+  // 主机：清掉别的房间 / 已死的怪的登记（不能按“在不在 ents 里”判断：深渊领主会先藏起来，派对结束后才回到 ents）
+  if (coop.dg === this && coop.role === 'host') { const rk = coop.rk(); for (const [id, m] of coop.puppets) if (m.dead || m.nrk !== rk) coop.puppets.delete(id); }
 };
 /* ---------------- 界面：队友头顶名字和血条、左侧队伍血条、队长掉线提示 ---------------- */
 netUiHooks.push((c) => {

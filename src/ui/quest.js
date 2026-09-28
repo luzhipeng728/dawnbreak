@@ -206,6 +206,8 @@ Object.assign(menus, {
       } else if (st === 'avail') btns.append(h('span', { class: 'small', style: 'color:#ffd23a' }, `去找 ${qNpcWhere(q.npc)} 接取这个任务`));
       else if (st === 'soon') btns.append(h('span', { class: 'small dim' }, `需要等级 Lv.${q.lvl}（当前 Lv.${game.lvl}）`));
       else if (st === 'done') btns.append(h('span', { class: 'small', style: 'color:#8aff9a' }, q.type === 'daily' ? '今天已经完成，明天 06:00 后可以再接' : '✔ 已完成'));
+      if (game.scene === 'town' && typeof guide !== 'undefined' && ['avail', 'active', 'ready'].includes(st) && guide.focus && (() => { const p = guide.pin; guide.pin = q.id; const t = guide.focus(); guide.pin = p; return t && t.q === q && !t.none; })())
+        btns.prepend(h('button', { class: 'btn', style: 'border-color:#ffd23a;color:#ffe070', title: '角色自己走过去（按任意方向键取消）', onclick: () => { sfx.click(); guide.goTo(q.id); this.close('quests'); } }, '自动前往'));
       det.append(btns);
     } else det.append(h('div', { class: 'dim' }, '选择左侧的任务查看详情'));
     const nAct = Object.keys(d.quests).length;

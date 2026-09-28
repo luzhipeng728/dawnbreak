@@ -29,12 +29,14 @@ export const cfg = {
   wsMaxPayload: 64 * 1024,
   pingEvery: 10_000,             // WS 心跳：两轮没回应（10~20 秒）就当掉线（网络静默断开时也能尽快发现）
   graceMs: +(env.DNF_GRACE_MS || 20_000),   // 掉线后保留队伍 / 房间的时间（这段时间内重连可以接着玩）
+  restoreMs: +(env.DNF_RESTORE_MS || 60_000),   // 服务端重启后：等队长 / 队员重新登记队伍和房间的时间
   sessionDays: 30,
 };
 
 const log = (...a) => console.log(ts(), ...a);
 export async function start(over = {}) {
   Object.assign(cfg, over);
+  cfg.boot = Date.now().toString(36);   // 这次启动的编号：客户端重连时发现变了，就知道服务端重启过（队伍 / 房间要重新登记）
   const db = openDb(cfg.db);
   const router = new Router();
   const handlers = new Map(), hooks = { connect: [], close: [] }, mods = {};

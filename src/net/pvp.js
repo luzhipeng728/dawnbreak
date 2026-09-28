@@ -17,7 +17,11 @@ const netDuel = {
   // 房间建好了（双方都会收到）
   onRoom(m) {
     const R = m.room; if (R.kind !== 'duel') return;
-    if (m.resume) { if (this.active()) chatSys('已恢复和对手的连接'); else net.send({ t: 'room:leave' }); return; }
+    if (m.resume) {
+      if (!this.active()) { net.send({ t: 'room:leave' }); return; }
+      this.room = R; this.resumed = true; this.peerLag = false; clearTimeout(this.restoreT);   // 服务端重启后恢复的房间 id 是新的
+      chatSys(m.restored ? '服务器重启后，决斗已恢复' : '已恢复和对手的连接'); return;
+    }
     if (!game.player || game.scene !== 'town' || !save.live) { net.send({ t: 'room:leave' }); return; }
     this.room = R; this.role = R.host === net.user.id ? 'host' : 'guest'; this.state = 'setup'; this.t0 = performance.now();
     const other = R.members.find(x => x.id !== net.user.id); this.peer = { id: other.id, name: other.name };
@@ -177,8 +181,10 @@ const netDuel = {
     this.reset();
     if (save.data) return startGameNow(save.data.cls);
   },
-  reset() { clearTimeout(this.setupT); Object.assign(this, { role: null, state: 'none', room: null, peer: null, inQ: [], recs: [], saved: null, view: null, result: null, resultShown: false, peerKit: null, myKit: null }); },
+  reset() { clearTimeout(this.setupT); clearTimeout(this.restoreT); if (this.netWait) { this.netWait = false; game.paused = false; } Object.assign(this, { peerLag: false, resumed: false, role: null, state: 'none', room: null, peer: null, inQ: [], recs: [], saved: null, view: null, result: null, resultShown: false, peerKit: null, myKit: null }); },
   tick() {
+    // 主机：自己断线或对方断线时暂停决斗（对方没法操作，不能白挨打），恢复后继续
+    if (this.role === 'host' && this.state === 'fight') { const wait = !net.connected || !!this.peerLag; if (wait !== !!this.netWait) { this.netWait = wait; game.paused = wait; } }
     if (this.role === 'host' && this.state === 'fight') {
       const now = performance.now();
       if (now - this.lastSnap >= 33) { this.lastSnap = now; this.hostSnap(); }
@@ -259,7 +265,7 @@ net.on('room:closed', m => {
   netDuel.abort(m.why === 'host-lost' || m.why === 'peer-left' || m.why === 'timeout' ? '对方掉线了，决斗结束（不计胜负）' : '对方离开了决斗');
 });
 net.on('room:left', m => { if (netDuel.room && m.id === netDuel.room.id && netDuel.state !== 'end') netDuel.abort('对方掉线了，决斗结束（不计胜负）'); });
-net.on('room:lag', m => { if (netDuel.room && m.id === netDuel.room.id && netDuel.active()) chatSys(m.on ? '对方的连接中断了，等待重连…' : '对方重新连上了'); });
+net.on('room:lag', m => { if (netDuel.room && m.id === netDuel.room.id && netDuel.active()) { netDuel.peerLag = m.on; chatSys(m.on ? '对方的连接中断了，决斗暂停，等待重连…' : '对方重新连上了，决斗继续'); } });
 net.on('r', m => {
   if (!netDuel.room || !netDuel.peer || m.f !== netDuel.peer.id) return;
   const d = m.d;
@@ -275,7 +281,12 @@ net.on('r', m => {
   }
 });
 // 断线：自己重连回来时如果房间已经没了（超时），结束决斗
-bus.on('netOpen', () => { if (netDuel.active()) setTimeout(() => { if (netDuel.active() && !netDuel.room) netDuel.abort('和对手的连接断开太久，决斗结束'); }, 4000); });
+// 重连后等服务端补发房间（resume）；服务端重启过就多等一会儿（要等双方重新登记）
+bus.on('netOpen', e => {
+  if (!netDuel.active() || netDuel.state === 'end') return;
+  netDuel.resumed = false; clearTimeout(netDuel.restoreT);
+  netDuel.restoreT = setTimeout(() => { if (netDuel.active() && netDuel.state !== 'end' && !netDuel.resumed) netDuel.abort(e && e.restarted ? '服务器重启了，决斗没能恢复，返回城镇' : '和对手的连接断开太久，决斗结束'); }, e && e.restarted ? 25000 : 4000);
+});
 bus.on('netClose', () => { if (netDuel.active()) chatSys('和服务器的连接断开了，正在重连…'); });
 // 决斗中：主机那边的结算界面不要“按 X 再来一局”（结束后双方自动回城）
 const _duelUpdate = duel.update;

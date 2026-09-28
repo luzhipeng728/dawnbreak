@@ -48,7 +48,7 @@ function invActions(it, el) {
   if (it.kind === 'use' && ITEMS[it.key] && ITEMS[it.key].use) row.append(b(ITEMS[it.key].use.open ? '打开' : '使用', () => invPrimaryPlain(it)));
   if (ITEMS[it.key] && ITEMS[it.key].orb) row.append(b('附魔', () => invOpenEnchant(it)));
   if (it.kind === 'use') row.append(h('span', { class: 'small dim' }, '快捷栏'), ...[0, 1, 2, 3, 4, 5].map(i => h('button', { class: 'btn sm' + (inv.quick[i] === it.key ? ' blue' : ''), style: 'padding:.2em .45em', onclick: () => { inv.quick[i] = inv.quick[i] === it.key ? null : it.key; sfx.click(); save.write(); el._render(); } }, String(i + 1))));
-  if (menus.isOpen('shop') && canSell(it)) row.append(b('出售', () => shopSellAsk([it], menus.wins.shop), 'red'));
+  if (canSell(it) && (menus.isOpen('shop') || isAvatar(it))) row.append(b('出售', () => shopSellAsk([it], menus.wins.shop || el), 'red'));   // 时装 / 宠物 / 光环随时可以卖
   if (menus.isOpen('storage') && it.kind !== 'quest') row.append(b('存入', () => storagePut(it)));
   if (it.kind !== 'quest') row.append(b('丢弃', () => invDiscard(it, el), 'red'));
   return row;
@@ -68,7 +68,9 @@ Object.assign(menus, {
       const tabs = h('div', { class: 'itabs' }, INV_TABS.map(([id, nm]) => h('div', { class: 'itab' + (id === tab ? ' on' : ''), onclick: () => { IW.invTab = id; sfx.click(); el._render(); } }, nm, h('span', { class: 'cnt' }, cnt[id] || 0))));
       const grid = h('div', { class: 'igrid', 'data-sk': 'inv' });
       if (IW.invSel && !inv.items.includes(IW.invSel)) IW.invSel = null;
-      for (let i = 0; i < inv.cap; i++) {
+      const cells = INV_NOCAP[tab] ? Math.max(inv.cap, Math.ceil((list.length + 1) / 8) * 8) : inv.cap;   // 不限格子：物品多了往下加行（至少留 1 个空格可以拖放）
+      if (cells > inv.cap) grid.style.cssText = 'max-height:20.4em;overflow-y:auto';
+      for (let i = 0; i < cells; i++) {
         const it = list[i];
         grid.append(itemSlot(it, {
           quick: true, sel: it && it === IW.invSel, onRight: () => invPrimary(it, el), onDbl: () => invPrimary(it, el),
@@ -82,7 +84,7 @@ Object.assign(menus, {
         h('span', { class: 'igold' }, `${fmtNum(game.gold)} G`),
         h('span', { class: 'small', style: 'color:#ffe8c0' }, `复活币 ×${save.data ? save.data.coins : 0}`),
         h('span', { class: 'sp' }),
-        h('span', { class: 'small dim' }, `${list.length}/${inv.cap}`),
+        h('span', { class: 'small dim' }, INV_NOCAP[tab] ? `${list.length} 件 · 不限格子` : `${list.length}/${inv.cap}`),
         h('button', { class: 'btn sm', onclick: () => { inv.sort(); sfx.click(); itemsRefresh(); } }, '整理'),
         menus.w_status ? h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('status')) menus.open('status'); } }, '个人信息') : null,
         h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('codex')) menus.open('codex'); } }, '图鉴'));

@@ -1,6 +1,6 @@
 /* =====================================================================
    任务线路指引 + 自动前往
-   - 目标：追踪栏第一个进行中的任务（没有追踪就取进行中的主线，再没有就取下一个可接主线）
+   - 目标：任务日志里点了“自动前往”的任务（guide.goTo）> 追踪栏第一个进行中的任务（没有追踪就取进行中的主线，再没有就取下一个可接主线）
      可交付 → 交付 NPC；否则第一个没完成的目标：对话 → NPC，到达 → 场景，通关 / 击杀 / 收集 → 地下城的门
    - 路线：沿场景出口（城镇 / 区域地图的连接）做最短路径；当前画面里的下一站头顶有跳动的金色箭头，画面外在屏幕边缘指方向
    - 左上角的指引条显示完整路线，点“自动前往”角色会自己走过去（模拟按方向键，走到 NPC 身边自动对话，走到门口弹出地下城窗口）；按任意方向键取消
@@ -17,10 +17,14 @@ body.touchui #qguide{top:12vh}
 #qguide button.stop{background:linear-gradient(#6a2a22,#2e100c);border-color:#c86a50}
 `);
 const guide = {
-  el: null, t: 0, cur: null, auto: false, autoT: 0, arrived: false,
+  el: null, t: 0, cur: null, auto: false, autoT: 0, arrived: false, pin: null,
+  // 任务日志里点“自动前往”：指引切到这个任务并开始走
+  goTo(id) { this.pin = id; this.auto = true; this.arrived = false; if (this.el) this.el._sig = null; },
   // ---- 目标 ----
   focus() {
     const d = typeof qdata === 'function' && qdata(); if (!d) return null;
+    const pq = this.pin && QUESTS[this.pin];
+    if (pq) { const st = questState(pq.id), t = st === 'avail' ? pq.npc && this.npcT(pq.npc, `接取「${pq.name}」`, pq) : st === 'active' || st === 'ready' ? this.targetOf(pq) : null; if (t) return t; this.pin = null; }
     const act = activeQuests(), tracked = (d.questTrack || []).map(id => QUESTS[id]).filter(q => q && d.quests[q.id]);
     const list = tracked.length ? tracked : act.slice().sort((a, b) => (a.type === 'main' ? 0 : 1) - (b.type === 'main' ? 0 : 1));
     for (const q of list) { const t = this.targetOf(q); if (t) return t; }
@@ -34,6 +38,7 @@ const guide = {
       const g = q.goals[i]; if (goalVal(q, rec, i) >= g.n) continue;
       const txt = goalText(g);
       if (g.type === 'talk' && g.npc) return this.npcT(g.npc, txt, q);
+      if (g.type === 'job') return this.npcT(q.npc, txt, q);   // 转职：去导师那里
       if (g.type === 'reach' && SCENES[g.scene]) return { scene: g.scene, what: txt, q, kind: 'scene' };
       if (['clear', 'kill', 'collect'].includes(g.type)) { const dg = this.dungeonFor(g); if (dg) return this.gateT(dg, txt, q); }
       return { none: true, what: txt, q };   // 升级、穿装备之类没有地点的目标

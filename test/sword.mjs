@@ -73,7 +73,8 @@ const R = await page.evaluate(() => {
   // 爆发之刃：命中立即爆炸，命中后可以取消接怒气爆发
   T.clear(); const m2 = T.mob(400, 100); p.cool = {}; T.cast('bloodblade'); let boomAt = -1; for (let i = 0; i < 40; i++) { T.run(1); if (p.act && p.act.boom && boomAt < 0) boomAt = i; } T.tap('s3'); T.run(2); out.bladeBoomAt = boomAt; out.bladeCancel = p.act && p.act.skill; T.run(60);
   // 血气旺盛：十字刃附带出血
-  T.clear(); const m3 = T.mob(360, 100); p.cool = {}; T.cast('cross'); T.run(40); out.crossBleed = !!(m3.status && m3.status.bleed); T.clear();
+  T.clear(); game.skillLv.bz_limit = 0; const m3 = T.mob(360, 100); p.cool = {}; T.cast('cross'); T.run(40); out.crossBleed = !!(m3.status && m3.status.bleed); T.clear();
+  game.skillLv.bz_limit = 10; const m3b = T.mob(400, 100); p.cool = {}; T.cast('cross'); T.run(40); out.crossLimit = !!(m3b.status && m3b.status.bleed); T.clear();   // 血气界限：交叉斩直接射出血十字
   // 饥渴：按住蓄力耗血
   T.reset(); const hpB = p.hp; T.press('s5'); T.run(2); T.hold('s5'); T.run(130); T.release('s5'); T.run(40); out.thirstHp = Math.round((hpB - p.hp) / p.hpMax * 100); out.thirstBuff = !!p.buffs.bz_thirst;
   // 再按一次狂暴之力：解除，普攻回到单刀
@@ -114,9 +115,9 @@ const R = await page.evaluate(() => {
   // 泯灭仪式：清掉自己的阵
   T.cast('sb_purge'); T.run(20); out.purged = summonsOf(p, { tag: 'field' }).length; T.clear();
   // 残影之凯贾：普攻第 4 下是冲刺斩，冲刺中可以接鬼影闪；平时放不出鬼影闪
-  T.reset(); out.flashNoKaiga = T.cast('sb_flash') || null; T.run(20);
+  game.skillLv.sb_mastery = 0; T.reset(); out.flashNoKaiga = T.cast('sb_flash') || null; T.run(20);   // 二觉被动（御鬼之极）之前
   T.cast('sb_kaiga'); T.run(30); p._psvT = 0; T.run(2); for (let i = 0; i < 80 && !(p.act && p.act.kaigaDash); i++) { if (i % 6 === 0) T.tap('attack'); else T.run(1); }
-  out.kaigaDash = !!(p.act && p.act.kaigaDash); T.cast('sb_flash'); out.flashKaiga = p.act && p.act.skill; T.run(80);
+  out.kaigaDash = !!(p.act && p.act.kaigaDash); T.cast('sb_flash'); out.flashKaiga = p.act && p.act.skill; T.run(80); game.skillLv.sb_mastery = 1;
   // 冥炎之卡洛：普攻改为发射分身（投射物），命中附加冥炎；冥炎剑只能在卡洛中施放
   T.clear(); T.reset(); out.bladeNoKaro = T.cast('sb_karoblade') || null; T.run(10); const m9 = T.mob(420, 100);
   T.cast('sb_karo'); T.run(30); p._psvT = 0; T.run(2); const pj0 = projs.length; T.tap('attack'); T.run(6); out.karoShot = projs.length > pj0; T.run(40); out.karoBurn = summonsOf(p, 'sb_karo_burn').some(s => s.host === m9);
@@ -139,6 +140,30 @@ const R = await page.evaluate(() => {
   T.reset(); p.cool = {}; T.cast('gb_issen'); T.run(25); const ph2 = gbPhantom(p), phx = ph2 && ph2.x, plx = p.x; T.cast('gb_riko'); T.run(3); out.rikoSwap = ph2 && Math.abs(p.x - phx) < 5 && Math.abs(ph2.x - plx) < 5; T.run(90);
   // 剑影不能学卡赞
   out.gbKazan = skillAllowed('kazan', 'ghostblade');
+  // ---- P1（觉醒与 48–100 级技能）：每个转职的新主动技能逐个施放（满足前置条件），跑完不报错 ----
+  const P1 = { blade: ['wm_meteor', 'wm_kuubatto', 'wm_hakuu', 'wm_shunzan', 'wm_awaken2', 'wm_mukei', 'wm_awaken3'],
+    berserker: ['bz_awaken', 'bz_snatch', 'bz_crusher', 'bz_boom', 'bz_fatal', 'bz_awaken2', 'bz_rampant', 'bz_awaken3'],
+    asura: ['as_ice2', 'as_fire2', 'as_indra', 'as_vajra', 'as_awaken2', 'as_mui', 'as_awaken3'],
+    soulbender: ['sb_purgatory', 'sb_swamp', 'sb_blade', 'sb_descent', 'sb_awaken2', 'sb_ferry', 'sb_awaken3'],
+    ghostblade: ['gb_naraku', 'gb_abyss', 'gb_shinpu', 'gb_dance', 'gb_awaken2', 'gb_mushiki', 'gb_awaken3'] };
+  save.data.flags = { ...(save.data.flags || {}), awaken: true }; out.p1 = {};
+  for (const job in P1) { T.clear(); T.job(job); for (const id of P1[job]) { T.reset(); p.cool = {}; p.buffs.frenzy = { t: 9999, atk: 0.1, lv: 1, tick: 10 }; p.buffs.as_aura = { t: 9999, atk: 0.05, lv: 1, tick: 0 };
+    for (let i = 0; i < 3; i++) T.mob(380 + i * 50, 80 + i * 20); const ok = castSkill(p, id, false, 's0'); T.run(1); const got = !!(p.act && (p.act.skill === id)) || (SKILLS[id].instant && p.cool[id] > 0);
+    T.run(260); out.p1[id] = ok && got; T.clear(); } }
+  // 万剑归宗：召唤飞剑 → 普攻命中射出穿云刺 → 再按一次御剑术；暴风式和开天斩共享冷却
+  T.job('blade'); T.reset(); p.cool = {}; const m12 = T.mob(380, 100); castSkill(p, 'wm_awaken2', false, 's0'); T.run(130); out.swords = summonsOf(p, 'wm_swords').length;
+  const pj1 = projs.length; p.doAct(p.acts.atk1); T.run(12); out.thrust = projs.length > pj1 || summonsOf(p, 'wm_swords').length === 1; T.run(30); p.cool = {}; castSkill(p, 'wm_awaken2', false, 's0'); T.run(2); out.swordsEnd = summonsOf(p, 'wm_swords').length; T.run(120);
+  T.reset(); p.cool = {}; castSkill(p, 'wm_awaken3', false, 's0'); T.run(2); out.awkShared = (p.cool.awaken || 0) > 100; T.run(260); T.clear();
+  // 魔狱血刹（现版）：背后血剑 → 再按一次劈下
+  T.job('berserker'); T.reset(); p.cool = {}; castSkill(p, 'bz_awaken', false, 's0'); T.run(120); out.bloodSword = summonsOf(p, 'bz_bloodsword').length === 1 && !!p.buffs.bz_bloodsword;
+  p.cool.bz_awaken = 99; castSkill(p, 'bz_awaken', false, 's0'); T.run(2); out.bloodSwordFall = summonsOf(p, 'bz_bloodsword').length === 0; T.run(160); T.clear();
+  // 阿修罗：心眼挡下一次攻击；雷神之息让转职技能命中附带感电
+  T.job('asura'); T.reset(); const m13 = T.mob(360, 100); m13.face = -1; const hpM = p.hp; out.mind = applyHit(m13, p, { dmg: 5 }, {}) === false && p.hp === hpM; out.mind2 = applyHit(m13, p, { dmg: 5 }, {}) !== false;
+  T.reset(); p.cool = {}; p.buffs.as_mark = { t: 9999, n: 0, gen: 7 }; castSkill(p, 'as_burst', false, 's0'); T.run(30); out.thunderShock = !!(m13.status && m13.status.shock); T.clear();
+  // 鬼泣：吉格降临处决 HP 低的普通怪物
+  T.job('soulbender'); T.reset(); p.cool = {}; const m14 = T.mob(420, 100); m14.hp = m14.hpMax = 5e5; castSkill(p, 'sb_awaken2', false, 's0'); T.run(150); m14.hp = m14.hpMax * 0.2; T.run(90); out.jigExec = m14.dead || m14.hp <= 0; T.run(100); T.clear();
+  // 剑影：无式·极影剑在鬼步中施放 = 鬼步形态
+  T.job('ghostblade'); T.reset(); p.cool = {}; castSkill(p, 'gb_step', false, 's0'); T.run(10); castSkill(p, 'gb_mushiki', false, 's1'); T.run(1); out.mushikiStep = p.act && p.act.name; T.run(80); T.clear();
   // ---- 受击前钩子（combat.js beforeHurt）与新异常状态 ----
   const R0 = Math.random, fixR = v => { Math.random = () => v; }, relR = () => { Math.random = R0; };
   T.clear(); T.job('blade'); T.reset(); const atk = T.mob(360, 100); atk.face = -1;
@@ -177,7 +202,7 @@ report('狂战士：没开狂暴不能放狂气斩', R.scratchNoFrenzy === null,
 report('狂暴之力：开启、扣血、普攻二刀流', R.frenzyOn && R.frenzyCost > 0 && /^bzA/.test(R.dualClip || ''), [R.frenzyOn, R.frenzyCost, R.dualClip]);
 report('狂暴中可放狂气斩；转职技能冷却 −10%', R.scratchFrenzy === 'bz_scratch' && Math.abs(R.outrageCd - 11.7) < 0.05, [R.scratchFrenzy, R.outrageCd]);
 report('爆发之刃命中即爆、可取消', R.bladeBoomAt >= 0 && R.bladeBoomAt < 26 && R.bladeCancel === 'outrage', [R.bladeBoomAt, R.bladeCancel]);
-report('血气旺盛：十字刃出血', R.crossBleed, R.crossBleed);
+report('血气旺盛：十字刃出血（学了血气界限后射出的血十字也出血）', R.crossBleed && R.crossLimit, [R.crossBleed, R.crossLimit]);
 report('饥渴：蓄力耗血并获得 BUFF', R.thirstHp >= 25 && R.thirstBuff, [R.thirstHp, R.thirstBuff]);
 report('狂暴之力再按解除、普攻回单刀', R.frenzyOff && R.singleClip === undefined || (R.frenzyOff && !/^bzA/.test(R.singleClip || '')), [R.frenzyOff, R.singleClip]);
 report('阿修罗：没有波动印不能放鬼印珠', R.orbNoMark === null, R.orbNoMark);
@@ -201,6 +226,13 @@ report('剑术中无动作叠加幻鬼技能', R.stackAct === 'gb_chain' && R.st
 report('鬼步 + 剑术 = 瞬移收尾并伤害路径上的敌人', R.stepMoved && R.stepHit && /^gbStep_/.test(R.stepAct || ''), [R.stepMoved, R.stepHit, R.stepAct]);
 report('离魂一闪：与已分离的幻鬼交换位置', R.rikoSwap, R.rikoSwap);
 report('剑影不能学卡赞', R.gbKazan === false, R.gbKazan);
+const p1bad = Object.entries(R.p1).filter(([, v]) => !v).map(([k]) => k);
+report('P1：五个转职的觉醒与 48–100 级主动技能都能正常施放', p1bad.length === 0, p1bad.length ? p1bad : Object.keys(R.p1).length);
+report('万剑归宗：飞剑、穿云刺、再按御剑术；开天斩与暴风式共享冷却', R.swords === 1 && R.thrust && R.swordsEnd === 0 && R.awkShared, [R.swords, R.thrust, R.swordsEnd, R.awkShared]);
+report('魔狱血刹（现版）：背后血剑、再按劈下', R.bloodSword && R.bloodSwordFall, [R.bloodSword, R.bloodSwordFall]);
+report('阿修罗：心眼挡一次；雷神之息附带感电', R.mind && R.mind2 && R.thunderShock, [R.mind, R.mind2, R.thunderShock]);
+report('吉格降临处决低 HP 敌人', R.jigExec, R.jigExec);
+report('鬼步中的无式·极影剑 = 鬼步形态', /^gbStep_gb_mushiki/.test(R.mushikiStep || ''), R.mushikiStep);
 report('自动格挡挡下正面攻击', R.autoGuard, R.autoGuard);
 report('格挡：物理吸收 > 魔法吸收', R.guardPhys < R.guardMag && Math.abs(R.guardPhys - 0.44) < 0.06 && Math.abs(R.guardMag - 0.65) < 0.06, [R.guardPhys, R.guardMag]);
 report('感电：光剑命中附带、再挨打追加感电伤害', R.shock && R.shockProc, [R.shock, R.shockProc]);

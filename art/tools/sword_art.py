@@ -157,7 +157,7 @@ GHOSTS = {   # 名字: (描述, 尺寸)
                   'tiny glowing eyes above the mouth, dark purple shadowy body with dripping swamp muck and shadowy tendrils, chunky cartoon shapes, palette of dark purple, violet and black, front view, wide composition.', '1536x1024'),
     # P1：各转职二觉 / 三觉的大型形象
     'bz_demon': ('the Blood Demon: a huge hulking chibi demon made of swirling crimson blood energy with two curved horns, glowing white eyes, a fanged grin, huge clawed arms, '
-                 'blood dripping and flowing like flames, lower body fading into a crimson blood cloud, palette of crimson, blood red and black, charging forward to the RIGHT, side view.', '1536x1536'),
+                 'blood dripping and flowing like flames, lower body fading into a crimson blood cloud, palette of crimson, blood red and black, charging forward to the RIGHT, side view.', '1024x1024'),
     'as_raijin': ('the Thunder God: a heroic chibi thunder deity with a stern face, spiky hair crackling with lightning, a ring of small drums floating behind his back like a halo, '
                   'arms raised gathering lightning, a flowing sash, body made of glowing yellow-white and electric blue light, lower body fading into storm clouds, front view.', '1024x1536'),
     'sb_jig': ('Jig, the undead high priest and king of ghosts: a tall gaunt chibi lich priest in a tattered dark purple and gold ceremonial robe with a tall pointed hood, '
@@ -232,6 +232,24 @@ def jobart_jobs(only=''):
              'prompt': f'Using this exact chibi character (same face, same spiky silver hair, same proportions and the same cute art style with thick outlines), draw a full-body character illustration of him as {d}. Full body, three-quarter view facing right, dynamic confident pose. Plain pure white background, no text.'}
             for j, d in JOBART.items() if j.startswith(only)]
 
+ICONS_P1 = [   # P1（阿修罗 / 鬼泣 / 剑影的一觉后技能）+ P2 要用的 2 个；16 个一张，表名 sword_p1icons_a / b
+    ('as_mind', 'a calm closed third eye glowing violet on a blindfold with a faint afterimage dodging aside'), ('as_ice2', 'a huge trident-shaped light-blue ice spike sliding along the ground'),
+    ('as_fire2', 'a burning orange fire field on the ground erupting into a big explosion'), ('as_thunder', 'a stern thunder god face with a ring of drums crackling with yellow lightning'),
+    ('as_indra', 'several glowing electric orbs linked by crackling yellow lightning chains'), ('as_vajra', 'a golden vajra thunderbolt weapon falling from a dark storm cloud'),
+    ('as_awaken2', 'a giant thunder god raising both arms gathering lightning over a glowing seal circle'), ('as_eye', 'a wide open mystic eye with violet wave ripples flowing through the pupil'),
+    ('as_mui', 'a glowing violet square magic formation drawn on the ground about to explode'), ('as_awaken3', 'a lightning sword slashing down with electric ripples spreading in four directions'),
+    ('sb_fear', 'a dark purple aura of dread with a small ghostly skull face and slowing ripples'), ('sb_purgatory', 'ghostly purple blades rising out of a cracked burning ground'),
+    ('sb_swamp', 'three grey sealed tombstones around a dark swirling underworld swamp portal'), ('sb_mastery', 'a glowing purple ghost hand holding seven small colorful spirit flames'),
+    ('sb_blade', 'a hooded steel-grey ghost swordsman surrounded by a ring of floating ghostly swords'), ('sb_descent', 'a spirit sword plunging down from the sky onto a burst of steel-blue light'),
+    ('sb_awaken2', 'a gaunt lich priest in a purple and gold robe raising skeletal hands over clutching ghost hands'), ('sb_crown', 'a dark crown of the ghost king with nine small spirit flames'),
+    ('sb_ferry', 'a long dark sword slicing open a violet rift in space with ghost faces inside'), ('sb_awaken3', 'a huge ancient stone underworld gate with chains and violet light leaking out'),
+    ('gb_yaksha', 'a cold katana under a dark night moon with a faint pale blue ghost mask'), ('gb_naraku', 'a masked ghost dropping from above in a vertical cyan slash into darkness'),
+    ('gb_abyss', 'a paper seal talisman pinning a silhouette while a blue soul blade pulls in ghostly wisps'), ('gb_bloom', 'a pale ghost face mask blooming like a flower with cold blue petals'),
+    ('gb_shinpu', 'a masked ghost unleashing a spinning gust of cyan sword wind'), ('gb_dance', 'a flurry of three cyan slashes followed by a wide circular soul blade spin'),
+    ('gb_awaken2', 'a swordsman and a masked ghost vanishing into smoke above a dark abyss with a falling slash'), ('gb_scorn', 'a masked ghost looking down coldly with glowing blue eyes over a katana'),
+    ('gb_mushiki', 'three overlapping silhouettes of a swordsman and a ghost striking at once with cyan slashes'), ('gb_awaken3', 'a pale ghost hand with a cut palm opening a swirling blue soul world'),
+    ('wm_swap2', 'two different swords swapping places with a bright shock wave between them'), ('as_wing', 'a violet crescent sword wave spreading like glowing wings'),
+]
 def main():
     sys.path.insert(0, os.path.dirname(__file__))
     import combatgen

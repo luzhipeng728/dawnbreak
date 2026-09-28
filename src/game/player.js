@@ -192,8 +192,14 @@ function canCancelInto(p, id) {
 }
 // 兼容旧调用：当前动作有没有可能被“某个”技能打断（AI 判断忙不忙用）
 function canSkillCancel(p) { return p.st !== 'act' || !p.act || !!p.act.basic || !!p.act.links || !!p.act.cancelable; }
-// 受击中能不能放（S.whenHit：true = 受击硬直 / 倒地中；函数 = 自定条件）；被抓、冰冻、眩晕时都不行
-const whenHitOk = (p, S) => !(p.status && (p.status.freeze || p.status.stun)) && p.st !== 'held' && (typeof S.whenHit === 'function' ? S.whenHit(p) : p.st === 'hit' || p.st === 'down');
+// 受击时才能放的技能：S.whenHit = true 或 fn(p) → 这个限制现在是否生效（例：战斗法师学了“实战型替身草人”后返回 false，平时也能放）；
+// 限制生效时，只有 S.hitStates 里的状态（默认受击硬直 / 倒地）或受击后 S.hitWin 秒内能放；被抓、冰冻、眩晕时都不行
+function whenHitOk(p, S) {
+  if (!(typeof S.whenHit === 'function' ? S.whenHit(p) : !!S.whenHit)) return true;
+  if ((p.status && (p.status.freeze || p.status.stun)) || p.st === 'held') return false;
+  if ((S.hitStates || ['hit', 'down']).includes(p.st)) return true;
+  return !!S.hitWin && game.t - (p.hurtT ?? -9) < S.hitWin;
+}
 // 空中 / 地面限制：空中只能放 air（或 airIf 满足）的技能，airOnly 的技能只能在空中放
 function airOk(p, S) {
   const inAir = p.st === 'jump' || p.z > 2 || (p.st === 'act' && p.act && p.act.airOnly);

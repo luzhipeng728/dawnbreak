@@ -64,7 +64,7 @@
     "gl_awaken": { "hits": [10, 35], "invul": "part", "cd": 135, "src": "N-launcher#s-3.1.2 / QQ-2604", "conf": "high", "note": "古代巨炮主炮 10 段，满级施放中无敌，角色向后位移" },
     "gl_plasma": { "hits": [15, 40], "grab": true, "cd": 30, "src": "N-launcher#s-3.1.3", "conf": "high", "note": "3 秒 0.08 秒一段电流，命中强制控制 2 秒（可刷新），施放中可移动",
       "why": { "grab": "官方是多目标控制（홀딩）；本作用每段硬直 + 吸附实现，木桩不进入被抓状态" } },
-    "gl_fm92sw": { "hits": [8, 30], "cd": 50, "src": "N-launcher#s-3.1.4", "conf": "high", "note": "射出画面外，追踪最高等级目标返回轰炸 8 段（本作另有火焰地带）" },
+    "gl_fm92sw": { "hits": [8, 40], "cd": 50, "src": "N-launcher#s-3.1.4", "conf": "high", "note": "射出画面外，追踪最高等级目标返回轰炸 8 段（本作另有 3 秒火焰地带，每 0.3 秒一段）" },
     "gl_fsc7": { "hits": [8, 12], "cd": 40, "src": "N-launcher#s-3.2.2", "conf": "high", "note": "子母弹附着敌人后连锁爆炸 10 段" },
     "gl_pt15": { "hits": [1, 10], "cd": 45, "src": "N-launcher#s-3.2.3", "conf": "high", "note": "压缩空气炮；↑ 前后同时发射、↓ 向地面发射聚怪" },
     "gl_awaken2": { "hits": [20, 60], "cd": 170, "src": "N-launcher#s-3.2.4 / QQ-2604", "conf": "high", "note": "空降强袭装甲后全武装齐射（官方约 147 段），冲击波只击退",

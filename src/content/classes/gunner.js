@@ -115,12 +115,12 @@ defSkill('g_knee', { name: '后撩踢', cls: 'gun', lvReq: 1, lvStep: 3, sp: 20,
   desc: '抬腿向上猛踢，把敌人踢到空中。发动瞬间霸体；按住前方向键会向前滑出半个身位。', pow: lv => skillDmg(1.7, 0.17, lv), ai: { kind: 'launch', r: [0, 60], dy: 20 },
   act: (lv, p) => ({ name: 'g_knee', clip: 'kick', dur: 0.45, superArmor: [0, 0.1],
     move: p && p.pad && p.pad.is(p.face > 0 ? 'right' : 'left') ? [[0, 0.14, 210]] : null,
-    hits: [HB(0.08, 0.18, [0, 68, 26, 20, 135], skillDmg(1.7, 0.17, lv), { launch: 560 + lv * 6, knock: 30, hs: 0.08, snd: 'blunt', shake: 2, big: 1.2 })],
+    hits: [HB(0.08, 0.18, [0, 68, 26, 20, 135], skillDmg(1.7, 0.17, lv), { launch: 470 + lv * 5, knock: 30, hs: 0.08, snd: 'blunt', shake: 2, big: 1.2 })],
     events: [evAt(0.06, () => sfx.swing(true))] }) });
 defSkill('g_launch', { name: '浮空弹', cls: 'gun', lvReq: 1, sp: 15, mp: 12, cd: 3.8, type: 'phys', col: '#4a90d8',
-  desc: '射出一发特制子弹，命中的敌人被高高打上天。', pow: lv => skillDmg(1.8, 0.18, lv), ai: { kind: 'launch', r: [0, 380], dy: 14 },
+  desc: '射出一发特制子弹，命中的敌人被高高打上天（浮空高度比其他浮空技能都高）。', pow: lv => skillDmg(1.8, 0.18, lv), ai: { kind: 'launch', r: [0, 380], dy: 14 },
   act: (lv) => ({ name: 'g_launch', clip: 'gshot', dur: 0.36,
-    events: [evAt(0.04, e => { fireBullet(e, { dmg: skillDmg(1.8, 0.18, lv), life: 0.6, hit: { launch: 520, knock: 40, hs: 0.07, big: 1.3 } }); sfx.gun(1.3); })] }) });
+    events: [evAt(0.04, e => { fireBullet(e, { dmg: skillDmg(1.8, 0.18, lv), life: 0.6, hit: { launch: 700, knock: 40, hs: 0.07, big: 1.3 } }); sfx.gun(1.3); })] }) });
 defSkill('g_gatling', { name: 'M-137 格林机枪', cls: 'gun', lvReq: 5, sp: 15, mp: 30, cd: 5, type: 'phys', icon: 'g_gatling', col: '#5a5a6a',
   desc: '架起格林机枪向前扫射，每秒 7 发。连按 X 延长扫射（最长 2 秒），按住 ↑ 向斜上方扫射托住空中的敌人，按 C 停止。', pow: lv => skillDmg(6.7, 0.67, lv), ai: { kind: 'poke', r: [0, 400], dy: 14 },
   act: (lv) => ({ name: 'g_gatling', clip: 'gatling', dur: 3, noCounter: true,

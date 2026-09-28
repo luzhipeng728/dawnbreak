@@ -108,16 +108,16 @@ defSkill('g_blade', { name: '双枪极舞刃', cls: 'gun', job: 'ranger', lvReq:
 const bladeSub = (id, o) => defSkill(id, { cls: 'gun', job: 'ranger', lvReq: 15, lvFrom: 'g_blade', maxLv: 1, sp: 0, hidden: true, type: 'phys', col: '#c83a4a', ...o });
 bladeSub('g_bl_flip', { name: '飞燕射击', mp: 6, cd: 2, air: true, airOnly: true, req: p => p.st === 'jump' && p.stT < 0.4 ? true : '起跳后马上再按 C',
   desc: '起跳后马上再按 C：向前空翻，同时向下连开 3 枪。',
-  act: () => ({ name: 'g_bl_flip', clip: 'rainbow', dur: 0.55, airOnly: true, lowGrav: 0.45, noCounter: true superArmor: [0, 0.1],
+  act: () => ({ name: 'g_bl_flip', clip: 'rainbow', dur: 0.55, airOnly: true, lowGrav: 0.45, noCounter: true, superArmor: [0, 0.1],
     onStart: e => { e.vz = Math.max(e.vz, 300); e.vx = e.face * 230; sfx.jump(); },
     update: e => { const a = e.act, n = Math.floor((e.actT - 0.1) / 0.1); if (e.actT > 0.1 && n !== a.n && n < 3) { a.n = n; fireBullet(e, { down: true, dmg: 0.9 * shotDmgOf(e), life: 0.5, vol: 0.7 }); } } }) });
 bladeSub('g_bl_dive', { name: '俯冲斩', mp: 6, cd: 1, air: true, airOnly: true, desc: '跳跃中按 Z：挥着枪刃沿斜线向下俯冲斩击。',
-  act: () => ({ name: 'g_bl_dive', clip: 'airBlade', dur: 0.7, airOnly: true, noCounter: true superArmor: [0, 0.1],
+  act: () => ({ name: 'g_bl_dive', clip: 'airBlade', dur: 0.7, airOnly: true, noCounter: true, superArmor: [0, 0.1],
     onStart: e => { e.vz = -560; e.vx = e.face * 380; bladeSlash(e, { a0: -1.3, a1: 1.7, r: 62, heavy: true }); },
     hits: [HB(0, 0.7, [-6, 62, 26, -50, 70], 1.4, { stun: 0.4, knock: 80, airLift: 160, hs: 0.05, snd: 'slash', col: '#ff9aa8' })],
     onLand: e => { fxDust(e.x, e.y, 5, 12); e.vx *= 0.2; e.endAct(); } }) });
 bladeSub('g_bl_rush', { name: '起身斩', mp: 6, cd: 1, desc: '滑铲（跑攻）中按 Z：顺势起身斩击；再按 Z 把敌人挑飞，落地前可以接浮空弹或致命射击。',
-  act: () => ({ name: 'g_bl_rush', clip: 'rushBlade', dur: 0.46, noCounter: true superArmor: [0, 0.1], move: [[0, 0.12, 140]], follow: () => bladeRush2(), followWin: [0.16, 0.46],
+  act: () => ({ name: 'g_bl_rush', clip: 'rushBlade', dur: 0.46, noCounter: true, superArmor: [0, 0.1], move: [[0, 0.12, 140]], follow: () => bladeRush2(), followWin: [0.16, 0.46],
     hits: [HB(0.05, 0.16, [0, 72, 28, 0, 110], 1.3, { stun: 0.5, knock: 60, launch: 220, hs: 0.06, snd: 'slash', col: '#ff9aa8' })],
     events: [evAt(0.04, e => bladeSlash(e, { a0: 1.5, a1: -1.6, r: 60 }))] }) });
 function bladeRush2() {
@@ -126,7 +126,7 @@ function bladeRush2() {
     events: [evAt(0.05, e => bladeSlash(e, { a0: 1.8, a1: -1.2, r: 66, heavy: true }))] };
 }
 bladeSub('g_bl_up', { name: '翻腾攻击', mp: 6, cd: 1.5, desc: '上旋踢中按 Z：原地向上一记翻腾踢，把敌人挑飞。',
-  act: () => ({ name: 'g_bl_up', clip: 'kick', dur: 0.42, noCounter: true superArmor: [0, 0.1], links: ['g_launch', 'g_head', 'g_flash'],
+  act: () => ({ name: 'g_bl_up', clip: 'kick', dur: 0.42, noCounter: true, superArmor: [0, 0.1], links: ['g_launch', 'g_head', 'g_flash'],
     hits: [HB(0.06, 0.16, [-10, 66, 28, 10, 150], 1.2, { launch: 560, knock: 20, hs: 0.07, snd: 'blunt', big: 1.2 })],
     events: [evAt(0.05, e => bladeSlash(e, { a0: 2.0, a1: -1.4, r: 60 }))] }) });
 defSkill('g_head', { name: '致命射击', cls: 'gun', job: 'ranger', lvReq: 15, mp: 25, cd: 6.5, type: 'phys', icon: 'g_head', col: '#8a2a3a',

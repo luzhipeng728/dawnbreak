@@ -97,6 +97,8 @@ def fxcut():
         p = os.path.join(src, f'{n}.png')
         if not os.path.exists(p): print('missing', n); continue
         im = glow_to_rgba(Image.open(p)) if g else remove_bg(Image.open(p))
+        if n == 'enCage':   # 笼子栏杆之间被围住的白底
+            from sky_art import clear_holes; im = clear_holes(im, min_area=200)
         im = fit(im, FX_MAX[n]); f = os.path.join(out, f'{n}.webp'); im.save(f, 'WEBP', quality=80, method=6); print(n, im.size, os.path.getsize(f) // 1024, 'K')
     p = os.path.join(src, 'enForest.png')
     if os.path.exists(p):

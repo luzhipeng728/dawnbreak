@@ -6,7 +6,8 @@
   mage_art.py icons  [--only 前缀]     图标表 → <主仓库>/art/src/combat/icons/<表>.png
   mage_art.py fx     [--only 前缀]     特效   → <主仓库>/art/src/combat/fx/<名字>.png
   mage_art.py frames [--set 套装] 前缀  切帧（avatar_frames.py，先把本文件的帧名登记进 frames2.NAMES）
-生图并发最多 2（全队约定），429 退避 65 秒。已存在的输出跳过。
+生图并发最多 1（主线程 09-28 定，跑的时候加 -j 1），429 退避 65 秒。已存在的输出跳过。
+  mage_art.py cutin / cutinprep        觉醒插图 → art/final/cutin/<转职>.webp
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(__file__))
@@ -54,6 +55,16 @@ C.SHEETS['mage_witch2'] = [
     ('candy1', 'holding a giant swirly rainbow lollipop high above her head with both hands, about to smash it down, no staff'),
     ('wtCheer', 'jumping happily with both fists raised in celebration, big grin, no staff')]
 NO_WPN_SHEETS = {'mage_witch2'}
+# 召唤师：下命令（交感 / 全体指令）、扔印记、献祭（杖尖按进魔法阵）、画召唤阵 → 举杖召唤、一觉（用杖撕开次元 → 迎接卡西利亚斯）；光效都在运行时画
+C.SHEETS['mage_sm1'] = [
+    ('smPoint', 'giving a command: one arm thrust straight forward pointing with the index finger, the staff held upright in the other hand at her side, confident expression'),
+    ('smThrow1', 'winding up to throw overhand: the free hand raised back behind her head, the staff held low in the other hand, leaning back'),
+    ('smThrow2', 'just threw overhand: the free arm fully extended forward with the hand open, leaning forward, the staff held low in the other hand'),
+    ('smSac', 'pressing the staff down in front of her with both hands, the staff tip touching the ground, leaning over it with a stern expression'),
+    ('smCircle1', 'kneeling on one knee and drawing on the ground in front of her with the tip of the staff held in both hands'),
+    ('smCircle2', 'standing tall with the staff raised high overhead in one hand and the free hand spread out to the side, hair lifted upward'),
+    ('smAwk1', 'slashing the staff diagonally down across in front of her with one hand as if tearing open the air, cold serious expression, hair swept'),
+    ('smAwk2', 'standing proudly with the free arm stretched out to the side palm open, the staff planted upright on the ground beside her, a cold confident smile')]
 # 技能图标：16 个一张（combatgen 的图标画风），切图：mage_art.py iconcut
 ICONS = [
     ('mg_jackair', 'a flaming jack-o-lantern pumpkin shooting diagonally down from the sky with a small witch hat silhouette above'),
@@ -106,7 +117,14 @@ ICONS3 = [
     ('bm_awaken', 'a giant golden star quasar orb exploding with rings of light'),
     ('bm_chaser', 'a single glowing blue magic orb with a white core and small trail'),
     ('mg_shield', 'a translucent blue magic barrier dome with a hexagon pattern')]
-C.ICON_SHEETS = {'mg_icons_a': ICONS, 'mg_icons_b': ICONS2, 'mg_icons_c': ICONS3}
+ICONS4 = [
+    ('sm_awaken', 'a giant white-haired samurai with a horned black oni mask stepping out of a purple dimensional rift, holding a long katana'),
+    ('sm_thousand', 'a single long katana quick-draw slash leaving a huge crimson crescent sword trail and many small slash marks'),
+    ('sm_hilun', 'a tiny glowing fairy spirit made of rainbow light with little wings, soft aura ring'),   # P1 预留：融合精灵海伊伦
+    ('sm_ring', 'an ornate dark silver ring of domination with a violet gem and chains of summoning circles')]   # P1 预留：支配之环
+C.ICON_SHEETS = {'mg_icons_a': ICONS, 'mg_icons_b': ICONS2, 'mg_icons_c': ICONS3, 'mg_icons_d': ICONS4}
+# 觉醒插图（combatgen cutin / cutinprep）：只放本组要新出的
+C.CUTIN = {'summoner': ('mage', 'standing coldly in front of a giant purple dimensional rift torn open in the air, the staff raised in one hand, and behind her the huge shadowy silhouette of a white-haired samurai with a horned mask and a long katana stepping out, crescent moon')}
 C.FX = {}
 
 def frames(argv):

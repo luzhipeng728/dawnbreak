@@ -231,6 +231,7 @@ GUN2_ICONS = [
 ]
 for _i, _c in enumerate('abc'): ICON_SHEETS[f'gskills_{_c}'] = GUN2_ICONS[_i * 12:(_i + 1) * 12]
 if _SWA: ICON_SHEETS.update({f'sword_icons_{c}': _SWA.ICONS[i * 16:(i + 1) * 16] for i, c in enumerate('abcdefgh') if _SWA.ICONS[i * 16:(i + 1) * 16]})
+if _SWA and hasattr(_SWA, 'ICONS_P1'): ICON_SHEETS.update({f'sword_p1icons_{c}': _SWA.ICONS_P1[i * 16:(i + 1) * 16] for i, c in enumerate('ab')})
 def icon_prompt(items):
     return (f'A sprite sheet of {len(items)} separate game icons arranged in a grid of 4 columns and {len(items) // 4} rows on a plain pure white background, '
             f'evenly spaced with generous white gaps between icons, no icon touching another, {ICON_STYLE}. In reading order (left to right, top to bottom): '

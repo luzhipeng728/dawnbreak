@@ -55,28 +55,36 @@ export const ok = (c, msg, extra) => { total++; if (c) console.log('✓', msg); 
 export const result = () => ({ fails, total });
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 // 在页面里等条件成立（字符串表达式），超时返回 false
-export async function until(page, fn, arg, ms = 10000) {
+// 默认 20 秒：机器忙（多组测试并行、别的程序占 CPU）时页面加载 / 推送都会变慢，成功时不会多等
+export async function until(page, fn, arg, ms = 20000) {
   try { await page.waitForFunction(fn, arg, { timeout: ms, polling: 100 }); return true; } catch (e) { return false; }
 }
 // 通过界面注册 / 登录（真实点按钮、填表单）
-export async function uiRegister(page, url, user, pass = 'secret123', invite = 'NETTEST') {
-  await page.goto(url + '?mute'); await page.waitForFunction(() => window.__READY);
-  await until(page, () => menus.isOpen('title') && document.querySelector('#title .netacct, #title button.btn.big'));
-  await page.click('#title button:has-text("注册")');
-  const inputs = page.locator('.loginbd input');
-  await inputs.nth(0).fill(user); await inputs.nth(1).fill(pass); await inputs.nth(2).fill(pass); await inputs.nth(3).fill(invite);
-  await page.click('.loginbd button:has-text("注册并登录")');
-  return until(page, () => netOn() && !menus.isOpen('login'), null, 10000);
+// 机器忙时整条链路（页面加载 → 探测服务器 → 注册 / 登录 → 读云存档）可能要十几秒；客户端接口超时是 12 秒，这里等 30 秒，出错提示一出现就提前结束
+// authInfo：最近一次注册 / 登录的实测值（耗时、窗口里的错误提示、窗口栈……），失败时测试可以把它打印出来；失败时这里也会打印一行
+export const authInfo = {};
+async function uiAuth(page, url, mode, fields) {
+  const t0 = Date.now(), btn = mode === 'register' ? '注册' : '登录', submit = mode === 'register' ? '注册并登录' : '登录';
+  await page.goto(url + '?mute'); await page.waitForFunction(() => window.__READY, null, { timeout: 60000 });
+  const title = await until(page, b => menus.isOpen('title') && [...document.querySelectorAll('#title button')].some(e => e.textContent === b), btn, 30000);   // 探测到服务器后才出现登录 / 注册
+  if (title) {
+    await page.click(`#title button:text-is("${btn}")`);
+    const inputs = page.locator('.loginbd input');
+    await inputs.nth(fields.length - 1).waitFor({ timeout: 10000 });
+    for (let k = 0; k < 3; k++) {   // 填完读回来核对（窗口被重建时值会丢），不对就重填
+      for (let i = 0; i < fields.length; i++) await inputs.nth(i).fill(fields[i]);
+      if ((await inputs.evaluateAll(els => els.map(e => e.value))).every((v, i) => i >= fields.length || v === fields[i])) break;
+    }
+    await page.click(`.loginbd button:text-is("${submit}")`);
+    await until(page, () => (netOn() && !menus.isOpen('login')) || (menus.isOpen('login') && /^(?!正在).+/.test((document.querySelector('.loginbd .askerr') || {}).textContent || '')), null, 30000);
+  }
+  const st = await page.evaluate(() => ({ on: netOn(), login: menus.isOpen('login'), err: (document.querySelector('.loginbd .askerr') || {}).textContent || '', stack: menus.stack.slice(), avail: net.avail }));
+  Object.assign(authInfo, { mode, user: fields[0], ok: st.on && !st.login, ms: Date.now() - t0, title, ...st });
+  if (!authInfo.ok) console.log(`  （${btn} ${fields[0]} 没有成功：${JSON.stringify(authInfo)}）`);
+  return authInfo.ok;
 }
-export async function uiLogin(page, url, user, pass = 'secret123') {
-  await page.goto(url + '?mute'); await page.waitForFunction(() => window.__READY);
-  await until(page, () => menus.isOpen('title'));
-  await page.click('#title button:has-text("登录")');
-  const inputs = page.locator('.loginbd input');
-  await inputs.nth(0).fill(user); await inputs.nth(1).fill(pass);
-  await page.click('.loginbd button:has-text("登录")');
-  return until(page, () => netOn() && !menus.isOpen('login'), null, 10000);
-}
+export const uiRegister = (page, url, user, pass = 'secret123', invite = 'NETTEST') => uiAuth(page, url, 'register', [user, pass, pass, invite]);
+export const uiLogin = (page, url, user, pass = 'secret123') => uiAuth(page, url, 'login', [user, pass]);
 // 创建角色并进城（真实界面流程）
 export async function uiCreateChar(page, clsIndex = 0, name) {
   if (await page.evaluate(() => menus.isOpen('ask'))) await page.click('.askwin button:has-text("暂不上传")').catch(() => {});

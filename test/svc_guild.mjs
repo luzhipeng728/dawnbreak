@@ -33,7 +33,7 @@ try {
   await A.page.click('.sxguild .itab:has-text("创建公会")'); await sleep(300);
   await A.page.fill('.sxguild input[placeholder^="2~8"]', '破晓之光');
   await A.page.click('.sxguild .bpick .o >> nth=4'); await sleep(150);         // 形状：星
-  await A.page.click('.sxguild .bpick:nth-of-type(2) .o >> nth=2').catch(() => {});
+  await A.page.click('.sxguild .bpick:nth-of-type(2) .o >> nth=2', { timeout: 1500 }).catch(() => {});
   await A.page.click('.sxguild .bpick .gl:has-text("晓")'); await sleep(200);
   await shot(A, '01-create');
   await A.page.click('.sxguild button:has-text("创建")'); await A.page.click('.idlg button:has-text("创建")');
@@ -78,7 +78,7 @@ try {
   ok(await until(A.page, () => GD.data.guild.lvl === 2), '公会升到 Lv.2（全服公告 + 公会频道）');
   ok(await until(A.page, s => game.player.str === s + 5, s0), `公会技能「公会之力 I」：力量 +5（${s0} → ${await ev(A, () => game.player.str)}）`);
   ok(await until(B.page, () => [...document.querySelectorAll('#chatbox .chatline')].some(l => l.textContent.includes('Lv.2'))), 'bob 在公会频道看到升级消息');
-  await A.page.click('.sxguild .itab:has-text("概况")').catch(() => {});
+  await A.page.click('.sxguild .itab:has-text("概况")', { timeout: 1500 }).catch(() => {});
   await A.page.keyboard.press('KeyJ').catch(() => {}); await sleep(200);
   if (!await ev(A, () => menus.isOpen('guild'))) await A.page.keyboard.press('KeyJ');
   await until(A.page, () => document.querySelector('.sxguild .perk.on')); await sleep(200);

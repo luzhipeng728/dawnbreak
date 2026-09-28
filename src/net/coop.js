@@ -43,7 +43,8 @@ const coop = {
     this.sendSync(uid);
   },
   onReplay(d) {
-    for (const e of d.l) { if (e.sq <= this.lastSq) continue; if (e.k === 'spawn') this.onSpawn(e, true); else if (e.k === 'kill') this.onKill(e); }
+    // 不按 lastSq 跳过：重连后新事件可能比补发先到（lastSq 已经跳过去了）；生成 / 击杀本身是幂等的（击杀奖励只发一次）
+    for (const e of d.l) { if (e.k === 'spawn') this.onSpawn(e, true); else if (e.k === 'kill') this.onKill(e); }
   },
   onSync(d) {
     const dg = this.dg; if (!dg) return;

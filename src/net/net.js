@@ -94,7 +94,8 @@ const net = {
       bus.emit('netOpen', { user: m.user, restarted: this.restarted });
       if (this.restarted) bus.emit('netRestart', {});
     } else if (m.t === 'pong') {
-      const rtt = performance.now() - m.ts; this.rtt = this.rtt ? this.rtt * 0.7 + rtt * 0.3 : rtt; this.lastPong = performance.now();
+      const rtt = performance.now() - m.ts; this.lastPong = performance.now();
+      if (!document.hidden && m.ts >= (this.visibleSince || 0)) this.rtt = this.rtt ? this.rtt * 0.7 + rtt * 0.3 : rtt;   // 后台期间发出的 ping 回来得晚，不计入延迟
     } else if (m.t === 'error') {
       if (m.code === 'version') { this.stopped = true; netNotice('游戏版本已更新', '服务器的联机版本和你的页面不一致，请刷新页面（Ctrl+F5 / 下拉刷新）后再联机。', true); }
       else if (m.msg) toastMsg(m.msg, '#ff9a6a');
@@ -103,10 +104,15 @@ const net = {
   },
   ping() {
     if (!this.connected) return;
-    if (performance.now() - this.lastPong > 9000 && this.ws) { try { this.ws.close(4000); } catch (e) { /* */ } return; }   // 9 秒没有回音：当作断线，走重连
+    // 页面在后台时浏览器会把定时器压到每秒 / 每分钟一次，“多久没回音”算不准：后台不做超时判断，
+    // 连接保活交给服务端的协议级 ping（浏览器底层自动回 pong，不受页面节流影响）；也不在后台测延迟
+    if (document.hidden) return;
+    if (performance.now() - this.lastPong > 15000 && this.ws) { try { this.ws.close(4000); } catch (e) { /* */ } return; }   // 前台 15 秒没有回音：当作断线，走重连
     this.send({ t: 'ping', ts: performance.now() });
   },
 };
+// 切回前台：后台期间的“没回音”不算，重新开始计时并立刻测一次延迟
+document.addEventListener('visibilitychange', () => { if (document.hidden) return; net.visibleSince = performance.now(); net.lastPong = performance.now(); net.rtt = 0; if (net.connected) net.ping(); });
 const netOn = () => !!(net.user && net.token);
 // 当前页面脚本的指纹：队友 / 决斗对手的页面版本不一样时提示刷新（不同版本的怪物 / 技能数据会对不上）
 let NET_BUILD = '';

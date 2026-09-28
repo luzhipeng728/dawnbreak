@@ -34,6 +34,8 @@ for (const item of items) {
     const air = await page.evaluate(id => !!SKILLS[id].airOnly, id);
     await page.waitForFunction(() => __G.player.free && __G.player.z === 0, null, { timeout: 3000 }).catch(() => { });
     if (air) { await tap('KeyC'); await wait(160); }
+    // 受击时才能放的技能（S.whenHit：替身草人、心灵反击……）：先让角色进入受击硬直
+    await page.evaluate(id => { const S = SKILLS[id], p = __G.player; if (typeof S.whenHit === 'function' ? S.whenHit(p) : S.whenHit) { p.setState('hit'); p.stun = 0.8; } }, id);
     await tap(KEYS[i]);
     const ok = await page.waitForFunction(id => __G.player.act && __G.player.act.skill === id, id, { timeout: 1200 }).then(() => true).catch(() => false);
     cast.push(ok ? id : '✗' + id); if (!ok) fail++;

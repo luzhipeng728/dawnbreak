@@ -177,7 +177,7 @@ defSkill('iai', { name: '拔刀斩', cls: 'sword', job: 'blade', lvReq: 19, mp: 
         fxBurst(e.x, e.y, e.z + 50, 200, '#ffd070');
         instantHit(e, { box: [-150, 160, 44, 0, 130], dmg: skillDmg(6.5, 0.7, lv), down: true, knock: 260, radial: true, hs: 0.14, big: 1.8, col: '#ffe0a0', critBonus: 0.2, downHit: true });
       })] };
-    if (w === 'greatsword' && ar) a.charge = { at: 0.3, max: 0.8, min: 0, dmg: 0.6, update: (e, dt, k) => { if (Math.random() < 0.5) fxCharge(e, '#ffd070'); e.drawOpts = { glow: 0.3 + k * 0.7 }; } };
+    if (w === 'greatsword' && ar) a.charge = { at: 0.3, max: 0.5, min: 0, dmg: 0.6, update: (e, dt, k) => { if (Math.random() < 0.5) fxCharge(e, '#ffd070'); e.drawOpts = { glow: 0.3 + k * 0.7 }; } };
     if ((w === 'katana' || w === 'lightsaber') && ar) { a.follow = () => ({ name: 'iai2', clip: 'rk1', dur: 0.45, noCounter: true, superArmor: true,
       hits: [HB(0.06, 0.14, [-20, 180, 40, 0, 130], skillDmg(2.4, 0.26, lv), { knock: 160, stun: 0.6, hs: 0.1, shake: 4, big: 1.4, col: w === 'lightsaber' ? '#fff38a' : '#ffb0b0' })],
       events: [evAt(0.05, e => { sfx.iai(); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 60, face: e.face, len: 220, w: 18, col: w === 'lightsaber' ? '#fff38a' : '#ff9a9a', dur: 0.25 }); })] }); a.followWin = [0.5, 0.95]; }

@@ -11,6 +11,8 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAIN = os.environ.get('ART_MAIN', '/Users/luzhipeng/projects/dawnbreak/art')
 HEAD_FRAC = 0.40    # 站姿帧从顶上往下这么多算头
 Q_MAX = 110.0       # 平均色差超过这个就当找不到头（不画配件）
+# 全转角搜索会被装甲 / 重枪 / 帽檐带偏（找到胸口、转 90°、低头算成仰头）的原装帧：头的大致转角（度），只在它 ±30° 里搜
+HEAD_PRIOR = {'gun': {'armor1': 0, 'final1': 0, 'final2': 0, 'ptDown': 20}}
 
 def premul(a):
     a = a.astype(np.float32); al = a[..., 3:4] / 255.0
@@ -110,7 +112,10 @@ def heads_for_dir(key, frames=None, preview=True):
         if not os.path.exists(p): continue
         fr = np.array(Image.open(p).convert('RGBA'))
         near = predict_from_base(key, fn, fr, meta['frames'][fn], bmeta) if bmeta else None
-        H = (find_head(fr, tpl, tc, ctr_in_tpl, near) if near else None) or find_head(fr, tpl, tc, ctr_in_tpl)
+        pa = HEAD_PRIOR.get(base, {}).get(fn)
+        if near and pa is not None: near = near[:4] + (15,)   # 时装帧：这些帧按原装转角只放宽 ±15°
+        up = (fr.shape[1] / 2, fr.shape[0] / 2, pa, 1e4, 30) if not near and pa is not None else None
+        H = (find_head(fr, tpl, tc, ctr_in_tpl, near or up) if near or up else None) or find_head(fr, tpl, tc, ctr_in_tpl)
         if near: H['near'] = [round(near[0], 1), round(near[1], 1), round(math.radians(near[2]), 3)]   # 找不准时退回这个预测位置
         out[fn] = H
     return meta, out, d

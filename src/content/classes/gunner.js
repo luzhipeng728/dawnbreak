@@ -45,12 +45,16 @@ const GUN_FEEL = {
   bowgun: { n: 7, draw: 0.1, gap: 0.12, holster: 0.24, life: 0.52, stun: 0.2, knock: 12, pierce: 0, dmg: 0.4, air: 7, bonus: [5, 14], airGap: 0.13, recoil: 'sink' },
 };
 const feelOf = p => GUN_FEEL[wtypeOf(p)] || GUN_FEEL.revolver;
+const isRevolver = p => !wtypeOf(p) || wtypeOf(p) === 'revolver';   // 没装备武器按左轮算
 const shotsOf = p => feelOf(p).n;
 // 空中射击（Buff）增加的跳射发数：1 级到 10 级之间按等级插值
 function aerialBonus(p) { const b = p.buffs && p.buffs.g_aerial; if (!b) return 0; const [a0, a1] = feelOf(p).bonus; return Math.round(lerp(a0, a1, clamp((b.lv - 1) / 9, 0, 1))); }
-// o: { dmg, up（格林机枪 / BBQ 的斜上射）, down（跳射斜下）, low（↓X 低射，可打倒地）, knock, lift, life, pierce, vol, quiet, hit, basic（普攻：吃银弹）}
+// o: { dmg, up（格林机枪 / BBQ 的斜上射）, down（跳射斜下）, low（↓X 低射，可打倒地）, knock, lift, life, pierce, vol, quiet, hit, basic（普攻：吃银弹）,
+//      speedMul（子弹速度倍率）, col（子弹染色，银弹优先）}
+// 转职的普攻子弹钩子 CLASSES.gun.shotMod(e, o) → 新的 o（弹药专家的子弹种类：改 dmg / life / pierce / hit / speedMul / col）
 function fireBullet(e, o = {}) {
-  const sp = 950 * (1 + 0.02 * skLv(e, 'g_revmaster')), dn = o.down, up = o.up, ang = dn || up ? 0.72 : 1, zz = dn ? 52 : up ? 74 : o.low ? 24 : 64;
+  if (o.basic && CLASSES.gun.shotMod) o = CLASSES.gun.shotMod(e, o) || o;
+  const sp = 950 * (1 + 0.02 * skLv(e, 'g_revmaster')) * (o.speedMul || 1), dn = o.down, up = o.up, ang = dn || up ? 0.72 : 1, zz = dn ? 52 : up ? 74 : o.low ? 24 : 64;
   muzzle(e);
   { const mx = e.x + e.face * 34, mz = e.z + zz, rot = (dn ? 0.7 : up ? -0.7 : 0) * e.face + (e.face < 0 ? Math.PI : 0);   // 枪口火光
     addFx({ x: mx, y: e.y + 1, z: mz, dur: 0.07, add: true, rot, draw(c) { drawSpr(c, 'muzzle', sx(this.x), sy(this.y, this.z), 34, 0, { ax: 0.2, rot: this.rot, alpha: 1 - this.t / this.dur }); } }); }
@@ -59,18 +63,19 @@ function fireBullet(e, o = {}) {
   const silver = o.basic && e.buffs && e.buffs.g_silver;
   if (silver) { silver.n--; if (silver.n <= 0) delete e.buffs.g_silver; }
   spawnProj({ owner: e, x: e.x + e.face * 34, y: e.y, z: e.z + zz, vx: e.face * sp * ang, vz: dn ? -sp * 0.72 : up ? sp * 0.72 : 0, face: e.face, life: o.life || 0.52, w: 7, d: 12, h: o.low ? 10 : 14,
-    pierce: !!o.pierce || skLv(e, 'g_revmaster') >= 5,
+    pierce: !!o.pierce || (o.basic && isRevolver(e) && Math.random() < 0.04 * skLv(e, 'g_revmaster')),   // 左轮奥义：普攻穿透几率
     hit: { dmg: (o.dmg || 0.5) * (silver ? 1 + silver.shot : 1), stun: 0.22, knock: o.knock ?? 25, airLift: o.lift ?? 120, hs: 0.025, snd: 'stab', col: silver ? '#fff6c0' : '#ffe0a0', downHit: !!o.low, elem: silver ? 'light' : undefined, ...(o.hit || {}) },
     update(pr) { if (pr.z <= 0 && pr.vz < 0) { pr.t = pr.life; fxDust(pr.x, pr.y, 2, 4, '#a89878'); } },
-    draw(c, pr) { drawSpr(c, silver ? fxTint('bullet', '#fff8d0') : 'bullet', sx(pr.x), sy(pr.y, pr.z), 52, 8, { ax: 0.9, rot: Math.atan2(-pr.vz, pr.vx) }); } });
+    draw(c, pr) { drawSpr(c, silver ? fxTint('bullet', '#fff8d0') : o.col ? fxTint('bullet', o.col) : 'bullet', sx(pr.x), sy(pr.y, pr.z), 52, 8, { ax: 0.9, rot: Math.atan2(-pr.vz, pr.vx) }); } });
 }
 // 手炮普攻：不是子弹，是前方一小块范围判定（穿透、能穿障碍）；空中的敌人直接被砸到地上
 function cannonBlast(e, dmg, o) {
+  const M = CLASSES.gun.shotMod ? CLASSES.gun.shotMod(e, { basic: true, cannon: true, dmg, hit: {} }) : null; if (M) dmg = M.dmg ?? dmg;   // 同 fireBullet 的普攻子弹钩子
   muzzle(e); sfx.cannon(0.4); cam.shake = Math.max(cam.shake, o.last ? 3 : 2);
   const air = o.air, low = o.low, F = GUN_FEEL.handcannon;
   addFx({ x: e.x + e.face * 40, y: e.y + 1, z: e.z + (air ? 40 : low ? 24 : 62), dur: 0.1, add: true, face: e.face, draw(c) { drawSpr(c, 'muzzle', sx(this.x), sy(this.y, this.z), 70, 0, { ax: 0.15, rot: (air ? 0.7 : 0) * this.face + (this.face < 0 ? Math.PI : 0), alpha: 1 - this.t / this.dur }); } });
   instantHit(e, { box: air ? [0, 90, 26, -70, 40] : [14, F.area, 26, low ? -10 : 10, low ? 50 : 100], dmg, stun: F.stun + (o.last ? 0.12 : 0), knock: o.last ? 200 : F.knock, spike: 320, hs: 0.06, snd: 'blunt',
-    downHit: low || air, heavy: o.last, big: 1.2, col: '#ffd090' });
+    downHit: low || air, heavy: o.last, big: 1.2, col: '#ffd090', ...((M && M.hit) || {}) });
 }
 // 普攻的一发（地面 / 空中共用）
 function gunFire(e, i, aim, air) {
@@ -78,12 +83,13 @@ function gunFire(e, i, aim, air) {
   if (F.area) { cannonBlast(e, dmg, { last, low: aim === 'low', air }); return; }
   fireBullet(e, { dmg, basic: true, down: air, low: aim === 'low', life: F.life, pierce: Math.random() < F.pierce, knock: last ? 160 : F.knock, lift: last ? 220 : 120, hit: { stun: F.stun + (last ? 0.12 : 0) } });
 }
-function shotDmgOf(e) { return (1 + 0.02 * skLv(e, 'g_revmaster')) * (e.buffs && e.buffs.g_buff ? 1 + e.buffs.g_buff.shot : 1); }
+// 射击伤害倍率：左轮奥义（只对左轮）+ 快速拔枪（普攻）
+function shotDmgOf(e) { return 1 + (isRevolver(e) ? 0.02 * skLv(e, 'g_revmaster') : 0) + 0.015 * skLv(e, 'g_quickdraw'); }
 const airShotMul = e => { const b = e.buffs && e.buffs.g_aerial; return b ? 1 + 0.02 * b.lv : 1; };
 // 普攻：按 X 先拔枪，然后按武器连射 N 发（按住 X 自动连射），打完一轮收枪 / 装填，再按（或一直按着）开下一轮。↓ 低射（能打倒地）；官方普攻没有 ↑ 斜上射
 const gunShot = i => ({ name: 'shot' + i, clip: 'gshot', dur: 0.2, basic: true, speed: 'aspd', chain: [0.1, 0.2], hold: true,
   next: p => i < feelOf(p).n ? 'atk' + (i + 1) : 'holster',
-  onStart: e => { const F = feelOf(e), a = e.act, d = i === 1 ? F.draw : 0; a.fireT = d; a.dur = d + F.gap; a.chain = [d + F.gap * 0.5, a.dur]; a.counterEnd = a.dur;
+  onStart: e => { const F = feelOf(e), a = e.act, d = i === 1 ? F.draw / (1 + 0.08 * skLv(e, 'g_quickdraw')) : 0; a.fireT = d; a.dur = d + F.gap; a.chain = [d + F.gap * 0.5, a.dur]; a.counterEnd = a.dur;
     const dy = e.pad ? e.pad.dy() : 0; a.aim = dy > 0 ? 'low' : ''; if (d > 0) e.play('gaim', true); },
   update: e => { const a = e.act; if (!a.fired && e.actT >= a.fireT) { a.fired = true; if (a.fireT > 0) e.play('gshot', true); gunFire(e, i, a.aim, false); } } });
 const GUN_ACTS = {
@@ -92,7 +98,7 @@ const GUN_ACTS = {
   holster: { name: 'holster', clip: 'holster', dur: 0.24, basic: true, speed: 'aspd', chain: [0.17, 0.24], next: 'atk1', hold: true,
     onStart: e => { const F = feelOf(e), a = e.act, H = F.holster / (1 + 0.1 * skLv(e, 'g_revmaster') * (wtypeOf(e) === 'revolver' || !wtypeOf(e) ? 1 : 0)); a.dur = H; a.chain = [H * 0.7, H]; a.counterEnd = 0; } },
   // 跑攻：滑铲（不再自带浮空，浮空铲是单独的主动技能）；滑铲中按 X = 起身上旋踢（学了上旋踢）
-  dash: { name: 'dash', clip: 'slide', dur: 0.46, basic: true, speed: 'aspd', move: [[0, 0.3, 430]], noCounter: true, keyLinks: { attack: 'g_spin' }, linkFrom: 0.08,
+  dash: { name: 'dash', clip: 'slide', dur: 0.46, basic: true, speed: 'aspd', move: [[0, 0.3, 430]], noCounter: true, keyLinks: { attack: 'g_spin', cmd: 'g_bl_rush' }, linkFrom: 0.08,   // 滑铲中 X = 起身上旋踢，Z = 起身斩（女漫游）
     hits: [HB(0.02, 0.3, [-10, 50, 24, 0, 50], 1.1, { knock: 180, stun: 0.45, hs: 0.05, snd: 'blunt', heavy: true })],
     update: e => { if (e.actT < 0.3 && Math.random() < 0.5) fxDust(e.x - e.face * 10, e.y, 1, 4); } },
   // 跳射：斜向下射击，每次跳跃有发数上限（airMaxOf），后坐随武器（手炮向后飘、步枪向上、手弩下坠、自动几乎停在空中）
@@ -131,6 +137,7 @@ defSkill('g_silver', { name: '银弹', cls: 'gun', lvReq: 5, sp: 15, mp: 30, cd:
 /* ---- RX-78 追击者：放出诱导型自爆机器人，追着最近的敌人跑，贴上后自爆（火属性魔法范围伤害）。
    先用投射物实现；机械师的机械引爆 / 危机追击者上线时改走召唤框架（src/game/summon.js，魔法师组）---- */
 function rx78(e, lv, o = {}) {
+  if (typeof mechRx78 === 'function') return mechRx78(e, lv, o);   // 机械师组把 RX-78 改成召唤物（gun_mechanic.js，召唤框架）；所有转职都走它
   const dmg = skillDmg(3.2, 0.32, lv) * (o.mul || 1);
   const boom = pr => { if (pr.done) return; pr.done = true; meteorImpact(pr, 0.45); sfx.boom(0.6);
     blast(e, pr.x, pr.y, 70, { dmg, type: 'mag', elem: 'fire', launch: 320, knock: 120, hs: 0.06, snd: 'fire', col: '#ffb060' }, { zMax: 120 }); };
@@ -160,8 +167,11 @@ defSkill('g_rx78', { name: 'RX-78 追击者', cls: 'gun', lvReq: 5, sp: 15, mp: 
 defSkill('g_spin', { name: '上旋踢', cls: 'gun', lvReq: 10, sp: 15, mp: 20, cd: 4.5, type: 'phys', icon: 'g_spin', col: '#3aa060',
   desc: '旋转着向上连踢 3 下，攻击身体两侧的敌人并把它们踢上天。滑铲（跑攻）中或倒地时按 X，起身的同时放出上旋踢（起身上旋踢）。', cmdNote: '↓↓+X（滑铲中 / 倒地时 X）',
   pow: lv => skillDmg(0.8, 0.08, lv) * 3, ai: { kind: 'aoe', r: [0, 60], dy: 26 },
-  act: (lv) => ({ name: 'g_spin', clip: 'spinkick', dur: 0.5, move: [[0, 0.36, 40]], superArmor: [0, 0.12],
-    onEnd: e => { e.drawFlip = false; },
+  act: (lv, p) => ({ name: 'g_spin', clip: 'spinkick', dur: 0.5, superArmor: [0, 0.12], move: p && skLv(p, 'g_stylish') ? null : [[0, 0.36, 40]],
+    // 女漫游：上旋踢中 X = 音速劫击、Z = 翻腾攻击，能接鲜血劫击；学了花式枪术可以边踢边移动
+    keyLinks: { attack: 'g_sonic', cmd: 'g_bl_up' }, linkFrom: 0.1, links: ['g_bloodspike'],
+    onInput: (e, I) => { if (skLv(e, 'g_stylish')) { e.vx = I.dx() * 240 * mspdOf(e); e.vy = I.dy() * 120; } return false; },
+    onEnd: e => { e.drawFlip = false; e.vy = 0; },
     update: e => { const n = Math.floor(e.actT / 0.08); if (n !== e._sp && e.actT < 0.4) { e._sp = n; e.drawFlip = n % 2 === 1; if (n % 2) sfx.swing(false); } },
     hits: [HB(0.04, 0.4, [-62, 62, 30, 0, 110], skillDmg(0.8, 0.08, lv), { rep: 0.12, max: 3, launch: 300, airLift: 240, knock: 40, hs: 0.04, snd: 'blunt' })] }) });
 defSkill('g_stomp', { name: '钉刺射', cls: 'gun', lvReq: 10, mp: 30, cd: 6, type: 'phys', col: '#8a5a2a',
@@ -183,7 +193,7 @@ defSkill('g_slide', { name: '浮空铲', cls: 'gun', lvReq: 10, maxLv: 1, sp: 15
     update: e => { if (e.actT < 0.3 && Math.random() < 0.6) fxDust(e.x - e.face * 10, e.y, 1, 5); } }) });
 defSkill('g_m3', { name: 'M-3 喷火器', cls: 'gun', lvReq: 10, sp: 20, mp: 40, cd: 7, type: 'phys', elem: 'fire', col: '#e0602a',
   desc: '按住技能键持续向前喷火（最长 2 秒），每 0.16 秒一段并灼烧敌人；火焰贴地，能烧到倒地的敌人。喷射越久，结束后的收招越长；等级越高，敌人被烧得越僵。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'poke', r: [0, 150], dy: 18 },
-  act: (lv) => ({ name: 'g_m3', clip: 'flame', dur: 2.3, noCounter: true,
+  act: (lv, p) => ({ name: 'g_m3', clip: 'flame', dur: 2.3, noCounter: true, superArmor: p && skLv(p, 'gl_pandora') ? true : undefined,   // 枪炮师三觉被动 Pandora_01：施放时霸体
     onInput: (e, I) => { const a = e.act; if (!a.stopT && e.actT > 0.35 && !I.is(a.key || 'attack')) { a.stopT = e.actT; a.dur = e.actT + 0.1 + 0.12 * e.actT; } return false; },
     update: e => { const a = e.act, end = a.stopT || 2.1, n = Math.floor(e.actT / 0.08);
       if (n !== a.k && e.actT > 0.08 && e.actT < end) { a.k = n; if (n % 3 === 0) sfx.flame(); flameJet(e, { range: 150, visual: true }); }
@@ -227,17 +237,9 @@ defSkill('g_grenade', { name: 'G-14 手雷', cls: 'gun', lvReq: 15, sp: 20, mp: 
   infoExtra: () => [['装填', '3 颗（每 2 秒 1 颗）']], ai: { kind: 'proj', r: [80, 320], dy: 40 },
   act: (lv) => ({ name: 'g_grenade', clip: 'gthrow', dur: 0.55,
     events: [evAt(0.26, e => { sfx.swing(false); const dy = e.pad ? e.pad.dy() : 0, dist = 220 + (dy < 0 ? 100 : dy > 0 ? -100 : 0), at = aimAhead(e, dist, dist + 60), tx = at.t ? at.x : e.x + e.face * dist;
-      const boom = pr => { if (pr.boomed) return; pr.boomed = true; meteorImpact(pr, 0.6); blast(e, pr.x, pr.y, 75, { dmg: skillDmg(3.0, 0.3, lv), launch: 360, knock: 100, hs: 0.08, snd: 'fire', col: '#ffb060', type: 'mag' }); };
+      const boom = pr => { if (pr.boomed) return; pr.boomed = true; meteorImpact(pr, 0.6); blast(e, pr.x, pr.y, 75, { dmg: skillDmg(3.0, 0.3, lv) * (CLASSES.gun.skillMul ? CLASSES.gun.skillMul(e, 'g_grenade') : 1), launch: 360, knock: 100, hs: 0.08, snd: 'fire', col: '#ffb060', type: 'mag' }); };
       lobProj(e, tx, at.t ? at.y : e.y, 0.5, { img: 'grenade', h: 16, onLand: boom,
         update: pr => { if (pr.boomed) return; for (const t of ents) if (foe(e, t) && !t.dead && Math.abs(t.x - pr.x) < t.w + 8 && Math.abs(t.y - pr.y) < 16 && pr.z < t.z + t.hurtH()) { boom(pr); pr.t = pr.life; break; } } }); })] }) });
-/* ---- 双鹰回旋用的回旋手枪（漫游枪手） ---- */
-function hawkGun(e, i, dmg) {
-  const T = 1.2, x0 = e.x, dir = e.face, z0 = 50 + i * 28;
-  spawnProj({ owner: e, x: x0, y: e.y, z: z0, face: dir, life: T, w: 14, d: 18, h: 18, pierce: true, spin: 0, sndT: 0,
-    hit: { dmg, stun: 0.3, knock: 20, airLift: 150, hs: 0.03, rep: 0.14, col: '#bfefff' },
-    update(pr, dt) { const u = clamp(pr.t / T, 0, 1); pr.x = lerp(x0, e.x, u) + dir * 330 * Math.sin(Math.PI * u); pr.y = damp(pr.y, e.y, 4, dt); pr.spin += dt * 30; pr.sndT -= dt; if (pr.sndT <= 0) { pr.sndT = 0.15; sfx.swing(false); } },
-    draw(c, pr) { const X = sx(pr.x), Y = sy(pr.y, pr.z); c.save(); c.translate(X, Y); c.rotate(pr.spin); c.globalCompositeOperation = 'lighter'; c.strokeStyle = 'rgba(160,230,255,.5)'; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, 14, 0, TAU * 0.7); c.stroke(); c.globalCompositeOperation = 'source-over'; c.rotate(Math.PI / 2); c.scale(1.1, 1.1); drawGun(c, PAL_GUN); c.restore(); } });
-}
 CLASSES.gun = { name: '神枪手', hp0: 1650, hpPer: 135, mp0: 800, mpPer: 45, atk0: 470, atkPer: 56, str0: 6, strPer: 2, def0: 260, defPer: 25, crit: 0.1, speed: 172, runSpeed: 305,
   desc: '单手持枪的远程射手，子弹能把敌人一直托在空中，踢技与重火器补足近身。', model: () => buildSwordsman(PAL_GUN, { weapon: 'gun', hair: 'long', hat: 'cap', scarf: true, pauldron: false, coatTail: true }),
   acts: GUN_ACTS, slashCol: '#ffd070', dmgType: 'phys',

@@ -26,7 +26,9 @@ run combat    node test/combat.mjs
 run skillsa   node test/skill_sa.mjs
 run summon    node test/summon.mjs
 run gunner    node test/gunner.mjs
+run gunjobs   node test/gunner_jobs.mjs
 run avatar    node test/avatar.mjs
+run hatcheck  python3 art/tools/avatar_hatcheck.py   # 神枪手 / 魔法师原装帧不能把帽子画丢
 run shop      node test/shop.mjs
 run shopecon  node test/shop_econ.mjs
 run shopsynth node test/shop_synth.mjs
@@ -59,4 +61,6 @@ run mpdrop    node test/mp_coop_drop.mjs
 run mpduel    node test/mp_duel.mjs
 run mpmore    node test/mp_coop_more.mjs
 run mprestart node test/mp_restart.mjs
+run findfriend node test/findfriend.mjs
+run partyhud  node test/mp_party_hud.mjs
 echo; cat $LOG/summary.txt

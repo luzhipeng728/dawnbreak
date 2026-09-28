@@ -242,7 +242,7 @@ async function awaken() {
     await wait(300); await P.shot('buy-crystal');
     step('无色小晶块：' + await page.evaluate(() => inv.count('crystal'))); await P.closeAll();
   }
-  // 冒险级烈焰格拉卡，B 评价（最多 3 次；多放技能，技能释放期间有霸体）
+  // 冒险级烈焰格拉卡，C 评价（最多 3 次；多放技能，技能释放期间有霸体）
   check(await goScene('gf_graca'), '走不到格拉卡区域');
   let okS = false;
   for (let t = 1; t <= 3 && !okS; t++) {
@@ -253,7 +253,7 @@ async function awaken() {
     if (r.state === 'result') { await P.shot(`warrior-result-${t}`); await P.flipAndReturn(); }
     okS = await page.evaluate(c => questRec(`q_awaken_${c}_2`) && goalVal(QUESTS[`q_awaken_${c}_2`], questRec(`q_awaken_${c}_2`), 0) >= 1, CLS);
   }
-  check(okS, '冒险级烈焰格拉卡 3 次都没打到 B');
+  check(okS, '冒险级烈焰格拉卡 3 次都没打到 C');
   const q2 = await page.evaluate(c => questState(`q_awaken_${c}_2`), CLS); step('觉醒任务 2 状态：' + q2);
   // 交任务 → 觉醒
   check(await goScene(mScene), '回不到导师处');

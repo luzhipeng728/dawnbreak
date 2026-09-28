@@ -35,6 +35,7 @@ content/classes/gunner.js
 content/classes/gun_ranger.js
 content/classes/gun_launcher.js
 content/classes/gun_spitfire.js
+content/classes/gun_mechanic.js
 # 协战师（神枪手第 5 转职，辅助）：全队同步见 net/party_sync.js
 content/classes/gun_paramedic.js
 content/classes/mage.js

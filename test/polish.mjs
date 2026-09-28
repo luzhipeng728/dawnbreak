@@ -23,6 +23,9 @@ ok(t.queued.join() === '横幅一,横幅二', '横幅排队、同样的消息不
 ok(t.vis === '横幅一' && t.count === 1, '同一时间只显示一条横幅', String(t.vis));
 await wait(3200);
 ok(await ev(() => toastList.length <= 1), '横幅按顺序播完');
+const band = await ev(async () => { toastList.length = 0; menus.open('skills'); toastMsg('窗口开着时的横幅'); await new Promise(r => setTimeout(r, 200)); const b = document.getElementById('toastbar').getBoundingClientRect(), w = menus.wins.skills.getBoundingClientRect(); menus.close('skills'); return { b: b.top, w: w.top, overlap: b.bottom > w.top && b.top < w.bottom }; });
+ok(!band.overlap, '窗口占着横幅那一条时，横幅挪到最上方', JSON.stringify(band));
+await wait(3000);
 
 console.log('· 1280 宽同时打开 I / M / K');
 for (const k of ['KeyI', 'KeyM', 'KeyK']) { await page.keyboard.press(k); await wait(250); }
@@ -48,6 +51,20 @@ const L = await ev(() => {
 });
 ok(L.n > 0 && L.n < 8 && !L.hit, `8 个路人挤在一起：画出 ${L.n} 个名牌，互不重叠（放不下的先不显示）`);
 ok(L.blinkNpcs > 0 && !L.err, `NPC 眨眼（这里 ${L.blinkNpcs} 个 NPC 有眼睛数据，绘制无报错）`, L.err || '');
+
+console.log('· 装备特效 Buff 图标 / 小屏字号');
+const B = await ev(() => {
+  const px = cv => { const d = cv.getContext('2d').getImageData(0, 0, 64, 64).data, set = new Set(); for (let i = 0; i < d.length; i += 16) set.add(d[i] >> 4 << 8 | d[i + 1] >> 4 << 4 | d[i + 2] >> 4); return set.size; };
+  const item = Object.keys(ITEMS).find(k => ITEMS[k].proc && [].concat(ITEMS[k].proc).some(x => x.act === 'buff'));
+  return { item: px(buffIcon('gear_t1', { src: item, col: '#ff8a4a' })), shield: px(buffIcon('gear_shield', { col: '#6ad0ff' })), atk: px(buffIcon('gear_t2', { atk: 0.1, col: '#ff8a4a' })), pot: px(buffIcon('item_potStr', { atk: 0.08 })) };
+});
+ok(Object.values(B).every(n => n > 12), '装备特效 / 护盾 / 秘药的 Buff 图标是正经图标（不是纯色方块）', JSON.stringify(B));
+await page.setViewportSize({ width: 844, height: 390 }); await wait(300);
+await ev(() => menus.open('cash')); await wait(500);
+const S = await ev(() => { const q = s => { const e = menus.wins.cash.querySelector(s); return e ? parseFloat(getComputedStyle(e).fontSize) : 99; }; const mb = document.querySelector('#menubar button'); return { small: document.body.classList.contains('smallui'), lim: q('.ccard .lim'), note: q('.cash-note'), mbOk: !mb || mb.querySelector('b').getBoundingClientRect().height <= mb.getBoundingClientRect().height }; });
+ok(S.small && S.lim >= 7.5 && S.note >= 7.5, '手机横屏大小（非触屏）：商城小字不小于 7.5px', JSON.stringify(S));
+ok(S.mbOk, '小屏：右下菜单按钮的字不溢出按钮');
+await ev(() => menus.closeAll()); await page.setViewportSize({ width: 1280, height: 720 }); await wait(300);
 
 console.log('· 决斗场回城');
 await ev(() => save.write());

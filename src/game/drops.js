@@ -144,20 +144,29 @@ function toastMsg(msg, col = '#fff', kind) {
   if ((kind || (TOAST_LOG_RE.test(msg) ? 'log' : 'banner')) === 'log' && typeof ui !== 'undefined' && ui.inGame()) { ui.pushLog(msg, col); return; }
   const same = toastList.find(m => m.msg === msg);
   if (same) { if (same === toastList[0] && same.t > 0.3) { same.t = 0.3; same.end = Math.max(same.end, 2.6); } return; }
-  toastList.push({ msg, col, t: 0, end: 2.6 });
+  toastList.push({ msg, col, t: 0, end: 2.6, born: performance.now() });
   if (toastList.length > 4) toastList.splice(1, 1);   // 排得太多：丢掉最早排队的（正在显示的那条不动）
 }
 // 横幅用 DOM 画在所有窗口之上（画在画布上会被商店 / 背包等窗口挡住）；ui.draw 每帧开始时清标记，谁这一帧调用了就显示，没人调用就隐藏
 const toastBar = { el: null, shown: false, sig: '' };
 function drawToastBanner(c, y = 380) {
   const now = performance.now(), dt = Math.min(0.1, (now - (drawToastBanner.last || now)) / 1000); drawToastBanner.last = now;
+  while (toastList.length && !toastList[0].t && now - (toastList[0].born || now) > 20000) toastList.shift();
   const m = toastList[0]; if (!m) return;
   m.t += dt;
   if (toastList.length > 1) m.end = Math.min(m.end, Math.max(1.2, m.t + 0.35));   // 后面有排队的：至少显示 1.2 秒就换下一条
   if (m.t >= m.end) { toastList.shift(); return; }
   const B = toastBar;
   if (!B.el) { B.el = h('div', { id: 'toastbar' }, h('span')); dom.appendChild(B.el); }
-  const sig = m.msg + m.col + y; if (B.sig !== sig) { B.sig = sig; const sp = B.el.firstChild; sp.textContent = m.msg; sp.style.color = m.col; B.el.style.top = `calc(var(--u) * ${y - 30}px)`; }
+  // 横幅所在的那一条如果被窗口占着（任务完成、技能窗口等），挪到屏幕最上方，不和窗口标题 / 内容叠在一起
+  const wins = menus.stack.join(), sig = m.msg + m.col + y + '|' + wins;
+  if (B.sig !== sig) {
+    B.sig = sig; const sp = B.el.firstChild; sp.textContent = m.msg; sp.style.color = m.col;
+    const k = dom.clientHeight / 1080, top = (y - 30) * k, bot = (y + 18) * k;
+    const hit = [...dom.children].some(e => e !== B.el && e.dataset && e.dataset.win && !e.hidden && e.offsetTop < bot && e.offsetTop + e.offsetHeight > top && e.offsetWidth < dom.clientWidth * 0.98);
+    const cover = menus.isOpen('result') || menus.isOpen('boxopen');   // 全屏的结算 / 开箱：放最上面
+    B.el.style.top = `calc(var(--u) * ${(hit || cover ? 70 : y) - 30}px)`;
+  }
   B.el.style.opacity = Math.min(1, m.t / 0.15, (m.end - m.t) / 0.35).toFixed(2); B.el.hidden = false; B.shown = true;
 }
 function toastBarFrame(end) { const B = toastBar; if (!end) { B.shown = false; return; } if (B.el && !B.shown && !B.el.hidden) B.el.hidden = true; }

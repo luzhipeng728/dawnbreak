@@ -17,6 +17,25 @@ export async function startServer(o = {}) {
   const url = `http://127.0.0.1:${app.port}/index.html`;
   return { app, url, tmp, stop: async () => { await app.stop(); fs.rmSync(tmp, { recursive: true, force: true }); } };
 }
+// 服务端跑在独立进程里（和线上一样），可以 kill -9 再拉起来：模拟服务器重启 / 崩溃（同端口、同数据库）
+export async function startServerProc(o = {}) {
+  const { spawn } = await import('node:child_process');
+  const net = await import('node:net');
+  const port = await new Promise(res => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => res(p)); }); });
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dnf-proc-'));
+  const env = { ...process.env, DNF_PORT: String(port), DNF_HOST: '127.0.0.1', DNF_DB: path.join(tmp, 'net.db'), DNF_INVITE: 'NETTEST', DNF_ADMIN: 'alice', DNF_STATIC: path.join(ROOT, 'dist/web'), DNF_GRACE_MS: String(o.graceMs || 4000), DNF_RESTORE_MS: String(o.restoreMs || 30000) };
+  let proc = null;
+  const up = async () => {
+    proc = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', path.join(ROOT, 'server/index.js')], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    proc.stdout.on('data', d => { if (process.env.SRVLOG) process.stdout.write('[服务端] ' + d); });
+    proc.stderr.on('data', d => process.stdout.write('[服务端错误] ' + d));
+    for (let i = 0; i < 100; i++) { try { const r = await fetch(`http://127.0.0.1:${port}/api/health`); if (r.ok) return; } catch (e) { /* 还没起来 */ } await new Promise(r => setTimeout(r, 100)); }
+    throw new Error('服务端没有启动');
+  };
+  await up();
+  const kill = () => new Promise(res => { if (!proc || proc.exitCode !== null) { res(); return; } proc.once('exit', () => res()); proc.kill('SIGKILL'); });
+  return { port, url: `http://127.0.0.1:${port}/index.html`, kill, up, restart: async () => { await kill(); await up(); }, stop: async () => { await kill(); fs.rmSync(tmp, { recursive: true, force: true }); } };
+}
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 export async function launchPlayers(n, { width = 1280, height = 720 } = {}) {
   if (n > 4) throw new Error('最多 4 个玩家页面');

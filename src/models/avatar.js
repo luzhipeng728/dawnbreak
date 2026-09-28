@@ -25,15 +25,16 @@ class AvatarLayer {
     const p = typeof game !== 'undefined' && game.player, own = !!(p && p.model === this.m);
     if (own) {
       const e = inv.equip, s = this.sig;
-      if (this.own && s[0] === e && AVATAR_SIG_SLOTS.every((k, i) => s[i + 1] === e[k])) return;
-      this.sig = [e, ...AVATAR_SIG_SLOTS.map(k => e[k])];
+      const gs = e.weapon ? (e.weapon.enh || 0) * (e.weapon.dim ? -1 : 1) : 0;   // 强化 / 增幅等级变了也要重算（武器光效）
+      if (this.own && s[0] === e && this.gs === gs && AVATAR_SIG_SLOTS.every((k, i) => s[i + 1] === e[k])) return;
+      this.sig = [e, ...AVATAR_SIG_SLOTS.map(k => e[k])]; this.gs = gs;
       this.own = true; this.apply(lookFromEquip(this.cls, e)); return;
     }
     if (this.own === false && this.look) return;
     this.own = false; this.apply(defaultLook(this.cls));
   }
   apply(look) {
-    this.look = look;
+    this.look = look; this.glow = vanityGlowRow(look.glow);   // 强化 / 增幅光效（game/vanity.js）
     this.A = look.wpn && WEAPON_IMG[look.wpn] || null; this.wim = this.A ? IMG['weapon/' + look.wpn] : null;
     if (this.A && !this.wim) { const k = 'weapon/' + look.wpn; loadArtKey(k).then(() => { if (this.look === look) this.wim = IMG[k] || null; }); }
     const sk = look.set ? `${this.cls}@${look.set}` : null;
@@ -69,6 +70,7 @@ class AvatarLayer {
     if (w2 && !w2.front && this.dual()) this.weapon(c, w2, F);
     if (w && !w.front) this.weapon(c, w, F);
     if (F.head && this.acc.length) this.accessories(c, F, true, f);
+    if (this.glow && this.glow.ground) vanityGround(c, this);
   }
   // 钩子：帧之后（身前的武器 + 握拳、头部配件）
   over(c, m, f, F) {
@@ -76,6 +78,7 @@ class AvatarLayer {
     if (w && w.front) { this.weapon(c, w, F); if (w.hand && this.wim) this.hand(c, m, f, F, w, 0); }
     if (w2 && w2.front && this.dual()) { this.weapon(c, w2, F); if (w2.hand && this.wim) this.hand(c, m, f, F, w2, 1); }
     if (F.head && this.acc.length) this.accessories(c, F, false, f);
+    if (this.glow && this.glow.trail) vanityTrail(c, this, F, f);
   }
   dual() { return !!this.A && this.A.dual !== 0; }   // 双枪帧的副手：长枪 / 手炮 / 手弩不画（副手空着）
   weapon(c, w, F) {
@@ -88,6 +91,7 @@ class AvatarLayer {
       if (x0 > 0) c.drawImage(im, x0, 0, A.w - x0, A.h, x0 - A.tx, -A.ty, A.w - x0, A.h); else c.drawImage(im, -A.tx, -A.ty);
     }
     else { c.scale(s, fy); c.drawImage(im, -A.gx, -A.gy); }
+    if (this.glow) vanityWeaponFx(c, this, w, A, im, s);
     c.restore();
   }
   // 握拳那块像素（按轮廓从当前帧图里剪出来，第一次用到时生成并缓存）盖在武器上

@@ -154,7 +154,7 @@ function useExit(ex) {
 }
 function playerControlTown(p, dt) {
   const dx = input.dx(), dy = input.dy(), running = input.runDir !== 0 && dx === input.runDir;
-  if (dx || dy) { if (dx) p.face = dx; const sp = running ? p.runSpeed : p.speed; p.vx = dx * sp; p.vy = dy * sp * 0.88; p.setState(running ? 'run' : 'walk'); }
+  if (dx || dy) { if (dx) p.face = dx; const sp = (running ? p.runSpeed : p.speed) * vanityTownMul(); p.vx = dx * sp; p.vy = dy * sp * 0.88; p.setState(running ? 'run' : 'walk'); }   // vanityTownMul：时装城镇移速（game/vanity.js）
   else { p.vx = p.vy = 0; p.setState('idle'); }
 }
 function revealGate(g) {
@@ -284,6 +284,7 @@ function drawOwnLabel(c, taken) {
   const half = Math.max(c.measureText(t1).width, c.measureText(t2).width * 0.8) / 2 + 2;
   // 站在 NPC 跟前时会和 NPC 的名牌叠在一起：挪到 NPC 名牌下面（贴着自己头顶）
   { const hits = taken.filter(o => X - half < o.x1 && X + half > o.x0 && ny - 20 < o.y1 && ny + 3 > o.y0); if (hits.length) ny = Math.max(...hits.map(o => o.y1)) + 21; }
+  vanityPlate(c, X, ny, c.measureText(t1).width / 2, vanityOwn());   // +13 徽章 / 天空套边框
   c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.85)'; c.strokeText(t1, X, ny); c.fillStyle = '#ffe8a8'; c.fillText(t1, X, ny);
   c.font = 'bold 8px "PingFang SC","Microsoft YaHei",sans-serif'; c.strokeText(t2, X, ny - 11); c.fillStyle = tag ? '#9aff7a' : '#e8dcc0'; c.fillText(t2, X, ny - 11);
   c.restore();

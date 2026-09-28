@@ -16,7 +16,7 @@ function cashLook(eq) {
 }
 const cashAttached = new Map();   // 其他实体（联机玩家 / 预览）→ look
 function cashAttach(ent, look) { if (look && (look.pet || look.aura || look.sky8)) cashAttached.set(ent, look); else { cashDetach(ent); } }
-function cashDetach(ent) { const C = ent && ent._cash; if (C) for (const k of ['petFx', 'auraFx', 'glowFx']) { const i = fxList.indexOf(C[k]); if (i >= 0) fxList.splice(i, 1); } cashAttached.delete(ent); if (ent) ent._cash = null; }
+function cashDetach(ent) { const C = ent && ent._cash; if (C) for (const k of ['petFx', 'auraFx', 'glowFx', 'skyFx']) { const i = fxList.indexOf(C[k]); if (i >= 0) fxList.splice(i, 1); } cashAttached.delete(ent); if (ent) ent._cash = null; }
 let cashPlayerLook = null, cashLookDirty = true;
 for (const ev of ['equip', 'unequip', 'charLeave', 'sceneEnter', 'dungeonEnter']) bus.on(ev, () => { cashLookDirty = true; });
 // 每个逻辑步更新（包装 updateFx：城镇 / 地下城 / 决斗场都会调用）
@@ -56,6 +56,7 @@ function cashEntTick(e, L, dt) {
   keep('glowFx', L.sky8, () => ({ t: 0, dur: Infinity, y: e.y, draw(c) { cashDrawGlow(c, e); } }));
   if (L.sky8) { C.sky8 = L.sky8; C.glowFx.y = e.y + 0.5; cashGlowStep(C, dt); }
   else if (C.parts.length) C.parts.length = 0;
+  vanitySkyTick(e, C, L.sky8, dt, keep);   // 城镇里的光翼 / 火环 / 脚印（game/vanity.js）
 }
 // 天空 8 件套光效的粒子（C = { sky8, parts, spawn }；预览画布也用它）
 function cashGlowStep(C, dt) {

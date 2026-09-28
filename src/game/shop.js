@@ -92,6 +92,13 @@ function cashGive(items) {
   }
 }
 
+/* ---- 不限购（房主要求 2026-09-28）：商城里花钱买的东西全部不限购、每周轮换礼包随时能买；
+   免费领取的新手 / 等级礼包仍然每角色一次（否则可以无限白领）。改回限购：把 CASH_NO_LIMIT 设为 false ---- */
+const CASH_NO_LIMIT = true;
+if (CASH_NO_LIMIT) {
+  for (const G of Object.values(CASH_GOODS)) if (G.limit && G.price > 0) delete G.limit;
+  for (const E of Object.values(CASH_EXCH)) for (const G of E.goods || []) if (G.limit && G.cost > 0) delete G.limit;
+}
 /* ---- 限购 ---- */
 const cashLimKey = per => per === 'day' ? dayKey() : per === 'week' ? cashWeekKey() : 'life';
 function cashLimitLeft(id, limit) {
@@ -108,7 +115,7 @@ function cashDeals() {
   for (let i = 0; i < 3 && pool.length; i++) out.push(pool.splice(Math.floor(R() * pool.length), 1)[0]);
   const wk = +cashWeekKey().slice(1), W = CASH_DEALS_WEEK.filter(d => ITEMS[d.key]);
   const week = W.length ? W[wk % W.length] : null;
-  const toG = (d, per) => ({ pid: `deal:${per}:${d.key}:${d.n}`, key: d.key, n: d.n, price: Math.round(d.base * d.off / 10) * 10, base: d.base, off: d.off, cur: 'cera', tab: 'rec', tag: `${Math.round(d.off * 10)} 折`, limit: { per, n: d.limit }, deal: per });
+  const toG = (d, per) => ({ pid: `deal:${per}:${d.key}:${d.n}`, key: d.key, n: d.n, price: Math.round(d.base * d.off / 10) * 10, base: d.base, off: d.off, cur: 'cera', tab: 'rec', tag: `${Math.round(d.off * 10)} 折`, limit: CASH_NO_LIMIT ? undefined : { per, n: d.limit }, deal: per });
   return { day: out.map(d => toG(d, 'day')), week: week ? toG(week, 'week') : null };
 }
 const cashLtdPack = () => CASH_LTD[+cashWeekKey().slice(1) % CASH_LTD.length];
@@ -122,7 +129,7 @@ function cashGoods(pid) {
 // 商品现在能不能买（返回原因文字；null = 可以）
 function cashGoodsBlock(G) {
   if (!G || !ITEMS[G.key]) return '商品不存在';
-  if (G.ltd && cashLtdPack() !== G.pid) return '本周不出售';
+  if (G.ltd && !CASH_NO_LIMIT && cashLtdPack() !== G.pid) return '本周不出售';
   if (G.lvl && game.lvl < G.lvl) return `达到 Lv.${G.lvl} 后可以领取`;
   if (cashLimitLeft(G.pid, G.limit) <= 0) return G.limit.per === 'life' ? '已经领取过了' : `${LIMIT_TXT[G.limit.per]}限购已满`;
   return null;

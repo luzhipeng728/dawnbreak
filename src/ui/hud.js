@@ -35,6 +35,31 @@ function skillIcon(id, size = 64) {
   c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = 2; c.strokeRect(1, 1, 62, 62);
   iconCache[key] = cv; return cv;
 }
+/* ---- Buff 图标（64×64，按来源缓存）：技能 → 技能图标；装备特效 → 来源装备的物品图标（套装取第一件）；消耗品 → 物品图标；
+   其余画矢量图标：护盾 / 燃斗 / 按增益属性（攻击 / 速度 / 暴击 / 伤害） ---- */
+const buffIconCache = {};
+function buffIcon(k, b) {
+  if (SKILLS[k]) return skillIcon(k, 64);
+  const src = b.src || (k.startsWith('item_') ? k.slice(5) : ''), setId = src.split(':')[0];
+  const itemKey = ITEMS[src] ? src : SETS[setId] && SETS[setId].pieces.find(x => ITEMS[x]) || null;
+  const ck = k + '|' + (itemKey || '') + '|' + (itemKey ? !!IMG[itemArtKey({ ...ITEMS[itemKey], key: itemKey })] : ''); if (buffIconCache[ck]) return buffIconCache[ck];
+  const [cv, c] = offCanvas(64, 64), col = b.col || (itemKey && ITEMS[itemKey].col) || '#6a8aff';
+  const g = c.createLinearGradient(0, 0, 64, 64); g.addColorStop(0, shade(col, 0.25)); g.addColorStop(1, shade(col, -0.65));
+  c.fillStyle = g; c.fillRect(0, 0, 64, 64);
+  if (itemKey) { c.save(); c.translate(32, 32); drawItemIcon(c, { ...ITEMS[itemKey], key: itemKey }, 52); c.restore(); }
+  else {
+    c.fillStyle = '#fff'; c.strokeStyle = '#fff'; c.lineWidth = 5; c.lineCap = 'round'; c.lineJoin = 'round'; c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 4;   // 只画一次（缓存），不在每帧里
+    const has = s => b[s] != null && b[s] !== 0;
+    if (k === 'gear_shield') { c.beginPath(); c.moveTo(32, 8); c.lineTo(52, 16); c.quadraticCurveTo(52, 44, 32, 57); c.quadraticCurveTo(12, 44, 12, 16); c.closePath(); c.globalAlpha = 0.35; c.fill(); c.globalAlpha = 1; c.stroke(); }
+    else if (k === 'burn_mode') { c.beginPath(); c.moveTo(32, 6); c.quadraticCurveTo(50, 26, 46, 40); c.quadraticCurveTo(42, 58, 32, 58); c.quadraticCurveTo(18, 58, 18, 42); c.quadraticCurveTo(18, 30, 28, 22); c.quadraticCurveTo(28, 34, 34, 36); c.quadraticCurveTo(38, 22, 32, 6); c.fill(); }
+    else if (has('aspd') || has('cspd') || has('mspd') || has('spd')) { for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(12 + i * 6, 18 + i * 14); c.lineTo(46 + i * 6, 18 + i * 14); c.stroke(); } c.beginPath(); c.moveTo(40, 12); c.lineTo(56, 32); c.lineTo(40, 52); c.stroke(); }
+    else if (has('crit') || has('critDmg')) { c.beginPath(); c.arc(32, 32, 17, 0, TAU); c.stroke(); c.beginPath(); c.moveTo(32, 6); c.lineTo(32, 58); c.moveTo(6, 32); c.lineTo(58, 32); c.lineWidth = 3; c.stroke(); }
+    else if (has('atk') || has('matk')) { c.beginPath(); c.moveTo(14, 50); c.lineTo(48, 16); c.stroke(); c.beginPath(); c.moveTo(20, 36); c.lineTo(28, 44); c.stroke(); c.beginPath(); c.moveTo(12, 52); c.lineTo(18, 46); c.stroke(); c.beginPath(); c.moveTo(44, 10); c.lineTo(54, 10); c.lineTo(54, 20); c.stroke(); }
+    else { c.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 11 : 25, a = i / 10 * TAU - Math.PI / 2; c.lineTo(32 + Math.cos(a) * r, 33 + Math.sin(a) * r); } c.closePath(); c.fill(); }
+  }
+  c.shadowBlur = 0; c.strokeStyle = 'rgba(0,0,0,.6)'; c.lineWidth = 2; c.strokeRect(1, 1, 62, 62);
+  return (buffIconCache[ck] = cv);
+}
 /* ---- 底栏布局（逻辑坐标） ---- */
 const HUD = {
   y0: 940, x0: 452, x1: 1468,                      // 面板上沿 / 左右边
@@ -183,7 +208,7 @@ const ui = {
       uiText(`SP ${fmtNum(game.sp || 0)}`, HUD.dodge.x, 1072, { size: 16, align: 'center', color: (game.sp || 0) > 0 ? '#8aff9a' : '#c8c0b0', sw: 3 });
     }
     // BUFF 图标（剩余秒数）
-    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b) continue; const src = SKILLS[k] ? skillIcon(k, 32) : null; if (src) c.drawImage(src, bx, y0 - 84, 34, 34); else { c.fillStyle = b.col || '#6a8aff'; c.fillRect(bx, y0 - 84, 34, 34); } c.strokeStyle = '#ffd23a'; c.lineWidth = 1.5; c.strokeRect(bx, y0 - 84, 34, 34); uiText(Math.ceil(b.t) + '', bx + 17, y0 - 38, { size: 14, align: 'center', sw: 3 }); bx += 40; } }
+    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b) continue; c.drawImage(buffIcon(k, b), bx, y0 - 84, 34, 34); c.strokeStyle = '#ffd23a'; c.lineWidth = 1.5; c.strokeRect(bx, y0 - 84, 34, 34); if (b.n > 1) uiText('×' + b.n, bx + 33, y0 - 53, { size: 13, align: 'right', color: '#fff6c0', sw: 3 }); if (b.t < 900) uiText(Math.ceil(b.t) + '', bx + 17, y0 - 38, { size: 14, align: 'center', sw: 3 }); bx += 40; } }
   },
   drawCombo(c) {
     const n = game.combo;

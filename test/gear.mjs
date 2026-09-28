@@ -212,9 +212,9 @@ await ev(() => { const dg = game.dungeon, b = dg.boss; dg._fin = dg.finish; dg.f
 await wait(3200);
 const dr = await ev(() => ({ n: drops.length, epic: drops.filter(d => d.item && d.item.rar >= 5).map(d => ({ key: d.item.key, abyss: !!d.abyss, landed: d.landT != null })), soul: drops.some(d => d.item && d.item.key === 'm_cosmos') }));
 check(dr.epic.length >= 1 && dr.epic[0].abyss && dr.epic[0].landed && dr.soul, `深渊领主掉落：史诗 ${dr.epic.map(x => x.key).join(',')}（深渊光柱，已落地）、宇宙灵魂`);
-await ev(() => { const d = drops.find(d => d.item && d.item.rar >= 5), p = game.player; p.x = d.x; p.y = d.y; cam.x = clamp(p.x - WW / 2, 0, game.room.x1 - WW); });
+await ev(() => { const d = drops.find(d => d.item && d.item.rar >= 5); cam.x = clamp(d.x - WW / 2, 0, game.room.x1 - WW); });   // 只移镜头：玩家站到掉落上会被自动拾取 / 宠物捡走，下一步就找不到了（负载高时偶发）
 await wait(300); await shot('14-epic-pillar');
-const pick = await ev(() => { const d = drops.find(d => d.item && d.item.rar >= 5), key = d.item.key; const n0 = window.__ann.length; const ok = tryPickup(game.player); return { ok, key, ann: window.__ann.slice(n0).find(a => a.kind === 'epic'), codex: !!save.data.codex[key], rec: save.data.codex[key] && save.data.codex[key].src }; });
+const pick = await ev(() => { const d = drops.find(d => d.item && d.item.rar >= 5), key = d.item.key, p = game.player; p.x = d.x; p.y = d.y; const n0 = window.__ann.length; const ok = tryPickup(game.player); return { ok, key, ann: window.__ann.slice(n0).find(a => a.kind === 'epic'), codex: !!save.data.codex[key], rec: save.data.codex[key] && save.data.codex[key].src }; });
 check(pick.ok && pick.ann && pick.ann.abyss && pick.codex, `拾取深渊史诗：全服公告（abyss: true），图鉴登记（${pick.rec}）`);
 await ev(() => { const dg = game.dungeon; dg.finish = dg._fin; dg.finish(); }); await wait(600);
 check(await ev(() => menus.isOpen('result')), '通关结算');

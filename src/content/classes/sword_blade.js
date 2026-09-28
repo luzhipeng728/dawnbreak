@@ -6,8 +6,6 @@
 const flowMul = p => 1 + buffVal(p, 'flowDmg');
 const swWt = p => wtypeOf(p) || 'katana';
 const arcanaLv = p => skLv(p, 'wm_arcana');   // 武器奥义：各武器的专属特效（P0 每种武器一条，见 wmWeaponFx）
-// 状态名字在（魔法师组的）新异常状态合入前可能不存在：没有就不加
-const swStatus = (t, kind, dur, o) => { if (typeof STATUS_NAME !== 'undefined' && STATUS_NAME[kind]) addStatus(t, kind, dur, o); };
 
 /* ---- 武器奥义的专属特效（剑魂 + 武器奥义）：
    太刀 刺伤（叠层，满 17 层或 3 秒后引爆）；光剑 感电；钝器 几率眩晕；巨剑 里·鬼剑术第 2 击可蓄力 + 霸体；短剑 普攻 / 里·鬼剑术放出小剑气 ---- */
@@ -26,8 +24,7 @@ function wmWeaponFx(p, t, h, act) {
   const w = swWt(p), job = act && act.skill && SKILLS[act.skill] && SKILLS[act.skill].job === 'blade';
   if (w === 'katana' && (job || (act && act.rk))) wmPierce(p, t);
   else if (w === 'lightsaber' && Math.random() < (act && act.rk ? 0.5 : 0.2)) {
-    if (typeof STATUS_NAME !== 'undefined' && STATUS_NAME.shock) addStatus(t, 'shock', 1.5, { src: p });
-    else applyHit(p, t, { dmg: 0.15, sure: true, hs: 0.01, elem: 'light', col: '#fff38a', snd: 'slash', wmFx: true }, { proj: true });   // 感电状态合入前：追加一段光属性伤害
+    addStatus(t, 'shock', 1.5, { src: p });
   } else if (w === 'club' && (job || (act && act.rk)) && Math.random() < 0.15) addStatus(t, 'stun', 0.8, { src: p });
 }
 

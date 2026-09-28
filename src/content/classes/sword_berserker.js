@@ -163,6 +163,24 @@ defSkill('quake', { name: '崩山裂地斩', cls: 'sword', job: 'berserker', lvR
       for (let i = 0; i < 6; i++) game.after(0.14 + i * 0.12, () => { if (e.dead) return; const x = e.x + e.face * (70 + (i % 3) * 70) , y = e.y + (i < 3 ? -18 : 18); sfx.boom(0.4); fxSpr('lava', x, y, 0, { w: 130, dur: 0.5, ay: 0.85, grow: [0.3, 1.1] });
         blast(e, x, y, 70, { dmg: skillDmg(0.85, 0.085, lv), airLift: 380, launch: 260, knock: 20, hs: 0.04, col: '#ffb060' }, { zMax: 300 }); }); } }) });
 
+/* ---- 狂气涌动：除受击硬直、浮空外任何时候都能瞬发（不打断当前动作）。10 秒内 HP 不会被打到 50% 以下；
+   触发时生成 3 秒血盾吸收全部伤害，血盾结束时 BUFF 也结束。冷却固定 45 秒（不受冷却减少影响）---- */
+defSkill('bz_surge', { name: '狂气涌动', cls: 'sword', job: 'berserker', lvReq: 24, maxLv: 1, mp: 30, cd: 45, fixedCd: true, type: 'indep', buff: true, noForce: false, col: '#ff4a5a',
+  desc: '【BUFF · 瞬发】除受击硬直、浮空以外任何时候都能施放（不打断当前动作）。10 秒内 HP 不会被打到 50% 以下；第一次被打到 50% 时生成 3 秒的血盾，吸收所有伤害，血盾结束时效果也结束。冷却时间固定 45 秒。',
+  ai: { kind: 'buff' }, cmdNote: '单按 Space',
+  req: p => p.st === 'hit' || p.st === 'air' ? '受击中不能用' : true,
+  act: () => ({ name: 'bz_surge', clip: 'roar', dur: 0.3, noCounter: true }),   // 只给 AI 选技能用；实际施放走 instant
+  instant: (lv, p) => { p.buffs.bz_surge = { t: 10 }; sfx.buff(); fxAura(p, '#ff2a3a', 0.8); fxText('狂气涌动', p.x, p.y, p.z + 20, { col: '#ff6a6a', size: 12 }); } });
+SWORD_HOOKS.beforeHurt.push((p, a, h) => {
+  const B = p.buffs.bz_surge; if (!B || jobOf(p) !== 'berserker') return null;
+  if (B.shield) { fxSpr('bloodpillar', p.x, p.y, 0, { h: 90, dur: 0.2, ay: 1, alpha: 0.5 }); return { block: true }; }   // 血盾：吸收全部伤害
+  return { minHp: Math.ceil(p.hpMax * 0.5) };
+});
+SWORD_HOOKS.onHurt.push(p => {
+  const B = p.buffs.bz_surge; if (!B || B.shield || jobOf(p) !== 'berserker' || p.hp > Math.ceil(p.hpMax * 0.5)) return;
+  B.shield = true; B.t = 3; p.superArmor = Math.max(p.superArmor, 0.3); sfx.boom(0.6); fxAura(p, '#ff2a3a', 1.2); fxText('血盾', p.x, p.y, p.z + 24, { col: '#ff4a5a', size: 13 });
+});
+
 /* ---- 一觉：魔狱血刹（现版的“背后召唤血剑 → 再按一次劈下”改动放在 P1；这里仍是一次性演出）---- */
 defSkill('bz_awaken', { name: '魔狱血刹', cls: 'sword', job: 'berserker', lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'indep', awaken: true, col: '#8a0010',
   desc: '【觉醒】召唤吸满血气的魔剑，劈向大地引发血气爆炸，血气柱贯穿整个画面。施放中无敌。', pow: lv => skillDmg(24, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
@@ -178,9 +196,9 @@ defSkill('bz_awaken', { name: '魔狱血刹', cls: 'sword', job: 'berserker', lv
 
 CLASSES.sword.jobs.berserker = { art: 'job/berserker', name: '狂战士', role: '近战 · 爆发', armor: 'heavy', awaken: 'bz_awaken', awakenName: '暗狱魔神',
   desc: '以自身鲜血换取力量的鬼剑士。狂暴之力下双刀乱舞，出血链越滚越强，HP 越低越凶猛。',
-  skills: ['bz_vigor', 'bz_madness', 'bloodwake', 'frenzy', 'bz_defy', 'bz_scratch', 'rampage', 'outrage', 'bz_whirl', 'bz_thirst', 'bz_enrage', 'bz_twister', 'bloodblade', 'quake', 'bz_awaken'] };
+  skills: ['bz_vigor', 'bz_madness', 'bloodwake', 'frenzy', 'bz_defy', 'bz_scratch', 'rampage', 'outrage', 'bz_whirl', 'bz_thirst', 'bz_enrage', 'bz_twister', 'bloodblade', 'quake', 'bz_awaken', 'bz_surge'] };
 CLASSES.sword.cmds.push(['du', 'frenzy', 'buff'], ['uu', 'bz_defy', 'buff'], ['uu', 'bz_scratch'], ['ff', 'rampage', 'buff'], ['du', 'outrage'], ['ud', 'bz_whirl'], ['ud', 'bz_thirst', 'buff'],
-  ['buf', 'bz_enrage'], ['bff', 'bz_twister'], ['bbf', 'bloodblade'], ['uff', 'quake'], ['uudd', 'bz_awaken']);
+  ['buf', 'bz_enrage'], ['bff', 'bz_twister'], ['bbf', 'bloodblade'], ['uff', 'quake'], ['uudd', 'bz_awaken'], ['', 'bz_surge', 'buff']);
 
 // 被动：狂暴之力每 10 秒扣 HP、刀光变红；力量唤醒按 HP 分档
 CLASSES.sword.passives.push(p => {
@@ -204,7 +222,7 @@ SWORD_HOOKS.onHit.push((p, t, h, dmg, act) => {
 /* ---- 冷却修正（castSkill 先写冷却再调用 act，这里包一层 act 在施放时改 p.cool）：
    剑魂光剑掌握（光剑，非觉醒 −1%/级，最多 −10%）；狂战士狂暴之力（转职技能 −10%）、暴走（爆发之刃 / 嗜魂封魔斩 / 崩山裂地斩 −20%）---- */
 function swordCdMul(p, S) {
-  let m = 1; if (!p || S.awaken) return m;
+  let m = 1; if (!p || S.awaken || S.fixedCd) return m;
   const job = jobOf(p);
   if (job === 'blade' && wtypeOf(p) === 'lightsaber') m *= 1 - Math.min(0.1, 0.01 * skLv(p, 'wm_saber'));
   if (job === 'berserker' && S.job === 'berserker') { if (bzFrenzy(p)) m *= 0.9; if (p.buffs.rampage && ['bloodblade', 'bz_twister', 'quake'].includes(S.id)) m *= 0.8; }

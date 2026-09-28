@@ -39,7 +39,7 @@ for (const item of items) {
     await page.waitForFunction(() => __G.player.free && __G.player.z === 0, null, { timeout: 3000 }).catch(() => { });
     if (air) { await tap('KeyC'); await wait(160); }
     await tap(KEYS[i]);
-    const ok = await page.waitForFunction(id => __G.player.act && __G.player.act.skill === id, id, { timeout: 1200 }).then(() => true).catch(() => false);
+    const ok = await page.waitForFunction(id => (__G.player.act && __G.player.act.skill === id) || (SKILLS[id].instant && __G.player.cool[id] > 0), id, { timeout: 1200 }).then(() => true).catch(() => false);   // 无动作施放（S.instant）的技能看冷却
     cast.push(ok ? id : '✗' + id); if (!ok) fail++;
     await page.evaluate(() => { window.__lowHp = false; });
     const awk = await page.evaluate(id => !!SKILLS[id].awaken, id);

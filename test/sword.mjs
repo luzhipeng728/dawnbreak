@@ -100,6 +100,23 @@ const R = await page.evaluate(() => {
   T.cast('as_awaken'); T.run(40); out.domainEnd = !p.buffs.as_domain;
   // 指令 →→+Z：阿修罗是邪光斩（冷却更长的占用指令），不是嗜魂之手
   T.reset(); p.cool = {}; T.tap('right'); T.run(2); T.tap('right'); T.run(2); T.tap('cmd'); T.run(1); out.ffZ = p.act && p.act.skill; T.run(60);
+  // ---- 受击前钩子（combat.js beforeHurt）与新异常状态 ----
+  const R0 = Math.random, fixR = v => { Math.random = () => v; }, relR = () => { Math.random = R0; };
+  T.clear(); T.job('blade'); T.reset(); const atk = T.mob(360, 100); atk.face = -1;
+  p.buffs.wm_autoguard = { t: 120, chance: 1, lv: 5 }; const hpG = p.hp; out.autoGuard = applyHit(atk, p, { dmg: 5, stun: 0.3 }, {}) === false && p.hp === hpG; T.run(40); delete p.buffs.wm_autoguard;
+  // 格挡：魔法攻击的吸收率比物理低（物理 56%、魔法 35%，技能 5 级）
+  const hitOnce = (type, guard) => { T.reset(); p.face = 1; if (guard) { p.cool = {}; castSkill(p, 'guard', false, 's0'); T.run(3); } fixR(0.99); const h0 = p.hp; applyHit(atk, p, { dmg: 3, type, sure: true }, {}); relR(); const d = h0 - p.hp; p.act = null; p.setState('idle'); return d; };
+  T.bar(['guard']); const gp = hitOnce('phys', true) / hitOnce('phys', false), gm = hitOnce('mag', true) / hitOnce('mag', false); out.guardPhys = +gp.toFixed(2); out.guardMag = +gm.toFixed(2);
+  // 感电：剑魂光剑（武器奥义）命中附带感电，之后再挨打会追加感电伤害
+  T.weapon('lightsaber'); T.bar(['rikiken']); T.reset(); fixR(0.01); T.cast('rikiken'); T.run(12); relR(); out.shock = !!(atk.status && atk.status.shock); const s0 = atk._shockT;
+  T.run(12); applyHit(p, atk, { dmg: 0.1, sure: true }, { proj: true }); out.shockProc = atk._shockT !== s0 && atk._shockT !== undefined; T.weapon('katana'); T.run(30);
+  // 狂气涌动：HP 不会被打到 50% 以下，触发血盾后再挨打全部吸收
+  T.job('berserker'); T.bar(['bz_surge']); T.reset(); p.cool = {}; castSkill(p, 'bz_surge', false, 's0'); T.run(2); out.surgeBuff = !!p.buffs.bz_surge;
+  applyHit(atk, p, { dmg: 1e6, sure: true }, {}); out.surgeHp = p.hp === Math.ceil(p.hpMax * 0.5); out.surgeShield = !!(p.buffs.bz_surge && p.buffs.bz_surge.shield);
+  const hpS = p.hp; out.surgeBlock = applyHit(atk, p, { dmg: 5, sure: true }, {}) === false && p.hp === hpS; T.run(30);
+  // 阿修罗：背击回避（绝对感知）、邪光波动阵定身
+  T.job('asura'); T.reset(); p.face = 1; atk.x = p.x - 60; atk.face = 1; fixR(0.01); const hpBk = p.hp; out.backEvade = applyHit(atk, p, { dmg: 5 }, {}) === false && p.hp === hpBk; relR();
+  Object.assign(atk, { x: 380, z: 0, vz: 0, invul: 0, status: {} }); atk.hp = 1e9; atk.setState('idle'); T.bar(['as_array']); T.reset(); p.cool = {}; out.arr = T.cast('as_array'); T.run(30); out.root = !!(atk.status && atk.status.root); T.run(120); T.clear();
   return out;
 });
 report('三段刃 5 段', R.triple.length === 5, R.triple);
@@ -133,6 +150,11 @@ report('无双波需要无尽波动；无尽波动耗 MP、伤害周围', R.muso
 report('不动明王阵消耗全部波动印并命中', R.fudo === 'as_fudo' && R.markAfterFudo === 0 && R.fudoHit, [R.fudo, R.markAfterFudo, R.fudoHit]);
 report('暗天波动眼：需要无尽波动、领域中地裂变光翼、再按结束', R.awkNoAura === null && R.domain && R.wing === 'as_wing' && R.domainEnd, [R.awkNoAura, R.domain, R.wing, R.domainEnd]);
 report('阿修罗 →→+Z = 邪光斩', R.ffZ === 'as_evil', R.ffZ);
+report('自动格挡挡下正面攻击', R.autoGuard, R.autoGuard);
+report('格挡：物理吸收 > 魔法吸收', R.guardPhys < R.guardMag && Math.abs(R.guardPhys - 0.44) < 0.06 && Math.abs(R.guardMag - 0.65) < 0.06, [R.guardPhys, R.guardMag]);
+report('感电：光剑命中附带、再挨打追加感电伤害', R.shock && R.shockProc, [R.shock, R.shockProc]);
+report('狂气涌动：HP 停在 50%、生成血盾后吸收伤害', R.surgeBuff && R.surgeHp && R.surgeShield && R.surgeBlock, [R.surgeBuff, R.surgeHp, R.surgeShield, R.surgeBlock]);
+report('阿修罗：背击回避、邪光波动阵定身', R.backEvade && R.root, [R.backEvade, R.root]);
 const errs = logs.filter(l => l.type !== 'warning'); if (errs.length) fail++;
 console.log('LOGS', JSON.stringify(errs.slice(0, 6), null, 1));
 await browser.close();

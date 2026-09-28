@@ -139,8 +139,7 @@ defSkill('as_array', { name: '邪光波动阵', cls: 'sword', job: 'asura', lvRe
       addFx({ x: cx, y: cy - 30, z: 0, dur: 2, draw(c) { const k = this.t / this.dur, al = k < 0.1 ? k / 0.1 : k > 0.85 ? (1 - k) / 0.15 : 1; drawSpr(c, fxTint('hexagram', AS_COL), sx(cx), sy(cy, 0), 240, 90, { rot: this.t * 0.8, alpha: 0.75 * al }); } });
       for (let i = 0; i < 7; i++) game.after(i * 0.28, () => { if (e.dead) return; fxSpr('wave', cx + rnd(-60, 60), cy + rnd(-16, 16), 0, { h: 90, dur: 0.3, ay: 1, col: AS_COL, alpha: 0.8 });
         blast(e, cx, cy, 130, { dmg: skillDmg(0.93, 0.093, lv), stun: 0.6, knock: 0, hs: 0.03, downHit: true, type: 'indep', col: AS_COL, onHit: (a, t) => asRoot(t, a, 0.5) }, { zMax: 140 }); }); })] }) });
-// 定身：新异常状态（root）合入后用 root；之前用短眩晕代替（领主减速）
-function asRoot(t, a, dur) { if (typeof STATUS_NAME !== 'undefined' && STATUS_NAME.root) addStatus(t, 'root', dur, { src: a }); else if (t.boss) addStatus(t, 'slow', dur, { src: a }); else addStatus(t, 'stun', dur, { src: a, force: true }); }
+const asRoot = (t, a, dur) => addStatus(t, 'root', dur, { src: a });   // 定身（对领主自动变为减速）
 
 /* ---- 不动明王阵：需要波动印，一次消耗全部。在前方生成阵法强控敌人，不动明王现身，焰珠绕阵旋转后爆炸；按 C 立刻引爆。全程霸体 ---- */
 defSkill('as_fudo', { name: '不动明王阵', cls: 'sword', job: 'asura', lvReq: 20, mp: 70, cd: 45, type: 'indep', col: '#7a8aff', req: asMarkReq,
@@ -225,7 +224,7 @@ CLASSES.sword.passives.push(p => {
     else { p.mp -= cost; A.tick = (A.tick || 0) + 0.25; asFx(p);
       if (A.tick >= 0.5) { A.tick = 0; for (const t of ents) if (hittable(p, t) && Math.hypot(t.x - p.x, (t.y - p.y) * 1.5) < 150) {
         applyHit(p, t, { dmg: skillDmg(0.3, 0.03, A.lv || 1), sure: true, hs: 0, stun: 0.05, knock: 0, type: 'indep', col: AS_COL, asAura: true }, { proj: true });
-        if (typeof STATUS_NAME !== 'undefined' && STATUS_NAME.taunt) addStatus(t, 'taunt', 1, { src: p }); } } } }
+        addStatus(t, 'taunt', 1, { src: p }); } } } }
 });
 // 背击回避（绝对感知）
 SWORD_HOOKS.beforeHurt.push((p, a, h, opt) => {

@@ -118,11 +118,11 @@ smDef('sm_echeverria', 'echeverria', { h: 140, w: 16, speed: 150, pref: 120, sa:
     { clip: 'axe', range: [60, 420], dy: 30, cd: [8, 11], w: 1, act: { dur: 1.2, events: [evAt(0.55, s => { const t = summonTarget(s), el = bestElem(t); sfx.zap(); fxBeam(s.x + s.face * 30, s.y, s.z + 70, 420, s.face, { w: 30, col: ELEM_COL[el], dur: 0.4 });
       instantHit(s, { box: [10, 430, 26, 30, 110], dmg: 1.4 * s.mul, stun: 0.5, knock: 120, hs: 0.06, elem: el, type: 'mag' }); })] } }] });
 // ---- 技能 ----
-const smSummonAct = (key, lv, extra = {}) => ({ name: key, clip: 'summon', dur: 0.5, cancelFrom: 0.36, noCounter: true, ...extra,
+const smSummonAct = (key, lv, extra = {}) => ({ name: key, clip: 'smSummon', dur: 0.5, cancelFrom: 0.36, noCounter: true, ...extra,
   events: [evAt(0.22, e => { sfx.magic(); summon(e, key, { lv, mul: smMul(e, lv) }); })] });
 // 交感（心灵感应）：契约兽在场时再按一次召唤键，它瞬移到你前方放专属招；需要心灵感应达到对应等级
 const smRecast = (key, need, cd, mp) => ({ ok: p => jobOf(p) === SM && summonsOf(p, key).length > 0 && skLv(p, 'sm_telepathy') >= need, cd, mp,
-  act: (lv, p) => ({ name: 'sm_cmd', clip: 'cast3', dur: 0.3, noCounter: true, onStart: e => { summonCmd(e, key, 'special', smCmdArg(e)); fxText('交感', e.x, e.y, e.z + 30, { col: '#e0c0ff', size: 10, dur: 0.5 }); } }) });
+  act: (lv, p) => ({ name: 'sm_cmd', clip: 'smCmd', dur: 0.3, noCounter: true, onStart: e => { summonCmd(e, key, 'special', smCmdArg(e)); fxText('交感', e.x, e.y, e.z + 30, { col: '#e0c0ff', size: 10, dur: 0.5 }); } }) });
 defSkill('sm_aura', { name: '召唤兽强化', cls: 'mage', job: SM, lvReq: 15, passive: true, type: 'mag', col: '#b89aff', desc: '【被动光环】全图的召唤兽攻击力提高；你的魔法暴击率提高。', infoExtra: lv => [['召唤兽攻击力', '+' + pct(0.02 + 0.02 * lv)], ['魔法暴击率', '+' + pct(0.05 + 0.005 * lv)]] });
 defSkill('sm_telepathy', { name: '心灵感应', cls: 'mage', job: SM, lvReq: 15, maxLv: 6, passive: true, type: 'mag', col: '#e0a0ff',
   desc: '【被动】技能攻击力提高。每升一级解锁一只契约兽的交感（召唤兽在场时再按一次召唤键，它瞬移到你前方放专属招；按住 ↓ 再按则瞬移到你脚下）：1 赫德尔 → 2 弗利特 → 3 桑德尔 → 4 袄索 → 5 露易丝 → 6 库鲁塔。',
@@ -130,21 +130,21 @@ defSkill('sm_telepathy', { name: '心灵感应', cls: 'mage', job: SM, lvReq: 15
 defSkill('sm_lesser', { name: '下级精灵召唤', cls: 'mage', job: SM, lvReq: 15, mp: 30, cd: 2, type: 'mag', col: '#8ad0ff', cast: true,
   desc: '一次召唤火、冰、暗、光四种下级精灵各 1 只，在场 30 秒：亚德炎（火，近身连打）、冰奈斯（冰，近战 + 远程，召唤时为你回复少量 HP）、瑟冥特克（暗，攻击快、硬直长，几率诅咒）、雷沃斯（光，电击，背击几率眩晕）。',
   pow: lv => skillDmg(0.8, 0.08, lv), ai: { kind: 'buff', summon: 'sm_ador' },
-  act: (lv) => ({ name: 'sm_lesser', clip: 'summon', dur: 0.45, cancelFrom: 0.32, noCounter: true, events: [evAt(0.2, e => { sfx.magic(); LESSER.forEach((k, i) => game.after(i * 0.05, () => { if (!e.dead) summon(e, k, { lv, mul: smMul(e, lv), x: e.x + e.face * (30 + i * 16), y: clamp(e.y + (i - 1.5) * 16, 6, DEPTH - 6) }); })); })] }) });
+  act: (lv) => ({ name: 'sm_lesser', clip: 'smSummon', dur: 0.45, cancelFrom: 0.32, noCounter: true, events: [evAt(0.2, e => { sfx.magic(); LESSER.forEach((k, i) => game.after(i * 0.05, () => { if (!e.dead) summon(e, k, { lv, mul: smMul(e, lv), x: e.x + e.face * (30 + i * 16), y: clamp(e.y + (i - 1.5) * 16, 6, DEPTH - 6) }); })); })] }) });
 defSkill('sm_wait', { name: '伺机而动', cls: 'mage', job: SM, lvReq: 15, maxLv: 1, mp: 5, cd: 1.2, type: 'mag', buff: true, col: '#8a8aa0',
   desc: '【开关】所有召唤兽原地停手，不再主动攻击（交感等指令攻击照常）。再按一次恢复。', ai: null,
-  act: () => ({ name: 'sm_wait', clip: 'cast3', dur: 0.3, noCounter: true, onStart: e => { const M = e.summonMode = e.summonMode || {}; M.hold = !M.hold; if (M.hold) e.buffs.sm_wait = { t: 1e9 }; else delete e.buffs.sm_wait; fxText(M.hold ? '伺机而动' : '解除', e.x, e.y, e.z + 30, { col: '#c0c0e0', size: 10 }); } }) });
+  act: () => ({ name: 'sm_wait', clip: 'smCmd', dur: 0.3, noCounter: true, onStart: e => { const M = e.summonMode = e.summonMode || {}; M.hold = !M.hold; if (M.hold) e.buffs.sm_wait = { t: 1e9 }; else delete e.buffs.sm_wait; fxText(M.hold ? '伺机而动' : '解除', e.x, e.y, e.z + 30, { col: '#c0c0e0', size: 10 }); } }) });
 defSkill('sm_follow', { name: '召唤兽跟随', cls: 'mage', job: SM, lvReq: 15, maxLv: 1, mp: 5, cd: 1, type: 'mag', buff: true, col: '#6ab0a0',
   desc: '【开关】召唤兽在你身边 100px 内跟随，只攻击靠近你的敌人；期间你受到的伤害降低 5%。再按一次恢复。', ai: null,
-  act: () => ({ name: 'sm_follow', clip: 'cast3', dur: 0.4, noCounter: true, onStart: e => { const M = e.summonMode = e.summonMode || {}; M.follow = !M.follow; if (M.follow) e.buffs.sm_follow = { t: 1e9, taken: -0.05 }; else delete e.buffs.sm_follow; fxText(M.follow ? '跟随' : '解除', e.x, e.y, e.z + 30, { col: '#a0e0d0', size: 10 }); } }) });
+  act: () => ({ name: 'sm_follow', clip: 'smCmd', dur: 0.4, noCounter: true, onStart: e => { const M = e.summonMode = e.summonMode || {}; M.follow = !M.follow; if (M.follow) e.buffs.sm_follow = { t: 1e9, taken: -0.05 }; else delete e.buffs.sm_follow; fxText(M.follow ? '跟随' : '解除', e.x, e.y, e.z + 30, { col: '#a0e0d0', size: 10 }); } }) });
 defSkill('sm_dismiss', { name: '召唤解除', cls: 'mage', job: SM, lvReq: 16, maxLv: 1, mp: 0, cd: 10, type: 'mag', col: '#6a6a80', desc: '解除你的全部召唤兽。', ai: null,
-  act: () => ({ name: 'sm_dismiss', clip: 'cast3', dur: 0.8, noCounter: true, events: [evAt(0.4, e => { dismissSummons(e, undefined, 'cmd'); sfx.magic(); })] }) });
+  act: () => ({ name: 'sm_dismiss', clip: 'smCmd', dur: 0.8, noCounter: true, events: [evAt(0.4, e => { dismissSummons(e, undefined, 'cmd'); sfx.magic(); })] }) });
 defSkill('sm_frit', { name: '契约召唤：弗利特', cls: 'mage', job: SM, lvReq: 16, mp: 40, cd: 10, type: 'mag', elem: 'fire', col: '#e06a3a', cast: true, recast: smRecast('sm_frit', 2, 10, 10),
   desc: '召唤小火龙弗利特（常驻）：撕咬（霸体）、吐火球、火焰吐息（几率灼烧）。心灵感应 2 级后可以交感：“龙之威压”——瞬移到你前方咆哮，5 段范围火焰伤害。', pow: lv => skillDmg(1.0, 0.1, lv), ai: { kind: 'buff', summon: 'sm_frit' },
   act: (lv) => smSummonAct('sm_frit', lv) });
 defSkill('sm_sacrifice', { name: '精灵献祭', cls: 'mage', job: SM, lvReq: 16, mp: 40, cd: 20, type: 'mag', col: '#e0a0ff', cast: true,
   desc: '在前方画出魔法阵，引爆阵内的下级精灵，各按属性造成爆炸（火：灼烧 / 冰：冰刺 / 暗：诅咒 / 光：落雷）。按住技能键时，先把全图的下级精灵传送到阵里再引爆。', pow: lv => skillDmg(2.0, 0.2, lv) * 4, ai: { kind: 'aoe', r: [40, 260], dy: 60 },
-  act: (lv, p) => ({ name: 'sm_sacrifice', clip: 'grip', dur: 0.8, cancelFrom: 0.6, noCounter: true, charge: { at: 0.1, max: 0.4, min: 0, dmg: 0, clip: 'mchan' },
+  act: (lv, p) => ({ name: 'sm_sacrifice', clip: 'smSac', dur: 0.8, cancelFrom: 0.6, noCounter: true, charge: { at: 0.1, max: 0.4, min: 0, dmg: 0, clip: 'smSac' },
     events: [evAt(0.2, e => { const cx = e.x + e.face * 130, cy = e.y; fxSpr('hexagram', cx, cy, 0, { w: 240, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: '#e0a0ff' });
       const L = summonsOf(e, { tag: 'lesser' }); if ((e.act.chargeK || 0) > 0.2) L.forEach((s, i) => s.warp(cx + (i - 1.5) * 26, cy + ((i % 2) - 0.5) * 20));
       for (const s of L) { if (Math.hypot(s.x - cx, (s.y - cy) * 2) > 130) continue; const x = s.x, y = s.y, key = s.skey; dismissOne(s, 'cmd'); fxBurst(x, y, 40, 130, s.sdef.col); sfx.boom(0.5);
@@ -157,7 +157,7 @@ defSkill('sm_sandor', { name: '契约召唤：黑骑士桑德尔', cls: 'mage', 
 defSkill('sm_domin', { name: '绝对支配', cls: 'mage', job: SM, lvReq: 17, passive: true, type: 'mag', col: '#a05ad0', desc: '【被动】鞭挞的范围大幅扩大，给召唤兽的增益持续时间变成 40 秒。' });
 defSkill('sm_mark', { name: '魔力印记', cls: 'mage', job: SM, lvReq: 17, mp: 15, cd: 1, type: 'mag', col: '#ff6aa0', cast: true,
   desc: '向前方的敌人扔出魔力印记：被标记的敌人 72 秒内每秒受到伤害，附近的召唤兽会集火它。同一时间只能标记一个敌人。', pow: lv => skillDmg(0.3, 0.03, lv), infoExtra: lv => [['射程', (300 + 8 * lv) + 'px']], ai: { kind: 'proj', r: [0, 300], dy: 40 },
-  act: (lv) => ({ name: 'sm_mark', clip: 'cast3', dur: 0.35, cancelFrom: 0.2, events: [evAt(0.1, e => { const t = aimAhead(e, 200, 300 + 8 * lv, 80).t || nearestFoe(e, 300 + 8 * lv); if (!t) return;
+  act: (lv) => ({ name: 'sm_mark', clip: 'smThrow', dur: 0.35, cancelFrom: 0.2, events: [evAt(0.12, e => { const t = aimAhead(e, 200, 300 + 8 * lv, 80).t || nearestFoe(e, 300 + 8 * lv); if (!t) return;
     sfx.magic(); dismissSummons(e, 'sm_markT'); const s = summon(e, 'sm_markT', { target: t, lv }); if (s) s.dmg = skillDmg(0.3, 0.03, lv); const M = e.summonMode = e.summonMode || {}; M.mark = t; M.markR = 400 + 10 * lv; })] }) });
 defSummon('sm_markT', { kind: 'attach', host: 'target', life: 72, max: 1, tick: 1, col: '#ff6aa0',
   onTick(s, h) { summonHit(s, h, { dmg: s.dmg || 0.3, stun: 0.05, knock: 0, hs: 0.01, type: 'mag', sure: true, col: '#ff8ac0' }); },
@@ -182,13 +182,13 @@ defSkill('sm_echeverria', { name: '精灵召唤：精灵王伊伽贝拉', cls: '
   desc: '召唤精灵王伊伽贝拉（常驻、霸体）：触击、音波、七连落雷、全属性激光，攻击时自动选择敌人抗性最低的属性。附近的己方精灵伤害 +15%；自己身边每有一只精灵伤害 +15%（最多 +30%）。', pow: lv => skillDmg(2.4, 0.24, lv), ai: { kind: 'buff', summon: 'sm_echeverria' },
   act: (lv) => smSummonAct('sm_echeverria', lv) });
 defSkill('sm_teleport', { name: '召唤兽传送', cls: 'mage', job: SM, lvReq: 19, maxLv: 1, mp: 10, cd: 10, type: 'mag', col: '#8a9aff', desc: '让全部召唤兽瞬移到你所站的位置（包括不会移动的袄索）。', ai: null,
-  act: () => ({ name: 'sm_teleport', clip: 'cast3', dur: 0.7, noCounter: true, events: [evAt(0.35, e => { summonsOf(e).forEach((s, i) => { if (s.kind === 'follower') { s.warp(e.x + (i % 5 - 2) * 18, clamp(e.y + ((i % 3) - 1) * 18, 6, DEPTH - 6)); fxBurst(s.x, s.y, 40, 60, s.sdef.col || '#d8c0ff'); } }); sfx.magic(); })] }) });
+  act: () => ({ name: 'sm_teleport', clip: 'smCmd', dur: 0.7, noCounter: true, events: [evAt(0.35, e => { summonsOf(e).forEach((s, i) => { if (s.kind === 'follower') { s.warp(e.x + (i % 5 - 2) * 18, clamp(e.y + ((i % 3) - 1) * 18, 6, DEPTH - 6)); fxBurst(s.x, s.y, 40, 60, s.sdef.col || '#d8c0ff'); } }); sfx.magic(); })] }) });
 defSkill('sm_kuruta', { name: '契约召唤：牛头王库鲁塔', cls: 'mage', job: SM, lvReq: 20, mp: 70, cd: 10, type: 'mag', col: '#c08040', cast: true, recast: smRecast('sm_kuruta', 6, 40, 20),
   desc: '召唤牛头王库鲁塔（常驻、霸体）：横斩、愤怒冲锋、咆哮（眩晕）。放着不管时输出最高。心灵感应 6 级后可以交感：“狂怒”——横扫把敌人拉到一起，再下劈带冲击波。', pow: lv => skillDmg(2.4, 0.24, lv), ai: { kind: 'buff', summon: 'sm_kuruta' },
   act: (lv) => smSummonAct('sm_kuruta', lv) });
 defSkill('sm_bind', { name: '束缚印记', cls: 'mage', job: SM, lvReq: 20, mp: 40, cd: 25, type: 'mag', col: '#8adf6a', cast: true,
   desc: '向前扔出黏液瓶，爆炸后把范围内的敌人定身 3 秒。', pow: lv => skillDmg(1.5, 0.15, lv), ai: { kind: 'aoe', r: [60, 300], dy: 60 },
-  act: (lv) => ({ name: 'sm_bind', clip: 'jack', dur: 0.5, cancelFrom: 0.34, events: [evAt(0.18, e => { const at = aimAhead(e, 200, 320); sfx.swing(false);
+  act: (lv) => ({ name: 'sm_bind', clip: 'smThrow', dur: 0.5, cancelFrom: 0.34, events: [evAt(0.18, e => { const at = aimAhead(e, 200, 320); sfx.swing(false);
     lobProj(e, at.x, at.y, 0.45, { img: 'poison', h: 18, onLand: pr => { sfx.boom(0.4); fxSpr('poison', pr.x, pr.y, 10, { w: 170, dur: 0.6, col: '#8adf6a' });
       blast(e, pr.x, pr.y, 80, { dmg: skillDmg(1.5, 0.15, lv), stun: 0.3, knock: 10, hs: 0.05, type: 'mag' }, { zMax: 120, status: 'root', sdur: 3 }); } }); })] }) });
 defSkill('sm_soul', { name: '灵魂支配', cls: 'mage', job: SM, lvReq: 21, passive: true, type: 'mag', col: '#c0a0ff', desc: '【被动·一觉】技能攻击力和施放速度提高。', infoExtra: lv => [['技能攻击力', '+' + pct(0.08 + 0.015 * lv)], ['施放速度', '+' + pct(0.05 + 0.01 * lv)]] });
@@ -255,7 +255,7 @@ defSummon('sm_casillas', { kind: 'follower', name: '征服者卡西利亚斯', b
 defSkill('sm_awaken', { name: '契约召唤：征服者卡西利亚斯', cls: 'mage', job: SM, lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'mag', awaken: true, col: CAS_COL,
   desc: '【觉醒】用禁断之术劈开次元，召唤第四使徒的分身“征服者卡西利亚斯”：他从裂缝里走出，落地时击倒画面内的全部敌人。在场 200 秒（决斗场 30 秒），霸体、免疫异常，放着不管时施展不动剑、疾风剑、残心剑；离场时放出“狱冥天地”剑阵。召唤过程中你处于无敌状态。',
   pow: lv => skillDmg(12, 3, lv), ai: { kind: 'awaken', r: [0, 420], dy: 120 }, infoExtra: () => [['在场时间', '200 秒'], ['离场', '狱冥天地（剑阵）']],
-  act: (lv) => ({ name: 'sm_awaken', clip: 'summon', dur: 2.0, superArmor: true, noCounter: true, invul: true,
+  act: (lv) => ({ name: 'sm_awaken', clip: 'smAwk', dur: 2.0, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '征服者卡西利亚斯', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); dismissSummons(e, 'sm_casillas', 'replaced');
       const R = game.room, x = e.x + e.face * 150; e.act.rx = R ? clamp(x, R.x0 + 40, R.x1 - 40) : x; e.act.ry = e.y; },
     events: [evAt(0.95, e => { sfx.charge(); casRift(e.act.rx, e.act.ry, 2.0); cam.shake = Math.max(cam.shake, 4); }),
@@ -265,7 +265,7 @@ defSkill('sm_awaken', { name: '契约召唤：征服者卡西利亚斯', cls: 'm
         e.invul = Math.max(e.invul, 0.6); })] }) });
 defSkill('sm_thousand', { name: '必杀剑·千鬼杀', cls: 'mage', job: SM, lvReq: 21, mp: 80, cd: 30, type: 'mag', col: CAS_COL, req: p => summonsOf(p, 'sm_casillas').length > 0 || '卡西利亚斯不在场',
   desc: '卡西利亚斯在场时才能用：他瞬移到你前方拔刀冲斩，穿过敌群，身后的剑气再补 5 段，收刀时一起爆开。期间你处于无敌状态。', pow: lv => skillDmg(9, 0.9, lv) * 3, ai: { kind: 'burst', r: [0, 360], dy: 60 },
-  act: (lv) => ({ name: 'sm_thousand', clip: 'cast3', dur: 0.5, noCounter: true, invul: true, onStart: e => { const s = summonsOf(e, 'sm_casillas')[0]; if (!s) return; summonCmd(e, 'sm_casillas', 'thousand', { mul: lvMul(lv, 0.1) }); e.invul = Math.max(e.invul, 1.6);
+  act: (lv) => ({ name: 'sm_thousand', clip: 'smCmd', dur: 0.5, noCounter: true, invul: true, onStart: e => { const s = summonsOf(e, 'sm_casillas')[0]; if (!s) return; summonCmd(e, 'sm_casillas', 'thousand', { mul: lvMul(lv, 0.1) }); e.invul = Math.max(e.invul, 1.6);
     fxText('千鬼杀', e.x, e.y, e.z + 40, { col: '#ff8090', size: 12, dur: 0.6 }); } }) });
 // 赫德尔的交感（心灵感应 1 级）：瞬移到你前方冲刺 4 连棍
 SKILLS.mg_hodor.recast = smRecast('hodor', 1, 8, 8);

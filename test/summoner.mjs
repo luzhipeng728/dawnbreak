@@ -6,7 +6,7 @@ const report = (name, ok, info) => { if (!ok) fail++; console.log(`${ok ? 'PASS'
 const { browser, page, logs } = await launch({ width: 960, height: 540 });
 await page.goto(`${URL_BASE}?test&cls=mage&mobs=0&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
 // 先把召唤兽的美术分包加载好（正式环境由召唤师进城 / 进地下城时预加载）
-await page.evaluate(async () => { game.job = 'summoner'; const B = ['sandor', 'ador', 'naias', 'stalker', 'wisp', 'frit', 'aukuso', 'luise', 'merkle', 'glarelin', 'aqueris', 'flamehulk', 'echeverria', 'goblinCaptain', 'tauKing'];
+await page.evaluate(async () => { game.job = 'summoner'; const B = ['sandor', 'ador', 'naias', 'stalker', 'wisp', 'frit', 'aukuso', 'luise', 'merkle', 'glarelin', 'aqueris', 'flamehulk', 'echeverria', 'goblinCaptain', 'tauKing', 'casillas'];
   if (typeof loadBundles === 'function') await loadBundles(B.filter(b => !IMG[`spr/${b}/idle`]).map(b => 'spr:' + b)); });
 const R = await page.evaluate(() => {
   game.paused = true;
@@ -65,7 +65,7 @@ report('精灵献祭：阵里的下级精灵被引爆', o.sacrifice.after < o.sa
 report('绝对支配：远处的召唤兽吃到 40 秒鞭挞增益、再按追加上挑', o.domin.cancel && o.domin.whipT >= 39 && o.domin.up === 'mg_whipUp', o.domin);
 report('换房间：召唤兽跟到身边', o.room, o.room);
 report('召唤解除：全部消失', o.dismissed === 0, o.dismissed);
-report('一觉：卡西利亚斯出场、落地击倒身后的敌人、召唤过程本体无敌、放养会出手', o.awaken.cas && o.awaken.behind && o.awaken.inv && o.awaken.fights, o.awaken);
+report('一觉：卡西利亚斯出场、落地击倒身后的敌人、召唤过程本体无敌、放养会出手', o.awaken.cas && o.awaken.sprite && o.awaken.behind && o.awaken.inv && o.awaken.fights, o.awaken);
 report('千鬼杀：卡西利亚斯放专属招、本体无敌、打出伤害', o.thousand.act === 'casThousand' && o.thousand.pinv && o.thousand.dealt, o.thousand);
 report('狱冥天地：解除时剑阵落下打出伤害', o.gokumei.gone && o.gokumei.dealt, o.gokumei);
 const errs = logs.filter(l => /error|Error/.test(l)); report('无报错', errs.length === 0, errs.slice(0, 3));

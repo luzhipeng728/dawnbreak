@@ -81,7 +81,7 @@ A.M = {
              'a flowing white and gold gown with elemental gem ornaments, glowing eyes, four small elemental orbs (fire, ice, light, dark) floating around her.',
         atk='a sweep of her hand releasing elemental light', cast='raising both hands as the four elemental orbs spin and gather', low='pointing forward firing a beam'),
     # 一觉：征服者卡西利亚斯（第四使徒的分身，剑豪）。巨型，常驻霸体；出场 / 千鬼杀 / 狱冥天地这些大招的光效都在运行时画，帧里不画特效
-    'casillas': dict(h=188, hold='holding the long curved nodachi katana', sheets=('walk', 'act', 'more'),
+    'casillas': dict(h=188, hold='holding the long curved nodachi katana', sheets=('walk', 'act', 'more'), upright={'act': ('stance', 'sheath'), 'more': ('step2', 'guard')},
         desc='Kasijas the Conqueror, a giant legendary swordsman from another dimension: a towering broad-shouldered warrior with ashen grey-blue skin, long wild white hair flowing down his back, '
              'a black horned oni half-mask over the upper face with glowing crimson eyes, heavy dark iron samurai-style armor with crimson lacing, big layered shoulder guards, a tattered deep-red cape, '
              'a thick rope belt, holding a very long curved nodachi katana with a steel blade and a crimson-wrapped hilt, a black lacquered scabbard at his left hip.',

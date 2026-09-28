@@ -100,6 +100,45 @@ const R = await page.evaluate(() => {
   T.cast('as_awaken'); T.run(40); out.domainEnd = !p.buffs.as_domain;
   // 指令 →→+Z：阿修罗是邪光斩（冷却更长的占用指令），不是嗜魂之手
   T.reset(); p.cool = {}; T.tap('right'); T.run(2); T.tap('right'); T.run(2); T.tap('cmd'); T.run(1); out.ffZ = p.act && p.act.skill; T.run(60);
+  // ---- 鬼泣 ----
+  T.clear(); T.job('soulbender'); T.bar(['sb_saya', 'sb_whip', 'sb_rasha', 'sb_plemon', 'sb_purge', 'sb_kaiga', 'sb_flash', 'sb_karo', 'sb_karoblade', 'kazan', 'ghost']);
+  const m7 = T.mob(420, 100); T.reset(); T.cast('sb_saya'); T.run(40); out.sayaN = summonsOf(p, 'sb_saya_f').length; T.run(60); out.sayaHit = m7.hp < 1e9;
+  p.cool = {}; T.cast('sb_saya'); T.run(40); out.sayaReplace = summonsOf(p, 'sb_saya_f').length;
+  // 鬼神解放：鬼影鞭施放中按罗刹键，不打断动作直接放阵；没学鬼神解放时放不出来
+  dismissSummons(p); T.reset(); p.cool = {}; T.cast('sb_whip'); T.run(6); T.tap('s2'); T.run(1); out.softAct = p.act && p.act.skill; out.softField = summonsOf(p, 'sb_rasha_f').length; T.run(60);
+  game.skillLv.sb_release = 0; dismissSummons(p); T.reset(); p.cool = {}; T.cast('sb_whip'); T.run(6); T.tap('s2'); T.run(1); out.noSoftField = summonsOf(p, 'sb_rasha_f').length; T.run(60); game.skillLv.sb_release = 1;
+  // 罗刹附身：踩进阵的敌人被附身，离开阵也不掉
+  dismissSummons(p); T.clear(); const m8 = T.mob(400, 100); T.reset(); p.cool = {}; T.cast('sb_rasha'); T.run(60); out.rashaOn = summonsOf(p, 'sb_rasha_on').some(s => s.host === m8); m8.x = 900; T.run(60); out.rashaStay = summonsOf(p, 'sb_rasha_on').some(s => s.host === m8);
+  // 普戾蒙：阵里的敌人受到伤害增加
+  p.cool = {}; m8.x = 400; T.cast('sb_plemon'); T.run(60); out.plemon = !!(m8.buffs && m8.buffs.sb_plemon);
+  // 泯灭仪式：清掉自己的阵
+  T.cast('sb_purge'); T.run(20); out.purged = summonsOf(p, { tag: 'field' }).length; T.clear();
+  // 残影之凯贾：普攻第 4 下是冲刺斩，冲刺中可以接鬼影闪；平时放不出鬼影闪
+  T.reset(); out.flashNoKaiga = T.cast('sb_flash') || null; T.run(20);
+  T.cast('sb_kaiga'); T.run(30); p._psvT = 0; T.run(2); for (let i = 0; i < 80 && !(p.act && p.act.kaigaDash); i++) { if (i % 6 === 0) T.tap('attack'); else T.run(1); }
+  out.kaigaDash = !!(p.act && p.act.kaigaDash); T.cast('sb_flash'); out.flashKaiga = p.act && p.act.skill; T.run(80);
+  // 冥炎之卡洛：普攻改为发射分身（投射物），命中附加冥炎；冥炎剑只能在卡洛中施放
+  T.clear(); T.reset(); out.bladeNoKaro = T.cast('sb_karoblade') || null; T.run(10); const m9 = T.mob(420, 100);
+  T.cast('sb_karo'); T.run(30); p._psvT = 0; T.run(2); const pj0 = projs.length; T.tap('attack'); T.run(6); out.karoShot = projs.length > pj0; T.run(40); out.karoBurn = summonsOf(p, 'sb_karo_burn').some(s => s.host === m9);
+  p.cool = {}; out.bladeKaro = T.cast('sb_karoblade'); T.run(90); T.clear();
+  // 卡赞：鬼泣转职后变被动（不能施放）
+  T.reset(); out.kazanSb = T.cast('kazan') || null;
+  // ---- 剑影 ----
+  T.clear(); T.job('ghostblade'); T.bar(['gb_step', 'gb_chain', 'gb_issen', 'gb_rend', 'gb_riko', 'gb_ghostslash', 'gb_retrace', 'gb_fang', 'gb_break', 'gb_behead', 'gb_resonance', 'kazan']);
+  // 鬼人化：普攻 4 段
+  T.reset(); const gbSeen = []; T.press('attack'); for (let i = 0; i < 120; i++) { T.run(1); if (p.act && !gbSeen.includes(p.act.name)) gbSeen.push(p.act.name); } T.release('attack'); T.run(30); out.gbBasic = gbSeen.filter(n => /^atk/.test(n)).length;
+  // 幻鬼：一闪 → 幻鬼现身出招、之后可以幻鬼步
+  const m10 = T.mob(560, 100); T.reset(); T.cast('gb_issen'); T.run(20); const ph = gbPhantom(p); out.phantom = !!ph; out.phantomHit = m10.hp < 1e9; T.run(10);
+  const px0 = p.x; T.cast('gb_retrace'); T.run(2); out.retrace = ph && Math.abs(p.x - ph.x) < 5 && Math.abs(p.x - px0) > 100; out.retraceInvul = p.invul > 0.3;
+  T.run(90); out.phantomGone = !gbPhantom(p);
+  // 幻鬼技能在剑术技能中无动作叠加
+  T.reset(); p.cool = {}; T.cast('gb_chain'); T.run(6); T.tap('s3'); T.run(1); out.stackAct = p.act && p.act.skill; out.stackPhantom = !!gbPhantom(p); T.run(90);
+  // 鬼步 + 剑术 = 鬼步形态（瞬移 + 路径伤害）
+  T.clear(); const m11 = T.mob(480, 100); T.reset(); p.cool = {}; T.cast('gb_step'); T.run(10); const sx0 = p.x; T.tap('s1'); T.run(20); out.stepMoved = p.x - sx0 > 200; out.stepHit = m11.hp < 1e9; out.stepAct = p.act && p.act.name; T.run(60); T.clear();
+  // 共鸣：离魂一闪（与已分离的幻鬼交换位置）
+  T.reset(); p.cool = {}; T.cast('gb_issen'); T.run(25); const ph2 = gbPhantom(p), phx = ph2 && ph2.x, plx = p.x; T.cast('gb_riko'); T.run(3); out.rikoSwap = ph2 && Math.abs(p.x - phx) < 5 && Math.abs(ph2.x - plx) < 5; T.run(90);
+  // 剑影不能学卡赞
+  out.gbKazan = skillAllowed('kazan', 'ghostblade');
   // ---- 受击前钩子（combat.js beforeHurt）与新异常状态 ----
   const R0 = Math.random, fixR = v => { Math.random = () => v; }, relR = () => { Math.random = R0; };
   T.clear(); T.job('blade'); T.reset(); const atk = T.mob(360, 100); atk.face = -1;
@@ -150,6 +189,18 @@ report('无双波需要无尽波动；无尽波动耗 MP、伤害周围', R.muso
 report('不动明王阵消耗全部波动印并命中', R.fudo === 'as_fudo' && R.markAfterFudo === 0 && R.fudoHit, [R.fudo, R.markAfterFudo, R.fudoHit]);
 report('暗天波动眼：需要无尽波动、领域中地裂变光翼、再按结束', R.awkNoAura === null && R.domain && R.wing === 'as_wing' && R.domainEnd, [R.awkNoAura, R.domain, R.wing, R.domainEnd]);
 report('阿修罗 →→+Z = 邪光斩', R.ffZ === 'as_evil', R.ffZ);
+report('鬼泣：萨亚之阵生成、命中，再放替换旧阵', R.sayaN === 1 && R.sayaHit && R.sayaReplace === 1, [R.sayaN, R.sayaHit, R.sayaReplace]);
+report('鬼神解放：鬼影鞭中按罗刹不打断直接放阵；没学时放不出', R.softAct === 'sb_whip' && R.softField === 1 && R.noSoftField === 0, [R.softAct, R.softField, R.noSoftField]);
+report('罗刹附身，离开阵也不掉；普戾蒙减益；泯灭仪式清阵', R.rashaOn && R.rashaStay && R.plemon && R.purged === 0, [R.rashaOn, R.rashaStay, R.plemon, R.purged]);
+report('凯贾冲刺中才能接鬼影闪', R.flashNoKaiga === null && R.kaigaDash && R.flashKaiga === 'sb_flash', [R.flashNoKaiga, R.kaigaDash, R.flashKaiga]);
+report('卡洛：普攻发射分身并附加冥炎；冥炎剑需要卡洛', R.bladeNoKaro === null && R.karoShot && R.karoBurn && R.bladeKaro === 'sb_karoblade', [R.bladeNoKaro, R.karoShot, R.karoBurn, R.bladeKaro]);
+report('鬼泣的卡赞是被动（不能施放）', R.kazanSb === null, R.kazanSb);
+report('剑影：鬼人化普攻 4 段', R.gbBasic === 4, R.gbBasic);
+report('幻鬼：一闪现身出招、幻鬼步瞬移并无敌、之后消失', R.phantom && R.phantomHit && R.retrace && R.retraceInvul && R.phantomGone, [R.phantom, R.phantomHit, R.retrace, R.retraceInvul, R.phantomGone]);
+report('剑术中无动作叠加幻鬼技能', R.stackAct === 'gb_chain' && R.stackPhantom, [R.stackAct, R.stackPhantom]);
+report('鬼步 + 剑术 = 瞬移收尾并伤害路径上的敌人', R.stepMoved && R.stepHit && /^gbStep_/.test(R.stepAct || ''), [R.stepMoved, R.stepHit, R.stepAct]);
+report('离魂一闪：与已分离的幻鬼交换位置', R.rikoSwap, R.rikoSwap);
+report('剑影不能学卡赞', R.gbKazan === false, R.gbKazan);
 report('自动格挡挡下正面攻击', R.autoGuard, R.autoGuard);
 report('格挡：物理吸收 > 魔法吸收', R.guardPhys < R.guardMag && Math.abs(R.guardPhys - 0.44) < 0.06 && Math.abs(R.guardMag - 0.65) < 0.06, [R.guardPhys, R.guardMag]);
 report('感电：光剑命中附带、再挨打追加感电伤害', R.shock && R.shockProc, [R.shock, R.shockProc]);

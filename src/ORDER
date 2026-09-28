@@ -29,6 +29,8 @@ content/classes/sword.js
 content/classes/sword_blade.js
 content/classes/sword_berserker.js
 content/classes/sword_asura.js
+content/classes/sword_soul.js
+content/classes/sword_ghost.js
 content/classes/gunner.js
 content/classes/gun_ranger.js
 content/classes/gun_launcher.js

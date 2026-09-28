@@ -5,14 +5,15 @@ AI 原图写到主仓库 art/src/summon/；最终 webp 写到本仓库 art/final
 赫德尔复用哥布林十夫长（goblinCaptain），库鲁塔复用牛头王（tauKing），不在这里生成。
 
   summon_art.py refs|sheets|cut [--only 前缀] [--sheets walk,act,more]
-生图配额：本组同时最多 2 个请求，429 退避 65 秒。
+生图配额：本组同时最多 1 个请求（主线程 09-28 定），429 退避 65 秒。
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(__file__))
 import sky_art as A
+import witch_art   # 自定义帧名的动作表补丁（names_for / sheet_job），卡西利亚斯用；下面会把 SRC / M 换回召唤师自己的
 
 A.SRC = os.path.join(A.MAIN, 'src', 'summon')
-A.PAR = 2
+A.PAR = 1
 A.BACKOFF = 65
 
 SPIRIT_HOVER = {   # 浮空精灵：没有腿，上下浮动
@@ -79,6 +80,28 @@ A.M = {
         desc='Echeverria the Spirit King: a tall majestic spirit queen with long hair in four elemental colors (red, blue, gold and violet streaks), a radiant crystal crown, '
              'a flowing white and gold gown with elemental gem ornaments, glowing eyes, four small elemental orbs (fire, ice, light, dark) floating around her.',
         atk='a sweep of her hand releasing elemental light', cast='raising both hands as the four elemental orbs spin and gather', low='pointing forward firing a beam'),
+    # 一觉：征服者卡西利亚斯（第四使徒的分身，剑豪）。巨型，常驻霸体；出场 / 千鬼杀 / 狱冥天地这些大招的光效都在运行时画，帧里不画特效
+    'casillas': dict(h=188, hold='holding the long curved nodachi katana', sheets=('walk', 'act', 'more'), upright={'act': ('stance', 'sheath'), 'more': ('step2', 'guard')},
+        desc='Kasijas the Conqueror, a giant legendary swordsman from another dimension: a towering broad-shouldered warrior with ashen grey-blue skin, long wild white hair flowing down his back, '
+             'a black horned oni half-mask over the upper face with glowing crimson eyes, heavy dark iron samurai-style armor with crimson lacing, big layered shoulder guards, a tattered deep-red cape, '
+             'a thick rope belt, holding a very long curved nodachi katana with a steel blade and a crimson-wrapped hilt, a black lacquered scabbard at his left hip.',
+        atk='the long nodachi katana', cast='raising the long katana', low='lunging forward with a low slash',
+        custom={'act': [('iai1', 'crouching low in a quick-draw stance, the right hand gripping the hilt at the left hip, the katana still inside its scabbard, no effects'),
+                        ('iai2', 'just finished a lightning-fast horizontal quick-draw slash: the long katana extended far forward at shoulder height in the right hand, body twisted forward, no effects'),
+                        ('dash', 'dashing forward low and fast, leaning far forward, the long katana held back behind him in the right hand, no speed lines'),
+                        ('slash1', 'raising the long katana high above his head with both hands, ready to strike down'),
+                        ('slash2', 'the long katana swung down in front of him with both hands, the blade tip near the ground, no effects'),
+                        ('spin', 'mid-spin with his back turned to the viewer, the long katana extended horizontally in one hand, the cape swirling'),
+                        ('sheath', 'standing upright calmly sliding the long katana back into the black scabbard at his left hip, eyes closed'),
+                        ('stance', 'standing in a wide calm stance, the long katana held forward in both hands at a middle guard')],
+                'more': [('plunge', 'kneeling on one knee and stabbing the long katana straight down into the ground with both hands, no cracks, no effects'),
+                         ('raise', 'standing tall and holding the long katana straight up to the sky in one hand, the cape flowing'),
+                         ('step1', 'stepping forward with one foot, head lowered, the long katana held low at his side'),
+                         ('step2', 'standing tall after stepping forward, head raised proudly, the long katana held low at his side'),
+                         ('thrust', 'a powerful straight forward thrust with the long katana, one leg lunging far forward, no effects'),
+                         ('upcut', 'a rising upward slash: the long katana swung up high, body stretched upward, no effects'),
+                         ('guard', 'blocking with the long katana held horizontally in front of him with both hands'),
+                         ('fade', 'kneeling on one knee, both hands leaning on the katana stabbed into the ground, head bowed')]}),
 }
 A.HOVER = {'naias': 26, 'wisp': 30, 'glarelin': 34, 'aqueris': 34}
 

@@ -133,7 +133,7 @@ function crossStage(lv, p, n) {
   if (n === 2) return { name: 'cross2', clip: 'atk3', dur: 0.4, cancelFrom: 0.22, move: [[0.02, 0.1, 160]],
     hits: [HB(0.06, 0.14, [0, 90, 32, 0, 120], skillDmg(1.2, 0.12, lv), { down: true, knock: 260, stun: fast ? 0.9 : 0.5, hs: 0.09, shake: 3, heavy: true, col: '#ff6a6a', downHit: true })],
     events: [slashAt(0.05, { a0: -2.7, a1: 1.1, r: 70, w: 22, off: [10, 56], heavy: true, col: '#ff8a8a' })] };
-  return { name: 'cross', clip: 'cross', dur: 0.52, cancelFrom: fast ? 0.2 : 0.3, move: [[0.02, 0.1, 90]], follow: () => crossStage(lv, p, 2), followWin: [0.26, 0.52],
+  return { name: 'cross', clip: 'cross', dur: 0.52, cancelFrom: fast ? 0.2 : 0.3, links: swordAttackIds(), linkFrom: fast ? 0.2 : 0.3, move: [[0.02, 0.1, 90]], follow: () => crossStage(lv, p, 2), followWin: [0.26, 0.52],
     onStart: e => { if (vig) { const c = Math.round(e.hpMax * 0.01); e.hp = Math.max(1, e.hp - c); } },
     hits: [HB(0.05, 0.1, [0, 76, 30, 10, 110], skillDmg(0.9, 0.09, lv), { stun: fast ? 0.7 : 0.4, knock: 40, hs: 0.05 }), HB(0.17, 0.22, [0, 76, 30, 10, 110], skillDmg(0.9, 0.09, lv), { stun: fast ? 0.7 : 0.45, knock: 60, hs: 0.06 })],
     events: [slashAt(0.04, { a0: -2.2, a1: 1.0, r: 58, w: 16, off: [10, 55], col: '#ff8a8a' }), slashAt(0.16, { a0: 1.0, a1: -2.2, r: 58, w: 16, off: [10, 55], col: '#ff8a8a' }),
@@ -194,6 +194,24 @@ Object.assign(CLASSES.sword, {
   cmds: [['', 'upslash'], ['', 'silver'], ['u', 'ghost'], ['dd', 'guard', 'attack'], ['f', 'kazan', 'buff'], ['fd', 'slam'], ['fu', 'rip'], ['hold', 'triple'], ['df', 'wave'], ['bf', 'cross'], ['uf', 'moon'], ['ff', 'soulhand']],
   jobs: {}, passives: [],
 });
+// 职业钩子：各转职文件往这里登记（onHit 命中、onHurt 受击后、beforeHurt 受击前 → { block, mul, minHp, noStun, noStatus }）
+const SWORD_HOOKS = { onHit: [], onHurt: [], beforeHurt: [] };
+CLASSES.sword.onHit = (p, t, h, dmg, act, opt) => { for (const f of SWORD_HOOKS.onHit) f(p, t, h, dmg, act, opt); };
+CLASSES.sword.onHurt = (p, a, h, dmg) => { for (const f of SWORD_HOOKS.onHurt) f(p, a, h, dmg); };
+CLASSES.sword.beforeHurt = (p, a, h, opt = {}) => {
+  let r = null;
+  for (const f of SWORD_HOOKS.beforeHurt) { const x = f(p, a, h, opt); if (!x) continue; if (x.block) return x; r = { ...r, ...x, mul: ((r && r.mul) || 1) * (x.mul || 1) }; }
+  return r;
+};
+// 格挡：魔法攻击的吸收率比物理低（combat.js 按 act.guard 统一吸收，这里把魔法攻击补回差值）
+SWORD_HOOKS.beforeHurt.push((p, a, h, opt) => {
+  const A = p.st === 'act' && p.act; if (!A || !A.guard || A.guardMag === undefined || h.grab) return null;
+  const type = h.type || opt.type || (a && a.act && a.act.type) || (a && a.dmgType); if (type !== 'mag') return null;
+  const src = opt.src || a; if (!src || Math.sign(src.x - p.x || 1) !== p.face) return null;
+  return { mul: (1 - A.guardMag) / Math.max(0.05, 1 - A.guard) };
+});
+// 鬼剑士所有攻击技能 id（非被动、非 BUFF、非觉醒）：“可以被其他技能取消”的技能用它当 links
+function swordAttackIds() { return Object.keys(SKILLS).filter(id => { const S = SKILLS[id]; return S.cls === 'sword' && S.act && !S.passive && !S.buff && !S.awaken; }); }
 // 普攻动作表按转职 / BUFF 挑选（狂战士狂暴之力 = 二刀流等）：各转职文件往 SWORD_ACT_PICK 里登记 p => 动作表 | null
 const SWORD_ACT_PICK = [];
 function swordActs(p) { for (const f of SWORD_ACT_PICK) { const A = f(p); if (A) return A; } return SWORD_ACTS; }

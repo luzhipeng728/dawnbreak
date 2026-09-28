@@ -57,7 +57,24 @@ AVATAR_NOTES = {
 }
 
 FX = {}      # 名字: (描述, 尺寸, 发光?)；随各阶段补充
-ICONS = []   # (技能 id, 图标描述)；16 个一张，表名 sword_icons_a..
+ICONS = [   # (技能 id, 图标描述)；16 个一张，表名 sword_icons_a..（第 1 阶段 17 个 + 第 2 批觉醒前后的技能）
+    ('kazan', 'a fierce red ghost demon head with horns floating above a glowing red rune circle'), ('moon', 'a violet crescent moon shaped sword slash with a small rising slash'),
+    ('wm_saber', 'a glowing golden lightsaber blade with a crackle of light'), ('wm_arcana', 'five different swords (katana, short sword, greatsword, club, lightsaber) fanned out in a circle'),
+    ('wm_mind', 'a calm swordsman silhouette meditating with a soft cyan sword aura rising'), ('wm_autoguard', 'a katana blocking automatically with a blue hexagon shield and a small upward arrow'),
+    ('wm_edge', 'a katana blade being sharpened with bright white sparks and a gleam of light on the edge'), ('wm_reverse', 'a sword swinging around behind with a curved turning arrow'),
+    ('wm_dragonrush', 'an orange shoulder charge silhouette followed by rapid sword thrusts and an upward dragon-shaped slash'), ('bz_vigor', 'dripping crimson blood drops around a sword with a pulsing red glow'),
+    ('bz_madness', 'two crossed crimson swords slashing wildly with red scratch marks'), ('bz_defy', 'a cracked red heart being held together by a glowing hand, refusing death'),
+    ('bz_scratch', 'two red blades crossing in an X slash with claw-like red streaks'), ('bz_whirl', 'a crimson circular sword sweep pulling small silhouettes into the center'),
+    ('bz_thirst', 'a blood-red fanged mouth made of red mist above a pool of blood'), ('bz_enrage', 'four crimson slash marks hanging in the air about to explode'),
+    ('bz_twister', 'a blood-red whirlwind tornado with a sword rising out of it'), ('wm_zantetsu', 'a katana splitting a steel block cleanly in half with a white flash'),
+    ('wm_meteor', 'dozens of glowing swords raining down from the sky like meteors onto a target reticle'), ('wm_kuubatto', 'a quick-draw slash releasing a huge round crescent sword wave flying forward'),
+    ('wm_shinken', 'five ghostly legendary swordsman silhouettes standing behind a glowing sword'), ('wm_hakuu', 'a sword stance with glowing target marks on distant enemies and a sky-splitting slash'),
+    ('wm_shunzan', 'a flying spectral sword dashing through enemies leaving five cyan slash lines'), ('wm_awaken2', 'a storm of hundreds of flying glowing swords circling in the sky'),
+    ('wm_formless', 'an invisible sword outlined only by shimmering light distortion'), ('wm_mukei', 'a translucent invisible sword slashing inside a glowing square area'),
+    ('wm_awaken3', 'a giant radiant sword of light splitting the heavens with five weapons merging into it'), ('bz_memory', 'a red blood drop with a glowing eye and faint memories of battle'),
+    ('bz_snatch', 'a crimson hand grabbing and slamming a silhouette into the ground with a blood burst'), ('bz_surge', 'a crimson blood shield bubble with a red heartbeat line'),
+    ('bz_crusher', 'a massive blood-red sword slamming down into the ground with a huge crimson explosion'), ('bz_incarnate', 'a demonic crimson armor shape forming from swirling blood'),
+]
 CUTIN = {}   # 转职: ('sword', 描述)
 
 # ---- 剑影的幻鬼：独立的伙伴角色（不换武器、不换时装），先出设定立绘，再按立绘出动作表 ----

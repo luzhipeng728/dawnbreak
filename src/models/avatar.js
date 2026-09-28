@@ -57,7 +57,7 @@ class AvatarLayer {
   // 钩子：换帧来源（时装）
   frame(m, f) {
     this.sync();
-    const r = this.alt[f]; if (r !== undefined) return r;
+    const r = this.alt[f]; if (r !== undefined && !(r && r.dead)) return r;   // dead：拼好的画布被全局缓存挤掉了，重新拼
     if (this.parts) { const c = avatarMix(m, this.cls, f, this.parts); if (c) return (this.alt[f] = c); if (c === undefined) return null; }   // undefined = 素材还没加载完，下次再拼
     if (!this.S2) return (this.alt[f] = null);
     const F = this.S2.frames[f], im = F && IMG[`spr/${this.setKey}/${f}`];
@@ -114,9 +114,9 @@ class AvatarLayer {
    只在第一次用到（帧 × 搭配）时拼一次，缓存成一张画布（全局 LRU，最多 MIX_MAX 张），之后每帧还是一次 drawImage。
    各套时装帧都已按脚底锚点对齐到原装同名帧（art/tools/avatar_align.py），所以同一条分割线换算到各套里是同一个位置。
    返回 { F, im, up }；这一帧没有分割线（躺地 / 翻滚等）返回 null（调用方整套用 look.set）；素材没加载完返回 undefined。 */
-const MIX_CACHE = new Map(), MIX_MAX = 160, FEATHER = 6;
+const MIX_CACHE = new Map(), MIX_MAX = 128, FEATHER = 6;   // 一张约 120×210 像素（~100 KB），最多 ~13 MB
 function avatarMix(m, cls, f, P) {
-  const key = `${cls}|${f}|${P.up || ''}|${P.low || ''}|${P.feet || ''}|${m.o.hue || 0}`;
+  const o = m.o || {}, key = `${cls}|${f}|${P.up || ''}|${P.low || ''}|${P.feet || ''}|${o.hue || 0},${o.bright || 1},${o.sat || 1},${o.only || ''}`;   // 默认造型那段可能换过色（路人）
   const hit = MIX_CACHE.get(key); if (hit) { MIX_CACHE.delete(key); MIX_CACHE.set(key, hit); return hit; }
   const B = SPR_DATA[cls].frames[f], cut = B && B.cut; if (!cut) return null;
   const part = id => { if (!id) return m.img[f] ? { F: B, im: m.img[f] } : null; const F = SPR_DATA[`${cls}@${id}`].frames[f], im = IMG[`spr/${cls}@${id}/${f}`]; return F && im ? { F, im } : null; };
@@ -151,7 +151,7 @@ function avatarMix(m, cls, f, P) {
   const F = { w: W, h: H, ax: AX, ay: AY, wpn: mv(U.wpn), wpn2: mv(U.wpn2), head: sh(U.head, dx, dy) };
   const res = { F, im: cv, up: P.up };
   MIX_CACHE.set(key, res);
-  if (MIX_CACHE.size > MIX_MAX) { const k0 = MIX_CACHE.keys().next().value, o = MIX_CACHE.get(k0); MIX_CACHE.delete(k0); if (o.im.width) o.im.width = o.im.height = 0; }
+  if (MIX_CACHE.size > MIX_MAX) { const k0 = MIX_CACHE.keys().next().value, o = MIX_CACHE.get(k0); MIX_CACHE.delete(k0); o.dead = true; if (o.im.width) o.im.width = o.im.height = 0; }
   return res;
 }
 // 一段里和主体不相连、又很小（< 最大块的 15%）的碎块去掉：例如下身那套背后的翅膀，腰线以下露出来的翅膀尖会漂在半空

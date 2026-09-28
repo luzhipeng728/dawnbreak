@@ -103,5 +103,7 @@ function avatarRandomLook(cls) {
   const sets = Object.values(AVATAR_SETS).filter(S => SPR_DATA[`${cls}@${S.id}`]);
   const set = sets.length && Math.random() < 0.35 ? pick(sets).id : null;
   const acc = set ? Object.keys(AVATAR_ACC).filter(k => k.endsWith('_' + set) && Math.random() < 0.6) : [];
-  return { wpn, set, acc };
+  // 穿时装的路人里约三分之一是混搭（上衣 / 下装 / 鞋各挑一套，可能有一段是默认造型）
+  const parts = set && sets.length > 1 && Math.random() < 0.33 ? { up: set, low: pick(sets).id, feet: Math.random() < 0.3 ? null : pick(sets).id } : null;
+  return { wpn, set, parts: parts && !(parts.up === parts.low && parts.low === parts.feet) ? parts : null, acc };
 }

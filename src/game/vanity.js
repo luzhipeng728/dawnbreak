@@ -105,7 +105,7 @@ function vanityWeaponFx(c, L, w, A, im, s, back) {
   const z = ((L.m.S && L.m.S.res) || 1) / s, pole = A.kind === 'pole';   // z：1 个游戏像素 = 多少武器图像素（光效大小跟着角色走，不受画布缩放影响）
   const ox = pole ? -A.tx : -A.gx, oy = pole ? -A.ty : -A.gy;
   const x0 = pole && w.bk !== undefined ? Math.max(0, A.tx - (w.len + w.bk + 6) / s) : 0;   // 长杆被身体挡住的那截（和武器图同样裁掉）
-  const pu = 0.78 + 0.22 * Math.sin(t * G.pulse * TAU), R = v => Math.max(2, Math.min(56, Math.round(v * z / 2) * 2));
+  const pu = 0.78 + 0.22 * Math.sin(t * G.pulse * TAU), R = v => Math.max(2, Math.min(160, Math.round(v * z / 2) * 2));   // 半径按游戏像素算（武器图存多大都一样）
   const blit = (img, pad, a) => {
     if (a <= 0.01) return; c.globalAlpha = A0 * Math.min(1, a);
     if (x0 > 0) { const q = x0 + pad; c.drawImage(img, q, 0, img.width - q, img.height, ox + x0, oy - pad, img.width - q, img.height); }

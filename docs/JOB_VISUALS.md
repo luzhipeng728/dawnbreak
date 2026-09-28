@@ -15,14 +15,31 @@
 | 狂战士 · 出血命中 | 出血 | 命中时溅血花（`jobFxBlood`，同一目标 0.15 秒一次） |
 | 阿修罗 | 眼罩 | X 形眼罩（原来只有自己看得到，现在 look.acc 带着，其他玩家也看得到） |
 
-阶段 B（其余 12 个转职）按第 3 节的配方各加一条。
+### 阶段 B（其余 13 个转职，全部复用现成素材，没有新生图）
+
+| 转职 | 常驻外观（城镇也有） | 状态特效 |
+|---|---|---|
+| 剑魂 | 刀身一圈淡青剑气（武器精通）+ 身后悬着两把光剑（fx/swordrain）+ 往上飘的剑气光点 | **破极兵刃**：五把光剑绕身、刀身白光、青色剑气 |
+| 阿修罗 | X 形眼罩下透出波动之光 + 脚下一圈圈扩散的蓝紫波动 | **杀意波动（无尽波动）**：大范围波动 + 全身蓝紫波动之焰；**波动刻印**：身边绕着 n 颗波动印（= 印的个数） |
+| 剑影 | 身后跟着半透明的蓝色幻鬼（精灵 phantom 着色；幻鬼真的现身时不画）+ 灵魂之手蓝色魂火 | **双魂共鸣**：幻鬼亮起 + 移动残影 + 蓝色魂气 + 刀身蓝光 |
+| 漫游枪手 | 帽子上一朵血色蔷薇 + 飘落的蔷薇花瓣（沾血蔷薇） | **死亡左轮**：双枪血光 + 血色气场 + 一圈金色子弹绕身 |
+| 枪炮师 | 背上扛着一门重炮（武器图 handcannon_r4） | **潜能爆发**：橙色热浪火苗 + 气场 + 武器过热发光 |
+| 机械师 | 脚边跟着小机器人 RX-78（走动时蹦跳） | **机械改良**：两架小无人机绕身 + 蓝色电光 |
+| 弹药专家 | 背后一对喷射翼（fx/sf_wings） | **超负荷装填**：属性色（火红 / 冰蓝 / 光黄 / 无属性白）的子弹绕身 + 气场 + 火星 + 武器发光 |
+| 协战师 | 肩旁一架分析无人机；地下城换成战斗服也有（外观层挂到了 pmsuit 上） | **战场信息**（1~3 层）：脚下青色战术法阵 + 往上飘的数据十字（层数越多越多） |
+| 元素师 | 火 / 冰 / 光 / 暗四颗小元素珠绕身 | **元素点燃 / 圣灵符文**：四颗大元素球 + 脚下六芒星法阵 |
+| 战斗法师 | 两颗金色追踪球绕身 | **战斗本能**：红色电光气场（官方描述）+ 五颗追踪球 |
+| 召唤师 | 肩旁一只契约光精灵（精灵 wisp）+ 脚下淡淡的契约印 | **召唤兽狂化**：大号赤紫契约法阵 + 紫色气场 |
+| 魔道学者 | 背着扫把（手里拿扫把时不背）+ 药水泡泡 | **远古魔法书**：背后竖着一面旋转的魔法阵 + 闪光 + 粉色气场 |
+| 小魔女 | 手上用红线吊着疯疯熊人偶 | **禁忌诅咒**：暗红诅咒法阵 + 暗紫气场 + 飘落的蔷薇 |
+
 
 ## 2. 代码结构
 
 | 文件 | 内容 |
 |---|---|
 | `src/content/avatar/job_looks.js` | `JOB_LOOKS[转职] = { 数据 }`（字段说明见文件头）+ `jobLookAcc`（转职配件并进 look.acc） |
-| `src/models/job_fx.js` | 渲染器：`jlUnder`（身后 / 半透明）、`jlOver`（身前）、`jlWeapon`（武器染色）、组件 `jlArm / jlEyes / jlGhost / jlTrail / jlWisps / jlBurn`、`jobFxBlood` |
+| `src/models/job_fx.js` | 渲染器：`jlUnder`（身后 / 半透明）、`jlOver`（身前）、`jlWeapon`（武器染色）；组件表 `JL_COMP`（ring / trail / ghost / aura / prop / pet / spirit / burn / orbit / wisps / motes / arcs / arm / eyes）、`jobFxBlood` |
 | `src/models/avatar.js` | 外观层 `under` 开头调 `jlUnder`，`over` 结尾调 `jlOver`，`weapon` 在武器图之前调 `jlWeapon` |
 | `src/content/avatar/looks.js` | `lookFromEquip(cls, eq, prefer, job)` 写 `look.job`（自己 = game.job；选角 = 存档里那个角色的 job） |
 | `art/tools/avatar_hands.py` | 每帧副手锚点 `F.oh`（手套颜色找色块，去掉武器握点 / 靴子 / 腰带 / 头）；新动作帧切好后重跑 |
@@ -35,11 +52,11 @@
 
 ## 3. 新增一个转职（配方）
 
-1. `JOB_LOOKS` 加一条：选颜色，挑组件（`arm / eyes / spirit / acc` 常驻；`states` 里 `ghost / trail / fade / wisps / burn / wtint`），参数照着鬼泣 / 狂战士改。
+1. `JOB_LOOKS` 加一条：选颜色，挑组件（常驻：`orbit / prop / pet / ring / motes / aura / arm / eyes / spirit / wtint / acc`；`states` 里还可以用 `ghost / trail / fade / wisps / burn / arcs`），每个状态写 `name`、`on(e)`、`demo(e)`（测试和总览图靠它打开）。素材先找 `art/final/fx`、精灵帧（小伙伴）、武器图（背上的道具）。
 2. 组件不够用 → 写 `draw(c, L, F, f, back, e)` 钩子（坐标 = 帧像素，原点脚底，人物朝右，`back` 区分身前身后）；能复用就把它提成新组件放进 `job_fx.js`。
 3. 要新素材（背后的大件、专属火焰）→ `jobvis_art.py` 的 `FX` 加一行，`gen` → `prep`，`job_fx.js` 的 `JL_STRIP` 登记格数、`FX_BASE_HUE` 登记本色。
 4. 其他职业（gun / mage）第一次用 `arm` / `eyes`：先跑 `avatar_hands.py <职业> --sheet 预览.jpg`（`GLOVE` 里加手套颜色）、在 `JL_EYE` 里加眼睛偏移。
-5. `node test/jobvisuals.mjs shots` 出总览图（原始 1 倍大小，城镇 + 地下城，默认 + 混搭时装）；`test/jobvisuals.mjs` 的检查会自动覆盖新条目（look.job / 配件）。
+5. `node test/jobvisuals.mjs shots` 出总览图（每个转职一排：城镇站立 / 走路 / 状态 / 混搭时装 + 状态跑动 / 地下城状态，原始 1 倍大小）；测试自动覆盖新条目（look.job / 配件 / 每个状态开关）。
 
 ## 4. 强化光效（面子系统，game/vanity.js）
 

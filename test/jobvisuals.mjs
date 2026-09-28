@@ -1,21 +1,26 @@
-// 转职外观测试：node test/jobvisuals.mjs [shots] [--oldglow 旧版 vanityWeaponFx 的 js 文件]（先 node build.mjs）
-//   1. look 带转职：lookFromEquip 给自己 / 存档角色 / 指定转职都写 look.job；阿修罗的眼罩在 look.acc 里；JOB_LOOKS 每条都能解析
-//   2. 状态特效跟着 BUFF 开关：鬼泣 残影之凯贾（鬼影 / 残影 / 无敌半透明）、阵（鬼火）；狂战士 狂暴之力（血焰 + 武器染色）/ 暴走（加强）
+// 转职外观测试：node test/jobvisuals.mjs [shots] [glow]（先 node build.mjs）
+//   1. look 带转职：lookFromEquip 给自己 / 存档角色 / 指定转职都写 look.job；阿修罗的眼罩在 look.acc 里；15 个转职的 JOB_LOOKS 都在、都能解析
+//   2. 状态特效跟着 BUFF 开关：每个转职的每个状态（states[i].demo 打开）→ 打开后外观层有这个状态，关掉就没了；每个转职都能画出来（不报错）
 //   3. 无敌半透明：凯贾 + 无敌时本体 globalAlpha ≈ 0.45；凯贾时开始跑动 → 1 秒无敌（官方前冲无敌）
 //   4. 强化光效在刀身后面：武器图之前画光晕（back），之后只画火花；狂暴之力的武器染色也在武器图之前
 //   5. 其他玩家：城镇里的 NetPeer 收到带 job 的 look → 外观层解析出转职外观
-//   6. 帧率：城镇 8 人（转职外观 + +16 武器 + 天空套）+ 地下城 4 个开着状态特效的鬼剑士打怪，要 55fps 以上
-//   shots：鬼泣 / 狂战士 各状态 × 默认 / 混搭时装 × 城镇 / 地下城，原始 1 倍大小 → test/shots/jobvisuals/sheet.png
-//   glow：强化光效阶梯 +7 / +10 / +12 / +13 / +14 / +15 / +16（修罗之戮、血之挽歌各一排）→ test/shots/jobvisuals/glow.png
+//   6. 帧率：城镇 8 人（各转职外观 + +13~+16 武器 + 天空套）+ 地下城 4 个开着状态特效的角色打怪，要 55fps 以上
+//   shots：每个转职一排（城镇站立 / 走路 / 状态、混搭时装 + 状态、地下城状态），原始 1 倍大小 → test/shots/jobvisuals/sheet.jpg
+//   glow：强化光效阶梯 +7 / +10 / +12 / +13 / +14 / +15 / +16（修罗之戮、血之挽歌、增幅各一排）→ test/shots/jobvisuals/glow.jpg
 import { launch, URL_BASE } from './lib.mjs';
 import fs from 'fs';
 import { execFileSync } from 'child_process';
-const SHOTS = process.argv.includes('shots'), GLOW = process.argv.includes('glow'), OLD = process.argv.includes('--oldglow') ? fs.readFileSync(process.argv[process.argv.indexOf('--oldglow') + 1], 'utf8') : null;
+const SHOTS = process.argv.includes('shots'), GLOW = process.argv.includes('glow');
 const out = 'test/shots/jobvisuals'; fs.mkdirSync(out, { recursive: true });
 let fail = 0; const ok = (c, msg, x = '') => { console.log((c ? '  ✓ ' : '  ✗ ') + msg, x); if (!c) fail++; };
+// 总览图里每个转职拿的武器（史诗外观）
+const WPN = { blade: 'ep_katana', soulbender: 'ep_ss_shura', berserker: 'ep_ls_elegy', asura: 'ep_kt_andra', ghostblade: 'ep_kt_slaughter',
+  ranger: 'ep_rv_python', launcher: 'ep_hc_meteor', mechanic: 'ep_ap_flash', spitfire: 'ep_bg_red', paramedic: 'ep_rf_howl',
+  elemental: 'ep_st_sage', battlemage: 'ep_pl_phantom', summoner: 'ep_rd_thunder', witch: 'ep_br_lucky', enchantress: 'ep_rd_meow' };
 
 const HELP = () => {
   window.__jv = {
+    clsOf(job) { for (const c of ['sword', 'gun', 'mage']) if (CLASSES[c].jobs[job]) return c; return 'sword'; },
     eq(o = {}) {
       const e = {};
       if (o.wpn) e.weapon = { key: o.wpn, slot: 'weapon', kind: 'equip', wtype: ITEMS[o.wpn] ? ITEMS[o.wpn].wtype : null, rar: 4, enh: o.enh || 0, dim: o.amp ? 'str' : undefined };
@@ -23,14 +28,17 @@ const HELP = () => {
       if (o.mix) ['av_top', 'av_bottom', 'av_shoes'].forEach((s, i) => { if (o.mix[i]) e[s] = { set: o.mix[i] }; });
       return e;
     },
-    look(job, o) { return lookFromEquip('sword', this.eq(o), undefined, job); },
-    spawn(job, o, x, y) {
-      const g = makePlayer('sword', { team: 'p', kit: { bar: [], lv: {}, job, wtype: null }, name: job, pad: new Pad() });
+    look(job, o, cls) { return lookFromEquip(cls || this.clsOf(job), this.eq(o), undefined, job); },
+    async spawn(job, o, x, y) {
+      const cls = job ? this.clsOf(job) : 'sword'; await loadBundles(['spr:' + cls]); if (o && o.wpn && typeof loadArtKey === 'function') await loadArtKey('weapon/' + o.wpn);   // 武器图按需加载
+      const g = makePlayer(cls, { team: 'p', kit: { bar: [], lv: {}, job, wtype: null }, name: job || cls, pad: new Pad() });
       g.x = x; g.y = y; g.face = 1; g.control = null; g.hp = g.hpMax = 1e7; ents.push(g);
-      avatarSetLook(g.model, this.look(job, o)); return g;
+      avatarSetLook(g.model, this.look(job, o, cls)); return g;
     },
-    clear() { for (let i = ents.length - 1; i >= 0; i--) if (ents[i] !== game.player) ents.splice(i, 1); if (world && world.crowd) { for (const q of world.crowd) if (q.net && typeof cashDetach === 'function') cashDetach(q); world.crowd.length = 0; } fxList.length = 0; },
-    // 暂停主循环，逐帧推进；_mv = 每秒移动（跑 / 走），_act = 定格在某个动作帧
+    stateOn(g) { const J = JOB_LOOKS[g.kit.job]; for (const S of (J && J.states) || []) if (S.demo) S.demo(g); },
+    stateOff(g) { g.buffs = {}; g.pmInfo = 0; if (typeof dismissSummons === 'function') dismissSummons(g, null, 'cmd'); },
+    clear() { for (let i = ents.length - 1; i >= 0; i--) if (ents[i] !== game.player) ents.splice(i, 1); if (world && world.crowd) { for (const q of world.crowd) if (q.net && typeof cashDetach === 'function') cashDetach(q); world.crowd.length = 0; } fxList.length = 0; if (typeof SUMMONS !== 'undefined') SUMMONS.length = 0; },
+    // 暂停主循环，逐帧推进；_mv = 每秒移动（跑 / 走）
     step(n) {
       for (let i = 0; i < n; i++) {
         for (const e of ents) if (e._mv !== undefined) { e.vx = e._mv; e.vy = 0; const s = Math.abs(e._mv) > 200 ? 'run' : e._mv ? 'walk' : 'idle'; if (e.st !== s) e.setState(s); }
@@ -39,38 +47,60 @@ const HELP = () => {
     },
   };
 };
+const town = async () => {
+  await page.goto(`${URL_BASE}?town&mute&cls=sword&fresh`); await page.waitForFunction(() => window.__READY); await page.waitForTimeout(600); await page.evaluate(HELP); await page.evaluate(w => { window.WPN_ = w; }, WPN);
+  await page.evaluate(async () => { enterScene('hm_plaza'); for (let i = 0; i < 60 && world.S.id !== 'hm_plaza'; i++) await new Promise(r => setTimeout(r, 100)); await new Promise(r => setTimeout(r, 800)); while (menus.stack.length) menus.close(menus.stack[menus.stack.length - 1]); });
+};
+const dungeon = async () => {
+  await page.goto(`${URL_BASE}?test&mute&cls=sword&mon=goblin,goblin,goblin,goblinThrower`); await page.waitForFunction(() => window.__READY); await page.waitForTimeout(800); await page.evaluate(HELP); await page.evaluate(w => { window.WPN_ = w; }, WPN);
+};
 
 const { browser, page, logs } = await launch({ width: 960, height: 540 });
-await page.goto(`${URL_BASE}?town&mute&cls=sword&fresh`); await page.waitForFunction(() => window.__READY); await page.waitForTimeout(600);
-await page.evaluate(HELP);
-await page.evaluate(async () => { enterScene('hm_plaza'); for (let i = 0; i < 60 && world.S.id !== 'hm_plaza'; i++) await new Promise(r => setTimeout(r, 100)); await new Promise(r => setTimeout(r, 500)); while (menus.stack.length) menus.close(menus.stack[menus.stack.length - 1]); });
+await town();
 
 console.log('1. look 带转职');
 const r1 = await page.evaluate(() => {
   game.job = 'soulbender'; const own = lookFromEquip('sword', inv.equip);
   save.chars = save.chars || []; const d = { cls: 'sword', job: 'berserker', equip: {} }; save.chars.push(d); const other = lookFromEquip('sword', d.equip); save.chars.pop();
   const asura = __jv.look('asura', {}), stranger = lookFromEquip('sword', {});
+  const all = []; for (const c of ['sword', 'gun', 'mage']) for (const j in CLASSES[c].jobs) all.push(j);
+  const missing = all.filter(j => !JOB_LOOKS[j]);
   const bad = Object.keys(JOB_LOOKS).filter(j => { const L = __jv.look(j, {}); return L.job !== j || (JOB_LOOKS[j].acc || []).some(k => !L.acc.includes(k) || !AVATAR_ACC[k]); });
-  game.job = null; return { own: own.job, other: other.job, asura: asura.acc, stranger: stranger.job, bad, jobs: Object.keys(JOB_LOOKS) };
+  const noState = Object.keys(JOB_LOOKS).filter(j => !(JOB_LOOKS[j].states || []).some(S => S.demo));
+  game.job = null; return { own: own.job, other: other.job, asura: asura.acc, stranger: stranger.job, bad, missing, noState, n: Object.keys(JOB_LOOKS).length, all: all.length };
 });
 ok(r1.own === 'soulbender' && r1.other === 'berserker' && r1.stranger === null, '自己 / 存档角色的 look.job 正确，没有主人的装备不带转职', JSON.stringify([r1.own, r1.other, r1.stranger]));
 ok(r1.asura.includes('job_asura_eyes'), '阿修罗的眼罩在 look.acc 里', JSON.stringify(r1.asura));
-ok(!r1.bad.length && r1.jobs.includes('soulbender') && r1.jobs.includes('berserker'), `JOB_LOOKS ${r1.jobs.length} 条都能解析`, JSON.stringify(r1.bad));
+ok(!r1.missing.length && !r1.bad.length && r1.n === r1.all, `${r1.all} 个转职都有外观条目、都能解析`, JSON.stringify([r1.missing, r1.bad]));
+ok(!r1.noState.length, '每个转职都至少有一个状态特效（带 demo）', JSON.stringify(r1.noState));
 
-console.log('2 / 3 / 4. 状态特效、无敌半透明、光效在刀身后面');
-const r2 = await page.evaluate(() => {
-  __jv.clear(); game.paused = true; const p = game.player;
-  const sb = __jv.spawn('soulbender', { wpn: 'ep_ss_shura', enh: 12 }, p.x + 60, p.y), bz = __jv.spawn('berserker', { wpn: 'ep_ls_elegy', enh: 12 }, p.x + 140, p.y);
-  const [cv, c] = offCanvas(300, 300);
+console.log('2. 状态特效跟着 BUFF 开关（全部转职）');
+const r2 = await page.evaluate(async () => {
+  __jv.clear(); const p = game.player, [cv, c] = offCanvas(400, 400), bad = [], drawn = [];
+  const draw = g => { c.setTransform(1, 0, 0, 1, 200, 330); c.globalAlpha = 1; g.model.draw(c, g.pose, game.t, NO_OPTS); return g.model.av; };
+  const has = (g, fx) => (draw(g).jfx || []).some(([x]) => x === fx);
+  for (const job of Object.keys(JOB_LOOKS)) {
+    const g = await __jv.spawn(job, {}, p.x + 80, p.y); game.paused = true; __jv.step(2);
+    const L = draw(g); if (L.jobId !== job || !L.J) bad.push(job + ':没解析出转职');
+    for (const S of JOB_LOOKS[job].states || []) {
+      if (has(g, S.fx)) bad.push(`${job}.${S.id}:没开就有`);
+      S.demo(g); __jv.step(1); if (!has(g, S.fx)) bad.push(`${job}.${S.id}:打开后没有`);
+      __jv.stateOff(g); __jv.step(1); if (has(g, S.fx)) bad.push(`${job}.${S.id}:关掉还在`);
+    }
+    __jv.stateOn(g); for (let i = 0; i < 3; i++) { __jv.step(1); draw(g); } drawn.push(job);   // 全开画几帧（报错会记在页面错误里）
+    game.paused = false; __jv.clear();
+  }
+  return { bad, drawn: drawn.length };
+});
+ok(!r2.bad.length && r2.drawn === r1.n, `${r2.drawn} 个转职的状态特效都跟着 BUFF 开关`, JSON.stringify(r2.bad));
+
+console.log('3 / 4. 无敌半透明、凯贾前冲无敌、光效在刀身后面');
+const r3 = await page.evaluate(async () => {
+  __jv.clear(); const p = game.player;
+  const sb = await __jv.spawn('soulbender', { wpn: 'ep_ss_shura', enh: 12 }, p.x + 60, p.y), bz = await __jv.spawn('berserker', { wpn: 'ep_ls_elegy', enh: 12 }, p.x + 140, p.y);
+  game.paused = true; const [cv, c] = offCanvas(300, 300), res = {};
   const draw = g => { c.setTransform(1, 0, 0, 1, 150, 280); c.globalAlpha = 1; g.model.draw(c, g.pose, game.t, NO_OPTS); return g.model.av; };
-  const ids = g => { const L = draw(g); return (L.jfx || []).map(([fx]) => Object.keys(fx).join('+')).join(','); };
-  const res = { sb0: ids(sb), bz0: ids(bz), job: [sb.model.av.jobId, bz.model.av.jobId], J: !!(sb.model.av.J && bz.model.av.J) };
-  sb.buffs.sb_kaiga = { t: 9999 }; res.sbK = ids(sb);
-  summon(sb, 'sb_plemon_f', { x: sb.x + 100, y: sb.y, lv: 1 }); res.sbKF = ids(sb); dismissSummons(sb, { tag: 'field' }, 'cmd');
-  delete sb.buffs.sb_kaiga; res.sbOff = ids(sb);
-  bz.buffs.frenzy = { t: 9999 }; res.bzF = ids(bz); res.jw = bz.model.av.jw;
-  bz.buffs.rampage = { t: 9999 }; draw(bz); res.bzLv = bz.model.av.jfx.find(([fx]) => fx.burn)[1];
-  delete bz.buffs.frenzy; delete bz.buffs.rampage; res.bzOff = ids(bz); res.jwOff = bz.model.av.jw;
+  bz.buffs.frenzy = { t: 9999 }; bz.buffs.rampage = { t: 9999 }; draw(bz); res.bzLv = bz.model.av.jfx.find(([fx]) => fx.burn)[1]; res.jw = bz.model.av.jw && bz.model.av.jw.col; bz.buffs = {};
   // 无敌半透明：under 之后的 globalAlpha（本体就按它画）
   sb.buffs.sb_kaiga = { t: 9999 }; sb.invul = 1; const L = sb.model.av, F = sb.model.S.frames.idle;
   c.setTransform(1, 0, 0, 1, 150, 280); c.globalAlpha = 1; c.save(); L.under(c, sb.model, 'idle', F); res.alphaInv = +c.globalAlpha.toFixed(2); c.restore();
@@ -84,26 +114,27 @@ const r2 = await page.evaluate(() => {
   window.vanityWeaponFx = (cc, LL, w, A, im, s, back) => { seq.push('glow:' + (back ? 'back' : 'front')); };
   window.jlWeapon = () => seq.push('tint');
   c.drawImage = function (im, ...a) { if (im === LB.wim) seq.push('weapon'); return d0.call(this, im, ...a); };
-  draw(bz); window.vanityWeaponFx = v0; window.jlWeapon = j0; delete c.drawImage; delete bz.buffs.frenzy;
+  draw(bz); window.vanityWeaponFx = v0; window.jlWeapon = j0; delete c.drawImage;
   res.seq = seq.slice(0, 4).join(' → '); res.glow = !!LB.glow;
   __jv.clear(); game.paused = false; return res;
 });
-ok(r2.J && r2.job.join() === 'soulbender,berserker', 'AI / 队友实体按 kit.job 解析出转职外观', JSON.stringify(r2.job));
-ok(r2.sb0 === '' && r2.bz0 === '', '没开状态时没有状态特效', JSON.stringify([r2.sb0, r2.bz0]));
-ok(/ghost/.test(r2.sbK) && /trail/.test(r2.sbK) && /fade/.test(r2.sbK) && /wisps/.test(r2.sbKF) && r2.sbOff === '', '鬼泣：凯贾 → 鬼影 + 残影 + 无敌半透明；阵在场 → 鬼火；关掉就没了', JSON.stringify([r2.sbK, r2.sbKF, r2.sbOff]));
-ok(/burn/.test(r2.bzF) && r2.jw && r2.bzLv === 2 && r2.bzOff === '' && !r2.jwOff, '狂战士：狂暴之力 → 血焰 + 武器染红；再开暴走 → 强度 2；关掉就没了', JSON.stringify([r2.bzF, r2.jw, r2.bzLv, r2.bzOff]));
-ok(r2.alphaInv <= 0.56 && r2.alphaInv >= 0.35 && r2.alphaNo === 1, `凯贾 + 无敌：本体半透明（alpha ${r2.alphaInv}，不无敌时 ${r2.alphaNo}）`);
-ok(r2.runInv >= 0.9 && r2.runInv2 === 0, `凯贾时开始跑动 → 1 秒无敌（${r2.runInv} 秒），3 秒内再跑不再触发（${r2.runInv2}）`);
-ok(r2.glow && r2.seq === 'glow:back → tint → weapon → glow:front', '强化光晕 / 武器染色画在武器图之前，火花在之后', r2.seq);
+ok(r3.bzLv === 2 && r3.jw === '#ff2030', `狂战士：狂暴之力 + 暴走 → 血焰强度 2、武器染红（${r3.jw}）`);
+ok(r3.alphaInv <= 0.56 && r3.alphaInv >= 0.35 && r3.alphaNo === 1, `凯贾 + 无敌：本体半透明（alpha ${r3.alphaInv}，不无敌时 ${r3.alphaNo}）`);
+ok(r3.runInv >= 0.9 && r3.runInv2 === 0, `凯贾时开始跑动 → 1 秒无敌（${r3.runInv} 秒），3 秒内再跑不再触发（${r3.runInv2}）`);
+ok(r3.glow && r3.seq === 'glow:back → tint → weapon → glow:front', '强化光晕 / 武器染色画在武器图之前，火花在之后', r3.seq);
 
 console.log('5. 其他玩家收到转职外观');
 const r5 = await page.evaluate(async () => {
-  __jv.clear(); const p = game.player, look = __jv.look('berserker', { wpn: 'ep_ls_elegy', enh: 12 });
-  const P = new NetPeer({ id: 901, name: 'peer', x: p.x + 80, y: p.y, f: 1, s: 'idle' }); P.setChar({ name: '红眼', cls: 'sword', lvl: 30, look: JSON.parse(JSON.stringify(look)) }); P.a = 1; world.crowd.push(P);
-  for (let i = 0; i < 30 && !(P.model && P.model.av && P.model.av.J); i++) await new Promise(r => setTimeout(r, 50));
-  const L = P.model && P.model.av; return { job: L && L.jobId, J: !!(L && L.J), eyes: !!(L && L.J && L.J.eyes) };
-});
-ok(r5.job === 'berserker' && r5.eyes, '城镇里的其他玩家（NetPeer）按 look.job 画出狂战士外观', JSON.stringify(r5));
+  __jv.clear(); const p = game.player, res = {};
+  for (const job of ['berserker', 'elemental', 'mechanic']) {
+    const cls = __jv.clsOf(job), look = __jv.look(job, { wpn: WPN_[job], enh: 12 }, cls); await loadBundles(['spr:' + cls]);
+    const P = new NetPeer({ id: 901 + Object.keys(res).length, name: 'peer', x: p.x + 80, y: p.y, f: 1, s: 'idle' }); P.setChar({ name: job, cls, lvl: 30, look: JSON.parse(JSON.stringify(look)) }); P.a = 1; world.crowd.push(P);
+    for (let i = 0; i < 30 && !(P.model && P.model.av && P.model.av.J); i++) await new Promise(r => setTimeout(r, 50));
+    res[job] = P.model && P.model.av && P.model.av.jobId;
+  }
+  return res;
+}).catch(e => ({ err: e.message }));
+ok(r5.berserker === 'berserker' && r5.elemental === 'elemental' && r5.mechanic === 'mechanic', '城镇里的其他玩家（NetPeer）按 look.job 画出转职外观（鬼剑士 / 魔法师 / 神枪手）', JSON.stringify(r5));
 
 console.log('6. 帧率');
 const fps = async () => page.evaluate(async () => {
@@ -114,47 +145,48 @@ const fps = async () => page.evaluate(async () => {
 });
 const r6 = await page.evaluate(async () => {
   __jv.clear(); const p = game.player; game.job = 'berserker'; inv.ensure(); inv.equip.weapon.enh = 16; bus.emit('enhance', {});
-  const P = [];
+  await loadBundles(['spr:gun', 'spr:mage']);
+  const P = [], jobs = ['soulbender', 'elemental', 'mechanic', 'berserker', 'summoner', 'enchantress', 'blade', 'spitfire'];
   for (let i = 0; i < 8; i++) {
-    const job = ['soulbender', 'berserker', 'asura', 'soulbender'][i % 4], eq = __jv.eq({ wpn: i % 2 ? 'ep_ls_elegy' : 'ep_ss_shura', enh: 13 + (i % 4) }); for (const s of AV_PIECE_SLOTS) eq[s] = { set: i % 2 ? 'av_sky2' : 'av_sky1' };
-    const look = { ...lookFromEquip('sword', eq, undefined, job), cash: cashLook(eq) };
-    const q = new NetPeer({ id: 910 + i, name: 'p' + i, x: p.x - 420 + i * 110, y: 30 + (i % 4) * 30, f: 1, s: 'walk' }); q.setChar({ name: '勇士' + i, cls: 'sword', lvl: 30, look }); q.a = 1; world.crowd.push(q); P.push(q);
+    const job = jobs[i], cls = __jv.clsOf(job), eq = __jv.eq({ wpn: WPN_[job], enh: 13 + (i % 4) }); for (const s of AV_PIECE_SLOTS) eq[s] = { set: i % 2 ? 'av_sky2' : 'av_sky1' };
+    const look = { ...lookFromEquip(cls, eq, undefined, job), cash: cashLook(eq) };
+    const q = new NetPeer({ id: 910 + i, name: 'p' + i, x: p.x - 420 + i * 110, y: 30 + (i % 4) * 30, f: 1, s: 'walk' }); q.setChar({ name: '勇士' + i, cls, lvl: 30, look }); q.a = 1; world.crowd.push(q); P.push(q);
   }
-  await new Promise(r => setTimeout(r, 1500));
+  await new Promise(r => setTimeout(r, 2000));
   let k = 0; window.__jvIv = setInterval(() => { k++; P.forEach((q, i) => q.push(p.x - 420 + i * 110 + Math.sin(k / 12 + i) * 90, 30 + (i % 4) * 30, Math.cos(k / 12 + i) > 0 ? 1 : -1, i % 2 ? 'run' : 'walk')); }, 100);
   return P.filter(q => q.model && q.model.av && q.model.av.J).length;
 });
 const f6 = await fps(); await page.evaluate(() => clearInterval(window.__jvIv));
 ok(r6 >= 6, `城镇里 ${r6}/8 个其他玩家画出了转职外观`);
-ok(f6.fps >= 55, `城镇 8 人（转职外观 + +13~+16 + 天空套）：${f6.fps} fps，最长一帧 ${f6.maxFrame} ms，渲染平均 ${f6.renderMs} ms / 最长 ${f6.renderMax} ms`);
+ok(f6.fps >= 55, `城镇 8 人（各转职外观 + +13~+16 + 天空套）：${f6.fps} fps，最长一帧 ${f6.maxFrame} ms，渲染平均 ${f6.renderMs} ms / 最长 ${f6.renderMax} ms`);
 
-// 地下城（测试房间）：自己 + 3 个开着状态的鬼剑士打哥布林
-await page.goto(`${URL_BASE}?test&mute&cls=sword&mon=goblin,goblin,goblin,goblinThrower`); await page.waitForFunction(() => window.__READY); await page.waitForTimeout(800);
-await page.evaluate(HELP);
+// 地下城（测试房间）：自己（鬼泣 + 凯贾）+ 4 个开着状态的角色打哥布林
+await dungeon();
 await page.evaluate(async () => {
   const p = game.player; game.job = 'soulbender'; p.buffs.sb_kaiga = { t: 9999 }; for (const m of ents) if (m.team === 'e') { m.hp = m.hpMax = 1e8; }
-  const g1 = __jv.spawn('berserker', { wpn: 'ep_ls_elegy', enh: 16 }, p.x + 60, p.y + 20), g2 = __jv.spawn('soulbender', { wpn: 'ep_ss_shura', enh: 16 }, p.x + 20, p.y - 20), g3 = __jv.spawn('berserker', { wpn: 'ep_ls_elegy', enh: 14, mix: ['av_academy', 'av_festival', null] }, p.x - 40, p.y + 40);
-  g1.buffs.frenzy = g3.buffs.frenzy = { t: 9999 }; g3.buffs.rampage = { t: 9999 }; g2.buffs.sb_kaiga = { t: 9999 };
-  let k = 0; window.__jvIv = setInterval(() => { k++; input.virt[k % 30 < 15 ? 'right' : 'left'] = 1; delete input.virt[k % 30 < 15 ? 'left' : 'right']; if (k % 5 === 0) { input.virt.attack = 1; } else delete input.virt.attack; if (k % 20 === 0) p.invul = 0.6; }, 100);
-  await new Promise(r => setTimeout(r, 1200));
+  const G = [];
+  for (const [i, job] of ['berserker', 'elemental', 'battlemage', 'asura'].entries()) { const g = await __jv.spawn(job, { wpn: WPN_[job], enh: 14 + i }, p.x + 60 - i * 30, p.y + 30 - i * 20); __jv.stateOn(g); G.push(g); }
+  let k = 0; window.__jvIv = setInterval(() => { k++; input.virt[k % 30 < 15 ? 'right' : 'left'] = 1; delete input.virt[k % 30 < 15 ? 'left' : 'right']; if (k % 5 === 0) { input.virt.attack = 1; } else delete input.virt.attack; if (k % 20 === 0) p.invul = 0.6; G.forEach((g, i) => { g.vx = Math.sin(k / 8 + i) * 120; }); }, 100);
+  await new Promise(r => setTimeout(r, 1500));
 }).catch(e => console.log('  (地下城准备)', e.message));
 const f7 = await fps(); await page.evaluate(() => { clearInterval(window.__jvIv); for (const k of ['left', 'right', 'attack']) delete input.virt[k]; });
-ok(f7.fps >= 55, `地下城 4 个鬼剑士开着状态特效打怪：${f7.fps} fps，最长一帧 ${f7.maxFrame} ms，渲染平均 ${f7.renderMs} ms / 最长 ${f7.renderMax} ms`);
+ok(f7.fps >= 55, `地下城 5 个角色开着状态特效打怪：${f7.fps} fps，最长一帧 ${f7.maxFrame} ms，渲染平均 ${f7.renderMs} ms / 最长 ${f7.renderMax} ms`);
 
 if (SHOTS || GLOW) {
   console.log('7. 总览图');
   const tiles = [], titles = {};
-  // 一排角色：list[i] = { job, o（装备）, buffs, invul, mv（每秒移动）, act（动作帧）, fields, label }
+  // 一排角色：list[i] = { job, o（装备）, state（打开全部状态）, invul, mv（每秒移动）, suit（协战师战斗服）, row, label }
   const stage = async (row, list, scene, gap = 180) => {
     const pos = await page.evaluate(async ({ list, scene, gap }) => {
-      if (scene === 'town' && game.scene !== 'town') { enterScene('hm_plaza'); await new Promise(r => setTimeout(r, 1200)); }
       __jv.clear(); while (menus.stack.length) menus.close(menus.stack[menus.stack.length - 1]);
       const p = game.player; p.draw = p.drawShadow = () => {}; p.vx = p.vy = 0; game.paused = true; __jv.step(40); game.paused = false;   // 自己不画；先让镜头停稳再按镜头摆人
-      const X0 = cam.x + (gap < 180 ? 80 : 110), Y = scene === 'town' ? 150 : 110, G = list.map((o, i) => { const g = __jv.spawn(o.job, o.o, X0 + i * gap - (o.mv ? 70 : 0), Y); g._x0 = g.x; Object.assign(g.buffs, o.buffs || {}); if (o.mv !== undefined) g._mv = o.mv; if (o.fields) summon(g, 'sb_plemon_f', { x: g.x + 30, y: g.y + 50, lv: 1 }); return g; });
+      const X0 = cam.x + (gap < 180 ? 80 : 110), Y = scene === 'town' ? 150 : 110, G = [];
+      for (const [i, o] of list.entries()) { const g = await __jv.spawn(o.job, o.o, X0 + i * gap - (o.mv ? 70 : 0), Y); if (o.mv !== undefined) g._mv = o.mv; if (o.state) __jv.stateOn(g); if (o.suit && typeof pmSuitSync === 'function') pmSuitSync(g); G.push(g); }
       for (const m of ents) if (m.team === 'e') m.x = cam.x + 2000;
-      await new Promise(r => setTimeout(r, 1500));   // 时装分包、武器图
+      await new Promise(r => setTimeout(r, 1800));   // 时装分包、武器图、小伙伴的精灵帧
+      for (const [i, g] of G.entries()) if (list[i].suit && typeof pmSuitSync === 'function') pmSuitSync(g);
       game.paused = true; __jv.step(30);
-      G.forEach((g, i) => { const o = list[i]; if (o.invul) g.invul = 5; if (o.act) { g.doAct({ name: 'shot', clip: o.act, dur: 9, noCounter: true }); g.animT = 0.1; } });
+      G.forEach((g, i) => { if (list[i].invul) g.invul = 5; });
       __jv.step(2);
       return G.map((g, i) => ({ x: sx(list[i].mv ? g.x - 30 : g.x), y: sy(g.y, 0) }));
     }, { list, scene, gap });
@@ -163,36 +195,27 @@ if (SHOTS || GLOW) {
     const f = `${out}/stage${tiles.length}.png`; await page.screenshot({ path: f });
     await page.evaluate(() => { for (const id of ['ui', 'dom']) document.getElementById(id).style.visibility = ''; });
     await page.evaluate(() => { game.paused = false; for (const e of ents) delete e._mv; delete game.player.draw; delete game.player.drawShadow; });
-    const w = Math.min(170, gap - 4); list.forEach((o, i) => tiles.push({ f, label: o.label, row, box: [pos[i].x - w / 2, pos[i].y - 150, w, 168].map(Math.round) }));
+    const w = Math.min(170, gap - 4); list.forEach((o, i) => tiles.push({ f, label: o.label, row: o.row ?? row, box: [pos[i].x - w / 2, pos[i].y - 150, w, 168].map(Math.round) }));
   };
-  const SB = { wpn: 'ep_ss_shura', enh: 12 }, BZ = { wpn: 'ep_ls_elegy', enh: 12 }, MIX = ['av_academy', 'av_festival', null], MIX2 = ['av_sky2', 'av_summer', 'av_spring'];
-  const K = { sb_kaiga: { t: 9999 } }, FR = { frenzy: { t: 9999 } }, FRR = { frenzy: { t: 9999 }, rampage: { t: 9999 } };
-  if (SHOTS) for (const [scene, url] of [['dungeon', null], ['town', null]]) {
-    const tag = scene === 'town' ? '城镇' : '地下城';
-    await stage(scene === 'town' ? 0 : 3, [
-      { job: 'soulbender', o: SB, label: `鬼泣 站立（${tag}）` }, { job: 'soulbender', o: SB, mv: 110, label: '鬼泣 走路' },
-      { job: 'soulbender', o: SB, buffs: K, mv: 300, label: '鬼影步（凯贾）跑动' }, { job: 'soulbender', o: SB, buffs: K, invul: 1, label: '鬼影步 无敌半透明' },
-      { job: 'soulbender', o: SB, buffs: K, fields: 1, label: '凯贾 + 阵（鬼影重重）' }], scene);
-    await stage(scene === 'town' ? 1 : 4, [
-      { job: 'berserker', o: BZ, label: `狂战士 站立（${tag}）` }, { job: 'berserker', o: BZ, mv: 300, label: '狂战士 跑动（红眼拖光）' },
-      { job: 'berserker', o: BZ, buffs: FR, label: '狂暴之力' }, { job: 'berserker', o: BZ, buffs: FR, act: 'dual1', label: '狂暴之力 二刀流' },
-      { job: 'berserker', o: BZ, buffs: FRR, label: '狂暴之力 + 暴走' }], scene);
-    if (scene === 'town') await stage(2, [
-      { job: 'soulbender', o: { ...SB, mix: MIX }, label: '鬼泣 混搭时装' }, { job: 'soulbender', o: { ...SB, mix: MIX2 }, buffs: K, invul: 1, label: '混搭 + 鬼影步无敌' },
-      { job: 'berserker', o: { ...BZ, mix: MIX }, label: '狂战士 混搭时装' }, { job: 'berserker', o: { ...BZ, mix: MIX2 }, buffs: FRR, label: '混搭 + 狂暴 + 暴走' },
-      { job: 'asura', o: { wpn: 'ep_katana', enh: 12, mix: MIX }, label: '阿修罗（眼罩，参照）' }], 'town');
-    if (scene === 'dungeon') { await page.goto(`${URL_BASE}?town&mute&cls=sword&fresh`); await page.waitForFunction(() => window.__READY); await page.waitForTimeout(600); await page.evaluate(HELP); }
+  if (SHOTS) {
+    const J = await page.evaluate(() => { const r = []; for (const c of ['sword', 'gun', 'mage']) for (const j in CLASSES[c].jobs) if (JOB_LOOKS[j]) r.push({ job: j, cls: c, name: CLASSES[c].jobs[j].name, st: (JOB_LOOKS[j].states || []).map(S => S.name || S.id).join(' + ') }); return r; });
+    const MIX = ['av_academy', 'av_festival', null];
+    J.forEach((j, i) => { titles[i] = `${j.name}（${j.job}）· 状态：${j.st}`; });
+    // 地下城：一次摆 5 个转职（每个一格，开着状态）
+    for (let k = 0; k < J.length; k += 5) await stage(0, J.slice(k, k + 5).map((j, i) => ({ job: j.job, o: { wpn: WPN[j.job], enh: 12 }, state: 1, suit: 1, row: k + i, label: `地下城 · 状态` })), 'dungeon');
+    await town();
+    for (const [i, j] of J.entries()) await stage(i, [
+      { job: j.job, o: { wpn: WPN[j.job], enh: 12 }, label: `${j.name} 站立（城镇）` }, { job: j.job, o: { wpn: WPN[j.job], enh: 12 }, mv: 110, label: '走路' },
+      { job: j.job, o: { wpn: WPN[j.job], enh: 12 }, state: 1, label: '状态' }, { job: j.job, o: { wpn: WPN[j.job], enh: 12, mix: MIX }, state: 1, mv: 300, label: '混搭时装 + 状态 跑动' }], 'town');
+    // 地下城那格放到每排最后
+    const byRow = {}; for (const t of tiles) (byRow[t.row] ||= []).push(t); tiles.length = 0; for (const r in byRow) { const L = byRow[r]; tiles.push(...L.filter(t => !t.label.startsWith('地下城')), ...L.filter(t => t.label.startsWith('地下城'))); }
   }
-  Object.assign(titles, { 0: '城镇 · 鬼泣（修罗之戮 +12）：鬼手鬼火 + 身后小鬼神；鬼影步 = 鬼影 + 残影 + 无敌半透明', 1: '城镇 · 狂战士（血之挽歌 +12）：红眼 + 鬼手血气；狂暴之力 = 全身血焰；暴走更猛',
-    2: '城镇 · 混搭时装（覆盖层叠在最上面）', 3: '地下城 · 鬼泣', 4: '地下城 · 狂战士' });
-  // 强化光效阶梯：同一把武器 +7 / +10 / +12 / +13 / +14 / +15 / +16 排一排（--oldglow：旧版对照）
+  // 强化光效阶梯：同一把武器 +7 / +10 / +12 / +13 / +14 / +15 / +16 排一排
   if (GLOW) {
-    await page.goto(`${URL_BASE}?town&mute&cls=sword&fresh`); await page.waitForFunction(() => window.__READY); await page.waitForTimeout(600); await page.evaluate(HELP);
-    await page.evaluate(async () => { enterScene('hm_plaza'); await new Promise(r => setTimeout(r, 1500)); });
-    const LV = [7, 10, 12, 13, 14, 15, 16], R = (row, wpn, nm, amp, tag = '') => stage(row, LV.map(lv => ({ job: null, o: { wpn, enh: lv, amp }, label: `${nm} ${amp ? '增幅' : ''}+${lv}${tag}` })), 'town', 128);
-    await R(10, 'ep_ss_shura', '修罗之戮'); await R(11, 'ep_ls_elegy', '血之挽歌'); await R(12, 'ep_ls_elegy', '血之挽歌', 1);
-    Object.assign(titles, { 10: '强化光效 · 修罗之戮（短剑）：+10 起刀身描边，+12 光晕加倍，+13 变红 + 爆闪，+14 环绕光点，+15 变紫 + 双层光晕 + 脚下光环，+16 七彩 + 电弧', 11: '强化光效 · 血之挽歌（光剑）', 12: '增幅光效 · 血之挽歌' });
-    if (OLD) { await page.evaluate(src => { const f = (0, eval)('(' + src + ')'); window.__vwNew = window.vanityWeaponFx; window.__glNew = [GLOW_ENH, GLOW_AMP]; window.vanityWeaponFx = (c, L, w, A, im, s, back) => { if (!back) f(c, L, w, A, im, s); }; }, OLD); await R(13, 'ep_ss_shura', '修罗之戮', 0, '（旧）'); await page.evaluate(() => { window.vanityWeaponFx = window.__vwNew; }); titles[13] = '旧版（对照）'; }
+    await town();
+    const LV = [7, 10, 12, 13, 14, 15, 16], R = (row, wpn, nm, amp) => stage(row, LV.map(lv => ({ job: null, o: { wpn, enh: lv, amp }, label: `${nm} ${amp ? '增幅' : ''}+${lv}` })), 'town', 128);
+    await R(100, 'ep_ss_shura', '修罗之戮'); await R(101, 'ep_ls_elegy', '血之挽歌'); await R(102, 'ep_ls_elegy', '血之挽歌', 1);
+    Object.assign(titles, { 100: '强化光效 · 修罗之戮（短剑）：+10 起刀身描边，+12 光晕加倍，+13 变红 + 爆闪，+14 环绕光点，+15 变紫 + 双层光晕 + 脚下光环，+16 七彩 + 电弧', 101: '强化光效 · 血之挽歌（光剑）', 102: '增幅光效 · 血之挽歌' });
   }
   fs.writeFileSync(`${out}/tiles.json`, JSON.stringify({ tiles, titles })); const name = GLOW && !SHOTS ? 'glow' : 'sheet';
   const py = `
@@ -205,13 +228,13 @@ for t in tiles:
     cell = Image.new('RGB', (w, h + 18), (18, 16, 22)); cell.paste(im, (0, 18)); ImageDraw.Draw(cell).text((4, 1), t['label'], font=F, fill=(255, 226, 160)); rows.setdefault(t['row'], []).append(cell)
 W = max(sum(c.width + 4 for c in r) for r in rows.values()); out = []
 for r in sorted(rows):
-    hd = Image.new('RGB', (W, 26), (40, 30, 24)); ImageDraw.Draw(hd).text((8, 3), titles.get(r, ''), font=T, fill=(255, 240, 200)); out.append(hd)
+    hd = Image.new('RGB', (W, 24), (40, 30, 24)); ImageDraw.Draw(hd).text((8, 2), titles.get(r, ''), font=T, fill=(255, 240, 200)); out.append(hd)
     h = max(c.height for c in rows[r]); im = Image.new('RGB', (W, h + 4), (10, 8, 12)); x = 0
     for c in rows[r]: im.paste(c, (x, 0)); x += c.width + 4
     out.append(im)
 sheet = Image.new('RGB', (W, sum(o.height for o in out))); y = 0
 for o in out: sheet.paste(o, (0, y)); y += o.height
-sheet.save('${out}/${name}.png'); sheet.save('${out}/${name}.jpg', quality=88)
+sheet.save('${out}/${name}.png'); sheet.save('${out}/${name}.jpg', quality=86)
 `;
   execFileSync('python3', ['-c', py]); console.log('  总览图', `${out}/${name}.jpg`);
 }

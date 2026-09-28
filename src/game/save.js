@@ -91,6 +91,7 @@ const save = {
     const C = CLASSES[d.cls]; if (!C) return;
     const ok = new Set(classSkills(d.cls, d.job || null)), old = Array.isArray(d.skillBar) ? d.skillBar : [];
     d.skillLv = {}; for (const id of C.start) d.skillLv[id] = 1;
+    const J = d.job && C.jobs && C.jobs[d.job]; if (J && J.auto) for (const id of J.auto) d.skillLv[id] = 1;   // 转职自动学会的技能
     d.skillBar = Array(SKILL_SLOTS).fill(null);
     old.forEach((id, i) => { if (i < SKILL_SLOTS && id && ok.has(id) && SKILLS[id] && !SKILLS[id].passive && !d.skillBar.includes(id)) d.skillBar[i] = id; });
     for (const id of C.start) if (!d.skillBar.includes(id)) { const k = d.skillBar.indexOf(null); if (k >= 0) d.skillBar[k] = id; }

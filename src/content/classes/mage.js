@@ -197,12 +197,22 @@ defSkill('mg_cat', { name: '暗影夜猫', cls: 'mage', lvReq: 10, mp: 14, cd: 1
           c.fillStyle = '#ffe070'; c.fillRect(14, -8, 2, 2); c.restore(); } }); })] }) });
 // 鞭挞：向前挥出魔法鞭；打中敌人造成伤害，抽到自己的召唤兽让它攻击力 / 攻速 / 移速提高 20 秒（不会让召唤兽硬直）
 defSkill('mg_whip', { name: '鞭挞', cls: 'mage', lvReq: 10, mp: 8, cd: 1, type: 'mag', col: '#8a3ab0', excl: NO_BM,
-  desc: '向前挥出魔法长鞭造成伤害。抽到自己的召唤兽时，让它 20 秒内攻击力、攻击速度和移动速度提高（不会让召唤兽硬直）。', pow: lv => skillDmg(1.2, 0.12, lv),
+  desc: '向前挥出魔法长鞭造成伤害。抽到自己的召唤兽时，让它 20 秒内攻击力、攻击速度和移动速度提高（不会让召唤兽硬直）。召唤师学了“绝对支配”后范围扩大、增益持续 40 秒，并可再按一次追加上挑。', pow: lv => skillDmg(1.2, 0.12, lv),
   infoExtra: lv => [['召唤兽攻击力', '+4.5%'], ['召唤兽攻速', '+' + pct(0.017 * (1 + lv))], ['召唤兽移速', '+' + pct(0.009 + 0.024 * lv)]], ai: { kind: 'poke', r: [0, 150], dy: 16 },
-  act: (lv) => ({ name: 'mg_whip', clip: 'whip', dur: 0.4, cancelFrom: 0.24,
-    hits: [HB(0.08, 0.14, [10, 160, 16, 20, 90], skillDmg(1.2, 0.12, lv), { stun: 0.3, knock: 40, hs: 0.04, snd: 'slash', type: 'mag', col: '#e0a0ff' })],
-    events: [evAt(0.07, e => { sfx.swing(false); fxStreak({ x: e.x + e.face * 16, y: e.y, z: e.z + 60, face: e.face, len: 150, w: 5, col: '#d890ff', dur: 0.18 });
-      const cx = e.x + e.face * 85; for (const s of summonsIn(e, cx, e.y, 90)) { s.buffs.whip = { t: 20, atk: 0.045, aspd: 0.017 * (1 + lv), mspd: 0.009 + 0.024 * lv }; fxAura(s, '#e090ff', 0.5); } })] }) });
+  // 绝对支配（召唤师被动）：鞭挞键再按一次 = 上挑
+  recast: { ok: p => p.st === 'act' && p.act && p.act.name === 'mg_whip' && whipDomin(p), cd: 0.3, mp: 0,
+    act: (lv) => ({ name: 'mg_whipUp', clip: 'mup', dur: 0.42, cancelFrom: 0.3,
+      hits: [HB(0.06, 0.13, [10, 230, 22, 0, 150], skillDmg(1.2, 0.12, lv), { launch: 330, knock: 20, stun: 0.4, hs: 0.05, snd: 'slash', type: 'mag', col: '#e0a0ff' })],
+      events: [evAt(0.05, e => { sfx.swing(true); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#d890ff', a0: 1.2, a1: -1.3, r: 150, w: 10, off: [8, 40], squash: 0.8, dur: 0.22 }); whipBuffSummons(e, lv); })] }) },
+  act: (lv, p) => { const dom = whipDomin(p), L = dom ? 240 : 160;
+    return { name: 'mg_whip', clip: 'whip', dur: 0.4, cancelFrom: 0.24, links: dom ? ['mg_whip'] : undefined, linkFrom: 0.12,
+      hits: [HB(0.08, 0.14, [10, L, 16, 20, 90], skillDmg(1.2, 0.12, lv), { stun: 0.3, knock: 40, hs: 0.04, snd: 'slash', type: 'mag', col: '#e0a0ff' })],
+      events: [evAt(0.07, e => { sfx.swing(false); fxStreak({ x: e.x + e.face * 16, y: e.y, z: e.z + 60, face: e.face, len: L - 10, w: dom ? 7 : 5, col: '#d890ff', dur: 0.18 }); whipBuffSummons(e, lv); })] }; } });
+function whipDomin(p) { return !!p && typeof jobOf === 'function' && jobOf(p) === 'summoner' && skLv(p, 'sm_domin') > 0; }
+function whipBuffSummons(e, lv) {
+  const dom = whipDomin(e), cx = e.x + e.face * (dom ? 125 : 85);
+  for (const s of summonsIn(e, cx, e.y, dom ? 150 : 90)) if (s.kind === 'follower') { s.buffs.whip = { t: dom ? 40 : 20, atk: 0.045, aspd: 0.017 * (1 + lv), mspd: 0.009 + 0.024 * lv }; fxAura(s, '#e090ff', 0.5); }
+}
 // 替身草人：受击 / 倒地时施放（通用组的 whenHit 钩子），瞬移一段距离（默认向后，可用方向键选方向），之后 0.5 秒无敌；原地留下草人，捡到的人获得攻速 / 移速提升
 defSummon('strawdoll', { kind: 'field', life: 10, max: 1, r: 20, tick: 0.1, keepRoom: false,
   onTick(s) { const o = s.owner; if (Math.hypot(o.x - s.x, (o.y - s.y) * 2) < 26 && o.z < 20) { o.buffs.mg_doll = { t: 10, aspd: 0.1, mspd: 0.1 }; fxText('攻速 / 移速提升', o.x, o.y, o.z + 20, { col: '#ffe070', size: 10 }); fxAura(o, '#ffe070', 0.5); dismissOne(s, 'cmd'); } },

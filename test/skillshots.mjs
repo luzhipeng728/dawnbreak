@@ -25,6 +25,7 @@ for (const item of list) {
       const p = game.player; p.x = 380; p.y = 100; p.z = 0; p.vz = 0; p.face = 1; p.setState('idle'); p.act = null; p.cool = {}; p.buffs = {}; p.chasers = [];
       for (let i = 0; i < 12; i++) game.skillBar[i] = null; game.skillBar[0] = id; __dummy(); projs.length = 0;
       if (SKILLS[id].airOnly) { p.vz = 420; p.z = 1; p.setState('jump'); }
+      const S = SKILLS[id]; if (typeof S.whenHit === 'function' ? S.whenHit(p) : S.whenHit) { p.setState('hit'); p.stun = 0.8; }
       return true;
     }, id);
     if (SKILLS_AIR_DELAY.has(id)) await page.waitForTimeout(160);

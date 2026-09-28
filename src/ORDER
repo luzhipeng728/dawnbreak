@@ -35,9 +35,12 @@ content/classes/gunner.js
 content/classes/gun_ranger.js
 content/classes/gun_launcher.js
 content/classes/gun_mechanic.js
+# 协战师（神枪手第 5 转职，辅助）：全队同步见 net/party_sync.js
+content/classes/gun_paramedic.js
 content/classes/mage.js
 content/classes/mage_elemental.js
 content/classes/mage_battle.js
+content/classes/mage_summoner.js
 content/classes/mage_witch.js
 content/classes/mage_enchantress.js
 engine/touch.js
@@ -134,6 +137,8 @@ ui/friends.js
 ui/party.js
 net/pvp.js
 net/coop.js
+# 全队效果同步（协战师 / 小魔女）：单刷判定、全队 BUFF / 保护罩 / 复活、光环；中继 {k:'pfx'}
+net/party_sync.js
 # 社交与经济服务（拍卖行 / 邮件 / 排行榜 / 全服公告 / 签到 / 管理员后台；依赖 net/net.js、物品窗口、npc.js，窗口在 ui/social/*）
 net/social.js
 net/social_guild.js

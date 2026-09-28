@@ -2,7 +2,8 @@
 """外观与换装：武器图表 → art/final/weapon/<key>.webp + src/content/avatar/weapon_art.js（握点 / 尖端数据）
   avatar_weapons.py [表名前缀...]
 武器图横放、握柄在左、尖端 / 枪口在右（art/tools/avatar_gen.py weapons 生成，原图在主仓库 art/src/avatar/weapons/）。
-握点自动求（按武器类别），需要微调的写在 art/tools/avatar_weapons.json：{ "<key>": { "gx": 0.3, "gy": 0.5 } }（相对图片宽高）。
+握点自动求（按武器类别），需要微调的写在 art/tools/avatar_weapons.json：{ "<key>": { "gx": 0.3, "gy": 0.5 } }（相对图片宽高）；
+  另可写 size（握点→尖端长度）、mul（相对类型长度的倍数）、wide（只加宽的倍数，如巨剑 1.3）、cut / solo（去掉特效碎块）。
 图片按“握点→尖端 = SIZE × 1.25 像素”缩放保存，运行时再缩到 SIZE（角色帧像素，res 1.8）。
 预览写到主仓库 art/src/avatar/cut/weapons_<表>.png（黄圈 = 握点，红线 = 朝向）。
 """
@@ -32,6 +33,16 @@ SINGLE = {'rifle', 'handcannon', 'bowgun'}   # 长枪 / 手炮 / 手弩不双持
 EP_TYPE = {'ep_shortsword': 'shortsword', 'ep_katana': 'katana', 'ep_katana2': 'katana', 'ep_club': 'club', 'ep_greatsword': 'greatsword', 'ep_lightsaber': 'lightsaber',
            'ep_revolver': 'revolver', 'ep_autopistol': 'autopistol', 'ep_rifle': 'rifle', 'ep_handcannon': 'handcannon', 'ep_bowgun': 'bowgun',
            'ep_spear': 'spear', 'ep_pole': 'pole', 'ep_rod': 'rod', 'ep_staff': 'staff', 'ep_broom': 'broom'}
+
+TIER_MUL = {2: 1.02, 3: 1.06, 4: 1.14}   # 普通武器的品级外观 <类型>_r2/r3/r4：稀有 / 神器 / 传说，一级比一级长（传说长 10~15%）
+EPIC_MUL = {'greatsword': 1.12, 'revolver': 1.15, 'autopistol': 1.15, 'handcannon': 1.1, 'bowgun': 1.1, 'rod': 1.1}   # 史诗默认比普通武器长 5%；巨剑更夸张，小枪 / 魔杖放大一点才看得清
+WIDE = {'katana': 1.2, 'lightsaber': 1.15, 'greatsword': 1.1}   # 史诗 / 品级外观只加宽不加长：太刀、光剑在游戏里别细成一根线
+def tier_type(key):
+    t, _, r = key.rpartition('_r')
+    return t if t in SIZE and r in ('2', '3', '4') else None
+def default_mul(key, wt):
+    if tier_type(key): return TIER_MUL[int(key[-1])]
+    return EPIC_MUL.get(wt, 1.05) if key.startswith('ep_') else 1.05
 
 def cut_rows(path, n):
     a = np.array(remove_bg(Image.open(path))); drop_holes(a)   # 扳机护圈、弩弦里围住的白底也去掉
@@ -116,6 +127,19 @@ def auto_grip(sub, kind):
         barrel = float(np.nanmedian(mid[int(W * 0.6):int(W * 0.95)])); gx = W * 0.32; gy = barrel + (bot[int(gx)] - barrel) * 0.35
     return gx, gy
 
+import re   # epics3.js 的经典官方史诗没有画师图标：图标由武器图生成，重切时跟着更新（其他史诗的图标不动）
+ICON_FROM_ART = set(re.findall(r"EP\('(ep_\w+)'", open(os.path.join(ROOT, 'src', 'content', 'items', 'epics3.js')).read()))
+def epic_icon(sub, kind, out):
+    """没有专属图标的史诗（epics3.js 新增的官方史诗）：用武器原图斜放 + 金色描光做 128×128 图标，和现有史诗图标同一种摆法"""
+    from PIL import ImageFilter
+    im = Image.fromarray(sub, 'RGBA'); ang = 18 if kind in ('gun', 'rifle') else 45   # 刀剑 / 长杆斜 45°（尖端朝右上），枪稍微上扬
+    im = im.rotate(ang, resample=Image.BICUBIC, expand=True); im = im.crop(im.getbbox())
+    k = 112 / max(im.size); im = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS)
+    cv = Image.new('RGBA', (128, 128)); cv.alpha_composite(im, ((128 - im.width) // 2, (128 - im.height) // 2))
+    a = cv.split()[3].filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(2.5))
+    glow = Image.new('RGBA', (128, 128), (255, 196, 64, 0)); glow.putalpha(a.point(lambda v: min(255, int(v * 1.1))))
+    glow.alpha_composite(cv); glow.save(out, 'WEBP', quality=90, method=6)
+
 def main():
     pres = sys.argv[1:]
     fixes = json.load(open(FIXF)) if os.path.exists(FIXF) else {}
@@ -139,21 +163,24 @@ def main():
                 sub = solo; ys, xs = np.where(sub[..., 3] > 40); sub = sub[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
             if 'cut' in f:   # 只保留左边这么多（去掉枪口的火焰等特效）
                 sub = sub[:, :int(sub.shape[1] * f['cut'])]; cols = np.where((sub[..., 3] > 40).any(0))[0]; sub = sub[:, :cols.max() + 1]
-            wt = EP_TYPE.get(key) or EP2_CODE.get(key.split('_')[1] if key.startswith('ep_') else '') or (key.split('_', 1)[1] if '_' in key and key.split('_', 1)[1] in SIZE else key)   # 装扮：<装扮>_<武器类型>
+            wt = EP_TYPE.get(key) or EP2_CODE.get(key.split('_')[1] if key.startswith('ep_') else '') or tier_type(key) or (key.split('_', 1)[1] if '_' in key and key.split('_', 1)[1] in SIZE else key)   # 装扮：<装扮>_<武器类型>
             kind = KIND[wt]; H, W = sub.shape[:2]
             gx, gy = auto_grip(sub, kind)
             if 'gx' in f: gx = f['gx'] * W
             if 'gy' in f: gy = f['gy'] * H
             tx = W - 1.0   # 尖端：最右边
             reach = tx - gx if kind != 'pole' else tx - gx
-            size = f.get('size', SIZE[wt]) * (1.0 if key == wt else f.get('mul', 1.05))
-            k = size * OVER / reach
-            im = Image.fromarray(sub, 'RGBA'); sm = im.resize((max(1, round(W * k)), max(1, round(H * k))), Image.LANCZOS)
+            size = f.get('size', SIZE[wt]) * (1.0 if key == wt else f.get('mul', default_mul(key, wt)))
+            k = size * OVER / reach; ky = k * f.get('wide', 1.0 if key == wt else WIDE.get(wt, 1.0))   # wide：只加宽（刀身 / 杖头更粗），长度不变
+            im = Image.fromarray(sub, 'RGBA'); sm = im.resize((max(1, round(W * k)), max(1, round(H * ky))), Image.LANCZOS)
+            gy *= ky / k
             sm.save(os.path.join(outd, f'{key}.webp'), 'WEBP', quality=88, method=6)
             data[key] = {'w': sm.width, 'h': sm.height, 'gx': round(gx * k, 1), 'gy': round(gy * k, 1), 'tx': round(tx * k, 1), 'ty': round(gy * k, 1),
                          'size': round(size, 1), 'kind': kind, 'type': wt}
             if wt in SINGLE: data[key]['dual'] = 0
             tiles.append((key, sm, data[key]))
+            ic = os.path.join(HERE, 'final', 'icon', f'item_{key}.webp')
+            if key.startswith('ep_') and (not os.path.exists(ic) or key in ICON_FROM_ART): epic_icon(sub, kind, ic)
             print(f'  {key:14s} {sm.width}x{sm.height} 握点 ({gx * k:.0f},{gy * k:.0f}) {kind}')
         # 预览
         Z = 2; wmax = max(t[1].width for t in tiles) * Z + 40; hsum = sum(t[1].height * Z + 30 for t in tiles) + 10

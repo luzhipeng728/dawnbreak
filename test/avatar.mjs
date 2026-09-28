@@ -174,7 +174,7 @@ for (const cls of ['sword', 'gun', 'mage']) {
   for (const t of types) {
     const err = await page.evaluate(([EQ, t, cls]) => (0, eval)(EQ)([{ slot: 'weapon', wtype: t, lvl: 10, cls, rar: 2 }]   /* 固定稀有品级：不指定时可能随机出史诗（史诗有专属外观 ep_*） */), [`(${EQUIP})`, t, cls]);
     const L = await look(); seen[t] = L.hash;
-    ok(!err && L.wpn === t, `装备${t} → 手里的武器图 ${L.wpn}${err ? ' ' + err : ''}`);
+    ok(!err && L.wpn === t + '_r2', `装备稀有${t} → 手里的武器图 ${L.wpn}（稀有品级外观）${err ? ' ' + err : ''}`);
   }
   ok(new Set(Object.values(seen)).size === types.length, `${types.length} 种武器外观互不相同`);
   const ep = await page.evaluate(cls => Object.keys(WEAPON_IMG).find(k => k.startsWith('ep_') && ITEMS[k] && WTYPES[WEAPON_IMG[k].type].cls === cls), cls);   // 只挑物品库里已有的史诗（别的组的新史诗合并前不存在）

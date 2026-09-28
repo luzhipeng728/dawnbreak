@@ -24,9 +24,9 @@ run world     node test/world.mjs
 run polish    node test/polish.mjs
 run combat    node test/combat.mjs
 run skillsa   node test/skill_sa.mjs
-run gunner    node test/gunner.mjs
 run sword     node test/sword.mjs
 run summon    node test/summon.mjs
+run gunner    node test/gunner.mjs
 run summoner  node test/summoner.mjs
 run paramedic node test/paramedic.mjs
 run enchant   node test/enchantress.mjs

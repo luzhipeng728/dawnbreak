@@ -787,7 +787,8 @@ function g0AI(s, dt) {
       summonHit(s, t, { dmg: MECH_DMG.g0Las(lv) * 0.8, type: 'mag', elem: 'light', stun: 0.4, knock: 10, airLift: 60, hs: 0.03, sure: true, downHit: true, col: '#ffd0c0', snd: 'crit', big: 1.4 });
       summonArea(s, t.x, t.y, 60, { dmg: MECH_DMG.g0Las(lv) * 0.2, type: 'mag', elem: 'light', stun: 0.3, knock: 20, hs: 0.01, col: '#ffd0c0' }, { zMax: 200 }); }
     return; }
-  s.phase = 'end'; s.beamT = null;
+  s.phase = 'end'; s.beamT = null;   // 打完就飞走（官方）
+  s.hz = (s.hz || 0) + (120 + (s.hz || 0) * 4) * dt; if (Math.random() < 0.6) fxBurst(s.x - s.face * 10, s.y, (s.hz || 0) + 20, 40, '#ffb060');
 }
 function g0Missile(s, t, i) {
   const o = s.owner, img = fxTint('fireball', '#ff9a6a');
@@ -918,10 +919,18 @@ function falconAttack(p, lv) {
 defSummon('mech_falcon', { kind: 'follower', tags: ['mech'], max: 1, life: 20, keepRoom: true, enterAt: 'behind', speed: 0, w: 12, d: 12, h: 30, shadowR: 10, type: 'mag', noHold: true,
   model: () => MECH_NULL, onSpawn: s => mechSpawn(s, 'falcon', { hz: 104 }), ai: falconAI });
 defSkill('gm_falcon', { name: 'G-超级猎鹰', cls: 'gun', job: MC, lvReq: 26, tier: 2, mp: 80, cd: 0.5, charges: 3, reload: 15, type: 'mag', elem: 'light', col: '#f0b83a',
-  desc: '放出和 G 系列联动的特殊机器人猎鹰，按 G 系列当前的形态攻击：科罗纳（或没有 G 系列）= 蓄能后大范围爆炸；旋雷者 = 向前射出 3 道激光；捕食者 = 缠住被捕食者咬住的敌人里等级最高的一个，连续攻击 25 段。每 15 秒充能 1 次，最多存 3 次。',
+  desc: '按一次放出和 G 系列联动的特殊机器人猎鹰（跟在身后，20 秒没有动作就离开）；猎鹰在场时再按技能键，它按 G 系列当前的形态攻击：科罗纳（或没有 G 系列）= 蓄能后大范围爆炸；旋雷者 = 向前射出 3 道激光；捕食者 = 缠住被捕食者咬住的敌人里等级最高的一个，连续攻击 25 段。每次攻击消耗 1 次充能（每 15 秒充 1 次，最多存 3 次）；下命令不打断自己的动作。',
   pow: lv => MECH_DMG.falconCo(lv), infoExtra: lv => [['科罗纳形态', pct(MECH_DMG.falconCo(lv))], ['旋雷者形态', pct(MECH_DMG.falconRt(lv)) + ' ×3'], ['捕食者形态', pct(MECH_DMG.falconRp(lv)) + ' ×25'], ['充能', '15 秒 / 最多 3 次']],
   ai: { kind: 'burst', r: [0, 480], dy: 80 },
-  act: (lv) => ({ name: 'gm_falcon', clip: mclip('mPoint'), dur: 0.4, noCounter: true, events: [evAt(0.1, e => { falconAttack(e, lv); sfx.mech(1.1); })] }) });
+  recast: { ok: p => summonsOf(p, 'mech_falcon').length > 0, instant: () => true, cd: 0.5, mp: 0,
+    act: (lv, p) => { const Q = chargesOf(p, 'gm_falcon'), mp = SKILLS.gm_falcon.mp;
+      if (!Q || Q.n < 1) { if (isHuman(p)) fxText('充能中', p.x, p.y, p.z + 20, { col: '#ffe080', size: 10, dur: 0.5 }); }
+      else if (p.mp < mp) { if (isHuman(p)) fxText('MP不足', p.x, p.y, p.z + 20, { col: '#9fd8ff', size: 10, dur: 0.5 }); }
+      else { Q.n--; p.mp -= mp; falconAttack(p, lv); sfx.beep(); }
+      return tinyAct('gm_falcon'); } },
+  act: (lv) => ({ name: 'gm_falcon', clip: mclip('mPoint'), dur: 0.4, noCounter: true,
+    events: [evAt(0.1, e => { const Q = chargesOf(e, 'gm_falcon'); if (Q) Q.n = Math.min(SKILLS.gm_falcon.charges, Q.n + 1);   // 放出猎鹰不消耗充能
+      falconUnit(e); sfx.mech(1.1); if (isHuman(e)) fxText('G-超级猎鹰', e.x, e.y, e.z + 26, { col: '#ffe080', size: 11, dur: 0.8 }); })] }) });
 
 /* ---- 高压电磁场：射出磁场发生器，飞 220 px 后展开电磁场，1.5 秒内 15 段，把周围的敌人往中心拉 ---- */
 defSummon('mech_emfield', { kind: 'field', r: 125, tick: 0.1, hits: 15, life: 1.7, tags: ['mech'], type: 'mag', keepRoom: false,
@@ -962,15 +971,20 @@ function boltAI(s, dt) {
       fxSlash({ x: s.x, y: s.y, z: 0, face: s.face, col: '#ff8ae0' });
       summonArea(s, s.x + s.face * 55, s.y, 95, { dmg: MECH_DMG.boltBlade(lv), type: 'mag', elem: 'light', launch: 260, knock: 140, hs: 0.08, sure: true, downHit: true, big: 1.5, col: '#ffb0e8' }, { zMax: 220 }); }
     return; }
-  if (k < 5.6) { s.phase = 'charge'; const t = main; if (t) { const dx = t.x - s.x; s.x += Math.sign(dx) * Math.min(Math.abs(dx), 700 * dt); s.y = damp(s.y, t.y, 8, dt); s.face = dx >= 0 ? 1 : -1; }
-    if (!T.fin && (k > 5.4 || (t && Math.abs(t.x - s.x) < 30))) { T.fin = true; cam.shake = 14; cam.flash = 0.2; cam.flashCol = '#fff0e0'; mechBoomFx(s.x, s.y, 1.6, 'light');
-      summonArea(s, s.x, s.y, 170, { dmg: MECH_DMG.boltFin(lv), type: 'mag', elem: 'light', launch: 520, knock: 220, hs: 0.14, sure: true, downHit: true, big: 2 }, { zMax: 300 }); s.life = Math.min(s.life, s.lifeT + 0.1); }
-  }
+  // 终结：后空翻跃起，全身部件分离，飞向周围的敌人自爆，本体在落点大爆炸
+  if (k < 5.0) { s.phase = 'flip'; if (!T.flip) { T.flip = { x0: s.x }; sfx.jump(); } const q = clamp((k - 4.7) / 0.3, 0, 1); s.x = T.flip.x0 - s.face * 70 * q; s.hz = Math.sin(q * Math.PI * 0.5) * 110; return; }
+  if (!T.fin) { T.fin = true; s.phase = 'split'; cam.shake = 10; sfx.boom(0.8); const room = game.room, P = L.slice(0, 3);
+    for (let i = 0; i < 6; i++) { const t = P[i % Math.max(1, P.length)] || null, tx = t ? t.x + rnd(-30, 30) : s.x + rnd(-160, 160), ty = t ? t.y : clamp(s.y + rnd(-50, 50), 6, DEPTH - 6);
+      addFx({ x: s.x, y: s.y + 0.5, z: s.hz + 60, tx, ty, dur: 0.35, rot0: rnd(0, TAU), add: false, draw(c) { const q = this.t / this.dur, X = sx(lerp(this.x, this.tx, q)), Y = sy(lerp(this.y, this.ty, q), lerp(this.z, 10, q) + Math.sin(q * Math.PI) * 70);
+        if (IMG['fx/sf_parts']) drawSpr(c, 'sf_parts', X, Y, 34, 0, { rot: this.rot0 + this.t * 16, add: false }); else { c.save(); c.translate(X, Y); c.rotate(this.rot0 + this.t * 16); c.fillStyle = '#8a96ae'; c.strokeStyle = OUTL; c.lineWidth = 2; c.fillRect(-8, -5, 16, 10); c.strokeRect(-8, -5, 16, 10); c.restore(); } } });
+      game.after(0.35, () => { if (game.room !== room || ents.indexOf(s.owner) < 0) return; mechBoomFx(tx, ty, 0.55, 'light'); summonArea(s, tx, ty, 70, { dmg: MECH_DMG.boltFin(lv) * 0.07, type: 'mag', elem: 'light', launch: 300, knock: 100, hs: 0.05, sure: true, downHit: true }, { zMax: 220 }); }); }
+    s.hz = 0; cam.flash = 0.2; cam.flashCol = '#fff0e0'; mechBoomFx(s.x, s.y, 1.6, 'light');
+    summonArea(s, s.x, s.y, 170, { dmg: MECH_DMG.boltFin(lv) * 0.6, type: 'mag', elem: 'light', launch: 520, knock: 220, hs: 0.14, sure: true, downHit: true, big: 2 }, { zMax: 300 }); s.life = Math.min(s.life, s.lifeT + 0.1); }
 }
 defSummon('mech_bolt', { kind: 'follower', tags: ['mech'], max: 1, life: 5.8, keepRoom: false, speed: 0, w: 26, d: 16, h: 140, shadowR: 36, type: 'mag', noHold: true,
   model: () => MECH_NULL, onSpawn: s => { mechSpawn(s, 'bolt', { puff: false, hz: 420 }); s.x0 = s.x; s.y0 = s.y; }, ai: boltAI });
 defSkill('gm_bolt', { name: '终结者：博尔特 MX', cls: 'gun', job: MC, lvReq: 27, maxLv: 3, mp: 250, cd: 170, pvp: 0.45, type: 'mag', elem: 'light', awaken: true, tier: 2, col: '#e84a8a',
-  desc: '【二觉】召唤天界最新型的战斗机甲博尔特 MX 从天而降，自动锁定落点附近的敌人：先从肩上射出回旋炮连续打击后爆炸，再一边移动一边用步枪射击 4 发，随后拔出激光剑连斩 3 次，最后冲向一个敌人自爆。施放时无敌。',
+  desc: '【二觉】召唤天界最新型的战斗机甲博尔特 MX 从天而降，自动锁定落点附近的敌人：先从肩上射出回旋炮连续打击后爆炸，再一边移动一边用步枪射击 4 发，随后拔出激光剑连斩 3 次，最后后空翻跃起、全身部件分离飞向周围的敌人，本体在落点自爆。施放时无敌。',
   pow: lv => MECH_DMG.boltMx2(lv) * 5 + MECH_DMG.boltMx2Boom(lv) + MECH_DMG.boltRifle(lv) * 3 + MECH_DMG.boltRifle4(lv) + MECH_DMG.boltBlade(lv) * 3 + MECH_DMG.boltFin(lv), ai: { kind: 'awaken', r: [0, 400], dy: 120 },
   act: (lv) => ({ name: 'gm_bolt', clip: mclip('mAwk'), dur: 0.6, superArmor: true, invul: true, noCounter: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '终结者：博尔特 MX', who: cutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); },
@@ -1028,10 +1042,10 @@ defSummon('mech_stardust', { kind: 'follower', tags: ['mech'], max: 1, life: 3.8
   model: () => MECH_NULL, onSpawn: s => { s.timers = {}; s.dome = addFx({ s, y: s.y - 60, dur: 4, add: true, draw(c) { if (this.s.gone) { this.t = this.dur; return; } stardustDome(c, this.s); } }); },
   ai: stardustAI });
 defSkill('gm_stardust', { name: 'G-X 星尘天穹', cls: 'gun', job: MC, lvReq: 30, maxLv: 1, mp: 380, cd: 270, pvp: 0.45, type: 'mag', elem: 'light', awaken: true, tier: 3, col: '#ff7ad8',
-  desc: '【三觉】需要 G 系列在场。G 系列分解成无数微型机械“星尘”飞上天空，组成覆盖前方的巨大机械穹顶，放电后降下 8 道激光，最后穹顶承受不住冲击爆炸（7 段）。施放时无敌；G-1 科罗纳的冷却立刻重置。和一觉绑定：改装：G-0 战争领主冷却中不能使用，使用后 G-0 也进入冷却。',
+  desc: '【三觉】需要 G 系列在场。G 系列分解成无数微型机械“星尘”飞上天空，组成覆盖前方的巨大机械穹顶，放电后降下 8 道激光，最后穹顶承受不住冲击爆炸（7 段）。直到穹顶爆炸都处于施放中，全程无敌；G-1 科罗纳的冷却立刻重置。和一觉绑定：改装：G-0 战争领主冷却中不能使用，使用后 G-0 也进入冷却。',
   pow: lv => MECH_DMG.sdLaser(lv) * 8 + MECH_DMG.sdDome(lv) * 7, ai: { kind: 'awaken', r: [0, 500], dy: 140 },
   req: p => !gsUnits(p).length ? '需要 G 系列在场' : (p.cool.gm_g0 || 0) > 0 ? 'G-0 战争领主冷却中' : true,
-  act: (lv) => ({ name: 'gm_stardust', clip: mclip('mAwk'), dur: 1.0, superArmor: true, invul: true, noCounter: true,
+  act: (lv) => ({ name: 'gm_stardust', clip: mclip('mAwk'), dur: 3.9, superArmor: true, invul: true, noCounter: true,   // 官方：穹顶爆炸之前一直在施放中（无敌）
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: 'G-X 星尘天穹', who: cutinWho(e, 3) }; game.timeStop = 0.9; sfx.awaken(); },
     events: [evAt(0.1, e => { dismissSummons(e, GS_Q, 'tf'); gsState(e).stacks = 0; e.cool.gm_g1 = 0; e.cool.gm_g0 = Math.max(e.cool.gm_g0 || 0, SKILLS.gm_g0.cd * (e.cdMul || 1));
       summon(e, 'mech_stardust', { lv, x: e.x + e.face * 260, y: e.y }); })] }) });

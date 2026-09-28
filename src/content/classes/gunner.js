@@ -194,7 +194,10 @@ defSkill('g_slide', { name: '浮空铲', cls: 'gun', lvReq: 10, maxLv: 1, sp: 15
 defSkill('g_m3', { name: 'M-3 喷火器', cls: 'gun', lvReq: 10, sp: 20, mp: 40, cd: 7, type: 'phys', elem: 'fire', col: '#e0602a',
   desc: '按住技能键持续向前喷火（最长 2 秒），每 0.16 秒一段并灼烧敌人；火焰贴地，能烧到倒地的敌人。喷射越久，结束后的收招越长；等级越高，敌人被烧得越僵。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'poke', r: [0, 150], dy: 18 },
   act: (lv, p) => ({ name: 'g_m3', clip: 'flame', dur: 2.3, noCounter: true, superArmor: p && skLv(p, 'gl_pandora') ? true : undefined,   // 枪炮师三觉被动 Pandora_01：施放时霸体
-    onInput: (e, I) => { const a = e.act; if (!a.stopT && e.actT > 0.35 && !I.is(a.key || 'attack')) { a.stopT = e.actT; a.dur = e.actT + 0.1 + 0.12 * e.actT; } return false; },
+    onInput: (e, I) => { const a = e.act; if (!a.stopT && e.actT > 0.35 && !I.is(a.key || 'attack')) { a.stopT = e.actT; a.dur = e.actT + 0.1 + 0.12 * e.actT; }
+      if (skLv(e, 'gl_pandora') && !a.stopT) { const sp = e.speed * 1.1; e.vx = I.dx() * sp; e.vy = I.dy() * sp * 0.6; }   // 枪炮师三觉被动 Pandora_01：喷射中可以移动（固定 110%）
+      return false; },
+    onEnd: e => { e.vx = 0; e.vy = 0; },
     update: e => { const a = e.act, end = a.stopT || 2.1, n = Math.floor(e.actT / 0.08);
       if (n !== a.k && e.actT > 0.08 && e.actT < end) { a.k = n; if (n % 3 === 0) sfx.flame(); flameJet(e, { range: 150, visual: true }); }
       const tk = Math.floor(e.actT / 0.16); if (tk !== a.tk && e.actT > 0.1 && e.actT < end) { a.tk = tk;

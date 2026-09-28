@@ -1,7 +1,8 @@
 // 神枪手（女）转职的官方对齐测试（docs/SKILLS_OFFICIAL_gun.md 第 4、5 节）：暂停游戏循环、逐帧推进
 // 漫游枪手：双枪极舞刃 4 个派生（C C / 空中 Z / 滑铲 Z / 上旋踢 Z）、上旋踢中 X = 音速劫击、花式枪术（柔化次数、免费衔接）、心灵反击（被击时 Z）、
 //   锁链截击 3 段、双鹰回旋接枪再掷、移动射击弹数、隐匿切割、觉醒阶段门槛；
-// 枪炮师：重火器奥义 +1 级、重火器精通（MP、叠层）、重火器拔击、蓄电激光炮、FM-92 分裂、反坦克炮 3 爆、PT-15 三种形态、二觉 / 三觉；二觉 / 三觉任务。node test/gunner_jobs.mjs
+// 枪炮师：重火器奥义 +1 级、重火器精通（MP、叠层）、重火器拔击、蓄电激光炮、FM-92 分裂、反坦克炮 3 爆、PT-15 三种形态、二觉 / 三觉；二觉 / 三觉任务；
+// 行为层对齐（docs/skills/gun_behavior.md）：多重射击逐发转向、致命回射不转身、双鹰回旋定方向、绯红盛宴固定 26 段、UHT-03 固定 3 秒 + 融合、FM-92 SW 领主优先、X-2 瞬发、猎鹰放出 → 再按攻击、超限压制 5 段、聚合弹单发。node test/gunner_jobs.mjs
 import { launch, URL_BASE } from './lib.mjs';
 let fail = 0;
 const report = (name, ok, info) => { if (!ok) fail++; console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}  ${JSON.stringify(info)}`); };
@@ -74,6 +75,22 @@ const R = await page.evaluate(() => {
   // 二觉 / 三觉
   T.reset(); castSkill(p, 'gl_awaken2'); out.awk2 = T.act(); game.timeStop = 0; T.run(300);
   T.reset(); castSkill(p, 'gl_awaken3'); out.awk3 = T.act(); game.timeStop = 0; T.run(320);
+  // ---- 行为对齐（官方现版的多段 / 方向键 / 再按，docs/skills/gun_behavior.md）----
+  const bh = {}, countHits = (m, fn, frames) => { let n = 0; const ah = window.applyHit; window.applyHit = function (a, t) { if (a === p && t === m) n++; return ah.apply(this, arguments); }; fn(); T.run(frames); window.applyHit = ah; return n; };
+  T.job('ranger');
+  T.reset(); castSkill(p, 'g_multi'); T.run(24); T.hold('left'); T.run(20); bh.multiFace = p.face; T.release('left'); T.run(60);
+  T.reset(); { const m = T.mob(220, 100), h0 = m.hp; castSkill(p, 'g_backshot'); T.run(30); bh.backshot = { face: p.face, hit: m.hp < h0 }; } T.clear();
+  T.reset(); { const m = T.mob(160, 100), h0 = m.hp; castSkill(p, 'g_hawk'); T.hold('left'); T.run(40); T.release('left'); T.run(80); bh.hawkBack = m.hp < h0; } T.run(60); projs.length = 0; T.clear();
+  T.reset(); { const m = T.mob(380, 100); bh.awk = countHits(m, () => { castSkill(p, 'g_awaken'); game.timeStop = 0; }, 360); } T.clear();
+  T.job('launcher');
+  T.reset(); game.skillBar[4] = 'g_m3'; castSkill(p, 'gl_uht03'); T.run(60); T.tap('s4'); T.run(2); bh.uht = { act: T.act(), fuse: p.act && p.act.fuse, m3cd: (p.cool.g_m3 || 0) > 0 }; T.run(140); bh.uht.end = T.act(); T.run(30);
+  T.reset(); { const a = T.mob(420, 100), b = T.mob(760, 100); b.boss = true; const ha = a.hp, hb = b.hp; castSkill(p, 'gl_fm92sw'); T.run(160); bh.sw = { near: ha - a.hp, boss: hb - b.hp }; b.boss = false; } T.clear();
+  T.reset(); castSkill(p, 'gl_x1'); T.run(14); bh.x2 = { proj: projs.length > 0, charging: !!(p.act && p.act.charging) }; T.run(120); projs.length = 0;
+  T.job('mechanic'); T.reset();
+  castSkill(p, 'gm_falcon'); T.run(30); { const Q = p.charges.gm_falcon; bh.falcon1 = { n: Q.n, unit: summonsOf(p, 'mech_falcon').length }; castSkill(p, 'gm_falcon'); T.run(2); bh.falcon2 = { n: Q.n }; } T.run(120); dismissSummons(p, 'mech_falcon');
+  T.job('paramedic'); T.reset(); { const m = T.mob(420, 100); bh.over = { n: countHits(m, () => castSkill(p, 'pm_overlimit'), 110), back: Math.abs(p.x - 300) < 5 }; } T.clear();
+  T.job('spitfire'); T.reset(); castSkill(p, 'gs_overcharge'); T.run(40); p.cool = {}; { const m = T.mob(600, 100); bh.buster = countHits(m, () => castSkill(p, 'gs_buster'), 40); } T.clear();
+  out.bh = bh;
   // 二觉 / 三觉任务
   out.quests = ['sword', 'gun', 'mage'].map(c => [`q_awaken2_${c}_2`, `q_awaken3_${c}_2`].map(id => QUESTS[id] ? QUESTS[id].lvl : null));
   return out;
@@ -96,6 +113,17 @@ report('FM-92 mk2：分裂成 10 个爆弹', R.fm92 >= 10, { projs: R.fm92 });
 report('PT-15：前方 1 发 / 按住 ↑ 前后 2 发 / 按住 ↓ 对地', R.pt15.fwd[0] === 1 && R.pt15.both[0] === 2 && R.pt15.down[1] === 'ptDown', R.pt15);
 report('枪炮师二觉 / 三觉能放', R.awk2 === 'gl_awaken2' && R.awk3 === 'gl_awaken3', { awk2: R.awk2, awk3: R.awk3 });
 report('二觉（26 级）/ 三觉（30 级）任务，三个职业都有', R.quests.every(q => q[0] === 26 && q[1] === 30), R.quests);
+const B = R.bh;
+report('多重射击：施放中按方向键，每一发之前都能转向', B.multiFace === -1, { face: B.multiFace });
+report('致命回射：不转身，打到身后的敌人', B.backshot.face === 1 && B.backshot.hit, B.backshot);
+report('双鹰回旋：掷出时按住后方向键 = 掷向身后', B.hawkBack, {});
+report('绯红盛宴：不用连按也是 26 段（25 连斩 + 下劈）', B.awk >= 26, { hits: B.awk });
+report('UHT-03：不用按住，固定喷 3 秒；喷射中按 M-3 = 融合（M-3 进入冷却）', B.uht.act === 'gl_uht03' && B.uht.fuse === 'g_m3' && B.uht.m3cd && B.uht.end !== 'gl_uht03', B.uht);
+report('FM-92 SW：领主优先锁定', B.sw.boss > 0 && B.sw.near === 0, B.sw);
+report('X-2 太阳神光炮：瞬发、不蓄气', B.x2.proj && !B.x2.charging, B.x2);
+report('G-超级猎鹰：第一次按只放出（不耗充能），再按才攻击（耗 1 次）', B.falcon1.n === 3 && B.falcon1.unit === 1 && B.falcon2.n === 2, { a: B.falcon1, b: B.falcon2 });
+report('超限压制：单个敌人也打 5 下，然后回原位', B.over.n >= 5 && B.over.back, B.over);
+report('聚合弹：单发贯穿', B.buster === 1, { hits: B.buster });
 const errs = logs.filter(l => l.type !== 'warning'); report('无报错', errs.length === 0, errs.slice(0, 3));
 await browser.close();
 console.log(fail ? `${fail} 项失败` : '全部通过');

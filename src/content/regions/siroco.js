@@ -1,14 +1,15 @@
 /* =====================================================================
-   区域：魔界 · 潜行者希洛克（官方 Lv100「希洛克攻坚战」时代，本作压缩到满级 Lv30 的终局内容）
+   区域：魔界 · 潜行者希洛克（官方 Lv100「希洛克攻坚战」时代；2026-09-28 满级 30 → 60 后移到 Lv60 终局，原来是 Lv30 终局）
    官方依据：希洛克是来自魔界的第五使徒“潜行者”，拥有无数张脸孔的隐形者；攻坚战分「追逐战」（法则之门 / 知性之门 / 痛苦之门）
    与「讨伐战」（无形棺柩 · 希洛克的幻界）。奈克斯、暗杀者、守门人、卢克西都是攻坚战里的官方首领名；阿甘左是官方 NPC（卢克西是他的妻子）。
    本作原创：暗黑城的商人米拉、各种小怪的名字与造型、凝视机制的具体做法。
    这个文件是纯数据：代码由 game/region.js 的 defineRegion 展开，美术由 art/tools/region_art.py siroco 读同一份数据生成。
-   入口：天帷巨兽 · 脊背（x 2200 的次元裂缝，Lv.30）
+   入口（临时）：天帷巨兽 · 脊背（x 2200 的次元裂缝，Lv.30 就能过去，地下城选择界面会提示等级偏低）。
+     31~59 的 60 版本区域做好后，把 entry 挪到最后一个区域（时空之门）的场景、minLv 改成 60（等级组约定，见 docs/GEAR.md「等级段」）
    ===================================================================== */
 defineRegion({
-  id: 'siroco', name: '魔界 · 潜行者希洛克', lvl: 30, power: 6.5, bossPower: 0.75, atkPower: 3.2,   // 难度：按 Lv30 全身 +12 史诗调（机器人实测见 docs/REGION_PIPELINE.md）
-  entry: { scene: 'behemoth_spine', side: 'up', x: 2200, to: 'siroco_town', minLv: 30, label: '次元裂缝 · 魔界' },
+  id: 'siroco', name: '魔界 · 潜行者希洛克', lvl: 60, power: 6.5, bossPower: 0.75, atkPower: 3.2,   // 难度：按 Lv30 全身 +12 史诗调（机器人实测见 docs/REGION_PIPELINE.md）；移到 Lv60 后靠怪物等级公式（game/monsters.js monLvScale）保持同样手感
+  entry: { scene: 'behemoth_spine', side: 'up', x: 2200, to: 'siroco_town', minLv: 30, label: '次元裂缝 · 魔界（Lv.60）' },
 
   /* ---- 场景主题（pal = 程序兜底画面的配色；bg = 手绘背景的远景 / 地面 / 交界带描述）---- */
   themes: {
@@ -67,7 +68,7 @@ defineRegion({
 
   /* ---- 领主：mechs 出场就有的机制 | phases 按血量切阶段（at = 血量比例），enter = 进阶段时的动作 | hook = 自定义钩子（content/regions/siroco_bosses.js）---- */
   bosses: {
-    nex: { name: '奈克斯', lvl: 32, size: [16, 14, 122], elem: 'dark', art: 'nex', pref: 150,
+    nex: { name: '奈克斯', lvl: 62, size: [16, 14, 122], elem: 'dark', art: 'nex', pref: 150,
       mechs: [{ use: 'groggy', max: 100, dur: 6 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', reach: 120, width: 28, dmg: 1.2, cd: [1.6, 2.6], w: 2, say: '' }, { use: 'shot', mode: 'homing', n: 3, spread: 60, speed: 240, turn: 2.0, dmg: 1.0, cd: [5, 7], w: 1.4, say: '锁链球！', col: '#7ae0c8' },
@@ -77,7 +78,7 @@ defineRegion({
           skills: [{ use: 'mech', mech: { use: 'shield', hp: 0.05, dur: 14, punish: 'heal', onBreak: 'groggy', col: '#7ae0c8' }, cd: [26, 32], say: '护盾！' },
             { use: 'rain', kind: 'bolt', n: 5, r: 44, windup: 1.1, dmg: 1.1, col: '#7ae0c8', cd: [7, 9] }] },
       ] },
-    assassin: { name: '暗杀者', lvl: 32, size: [14, 12, 112], speed: 125, elem: 'dark', art: 'assassin', pref: 90,
+    assassin: { name: '暗杀者', lvl: 62, size: [14, 12, 112], speed: 125, elem: 'dark', art: 'assassin', pref: 90,
       mechs: [{ use: 'groggy', max: 100, dur: 6 }, { use: 'enrage', t: 240 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', n: 3, reach: 86, dmg: 0.9, cd: [1.6, 2.4], w: 2 }, { use: 'dash', len: 420, speed: 760, windup: 0.75, dmg: 1.3, cd: [4.5, 6] },
@@ -86,7 +87,7 @@ defineRegion({
         { at: 0.6, enter: { say: '暗杀者分出了影子——找出本体！', mechs: [{ use: 'clones', n: 3, dur: 12, punish: 'nova' }] },
           skills: [{ use: 'mech', mech: { use: 'clones', n: 3, dur: 12, punish: 'nova' }, cd: [20, 26], say: '影分身！' }] },
       ] },
-    gatekeeper: { name: '守门人', lvl: 32, size: [20, 15, 132], weight: 5, speed: 80, art: 'gatekeeper', pref: 110, traits: { sa: 'cast' },
+    gatekeeper: { name: '守门人', lvl: 62, size: [20, 15, 132], weight: 5, speed: 80, art: 'gatekeeper', pref: 110, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }, { use: 'element', modes: ['light', 'dark'], every: 12, mul: 0.4 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'slam', reach: 120, width: 34, windup: 0.7, dmg: 1.4, down: true, sa: true, cd: [2, 3], w: 2 },
@@ -95,7 +96,7 @@ defineRegion({
         { at: 0.5, enter: { say: '幻灭——站进光圈！', col: '#e8f4ff', mechs: [{ use: 'safezone', windup: 3.4, n: 2, r: 72, frac: 0.4, say: '幻灭——站进光圈！' }] },
           skills: [{ use: 'mech', mech: { use: 'safezone', windup: 3.4, n: 2, r: 72, frac: 0.4, say: '幻灭——站进光圈！' }, cd: [26, 32] }] },
       ] },
-    siroco: { name: '潜行者 希洛克', tier: 'raid', lvl: 33, size: [18, 15, 126], speed: 105, elem: 'dark', art: 'siroco', pref: 120, hook: 'siroco', scale: 1.5,   // 攻坚最终领主：画面高约 190
+    siroco: { name: '潜行者 希洛克', tier: 'raid', lvl: 63, size: [18, 15, 126], speed: 105, elem: 'dark', art: 'siroco', pref: 120, hook: 'siroco', scale: 1.5,   // 攻坚最终领主：画面高约 190
       mechs: [{ use: 'groggy', max: 120, dur: 8, mul: 1.6 }, { use: 'enrage', t: 300 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', n: 3, reach: 96, width: 26, dmg: 1.0, cd: [1.6, 2.4], w: 2 },
@@ -112,17 +113,17 @@ defineRegion({
       ] },
   },
 
-  /* ---- 史诗（比现有 Lv30 史诗略强一档，见 docs/REGION_PIPELINE.md 的数值说明）；look = 图标描述 ---- */
+  /* ---- 史诗（Lv60；原来是 Lv30、比当时的 Lv30 史诗略强一档，见 docs/REGION_PIPELINE.md 的数值说明）；look = 图标描述 ---- */
   items: {
     epics: [
-      { key: 'ep_si_nex', slot: 'support', lvl: 30, name: '奈克斯的锁链', fx: { dmgUp: 0.09, allStat: 24 },
+      { key: 'ep_si_nex', slot: 'support', lvl: 60, name: '奈克斯的锁链', fx: { dmgUp: 0.09, allStat: 24 },
         proc: { chance: 0.05, cd: 2, act: 'status', status: 'slow', dur: 2, name: '锁链束缚', desc: '攻击时 5% 几率用锁链束缚敌人（减速 2 秒）。' }, desc: '奈克斯的锁链球上拆下来的一截，还在轻轻颤动。',
         look: 'a coiled black iron chain with a small spiked chain ball and teal glowing rune links' },
-      { key: 'ep_si_gate', slot: 'stone', lvl: 30, name: '守门人的幻灭之石', fx: { light: 30, dark: 30, dmgUp: 0.06 }, desc: '一半发光一半漆黑的魔石，守门人用它分辨光与暗。',
+      { key: 'ep_si_gate', slot: 'stone', lvl: 60, name: '守门人的幻灭之石', fx: { light: 30, dark: 30, dmgUp: 0.06 }, desc: '一半发光一半漆黑的魔石，守门人用它分辨光与暗。',
         look: 'a round magic gem split into a glowing golden half and a deep violet half, set in a silver frame' },
     ],
     sets: [
-      { id: 'set_siroco', name: '潜行者希洛克的残香', lvl: 30, desc: '希洛克留在幻界里的残香凝成的首饰。',
+      { id: 'set_siroco', name: '潜行者希洛克的残香', lvl: 60, desc: '希洛克留在幻界里的残香凝成的首饰。',
         bonus: { 2: { st: { elemAll: 15, crit: 0.05, mcrit: 0.05 }, desc: '所有属性强化 +15，暴击率 +5%' },
           3: { st: { dmgUp: 0.15, elemAll: 8 }, desc: '【残影流】伤害增加 15%，所有属性强化 +8；攻击时 6% 几率召出希洛克的残影（周围 160% 暗属性伤害）', proc: { chance: 0.06, cd: 1, act: 'strike', mul: 1.6, aoe: 110, elem: 'dark', vis: 'dark', name: '残影！' } } },
         pieces: [
@@ -131,7 +132,7 @@ defineRegion({
           { key: 'ep_si_ring', slot: 'ring', name: '希洛克的残香戒指', look: 'a silver ring with a violet eye-shaped gem that seems to look around' },
         ] },
       // 深渊专属（abyss: true → 只在本区域的深渊派对掉落 / 宇宙灵魂兑换）：官方 Lv100 特殊装备套「军神的隐秘遗产」（本作没有耳环栏位，做成辅助装备 + 魔法石两件套）
-      { id: 'set_armygod', name: '军神的隐秘遗产', lvl: 30, abyss: true, desc: '沉在魔界深渊里的军神遗物。据说它的主人一生从未败过。',
+      { id: 'set_armygod', name: '军神的隐秘遗产', lvl: 60, abyss: true, desc: '沉在魔界深渊里的军神遗物。据说它的主人一生从未败过。',
         bonus: { 2: { st: { dmgUp: 0.12, cdr: 0.06, elemAll: 12 }, desc: '【军神】伤害增加 12%，技能冷却 -6%，所有属性强化 +12；攻击时 5% 几率插下军神的战旗（周围 180% 伤害）',
           proc: { chance: 0.05, cd: 2, act: 'strike', mul: 1.8, aoe: 120, vis: 'holy', name: '军神的战旗' } } },
         pieces: [
@@ -144,16 +145,16 @@ defineRegion({
 
   /* ---- 地下城：layout 房间模板 short / standard / long / raid | gate = 区域地图上门的位置 | drops 领主掉落 ---- */
   dungeons: {
-    law_gate: { name: '法则之门', lvl: [30, 31], theme: 'siroLaw', layout: 'standard', mobs: [['phantomBlade', 3], ['hellHound', 2], ['voidCaster', 2], ['burstShade', 1]], elite: 'jailer', boss: 'nex', bgm: 'dungeon2', bossBgm: 'boss',
+    law_gate: { name: '法则之门', lvl: [60, 61], theme: 'siroLaw', layout: 'standard', mobs: [['phantomBlade', 3], ['hellHound', 2], ['voidCaster', 2], ['burstShade', 1]], elite: 'jailer', boss: 'nex', bgm: 'dungeon2', bossBgm: 'boss',
       gate: { x: 620, col: '160,140,255' }, desc: '希洛克幻界的第一道门。奈克斯的锁链球会追着你；她读条“全屏抓取”时跳起来就能躲。血量过半后她会张开护盾——打破护盾她就会破招。',
       drops: { boss: [['ep_si_nex', 0.02], ['ep_si_bracelet', 0.012], ['ep_ss_fate', 0.008], ['ep_rd_meow', 0.008]], mats: [['crystal', 0.12, 10], ['m_diamond', 0.008, 1], ['m_soul', 0.002, 1]] } },
-    wit_gate: { name: '知性之门', lvl: [30, 31], theme: 'siroWit', layout: 'long', mobs: [['phantomStalker', 3], ['voidCaster', 2], ['soulBinder', 2], ['gazer', 1.5]], elite: 'soulBinder', boss: 'assassin', bgm: 'dungeon3', bossBgm: 'boss',
+    wit_gate: { name: '知性之门', lvl: [60, 61], theme: 'siroWit', layout: 'long', mobs: [['phantomStalker', 3], ['voidCaster', 2], ['soulBinder', 2], ['gazer', 1.5]], elite: 'soulBinder', boss: 'assassin', bgm: 'dungeon3', bossBgm: 'boss',
       gate: { x: 1280, col: '140,200,255' }, desc: '幻象组成的图书馆。暗杀者又快又狠，冲刺前地上会出现红线；她分出影子时，打中本体影子就会散掉，打影子会被炸。',
       drops: { boss: [['ep_si_ring', 0.012], ['ep_si_nex', 0.01], ['ep_ls_millennium', 0.008], ['ep_kt_andra', 0.008]], mats: [['crystal', 0.12, 10], ['c_blue', 0.03, 2], ['m_elem2', 0.01, 1]] } },
-    pain_gate: { name: '痛苦之门', lvl: [30, 31], theme: 'siroPain', layout: 'long', mobs: [['jailer', 2], ['hellHound', 2], ['burstShade', 2], ['gazer', 1.5], ['phantomBlade', 1]], elite: 'hellHound', boss: 'gatekeeper', bgm: 'dungeon', bossBgm: 'boss',
+    pain_gate: { name: '痛苦之门', lvl: [60, 61], theme: 'siroPain', layout: 'long', mobs: [['jailer', 2], ['hellHound', 2], ['burstShade', 2], ['gazer', 1.5], ['phantomBlade', 1]], elite: 'hellHound', boss: 'gatekeeper', bgm: 'dungeon', bossBgm: 'boss',
       gate: { x: 1940, col: '255,120,110' }, desc: '魔界的地下监狱。守门人会在光和暗之间切换——站进相反颜色的法阵里打才有效（亮破暗，暗破亮）；“幻灭”读条时站进白色光圈。',
       drops: { boss: [['ep_si_gate', 0.02], ['ep_si_neck', 0.012], ['ep_hc_aqua', 0.008], ['ep_sup_paris', 0.008]], mats: [['crystal', 0.12, 10], ['c_red', 0.03, 2], ['m_obsidian', 0.006, 1]] } },
-    siroco_coffin: { name: '无形棺柩', lvl: [31, 32], bossLvl: 33, theme: 'siroCoffin', layout: 'raid', mobs: [['phantomStalker', 2], ['soulBinder', 1.5], ['gazer', 1.5], ['jailer', 1], ['burstShade', 1]], elite: 'jailer', boss: 'siroco', bossAdds: 0,
+    siroco_coffin: { name: '无形棺柩', lvl: [61, 62], bossLvl: 63, theme: 'siroCoffin', layout: 'raid', mobs: [['phantomStalker', 2], ['soulBinder', 1.5], ['gazer', 1.5], ['jailer', 1], ['burstShade', 1]], elite: 'jailer', boss: 'siroco', bossAdds: 0,
       bgm: 'abyss', bossBgm: 'boss', preBoss: { kind: 'jailer', say: '狱卒守着希洛克的幻界……' },
       gate: { x: 2620, col: '200,150,255' }, desc: '【攻坚】希洛克的幻界。她会隐入黑暗（击破记忆碎片逼她现身）、操纵卢克西（先打倒卢克西，希洛克会破招）、分出暗影，还会用“凝视”——看到提示就背对她。',
       drops: { boss: [['ep_si_neck', 0.04], ['ep_si_bracelet', 0.04], ['ep_si_ring', 0.04], ['ep_si_gate', 0.02], ['ep_si_nex', 0.02], ['lg_karo_eye', 0.02]], mats: [['crystal', 0.14, 12], ['m_soul', 0.004, 1], ['m_diamond', 0.012, 1]] } },
@@ -162,9 +163,9 @@ defineRegion({
   /* ---- 深渊派对（content/abyss.js 展开，字段见 docs/REGION_PIPELINE.md §2.1）：资格任务 → 隐藏门 → 封印之门 → waves 几波派对 → 深渊领主（lords 随机，lord.mechs / cycle 加领主机制）
           cost 每次消耗的邀请函；pity 保底次数；seal 封印之门血量倍率；items 里标了 abyss 的套装 / 史诗是本区域的深渊专属 ---- */
   abyss: {
-    abyss_siroco: { name: '魔界深渊', lvl: [30, 31], lordLvl: 33, cost: 2, pity: 8, seal: 4, themeFrom: 'siroPain', theme: 'abyssSiroco', tint: 'rgba(90,10,110,0.34)',
+    abyss_siroco: { name: '魔界深渊', lvl: [60, 61], lordLvl: 63, cost: 2, pity: 8, seal: 4, themeFrom: 'siroPain', theme: 'abyssSiroco', tint: 'rgba(90,10,110,0.34)',
       mobs: [['phantomBlade', 2], ['phantomStalker', 2], ['voidCaster', 1.5], ['hellHound', 2], ['burstShade', 1], ['gazer', 1]], elite: 'jailer',
-      lords: ['nex', 'assassin', 'gatekeeper'], gate: { scene: 'siroco_field', x: 2880 }, clearExp: 19000,
+      lords: ['nex', 'assassin', 'gatekeeper'], gate: { scene: 'siroco_field', x: 2880 }, clearExp: 37000,
       waves: [
         { n: 6, mobs: [['phantomBlade', 1], ['phantomStalker', 1], ['burstShade', 1]], elite: 1, say: '幻影从碎镜子里涌出来了！' },
         { n: 5, mobs: [['voidCaster', 1], ['soulBinder', 1], ['gazer', 1]], elites: ['soulBinder'], say: '咏唱者躲在后排——先打它们！' },
@@ -174,7 +175,7 @@ defineRegion({
         { every: [20, 26], mech: { use: 'hazard', kind: 'debris', every: 3.5, n: 3, dur: 10, col: '#b070ff' } },
         { every: [30, 36], at: 0.6, mech: { use: 'safezone', windup: 3.2, n: 2, r: 72, frac: 0.4, say: '深渊的凝视——站进光圈！' } }] },
       desc: '【深渊派对】希洛克消散之后，魔界深处裂开了一道深渊。每次消耗 2 张深渊派对邀请函。深渊领主是幻界的三个首领之一（每次随机），降临后会引发落石，血量过半时用「深渊的凝视」逼你站进光圈。魔界专属史诗「军神的隐秘遗产」只在这里出现。',
-      quest: { name: '魔界的深渊', lvl: 30, clear: 'siroco_coffin', pre: ['q_abyss_gf'], gold: 10000, desc: '希洛克的幻界崩塌后，魔界深处也裂开了深渊。讨伐一次潜行者希洛克（无形棺柩），歌兰蒂斯就会告诉你魔界深渊的入口。',
+      quest: { name: '魔界的深渊', lvl: 60, clear: 'siroco_coffin', pre: ['q_abyss_gf'], gold: 10000, desc: '希洛克的幻界崩塌后，魔界深处也裂开了深渊。讨伐一次潜行者希洛克（无形棺柩），歌兰蒂斯就会告诉你魔界深渊的入口。',
         offer: ['……魔界那边传来了很重的深渊气息。', '希洛克的幻界崩塌以后，她留下的首领们都被深渊吞了进去。', '先去无形棺柩讨伐一次希洛克。回来我告诉你入口——那里的深渊，要 2 张邀请函才打得开。'],
         done: ['你真的从希洛克的幻界回来了……', '魔界地图的最右边，深渊之门已经为你打开。听说那里沉睡着「军神」的遗物。'] } },
   },
@@ -201,7 +202,7 @@ defineRegion({
   story: { chapter: '第七章 · 潜行者希洛克', prefix: 'q_si', pre: 'q_b09', npc: 'agonzo', scene: 'siroco_town', steps: [
     { t: 'arrive', npc: 'sharan', to: 'agonzo', name: '来自魔界的求援', scene: 'siroco_town', reward: { exp: 0.05, gold: 2000 },
       desc: '天帷巨兽的脊背上裂开了一道通往魔界的次元裂缝。穿过裂缝，去暗黑城找剑圣阿甘左。',
-      talk: { offer: ['天帷巨兽的脊背上……裂开了一道次元裂缝。', '有人从那边传来了求援——是剑圣阿甘左。去魔界的暗黑城找他吧。'], doing: ['裂缝在脊背那张图的中间，Lv.30 才能过去。'], done: ['……莎兰让你来的？', '我是阿甘左。我的妻子卢克西，被魔界的第五使徒——潜行者希洛克带走了。'] } },
+      talk: { offer: ['天帷巨兽的脊背上……裂开了一道次元裂缝。', '有人从那边传来了求援——是剑圣阿甘左。去魔界的暗黑城找他吧。'], doing: ['裂缝在脊背那张图的中间。那边的怪物都有 Lv.60，做好准备再过去。'], done: ['……莎兰让你来的？', '我是阿甘左。我的妻子卢克西，被魔界的第五使徒——潜行者希洛克带走了。'] } },
     { t: 'clear', dungeon: 'law_gate', name: '法则之门', reward: { exp: 0.1, gold: 3000 },
       desc: '希洛克的幻界有三道门。先通关「法则之门」。',
       talk: { offer: ['希洛克躲在她的幻界里，入口有三道门：法则、知性、痛苦。', '先去法则之门。那里的狱卒会抓人，看到它伸手就后撤。'], doing: ['法则之门在幻界入口的最左边。'], done: ['你回来了。……门后面还有东西在守着。'] } },

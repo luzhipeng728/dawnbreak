@@ -78,7 +78,7 @@ const bot = {
 function testLoadout(lv) {
   const p = game.player; game.lvl = lv;
   for (const s of Object.keys(SLOT_WEIGHT)) inv.equip[s] = makeEquip(s, lv, s === 'weapon' ? 2 : 1, p.cls);   // 只填能掉落的部位（称号 / 时装栏不填）
-  for (const id of CLASSES[p.cls].skills) { const S = SKILLS[id]; if (S.lvReq <= lv) game.skillLv[id] = Math.max(1, Math.min(S.maxLv, 1 + Math.floor((lv - S.lvReq) / 2))); }
+  for (const id of CLASSES[p.cls].skills) { const S = SKILLS[id]; if (S.lvReq <= lv) { let n = Math.max(1, Math.min(S.maxLv, 1 + Math.floor((lv - S.lvReq) / 2))); if (n >= S.maxLv) while (n < skillMaxLv(S) && skillLvReq(S, n + 1) <= lv) n++; game.skillLv[id] = n; } }
   game.skillBar = CLASSES[p.cls].skills.filter(id => game.skillLv[id] > 0 && !SKILLS[id].passive).concat(Array(SKILL_SLOTS).fill(null)).slice(0, SKILL_SLOTS);
   inv.add(makeConsumable('hpM', 20)); inv.add(makeConsumable('mpM', 20)); inv.quick = ['hpM', 'mpM', null, null, null, null];
   recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax;

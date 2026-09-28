@@ -20,6 +20,7 @@ run gearsim   node test/gear_sim.mjs 20
 run quests    node test/quests.mjs
 run guide     node test/guide.mjs
 run quickquest node test/quickquest.mjs
+run levelcap  node test/levelcap.mjs
 run world     node test/world.mjs
 run polish    node test/polish.mjs
 run combat    node test/combat.mjs

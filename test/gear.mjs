@@ -30,7 +30,7 @@ const lib = await ev(() => {
 });
 check(lib.n >= 120 && lib.wtypes === 15 && lib.minW >= 3, `史诗 ${lib.n} 件，15 种武器每种至少 ${lib.minW} 件`);
 check(['weapon', 'top', 'head', 'bottom', 'belt', 'shoes', 'neck', 'bracelet', 'ring', 'support', 'stone'].every(s => lib.slots[s] >= 2), '每个部位至少 2 件史诗', JSON.stringify(lib.slots));
-check(lib.epicSets >= 12 && lib.has5 && lib.has3 && lib.maxLv === 30, `史诗套装 ${lib.epicSets} 套（有 3 件 / 5 件套），最高 Lv${lib.maxLv}`);
+check(lib.epicSets >= 12 && lib.has5 && lib.has3 && lib.maxLv >= 30 && lib.maxLv <= 60, `史诗套装 ${lib.epicSets} 套（有 3 件 / 5 件套），最高 Lv${lib.maxLv}`);
 check(lib.legend === 6 && lib.cards >= 30, `异界套装 ${lib.legend} 套，怪物卡片 ${lib.cards} 张`);
 check(lib.badIcon === 0, '每件史诗都有专属图标', lib.badIconList.join(','));
 

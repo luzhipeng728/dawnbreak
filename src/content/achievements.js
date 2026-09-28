@@ -22,6 +22,7 @@ function defineAch(id, def) {
 {
   const T = (key, name, lvl, rar, st, fx, desc) => defineTitle(key, { name, lvl, rar, noDrop: true, noSell: true, bind: 'char', st, fx, desc });
   T('title_ach_lvl', '传奇勇士', 30, 4, { str: 15, int: 15, vit: 15, spr: 15 }, { expUp: 0.02 }, '成就「传奇勇士」：角色达到 Lv.30。');
+  T('title_ach_lvl60', '破晓之巅', 60, 4, { str: 30, int: 30, vit: 30, spr: 30 }, { goldUp: 0.03 }, '成就「破晓之巅」：角色达到满级 Lv.60。');
   T('title_ach_perfect', '完美主义者', 1, 4, { str: 14, int: 14, vit: 10, spr: 10 }, { critDmg: 0.03 }, '成就「完美主义者」：打出 20 次 SSS 评价。');
   T('title_ach_abyss', '深渊行者', 1, 4, { str: 14, int: 14, vit: 14, spr: 14 }, { dmgUp: 0.02 }, '成就「深渊行者」：通关深渊派对 30 次。');
   T('title_ach_collector', '传说收藏家', 1, 4, { str: 12, int: 12, vit: 12, spr: 12 }, { goldUp: 0.03 }, '成就「传说收藏家」：图鉴收集 30 件不同的史诗。');
@@ -50,7 +51,8 @@ const achHas = ids => ids.filter(id => DUNGEONS[id]);
 const R = (cera, extra = {}) => ({ cera, ...extra });
 
 /* ================= 成长 ================= */
-for (const [lv, tier, name, rw] of [[5, 1, '初露锋芒', R(50)], [10, 1, '小有所成', R(80, { items: [['fatigue', 1]] })], [15, 1, '独当一面', R(100)], [20, 2, '身经百战', R(200, { items: [['guard', 1]] })], [25, 2, '名震阿拉德', R(300)], [30, 3, '传奇勇士', R(600, { title: 'title_ach_lvl' })]])
+for (const [lv, tier, name, rw] of [[5, 1, '初露锋芒', R(50)], [10, 1, '小有所成', R(80, { items: [['fatigue', 1]] })], [15, 1, '独当一面', R(100)], [20, 2, '身经百战', R(200, { items: [['guard', 1]] })], [25, 2, '名震阿拉德', R(300)], [30, 3, '传奇勇士', R(600, { title: 'title_ach_lvl' })],
+  [40, 2, '百战精英', R(400)], [50, 3, '超越极限', R(600)], [60, 3, '破晓之巅', R(1000, { title: 'title_ach_lvl60' })]])   // 2026-09-28 满级 30 → 60：老的 Lv30 成就保留
   defineAch('lvl' + lv, { cat: 'grow', tier, name, desc: `角色达到 Lv.${lv}`, val: X => X.lvl, n: lv, reward: rw });
 defineAch('job', { cat: 'grow', tier: 1, name: '新的道路', desc: '完成转职', val: X => (X.job ? 1 : 0), reward: R(500), cash: 'job' });
 defineAch('awaken', { cat: 'grow', tier: 2, name: '觉醒', desc: '解锁觉醒技能', val: X => (X.awaken ? 1 : 0), reward: R(1000), cash: 'awaken' });

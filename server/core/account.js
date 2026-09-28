@@ -60,6 +60,16 @@ export default {
         const row = typeof q === 'number' ? db.get('SELECT id, name, created, banned FROM users WHERE id = ?', q) : db.get('SELECT id, name, created, banned FROM users WHERE name = ?', String(q));
         return row ? { ...pub(row), created: row.created, banned: !!row.banned } : null;
       },
+      // 玩家手动输入的名字：先按账号名，找不到再按角色名（存档里的角色名，精确匹配）。同名角色有多个时报错，请对方给账号名
+      findPlayer(q) {
+        const u = api.findUser(q); if (u || typeof q !== 'string') return u;
+        const n = q.trim(); if (!n) return null;
+        const like = '%"name":"' + n.replace(/[\\%_]/g, m => '\\' + m) + '"%';
+        const ids = db.all("SELECT user_id, data FROM saves WHERE data LIKE ? ESCAPE '\\'", like)
+          .filter(r => { try { return (JSON.parse(r.data).chars || []).some(c => c && c.name === n); } catch (e) { return false; } }).map(r => r.user_id);
+        if (ids.length > 1) throw ctx.err(400, `有 ${ids.length} 个叫「${n}」的角色，请输入对方的账号名`);
+        return ids.length ? api.findUser(ids[0]) : null;
+      },
       // 邀请码（管理员后台用）
       createInvite(byUserId, note) {
         const code = crypto.randomBytes(5).toString('hex').toUpperCase();
@@ -76,7 +86,7 @@ export default {
       logout(token) { const h = sha(token); db.run('DELETE FROM sessions WHERE token = ?', h); cache.delete(h); },
       logoutAll(userId) { db.run('DELETE FROM sessions WHERE user_id = ?', userId); for (const [k, v] of cache) if (v.user.id === userId) cache.delete(k); },
     };
-    ctx.findUser = api.findUser;
+    ctx.findUser = api.findUser; ctx.findPlayer = api.findPlayer;
     return api;
   },
   routes(r, ctx) {

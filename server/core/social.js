@@ -107,7 +107,7 @@ export default {
   routes(r, ctx) {
     const { db, err } = ctx, S = () => ctx.mods.social;
     const target = (req, q) => {
-      const u = ctx.findUser(typeof q === 'number' ? q : str(q, 32));
+      const u = ctx.findPlayer(typeof q === 'number' ? q : str(q, 32));   // 账号名或角色名
       if (!u) throw err(404, '没有这个玩家');
       if (u.id === req.user.id) throw err(400, '不能加自己为好友');
       return u;
@@ -121,16 +121,16 @@ export default {
       const u = target(req, req.body.user), me = req.user.id, t = Date.now();
       const cur = db.get('SELECT state FROM friends WHERE user_id = ? AND friend_id = ?', me, u.id);
       if (cur && cur.state === 'ok') throw err(400, `${u.name} 已经是你的好友了`);
-      if (cur && cur.state === 'out') return { ok: true, state: 'out' };
+      if (cur && cur.state === 'out') return { ok: true, state: 'out', name: u.name };
       if (db.get("SELECT COUNT(*) AS n FROM friends WHERE user_id = ? AND state = 'ok'", me).n >= 100) throw err(400, '好友数量已达上限（100）');
       if (cur && cur.state === 'in') {   // 对方已经申请过：直接成为好友
         db.tx(() => { db.run("UPDATE friends SET state = 'ok' WHERE user_id = ? AND friend_id = ?", me, u.id); db.run("INSERT OR REPLACE INTO friends (user_id, friend_id, state, created) VALUES (?, ?, 'ok', ?)", u.id, me, t); });
         ctx.sendTo(u.id, { t: 'friend:ok', user: info(me) });
-        return { ok: true, state: 'ok' };
+        return { ok: true, state: 'ok', name: u.name };
       }
       db.tx(() => { db.run("INSERT OR REPLACE INTO friends (user_id, friend_id, state, created) VALUES (?, ?, 'out', ?)", me, u.id, t); db.run("INSERT OR REPLACE INTO friends (user_id, friend_id, state, created) VALUES (?, ?, 'in', ?)", u.id, me, t); });
       ctx.sendTo(u.id, { t: 'friend:req', from: { id: me, name: req.user.name } });
-      return { ok: true, state: 'out' };
+      return { ok: true, state: 'out', name: u.name };
     });
     r.post('/api/friends/accept', { auth: true, rate: [30, 60] }, req => {
       const u = target(req, req.body.user), me = req.user.id;

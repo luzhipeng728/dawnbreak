@@ -15,7 +15,7 @@ const netFriends = {
     } catch (e) { /* 断网时保留旧列表 */ }
   },
   async add(name) {
-    try { const r = await net.api('POST', '/api/friends', { user: name }); toastMsg(r.state === 'ok' ? `你和 ${name} 成为了好友` : `已向 ${name} 发送好友申请`, '#8aff9a'); this.load(); return true; }
+    try { const r = await net.api('POST', '/api/friends', { user: name }); const who = r.name && r.name !== name ? `${name}（${r.name}）` : name; toastMsg(r.state === 'ok' ? `你和 ${who} 成为了好友` : `已向 ${who} 发送好友申请`, '#8aff9a'); this.load(); return true; }
     catch (e) { toastMsg(e.message, '#ff9a6a'); return false; }
   },
   async accept(name) { try { await net.api('POST', '/api/friends/accept', { user: name }); toastMsg(`你和 ${name} 成为了好友`, '#8aff9a'); this.load(); } catch (e) { toastMsg(e.message, '#ff9a6a'); } },
@@ -45,7 +45,7 @@ Object.assign(menus, {
   w_friends() {
     if (!netOn()) return null;
     if (!netFriends.loaded) netFriends.load();
-    const addIn = h('input', { class: 'txt', placeholder: '输入用户名加好友', maxlength: 16, spellcheck: 'false' });
+    const addIn = h('input', { class: 'txt', placeholder: '账号名或角色名', maxlength: 16, spellcheck: 'false' });
     const doAdd = () => { const n = addIn.value.trim(); if (!n) return; netFriends.add(n).then(ok => { if (ok) addIn.value = ''; }); };
     addIn.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') doAdd(); if (e.key === 'Escape') this.close('friends'); });
     const rows = [];

@@ -116,20 +116,97 @@ def sheet_prompt(k):
             f'with wide empty white gaps so that no frame touches or overlaps another. {fly}Frames in reading order (left to right, top to bottom): {items}. '
             f'Consecutive frames must be clearly different so the animation reads smoothly. {NOFX} Plain pure white background, no numbers.')
 
+# 动作表 9 格的帧名（第 1 格 = 参考站姿 idle）；代码里 MECH_LOOK 按这些名字取帧
+NAMES = {
+    'rx78': ['idle', 'run1', 'run2', 'run3', 'brake', 'crouch', 'hop', 'land', 'look'],
+    'ez8': ['idle', 'blink', 'crouch', 'hop1', 'hop2', 'land', 'shake', 'swell', 'idle2'],
+    'g1': ['idle', 'bob1', 'bob2', 'aimUp', 'fire', 'recover', 'fly', 'charge', 'idle2'],
+    'g2': ['idle', 'spin1', 'spin2', 'spin3', 'tiltF', 'tiltB', 'charged', 'aim', 'idle2'],
+    'g3': ['idle', 'flapU', 'flapD', 'glide', 'dive', 'grab', 'bite', 'pull', 'idle2'],
+    'viper': ['idle', 'fire1', 'fire2', 'aimUp', 'aimDown', 'fold', 'rise', 'heat', 'idle2'],
+    'gale': ['idle', 'bob1', 'bob2', 'fire', 'missile', 'bank', 'dive', 'climb', 'idle2'],
+    'sparrow': ['idle', 'up', 'down', 'attack', 'bank', 'dive', 'climb', 'spin', 'idle2'],
+    'factory': ['idle', 'open1', 'open2', 'peek', 'close', 'work', 'blink', 'brace', 'idle2'],
+    'g0': ['idle', 'aim', 'gat1', 'gat2', 'missile', 'laser', 'recoil', 'kneel', 'idle2'],
+}
+LINEUP_ORDER = ['rx78', 'ez8', 'g1', 'g2', 'g3', 'viper', 'gale', 'sparrow', 'factory', 'g0']
+
+def crop_lineup():
+    """全家福 → 每个机器人一张参考图（白底，加边距）：连通块按从左到右排序，小碎块并进最近的大块（主线程：用全家福的格子当参考，不再单独生成）。"""
+    from prep import components
+    im = Image.open(os.path.join(SRC, '_lineup.png')).convert('RGBA'); arr = np.array(im)
+    lab, comps = components(arr[..., 3], min_cells=4)
+    boxes = []
+    for c, cells in comps:
+        ys, xs = np.where(lab == c); boxes.append({'ids': [c], 'y0': ys.min(), 'y1': ys.max() + 1, 'x0': xs.min(), 'x1': xs.max() + 1, 'cells': cells})
+    boxes.sort(key=lambda b: -b['cells']); n = len(LINEUP_ORDER); big, small = boxes[:n], boxes[n:]
+    for sm in small:
+        cx, cy = (sm['x0'] + sm['x1']) / 2, (sm['y0'] + sm['y1']) / 2
+        dist = lambda b: max(0, b['x0'] - cx, cx - b['x1']) + max(0, b['y0'] - cy, cy - b['y1'])
+        b = min(big, key=dist)
+        if dist(b) > 60: continue
+        b['ids'].append(sm['ids'][0]); b['x0'] = min(b['x0'], sm['x0']); b['x1'] = max(b['x1'], sm['x1']); b['y0'] = min(b['y0'], sm['y0']); b['y1'] = max(b['y1'], sm['y1'])
+    big.sort(key=lambda b: (b['x0'] + b['x1']) / 2)
+    for k, b in zip(LINEUP_ORDER, big):
+        sub = arr[b['y0']:b['y1'], b['x0']:b['x1']].copy(); sub[..., 3] = np.where(np.isin(lab[b['y0']:b['y1'], b['x0']:b['x1']], b['ids']), sub[..., 3], 0)
+        fr = Image.fromarray(sub, 'RGBA'); m = max(fr.size) // 6 + 20
+        bg = Image.new('RGBA', (fr.width + m * 2, fr.height + m * 2), (255, 255, 255, 255)); bg.alpha_composite(fr, (m, m))
+        bg.convert('RGB').save(os.path.join(SRC, f'{k}_ref.png')); print(k, fr.size)
+
+def cut(k):
+    """切帧：按第 1 格（参考站姿）的高度统一缩放到设定高度；每行按行基线对齐（保留上下浮动），横向按机身中段像素的中位数对齐。"""
+    import sky_art
+    src = os.path.join(SRC, 'sheets', f'{k}.png')
+    if not os.path.exists(src): print('缺少', src); return
+    im, arr, lab, order = sky_art.cut9(src, holes=False)
+    rows_ok = [sum(1 for b in order if b['row'] == r) for r in range(3)]
+    print(f'{k}: {len(order)} frames rows={rows_ok}{"  <-- CHECK" if len(order) != 9 or rows_ok != [3, 3, 3] else ""}')
+    names = NAMES[k]; out = os.path.join(HERE, 'final', 'spr', 'mech_' + k)
+    if os.path.isdir(out):
+        for x in os.listdir(out): os.remove(os.path.join(out, x))
+    os.makedirs(out, exist_ok=True)
+    pv_dir = os.path.join(SRC, 'cut'); os.makedirs(pv_dir, exist_ok=True)
+    pv = Image.new('RGB', im.size, (60, 64, 72)); pv.paste(im, (0, 0), im); dr = ImageDraw.Draw(pv)
+    for i, b in enumerate(order):
+        dr.rectangle([b['x0'], b['y0'], b['x1'], b['y1']], outline=(255, 220, 60), width=3); dr.text((b['x0'] + 4, b['y0'] + 4), f'{i} {names[i] if i < len(names) else "?"}', fill=(255, 60, 60))
+    pv.thumbnail((900, 900)); pv.save(os.path.join(pv_dir, f'{k}.png'))
+    ref = order[0]; kk = M[k]['h'] * RES / (ref['y1'] - ref['y0'])
+    base = {r: max(b['y1'] for b in order if b['row'] == r) for r in range(3) if any(b['row'] == r for b in order)}
+    meta = {'res': RES, 'frames': {}}
+    for b, fn in zip(order, names):
+        sub = arr[b['y0']:b['y1'], b['x0']:b['x1']].copy(); sub[..., 3] = np.where(np.isin(lab[b['y0']:b['y1'], b['x0']:b['x1']], b['ids']), sub[..., 3], 0)
+        a = sub[..., 3] > 40; h = a.shape[0]
+        xs = np.where(a[int(h * 0.15):int(h * 0.85)])[1]; ax = float(np.median(xs)) if len(xs) else a.shape[1] / 2
+        ay = base[b['row']] - b['y0']
+        fr = Image.fromarray(sub, 'RGBA'); sm = fr.resize((max(1, round(fr.width * kk)), max(1, round(fr.height * kk))), Image.LANCZOS)
+        sm.save(os.path.join(out, f'{fn}.webp'), 'WEBP', quality=80, method=6)
+        meta['frames'][fn] = {'w': sm.width, 'h': sm.height, 'ax': round(ax * kk, 1), 'ay': round(ay * kk, 1)}
+    json.dump(meta, open(os.path.join(out, 'spr.json'), 'w'), indent=1)
+    tot = sum(os.path.getsize(os.path.join(out, x)) for x in os.listdir(out) if x.endswith('.webp'))
+    print(f'  -> mech_{k}: {len(meta["frames"])} frames, {tot // 1024} KB')
+
+def strip(k):
+    """游戏内比例连拍：神枪手站姿 + 机器人全部 9 帧（summon_strip.py 同一套），输出 art/src/mech/_mech_<id>_strip.png"""
+    import summon_strip as SS
+    SS.OUT = SRC
+    SS.strip('mech_' + k, 'town', vs=('gun',), seq=NAMES[k])
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('phase'); ap.add_argument('--only', default=''); ap.add_argument('--force', action='store_true'); a = ap.parse_args()
     if a.phase == 'lineup':
         refs = [os.path.join(MAIN, 'src', 'summon', '_refs_all.png'), os.path.join(SRC, '_rx78_ref_big.png')]
         print(gen(os.path.join(SRC, '_lineup.png'), lineup_prompt(), '3840x2160', refs, force=a.force), flush=True)
-    elif a.phase == 'refs':
-        for k in M:
-            if k.startswith(a.only) and k != 'rx78': print(gen(os.path.join(SRC, f'{k}_ref.png'), ref_prompt(k), '1024x1024', [os.path.join(SRC, '_lineup.png')], force=a.force), flush=True)
+    elif a.phase == 'crop': crop_lineup()
     elif a.phase == 'sheets':
         for k in M:
-            if not k.startswith(a.only): continue
-            ref = os.path.join(SRC, f'{k}_ref.png') if k != 'rx78' else os.path.join(SRC, '_rx78_ref_big.png')
-            print(gen(os.path.join(SRC, 'sheets', f'{k}.png'), sheet_prompt(k), '2048x2048', [ref], force=a.force), flush=True)
-    else: raise SystemExit('phase: lineup | refs | sheets | cut | strip')
+            if k.startswith(a.only): print(gen(os.path.join(SRC, 'sheets', f'{k}.png'), sheet_prompt(k), '2048x2048', [os.path.join(SRC, f'{k}_ref.png')], force=a.force), flush=True)
+    elif a.phase == 'cut':
+        for k in M:
+            if k.startswith(a.only): cut(k)
+    elif a.phase == 'strip':
+        for k in M:
+            if k.startswith(a.only) and os.path.isdir(os.path.join(HERE, 'final', 'spr', 'mech_' + k)): strip(k)
+    else: raise SystemExit('phase: lineup | crop | sheets | cut | strip')
 
 if __name__ == '__main__':
     main()

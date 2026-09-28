@@ -28,8 +28,9 @@ await page.evaluate(() => {
   const p = game.player;
   game.job = 'mechanic'; if (save.data) save.data.job = 'mechanic'; onJobChange(p, 'mechanic');
   const L = game.skillLv; for (const id of CLASSES.gun.skills.concat(CLASSES.gun.jobs.mechanic.skills)) if (SKILLS[id]) L[id] = SKILLS[id].passive ? 1 : 5;
-  for (const id of ['gm_hitech', 'gm_convert', 'gm_solar', 'gm_gext', 'gm_backup']) L[id] = 0;
-  L.gm_g0 = 1;
+  for (const id of ['gm_hitech', 'gm_convert', 'gm_solar', 'gm_gext', 'gm_backup', 'gm_gop', 'gm_micro']) L[id] = 0;
+  L.gm_g0 = 1; L.gm_bolt = 1; L.gm_stardust = 1;
+  const F = save.data.flags ??= {}; F.awaken = F.awaken2 = F.awaken3 = true;   // 测试：三次觉醒都已完成
   game.skillBar = ['gm_ez8', 'gm_detonate', 'gm_g1', 'gm_g2', 'gm_g3', 'gm_viper', 'gm_gale', 'gm_magnet', 'gm_drop', 'gm_factory', 'gm_g0', 'g_rx78', 'gm_hold', 'gm_camo'];
   recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax;
 });
@@ -144,6 +145,45 @@ const R = await page.evaluate(() => {
   T.clear(); T.reset();
   // 20) 电能转换：RX-78 改成光属性
   game.skillLv.gm_convert = 1; out.convert = mElem(p, 'fire'); game.skillLv.gm_convert = 0;
+  // ---- 第 B 阶段：二觉 / 三觉 ----
+  T.clear(); T.reset();
+  // 21) HS-12：锁定、飞过去自爆
+  m = T.mob(560); hp0 = m.hp; T.cast('gm_hs12'); T.run(20); const hs = summonsOf(p, 'mech_hs12')[0]; T.sec(3); out.hs12 = { spawned: !!hs, gone: hs && hs.gone, dmg: dealt(m, hp0) > 0 };
+  T.clear(); T.reset();
+  // 22) G-4 雷行者：绕身回旋多段；方向键 + 再按 = 派出，只按 = 召回；到时爆炸
+  m = T.mob(370); hp0 = m.hp; T.cast('gm_frisbee'); T.run(30); const fr = summonsOf(p, 'mech_frisbee')[0]; T.sec(1.5); out.frisbee = { spawned: !!fr, dmg: dealt(m, hp0) > 0 };
+  T.hold('right'); p.cool['gm_frisbee~'] = 0; T.cast('gm_frisbee'); T.release('right'); out.frisbee.sent = !!(fr.goal && fr.goal.x > p.x + 200); out.frisbee.noAct = !p.act || p.act.skill !== 'gm_frisbee';
+  p.cool['gm_frisbee~'] = 0; T.cast('gm_frisbee'); out.frisbee.recalled = !fr.goal; T.sec(6); out.frisbee.gone = fr.gone;
+  T.clear(); T.reset();
+  // 23) G-X 主宰者：旋雷者 4 台 / 捕食者 7 台、改装无动作（再按分支）、Buff On!、冷却 -15%
+  game.skillLv.gm_gop = 1; T.cast('gm_g1'); T.run(30); T.run(40); T.cast('gm_g2'); T.run(2);
+  out.gop = { form: gsForm(p), n2: T.n('mech_g2'), noAct: !p.act, buffOn: !!p.buffs.gm_gop };
+  p.gsTfT = 0; p.cool['gm_g3~'] = 0; T.cast('gm_g3'); T.run(2); out.gop.n3 = T.n('mech_g3');
+  T.cast('gm_viper'); out.gop.cd = +(p.cool.gm_viper || 0).toFixed(2); game.skillLv.gm_gop = 0;
+  T.clear(); T.reset();
+  // 24) G-超级猎鹰：3 次充能；科罗纳形态大范围爆炸 / 旋雷者形态 3 道激光 / 捕食者形态 25 段
+  m = T.mob(500); hp0 = m.hp; out.falcon = { charges: SKILLS.gm_falcon.charges }; T.cast('gm_falcon'); T.sec(0.9); out.falcon.co = dealt(m, hp0);
+  T.cast('gm_g1'); T.run(30); p.gsTfT = 0; T.cast('gm_g2'); T.run(30); hp0 = m.hp; T.cast('gm_falcon'); T.sec(0.6); out.falcon.rt = dealt(m, hp0);
+  p.gsTfT = 0; p.cool.gm_g3 = 0; T.cast('gm_g3'); T.run(30); hp0 = m.hp; T.cast('gm_falcon'); T.sec(2.6); out.falcon.rp = dealt(m, hp0);
+  T.clear(); T.reset();
+  // 25) 高压电磁场：飞 220 px 后展开，15 段
+  m = T.mob(520); hp0 = m.hp; let nf = 0; const sh0 = window.summonHit; window.summonHit = (s, t, h, o) => { if (s.skey === 'mech_emfield' && t === m) nf++; return sh0(s, t, h, o); };
+  T.cast('gm_field'); T.sec(2.8); window.summonHit = sh0; out.field = { hits: nf, dmg: dealt(m, hp0) > 0 };
+  T.clear(); T.reset();
+  // 26) 二觉 博尔特 MX：天降、回旋炮 → 步枪 → 激光剑 → 自爆
+  m = T.mob(520); m.boss = true; hp0 = m.hp; T.cast('gm_bolt'); T.sec(1.2); const bolt = summonsOf(p, 'mech_bolt')[0]; T.sec(6.5);
+  out.bolt = { spawned: !!bolt, gone: bolt && bolt.gone, dmg: dealt(m, hp0), rifle: bolt && bolt.nR, blade: bolt && bolt.nB };
+  T.clear(); T.reset();
+  // 27) 微型制导：技能攻击力；超时空光耀加农炮：能量弹 + 4 次大爆炸
+  game.skillLv.gm_micro = 1; T.run(20); out.micro = +(((p.buffs.gm_micro || {}).dmg) || 0).toFixed(2); game.skillLv.gm_micro = 0;
+  m = T.mob(500); hp0 = m.hp; T.cast('gm_hyper'); T.sec(2.2); out.hyper = { dmg: dealt(m, hp0) > 0, sa: true };
+  T.clear(); T.reset();
+  // 28) 三觉 星尘天穹：要 G 系列；G-0 冷却中不能用；用了 G-0 进冷却、G-1 冷却重置
+  out.sd = { noG: SKILLS.gm_stardust.req(p) }; T.cast('gm_g1'); T.run(30); p.cool.gm_g0 = 10; out.sd.g0cd = SKILLS.gm_stardust.req(p); p.cool.gm_g0 = 0; p.cool.gm_g1 = 20;
+  m = T.mob(560); hp0 = m.hp; T.cast('gm_stardust'); T.sec(1.5); out.sd.g0 = Math.round(p.cool.gm_g0 || 0); out.sd.g1 = p.cool.gm_g1 || 0; out.sd.gs = gsUnits(p).length; T.sec(3.5); out.sd.dmg = dealt(m, hp0) > 0;
+  T.clear(); T.reset();
+  // 29) 转职任务线：quests/job.js 按 J.quests 登记，选了机械师才开放
+  out.quest = { q1: !!QUESTS.q_jl_mechanic_1, q3: !!QUESTS.q_jl_mechanic_3, pre: QUESTS.q_jl_mechanic_1 && QUESTS.q_jl_mechanic_1.pre.join(), items: QUESTS.q_jl_mechanic_2 && QUESTS.q_jl_mechanic_2.goals.map(g => g.key + ':' + g.n).join() };
   return out;
 });
 const o = R;
@@ -155,7 +195,7 @@ report('机械引爆（按住）：准星可移动，松开后 RX-78 冲过去�
 report('G-1：身后浮空炮台、自动射击命中；再按技能键补射', o.g1.n === 1 && o.g1.behind > 20 && o.g1.dmg > 0 && o.g1.rapid.pressed >= 3, o.g1);
 report('改装：G-2 三台，持续 +10 秒不超过 20 秒；改装冷却 5 秒挡住 G-3', o.tf.form === 'g2' && o.tf.n === 3 && o.tf.left1 > o.tf.left0 && o.tf.left1 <= 20 && o.tf.blockedMsg === '改装冷却中', o.tf);
 report('G-2：充满电后再按发射 3 道电磁波，电量清零', o.g2.waves === 3 && o.g2.dmg > 0 && o.g2.chgAfter < 1, o.g2);
-report('G-3：6 台；再按缠到敌人身上持续电击，再按召回', o.g3.n === 6 && o.g3.form === 'g3' && o.g3.on && o.g3.stuck >= 3 && o.g3.dmg > 0 && o.g3.recalled, o.g3);
+report('G-3：6 台；再按缠到敌人身上持续电击（同一个敌人最多 2 台），再按召回', o.g3.n === 6 && o.g3.form === 'g3' && o.g3.on && o.g3.stuck === 2 && o.g3.dmg > 0 && o.g3.recalled, o.g3);
 report('G-1 键在其他形态下 = 改装回 G-1', o.back === 'g1', o.back);
 report('G 系扩张：改装冷却 0，叠层最多 5', o.gext.stacks === 5 && o.gext.tfReady, o.gext);
 report('Ex-S：最多 9 台（第 10 台挤掉最早的），会打人，6 秒后自爆', o.viper.n === 9 && o.viper.firstGone && o.viper.dmg && o.viper.after === 0, o.viper);
@@ -172,6 +212,15 @@ report('G-0 战争领主：要有 G 系列；锁定、合体轰炸，G 系列消
 report('换房间：G 系列跟过去，RX-78 / Ex-S 清掉', o.room.g1 === 1 && o.room.rx === 0 && o.room.viper === 0, o.room);
 report('指令：←→+Z G-1、↓↓+Z EZ-8、←→+Space 机械引爆、→↓→+Z Ex-S', o.cmd.g1 === 'gm_g1' && o.cmd.ez === 'gm_ez8' && o.cmd.det === 'gm_detonate' && o.cmd.viper === 'gm_viper', o.cmd);
 report('电能转换：RX-78 改成光属性', o.convert === 'light', o.convert);
+report('HS-12：锁定后飞过去自爆', o.hs12.spawned && o.hs12.gone && o.hs12.dmg, o.hs12);
+report('G-4 雷行者：回旋多段、方向键派出（不打断动作）、召回、到时爆炸', o.frisbee.spawned && o.frisbee.dmg && o.frisbee.sent && o.frisbee.noAct && o.frisbee.recalled && o.frisbee.gone, o.frisbee);
+report('G-X 主宰者：旋雷者 4 / 捕食者 7、改装无动作、Buff On!、冷却 -15%', o.gop.form === 'g2' && o.gop.n2 === 4 && o.gop.noAct && o.gop.buffOn && o.gop.n3 === 7 && Math.abs(o.gop.cd - 3.5 * 0.85) < 0.05, o.gop);
+report('G-超级猎鹰：3 次充能；三种形态各自的攻击都打到', o.falcon.charges === 3 && o.falcon.co > 0 && o.falcon.rt > 0 && o.falcon.rp > 0, o.falcon);
+report('高压电磁场：15 段', o.field.hits === 15 && o.field.dmg, o.field);
+report('二觉 博尔特 MX：步枪 4 发、激光剑 3 次、自爆', o.bolt.spawned && o.bolt.gone && o.bolt.dmg > 0 && o.bolt.rifle === 4 && o.bolt.blade === 3, o.bolt);
+report('微型制导 / 超时空光耀加农炮', o.micro >= 0.2 && o.hyper.dmg, { micro: o.micro, hyper: o.hyper });
+report('三觉 星尘天穹：要 G 系列、G-0 冷却中不能用、用后 G-0 冷却 / G-1 重置', typeof o.sd.noG === 'string' && typeof o.sd.g0cd === 'string' && o.sd.g0 > 100 && o.sd.g1 === 0 && o.sd.gs === 0 && o.sd.dmg, o.sd);
+report('转职任务线：3 步，接在职业试炼之后，60 白色小晶块 + 2 火种', o.quest.q1 && o.quest.q3 && o.quest.pre === 'q_job_gun_final' && o.quest.items === 'c_white:60,q_magic_tinder:2', o.quest);
 const errs = logs.filter(l => l.type === 'pageerror' || l.type === 'error');
 report('没有页面错误', errs.length === 0, errs.slice(0, 5));
 await browser.close();

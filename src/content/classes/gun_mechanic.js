@@ -67,6 +67,7 @@ function mechFrame(c, kind, f) {
   const k = 1 / (D.res || 2); c.save(); c.scale(k, k); c.drawImage(im, -F.ax, -F.ay); c.restore(); return true;
 }
 const MECH_NULL = { skel: { map: {} }, draw() { } };
+const cyc = (t, fps, L) => L[Math.floor(t * fps) % L.length];
 function mechModel(s) { return { skel: { map: {} }, draw(c, pose, t) { const L = MECH_LOOK[s.mkind]; if (!L) return; c.save(); c.translate(0, -(s.hz || 0)); L(c, s, t); c.restore(); } }; }
 function mechSpawn(s, kind, o = {}) {
   s.mkind = kind; s.model = mechModel(s); s.hz = o.hz || 0; s.timers = {}; mechArtLoad();
@@ -77,15 +78,15 @@ function mechSpawn(s, kind, o = {}) {
 function mP(c, fill, fn, lw = 2.2) { c.beginPath(); fn(); c.fillStyle = fill; c.fill(); c.lineWidth = lw; c.strokeStyle = OUTL; c.stroke(); }
 function mGlow(c, x, y, r, col, a = 0.8) { c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha *= a; const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); c.restore(); }
 const MECH_LOOK = {
-  rx78(c, s, t) { if (mechFrame(c, 'rx78', s.rush ? 'run' : 'idle')) return; drawRx78(c, 0, 0, 1, t + s.sid); },
+  rx78(c, s, t) { if (mechFrame(c, 'rx78', s.st === 'walk' || s.st === 'run' || s.rush ? cyc(t, s.rush ? 18 : 12, ['run1', 'run2', 'run3']) : 'idle')) return; drawRx78(c, 0, 0, 1, t + s.sid); },
   buster(c, s, t) {
-    if (mechFrame(c, 'buster', 'idle')) return;
+    if (mechFrame(c, 'buster', cyc(t, 16, ['run1', 'run2', 'run3']))) return;
     c.save(); c.scale(1.1, 1.1); drawRx78(c, 0, 0, 1, t * 1.6 + s.sid);
     c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.35; c.fillStyle = '#e8eef8'; c.fillRect(-11, -26, 22, 20); c.restore();
   },
   ez8(c, s, t) {
     const left = s.life - s.lifeT, on = Math.floor(t * (left < 1 ? 14 : left < 2 ? 7 : 3.5)) % 2 === 0;
-    if (mechFrame(c, 'ez8', on ? 'idle' : 'blink')) return;
+    if (mechFrame(c, 'ez8', s.leap ? 'hop2' : left < 0.5 ? 'swell' : left < 1.2 ? (on ? 'shake' : 'blink') : on ? 'idle' : 'blink')) return;
     c.fillStyle = '#2a2f3c'; c.fillRect(-12, -6, 6, 6); c.fillRect(6, -6, 6, 6);
     mP(c, '#7a8499', () => c.ellipse(0, -19, 15, 14, 0, 0, TAU));
     mP(c, '#f2c230', () => c.rect(-15, -17, 30, 5), 1.6);
@@ -96,7 +97,7 @@ const MECH_LOOK = {
   },
   g1(c, s, t) {
     const b = Math.sin(t * 3 + s.sid) * 3; c.translate(0, b);
-    if (mechFrame(c, 'g1', s.fireFx > game.t ? 'fire' : 'idle')) return;
+    if (mechFrame(c, 'g1', s.fireFx > game.t ? 'fire' : s.fireFx > game.t - 0.15 ? 'recover' : cyc(t, 2.5, ['idle', 'bob1', 'idle', 'bob2']))) return;
     c.translate(0, -12);
     mP(c, '#58627a', () => { c.moveTo(-10, -4); c.lineTo(-24, -14); c.lineTo(-20, 4); c.closePath(); });
     mP(c, '#58627a', () => { c.moveTo(-10, 4); c.lineTo(-22, 12); c.lineTo(-12, 10); c.closePath(); });
@@ -108,7 +109,7 @@ const MECH_LOOK = {
   },
   g2(c, s, t) {
     const G = s.owner.gs, full = G && G.chg >= 1;
-    if (mechFrame(c, 'g2', full ? 'charged' : 'idle')) return;
+    if (mechFrame(c, 'g2', full ? (Math.floor(t * 8) % 3 ? 'charged' : 'spin2') : cyc(t, 14, ['idle', 'spin1', 'spin2', 'spin3']))) return;
     c.translate(0, -8); c.scale(1, 0.9);
     mP(c, '#3a4050', () => c.ellipse(0, 4, 13, 5, 0, 0, TAU));
     mP(c, '#9aa6bc', () => c.ellipse(0, 0, 12, 7, 0, 0, TAU));
@@ -118,7 +119,7 @@ const MECH_LOOK = {
   },
   g3(c, s, t) {
     const flap = Math.sin(t * 22 + s.idx) > 0;
-    if (mechFrame(c, 'g3', s.stuck ? 'bite' : flap ? 'idle' : 'fly')) return;
+    if (mechFrame(c, 'g3', s.stuck ? cyc(t, 6, ['bite', 'grab']) : s.tgt ? 'dive' : cyc(t, 10, ['flapU', 'idle', 'flapD', 'idle']))) return;
     c.translate(0, -6);
     mP(c, '#8a95ab', () => { c.moveTo(-4, -2); c.lineTo(-16, flap ? -12 : 2); c.lineTo(-2, 3); c.closePath(); }, 1.8);
     mP(c, '#b9c3d4', () => c.ellipse(0, 0, 9, 6, 0, 0, TAU), 1.8);
@@ -128,7 +129,7 @@ const MECH_LOOK = {
   },
   viper(c, s, t) {
     const firing = s.fireFx > game.t;
-    if (mechFrame(c, 'viper', firing ? (Math.floor(t * 20) % 2 ? 'fire1' : 'fire2') : 'idle')) return;
+    if (mechFrame(c, 'viper', firing ? cyc(t, 20, ['fire1', 'fire2']) : s.life - s.lifeT < 0.6 ? 'heat' : 'idle')) return;
     c.strokeStyle = OUTL; c.lineWidth = 3; c.beginPath(); c.moveTo(0, -14); c.lineTo(-12, 0); c.moveTo(0, -14); c.lineTo(12, 0); c.moveTo(0, -14); c.lineTo(2, 0); c.stroke();
     c.strokeStyle = '#5a6378'; c.lineWidth = 1.6; c.stroke();
     mP(c, '#6b778f', () => c.rect(-10, -26, 18, 13));
@@ -139,7 +140,7 @@ const MECH_LOOK = {
   },
   gale(c, s, t) {
     const b = Math.sin(t * 2.4 + s.sid) * 4; c.translate(0, b);
-    if (mechFrame(c, 'gale', s.fireFx > game.t ? 'fire' : 'idle')) return;
+    if (mechFrame(c, 'gale', s.dive ? 'dive' : s.misFx > game.t ? 'missile' : s.fireFx > game.t ? 'fire' : cyc(t, 2.5, ['idle', 'bob1', 'idle', 'bob2']))) return;
     c.translate(0, -14);
     mP(c, '#3a4050', () => c.rect(-30, -3, 60, 5), 1.8);
     for (const x of [-26, 26]) { c.save(); c.translate(x, -4); c.scale(1, 0.25); c.globalAlpha = 0.55; c.fillStyle = '#cfd6e2'; c.beginPath(); c.arc(0, 0, 13, 0, TAU); c.fill(); c.restore(); }
@@ -151,14 +152,14 @@ const MECH_LOOK = {
   },
   sparrow(c, s, t) {
     const flap = Math.sin(t * 30 + s.sid) > 0;
-    if (mechFrame(c, 'sparrow', flap ? 'idle' : 'fly')) return;
+    if (mechFrame(c, 'sparrow', s.kami ? 'dive' : cyc(t + s.sid, 14, ['up', 'idle', 'down', 'idle']))) return;
     c.translate(0, -4); c.scale(0.8, 0.8);
     mP(c, '#9aa6bc', () => { c.moveTo(-2, 0); c.lineTo(-12, flap ? -9 : 3); c.lineTo(2, 2); c.closePath(); }, 1.6);
     mP(c, '#e8ecf2', () => c.ellipse(0, 0, 8, 5, 0, 0, TAU), 1.6);
     mP(c, '#5ab8ff', () => c.arc(4, -1, 2.2, 0, TAU), 1.2);
   },
   factory(c, s, t) {
-    if (mechFrame(c, 'factory', 'idle')) return;
+    if (mechFrame(c, 'factory', s.life - s.lifeT < 0.5 ? 'brace' : s.mkT > game.t ? 'open2' : s.mkT > game.t - 0.15 ? 'open1' : 'idle')) return;
     mP(c, '#5a6378', () => c.rect(-26, -44, 52, 44));
     mP(c, '#7d8aa3', () => { c.moveTo(-30, -44); c.lineTo(0, -58); c.lineTo(30, -44); c.closePath(); });
     for (let i = 0; i < 5; i++) { c.fillStyle = i % 2 ? '#f2c230' : '#232833'; c.fillRect(-26 + i * 10.4, -8, 10.4, 8); }
@@ -169,7 +170,7 @@ const MECH_LOOK = {
   g0(c, s, t) {
     const k = clamp(s.lifeT / 0.6, 0, 1), sc = 0.4 + 0.6 * easeOutBack(k), fin = s.life - s.lifeT;
     c.globalAlpha *= clamp(fin / 0.4, 0, 1) * Math.min(1, k * 2);
-    const ph = s.phase || 'build', f = ph === 'gat' ? (Math.floor(t * 24) % 2 ? 'gat1' : 'gat2') : ph === 'mis' ? 'missile' : ph === 'laser' ? 'laser' : 'idle';
+    const ph = s.phase || 'build', f = ph === 'gat' ? cyc(t, 24, ['gat1', 'gat2']) : ph === 'mis' ? 'missile' : ph === 'laser' ? 'laser' : ph === 'end' ? 'kneel' : k < 1 ? 'recoil' : 'idle';
     c.scale(sc, sc);
     if (mechFrame(c, 'g0', f)) return;
     const bob = Math.sin(t * 2) * 2; c.translate(0, bob);
@@ -258,8 +259,6 @@ function mechRx78(e, lv, o = {}) {
   const bl = skLv(e, 'gm_backup'); if (s && !o.extra && bl && Math.random() < 0.01 * bl) mechRx78(e, lv, { ...o, extra: true, y: e.y + rnd(-16, 16) });
   return s;
 }
-// gunner.js 的 rx78() 加上转发之前，先在这里接管（通用组那行进 main 之后删掉这一句）
-if (typeof rx78 === 'function' && !/mechRx78/.test(String(rx78))) rx78 = (e, lv, o) => mechRx78(e, lv, o);
 
 /* =====================================================================
    EZ-8 自爆者：原地放置的定时炸弹（3 秒），按住技能键蓄力延长引信（官方：只有机械师能学）
@@ -568,7 +567,7 @@ defSkill('gm_convert', { name: '电能转换', cls: 'gun', job: MC, lvReq: 17, p
   infoExtra: lv => [['技能攻击力（G 系列除外）', '+' + pct(0.12 + 0.02 * (lv - 1))], ['魔法暴击率', '+10%']] });
 defSkill('gm_solar', { name: '光反应能量模块', cls: 'gun', job: MC, lvReq: 20, maxLv: 1, sp: 10, passive: true, type: 'mag', elem: 'light', col: '#e8e05a', pre: { gm_factory: 1 },
   desc: '【被动】拦截机工厂改成一次性的攻击：放出的拦截机互相连结成散热板，蓄满能量后向前方射出一道贯穿整个画面的光束。' });
-defSkill('gm_gext', { name: 'G 系扩张', cls: 'gun', job: MC, lvReq: 21, sp: 30, passive: true, awaken: true, type: 'mag', col: '#ffb03a',
+defSkill('gm_gext', { name: 'G 系扩张', cls: 'gun', job: MC, lvReq: 21, sp: 30, passive: true, tier: 1, type: 'mag', col: '#ffb03a',
   desc: '【被动·一觉】G 系列的改装冷却变为 0；G 系列每改装一次叠一层（最多 5 层，G 系列消失时清零），每层提高所有机器人的攻击力。旋雷者的电能在其他形态下也会照常充电。',
   infoExtra: lv => [['每层攻击力', '+' + pct(0.02 + 0.005 * (lv - 1))], ['最多', '5 层']] });
 
@@ -616,7 +615,7 @@ function galeAI(s, dt) {
   if (T.gun <= 0) { T.gun = 1.5; for (let i = 0; i < 8; i++) game.after(i * 0.07, () => { if (s.gone || s.dive || t.dead) return; s.fireFx = game.t + 0.1; if (isHuman(o)) sfx.gun(0.25);
     mechShot(s, { tx: t.x + rnd(-10, 10), ty: t.y + rnd(-4, 4), z: s.hz - 16, speed: 1100, life: 0.7, tracer: 2, col: '#ffe8a0', dx: 18,
       update: pr => { pr.vz = ((t.z + 40) - pr.z) * 3; }, hit: { dmg: MECH_DMG.galeGun(s.lv) * mechMul(o), elem: mElem(o, null), stun: 0.2, knock: 6, hs: 0.01 } }); }); }
-  if (T.mis <= 0) { T.mis = 3.6; for (let i = 0; i < 4; i++) game.after(i * 0.12, () => { if (s.gone || s.dive) return; galeMissile(s, nearestFoe(s, 700) || t, i); }); }
+  if (T.mis <= 0) { T.mis = 3.6; s.misFx = game.t + 0.6; for (let i = 0; i < 4; i++) game.after(i * 0.12, () => { if (s.gone || s.dive) return; galeMissile(s, nearestFoe(s, 700) || t, i); }); }
 }
 function galeMissile(s, t, i) {
   const o = s.owner, img = fxTint('fireball', '#ffb060');
@@ -683,7 +682,7 @@ function factoryAI(s, dt) {
     return;
   }
   T.mk = (T.mk ?? 0.2) - dt;
-  if (T.mk <= 0) { T.mk = 0.5; const mine = summonsOf(o, 'mech_sparrow').filter(b => b.fac === s); if (mine.length < 6 && !mechHeld(s)) { const b = summon(o, 'mech_sparrow', { lv: s.lv, x: s.x, y: s.y }); if (b) { b.fac = s; b.hz = 40; sfx.mech(0.5); } } }
+  if (T.mk <= 0) { T.mk = 0.5; const mine = summonsOf(o, 'mech_sparrow').filter(b => b.fac === s); if (mine.length < 6 && !mechHeld(s)) { const b = summon(o, 'mech_sparrow', { lv: s.lv, x: s.x, y: s.y }); if (b) { b.fac = s; b.hz = 40; s.mkT = game.t + 0.3; sfx.mech(0.5); } } }
 }
 function solarFire(s) {
   const o = s.owner, x0 = s.x + s.face * 40, dmg = MECH_DMG.solar(s.lv) * mechMul(o), el = mElem(o, 'light');
@@ -831,7 +830,7 @@ function hs12Boom(s, fromEnd) {
 }
 defSummon('mech_hs12', { kind: 'follower', tags: ['mech'], max: 2, life: 3.5, keepRoom: false, speed: 0, w: 14, d: 12, h: 40, shadowR: 12, type: 'mag',
   model: () => MECH_NULL, onSpawn: s => mechSpawn(s, 'hs12', { hz: 20 }), ai: hs12AI, onEnd: (s, why) => { if (why === 'life') hs12Boom(s, true); } });
-defSkill('gm_hs12', { name: 'HS-12 等离子体发生器', cls: 'gun', job: MC, lvReq: 23, mp: 120, cd: 30, type: 'mag', elem: 'light', col: '#9a5ae8',
+defSkill('gm_hs12', { name: 'HS-12 等离子体发生器', cls: 'gun', job: MC, lvReq: 23, tier: 1, mp: 120, cd: 30, type: 'mag', elem: 'light', col: '#9a5ae8',
   desc: '放出等离子体凝聚成的机器人 HS-12：锁定附近等级最高的敌人，蓄能片刻后飞过去自爆，大范围光属性爆炸。学了 G-X 主宰者后爆炸范围扩大。',
   pow: lv => MECH_DMG.hs12(lv), ai: { kind: 'burst', r: [0, 520], dy: 120 },
   act: (lv) => ({ name: 'gm_hs12', clip: mclip('mSet'), dur: 0.35, noCounter: true, events: [evAt(0.12, e => { summon(e, 'mech_hs12', { lv, x: e.x + e.face * 40, y: e.y }); sfx.charge(); })] }) });
@@ -859,7 +858,7 @@ function frisbeeCmd(p) {
 }
 defSummon('mech_frisbee', { kind: 'follower', tags: ['mech'], max: 2, life: 7, keepRoom: false, speed: 0, w: 16, d: 12, h: 20, shadowR: 16, type: 'mag',
   model: () => MECH_NULL, onSpawn: s => mechSpawn(s, 'frisbee', { hz: 10 }), ai: frisbeeAI, onEnd: (s, why) => { if (why === 'life') frisbeeBoom(s, true); } });
-defSkill('gm_frisbee', { name: 'G-4 雷行者', cls: 'gun', job: MC, lvReq: 25, mp: 130, cd: 45, type: 'mag', elem: 'light', col: '#d8a83a', pre: { gm_g3: 3 },
+defSkill('gm_frisbee', { name: 'G-4 雷行者', cls: 'gun', job: MC, lvReq: 25, tier: 1, mp: 130, cd: 45, type: 'mag', elem: 'light', col: '#d8a83a', pre: { gm_g3: 3 },
   desc: '放出全身裹着齿轮的回旋机器人雷行者：绕着你在地面高速回旋，锯齿身体连续攻击周围的敌人（能打到倒地的敌人），持续 7 秒，结束时爆炸。在场时按住方向键再按技能键，把它派到那个方向（最远 300 px）；只按技能键召回身边。',
   pow: lv => MECH_DMG.frisbee(lv) * 39 + MECH_DMG.frisbeeBoom(lv), infoExtra: () => [['持续', '7 秒'], ['多段间隔', '0.18 秒'], ['派出距离', '300 px']], ai: { kind: 'aoe', r: [0, 160], dy: 60, summon: 'mech_frisbee' },
   recast: { ok: p => summonsOf(p, 'mech_frisbee').length > 0, instant: () => true, cd: 0.25, mp: 0, act: (lv, p) => frisbeeCmd(p) },
@@ -867,7 +866,7 @@ defSkill('gm_frisbee', { name: 'G-4 雷行者', cls: 'gun', job: MC, lvReq: 25, 
     events: [evAt(0.15, e => { const n = hasGop(e) ? 2 : 1; for (let i = 0; i < n; i++) { const s = summon(e, 'mech_frisbee', { lv, x: e.x + e.face * 40, y: e.y }); if (s) s.idx = i; } sfx.mech(1.2); })] }) });
 
 /* ---- G-X 主宰者（二觉被动）：改装没有施法动作；G 系列强化；除觉醒外所有技能冷却 -15%；满足条件时“Buff On!”（30 秒）技能攻击力提高 ---- */
-defSkill('gm_gop', { name: 'G-X 主宰者', cls: 'gun', job: MC, lvReq: 26, passive: true, type: 'mag', col: '#ff6ac8',
+defSkill('gm_gop', { name: 'G-X 主宰者', cls: 'gun', job: MC, lvReq: 26, tier: 2, passive: true, type: 'mag', col: '#ff6ac8',
   desc: '【被动·二觉】G 系列的改装不再有施法动作（再按对应的技能键立即改装）；科罗纳射击间隔 -0.1 秒；旋雷者 +1 台、回旋速度 +50%；捕食者 +1 台、同一个敌人身上最多缠 4 台；雷行者 +1 个、多段间隔 -0.04 秒；HS-12 爆炸范围扩大。除觉醒技能外，所有技能冷却时间 -15%。G 系列改装、科罗纳命中 10 次、旋雷者发射电磁波、捕食者持续攻击 1 秒时，头上出现“Buff On!”，30 秒内技能攻击力提高。',
   infoExtra: lv => [['Buff On! 技能攻击力', '+' + pct(0.10 + 0.02 * (lv - 1))], ['冷却时间', '-15%']] });
 
@@ -898,14 +897,14 @@ function falconAttack(p, lv) {
 }
 defSummon('mech_falcon', { kind: 'follower', tags: ['mech'], max: 1, life: 20, keepRoom: true, enterAt: 'behind', speed: 0, w: 12, d: 12, h: 30, shadowR: 10, type: 'mag', noHold: true,
   model: () => MECH_NULL, onSpawn: s => mechSpawn(s, 'falcon', { hz: 104 }), ai: falconAI });
-defSkill('gm_falcon', { name: 'G-超级猎鹰', cls: 'gun', job: MC, lvReq: 26, mp: 80, cd: 0.5, charges: 3, reload: 15, type: 'mag', elem: 'light', col: '#f0b83a',
+defSkill('gm_falcon', { name: 'G-超级猎鹰', cls: 'gun', job: MC, lvReq: 26, tier: 2, mp: 80, cd: 0.5, charges: 3, reload: 15, type: 'mag', elem: 'light', col: '#f0b83a',
   desc: '放出和 G 系列联动的特殊机器人猎鹰，按 G 系列当前的形态攻击：科罗纳（或没有 G 系列）= 蓄能后大范围爆炸；旋雷者 = 向前射出 3 道激光；捕食者 = 缠住被捕食者咬住的敌人里等级最高的一个，连续攻击 25 段。每 15 秒充能 1 次，最多存 3 次。',
   pow: lv => MECH_DMG.falconCo(lv), infoExtra: lv => [['科罗纳形态', pct(MECH_DMG.falconCo(lv))], ['旋雷者形态', pct(MECH_DMG.falconRt(lv)) + ' ×3'], ['捕食者形态', pct(MECH_DMG.falconRp(lv)) + ' ×25'], ['充能', '15 秒 / 最多 3 次']],
   ai: { kind: 'burst', r: [0, 480], dy: 80 },
   act: (lv) => ({ name: 'gm_falcon', clip: mclip('mPoint'), dur: 0.4, noCounter: true, events: [evAt(0.1, e => { falconAttack(e, lv); sfx.mech(1.1); })] }) });
 
 /* ---- 高压电磁场：射出磁场发生器，飞 220 px 后展开电磁场，1.5 秒内 15 段，把周围的敌人往中心拉 ---- */
-defSummon('mech_emfield', { kind: 'field', r: 125, tick: 0.1, life: 1.5, tags: ['mech'], type: 'mag', keepRoom: false,
+defSummon('mech_emfield', { kind: 'field', r: 125, tick: 0.1, hits: 15, life: 1.7, tags: ['mech'], type: 'mag', keepRoom: false,
   onSpawn: s => { sfx.zap ? sfx.zap() : sfx.iai(); sfx.boom(0.5); fxShock(s.x, s.y, 150, '#9fd8ff'); },
   update: (s, dt) => { for (const t of ents) if (foe(s.owner, t) && !t.dead && !t.boss && !t.noGrab && inGround(t, s.x, s.y, 170)) { t.x = damp(t.x, s.x, 2.5, dt); t.y = damp(t.y, s.y, 2.5, dt); } },
   onTick: (s, foes) => { for (const t of foes) summonHit(s, t, { dmg: MECH_DMG.field(s.lv) * mechMul(s.owner), type: 'mag', elem: 'light', stun: 0.3, knock: 0, hs: 0.005, sure: true, downHit: true, col: '#bfe8ff', snd: 'crit' }); },
@@ -914,7 +913,7 @@ defSummon('mech_emfield', { kind: 'field', r: 125, tick: 0.1, life: 1.5, tags: [
     c.strokeStyle = '#bfe8ff'; c.lineWidth = 2; for (let i = 0; i < 3; i++) { const r = 125 * ((game.t * 1.5 + i / 3) % 1); c.globalAlpha = 0.7 * (1 - r / 125); c.beginPath(); c.ellipse(X, Y, r, r * GR, 0, 0, TAU); c.stroke(); }
     c.globalAlpha = 0.9; c.beginPath(); for (let i = 0; i < 6; i++) { const a = rnd(0, TAU), r = rnd(30, 120); c.moveTo(X, Y - 30); c.lineTo(X + Math.cos(a) * r, Y + Math.sin(a) * r * GR); } c.stroke();
     c.restore(); c.save(); c.translate(X, Y); if (!mechFrame(c, 'emgen', 'idle')) { mP(c, '#5a6378', () => c.rect(-8, -30, 16, 26)); mP(c, '#5ab8ff', () => c.arc(0, -34, 6, 0, TAU), 1.6); } c.restore(); } });
-defSkill('gm_field', { name: '高压电磁场', cls: 'gun', job: MC, lvReq: 26, mp: 150, cd: 50, type: 'mag', elem: 'light', col: '#3a8ae8',
+defSkill('gm_field', { name: '高压电磁场', cls: 'gun', job: MC, lvReq: 26, tier: 2, mp: 150, cd: 50, type: 'mag', elem: 'light', col: '#3a8ae8',
   desc: '向前射出磁场发生器，飞出 220 px 后展开高压电磁场，1.5 秒内连续电击范围内的敌人 15 次，并把周围的敌人往中心拉。',
   pow: lv => MECH_DMG.field(lv) * 15, infoExtra: () => [['多段', '15 次 / 1.5 秒'], ['飞行距离', '220 px']], ai: { kind: 'aoe', r: [100, 380], dy: 60 },
   act: (lv) => ({ name: 'gm_field', clip: mclip('mPoint'), dur: 0.7, noCounter: true,
@@ -958,7 +957,7 @@ defSkill('gm_bolt', { name: '终结者：博尔特 MX', cls: 'gun', job: MC, lvR
     events: [evAt(0.1, e => { const s = summon(e, 'mech_bolt', { lv, x: e.x + e.face * 60, y: e.y }); if (s) { s.face = e.face; for (const t of boltTargets(s).slice(0, 5)) lockFx(t, 3.2); } })] }) });
 
 /* ---- 三觉被动：微型制导 ---- */
-defSkill('gm_micro', { name: '微型制导', cls: 'gun', job: MC, lvReq: 29, passive: true, type: 'mag', col: '#8ad8ff',
+defSkill('gm_micro', { name: '微型制导', cls: 'gun', job: MC, lvReq: 29, tier: 3, passive: true, type: 'mag', col: '#8ad8ff',
   desc: '【被动·三觉】引入微型机械技术：所有技能攻击力提高；旋雷者加装部件后，电磁波的纵向范围随在场的旋雷者数量扩大；G-磁力弹的磁力弹分解成纳米机器人，展开更大的电磁场，把范围内的敌人一起吸到中心。',
   infoExtra: lv => [['技能攻击力', '+' + pct(0.2 + 0.02 * (lv - 1))]] });
 
@@ -974,7 +973,7 @@ function hyperCast(e, lv) {
         addFx({ x, y: y + 0.3, z: 0, dur: 1.2, draw(c) { const a = 0.6 + 0.4 * Math.sin(game.t * 20); drawSpr(c, fxTint('orb', '#ffe070'), sx(this.x), sy(this.y, 8), 26, 26, { alpha: a }); } }); }); }); }
   return spots;
 }
-defSkill('gm_hyper', { name: '超时空光耀加农炮', cls: 'gun', job: MC, lvReq: 29, mp: 200, cd: 60, type: 'mag', elem: 'light', col: '#ffc83a',
+defSkill('gm_hyper', { name: '超时空光耀加农炮', cls: 'gun', job: MC, lvReq: 29, tier: 3, mp: 200, cd: 60, type: 'mag', elem: 'light', col: '#ffc83a',
   desc: '派出小型机器人部队在前方投下 6 枚能量弹，同时组装光耀加农炮（组装时机器人部队变成护盾：霸体、受到的伤害降低），随后发射高温等离子，引爆能量弹的残留，造成 4 次大爆炸。可以取消普攻。',
   pow: lv => MECH_DMG.hyperBomb(lv) * 6 + MECH_DMG.hyperBoom(lv) * 4, ai: { kind: 'burst', r: [60, 460], dy: 60 },
   act: (lv) => ({ name: 'gm_hyper', clip: 'lAwk', dur: 1.7, superArmor: true, noCounter: true,
@@ -1040,6 +1039,7 @@ CLASSES.gun.passives.push(p => {
   if (!isMech(p)) { if (p.mechHold) p.mechHold = false; return; }
   const ht = skLv(p, 'gm_hitech'); setPassive(p, 'gm_hitech', ht > 0, { dmg: 0.10 + 0.015 * (ht - 1) });
   const cv = skLv(p, 'gm_convert'); setPassive(p, 'gm_convert', cv > 0, { dmg: 0.12 + 0.02 * (cv - 1), crit: 0.1 });
+  const mc = skLv(p, 'gm_micro'); setPassive(p, 'gm_micro', mc > 0, { dmg: 0.2 + 0.02 * (mc - 1) });
   // 机械改良：每秒耗 MP，不够时自动关闭
   const R = p.buffs.gm_robotics; if (R) { const d = R.drain * 0.25; if (p.mp < d) { delete p.buffs.gm_robotics; fxText('机械改良：MP 不足', p.x, p.y, p.z + 10, { col: '#9fd8ff', size: 10 }); } else p.mp -= d; }
   // G 系列：旋雷者充电（学了 G 系扩张后其他形态也充）；没有 G 系列时层数清零；层数显示在 BUFF 栏

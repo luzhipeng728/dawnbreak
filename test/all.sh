@@ -42,7 +42,7 @@ run shopsynth node test/shop_synth.mjs
 run acct      node test/acct.mjs
 run bag       node test/bag.mjs
 run skyguide  node test/skyguide.mjs
-run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,sword:asura,sword:soulbender,sword:ghostblade,gun:ranger,gun:launcher,mage:elemental,mage:battlemage
+run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,sword:asura,sword:soulbender,sword:ghostblade,gun:ranger,gun:launcher,gun:mechanic,gun:spitfire,gun:paramedic,mage:elemental,mage:battlemage,mage:summoner,mage:witch,mage:enchantress
 [ "$1" = quick ] && exit 0
 run bestiary  node test/bestiary.mjs
 run sky       node test/sky.mjs

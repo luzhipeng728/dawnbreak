@@ -216,7 +216,7 @@ function cashFillGrid(grid, el) {
     if (free.length) { sec('可以领取的免费礼包'); for (const p of free) add(p); }
     return;
   }
-  const list = Object.values(CASH_GOODS).filter(G => G.tab === tab && ITEMS[G.key] && (!G.ltd || cashLtdPack() === G.pid));
+  const list = Object.values(CASH_GOODS).filter(G => G.tab === tab && ITEMS[G.key] && (!G.ltd || CASH_NO_LIMIT || cashLtdPack() === G.pid));
   if (tab === 'avatar') {
     const subs = [...CASH_ADV_SETS.map(s => [s, CASH_SETS[s].name]), ['weapon', '武器装扮'], ['etc', '其他']];
     const cur = CW.sub.avatar || subs[0][0];

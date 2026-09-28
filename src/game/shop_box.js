@@ -95,3 +95,41 @@ function cashSynth(o) {
   save.write();
   return { ok, item: out, rate: Y.rate };
 }
+// ---- 自动放入 / 一键合成 ----
+// 目标天空套的某个部位是否已经有了（背包或身上）
+const cashSkyOwned = (set, slot) => inv.items.some(it => it.key === avKey(set, slot)) || Object.values(inv.equip || {}).some(it => it && it.key === avKey(set, slot));
+// 背包高级装扮按部位分组；每组里先用没选过属性的、再按 id（先拿到的先用）
+function cashSynthGroups() {
+  const g = {}; for (const s of AV_PIECE_SLOTS) g[s] = [];
+  for (const it of cashSynthPool()) if (g[it.slot]) g[it.slot].push(it);
+  for (const s in g) g[s].sort((a, b) => (a.opt ? 1 : 0) - (b.opt ? 1 : 0) || (a.id || 0) - (b.id || 0));
+  return g;
+}
+// 挑一次合成要放的装扮：普通 / 黄金 → 2 件同部位（优先目标套还缺的部位，其次件数多的）；梦想 → 任意 8 件（从富余多的部位拿），目标 = 第一个缺的部位
+function cashSynthAutoPick(synthKey, set, skipOwned = true) {
+  const Y = ITEMS[synthKey] && ITEMS[synthKey].synth; if (!Y) return null;
+  const g = cashSynthGroups();
+  if (Y.any) {
+    const slot = AV_PIECE_SLOTS.find(s => !cashSkyOwned(set, s)) || (skipOwned ? null : AV_PIECE_SLOTS[0]); if (!slot) return null;
+    const all = AV_PIECE_SLOTS.flatMap(s => g[s].map(it => ({ it, left: g[s].length }))).sort((a, b) => b.left - a.left);
+    if (all.length < Y.need) return null;
+    return { inputs: all.slice(0, Y.need).map(x => x.it), slot };
+  }
+  const slots = AV_PIECE_SLOTS.filter(s => g[s].length >= Y.need && !(skipOwned && cashSkyOwned(set, s)))
+    .sort((a, b) => (cashSkyOwned(set, a) ? 1 : 0) - (cashSkyOwned(set, b) ? 1 : 0) || g[b].length - g[a].length);
+  if (!slots.length) return null;
+  return { inputs: g[slots[0]].slice(0, Y.need), slot: slots[0] };
+}
+// 成品属性：沿用选好的属性；这个部位没有这项就用默认（第一项）
+const cashSynthOptFor = (set, slot, want) => { const T = cashAvOpts(ITEMS[avKey(set, slot)]); return T ? (T.some(o => o[0] === want) ? want : T[0][0]) : null; };
+// 一键合成：用完手上的合成器（或没有能配对的装扮为止）；失败退回的高级装扮会继续参与
+function cashSynthBatch(synthKey, set, { skipOwned = true, opt = null, max = 999 } = {}) {
+  const got = [], log = { n: 0, ok: 0 };
+  while (log.n < max && inv.count(synthKey) > 0) {
+    const P = cashSynthAutoPick(synthKey, set, skipOwned); if (!P) break;
+    const r = cashSynth({ synth: synthKey, inputs: P.inputs, set, slot: P.slot, opt: cashSynthOptFor(set, P.slot, opt) });
+    if (r.err) break;
+    log.n++; if (r.ok) { log.ok++; got.push(r.item); }
+  }
+  return { ...log, got };
+}

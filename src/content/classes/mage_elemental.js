@@ -10,7 +10,7 @@ const EL = 'elemental';
 defSkill('el_memorize', { name: '魔法记忆', cls: 'mage', job: EL, lvReq: 15, maxLv: 1, passive: true, type: 'mag', col: '#7a8ae0',
   desc: '【被动】施放速度提高、蓄气时间缩短；杰克爆弹、光电鳗、冰霜雪人、暗影夜猫的蓄气时间再额外缩短。', infoExtra: () => [['施放速度', '+25%'], ['蓄气时间', '-20%'], ['基础元素技能蓄气', '再 -26%']] });
 defSkill('el_movecast', { name: '移动施法', cls: 'mage', job: EL, lvReq: 15, maxLv: 1, passive: true, type: 'mag', col: '#5ab0a0',
-  desc: '【被动】蓄气期间可以自由走动，松开技能键就发射；蓄气中被击中则取消。对烈焰冲击、冰墙、陨星幻灭无效（它们不能蓄气）。' });
+  desc: '【被动】蓄气期间可以自由走动（双击方向冲刺），蓄满后按住技能键一直保持满蓄，松开才发射；蓄着的技能可以带进下一个房间。蓄气中被击中则取消。对烈焰冲击、冰墙、陨星幻灭无效（它们不能蓄气）。' });
 const elArc = p => !!p && hasSkill(p, 'el_arcana');
 const elBest = p => { let b = 'fire', v = -1e9; for (const k of ['fire', 'ice', 'light', 'dark']) { const x = (p.elem && p.elem[k]) || 0; if (x > v) { v = x; b = k; } } return b; };   // 全属性技能：按自己属强最高的属性结算   // 二觉被动元素奥义：天雷 / 极冰盛宴 / 湮灭黑洞 / 杰克降临变成全属性（彩虹色）并获得特殊效果
 const EL_MARK = { fire: '#ff9a50', ice: '#9fe6ff', light: '#fff38a', dark: '#c79aff' };
@@ -104,29 +104,36 @@ defSkill('mg_vortex', { name: '雷旋', cls: 'mage', job: EL, lvReq: 17, mp: 40,
         hit: { dmg: skillDmg(3.8, 0.38, lv), stun: 0.4, down: true, downLift: 200, knock: 160, radial: true, downHit: true, hs: 0.07, max: 1, elem: 'light', type: 'mag', col: '#fff6a0', snd: 'crit', big: 1.3 },
         update(pr) { const a = -Math.PI / 2 * dir + dir * pr.t / pr.life * TAU; pr.x = e.x + Math.cos(a) * R * dir; pr.y = clamp(e.y + Math.sin(a) * R * 0.42, 4, DEPTH - 4); pr.face = dir; },
         draw(c, pr) { drawSpr(c, 'eel', sx(pr.x), sy(pr.y, pr.z), 78 * sc, 78 * sc, { rot: pr.t * 14 }); drawSpr(c, 'spark', sx(pr.x), sy(pr.y, pr.z), 60 * sc, 60 * sc, { rot: -pr.t * 10 }); } }); })] }) });
+// 强化-天雷（官方以前的 TP 技能，35 级 → 本作 19 级）：天雷伤害 +55%，落雷间隔减半（自动落雷也更快），冷却固定 20 秒
+const THUNDER_UP = { dmg: 0.55, cd: 20 };
+defSkill('el_thunderup', { name: '强化-天雷', cls: 'mage', job: EL, lvReq: 19, maxLv: 1, passive: true, type: 'mag', elem: 'light', col: '#f0d83a', pre: { mg_thunder: 1 },
+  desc: '【被动】强化天雷：天雷的伤害提高 55%，落雷的间隔减半（按 X 连续落雷、不操作时自动落雷都更快）；天雷的冷却时间固定为 20 秒。',
+  infoExtra: () => [['天雷伤害', '+' + pct(THUNDER_UP.dmg)], ['落雷间隔', '-50%'], ['天雷冷却', THUNDER_UP.cd + ' 秒']] });
 // 天雷：出现准星（方向键移动），按 X 在准星处落雷，共 3 道；期间霸体、自己不能移动，按跳跃提前结束；蓄满时雷更大、命中必定眩晕
 defSkill('mg_thunder', { name: '天雷', cls: 'mage', job: EL, lvReq: 19, mp: 60, cd: 15, type: 'mag', elem: 'light', icon: 'mg_thunder', col: '#d8c82a', cast: true,
   desc: '一只手按在头上召来雷云，出现准星（方向键移动），按 X 在准星处落下天雷，共 3 道（一段时间不按会自动落下）。期间霸体、自己不能移动，按跳跃键提前结束。蓄气（最长 0.8 秒）蓄满时雷更大，命中必定眩晕。', pow: lv => skillDmg(2.2, 0.22, lv) * 3, ai: { kind: 'aoe', r: [40, 420], dy: 90 },
-  act: (lv, p) => ({ name: 'mg_thunder', clip: 'thunderCast', dur: 5.2, noCounter: true, superArmor: true, cancelFrom: 0.6, charge: mCharge(p, 0.8, '#fff38a', { at: 0.05, clip: 'thunderCast' }),
-    onStart: e => { const at = aimAhead(e, 160, 420); e.act.cx = at.x; e.act.cy = at.y; e.act.n = 0; e.act.cd = 0; },
+  act: (lv, p) => ({ name: 'mg_thunder', clip: 'thunderCast', dur: 5.2, noCounter: true, superArmor: true, cancelFrom: 0.6, charge: mCharge(p, 0.8, '#fff38a', { at: 0.05, clip: 'thunderCast', onRoom: e => { const at = aimAhead(e, 160, 420); e.act.cx = at.x; e.act.cy = at.y; } }),
+    onStart: e => { const at = aimAhead(e, 160, 420); e.act.cx = at.x; e.act.cy = at.y; e.act.n = 0; e.act.cd = 0;
+      if (hasSkill(e, 'el_thunderup')) { e.act.up = 1; if (!e.ghost) e.cool.mg_thunder = THUNDER_UP.cd * (e.cdMul || 1) * (game.pvp && SKILLS.mg_thunder.pvpCd ? SKILLS.mg_thunder.pvpCd : 1); } },
     onInput: (e, I, dt) => { const a = e.act; e.vx = e.vy = 0; if (!a.chargeDone) return false; const d = dt || 1 / 60;
       if (I.buffered('jump')) { I.consume('jump'); a.dur = e.actT + 0.1; return true; }
       if (isHuman(e)) { a.cx += I.dx() * 330 * d; a.cy = clamp(a.cy + I.dy() * 180 * d, 8, DEPTH - 8); } else { const t = nearestFoe(e, 520); if (t) { a.cx = damp(a.cx, t.x, 6, d); a.cy = damp(a.cy, t.y, 6, d); } }
       a.cx = clamp(a.cx, e.x - 500, e.x + 500);
       if (a.lastT === undefined) a.lastT = e.actT;
-      const auto = isHuman(e) ? e.actT - a.lastT > 1.5 : e.actT > 0.5 + a.n * 0.35;   // 一段时间不按 X 就自动落雷（官方 20 秒，本作压缩成 1.5 秒）
-      if ((I.buffered('attack') || auto) && e.actT > a.cd && a.n < 3) { I.consume('attack'); a.n++; a.cd = e.actT + 0.25; a.lastT = e.actT; const big = (a.chargeK || 0) > 0.95, r = big ? 62 : 50;
+      const iv = a.up ? 0.5 : 1;   // 强化-天雷：落雷间隔减半
+      const auto = isHuman(e) ? e.actT - a.lastT > 1.5 * iv : e.actT > 0.5 + a.n * 0.35 * iv;   // 一段时间不按 X 就自动落雷（官方 20 秒，本作压缩成 1.5 秒）
+      if ((I.buffered('attack') || auto) && e.actT > a.cd && a.n < 3) { I.consume('attack'); a.n++; a.cd = e.actT + 0.25 * iv; a.lastT = e.actT; const big = (a.chargeK || 0) > 0.95, r = big ? 62 : 50;
         const rb = elArc(e), col = rb ? ELC[(a.n - 1) % 4] : '#fff6a0';   // 元素奥义：全属性（彩虹色），落雷把周围的敌人聚过来
         if (rb) { mgPull(e, a.cx, a.cy, r * 2.8, 0.75); fxShock(a.cx, a.cy, r * 2.2, col); }
         lightningStrike({ x: a.cx, y: a.cy }); sfx.zap();
-        blast(e, a.cx, a.cy, r, { dmg: skillDmg(2.2, 0.22, lv), stun: 0.6, knock: 20, hs: 0.08, snd: 'crit', col, elem: rb ? elBest(e) : 'light', type: 'mag' }, { zMax: 220, status: big ? 'stun' : null, sdur: 1.2 });
+        blast(e, a.cx, a.cy, r, { dmg: skillDmg(2.2, 0.22, lv) * (a.up ? 1 + THUNDER_UP.dmg : 1), stun: 0.6, knock: 20, hs: 0.08, snd: 'crit', col, elem: rb ? elBest(e) : 'light', type: 'mag' }, { zMax: 220, status: big ? 'stun' : null, sdur: 1.2 });
         if (a.n >= 3) a.dur = e.actT + 0.35; }
       return true; },
     update: e => { const a = e.act; if (!a.chargeDone) return; addFx({ x: a.cx, y: a.cy + 1, z: 0, dur: 0.02, draw(c) { const X = sx(this.x), Y = sy(this.y, 0); c.strokeStyle = 'rgba(255,240,120,.85)'; c.lineWidth = 2; c.beginPath(); c.ellipse(X, Y, 26, 26 * GR, 0, 0, TAU); c.stroke(); c.beginPath(); c.moveTo(X - 32, Y); c.lineTo(X + 32, Y); c.moveTo(X, Y - 14); c.lineTo(X, Y + 14); c.stroke(); } }); } }) });
 // 极冰盛宴：身前展开大魔法阵，冰柱连续突刺 8 段（几率冰冻）；引导施法：霸体、不能移动，连按 X 加快突刺，按跳跃中断；蓄满时阵内敌人减速
 defSkill('mg_icefeast', { name: '极冰盛宴', cls: 'mage', job: EL, lvReq: 19, mp: 70, cd: 19, type: 'mag', elem: 'ice', col: '#3a8ae0', cast: true,
   desc: '在身前展开冰之魔法阵，阵内冰柱连续突刺 8 次，有几率冰冻敌人。引导施法期间霸体、不能移动；连按 X 加快突刺，按跳跃键中断。蓄气（最长 1 秒）蓄满时阵内敌人减速。', pow: lv => skillDmg(1.0, 0.1, lv) * 8, ai: { kind: 'aoe', r: [60, 320], dy: 80 },
-  act: (lv, p) => ({ name: 'mg_icefeast', clip: 'wall', dur: 3.2, superArmor: true, noCounter: true, charge: mCharge(p, 1.0, '#bfefff', { at: 0.05, clip: 'mchan' }),
+  act: (lv, p) => ({ name: 'mg_icefeast', clip: 'wall', dur: 3.2, superArmor: true, noCounter: true, charge: mCharge(p, 1.0, '#bfefff', { at: 0.05, clip: 'mchan', onRoom: e => { const at = aimAhead(e, 180, 360); e.act.cx = at.x; e.act.cy = at.y; } }),
     onStart: e => { const at = aimAhead(e, 180, 360); e.act.cx = at.x; e.act.cy = at.y; e.act.n = 0; e.act.next = 0.35; },
     onInput: (e, I) => { const a = e.act; e.vx = e.vy = 0; if (!a.chargeDone) return false;
       if (I.buffered('jump')) { I.consume('jump'); a.dur = e.actT + 0.1; return true; }
@@ -167,7 +174,11 @@ defSkill('mg_jackfall', { name: '杰克降临', cls: 'mage', job: EL, lvReq: 20,
         if (rb) for (let i = 0; i < 5; i++) mgAfter(e, 0.15 + i * 0.14, () => { const x = g.x + rnd(-120, 120) * sc, y = clamp(g.y + rnd(-45, 45), 6, DEPTH - 6), col = ELC[i % 4];
           addFx({ x, y: y + 2, z: 0, dur: 0.22, col, draw(c) { const k = this.t / this.dur; drawSpr(c, fxTint('meteor', this.col), sx(this.x) - 90 * (1 - k), sy(this.y, 0) - 200 * (1 - k), 48, 0, { ax: 0.8, ay: 0.82 }); } });
           mgAfter(e, 0.22, () => { meteorImpact({ x, y }, 0.35); blast(e, x, y, 50, { dmg: skillDmg(0.3, 0.03, lv), launch: 200, knock: 40, hs: 0.03, elem: el, type: 'mag', col, downHit: true }, { zMax: 200 }); }); }); } });
-      addFx({ x: at.x, y: at.y + 2, z: 0, dur: 0.75, add: false, draw(c) { const k = this.t / this.dur; drawSpr(c, 'jackbig', sx(this.x) - 240 * (1 - k), sy(this.y, 0) - 480 * (1 - k) - 40, 110 * sc, 0, { add: false, rot: k * 2, flip }); } }); })] }) });
+      const face = jackFace(e);
+      addFx({ x: at.x, y: at.y + 2, z: 0, dur: 0.75, add: false, draw(c) { const k = this.t / this.dur; drawSpr(c, face, sx(this.x) - 240 * (1 - k), sy(this.y, 0) - 480 * (1 - k) - 40, 110 * sc, 0, { add: false, rot: k * 2, flip }); } }); })] }) });
+// 杰克降临的南瓜每次换一张表情（坏笑 / 生气 / 吃惊 / 眨眼吐舌），不和上一次重复
+const JACK_FACES = ['jackbig', 'jackbig2', 'jackbig3', 'jackbig4'];
+function jackFace(e) { const L = JACK_FACES.filter(n => IMG['fx/' + n] && n !== e._jackFace); const n = L.length ? pick(L) : 'jackbig'; e._jackFace = n; return n; }
 // 陨星幻灭（觉醒）：可移动的法阵落四属性结晶（移动时法阵缩小、落点更密）；按技能键或跳跃键砸下最后 5 颗大结晶并大爆炸收尾；全程无敌
 const ELEM4 = [['fire', '#ff9a50'], ['ice', '#9fe6ff'], ['light', '#fff38a'], ['dark', '#c79aff']];
 function astralFinale(e, lv) {
@@ -195,7 +206,7 @@ defSkill('mg_awaken', { name: '陨星幻灭', cls: 'mage', job: EL, lvReq: 21, m
         game.after(0.3, () => { meteorImpact({ x, y }, 0.5); blast(e, x, y, 60, { dmg: skillDmg(0.7, 0.2, lv), launch: 300, knock: 60, hs: 0.04, elem: el, type: 'mag', col, downHit: true }, { zMax: 240 }); }); } } }) });
 CLASSES.mage.jobs.elemental = { art: 'job/elemental', name: '元素师', role: '远程 · 范围', armor: 'cloth', awaken: 'mg_awaken', awakenName: '大魔导师',
   desc: '把元素的力量发挥到极限的纯魔法师。大多数技能可以蓄气，学会移动施法后能边走边蓄；轮换火、冰、光、暗四种属性点亮元素标记来提高伤害。',
-  skills: ['el_memorize', 'el_movecast', 'mg_flame', 'mg_void', 'el_burn', 'mg_icewall', 'mg_vortex', 'el_mastery', 'mg_thunder', 'mg_icefeast', 'mg_hole', 'mg_jackfall', 'el_amplify', 'mg_awaken'] };
+  skills: ['el_memorize', 'el_movecast', 'mg_flame', 'mg_void', 'el_burn', 'mg_icewall', 'mg_vortex', 'el_mastery', 'mg_thunder', 'el_thunderup', 'mg_icefeast', 'mg_hole', 'mg_jackfall', 'el_amplify', 'mg_awaken'] };
 CLASSES.mage.cmds.push(['uu', 'mg_flame'], ['fdf', 'mg_void'], ['ud', 'el_burn', 'buff'], ['dd', 'mg_icewall'], ['bdf', 'mg_vortex'], ['udu', 'mg_thunder'], ['udd', 'mg_icefeast'], ['bff', 'mg_hole'], ['uff', 'mg_jackfall'], ['uudd', 'mg_awaken']);
 // ---- 被动刷新（每 0.25 秒）：魔法记忆、属性精通、魔力增幅；元素点燃的加成按亮起的标记数 ----
 CLASSES.mage.passives.push(p => {

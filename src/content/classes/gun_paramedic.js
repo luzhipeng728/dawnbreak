@@ -480,24 +480,39 @@ pmSkill('pm_breakout', { name: '系统·孤军突破', lvReq: 29, mp: 80, cd: 45
         blast(e, e.x, e.y, 240, { dmg: skillDmg(5.0, 0.5, lv), type: 'indep', launch: 420, knock: 200, hs: 0.1, big: 1.6, sure: true, downHit: true, col: '#fff0a0' }, { zMax: 220 }); pmGain(e, 100); })] }) });
 // ---- 三觉：空袭策略：神兵天降（重霄·协战师）：超高空速降，全队强化 + 激光 10 段 + 连锁爆炸 15 段；和一觉共享冷却 ----
 pmSkill('pm_awk3', { name: '空袭策略：神兵天降', lvReq: 30, maxLv: 3, mp: 250, cd: 160, pvp: 0.45, awaken: true, tier: 3, col: '#ffd23a',
-  desc: '【三觉】从超高空的医神设备上速降：全队（含自己）攻击力、三速大幅提高 40 秒，医神设备进行 10 段激光轰炸，落地时引发 15 段连锁爆炸。和“强袭策略：区域肃清”共享冷却。施放中无敌。',
+  desc: '【三觉】从超高空的医神设备上速降：全队（含自己）攻击力、三速大幅提高 40 秒，医神设备进行 10 段激光轰炸，落地时引发 15 段连锁爆炸。和“强袭策略：区域肃清”共享冷却；区域肃清可用时，在升空阶段输入区域肃清可以把它的威力合并进来（激光和爆炸加伤，全队同时获得区域肃清的 BUFF）。施放中无敌。',
   pow: lv => skillDmg(2.5, 0.8, lv) * 10 + skillDmg(1.4, 0.45, lv) * 15, ai: { kind: 'awaken', r: [0, 520], dy: 140 },
   infoExtra: lv => [['全队攻击力', '+' + pct(0.15 + 0.03 * (lv - 1))], ['全队三速', '+12%'], ['持续', '40 秒'], ['共享冷却', '强袭策略：区域肃清']],
   act: (lv) => ({ name: 'pm_awk3', clip: 'pmSalute', dur: 3.4, superArmor: true, noCounter: true, invul: [0, 3.4], lowGrav: 0.001,
     onStart: e => { game.cutin = { t: 0, dur: 1.1, name: '空袭策略：神兵天降', who: pmCutin(e, 3) }; game.timeStop = 1.0; sfx.awaken(); e.act.ox = e.x; e.act.oy = e.y;
+      e.act.a1Ready = !e.ghost && lvOf(e, 'pm_awk1') > 0 && !((e.cool.pm_awk1 || 0) > 0);   // 一觉本来是好的 → 升空阶段可以预输入合并
       if (!e.ghost) { e.cool.pm_awk1 = Math.max(e.cool.pm_awk1 || 0, SKILLS.pm_awk3.cd * (e.cdMul || 1)); pmParty(e, 'pm_awk3', { t: 40, atk: 0.15 + 0.03 * (lv - 1), aspd: 0.12, mspd: 0.12, cspd: 0.12, col: '#ffd23a' }, '#ffe07a'); } },
     update: e => { const a = e.act, t = e.actT; e.vz = 0;
       if (t > 1.0 && t < 1.3) e.z = 520 * (t - 1.0) / 0.3;
       else if (t >= 1.3 && t < 2.25) { e.z = Math.max(0, 520 * (1 - (t - 1.3) / 0.95)); if (!a.dive) { a.dive = true; e.play('pmDive', true); } if (!a.medic) a.medic = pmMedic(e, 2.1); }
       else if (t >= 2.25 && !a.landed) { a.landed = true; e.z = 0; e.play('pmLand', true); } },
     onEnd: e => { e.z = 0; },
+    onInput: (e, I) => pmAwk3Merge(e, I),
     events: [...Array.from({ length: 10 }, (_, i) => evAt(1.35 + i * 0.09, e => { const L = ents.filter(t => hittable(e, t) && Math.abs(t.x - e.act.ox) < 560 && Math.abs(t.y - e.act.oy) < 220), t = L.length ? L[i % L.length] : null;
         const x = t ? t.x : e.act.ox + rnd(-360, 360), y = t ? t.y : clamp(e.act.oy + rnd(-70, 70), 8, DEPTH - 8); pmSkyLaser(x, y, 0.35, 34, '#ffe07a'); sfx.pmZap(0.7); cam.shake = Math.max(cam.shake, 4);
-        blast(e, x, y, 80, { dmg: skillDmg(2.5, 0.8, lv), type: 'indep', stun: 0.6, launch: 240, knock: 30, hs: 0.04, sure: true, downHit: true, col: '#fff0a0', pmTok: e.act }, { zMax: 400 }); })),
+        blast(e, x, y, 80, { dmg: skillDmg(2.5, 0.8, lv) * (e.act.mergeMul || 1), type: 'indep', stun: 0.6, launch: 240, knock: 30, hs: 0.04, sure: true, downHit: true, col: e.act.merged ? '#bff4ff' : '#fff0a0', pmTok: e.act }, { zMax: 400 }); if (e.act.merged) pmSkyLaser(x + rnd(-30, 30), y, 0.3, 24, '#8fe8ff'); })),
       evAt(2.25, e => { cam.shake = 14; cam.flash = 0.3; cam.flashCol = '#fff6d0'; sfx.boom(1.5); fxShock(e.x, e.y, 260, '#ffe07a'); fxDust(e.x, e.y, 14, 40); }),
       ...Array.from({ length: 15 }, (_, i) => evAt(2.3 + i * 0.06, e => { const r = 60 + i * 26, a = i * 2.4, x = e.x + Math.cos(a) * r, y = clamp(e.y + Math.sin(a) * r * 0.35, 8, DEPTH - 8);
         fxBurst(x, y, 20, 170, '#ffc060'); if (i % 3 === 0) sfx.boom(0.5); cam.shake = Math.max(cam.shake, 5);
-        blast(e, x, y, 85, { dmg: skillDmg(1.4, 0.45, lv), type: 'indep', launch: 360, knock: 120, hs: 0.04, sure: true, downHit: true, col: '#ffd0a0' }, { zMax: 300 }); }))] }) });
+        blast(e, x, y, 85, { dmg: skillDmg(1.4, 0.45, lv) * (e.act.mergeMul || 1), type: 'indep', launch: 360, knock: 120, hs: 0.04, sure: true, downHit: true, col: '#ffd0a0' }, { zMax: 300 }); }))] }) });
+// 神兵天降的“预输入一觉合并威力”：升空阶段（激光开始前）输入一觉（技能栏键或 ↑↑↓↓+Z），而且一觉施放前是好的 →
+// 一觉的威力并进三觉（后面的激光和连锁爆炸按一觉 / 三觉的威力比例加伤，激光多一道蓝色光束），同时给全队挂上一觉的 BUFF；一觉照常进共享冷却
+function pmAwk3Merge(e, I) {
+  const a = e.act; if (!a.a1Ready || a.merged || e.actT >= 1.35) return false;
+  const slot = barOf(e).indexOf('pm_awk1'), key = slot >= 0 && I.buffered('s' + slot) ? 's' + slot : I.buffered('cmd') && cmdMatch(I, 'uudd', e.face, e) ? 'cmd' : null;
+  if (!key) return false;
+  I.consume(key); a.merged = true;
+  const l1 = Math.max(1, lvOf(e, 'pm_awk1')), l3 = Math.max(1, a.lv || lvOf(e, 'pm_awk3'));
+  a.mergeMul = 1 + SKILLS.pm_awk1.pow(l1) / SKILLS.pm_awk3.pow(l3);
+  if (e === game.player) partySend('buff', { id: 'pm_awk1', b: { t: 33, atk: 0.12 + 0.03 * (l1 - 1), aspd: 0.1, mspd: 0.1, col: '#3ac0ff' }, aura: '#8fe8ff' }, e);
+  fxText('威力合并：区域肃清', e.x, e.y, e.z + 40, { col: '#8fe8ff', size: 13, dur: 1.1 }); fxAura(e, '#3ac0ff', 0.8); sfx.pmZap(1);
+  return true;
+}
 // 三觉和一觉共享冷却：施放一觉时三觉也进入冷却
 { const A1 = SKILLS.pm_awk1, act0 = A1.act; A1.act = (lv, p) => { const A = act0(lv, p), s0 = A.onStart; return { ...A, onStart: e => { if (s0) s0(e); if (!e.ghost) e.cool.pm_awk3 = Math.max(e.cool.pm_awk3 || 0, A1.cd * (e.cdMul || 1)); } }; }; }
 

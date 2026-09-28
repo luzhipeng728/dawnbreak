@@ -100,7 +100,8 @@ class Ent {
         a.chargeT += dt;
         const held = this.pad ? this.pad.is(a.key) : false, C = a.charge;
         if (C.update) C.update(this, dt, a.chargeT / C.max);
-        if ((!held && a.chargeT >= (C.min || 0)) || a.chargeT >= C.max) {
+        // C.hold：蓄满后继续按住就一直保持满蓄（最多再保持 C.holdMax 秒，默认 10），松开才发射（魔法师 移动施法）
+        if ((!held && a.chargeT >= (C.min || 0)) || (a.chargeT >= C.max && !(C.hold && held && a.chargeT < C.max + (C.holdMax ?? 10)))) {
           a.charging = false; a.chargeDone = true; a.chargeK = clamp(a.chargeT / C.max, 0, 1); a.dmgMul *= 1 + a.chargeK * (C.dmg ?? 0.5);
           if (C.clip) { this.play(a.clip || a.name, true); this.animT = C.at; }
           if (C.onRelease) C.onRelease(this, a.chargeK);

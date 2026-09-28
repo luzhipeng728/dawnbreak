@@ -14,6 +14,7 @@
 //   presses：[秒…] 在这些时刻再按一次技能键（再按 / 引爆）   watch：最多观察多少秒（默认 8；召唤阵持续更久时加大）   minWatch：至少观察多少秒
 //   （动作结束后，木桩落地、投射物 / 召唤物 / game.after 定时器 / 地面效果都结束才停）
 //   at：木桩离人物多远（默认 70px；空中下砸类可以放近一点）   air：先起跳再放（airDelay 帧后按键，默认 8）   set：{ 字段: 值 } 施放前写到人物身上（结束后还原）
+//   learn：{ 技能id: 等级 } 施放前改技能等级（结束后还原；例：0 = 不学改形态的被动，量原版形态）
 //   随机数每次施放都从同一个种子开始（结果可复现，和技能顺序无关）
 // 输出：test/shots/audit/<职业>-<转职>.json（每个技能每种摆法的全部数据）+ 终端里一张表；--compare 时再打印不一致清单
 // 用法：node test/skillaudit.mjs sword,sword:berserker [--compare[=docs/skills/sword.json]] [--only id1,id2] [--weapon katana] [--setups light,air]
@@ -92,7 +93,8 @@ function pageInit() {
     A.step(1); projs.length = 0;
     Object.assign(p, { x: 300, y: 100, vx: 0, vy: 0, face: 1, cool: {}, invul: 0, superArmor: 0 }); p.mp = p.mpMax; p.hp = p.hpMax * (o.hp || 1);
     const setK = o.set || {}, setOld = {}; for (const k in setK) { setOld[k] = p[k]; p[k] = setK[k]; }   // 规格的 set：施放前改人物字段（结束后还原）
-    const unset = () => { for (const k in setOld) { if (setOld[k] === undefined) delete p[k]; else p[k] = setOld[k]; } };
+    const learnK = o.learn || {}, learnOld = {}; for (const k in learnK) { learnOld[k] = game.skillLv[k]; game.skillLv[k] = learnK[k]; }   // 规格的 learn：施放前改技能等级（例：不学改形态的被动，量原版形态）
+    const unset = () => { for (const k in setOld) { if (setOld[k] === undefined) delete p[k]; else p[k] = setOld[k]; } for (const k in learnOld) game.skillLv[k] = learnOld[k]; };
     const D = [];
     if (setup === 'light') D.push(A.dummy('goblin', 300 + (o.at || 70), 100, 'main'));
     else if (setup === 'heavy') D.push(A.dummy('tauBeast', 310 + (o.at || 70), 100, 'main'));
@@ -119,7 +121,7 @@ function pageInit() {
           if (presses.includes(f)) A.tap('s0');
           else if (mode === 'hold') { if (A.t < (o.holdT || 4) && (mine0 || f < 3)) input.virt.s0 = 1; else delete input.virt.s0; }
           else if (mode === 'mash') { if (mine0 && A.t < (o.mashT || 6) && f % 6 === 0) A.tap('s0'); else if (input.virt.s0 !== 2) delete input.virt.s0; }
-          else if (mine0 && a0.charge && !a0.chargeDone) input.virt.s0 = 1;
+          else if (mine0 && a0.charge && !a0.chargeDone && !(a0.chargeT >= a0.charge.max)) input.virt.s0 = 1;   // 蓄满就松开（移动施法的蓄气蓄满后按住会一直保持）
           else if (mine0 && a0.follow && a0.followWin && p.actT >= a0.followWin[0] + 0.6 * ((a0.followWin[1] ?? a0.dur) - a0.followWin[0]) && !followed.has(a0)) { followed.add(a0); A.tap('s0'); }   // 追加：在窗口后段再按（正常节奏，不截断当前段的多段判定）
           else if (input.virt.s0 !== 2) delete input.virt.s0;
         }
@@ -236,7 +238,7 @@ for (const item of list) {
   const rows = [];
   for (const s of skills) {
     const sp = specS[`${s.id}@${job}`] || specS[s.id] || {};
-    const o = { pre: sp.pre, hp: sp.hp, input: sp.input, holdT: sp.holdT, mashT: sp.mashT, dir: sp.dir, presses: sp.presses, watch: sp.watch, minWatch: sp.minWatch, air: sp.air, at: sp.at, airDelay: sp.airDelay, set: sp.set };
+    const o = { pre: sp.pre, hp: sp.hp, input: sp.input, holdT: sp.holdT, mashT: sp.mashT, dir: sp.dir, presses: sp.presses, watch: sp.watch, minWatch: sp.minWatch, air: sp.air, at: sp.at, airDelay: sp.airDelay, set: sp.set, learn: sp.learn };
     const R = { static: s };
     for (const su of SETUPS) R[su] = await page.evaluate(({ id, su, o }) => AUD.run(id, su, o), { id: s.id, su, o });
     res.skills[s.id] = R;

@@ -1,6 +1,7 @@
 // 协战师（神枪手第 5 转职，辅助；docs/SKILLS_OFFICIAL_gun.md 第 8 节）：暂停游戏循环、逐帧推进，逐条验证
 // 单机：只能学 5 个基础技能、强袭战斗服变身 + [SCQC] 普攻、战场信息（收集 / 上限 3 层 / 消耗）、无动作 BUFF（技能中施放不打断）、
-//       保护罩（吸伤、叠加上限）、强化保护罩（减伤 + 霸体）、单人专属加成（独立 +32%、冷却 −20%、耗层激光轰炸）、全部技能能放、回城变回来
+//       保护罩（吸伤、叠加上限）、强化保护罩（减伤 + 霸体）、单人专属加成（独立 +32%、冷却 −20%、耗层激光轰炸）、全部技能能放、回城变回来、
+//       神兵天降预输入一觉合并威力
 // 联机（2 人组队刷图）：协战师的 BUFF / 保护罩 / 净化同步到队友（队友在别的房间也生效），队友的影子也穿战斗服
 //   node test/paramedic.mjs          只跑单机部分：node test/paramedic.mjs solo
 import { launch, URL_BASE } from './lib.mjs';
@@ -78,6 +79,10 @@ const onlySolo = process.argv[2] === 'solo';
     out.casted = casted; out.castFail = Object.keys(casted).filter(k => !casted[k]);
     // 11) 回城：变回原来的样子
     T.clear(); T.reset(); game.scene = 'town'; pmSuitSync(p); out.town = { on: !!p._pmSuit, acts: p.acts === GUN_ACTS }; game.scene = 'test'; pmSuitSync(p);
+    // 12) 神兵天降：一觉本来是好的 → 升空阶段按一觉合并威力（伤害更高）；一觉在冷却中 → 按了也不合并
+    const awk3 = pre => { T.clear(); T.reset(); const m = T.mob(420, 100); const hp0 = m.hp; game.skillBar[12] = 'pm_awk1'; if (!pre) p.cool.pm_awk1 = 99; castSkill(p, 'pm_awk3');
+      T.run(70); T.tap('s12'); const a = p.act; T.run(260); return { merged: !!(a && a.merged), mul: +((a && a.mergeMul) || 1).toFixed(2), dmg: hp0 - m.hp, cd1: Math.round(p.cool.pm_awk1 || 0) }; };
+    out.merge = awk3(true); out.noMerge = awk3(false); T.clear(); T.reset();
     return out;
   });
   report('基础技能只能学 5 个（后撩踢 / 浮空弹 / 钉刺射 / 刺踢 / 上旋踢），其他转职不受影响；学不了的放不出来', R.base.allowed.join() === 'g_flash,g_knee,g_launch,g_spin,g_stomp' && R.base.ranger === R.base.total && R.base.gatlingCast === null && R.base.jobList >= 19, R.base);
@@ -91,6 +96,7 @@ const onlySolo = process.argv[2] === 'solo';
   report('保护罩：一层约 12%，叠加总量不超过最大 HP 的 60%，挨打时先扣护盾（HP 不掉）', R.shield.one >= 10 && R.shield.one <= 15 && R.shield.cap <= 70 && R.shield.cap >= 55 && R.shield.hpSame && R.shield.absorbed > 0, R.shield);
   report('强化保护罩：受到的伤害 −20%、霸体、外加小护盾', R.red.buff && R.red.taken <= -0.2 && R.red.sa && R.red.shield, R.red);
   report('二觉 / 三觉没完成觉醒任务时放不出来', !R.tierLocked.awk2 && !R.tierLocked.awk3, R.tierLocked);
+  report('神兵天降：升空阶段预输入一觉合并威力（伤害更高、一觉进冷却）；一觉冷却中不合并', R.merge.merged && R.merge.mul > 1.2 && R.merge.dmg > R.noMerge.dmg * 1.2 && R.merge.cd1 > 100 && !R.noMerge.merged, { merge: R.merge, noMerge: R.noMerge });
   report('全部技能都能放', R.castFail.length === 0, R.castFail.length ? R.castFail : Object.keys(R.casted).length);
   report('回城变回原来的样子（原模型、原普攻）', !R.town.on && R.town.acts, R.town);
   const errs = logs.filter(l => l.type !== 'warning'); report('单机无报错', errs.length === 0, errs.slice(0, 3));

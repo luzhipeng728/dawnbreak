@@ -460,6 +460,8 @@ CLASSES.sword.cmds.push(['du', 'wm_autoguard', 'buff'], ['ff', 'wm_edge', 'buff'
   ['dff', 'wm_meteor'], ['fbuf', 'wm_kuubatto'], ['fbf', 'wm_hakuu'], ['duf', 'wm_shunzan'], ['duff', 'wm_awaken2'], ['udff', 'wm_mukei'], ['bufd', 'wm_awaken3']);
 // 流心可以取消：普攻（强制，天然可以）、里·鬼剑术（算普攻）、三段刃、逆转反击
 SKILLS.triple.links = ['flow'];
+// 武器精通阈值（SKILLS_OFFICIAL_sword.md 3.2）：太刀 / 光剑 5 级 → 三段刃 +2 斩（共 7 段）
+{ const tn0 = tripleN; tripleN = p => p && jobOf(p) === 'blade' && ['katana', 'lightsaber'].includes(swWt(p)) && skLv(p, 'wm_arcana') >= 5 ? TRIPLE_N + 2 : tn0(p); }
 // 剑魂被动：光剑掌握（攻速）、武器奥义（攻击力）、无我剑气（技能伤害）
 CLASSES.sword.passives.push(p => {
   const blade = jobOf(p) === 'blade', saber = blade && skLv(p, 'wm_saber') && swWt(p) === 'lightsaber';

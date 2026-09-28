@@ -73,6 +73,7 @@
 | 完整回归 | `sh test/all.sh`（约 70 分钟，后台跑，跑的时候别重新构建） |
 | 技能连拍体检 | `node test/skillshots.mjs <职业:转职,...>` 或 `all` |
 | 技能机制体检（命中数 / 浮空 / 追加浮空 / 倒地 / 弹地 / 抓取 / 原生霸体·无敌比例 / 位移 / 范围 / 冷却 / 召唤物，逐帧确定性，约 1 秒一个转职） | `node test/skillaudit.mjs <职业:转职,...> [--compare] [--only id,...] [--weapon 武器]`；和官方规格 `docs/skills/<职业>.json` 对比用 `--compare`（没写理由的不一致 → 退出码 1）。规格字段、输入方式（pre / input / hp / dir / presses / watch / at / air）见脚本头注释和 `docs/skills/sword.json` 的 `_meta`；输出 `test/shots/audit/<职业>-<转职>.json` |
+| 觉醒取消回归（15 个转职，每个技能放到 30% 切觉醒，查残留，约 15 秒） | `node test/awkcancel.mjs [职业:转职,...]` |
 | 决斗场排位服务端自测 / 联机实测 | `node --disable-warning=ExperimentalWarning server/test/arena.mjs`（约 10 秒）/ `node test/arena.mjs`（2 个页面） |
 | 决斗平衡（18 职业 AI 循环赛，无渲染快进约 40 秒） | `node test/pvp_balance.mjs 8 all`；自动调 `PVP_JOB`：`node test/pvp_balance.mjs 6 all 4` |
 | 浮空 / 受身蹲伏定量测试 | `node test/juggle.mjs`（参数表 `JUGGLE`，docs/COMBAT_JUGGLE.md） |
@@ -120,5 +121,7 @@
 
 - **2026-09-28 满级 30 → 60**：先用页面里的“解析探针”（固定种子装备 + 伤害公式算击杀 / 扛几下 + 技能等级成长系数）把怪物等级倍率、经验指数调好，再只跑 2 次机器人对照确认，比反复跑机器人便宜得多。关键坑：伤害公式的防御常数固定 1200，怪物防御按老斜率涨到 Lv60 会减伤 83% → 30 级以后防御不再涨；刷怪时 `spawnMonster` 还会再乘一遍等级倍率（区域怪的基础值已经按等级算过），调难度要两层一起看。规则和数值见 GEAR.md §1.2，回归 `node test/levelcap.mjs`。
 - **2026-09-29 魔法师行为级对齐（docs/skills/mage_behavior.md，6 个转职到三觉）**：数值对齐（skillaudit）之后再逐技能比“怎么玩”（阶段 / 再按 / 方向 / 蓄气引导 / 召唤物行为 / 标志画面）。做法：主线程先读引擎钩子（act.onInput / follow / recast / charge / summon.js）再 fork 5 个子智能体，**每个转职一个、各用独立 worktree**（dist 各自构建，互不干扰），主线程做基础技能 + 合并 + 统一跑 classes / pvp_balance / quick.sh；每个 fork 交一份“官方要点 | 现状 | 不一致 | 已修”的清单，主线程拼成一份。坑：① `BM_ACTS` / `WITCH_ACTS` 是加载时从 `MAGE_ACTS` 复制的，改基础普攻 / 跑攻会被转职继承（跑攻打空扑倒要排除战法）；② 行为改强后决斗胜率会漂（魔道学者 70%）→ 只调 `PVP_JOB` 一个数再跑一次循环赛；③ 后台测试没跑完就重新构建会让正在加载的页面超时，调参要等测试结束；④ `| tail` 管道会吞掉退出码和前面的输出，长测试直接重定向到文件；⑤ 生图插图去白底后被主体围住的白底会残留成白斑 → `sky_art.clear_holes`（阈值放宽）+ 保护区（白衬衫 / 月亮）恢复原 alpha。
+- **2026-09-29 三职业行为对齐的遗留项（觉醒取消 / 魔法师新被动 / 过门 / 机械 HP 等）**：通用改动先写一个覆盖全转职的确定性回归（`test/awkcancel.mjs`：每个技能放到 30% 切觉醒，先放一次不取消的当对照，再比人物布尔字段有没有残留），比逐个技能看画面省得多；生图只出 1 张样图（图标）自己审，再一次性批量（1 个图标 + 3 张南瓜表情用原图图生图改脸，风格和原图一致）。
+  - 坑：① 会自己吞按键的动作（`onInput` 返回 true，例：天雷落点）挡住 trySkill → 觉醒键要在 onInput 之前单独看（`tryAwk`）；② 命中时的 hitstop 期间人物不处理输入，测试里按键后要多等几帧；③ 测试间残留的变身 / 开关状态（人偶剧场、机械指令停火）会让下一次施放变成“再按”，逐次复原人物字段；④ 实体会被 `R.x0 + w` 夹在墙内，车身宽的载具到不了门的判定区 → 门判定加 `doorPad`；⑤ 决斗 AI 学会切觉醒后，没转职的职业和剑影 / 机械师掉到 36%，按最小改动上调 PVP_JOB 三项即可（10 场 / 对跑了 4 次看方差）。
 ||||||| c6fc44a
 - **2026-09-28 在线更新提示 + 无缝续玩**：版本号在 build.mjs 里按页面内容算（`BUILD_ID`，顺带替换了联机的脚本指纹 `netBuild`），`version.json` 最后上传；续玩状态放 sessionStorage，刷新后在 `boot()` 里等 `account.syncing`（云存档对完版本）再进，城镇里存精确坐标（`save.data.loc` 平时 2 秒才更新一次），队伍靠服务端 20 秒掉线宽限自动回队。测试不改 dist/web：临时目录复制 index.html、素材目录做软链，改 BUILD_ID + version.json 模拟部署，一个测试覆盖城镇 / 地下城回城 / 账号云存档三种情况。坑：横幅放右下角要跟着菜单栏的实际高度走（栏会多出行），地下城里还要让开实时评价面板；层级要高过窗口，不然被背包挡住。worktree 里没有 server/node_modules，跑联机测试前软链主仓库的。

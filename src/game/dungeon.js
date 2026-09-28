@@ -39,6 +39,12 @@ function genLayout(def, seed) {
   return { rooms: [...rooms.values()], cols, rows, start: path[0], boss: cur, pathLen: path.length };
 }
 const OPP = { left: 'right', right: 'left', up: 'down', down: 'up' };
+// 可以带着过门的动作：蓄气中的移动施法（charge.keepRoom）、开着走的载具（act.keepRoom = true 或 fn(p)，魔道学者 冰霜钻孔车 / 乌洛波洛斯之环）
+function actKeepsRoom(p) {
+  const a = p.act; if (!a) return false;
+  if (a.charging && a.charge && a.charge.keepRoom) return true;
+  return typeof a.keepRoom === 'function' ? !!a.keepRoom(p) : !!a.keepRoom;
+}
 function dirTo(a, b) { return b.gx > a.gx ? 'right' : b.gx < a.gx ? 'left' : b.gy < a.gy ? 'up' : 'down'; }
 
 class Dungeon {
@@ -76,7 +82,10 @@ class Dungeon {
     const p = game.player;
     const pos = { left: [60, DEPTH / 2], right: [W - 60, DEPTH / 2], up: [W / 2, 20], down: [W / 2, DEPTH - 16] };
     const [px, py] = fromDir ? pos[fromDir] : [120, DEPTH / 2];
-    p.x = px; p.y = py; p.z = 0; p.vx = p.vy = p.vz = 0; p.face = fromDir === 'right' ? -1 : 1; if (p.act) p.endAct(); p.setState('idle');
+    // 能带进下一个房间的动作（actKeepsRoom）：换房后调 act.onRoom / charge.onRoom（重新瞄准、把载具摆到门口），其他动作照旧结束
+    const carry = p.st === 'act' && actKeepsRoom(p);
+    p.x = px; p.y = py; p.z = carry ? p.z : 0; p.vx = p.vy = p.vz = 0; p.face = fromDir === 'right' ? -1 : 1;
+    if (carry) { const a = p.act; if (a.onRoom) a.onRoom(p); if (a.charge && a.charge.onRoom) a.charge.onRoom(p); } else { if (p.act) p.endAct(); p.setState('idle'); }
     p.juggle = 0; p.downHits = 0; p.bounced = false; p.stun = 0; p.drawFlip = false;
     cam.x = clamp(p.x - WW / 2, 0, W - WW);
     if (!room.cleared) this.spawnRoom(room, W, first); else this.onCleared(true);
@@ -120,10 +129,11 @@ class Dungeon {
       else if (this.room.type !== 'boss') { this.room.cleared = true; this.onCleared(false); }
     }
     // 门
-    if (this.doorsOpen && !p.dead && p.st !== 'act') {
+    if (this.doorsOpen && !p.dead && (p.st !== 'act' || actKeepsRoom(p))) {
       const R = game.room, W = R.x1;
+      const pad = (p.st === 'act' && p.act && p.act.doorPad) || 0;   // 载具（人坐在车上，车身宽、到不了墙边）：门的判定放宽一点
       for (const d in this.room.doors) {
-        const hitDoor = d === 'left' ? p.x <= 30 && Math.abs(p.y - DEPTH / 2) < 50 : d === 'right' ? p.x >= W - 30 && Math.abs(p.y - DEPTH / 2) < 50
+        const hitDoor = d === 'left' ? p.x <= 30 + pad && Math.abs(p.y - DEPTH / 2) < 50 : d === 'right' ? p.x >= W - 30 - pad && Math.abs(p.y - DEPTH / 2) < 50
           : d === 'up' ? p.y <= 10 && Math.abs(p.x - W / 2) < 60 : p.y >= DEPTH - 8 && Math.abs(p.x - W / 2) < 60;
         if (hitDoor) { this.go(d); break; }
       }

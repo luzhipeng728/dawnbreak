@@ -30,6 +30,7 @@ run auditsw   node test/skillaudit.mjs sword,sword:blade,sword:berserker,sword:a
 run summon    node test/summon.mjs
 run gunner    node test/gunner.mjs
 run mage      node test/mage.mjs
+run awkcancel node test/awkcancel.mjs   # 觉醒取消：15 个转职每个技能放到 30% 切觉醒
 run summoner  node test/summoner.mjs
 run paramedic node test/paramedic.mjs
 run enchant   node test/enchantress.mjs

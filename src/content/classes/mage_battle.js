@@ -181,9 +181,29 @@ defSkill('bm_raid', { name: '强袭流星打', cls: 'mage', job: BM, lvReq: 19, 
     hits: [HB(0.1, 0.5, [-20, 76, 32, 0, 110], skillDmg(7.0, 0.7, lv), { launch: 520, knock: 120, hs: 0.1, big: 1.6, shake: 4 })],
     onLand: e => { if (e.act.back) { e.vx = 0; e.endAct(); } } }) });
 // 煌龙偃月：召唤巨型金色偃月刀向前连续突刺，强制把敌人推到刀尖（霸体、不可抓取的也推得动，固定型除外）；刺到敌人时刀尖周围生成 7 颗龙之炫纹依次爆炸，最后一次大爆炸
+// 煌龙乱舞（官方 45 级 → 本作 20 级，可选的形态被动）：学会后煌龙偃月改为挥舞偃月刀连续横扫 6 次，没有抓取 / 推到刀尖；
+//   连按 X 挥得更快（动作整体加速），按住 → 边走边打；最后一扫把敌人打飞。期间照样按住炫纹键自动连发炫纹
+defSkill('bm_dragondance', { name: '煌龙乱舞', cls: 'mage', job: BM, lvReq: 20, maxLv: 1, passive: true, type: 'phys', col: '#f0a830', pre: { bm_dragon: 1 },
+  desc: '【被动 · 改变形态】学会后，煌龙偃月改为：召唤巨大的金色偃月刀，连续横扫 6 次，最后一扫把敌人打飞；不再把敌人推到刀尖。释放中连按 X 挥得更快，按住 → 可以边走边打。（不想要这个形态就不学）' });
+const BM_DANCE_T = [0.1, 0.3, 0.5, 0.7, 0.9, 1.12];
+function bmDragonDance(lv) {
+  const sw = i => { const last = i === 5; return HB(BM_DANCE_T[i], BM_DANCE_T[i] + 0.08, [-40, 150, 50, 0, 140], skillDmg(last ? 3.6 : 1.9, last ? 0.36 : 0.19, lv),
+    last ? { launch: 460, knock: 220, hs: 0.12, big: 1.8, shake: 5, snd: 'blunt' } : { stun: 0.45, knock: 50, hs: 0.05, big: 1.2, shake: 1.5, snd: 'blunt' }); };
+  return { name: 'bm_dragon', clip: 'bmSweep', dur: 1.5, superArmor: true, noCounter: true, dance: true,
+    hits: [0, 1, 2, 3, 4, 5].map(sw),
+    onInput: (e, I) => { const a = e.act; if (I.buffered('attack')) { I.consume('attack'); a.fastT = 0.3; } a.fwd = isHuman(e) ? I.dx() === e.face : false; return false; },
+    update: (e, dt) => { const a = e.act; a.fastT = Math.max(0, (a.fastT || 0) - dt); a.spd0 ??= a.spd; a.spd = a.spd0 * (a.fastT > 0 ? 1.6 : 1);
+      e.vx = a.fwd && e.actT < 1.2 ? e.face * 150 : 0;
+      if (e.actT < 1.3) chaserAuto(e, 0.2); },
+    events: BM_DANCE_T.map((t, i) => evAt(t - 0.03, e => { const up = i % 2 === 0, last = i === 5;
+      e.play(up ? 'bmSweep' : 'bmSpin', true); sfx.swing(true); if (last) { cam.shake = Math.max(cam.shake, 5); sfx.boom(0.6); }
+      fxSlashOn(e, { col: '#ffd060', a0: up ? -1.6 : 1.3, a1: up ? 1.3 : -1.6, r: last ? 130 : 110, w: last ? 34 : 26, off: [30, 62], dur: 0.2 });
+      fxSpr('dragonfang', e.x + e.face * 80, e.y, e.z + 62, { w: last ? 260 : 200, dur: 0.22, flip: (e.face < 0) !== !up, rot: up ? -0.5 : 0.5, grow: [0.8, 1.1] });
+      if (last) { fxBurst(e.x + e.face * 110, e.y, e.z + 60, 200, '#ffd070'); fxShock(e.x + e.face * 110, e.y, 180, '#ffd070'); } })) };
+}
 defSkill('bm_dragon', { name: '煌龙偃月', cls: 'mage', job: BM, lvReq: 20, mp: 80, cd: 45, type: 'phys', col: '#f0c030',
   desc: '召唤一把巨大的金色偃月刀向前连续突刺，把敌人强制推到刀尖（霸体和无法抓取的敌人也推得动，固定型的除外）。刺中敌人时刀尖周围生成 7 颗龙之炫纹依次爆炸，最后一次大爆炸。全程霸体；期间按住炫纹键会自动连发炫纹。', pow: lv => skillDmg(11, 1.1, lv), ai: { kind: 'burst', r: [0, 130], dy: 26 },
-  act: (lv) => ({ name: 'bm_dragon', clip: 'fangRush', dur: 1.6, superArmor: true, noCounter: true, move: [[0.05, 0.75, 160]],
+  act: (lv, p) => p && hasSkill(p, 'bm_dragondance') ? bmDragonDance(lv) : ({ name: 'bm_dragon', clip: 'fangRush', dur: 1.6, superArmor: true, noCounter: true, move: [[0.05, 0.75, 160]],
     hits: [HB(0.05, 0.75, [0, 110, 32, 10, 120], skillDmg(0.5, 0.05, lv), { rep: 0.09, stun: 0.4, knock: 0, hs: 0.02, snd: 'stab', onHit: (a, t) => { if (!t.fixed && !t.def_?.fixed) t.x = a.x + a.face * 100; if (a.act) a.act.stuck = true; } })],
     update: e => { const a = e.act; if (e.actT < 0.75 && Math.random() < 0.3) fxSpr('dragonfang', e.x + e.face * 70, e.y, e.z + 60, { w: 200, dur: 0.12, flip: e.face < 0 }); if (e.actT < 1.35) chaserAuto(e, 0.2); },
     events: [evAt(0.8, e => { const a = e.act; e.play('fang', true); const x = e.x + e.face * 110; cam.flash = 0.12; cam.flashCol = '#fff0b0'; sfx.iai();
@@ -215,7 +235,7 @@ defSkill('bm_awaken', { name: '星纹陨爆', cls: 'mage', job: BM, lvReq: 21, m
     onEnd: e => { e.drawOpts = {}; } }) });
 CLASSES.mage.jobs.battlemage = { art: 'job/battlemage', name: '战斗法师', role: '近战 · 连击', armor: 'leather', awaken: 'bm_awaken', awakenName: '贝亚娜斗神',
   desc: '把魔力灌注进矛和棍、近身搏斗的魔法师。连招流畅；战斗中不断生成炫纹，命中敌人后把炫纹射出去追击。',
-  skills: ['bm_combo', 'bm_shieldup', 'bm_niu', 'bm_realphase', 'bm_chaser', 'bm_round', 'bm_instinct', 'bm_weapon', 'bm_double', 'bm_bomb', 'bm_smash', 'bm_super', 'bm_flash', 'bm_press', 'bm_raid', 'bm_dragon', 'bm_will', 'bm_awaken'] };
+  skills: ['bm_combo', 'bm_shieldup', 'bm_niu', 'bm_realphase', 'bm_chaser', 'bm_round', 'bm_instinct', 'bm_weapon', 'bm_double', 'bm_bomb', 'bm_smash', 'bm_super', 'bm_flash', 'bm_press', 'bm_raid', 'bm_dragon', 'bm_dragondance', 'bm_will', 'bm_awaken'] };
 CLASSES.mage.cmds.push(['f', 'bm_chaser', 'buff'], ['fd', 'bm_round'], ['ff', 'bm_instinct', 'buff'], ['dd', 'bm_double'], ['uu', 'bm_bomb'], ['bdf', 'bm_smash'], ['df', 'bm_super', 'buff'],
   ['fdf', 'bm_flash'], ['ud', 'bm_press'], ['bff', 'bm_raid'], ['uff', 'bm_dragon'], ['bfbf', 'bm_awaken']);
 // ---- 尼巫的战术：战斗法师专属普攻（刺 → 上挑 → 大横扫），跑攻打空也不摔 ----

@@ -481,7 +481,7 @@ defSkill('gm_g2', { name: '改装：G-2 旋雷者', cls: 'gun', job: MC, lvReq: 
   recast: { ok: p => gsForm(p) === 'g2' || (hasGop(p) && !!gsForm(p) && tfReady(p)), instant: p => gsForm(p) === 'g2' || p.st === 'act', cd: 0.2, mp: 0, act: (lv, p) => gsForm(p) === 'g2' ? g2Wave(p) : gopTransform(p, 'g2') },
   act: () => gsTfAct('g2') });
 
-/* ---- G-3 捕食者 ×6：在身边待命；再按技能键缠到范围内（500 px）等级最高的敌人身上持续电击（每 0.5 秒），再按一次召回 ---- */
+/* ---- G-3 捕食者 ×6：在身边待命；再按技能键缠到范围内（500 px）等级最高的敌人身上持续电击（每 0.5 秒），按住技能键 / 再按一次召回 ---- */
 function g3Pick(s) {
   const o = s.owner, L = foesNear(o, o.x, o.y, 500, 160).filter(t => t.invul <= 0 || t.st === 'down'); if (!L.length) return null;
   const cnt = new Map(); for (const u of summonsOf(o, 'mech_g3')) if (u !== s && u.tgt) cnt.set(u.tgt, (cnt.get(u.tgt) || 0) + 1);
@@ -490,8 +490,17 @@ function g3Pick(s) {
   ok.sort((a, b) => (cnt.get(a) || 0) - (cnt.get(b) || 0) || foeGrade(b) - foeGrade(a));
   return ok[0];
 }
+// 按住 G-3 的技能键 0.35 秒 = 召回（官方操作；再按一次召回也保留）：由 0 号捕食者每帧看一次
+const G3_HOLD = 0.35;
+function g3HoldRecall(p) {
+  const G = gsState(p), slot = barOf(p).indexOf('gm_g3'), held = slot >= 0 && p.pad && p.pad.is('s' + slot);
+  if (!held) { G.g3h0 = null; G.g3hDone = false; return; }
+  if (G.g3h0 == null) G.g3h0 = game.t;
+  if (!G.g3hDone && game.t - G.g3h0 >= G3_HOLD) { G.g3hDone = true; if (G.g3on) { G.g3on = false; sfx.beep(); if (isHuman(p)) fxText('捕食者：召回', p.x, p.y, p.z + 20, { col: '#ffe080', size: 10, dur: 0.6 }); } }
+}
 function g3AI(s, dt) {
   const o = s.owner, G = gsState(o);
+  if (s.idx === 0) g3HoldRecall(o);
   if (G.g3on && !mechHeld(s)) {
     let t = s.tgt; if (!t || t.dead || t.remove || Math.abs(t.x - o.x) > 560) { t = s.tgt = g3Pick(s); s.stuck = false; }
     if (t) {
@@ -515,7 +524,7 @@ function g3Toggle(p) {
 }
 defSummon('mech_g3', { ...G_FOLLOW, max: 7, onSpawn: s => mechSpawn(s, 'g3', { hz: 60, puff: false }), ai: g3AI });
 defSkill('gm_g3', { name: '改装：G-3 捕食者', cls: 'gun', job: MC, lvReq: 18, mp: 50, cd: GS_TF_CD, type: 'mag', elem: 'light', col: '#e89a3a', pre: { gm_g2: 3 },
-  desc: '把在场的科罗纳 / 旋雷者改装成 6 台捕食者，在身边待命。再按技能键，捕食者分头缠到周围（500 px 内）等级最高的敌人身上持续电击（使敌人硬直）；目标倒下会自动找下一个。再按一次召回。和 G-1 共用持续时间，改装冷却 5 秒。本技能等级也提高科罗纳、旋雷者的攻击力。',
+  desc: '把在场的科罗纳 / 旋雷者改装成 6 台捕食者，在身边待命。再按技能键，捕食者分头缠到周围（500 px 内）等级最高的敌人身上持续电击（使敌人硬直）；目标倒下会自动找下一个。按住技能键（或再按一次）召回。和 G-1 共用持续时间，改装冷却 5 秒。本技能等级也提高科罗纳、旋雷者的攻击力。',
   pow: lv => MECH_DMG.g3(lv) * 6 * 2 * 10, infoExtra: lv => [['每台每 0.5 秒', pct(MECH_DMG.g3(lv))], ['缠绕范围', '500 px'], ['G-1 / G-2 攻击力', '+' + pct(0.04 * lv)]], ai: { kind: 'aoe', r: [0, 480], dy: 120 },
   req: gsReq('g3'),
   recast: { ok: p => gsForm(p) === 'g3' || (hasGop(p) && !!gsForm(p) && tfReady(p)), instant: p => gsForm(p) === 'g3' || p.st === 'act', cd: 0.25, mp: 0, act: (lv, p) => gsForm(p) === 'g3' ? g3Toggle(p) : gopTransform(p, 'g3') },

@@ -250,7 +250,7 @@ function sbGhostWave(lv, p) {   // 噬灵鬼斩的追加：最后召唤的鬼神
   M.act = (lv, p) => {
     const a = act0(lv, p); if (!p || !sbJob(p)) return a;
     a.chain = [0.3, 0.46]; a.next = 'atk1';   // 鬼泣：普攻取消后摇
-    if (sbLv(p, 'sb_fullmoon')) { const f0 = a.follow; a.follow = () => { const b = f0(); b.chain = [0.28, 0.44]; b.next = 'atk1'; b.follow = () => sbFullMoon(lv); b.followWin = [0.14, 0.44]; return b; }; }
+    if (sbLv(p, 'sb_fullmoon')) { const f0 = a.follow; a.follow = () => { const b = f0(); b.chain = [0.28, 0.44]; b.next = 'atk1'; b.follow = e => sbLv(e, 'sb_crown') ? sbCrownMoon(lv) : sbFullMoon(lv); b.followWin = [0.14, 0.44]; return b; }; }
     return a;
   };
 }
@@ -258,6 +258,49 @@ function sbFullMoon(lv) {
   return { name: 'moon3', clip: 'rise', dur: 0.5, noCounter: true, move: [[0.02, 0.12, 100]],
     hits: [HB(0.08, 0.18, [-10, 84, 34, 0, 150], skillDmg(2.0, 0.2, lv), { launch: 520, knock: 30, hs: 0.09, shake: 3, type: 'mag', elem: 'dark' })],
     events: [slashAt(0.07, { a0: 1.4, a1: -1.9, r: 76, w: 24, off: [10, 50], col: '#d8c8ff', heavy: true })] };
+}
+// 满月斩（鬼神冠冕后）：上挑划出一轮满月 → 月亮被染黑 → 横斩击碎，碎片四散（打击在击碎那一下，附带失明见 onHit 钩子）
+function sbCrownMoon(lv) {
+  return { name: 'moon3', clip: 'rise', dur: 0.72, noCounter: true, move: [[0.02, 0.1, 60]],
+    hits: [HB(0.42, 0.52, [0, 130, 44, 0, 170], skillDmg(2.4, 0.24, lv), { launch: 480, knock: 60, hs: 0.1, shake: 4, big: 1.4, type: 'mag', elem: 'dark' })],
+    events: [slashAt(0.05, { a0: 1.4, a1: -1.9, r: 76, w: 20, off: [10, 50], col: '#e8e0ff' }),
+      evAt(0.08, e => sbMoonFx(e, e.x + e.face * 70, e.y, e.z + 95, 0.62)),
+      evAt(0.38, e => { e.play(e.clipOr('atk2', 'atk3'), true); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, a0: -0.9, a1: 0.8, r: 96, w: 26, off: [14, 70], col: '#b080ff', dur: 0.18 }); sfx.swing(true); }),
+      evAt(0.44, e => { sfx.boom(0.5); cam.shake = Math.max(cam.shake, 4); fxBurst(e.x + e.face * 70, e.y, e.z + 95, 120, '#8a5ae0'); })] };
+}
+// 程序画的月亮：0~0.3 造月（淡金白的满月长出来）→ 0.3~0.58 染黑（黑影从一侧漫过去，只剩紫色的边）→ 0.58 起击碎（楔形碎片四散淡出）
+function sbMoonFx(e, x, y, z, dur) {
+  const R = 52, N = 10, shards = Array.from({ length: N }, (_, i) => { const a = (i + rnd(-0.3, 0.3)) * TAU / N; return { a, w: TAU / N * rnd(0.8, 1.1), v: rnd(160, 260), spin: rnd(-8, 8) }; });
+  addFx({ x, y: y + 0.6, z, dur, face: e.face, draw(c) {
+    const k = this.t / this.dur, X = sx(this.x), Y = sy(this.y, this.z);
+    c.save();
+    if (k < 0.58) {
+      const g = clamp(k / 0.3, 0, 1), r = R * (0.25 + 0.75 * easeOut(g)), dk = clamp((k - 0.3) / 0.28, 0, 1);
+      c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5 * g;
+      const halo = c.createRadialGradient(X, Y, r * 0.6, X, Y, r * 1.8); halo.addColorStop(0, dk > 0 ? 'rgba(170,110,255,0.8)' : 'rgba(255,245,210,0.8)'); halo.addColorStop(1, 'rgba(120,80,255,0)');
+      c.fillStyle = halo; c.beginPath(); c.arc(X, Y, r * 1.8, 0, TAU); c.fill();
+      c.globalCompositeOperation = 'source-over'; c.globalAlpha = g;
+      const body = c.createRadialGradient(X - r * 0.3, Y - r * 0.3, r * 0.1, X, Y, r); body.addColorStop(0, '#fffbe8'); body.addColorStop(1, '#e8dcff');
+      c.fillStyle = body; c.beginPath(); c.arc(X, Y, r, 0, TAU); c.fill();
+      if (dk > 0) {   // 染黑：黑影从背对角色的一侧漫过整个月面
+        c.save(); c.beginPath(); c.arc(X, Y, r, 0, TAU); c.clip();
+        c.fillStyle = '#140a22'; c.beginPath(); c.arc(X + this.face * r * 2 * (1 - dk * dk * (3 - 2 * dk)), Y, r * 1.15, 0, TAU); c.fill(); c.restore();
+        c.strokeStyle = `rgba(190,140,255,${0.5 + 0.5 * dk})`; c.lineWidth = 2.5; c.beginPath(); c.arc(X, Y, r, 0, TAU); c.stroke();
+      }
+    } else {   // 击碎
+      const q = (k - 0.58) / 0.42, d = easeOut(q);
+      for (const s of shards) {
+        c.save(); c.translate(X + Math.cos(s.a) * s.v * d * 0.5, Y + Math.sin(s.a) * s.v * d * 0.5 + 40 * q * q); c.rotate(s.spin * q);
+        c.globalAlpha = 1 - q;
+        c.fillStyle = '#1c0e30'; c.strokeStyle = '#c09aff'; c.lineWidth = 1.5;
+        c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, R * (1 - 0.3 * q), s.a - s.w / 2, s.a + s.w / 2); c.closePath(); c.fill(); c.stroke();
+        c.restore();
+      }
+      c.globalCompositeOperation = 'lighter'; c.globalAlpha = (1 - q) * 0.7; c.strokeStyle = '#d0b0ff'; c.lineWidth = 3;
+      c.beginPath(); c.arc(X, Y, R * (1 + q * 1.6), 0, TAU); c.stroke();
+    }
+    c.restore();
+  } });
 }
 { const K = SKILLS.kazan, r0 = K.req; K.req = p => sbJob(p) ? '鬼泣已转为被动' : r0 ? r0(p) : true; }
 
@@ -271,7 +314,7 @@ defSkill('sb_fear', { name: '恐惧光环', cls: 'sword', job: 'soulbender', lvR
 defSkill('sb_mastery', { name: '御鬼之极', cls: 'sword', job: 'soulbender', lvReq: 26, maxLv: 1, mp: 0, cd: 0, type: 'mag', passive: true, col: '#9a6aff',
   desc: '【被动 · 二觉】驾驭鬼神达到极致：技能攻击力提高；鬼影闪随时可以施放；转职技能命中时自动附加普戾蒙的减益（受到的伤害增加）。' });
 defSkill('sb_crown', { name: '鬼神冠冕', cls: 'sword', job: 'soulbender', lvReq: 29, mp: 0, cd: 0, type: 'mag', passive: true, col: '#c0a0ff',
-  desc: '【被动 · 三觉】九大鬼神之王的冠冕：技能攻击力提高；满月斩附带失明。', infoExtra: lv => [['技能攻击力', '+' + pct(0.06 + 0.012 * lv)]] });
+  desc: '【被动 · 三觉】九大鬼神之王的冠冕：技能攻击力提高；满月斩改变形态——划出一轮满月，把它染黑后一刀击碎，附带失明。', infoExtra: lv => [['技能攻击力', '+' + pct(0.06 + 0.012 * lv)]] });
 
 /* ---- 鬼斩：炼狱：斩裂地面，冥界之刃从地下升起定住敌人 2 秒，随后刀刃崩碎再斩一次（同一敌人最多 2 段；现版没有爆炸）---- */
 defSkill('sb_purgatory', { name: '鬼斩：炼狱', cls: 'sword', job: 'soulbender', lvReq: 23, mp: 70, cd: 30, type: 'mag', elem: 'dark', col: '#8a3aff',

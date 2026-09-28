@@ -161,6 +161,24 @@
    ],
    "cd": 6
   },
+  "triple@blade": {
+   "official": "三段刃（剑魂）：武器精通阈值——太刀 / 光剑 5 级后 +2 斩（共 7 段）；其他武器 5 段",
+   "src": "docs/SKILLS_OFFICIAL_sword.md 3.2（武器精通阈值）",
+   "conf": "高",
+   "hits": [
+    6,
+    10
+   ],
+   "acts": [
+    7,
+    7
+   ],
+   "dx": [
+    150,
+    900
+   ],
+   "cd": 6
+  },
   "wave": {
    "official": "沿地面发出波动剑，击退并击倒；等级越高波越大；CD 3s",
    "src": "https://wiki.dfo.world/view/Force_Wave:_Neutral",
@@ -1212,7 +1230,7 @@
    "src2": "https://namu.wiki/w/%EC%86%8C%EC%9A%B8%EB%B8%8C%EB%A7%81%EC%96%B4(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },
   "moon@soulbender": {
-   "official": "月光斩（鬼泣）：可用普攻取消；满月斩再追加一记双手上挑（共 3 击）",
+   "official": "月光斩（鬼泣）：可用普攻取消；满月斩再追加一记双手上挑（共 3 击）；鬼神冠冕后第 3 击变成“造月 → 染黑 → 击碎”（击碎那一下是伤害，附带失明）",
    "src": "https://wiki.dfo.world/view/Moonlight_Slash",
    "en": "Moonlight Slash",
    "conf": "高",

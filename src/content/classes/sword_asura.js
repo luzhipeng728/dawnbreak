@@ -46,14 +46,16 @@ defSkill('as_mark', { name: '波动刻印', cls: 'sword', job: 'asura', lvReq: 1
 
 /* ---- 鬼印珠：需要波动印，一次消耗全部。发射高速旋转的珠子多段攻击，自己和被击中的敌人都减速；约 4 秒或打满后爆炸。印越多越痛 ---- */
 defSkill('as_orb', { name: '鬼印珠', cls: 'sword', job: 'asura', lvReq: 15, mp: 25, cd: 6, type: 'indep', col: '#b89aff', req: asMarkReq,
-  desc: '【需要波动印，消耗全部】向前发射高速旋转的鬼印珠，多段攻击并减速敌人（施放后自己也会短暂减速），约 4 秒后或打满次数时爆炸。消耗的波动印越多伤害越高（2 / 3 / 4 / 5 个：+5% / 10% / 15% / 20%）。',
+  desc: '【需要波动印，消耗全部】向前发射高速旋转的鬼印珠，多段攻击并减速敌人（施放后自己也会短暂减速），飞行中能抵消敌人的远程攻击（子弹、火球这类，激光不行），约 4 秒后或打满次数时爆炸。消耗的波动印越多伤害越高（2 / 3 / 4 / 5 个：+5% / 10% / 15% / 20%）。',
   pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'proj', r: [0, 320], dy: 30 },
   act: (lv, p) => ({ name: 'as_orb', clip: 'asOrb', dur: 0.5, noCounter: true,
     events: [evAt(0.22, e => { const n = asMarkTake(e), m = 1 + 0.05 * Math.max(0, n - 1); sfx.swing(true); sfx.charge(); e.buffs.as_orbslow = { t: 1.2, mspd: -0.3 };
       spawnProj({ owner: e, x: e.x + e.face * 40, y: e.y, z: e.z + 60, vx: e.face * 170, face: e.face, life: 4.3, w: 26, d: 24, h: 40, pierce: true,
         hit: { dmg: skillDmg(0.22, 0.022, lv) * m, rep: 0.2, max: 14, stun: 0.25, knock: 8, hs: 0.02, type: 'indep', col: AS_COL },
         onHitT(pr, t) { addStatus(t, 'slow', 1.5, { src: e }); pr.vx = Math.sign(pr.vx) * Math.max(40, Math.abs(pr.vx) * 0.7); pr.hits = (pr.hits || 0) + 1; if (pr.hits >= 14) pr.t = pr.life; },
-        update(pr, dt) { if (Math.abs(pr.vx) > 70) pr.vx *= Math.exp(-0.25 * dt); },
+        update(pr, dt) { if (Math.abs(pr.vx) > 70) pr.vx *= Math.exp(-0.25 * dt);
+          // 飞行中抵消敌方的远程攻击（子弹 / 火球 / 飞石……；激光这类大判定的不行）
+          if (eraseProjs(pr.team, { x0: pr.x - pr.w, x1: pr.x + pr.w, y0: pr.y - pr.d, y1: pr.y + pr.d, z0: pr.z - 10, z1: pr.z + pr.h }, q => fxBurst(q.x, q.y, q.z, 50, AS_COL))) sfx.hit(); },
         onEnd(pr) { sfx.boom(0.6); fxBurst(pr.x, pr.y, pr.z, 150, AS_COL); fxShock(pr.x, pr.y, 90, AS_COL);
           blast(e, pr.x, pr.y, 80, { dmg: skillDmg(1.4, 0.14, lv) * m, launch: 300, knock: 120, hs: 0.06, type: 'indep', col: AS_COL }, { zMax: 150 }); },
         draw(c, pr) { const X = sx(pr.x), Y = sy(pr.y, pr.z); drawSpr(c, fxTint('darkorb', AS_COL), X, Y, 44, 0, { rot: pr.t * 12 }); drawSpr(c, fxTint('rune', AS_COL), X, Y, 60, 0, { rot: -pr.t * 5, alpha: 0.6 }); } }); })] }) });

@@ -84,6 +84,9 @@ const R = await page.evaluate(() => {
   p.gsTfT = 0; p.cool.gm_g3 = 0; T.cast('gm_g3'); T.run(30); out.g3 = { n: T.n('mech_g3'), form: gsForm(p) };
   m.hp = 1e9; hp0 = m.hp; p.cool['gm_g3~'] = 0; T.cast('gm_g3'); T.sec(2.5); out.g3.on = p.gs.g3on; out.g3.stuck = summonsOf(p, 'mech_g3').filter(s => s.stuck).length; out.g3.dmg = dealt(m, hp0);
   p.cool['gm_g3~'] = 0; T.cast('gm_g3'); T.sec(1.0); out.g3.recalled = !p.gs.g3on && summonsOf(p, 'mech_g3').every(s => !s.tgt);
+  // 按住 G-3 的技能键 0.35 秒也是召回（官方操作）
+  p.cool['gm_g3~'] = 0; T.cast('gm_g3'); T.sec(1.5); out.g3.on2 = p.gs.g3on; input.virt.s4 = 1; T.sec(0.2); out.g3.stillOn = p.gs.g3on; T.sec(0.3); delete input.virt.s4; T.sec(0.8);
+  out.g3.holdRecall = !p.gs.g3on && summonsOf(p, 'mech_g3').every(s => !s.tgt);
   // G-1 键 = 改装回 G-1
   p.gsTfT = 0; p.cool['gm_g1~'] = 0; T.cast('gm_g1'); T.run(30); out.back = gsForm(p);
   T.clear(); T.reset();
@@ -196,6 +199,7 @@ report('G-1：身后浮空炮台、自动射击命中；再按技能键补射', 
 report('改装：G-2 三台，持续 +10 秒不超过 20 秒；改装冷却 5 秒挡住 G-3', o.tf.form === 'g2' && o.tf.n === 3 && o.tf.left1 > o.tf.left0 && o.tf.left1 <= 20 && o.tf.blockedMsg === '改装冷却中', o.tf);
 report('G-2：充满电后再按发射 3 道电磁波，电量清零', o.g2.waves === 3 && o.g2.dmg > 0 && o.g2.chgAfter < 1, o.g2);
 report('G-3：6 台；再按缠到敌人身上持续电击（同一个敌人最多 2 台），再按召回', o.g3.n === 6 && o.g3.form === 'g3' && o.g3.on && o.g3.stuck === 2 && o.g3.dmg > 0 && o.g3.recalled, o.g3);
+report('G-3：按住技能键 0.35 秒召回（按下 0.2 秒时还缠着）', o.g3.on2 && o.g3.stillOn && o.g3.holdRecall, o.g3);
 report('G-1 键在其他形态下 = 改装回 G-1', o.back === 'g1', o.back);
 report('G 系扩张：改装冷却 0，叠层最多 5', o.gext.stacks === 5 && o.gext.tfReady, o.gext);
 report('Ex-S：最多 9 台（第 10 台挤掉最早的），会打人，6 秒后自爆', o.viper.n === 9 && o.viper.firstGone && o.viper.dmg && o.viper.after === 0, o.viper);

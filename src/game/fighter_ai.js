@@ -118,6 +118,9 @@ class FighterBrain {
   attack(o, dx, dy, adx, ady, dir) {
     const p = this.p, P = p.pad, L = this.L;
     const inAir = p.st === 'jump' || p.z > 2, busySkill = p.st === 'act' && !canSkillCancel(p);
+    // 觉醒取消：自己的技能打中对手（硬直 / 浮空 / 被抓）时中途切入觉醒
+    if (busySkill && !inAir && this.t > 6 && o.lastHitBy === p && (o.st === 'hit' || o.st === 'air' || o.st === 'held') && o.hp > o.hpMax * 0.2 && Math.random() < L.awaken * 0.25) {
+      const a = this.pickSkill(['awaken'], adx, ady, false); if (a && canCancelInto(p, a) && this.cast(a, dir)) return; }
     if (busySkill) return;
     // BUFF：开局 / 过期后补上
     if (p.free && Math.random() < 0.5) { const b = this.pickSkill(['buff'], adx, ady, false); if (b && !p.buffs[b]) { this.cast(b, dir); return; } }

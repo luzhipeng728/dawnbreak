@@ -50,9 +50,9 @@ function duelFairSnap(p) {
 const PVP_SKILL = { awaken: 0.5, grab: 0.8, summon: 0.8, burst: 0.85, aoe: 0.9 };
 // 职业（转职）整体修正：AI 循环赛（node test/pvp_balance.mjs 6 all 6）自动调出来的，1 = 不修正；数组 = [造成伤害, 受到伤害]（未转职技能太少，只加伤害追不上）
 const PVP_JOB = {
-  'sword:': [2.5, 0.55], 'sword:blade': 0.75, 'sword:berserker': 1.04, 'sword:asura': [0.45, 1.15], 'sword:soulbender': 0.99, 'sword:ghostblade': 0.72,
-  'gun:': [2.5, 0.65], 'gun:ranger': 1.16, 'gun:launcher': 1.15, 'gun:spitfire': 0.58, 'gun:mechanic': 0.58, 'gun:paramedic': 1.4,
-  'mage:': 1.58, 'mage:elemental': 0.83, 'mage:battlemage': 0.93, 'mage:summoner': 0.5, 'mage:witch': 0.8, 'mage:enchantress': 0.93,
+  'sword:': [2.5, 0.55], 'sword:blade': 0.75, 'sword:berserker': 1.04, 'sword:asura': [0.45, 1.15], 'sword:soulbender': 0.99, 'sword:ghostblade': 0.78,
+  'gun:': [2.5, 0.65], 'gun:ranger': 1.16, 'gun:launcher': 1.15, 'gun:spitfire': 0.58, 'gun:mechanic': 0.62, 'gun:paramedic': 1.4,
+  'mage:': 1.7, 'mage:elemental': 0.83, 'mage:battlemage': 0.93, 'mage:summoner': 0.5, 'mage:witch': 0.8, 'mage:enchantress': 0.93,
 };
 for (const id in SKILLS) {
   const S = SKILLS[id]; if (!S || S.passive) continue;

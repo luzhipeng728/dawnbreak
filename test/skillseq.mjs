@@ -62,6 +62,11 @@ const SCEN = {
     { js: `game.skillBar[1] = 'as_awaken3'; const r = castSkill(game.player, 'as_awaken3', false, 's1'); run(90); return [r, !!game.player.buffs.as_domain, game.player.act && game.player.act.skill]` }, { shot: '万空代替收尾' },
     { js: `run(160); game.player.cool = {}; cast('as_mui'); run(8); W.dx = 1; run(3); W.dx = 0; run(20)` }, { shot: '无为法对侧' }, { js: `run(30)` }, { shot: '引爆' },
   ] },
+  // 鬼神冠冕后的满月斩：月光斩 → 追加上斩 → 满月斩（造月 → 染黑 → 击碎）
+  moon: { job: 'soulbender', steps: [
+    { js: `game.skillLv.sb_fullmoon = 1; game.skillLv.sb_crown = 1; mob(470, 100); cast('moon'); run(16); input.virt.s0 = 2; run(1); delete input.virt.s0; run(16); input.virt.s0 = 2; run(1); delete input.virt.s0; run(6); return game.player.act && game.player.act.name` }, { shot: '造月' },
+    { js: `run(11)` }, { shot: '染黑' }, { js: `run(8)` }, { shot: '击碎' }, { js: `run(8)` }, { shot: '碎片' },
+  ] },
   cross: { job: 'blade', steps: [
     { js: `mob(470, 100); cast('cross'); run(16)` }, { shot: '十字' }, { js: `run(8)` }, { shot: '血十字飞' },
   ] },

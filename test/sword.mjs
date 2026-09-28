@@ -1,7 +1,8 @@
 // 鬼剑士（男）官方对齐测试（docs/SKILLS_OFFICIAL_sword.md）：暂停游戏循环、逐帧推进，逐条验证
 // 基础：三段刃 5 段、空之连刃空中连斩、后跳中银光落刃、月光斩追加、十字刃追加 / 可被取消、嗜魂之手通用且不回血、卡赞（剑影不能学）
 // 剑魂：里·鬼剑术按武器段数、接回普攻、流心 X / Space / C 派生与落地回架势、三段刃 → 流心、拔刀斩打身后、逆转反击（被背击时 Z）、光剑冷却
-// 狂战士：狂暴之力开关 + 二刀流 + 扣血、狂暴前置（没开时提示开启方法、自动放上快捷栏、图标高亮）、爆发之刃命中即爆可取消、血气旺盛出血、狂暴冷却、饥渴蓄力耗血。node test/sword.mjs
+// 狂战士：狂暴之力开关 + 二刀流 + 扣血、狂暴前置（没开时提示开启方法、自动放上快捷栏、图标高亮）、爆发之刃命中即爆可取消、血气旺盛出血、狂暴冷却、饥渴蓄力耗血。
+// 遗留项（09-29）：鬼印珠抵消投射物、剑魂太刀 / 光剑三段刃 7 段、鬼神冠冕后的满月斩。node test/sword.mjs
 import { launch, URL_BASE } from './lib.mjs';
 let fail = 0;
 const report = (name, ok, info) => { if (!ok) fail++; console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}  ${JSON.stringify(info)}`); };
@@ -246,6 +247,31 @@ report('阿修罗：背击回避、邪光波动阵定身', R.backEvade && R.root
 report('狂暴之力没开：提示怎么开（按键）', /需要狂暴之力（.+开启）/.test(R.needMsg || ''), R.needMsg);
 report('狂战士：狂暴之力自动放上快捷栏前排', R.gateSlot >= 0 && R.gateSlot < 7, R.gateSlot);
 report('狂暴之力开启：BUFF 图标高亮', R.frenzyHl, R.frenzyHl);
+// ---- 2026-09-29 补做的遗留项：鬼印珠抵消投射物、剑魂三段刃 7 段、鬼神冠冕后的满月斩 ----
+const R2 = await page.evaluate(() => {
+  const out = {}, p = game.player; T.clear();
+  const seq = (id, n = 120) => { T.cast(id); const names = []; for (let i = 0; i < n; i++) { T.run(1); if (p.act && !names.includes(p.act.name)) names.push(p.act.name); if (p.act && p.actT > 0.16) T.tap('s0'); } return names; };
+  // 鬼印珠：飞行中抵消敌方投射物（大判定的激光不抵消）
+  T.job('asura'); T.bar(['as_orb']); T.reset(); p.buffs.as_mark = { t: 9999, n: 3, gen: 7 }; p.cool = {};
+  const sh = T.mob(1000, 100); T.cast('as_orb'); T.run(16); const orb = projs.find(q => q.owner === p);
+  const small = spawnProj({ owner: sh, x: orb.x + 140, y: p.y, z: orb.z + 10, vx: -320, face: -1, life: 3, w: 10, d: 12, h: 20, pierce: false, hit: { dmg: 10, stun: 0.2 } });
+  const big = spawnProj({ owner: sh, x: orb.x + 140, y: p.y, z: orb.z + 10, vx: -320, face: -1, life: 3, w: 70, d: 30, h: 60, pierce: true, hit: { dmg: 10, stun: 0.2 } });
+  let bigCulled = false; for (let i = 0; i < 30; i++) { T.run(1); if (big.culled) bigCulled = true; }
+  out.orbErase = projs.indexOf(small) < 0 && !!small.culled; out.orbKeepsBig = !bigCulled; T.clear(); T.run(200);
+  // 剑魂：太刀 / 光剑 + 武器奥义 5 级 → 三段刃 7 段；巨剑还是 5 段
+  T.job('blade'); T.bar(['triple']); T.weapon('katana'); T.reset(); out.bladeKatana = seq('triple').filter(n => n.startsWith('triple')).length;
+  T.weapon('greatsword'); T.reset(); out.bladeGreat = seq('triple').filter(n => n.startsWith('triple')).length; T.weapon('katana');
+  // 鬼泣：学了鬼神冠冕后满月斩 = 造月 → 染黑 → 击碎（0.72 秒，击碎附带失明）；没学时还是 0.5 秒的双手上挑
+  T.job('soulbender'); T.bar(['moon']); T.reset(); const mm = T.mob(390, 100); let m3 = null;
+  T.cast('moon'); for (let i = 0; i < 150; i++) { T.run(1); if (p.act && p.act.name === 'moon3' && !m3) m3 = p.act.dur; if (p.act && p.actT > 0.16 && p.act.name !== 'moon3') T.tap('s0'); }
+  out.crownMoon = m3; out.crownBlind = !!(mm.status && mm.status.blind); T.clear();
+  game.skillLv.sb_crown = 0; T.reset(); m3 = null; T.cast('moon'); for (let i = 0; i < 150; i++) { T.run(1); if (p.act && p.act.name === 'moon3' && !m3) m3 = p.act.dur; if (p.act && p.actT > 0.16 && p.act.name !== 'moon3') T.tap('s0'); }
+  out.plainMoon = m3; game.skillLv.sb_crown = SKILLS.sb_crown.maxLv || 1;
+  return out;
+});
+report('鬼印珠：飞行中抵消敌方投射物，激光类大判定不抵消', R2.orbErase && R2.orbKeepsBig, [R2.orbErase, R2.orbKeepsBig]);
+report('剑魂三段刃：太刀 7 段、巨剑 5 段', R2.bladeKatana === 7 && R2.bladeGreat === 5, [R2.bladeKatana, R2.bladeGreat]);
+report('满月斩：鬼神冠冕后变成造月 → 染黑 → 击碎（附带失明），没学时是普通上挑', R2.crownMoon === 0.72 && R2.crownBlind && R2.plainMoon === 0.5, [R2.crownMoon, R2.crownBlind, R2.plainMoon]);
 const errs = logs.filter(l => l.type !== 'warning'); if (errs.length) fail++;
 console.log('LOGS', JSON.stringify(errs.slice(0, 6), null, 1));
 await browser.close();

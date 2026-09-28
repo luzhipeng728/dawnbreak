@@ -41,3 +41,15 @@ function updateProjs(dt) {
   }
 }
 function drawProjShadows(c) { for (const p of projs) if (p.shadow) { c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(sx(p.x), sy(p.y, 0), p.shadow, p.shadow * 0.35, 0, 0, TAU); c.fill(); } }
+// 抵消投射物（阿修罗 鬼印珠“飞行中抵消远程攻击”）：删掉和盒子 B 重叠的敌方投射物，不触发它们的 onEnd（爆炸 / 分裂）；
+// 太大的（激光 / 光柱这类 w > maxW）和写了 noErase 的不算；fn(q) 在删掉前调（画火花）；返回删掉的个数
+function eraseProjs(team, B, fn, maxW = 48) {
+  let n = 0;
+  for (const q of projs) {
+    if (!q || q.team === team || !q.hit || q.noErase || q.w > maxW || q.t >= q.life) continue;
+    if (q.x + q.w < B.x0 || q.x - q.w > B.x1 || q.y + q.d < B.y0 || q.y - q.d > B.y1 || q.z + q.h < B.z0 || q.z > B.z1) continue;
+    if (fn) fn(q);
+    q.hit = null; q.culled = true; q.t = q.life; n++;
+  }
+  return n;
+}

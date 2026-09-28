@@ -87,14 +87,16 @@
 | `superArmor` `invul` | `true` 或时间窗 `[t0,t1]` / `[[t0,t1],...]` |
 | `noCounter` `counterEnd` | 不会被破招 / 破招判定结束时间 |
 | `speed` | `'aspd'`（攻速，普攻默认）、`'cspd'`（施放速度，技能写 `cast: true`）、数字 |
-| `charge` | `{ at, max, min, dmg, clip, update, onRelease(e, k) }`：动作到 `at` 秒后按住技能键蓄力，松开或蓄满继续；`act.chargeK` 0..1，伤害 ×(1 + k × dmg) |
+| `charge` | `{ at, max, min, dmg, clip, update, onRelease(e, k), hold, holdMax, keepRoom, onRoom }`：动作到 `at` 秒后按住技能键蓄力，松开或蓄满继续；`hold` = 蓄满后继续按住保持满蓄（最多 `holdMax` 秒，默认 10）；`keepRoom` = 蓄气中可以带着过门（换房后调 `onRoom(e)`）；`act.chargeK` 0..1，伤害 ×(1 + k × dmg) |
+| `keepRoom` `onRoom` `doorPad` | 动作可以带着过门（`true` 或 `fn(e)`，例：魔道学者的载具），换房后调 `onRoom(e)`；`doorPad` 放宽门的判定（车身宽、人到不了墙边） |
+| `noAwk` | 这个动作 / 技能不能被觉醒打断（默认都能） |
 | `cancelFrom` | 此后可以被技能 / 后跳取消；没有就不能取消（觉醒） |
 | `basic` `chain` `next` | 普攻：`chain:[开始, 结束]` 内按 X 接 `next`（字符串或 `p => 名字`）；普攻随时可被技能取消，命中后可被后跳取消 |
 | `follow(p)` `followWin` | 追加段（三段斩、双鹰回旋）：窗口内再按同一个键或 Z |
 | `guard` `grabAt` `hold(e,t)` `onGrab(e,t)` | 格挡、抓取相关 |
 | `airOnly` `lowGrav` | 空中动作、空中重力倍率 |
 
-取消规则（与原作一致）：普攻 → 任何技能（随时）；普攻打出判定后 → 后跳；技能 → 其他技能 / 后跳（`cancelFrom` 之后）；觉醒不能取消。闪避（Shift / V）可以在站立、普攻中、技能后摇中使用，受击硬直中使用（紧急闪避）冷却更长。
+取消规则（与原作一致）：普攻 → 任何技能（随时）；普攻打出判定后 → 后跳；技能 → 其他技能 / 后跳（`cancelFrom` 之后）；**普攻和大部分技能施放中途都能直接切入觉醒（一 / 二 / 三觉，`awkCancelOk`；空中只能切能在空中放的觉醒，写了 `noAwk` 的除外；决斗场同样适用）**；觉醒本身不能被取消。闪避（Shift / V）可以在站立、普攻中、技能后摇中使用，受击硬直中使用（紧急闪避）冷却更长。
 
 ## 6. 输入与控制器
 
@@ -197,7 +199,7 @@
 | 聚焦喷火器 | gl_flame | ←↑→+Z | 21 | 独立·火 | 霸体、可移动 |
 | FM-31 榴弹发射器 | gl_fm31 | ↑→→+Z | 23 | 独立 |  |
 | 量子爆弹 | gl_quantum | ↑↓+Z | 25 | 独立·光 | 可移动落点 |
-| X-1 压缩量子炮 | gl_x1 | ←←→+Z | 27 | 独立 | 蓄力、霸体、吸附 |
+| X-2 太阳神光炮 | gl_x1 | ←←→+Z | 20 | 独立·火 | 瞬发（不蓄气）、霸体、卷敌 + 灼烧后爆炸（官方 2022 年 X-2 取代 X-1，id 沿用） |
 | 远古粒子炮 | gl_awaken | ↑↑↓↓+Z | 18 | 独立 | 觉醒 |
 
 #### 魔法师（女）· 基础技能

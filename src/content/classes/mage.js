@@ -48,12 +48,13 @@ function fxSigil(name, x, y, z, o = {}) {
     const a = (o.alpha ?? 1) * (k < 0.08 ? k / 0.08 : k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1);
     drawSpr(c, img, sx(this.x), sy(y, this.z), w, w * GR, { ground: true, rot: (o.rot || 0) + (o.spin ?? 1.2) * this.t, alpha: a, add: o.add !== false }); } });
 }
-/* ---- 蓄气：PvE 只放大范围、决斗场才加伤害（官方 2017 年以后的规则）；学了移动施法（元素师）可以边蓄边走；
+/* ---- 蓄气：PvE 只放大范围、决斗场才加伤害（官方 2017 年以后的规则）；学了移动施法（元素师）可以边蓄边走、蓄满后按住保持、带进下一个房间；
    蓄气中双击方向可以冲刺；魔法秀 / 魔法记忆（BUFF 字段 chargeCut）缩短蓄气时间；basic = 四个基础元素技能（魔法记忆额外缩短） ---- */
 const chargeCut = (p, basic) => clamp(buffVal(p, 'chargeCut') + (basic ? buffVal(p, 'chargeCutB') : 0), 0, 0.95);
+// 移动施法：蓄满后按住可以一直保持满蓄边走边带着（hold），走进下一个房间也不会丢（keepRoom，换房时调 onRoom 重新瞄准）
 function mCharge(p, max, col, o = {}) {
-  const clip = o.clip || 'mchan';
-  return { at: o.at ?? 0.06, max: Math.max(0.04, max * (1 - chargeCut(p, o.basic))), min: 0, dmg: game.pvp ? (o.pvp ?? 0.4) : 0, clip,
+  const clip = o.clip || 'mchan', mv = !!p && typeof hasSkill === 'function' && hasSkill(p, 'el_movecast');
+  return { at: o.at ?? 0.06, max: Math.max(0.04, max * (1 - chargeCut(p, o.basic))), min: 0, dmg: game.pvp ? (o.pvp ?? 0.4) : 0, clip, hold: mv, keepRoom: mv, onRoom: o.onRoom,
     update: (e, dt) => { if (Math.random() < 0.4) fxCharge(e, col); mageChargeMove(e, clip); if (o.update) o.update(e, dt); } };
 }
 function mageChargeMove(e, clip) {

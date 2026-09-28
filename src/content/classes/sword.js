@@ -101,13 +101,14 @@ defSkill('rip', { name: '裂波斩', cls: 'sword', lvReq: 10, mp: 30, cd: 8, typ
         throwGrab(e, { dmg: skillDmg(1.2, 0.12, lv), launch: 480, knock: 120, hs: 0.1, big: 1.5 });
         blast(e, e.x + e.face * 30, e.y, 120, { dmg: skillDmg(1.0, 0.1, lv), launch: 420, knock: 100, hs: 0.06 }, { zMax: 160 }); })] }) });
 defSkill('triple', { name: '三段刃', cls: 'sword', lvReq: 15, mp: 25, cd: 6, type: 'phys', icon: 'triple', col: '#2aa0a0',
-  desc: '边向前滑行边斩击，再次按键追加下一段（最多 5 段，最后一段上挑浮空），每段之间可以用方向键转向。常用作位移。', pow: lv => skillDmg(1.3, 0.14, lv) * 5.4, ai: { kind: 'gap', r: [20, 160], dy: 26 },
-  act: (lv) => tripleStage(lv, 1) });
-const TRIPLE_N = 5;   // 现版 5 段（2025 年 TP 并入本体）
-function tripleStage(lv, n) {
-  const last = n === TRIPLE_N;
+  desc: '边向前滑行边斩击，再次按键追加下一段（最多 5 段，最后一段上挑浮空；剑魂装备太刀 / 光剑且武器奥义 5 级以上时最多 7 段），每段之间可以用方向键转向。常用作位移。', pow: lv => skillDmg(1.3, 0.14, lv) * 5.4, ai: { kind: 'gap', r: [20, 160], dy: 26 },
+  act: (lv, p) => tripleStage(lv, 1, tripleN(p)) });
+const TRIPLE_N = 5;   // 现版 5 段（2025 年 TP 并入本体；旧版 3 段）。剑魂 太刀 / 光剑 + 武器奥义 5 级再 +2 斩（sword_blade.js 覆盖 tripleN）
+let tripleN = p => TRIPLE_N;
+function tripleStage(lv, n, N = TRIPLE_N) {
+  const last = n === N;
   return { name: 'triple' + n, clip: last ? 'up' : ['dash', 'atk2', 'atk3', 'atk1'][(n - 1) % 4], dur: 0.34, cancelFrom: 0.22, move: [[0, 0.18, last ? 300 : 520]], noCounter: true,
-    follow: n < TRIPLE_N ? () => tripleStage(lv, n + 1) : null, followWin: [0.1, 0.34],
+    follow: n < N ? () => tripleStage(lv, n + 1, N) : null, followWin: [0.1, 0.34],
     onStart: n === 1 ? e => { e._tri = new Set(); } : undefined,
     update: e => { if (e._tri) for (const t of e._tri) if (!t.dead && !t.boss && t.weight <= 2 && (t.st === 'hit' || t.st === 'idle') && (t.x - e.x) * e.face < 36 && Math.abs(t.y - e.y) < 30) t.x = e.x + e.face * 36; },
     hits: [HB(0.02, 0.2, [-10, 60, 28, last ? -10 : 10, last ? 130 : 105], skillDmg(1.3, 0.14, lv) * (last ? 1.4 : 1), { stun: 0.45, knock: last ? 120 : 120, hs: 0.06, shake: last ? 3 : 1.5, launch: last ? 420 : 0, onHit: (a, t) => { if (a._tri) a._tri.add(t); } })],

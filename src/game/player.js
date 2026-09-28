@@ -6,6 +6,7 @@
      普攻（含跑攻、跳攻）→ 攻击类技能：随时（强制）；Buff 类技能（S.noForce，默认 = S.buff）不能取消普攻
      普攻 → 后跳：随时
      技能 → 其他技能：只有白名单——动作 / 技能上的 links（技能 id 列表，linkFrom 秒之后生效）、职业钩子 CLASSES[cls].cancelHook（次数制柔化等）
+     普攻 / 技能 → 觉醒（一 / 二 / 三觉）：随时（awkCancelOk；觉醒本身、非技能动作、写了 noAwk 的动作除外）
      技能 → 后跳：只有学了「后跳-强化」（c_bsup），冷却 40 秒；觉醒不能被取消
      受击 / 倒地中 ↓+C：「后跳-强化」的脱身，冷却 30 秒（和上面共用冷却），过程无敌 + 落地后 1 秒无敌
      动作中的派生键：act.keyLinks = { attack | cmd | jump: 技能id }（例：滑铲中按 X = 起身上旋踢）；倒地 / 起身中：CLASSES[cls].getupLinks
@@ -89,6 +90,8 @@ function playerControl(p, dt) {
   if (!p.free && p.st !== 'act') return;   // 硬直 / 浮空 / 倒地 / 起身 / 被抓
   // 后跳：↓ + C（站立、普攻中随时；技能中要有后跳-强化）
   if (I.buffered('jump') && I.is('down') && p.z <= 1) { const m = backstepMode(p); if (m) { I.consume('jump'); doBackstep(p, m); return; } }
+  // 觉醒取消先于动作自己的输入处理（天雷落点、连按追加这类 onInput 会吞掉按键）
+  if (p.st === 'act' && p.act && (p.act.onInput || p.act.keyLinks) && tryAwk(p)) return;
   // 动作自己处理输入（流心的 X/C/Z、移动射击、天雷落点、连按追加……）
   if (p.st === 'act' && p.act && p.act.onInput && p.act.onInput(p, I, dt)) return;
   // 动作中的派生键（例：滑铲中按 X = 起身上旋踢）
@@ -194,14 +197,22 @@ function canCancelInto(p, id) {
   if (S && S.instant) return true;                                            // 无动作施放：不打断当前动作
   if (S && recastInstant(p, S)) return true;                                  // 无动作的再按（给召唤物下命令）：也不打断
   if (a.name === 'back') return !!(S && S.air) && p.actT >= 0.06;              // 后跳算空中：可以接空中技能
-  if (a.basic) return !(S && (S.noForce ?? S.buff));                           // 强制：普攻随时可被攻击类技能取消
   const A = a.skill && SKILLS[a.skill];
+  if (S && S.awaken && airOk(p, S) && awkCancelOk(p, a, A)) return true;                     // 觉醒（一 / 二 / 三觉）：可以打断普攻和大部分技能
+  if (a.basic) return !(S && (S.noForce ?? S.buff));                           // 强制：普攻随时可被攻击类技能取消
   if (A && A.awaken) return false;
   const L = a.links || (A && A.links);
   if (L && L.includes(id) && p.actT >= (a.linkFrom ?? (A && A.linkFrom) ?? 0) && (!(a.hitCancel ?? (A && A.hitCancel)) || a.hitAny || p.hitsDone.size > 0)) return true;
   if (a.cancelable && a.cancelFrom !== undefined && p.actT >= a.cancelFrom) return true;   // 模式类动作（移动射击等）
   const C = CLASSES[p.cls]; if (C && C.cancelHook && C.cancelHook(p, a, id)) { p._soft = { a, id }; return true; }   // 职业专属柔化（女漫游「花式枪术」等）；真放出来才扣次数（softCommit）
   return false;
+}
+// 觉醒取消（官方现版）：普攻和大部分技能施放中途都能直接切入觉醒；觉醒本身、没有技能归属的动作（摔倒 / 起身之类）、
+// 动作或技能写了 noAwk（抓取演出这类中途切走会出问题的）不行；空中只切入能在空中放的觉醒（airOk 照常检查）
+function awkCancelOk(p, a, A) {
+  if (A && A.awaken) return false;
+  if (!a.basic && !A) return false;
+  return !(a.noAwk || (A && A.noAwk));
 }
 // 兼容旧调用：当前动作有没有可能被“某个”技能打断（AI 判断忙不忙用）
 function canSkillCancel(p) { return p.st !== 'act' || !p.act || !!p.act.basic || !!p.act.links || !!p.act.cancelable; }
@@ -313,6 +324,16 @@ function trySkill(p) {
       if (castSkill(p, id, seq !== '', key === 'cmdB' ? 'cmdB' : key)) return true;
     }
     if ((key === 'cmd' || key === 'cmdB') && !blocked) { I.consume(key); return false; }
+  }
+  return false;
+}
+// 技能动作中只看觉醒（技能栏按键 + 指令）：给自己处理输入的动作（onInput / keyLinks）用，别的动作走 trySkill
+function tryAwk(p) {
+  const I = p.pad, bar = barOf(p);
+  for (let i = 0; i < SKILL_SLOTS; i++) { const id = bar[i], S = id && SKILLS[id]; if (!S || !S.awaken || !I.buffered('s' + i) || !canCancelInto(p, id)) continue; I.consume('s' + i); if (castSkill(p, id, false, 's' + i)) return true; }
+  for (const [seq, id, k2] of CLASSES[p.cls].cmds) {
+    const S = SKILLS[id], key = CMD_KEY_OF[k2 || 'cmd']; if (!S || !S.awaken || seq === '' || !I.buffered(key) || !cmdMatch(I, seq, p.face, p) || !skillUsable(p, id) || (p.cool[id] || 0) > 0 || !canCancelInto(p, id)) continue;
+    I.consume(key); if (castSkill(p, id, true, key)) return true;
   }
   return false;
 }

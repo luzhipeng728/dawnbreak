@@ -148,17 +148,28 @@ function wtSprite(id, col) {
   return { draw(c, pose, t) { drawSpr(c, img(), 0, -40 + Math.sin(t * 4) * 3, 34, 34, {}); } };
 }
 // 机械：不走默认 AI，状态固定成 act（片段由技能动作控制，不会被 idle 覆盖）
+// 机械有自己的 HP（o.hpK × 主人 HP 上限，默认 0.6；o.hpK = 0 = 打不到）：挨打不硬直、不能被抓；被打坏时冒烟散架，技能提前结束（搭乘中的主角跳下来，不爆炸）
 function machDef(key, o) {
+  const hpK = o.hpK ?? 0.6;
   return defSummon('wt_' + key, { kind: 'follower', name: o.name, bundle: key, model: () => wtSprite(key, o.col), clips: WT_CLIPS[key], w: o.w || 22, d: o.d || 14, h: o.h || 100, scale: o.scale || 1, speed: 0, pref: 0, sight: 0,
-    life: o.life || 14, max: o.max || 1, col: o.col, type: 'indep', attacks: [], shadowR: o.shadowR || 30, tags: ['machine'].concat(o.tags || []),
-    onSpawn: s => { s.setState('act'); s.act = null; s.play('build', true); if (o.onSpawn) o.onSpawn(s); }, ai: () => { }, onEnd: o.onEnd,
-    update: (s, dt) => { if (s.auto) s.auto(s, dt); if (o.update) o.update(s, dt); } });
+    life: o.life || 14, max: o.max || 1, col: o.col, type: 'indep', attacks: [], shadowR: o.shadowR || 30, tags: ['machine'].concat(o.tags || []), weight: 99,
+    hp: hpK ? own => own.hpMax * hpK : undefined,
+    onSpawn: s => { s.setState('act'); s.act = null; s.play('build', true); if (hpK) { s.superArmor = Infinity; s.noGrab = true; } if (o.onSpawn) o.onSpawn(s); }, ai: () => { },
+    onEnd: (s, why) => { if (why === 'dead') machBroken(s); if (o.onEnd) o.onEnd(s, why); },
+    update: (s, dt) => { if (s.pinRoom) { if (s.pinRoom === game.room) { s.x = s.pinX; s.y = s.pinY; s.setState('act'); s.act = null; } s.pinRoom = null; }   // 载具开着过门：召唤框架换房时会把它挪到主人身后，这里挪回门口
+      if (s.auto) s.auto(s, dt); if (o.update) o.update(s, dt); } });
 }
 const mClip = (m, c) => { if (m && !m.gone && m.clipName !== c) m.play(c, true); };
 machDef('furnace', { name: '暴炎加热炉', h: 112, w: 26, col: '#ff9a50' });
 machDef('drill', { name: '冰霜钻孔车', h: 104, w: 30, col: '#9fe6ff' });
 machDef('tesla', { name: '电鳗碰撞机', h: 170, w: 26, col: '#fff38a', scale: 1 });
-machDef('antigrav', { name: '反重力装置', h: 64, w: 22, col: '#c79aff', life: 3 });
+machDef('antigrav', { name: '反重力装置', h: 64, w: 22, col: '#c79aff', life: 3, hpK: 0 });
+// 机械被打坏：冒烟、零件四散（没有爆炸伤害）
+function machBroken(m) {
+  sfx.hit('blunt', true); fxText('机械损坏！', m.x, m.y, (m.h || 100) + 10, { col: '#ffb070', size: 12, dur: 0.9 }); fxDust(m.x, m.y, 10, 40, '#6a6a6a');
+  for (let i = 0; i < 7; i++) { const vx = rnd(-160, 160), vz = rnd(160, 320), c = pick(['#8a8a9a', '#c0a070', '#5a5a6a']);
+    addFx({ x: m.x, y: m.y + 0.5, z: (m.h || 100) * 0.5, dur: 0.7, draw(cx) { const k = this.t, X = sx(this.x + vx * k), Y = sy(this.y, Math.max(0, this.z + vz * k - 500 * k * k)); cx.save(); cx.globalAlpha = 1 - k / this.dur; cx.fillStyle = c; cx.translate(X, Y); cx.rotate(k * 12); cx.fillRect(-4, -3, 8, 6); cx.restore(); } }); }
+}
 /* =====================================================================
    搭乘：放出机械，自己坐上去；期间免疫异常、受到伤害 −60%；学了引爆实验按跳跃当场引爆
    ===================================================================== */
@@ -387,8 +398,12 @@ const wtMash = (e, I, id) => { const sl = barOf(e).indexOf(id), k = sl >= 0 && I
 /* ---- 搭乘类技能的通用动作：组装 → 坐上去 → 持续输出 → 爆炸
    S = { id, key（机械 summon key）, fam（使魔）, bitter（苦涩的棒棒糖能强制失败）, dur / failDur（秒）, seat(e, a, m) → [前后偏移, 高度, 缩放?], pose（坐着的片段）,
          start(e, a, m), ride(e, a, m, k, dt), fail(e, a, m, k, dt), input(e, I, a), boom(e, a) → { dmg, elem, col, r } } ---- */
+// S.drive：开着走的载具（冰霜钻孔车 / 乌洛波洛斯之环）——门开着时能开着过门（dungeon.js 的 actKeepsRoom；车身宽到不了墙边，doorPad 放宽门的判定），进门后载具摆在门口接着开
 function rideAct(lv, p, S) {
   return { name: S.id, clip: 'hammer', dur: 30, superArmor: true, noCounter: true, lowGrav: 0.001, charge: S.bitter ? bitterCharge(p) : undefined,
+    doorPad: S.drive ? 40 : 0,
+    keepRoom: S.drive ? e => { const a = e.act, m = a && a.m; return !!(m && !m.gone && a.seated && !a.fell && a.r !== 'fail'); } : undefined,
+    onRoom: S.drive ? e => { const a = e.act, m = a.m; if (!m || m.gone) return; const st = S.seat(e, a, m); m.face = e.face; m.x = e.x - st[0] * m.face; m.y = clamp(e.y, 6, DEPTH - 6); m.pinRoom = game.room; m.pinX = m.x; m.pinY = m.y; } : undefined,
     onStart: e => { e._wtA = e.act; e.act.lv = lv; },
     onInput: (e, I, dt) => { const a = e.act; if (!a.m) return false; e.vx = e.vy = 0; if (detonate(e, I)) return true; if (S.input && !a.fell) S.input(e, I, a, dt); return true; },
     update: (e, dt) => {
@@ -466,9 +481,9 @@ defSkill('wt_furnace', { name: '暴炎加热炉', cls: 'mage', job: WT, lvReq: 1
 //      大成功换装巨型冰钻头；失败：钻进地里爆炸 ----
 const DRILL_SEAT = [-16, 46];
 defSkill('wt_drill', { name: '冰霜钻孔车', cls: 'mage', job: WT, lvReq: 20, mp: 80, cd: 45, type: 'indep', elem: 'ice', col: '#6ac0e8', cast: true,
-  desc: '钻孔车从天而降（落地冲击波），坐进去用方向键驾驶约 5.5 秒：钻头不断伤害前方的敌人（能打到倒地的敌人）；连按技能键 / X 钻得更快，并把前方的敌人吸过来；按 Z 掉头。结束时爆炸。大成功换装巨型冰钻头。失败：钻进地里爆炸。学会苦涩的棒棒糖后，按住技能键 0.15 秒强制失败，失败伤害 +50%。',
+  desc: '钻孔车从天而降（落地冲击波），坐进去用方向键驾驶约 5.5 秒：钻头不断伤害前方的敌人（能打到倒地的敌人）；连按技能键 / X 钻得更快，并把前方的敌人吸过来；按 Z 掉头；门开着时可以开着车过门。结束时爆炸。大成功换装巨型冰钻头。失败：钻进地里爆炸。学会苦涩的棒棒糖后，按住技能键 0.15 秒强制失败，失败伤害 +50%。',
   pow: lv => wtLv(lv, 0.3, 0.03) * 40 + wtLv(lv, 2.0, 0.2) + wtLv(lv, 2.5, 0.25), ai: { kind: 'burst', r: [0, 220], dy: 40 },
-  act: (lv, p) => rideAct(lv, p, { id: 'wt_drill', key: 'wt_drill', fam: 'snow', bitter: true, dur: 5.5, failDur: 1.3, dx: 40,
+  act: (lv, p) => rideAct(lv, p, { id: 'wt_drill', key: 'wt_drill', fam: 'snow', bitter: true, dur: 5.5, failDur: 1.3, dx: 40, drive: true,
     seat: () => DRILL_SEAT, pose: () => 'brIdle',
     building: (e, a, m, u) => { mClip(m, 'idle'); m.z = 240 * (1 - u * u); if (u > 0.9 && !a.landedD) { a.landedD = true; m.z = 0; cam.shake = Math.max(cam.shake, 5); sfx.boom(0.6); fxShock(m.x, m.y, 170, '#bfefff'); fxSpr('frost', m.x, m.y, 0, { w: 160, dur: 0.5, ay: 0.75 });
       summonArea(m, m.x, m.y, 110, { dmg: wtLv(lv, 2.0, 0.2), launch: 260, knock: 80, hs: 0.06, type: 'indep', elem: 'ice', downHit: true }, { zMax: 120 }); } },
@@ -676,12 +691,12 @@ defSkill('wt_lollipop', { name: '超级棒棒糖', cls: 'mage', job: WT, lvReq: 
 function candyModel(white) { if (typeof SPR_DATA === 'undefined' || !SPR_DATA.candyDoll || !IMG['spr/candyDoll/idle']) return wtSprite('', white ? '#fff6c0' : '#8a5ab0');
   return new SpriteModel('candyDoll', { _: 'idle', walk: 'walk1', run: 'walk1' }, MACH_ANIMS.candyDoll, white ? { sat: 0.15, bright: 1.9 } : {}); }
 // ---- 乌洛波洛斯之环（二觉）：衔尾蛇造型的环形履带载具，四只助手坐在上面；方向键移动，吸附并强控范围内的敌人，结束时爆炸 ----
-machDef('ouro', { name: '乌洛波洛斯之环', h: 150, w: 44, d: 20, col: '#ff5a8a', life: 10 });
+machDef('ouro', { name: '乌洛波洛斯之环', h: 150, w: 44, d: 20, col: '#ff5a8a', life: 10, hpK: 0 });   // 二觉载具：打不坏
 const OURO_SPARK = [['fire', '#ff9a50'], ['ice', '#bfefff'], ['light', '#fff38a'], ['dark', '#c79aff']];   // 四只助手各放自己属性的火花
 defSkill('wt_awaken2', { name: '乌洛波洛斯之环', cls: 'mage', job: WT, lvReq: 27, maxLv: 3, mp: 200, cd: 170, pvp: 0.45, type: 'indep', awaken: true, col: '#ff5a8a',
-  desc: '【觉醒 · 二觉】召出衔尾蛇造型的环形履带载具，四只助手坐在上面驾驶。方向键上下左右移动，把附近的敌人拖到环中央抓住（不能动弹）、不断碾压，助手们还会朝周围放出火 / 冰 / 光 / 暗四色火花；连按 X 转得更快。约 7 秒后、再按一次技能键或按跳跃键时大爆炸。施放中无敌。',
+  desc: '【觉醒 · 二觉】召出衔尾蛇造型的环形履带载具，四只助手坐在上面驾驶。方向键上下左右移动，把附近的敌人拖到环中央抓住（不能动弹）、不断碾压，助手们还会朝周围放出火 / 冰 / 光 / 暗四色火花；连按 X 转得更快；门开着时可以开着它进下一个房间。约 7 秒后、再按一次技能键或按跳跃键时大爆炸。施放中无敌。',
   pow: lv => wtLv(lv, 50, 12), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
-  act: (lv, p) => { const D = wtLv(lv, 50, 12), A = rideAct(lv, p, { id: 'wt_awaken2', key: 'wt_ouro', fam: 'cat', noFail: true, dur: 7, dx: 40,
+  act: (lv, p) => { const D = wtLv(lv, 50, 12), A = rideAct(lv, p, { id: 'wt_awaken2', key: 'wt_ouro', fam: 'cat', noFail: true, dur: 7, dx: 40, drive: true,
     seat: () => [0, 104], pose: () => 'brIdle',
     start: (e, a, m) => wtCutin(e, '乌洛波洛斯之环', 2),
     input: (e, I, a) => { a.mx = I.dx(); a.my = I.dy(); const sl = barOf(e).indexOf('wt_awaken2');

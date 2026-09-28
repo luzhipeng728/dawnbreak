@@ -24,7 +24,7 @@ if (cmd === 'users') {
 } else if (cmd === 'put') {
   const u = user(a1), next = JSON.parse(fs.readFileSync(a2, 'utf8'));
   const cur = db.prepare('SELECT data, updated_at FROM saves WHERE user_id = ?').get(u.id), old = JSON.parse(cur.data);
-  if (old.chars.length !== next.chars.length || old.chars.some((c, i) => c.created !== next.chars[i].created)) { console.error('角色和下载时不一致（玩家期间新建 / 删除了角色），已拒绝写入，请重新下载再做'); process.exit(1); }
+  if (next.chars.length < old.chars.length || old.chars.some((c, i) => c.created !== next.chars[i].created)) { console.error('角色和下载时不一致（玩家期间新建 / 删除了角色），已拒绝写入，请重新下载再做'); process.exit(1); }   // 允许在后面追加新角色
   const data = { ...old, v: next.v, chars: next.chars, acct: next.acct, _rev: crypto.randomBytes(6).toString('hex') };
   const text = JSON.stringify(data), t = Math.max(Date.now(), cur.updated_at + 1);
   db.exec('BEGIN');

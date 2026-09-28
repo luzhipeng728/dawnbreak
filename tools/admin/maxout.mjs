@@ -4,23 +4,29 @@ import { launch, URL_BASE } from '../../test/lib.mjs';
 //   <工作目录>/cloud.json（{ data }）→ <工作目录>/maxed.json；没转职的角色按第 2 个参数转职（例 sword=soulbender,gun=ranger,mage=elemental）
 const S = process.argv[2], cloud = JSON.parse(fs.readFileSync(S + '/cloud.json', 'utf8')).data;
 const JOBS = Object.fromEntries((process.argv[3] || '').split(',').filter(Boolean).map(x => x.split('='))), BONUS = +(process.argv[4] || 0);
+// 第 5 个参数：新建角色（只处理新建的，已有角色不动），多个用逗号：职业:转职:等级:装备(max|normal):名字   例 sword:berserker:30:max:血狱狂战,sword:berserker:20:normal:狂战练级
+const NEW = (process.argv[5] || '').split(',').filter(Boolean).map(x => { const [cls, job, lv, gear, name] = x.split(':'); return { cls, job, lv: +lv || 30, gear: gear || 'max', name }; });
 const { browser, page, logs } = await launch({ width: 1280, height: 720 });
 await page.goto(`${URL_BASE}?town&mute&cls=gun`); await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 60000 });
-const out = await page.evaluate(async ({ cloud, JOBS, BONUS }) => {
+const out = await page.evaluate(async ({ cloud, JOBS, BONUS, NEW }) => {
   window.toastMsg = () => {};
   const root = { v: cloud.v, cur: cloud.cur, chars: cloud.chars, acct: cloud.acct };
   localStorage.setItem(save.key, JSON.stringify(root)); save.loadAll();
+  const plan = {};   // 角色序号 → { lv, gear, job }；有新建角色时只处理新建的
+  if (NEW.length) { for (const n of NEW) { const e = checkCharName(n.name); if (e) throw new Error(n.name + '：' + e); save.newGame(n.cls, n.name); save.persist(); plan[save.chars.length - 1] = n; } save.loadAll(); }
   const report = [];
   for (let i = 0; i < save.chars.length; i++) {
-    save.select(i); const cls = save.data.cls;
+    if (NEW.length && !plan[i]) continue;
+    const PL = plan[i] || { lv: MAX_LVL, gear: 'max' }, LV = PL.lv;
+    save.select(i); const cls = save.data.cls; if (PL.job) JOBS[cls] = PL.job;
     for (const k of ['spr:' + cls]) await loadBundles([k]);
     game.player = makePlayer(cls); save.apply(); const p = game.player;
     // 等级 / 转职 / 觉醒
-    game.lvl = MAX_LVL; game.exp = 0;
-    const fl = save.data.flags ??= {}; fl.awaken = fl.awaken2 = fl.awaken3 = true;
+    game.lvl = LV; game.exp = 0;
+    const fl = save.data.flags ??= {}; if (LV >= 21) fl.awaken = true; if (LV >= 26) fl.awaken2 = true; if (LV >= 30) fl.awaken3 = true;   // 觉醒等级：21 / 26 / 30
     // 任务：本职业能做的非每日任务全部完成
     const d = qdata(); let qn = 0;
-    for (const id in QUESTS) { const q = QUESTS[id]; if (q.type === 'daily' || (q.cls && q.cls !== cls)) continue; if (!d.questDone[id]) { d.questDone[id] = Date.now(); qn++; } delete d.quests[id]; }
+    for (const id in QUESTS) { const q = QUESTS[id]; if (q.type === 'daily' || (q.cls && q.cls !== cls) || (q.lvl || 1) > LV) continue; if (!d.questDone[id]) { d.questDone[id] = Date.now(); qn++; } delete d.quests[id]; }
     d.questTrack = []; questDirty && questDirty();
     const fresh = !game.job;   // 这次才转职的角色：技能栏整个按转职技能重排
     if (!game.job && JOBS[cls] && !doJobChange(JOBS[cls])) throw new Error('job change failed for ' + cls);   // 转职试炼做完之后才能转职
@@ -41,9 +47,10 @@ const out = await page.evaluate(async ({ cloud, JOBS, BONUS }) => {
     // 装备：按装备对比同一套指标挑最强（单件 + 整套），全身 +12
     const type = mainDmgType(p), old = { ...inv.equip };
     const GEAR = SLOTS.filter(s => !s.startsWith('av_'));
-    const mk = k => { const it = makeItem(k, 1); if (!it) return null; if (!ITEMS[k].noEnhance && it.slot !== 'title') it.enh = 12; normalizeItem(it); if (it.durMax) it.dur = it.durMax; return it; };
+    const mk = k => { const it = makeItem(k, 1); if (!it) return null; if (PL.gear === 'max' && !ITEMS[k].noEnhance && it.slot !== 'title') it.enh = 12; normalizeItem(it); if (it.durMax) it.dur = it.durMax; return it; };
     const cand = {}; for (const s of GEAR) cand[s] = [];
-    for (const k in ITEMS) { const D = ITEMS[k]; if (D.kind !== 'equip' || !GEAR.includes(D.slot) || (D.lvl || 1) > MAX_LVL) continue;
+    for (const k in ITEMS) { const D = ITEMS[k]; if (D.kind !== 'equip' || !GEAR.includes(D.slot) || (D.lvl || 1) > LV) continue;
+      if (PL.gear === 'normal' && ((D.rar || 0) > 1 || D.slot === 'title' || (D.lvl || 1) < LV - 6)) continue;   // 普通装备：普通 / 高级品级、接近当前等级、不要称号
       if (D.set && SETS[D.set] && SETS[D.set].job && SETS[D.set].job !== game.job) continue;
       const it = mk(k); if (!it || (it.slot === 'weapon' && it.cls && it.cls !== cls) || !inv.canWear(it, true)) continue; cand[it.slot].push(it); }
     const score = () => { const m = gearMetrics(p, type); return m.off * Math.pow(m.ehp, 0.2); };
@@ -66,7 +73,7 @@ const out = await page.evaluate(async ({ cloud, JOBS, BONUS }) => {
   }
   if (BONUS) { save.acct.cera = (save.acct.cera || 0) + BONUS; save.persist(); }   // 额外点券（账号共享）
   return { report, saved: JSON.parse(localStorage.getItem(save.key)) };
-}, { cloud, JOBS, BONUS });
+}, { cloud, JOBS, BONUS, NEW });
 fs.writeFileSync(S + '/maxed.json', JSON.stringify(out.saved));
 for (const r of out.report) console.log(JSON.stringify(r, null, 0));
 console.log('errors:', logs.filter(l => l.type === 'pageerror').map(l => l.text.slice(0, 200)));

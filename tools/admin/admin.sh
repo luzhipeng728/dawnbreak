@@ -4,6 +4,8 @@
 #   sh tools/admin/admin.sh cera <账号> <点券>                        发点券邮件（大于 1000 万会自动拆成多封）
 #   sh tools/admin/admin.sh maxout <账号> [职业=转职,...] [额外点券]    角色全部满级 / 任务全完成 / 三觉 / 技能学满 / 最强装备 +12
 #       例：sh tools/admin/admin.sh maxout luzhipeng sword=soulbender 99999999
+#   sh tools/admin/admin.sh maxout <账号> '' <点券> '职业:转职:等级:max|normal:名字,...'   新建角色（只处理新建的）
+#       例：sh tools/admin/admin.sh maxout luzhipeng '' 999999 'sword:berserker:30:max:血狱狂战,sword:berserker:20:normal:狂战练级'
 #       做完让玩家刷新页面；弹“存档冲突”时选“使用云端存档”
 set -e
 cd "$(dirname "$0")/../.."
@@ -20,7 +22,7 @@ case "$1" in
   maxout)
     R dump "$2" > "$W/cloud.json"
     node build.mjs | tail -1
-    node tools/admin/maxout.mjs "$W" "$3" "${4:-0}"
+    node tools/admin/maxout.mjs "$W" "$3" "${4:-0}" "$5"
     node tools/admin/verify_save.mjs "$W" | tail -3
     scp -q "$W/maxed.json" $HOST:/tmp/dnf-maxed.json
     RW put "$2" /tmp/dnf-maxed.json maxout

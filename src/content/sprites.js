@@ -12,19 +12,32 @@ const BASE_ANIMS = {
   airUp: [['airUp', 0]], air: [['tumble', 0], ['air', 0.14]], bounceUp: [['bounce', 0], ['air', 0.12]], down: [['bounce', 0], ['down', 0.1]],
   getup: [['down', 0], ['getup', 0.15]], tech: [['tech', 0]], held: [['held', 0]], charge: [['charge', 0]], roll: [['roll', 0]],
 };
+// 新动作帧还没进素材时，先用已有的帧顶上（出了素材自动换成新帧）
+const sprHas = (c, f) => !!(typeof SPR_DATA !== 'undefined' && SPR_DATA[c] && SPR_DATA[c].frames[f]);
+const sprOr = (c, f, fallback) => sprHas(c, f) ? [[f, 0]] : fallback;
 const SPR_ANIMS = {
   sword: { ...BASE_ANIMS,
     atk1: [['a1_1', 0], ['a1_2', 0.05], ['a1_3', 0.12]], atk2: [['a2_1', 0], ['a2_2', 0.05], ['a2_3', 0.14]], atk3: [['a3_1', 0], ['a3_2', 0.12]],
     atk4: [['a2_1', 0], ['atk4', 0.05], ['a1_3', 0.24]], dash: [['dash1', 0], ['dash2', 0.06]], flurry: { fps: 12.5, frames: ['stab1', 'stab2'] },
     jatk: [['jatk1', 0], ['jatk2', 0.06], ['jatk3', 0.16]], up: [['up1', 0], ['up2', 0.09], ['up3', 0.2]], rise: [['rise1', 0], ['rise2', 0.08]],
-    a3slam: [['slam1', 0], ['slam2', 0.3]], iai: [['iai1', 0], ['iai2', 0.4]], focus: [['focus', 0]],
+    a3slam: [['slam1', 0], ['slam2', 0.3]], focus: [['focus', 0]],
     ghost: [['ghost1', 0], ['ghost2', 0.13]], guard: [['guard', 0]], silver: [['silver', 0]], silverLand: [['slam2', 0]],
     aircut: [['jatk1', 0], ['jatk2', 0.03], ['jatk4', 0.13], ['jatk2', 0.23], ['jatk4', 0.33], ['jatk3', 0.43]],
     rip: [['rip1', 0], ['rip2', 0.2]], cross: [['cross1', 0], ['cross2', 0.15]],
     leap: [['leap1', 0]], leapLand: [['leap2', 0]], dragon: [['dragon', 0]], phantom: { fps: 14, frames: ['phantom1', 'phantom2', 'atk4'] }, backslash: [['backslash', 0]],
     awkB: [['awkB1', 0], ['awk1', 0.95], ['iai2', 1.2], ['awk2', 2.4]],
     roar: [['roar', 0]], soulhand: [['grab1', 0], ['grab2', 0.4]], outrage: [['charge', 0], ['burst', 0.18]], bloodblade: [['dash1', 0], ['dragon', 0.08], ['bladeW', 0.4]],
-    quake: [['quake1', 0]], quakeLand: [['slam2', 0]], bzAwk: [['bzAwk1', 0], ['bzAwk2', 1.72]] },
+    quake: [['quake1', 0]], quakeLand: [['slam2', 0]], bzAwk: [['bzAwk1', 0], ['bzAwk2', 1.72]],
+    // 官方对齐（剑士第 1 阶段）：空之连刃、剑魂里·鬼剑术 / 肩撞 / 拔刀回旋、狂战士二刀流与新技能
+    jatkB: [['jatk2', 0], ['jatk4', 0.04]], jatkC: [['jatk1', 0], ['jatk3', 0.07]],
+    rk1: [['a1_1', 0], ['rk1', 0.04]], rk2: [['rk1', 0], ['rk2', 0.04]], rk3: [['a3_1', 0], ['rk3', 0.05]], rk4: [['rk3', 0], ['rk4', 0.07]],
+    rush: [['rush1', 0]], iai: [['iai1', 0], ['iaiSpin', 0.4]], meteorAim: [['meteorAim', 0]], hakuu: [['hakuu', 0]],
+    bzA1: [['dual3', 0], ['dual1', 0.05]], bzA2: [['dual1', 0], ['dual2', 0.05]], bzA3: [['dual2', 0], ['dual3', 0.06]], bzA4: [['dual3', 0], ['dual4', 0.07]],
+    dual1: [['dual1', 0]], dual2: [['dual2', 0]], whirl: [['whirl', 0]], thirst: [['thirst', 0]], twister: [['twister', 0]], enrage: [['enrage', 0], ['dual4', 0.12]],
+    // 阿修罗
+    asBurst: [['asBurst', 0]], asOrb: [['asOrb1', 0], ['asOrb2', 0.2]], asPlant: [['asPlant', 0]], asEvil: [['rk1', 0], ['asEvil', 0.08]], asPull: [['asPull', 0]], asSeal: [['asSeal', 0]], asAura: [['asAura', 0]],
+    // 鬼泣
+    sbSummon: [['sbSummon', 0]], sbPlace: [['sbPlace', 0]], sbWhip: [['sbWhip1', 0], ['sbWhip2', 0.26]], sbTomb: [['sbTomb', 0]], sbKaro: [['sbKaro', 0]], sbDescent: [['sbDescent', 0]], sbFerry: [['sbFerry', 0]] },
   gun: { ...BASE_ANIMS,
     gshot: [['shoot1', 0], ['shoot2', 0.03], ['shoot1', 0.12]], gup: { fps: 14, frames: ['shootUp1', 'shootUp2'] }, gdown: [['jatk1', 0], ['jatk2', 0.03], ['jatk3', 0.14]],
     gaim: [['snipe', 0]], holster: [['reload', 0]], kick: [['kick1', 0], ['kick2', 0.08]], spinkick: { fps: 12, frames: ['sk1', 'sk2', 'kick3'] }, slide: [['slide1', 0], ['slide2', 0.06]],
@@ -34,7 +47,15 @@ const SPR_ANIMS = {
     moveShot: { fps: 8, frames: ['move1', 'move2'] }, dualAim: [['dual', 0]],
     crazy: [['awk1', 0], ['crazy1', 0.9]], crazyAir: [['crazy2', 0]], crazyLand: [['crazy3', 0]],
     cannon: [['cannon1', 0]], cannonFire: [['cannon2', 0], ['cannon1', 0.25]], laser: [['laser1', 0]], laserFire: [['laser2', 0]], quantum: [['quantum', 0]],
-    lAwk: [['lAwk1', 0]], lAwkFire: [['lAwk2', 0]] },
+    lAwk: [['lAwk1', 0]], lAwkFire: [['lAwk2', 0]],
+    // 漫游枪手（官方对齐第 2 阶段）
+    headShot: [['shoot2', 0], ['shoot1', 0.1]],
+    rainbow: sprOr('gun', 'rainbow', [['tumble', 0], ['jatk2', 0.25]]), airBlade: sprOr('gun', 'airBlade', [['jatk4', 0]]), rushBlade: sprOr('gun', 'rushBlade', [['kick2', 0]]),
+    chainSnatch: sprOr('gun', 'chainSnatch', [['throw2', 0]]), carnival: sprOr('gun', 'carnival1', [['rapid1', 0]]), carnival2: sprOr('gun', 'carnival2', [['kick2', 0]]),
+    bloodDance: sprOr('gun', 'bloodDance', [['rapid1', 0], ['backshot', 0.12]]), garden: sprOr('gun', 'garden', [['awk2', 0]]),
+    // 枪炮师（官方对齐第 2 阶段）
+    lancerUp: sprOr('gun', 'lancerUp', [['cannon1', 0]]), plasma: sprOr('gun', 'plasma', [['flame', 0]]), ptFwd: sprOr('gun', 'ptFwd', [['cannon2', 0]]), ptDown: sprOr('gun', 'ptDown', [['quantum', 0]]),
+    armorOn: sprOr('gun', 'armor1', [['lAwk1', 0]]), armorFire: sprOr('gun', 'armor2', [['lAwk2', 0]]), finalWeapon: sprOr('gun', 'final1', [['gat1', 0]]), finalWeapon2: sprOr('gun', 'final2', [['gat2', 0]]) },
   mage: { ...BASE_ANIMS,
     atk1: [['m1_1', 0], ['m1_2', 0.06], ['m1_3', 0.14]], atk2: [['m2_1', 0], ['m2_2', 0.06], ['m2_3', 0.16]], dash: [['dash1', 0], ['dash2', 0.06]],
     mcast: [['cast1', 0], ['cast2', 0.12]], mup: [['castUp1', 0], ['castUp2', 0.1]], mdown: [['castDown1', 0], ['castDown2', 0.18]],
@@ -47,7 +68,12 @@ const SPR_ANIMS = {
     chaser: [['chaser', 0]], smash: [['smash1', 0]], smashDown: [['smash2', 0]], fangRush: { fps: 12, frames: ['fang2', 'fang1'] },
     raid: [['bmLeap2', 0]], bmLeap: [['bmLeap1', 0]], bmAwk: [['bmAwk', 0]],
     bmSweep: [['bmSweep1', 0], ['bmSweep2', 0.11]], bmSpin: { fps: 14, frames: ['bmSpin', 'bmSweep2'] }, bmDouble: [['bmSweep1', 0], ['bmDouble2', 0.1], ['bmDouble1', 0.3], ['bmDouble2', 0.62]],
-    bmThrow: [['fang2', 0], ['bmThrow1', 0.14], ['bmThrow2', 0.56]], bmCall: [['bmCall', 0]] },
+    bmThrow: [['fang2', 0], ['bmThrow1', 0.14], ['bmThrow2', 0.56]], bmCall: [['bmCall', 0]],
+    // 魔道学者（mage_witch.js）：骑扫把、失败演出、道具
+    brIdle: [['brIdle', 0]], brDash: [['brDash', 0]], brFall: [['brFall', 0]], brAtk: [['brAtk1', 0]], brAtkB: [['brAtk2', 0]], brSpin: [['brSpin', 0]],
+    faceplant: [['faceplant', 0]], sooty: [['sooty', 0]], potion: [['potion1', 0], ['potion2', 0.14]], potionHold: [['potion1', 0]],
+    swat: [['swat1', 0], ['swat2', 0.18]], swatAir: [['brAtk2', 0], ['swat2', 0.12]], fling: [['fling', 0]], hammer: [['hammer', 0]], hammerRun: { fps: 10, frames: ['hammer', 'run3', 'hammer', 'run7'] },
+    candy: [['candy1', 0], ['potion2', 0.36]], wtCheer: [['wtCheer', 0]] },
   monster: { ...BASE_ANIMS, run: seq('run', 8, 15), jumpUp: [['jump', 0]], jumpFall: [['jump', 0]], land: [['low1', 0]], back: [['jump', 0]],
     hit2: [['hit2', 0]], airUp: [['air', 0]], air: [['air', 0]], bounceUp: [['down', 0], ['air', 0.1]], down: [['down', 0]], held: [['hit2', 0]], tech: [['getup', 0]],
     club: [['atk1', 0], ['atk2', 0.15], ['atk3', 0.42], ['atk4', 0.6]], throw: [['atk1', 0], ['atk2', 0.15], ['atk3', 0.45], ['atk4', 0.6]],
@@ -59,6 +85,8 @@ const SPR_ANIMS = {
 };
 // 通用技能（后跳-强化等）挂到每个职业的技能表：这里所有职业 / 转职文件都已加载
 addCommonSkills();
+// 转职自带的动作片段（CLASSES[cls].jobs[job].anims，职业文件比这里早加载、碰不到 SPR_ANIMS）；帧名各转职用自己的前缀，不要互相覆盖
+for (const c in SPR_ANIMS) { const C = CLASSES[c]; if (C && C.jobs) for (const J of Object.values(C.jobs)) if (J.anims) Object.assign(SPR_ANIMS[c], J.anims); }
 // 没有骨骼片段的动画自动补一个（时长覆盖所有帧，循环动画按帧数 / fps）
 for (const c of ['sword', 'gun', 'mage']) {
   CLIPS[c] = CLIPS[c] || { ...HUMAN_CLIPS };

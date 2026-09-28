@@ -18,7 +18,7 @@ function skillPages(cls = game.player && game.player.cls, job = game.job) {
   }
   return { base, job: jobs };
 }
-const skMin = id => { const C = game.player && CLASSES[game.player.cls]; return C && (C.start || []).includes(id) ? 1 : 0; };
+const skMin = id => { const C = game.player && CLASSES[game.player.cls], J = C && C.jobs && game.job && C.jobs[game.job]; return C && ((C.start || []).includes(id) || (J && J.auto && J.auto.includes(id))) ? 1 : 0; };
 const skCost = (S, lv) => { try { if (typeof S.spCost === 'function') return Math.max(0, Math.round(S.spCost(lv))); } catch (e) { /* 回退 */ } return skillCost(S, lv); };
 const skLvReq = (S, lv) => (S.lvReq || 1) + (lv > 1 && S.lvStep ? (lv - 1) * S.lvStep : 0);   // 学到第 lv 级需要的角色等级
 const skCmd = id => { if (typeof cmdTextOf === 'function') return cmdTextOf(id) || ''; const C = game.player && CLASSES[game.player.cls], c = C && (C.cmds || []).find(x => x[1] === id); if (!c) return ''; const k = keyName({ attack: 'attack', buff: 'cmdB', jump: 'jump' }[c[2]] || 'cmd'); return c[0] === '' ? k : cmdText(c[0]) + '+' + k; };
@@ -31,7 +31,7 @@ function skillUpBlock(id) {
   if (typeof skillAllowed === 'function' && !skillAllowed(id, game.job)) return '该转职无法学习';
   if (lv >= (S.maxLv || 1)) return '已满级';
   const need = skLvReq(S, lv + 1); if (game.lvl < need) return `需要等级 ${need}`;
-  if (S.awaken && typeof awakenUnlocked === 'function' && !awakenUnlocked()) return '需要完成觉醒任务';
+  if (typeof tierOf === 'function' ? !tierUnlocked(tierOf(S)) : (S.awaken && typeof awakenUnlocked === 'function' && !awakenUnlocked())) return `需要完成${(typeof TIER_NAME !== 'undefined' && TIER_NAME[tierOf(S)]) || '觉醒'}任务`;
   for (const pid in S.pre || {}) if ((game.skillLv[pid] || 0) < S.pre[pid]) return `需要 ${SKILLS[pid] ? SKILLS[pid].name : pid} Lv.${S.pre[pid]}`;
   if ((game.sp || 0) < skCost(S, lv)) return 'SP 不足';
   return null;

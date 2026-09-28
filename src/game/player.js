@@ -74,6 +74,7 @@ function playerControl(p, dt) {
   const I = p.pad, dx = I.dx(), dy = I.dy();
   tickPassives(p, dt);
   tickCharges(p, dt);
+  const Cc = CLASSES[p.cls]; if (Cc.preControl && Cc.preControl(p, I, dt)) return;   // 职业的每帧前置处理（所有状态都调；弹药专家 单兵推进器 / 姿态恢复）；true = 这一帧不再往下走
   if (p.reboundCd > 0) p.reboundCd -= dt;
   if (p.bsCd > 0) p.bsCd -= dt;
   // 后跳-强化的脱身：受击 / 倒地中 ↓+C（优先于受身）
@@ -97,6 +98,7 @@ function playerControl(p, dt) {
   // ---- 动作中：普攻连段 ----
   if (p.st === 'act' && p.act) {
     const a = p.act;
+    if (a.airOnly && Cc.airControl && Cc.airControl(p, I, dt)) return;   // 空中动作（跳攻 / 空中技能）中也交给职业的空中钩子（魔道学者扫把、弹药专家急降）；自己看 p.act
     const nx = typeof a.next === 'function' ? a.next(p) : a.next;
     if (a.chain && nx && p.actT >= a.chain[0] && (I.buffered('attack') || (a.hold !== false && a.basic && I.is('attack') && p.actT >= a.chain[0] + 0.04))) {
       if (!a.airOnly || p.airAtk < airMaxOf(p)) { I.consume('attack'); faceInput(p, dx); if (a.airOnly) p.airAtk++; p.doAct(p.acts[nx]); return; }
@@ -107,6 +109,8 @@ function playerControl(p, dt) {
   }
   // ---- 空中 ----
   if (p.st === 'jump') {
+    if (Cc.airControl && Cc.airControl(p, I, dt)) return;   // 职业自己的空中操作（魔道学者 扫把：空中冲刺、缓降）；返回 true = 这一帧不走默认的空中处理
+    if (tryKeyLinks(p, Cc.jumpLinks, I)) return;   // 跳跃中的派生（例：女漫游 地面连按 C C = 飞燕射击）
     const sp = (p.jumpRun ? p.runSpeed : p.speed) * mspdOf(p);
     p.vx = damp(p.vx, dx * sp, 5, dt); p.vy = dy * p.speed * 0.6;
     if (dx) p.face = dx;
@@ -132,11 +136,11 @@ function playerControl(p, dt) {
 function faceInput(p, dx) { if (dx) p.face = dx; }
 // 每次跳跃的空中攻击次数上限（职业可以按武器改：CLASSES[cls].airMaxOf）
 function airMaxOf(p) { const C = CLASSES[p.cls]; return (C.airMaxOf ? C.airMaxOf(p) : (C.airMax || 1)) + (p.airBonus || 0); }
-// 派生键表 { attack | cmd | jump | cmdB: 技能id }：学会、冷却好了就放
+// 派生键表 { attack | cmd | jump | cmdB: 技能id }：学会、能用、冷却好了就放
 function tryKeyLinks(p, L, I) {
   if (!L) return false;
   for (const k in L) {
-    const id = L[k]; if (!I.buffered(k) || !hasSkill(p, id) || (p.cool[id] || 0) > 0) continue;
+    const id = L[k]; if (!I.buffered(k) || !skillUsable(p, id) || (p.cool[id] || 0) > 0) continue;
     I.consume(k); if (castSkill(p, id, false, k)) return true;
   }
   return false;
@@ -180,6 +184,7 @@ function canCancelInto(p, id) {
   if (p.st !== 'act' || !p.act) return true;
   const a = p.act, S = SKILLS[id];
   if (S && S.instant) return true;                                            // 无动作施放：不打断当前动作
+  if (S && recastInstant(p, S)) return true;                                  // 无动作的再按（给召唤物下命令）：也不打断
   if (a.name === 'back') return !!(S && S.air) && p.actT >= 0.06;              // 后跳算空中：可以接空中技能
   if (a.basic) return !(S && (S.noForce ?? S.buff));                           // 强制：普攻随时可被攻击类技能取消
   const A = a.skill && SKILLS[a.skill];
@@ -187,7 +192,7 @@ function canCancelInto(p, id) {
   const L = a.links || (A && A.links);
   if (L && L.includes(id) && p.actT >= (a.linkFrom ?? (A && A.linkFrom) ?? 0) && (!(a.hitCancel ?? (A && A.hitCancel)) || a.hitAny || p.hitsDone.size > 0)) return true;
   if (a.cancelable && a.cancelFrom !== undefined && p.actT >= a.cancelFrom) return true;   // 模式类动作（移动射击等）
-  const C = CLASSES[p.cls]; if (C && C.cancelHook && C.cancelHook(p, a, id)) return true;   // 职业专属柔化（女漫游「花式枪术」等）
+  const C = CLASSES[p.cls]; if (C && C.cancelHook && C.cancelHook(p, a, id)) { p._soft = { a, id }; return true; }   // 职业专属柔化（女漫游「花式枪术」等）；真放出来才扣次数（softCommit）
   return false;
 }
 // 兼容旧调用：当前动作有没有可能被“某个”技能打断（AI 判断忙不忙用）
@@ -203,42 +208,50 @@ function whenHitOk(p, S) {
 // 空中 / 地面限制：空中只能放 air（或 airIf 满足）的技能，airOnly 的技能只能在空中放
 function airOk(p, S) {
   const inAir = p.st === 'jump' || p.z > 2 || (p.st === 'act' && p.act && p.act.airOnly);
-  return inAir ? !!(S.air || (S.airIf && S.airIf(p))) : !S.airOnly;
+  if (!inAir) return !S.airOnly;
+  const C = CLASSES[p.cls]; return !!(S.air || (S.airIf && S.airIf(p)) || (C && C.airOk && C.airOk(p, S)));   // 职业钩子：弹药专家有推进器次数时基础技能也能在空中放
 }
 // 技能现在能不能用（学会、转职、转职限制、前置条件、受击限制）：指令匹配时用来决定谁“占用”这个指令
 function skillUsable(p, id) {
-  const S = SKILLS[id]; if (!S || lvOf(p, id) <= 0) return false;
+  const S = SKILLS[id]; if (!S || skillLvOf(p, id) <= 0) return false;
+  if (isHuman(p) && !tierUnlocked(tierOf(S))) return false;
   if (S.job && S.job !== jobOf(p)) return false;
   if (typeof skillAllowed === 'function' && !skillAllowed(id, jobOf(p))) return false;
   if (S.req && S.req(p) !== true) return false;
   if (S.whenHit && !whenHitOk(p, S)) return false;
   return true;
 }
+// 再按技能键的“无动作”版本：S.recast.instant = true 或 fn(p)（只在 recast.ok(p) 时看）——人物不做动作、不打断当前动作（机械师 G-1 补射、G-3 召回……）
+const recastInstant = (p, S) => !!(S.recast && S.recast.instant && S.recast.ok(p) && (typeof S.recast.instant !== 'function' || S.recast.instant(p)));
 function castSkill(p, id, viaCmd, key) {
   let S = SKILLS[id]; if (!S || !(S.act || S.instant) || S.passive) return false;
   const human = isHuman(p), slot = barOf(p).indexOf(id), flash = msg => { if (human && slot >= 0) ui.flashSlot(slot, msg); return true; };
   const id0 = id; if (S.morph) { const m = S.morph(p); if (m && m !== id && SKILLS[m]) { id = m; S = SKILLS[m]; } }   // 某些状态下同一个键放另一个技能（没学替代技能时用原技能的等级）
-  const lv = lvOf(p, id) || lvOf(p, id0);
+  const lv = skillLvOf(p, id) || skillLvOf(p, id0);
   if (lv <= 0) return flash('未学习');
   if (S.job && S.job !== jobOf(p)) return flash('未转职');
   if (typeof skillAllowed === 'function' && !skillAllowed(id, jobOf(p))) return flash('无法使用');
   if (S.req) { const r = S.req(p); if (r !== true) return flash(typeof r === 'string' ? r : '条件不足'); }
   if (S.whenHit && !whenHitOk(p, S)) return flash('受击时才能用');
   if (S.noWtype && S.noWtype.includes(wtypeOf(p))) return flash('武器不符');
-  if (S.awaken && human && typeof awakenUnlocked === 'function' && !awakenUnlocked()) return flash('未觉醒');
+  if (human && !tierUnlocked(tierOf(S))) return flash('未觉醒');
   const dx0 = p.pad.dx();
   // 召唤物 / 放置物在场时再按技能键（召唤框架，见 docs/SKILLS_OFFICIAL_mage.md 第 6 节）：在冷却检查之前
   if (S.recast && S.recast.ok(p)) {
     if ((p.cool[id + '~'] || 0) > 0) return flash('冷却中');
     if (p.mp < (S.recast.mp || 0)) return flash('MP不足');
-    p.cool[id + '~'] = S.recast.cd || 0.3; p.mp -= S.recast.mp || 0; if (dx0) p.face = dx0;
-    p.doAct(S.recast.act(lv, p), { skill: id, lv, key: key || null, type: S.type || p.dmgType }); return true;
+    p.cool[id + '~'] = S.recast.cd || 0.3; p.mp -= S.recast.mp || 0;
+    if (recastInstant(p, S)) { S.recast.act(lv, p); const Ci = CLASSES[p.cls]; if (Ci.onCast) Ci.onCast(p, id, null, 'recast'); return true; }   // 不做动作、不改朝向
+    if (dx0) p.face = dx0;
+    p.doAct(S.recast.act(lv, p), { skill: id, lv, key: key || null, type: S.type || p.dmgType });
+    const Cr = CLASSES[p.cls]; if (Cr.onCast) Cr.onCast(p, id, p.act, 'recast'); return true;
   }
   if ((p.cool[id] || 0) > 0) return flash('冷却中');
   const Q = chargesOf(p, id); if (Q && Q.n < 1) return flash('装填中');
-  if (p.mp < S.mp) return flash('MP不足');
+  const Cp = CLASSES[p.cls], mp = Math.round(S.mp * (Cp.mpMul ? Cp.mpMul(p, id) : 1));   // 职业的 MP 消耗修正（枪炮师「重火器精通」）
+  if (p.mp < mp) return flash('MP不足');
   if (!airOk(p, S)) return false;
-  p.mp -= S.mp; p.cool[id] = S.cd * (p.cdMul || 1) * (game.pvp && S.pvpCd ? S.pvpCd : 1);
+  p.mp -= mp; p.cool[id] = S.cd * (p.cdMul || 1) * (game.pvp && S.pvpCd ? S.pvpCd : 1);
   if (Q) Q.n--;
   if (dx0) p.face = dx0;
   const extra = { skill: id, lv, key: key || null, type: S.type || p.dmgType };
@@ -246,8 +259,11 @@ function castSkill(p, id, viaCmd, key) {
   if (S.pvp) extra.pvp = S.pvp;
   if (S.speed || S.cast) extra.speed = S.speed || 'cspd';
   else if (!S.awaken && extra.type !== 'mag') extra.speed = 1 + (aspdOf(p) - 1) * 0.5;   // 物理技能：攻速一半生效（施法类技能看施放速度）
+  const prev = p.act, soft = p._soft; p._soft = null;
   if (typeof S.instant === 'function') S.instant(lv, p, extra);
   else { if (p.st === 'hit' || p.st === 'down' || p.st === 'air') { p.interrupt(); p.stun = 0; } p.doAct(S.act(lv, p), extra); }
+  const C = CLASSES[p.cls]; if (soft && soft.a === prev && soft.id === id && C.softCommit) C.softCommit(p, prev, id);
+  if (C.onCast) C.onCast(p, id, typeof S.instant === 'function' ? null : p.act);   // 职业的施放钩子：扣完 MP / 冷却 / 装填、动作开始之后调（枪炮师：重火器拔击、精通叠层）；无动作施放 act = null，再按（recast）第 4 个参数 'recast'
   if (human) { game.onSkill(id); bus.emit('skillUse', { id }); }
   return true;
 }

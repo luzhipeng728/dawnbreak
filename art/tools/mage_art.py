@@ -52,7 +52,7 @@ C.SHEETS['mage_witch2'] = [
     ('fling', 'both arms thrown forward with open hands as if flinging a big cloth forward, leaning forward, no staff, nothing in her hands'),
     ('hammer', 'crouching and swinging a small wooden mallet down in front of her as if building something on the ground, focused expression, no staff'),
     ('candy1', 'holding a giant swirly rainbow lollipop high above her head with both hands, about to smash it down, no staff'),
-    ('cheer', 'jumping happily with both fists raised in celebration, big grin, no staff')]
+    ('wtCheer', 'jumping happily with both fists raised in celebration, big grin, no staff')]
 NO_WPN_SHEETS = {'mage_witch2'}
 # 技能图标：16 个一张（combatgen 的图标画风），切图：mage_art.py iconcut
 ICONS = [

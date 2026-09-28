@@ -60,10 +60,11 @@ function addStatus(t, kind, dur, o = {}) {
   if (kind === 'root' || kind === 'bind') { t.vx = t.vy = 0; }
   if (!cur) fxText(STATUS_NAME[kind], t.x, t.y, t.z + 20, { col: STATUS_COL[kind], size: 10, dur: 0.8 });
 }
-const hasStatus = (t, k) => !!(t && t.status && t.status[k]);
+function hasStatus(t, k) { return !!(t && t.status && t.status[k]); }
 const statusNoMove = e => hasStatus(e, 'root') || hasStatus(e, 'bind');   // 不能移动（player.js / 怪物 AI 读取）
 const statusConfused = e => hasStatus(e, 'confuse');                      // 方向键反转（player.js 读取）
-const statusRooted = e => hasStatus(e, 'root') && !e.boss;                // 定身：受击不击退 / 不浮空
+// 定身：受击只掉血，不击退 / 不浮空 / 不倒地（applyHit 跳过 react）。想让“定身后接一记击飞 / 击倒”生效，要先 delete t.status.root 再打
+function statusRooted(e) { return hasStatus(e, 'root') && !e.boss; }
 // 伤害修正（applyHit 调用）：受到的（诅咒 +、睡眠唤醒 ×1.5）× 造成的（诅咒 −）
 function statusDmgMul(a, t) {
   let m = 1; const S = t.status, A = a && a.status;
@@ -83,6 +84,8 @@ function statusOnHit(t, a, dmg, h) {
     if (t.hp <= 0 && !t.dead) { t.hp = 0; killEnt(t, src || t, {}); }
   }
 }
+// 隐身（机械师「伪装」等）：cloakT = 隐身结束时间，cloakRevT = 出招暂时现形结束时间；隐身的目标怪物找不到（乱走、不出招），挑衅优先
+function cloaked(e) { return !!(e && e.cloakT > game.t && !(e.cloakRevT > game.t)); }
 // 挑衅：怪物 AI 的目标
 const tauntSrc = m => { const s = m.status && m.status.taunt && m.status.taunt.src; return s && !s.dead && !s.remove ? s : null; };
 function updateStatus(t, dt) {

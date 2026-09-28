@@ -68,10 +68,11 @@ async function open(q) {
     T.reset(); p.cool = {}; castSkill(p, 'ghost'); T.run(25); T.key('s0'); T.run(1); T.release('s0'); out.skillLate = p.act && p.act.skill; T.run(40);
     const L0 = SKILLS.ghost.links; SKILLS.ghost.links = ['upslash']; T.reset(); p.cool = {}; castSkill(p, 'ghost'); T.run(2); T.key('s0'); T.run(1); T.release('s0'); out.skillLinked = p.act && p.act.skill; SKILLS.ghost.links = L0; T.run(40);
     T.reset(); castSkill(p, 'awaken'); game.timeStop = 0; for (let i = 0; i < 60; i++) { T.key('s1'); T.run(1); T.release('s1'); T.run(1); } out.awakenCancel = p.act && p.act.skill; T.run(200);
-    // 11) 蓄力：按住技能键蓄力（拔刀斩），松开或蓄满释放；倍率随蓄力提高
+    // 11) 蓄力：按住技能键蓄力（拔刀斩：官方只有巨剑 + 武器奥义能蓄力），松开或蓄满释放；倍率随蓄力提高
+    const W0 = inv.equip.weapon, A0 = game.skillLv.wm_arcana; inv.equip.weapon = { wtype: 'greatsword', slot: 'weapon' }; game.skillLv.wm_arcana = 5;
     T.reset(); p.cool = {}; T.key('s2'); T.run(2); T.run(52); const held = p.act && { name: p.act.name, t: +p.actT.toFixed(2), charging: p.act.charging, k: p.act.chargeK, mul: +p.act.dmgMul.toFixed(2) }; T.release('s2'); T.run(80);
     T.reset(); p.cool = {}; T.key('s2'); T.run(1); T.release('s2'); T.run(40); const tap = p.act && { k: p.act.chargeK, mul: +p.act.dmgMul.toFixed(2) };
-    out.charge = { held, tap }; T.run(60);
+    out.charge = { held, tap }; T.run(60); inv.equip.weapon = W0; game.skillLv.wm_arcana = A0;
     // 12) 攻速：aspd 1.5 → 普攻动作速度 ×1.5
     T.reset(); p.aspd = 1.5; p.doAct(p.acts.atk1); out.aspd = p.act.spd; let n = 0; while (p.act && n < 60) { T.run(1); n++; } out.atk1Frames = n; p.aspd = 1;
     // 13) 格挡：正面攻击吸收大部分伤害、不硬直
@@ -107,21 +108,28 @@ async function open(q) {
 {
   const { browser, page, logs } = await open('test&cls=sword&mobs=0');
   await page.evaluate(() => { game.paused = false; for (const id of classSkills('sword', 'blade')) game.skillLv[id] = 5; game.job = 'blade'; const p = game.player; p.mpMax = p.mp = 99999; setInterval(() => { p.mp = p.mpMax; for (const k in p.cool) p.cool[k] = 0; }, 100); });
-  const kb = page.keyboard, wait = ms => page.waitForTimeout(ms), tap = async (k, ms = 35) => { await kb.down(k); await wait(ms); await kb.up(k); };
+  // 按键以游戏帧为准（不按墙钟）：按下后等游戏至少跑过一步（game.t 前进）再松开——每个键各占一步、顺序不乱。
+  // 机器忙时几个 35ms 的点按会挤进同一帧，input.frame 按 左右上下 的固定顺序记方向，↓→ 会被记成 →↓（变成崩山击）
+  const kb = page.keyboard, wait = ms => page.waitForTimeout(ms);
+  const stepped = () => page.evaluate(() => { const t = game.t; return new Promise(r => { const f = () => game.t > t ? r() : requestAnimationFrame(f); requestAnimationFrame(f); }); });
+  const tap = async k => { await kb.down(k); await stepped(); await kb.up(k); };
   const skill = () => page.evaluate(() => { const p = game.player; return p.act && (p.act.skill || p.act.name); });
+  const act = () => page.waitForFunction(() => game.player.act, null, { timeout: 3000 }).then(skill, skill);
+  // 下一条指令之前：角色落地、能行动，且上一条的方向键已超过 0.3 秒游戏时间（不会被拼进下一条指令）
+  const ready = () => page.waitForFunction(() => { const p = game.player, H = input.dirHist; return p.z === 0 && p.free && (!H.length || game.t - H[H.length - 1].t > 0.3); }, null, { timeout: 15000 }).catch(() => {});
   const res = {};
-  await wait(300); await tap('ArrowDown'); await tap('ArrowRight'); await tap('KeyZ'); await wait(60); res.df = await skill(); await wait(700);
-  await tap('ArrowRight'); await tap('ArrowDown'); await tap('KeyZ'); await wait(60); res.fd = await skill(); await wait(1500);
-  await tap('ArrowDown'); await tap('ArrowDown'); await tap('KeyX'); await wait(60); res.ddX = await skill(); await wait(600);
-  await tap('KeyZ'); await wait(60); res.z = await skill(); await wait(700);
-  await tap('ArrowLeft'); await tap('ArrowRight'); await tap('ArrowRight'); await tap('KeyZ'); await wait(60); res.bff = await skill(); await wait(1400);
-  await page.waitForFunction(() => { const p = game.player; return p.z === 0 && p.free; }); await page.evaluate(() => { const p = game.player; p.face = 1; });
-  await kb.down('ArrowUp'); await tap('KeyZ'); await kb.up('ArrowUp'); await wait(60); res.u = await skill(); await wait(800);
+  await wait(300); await ready();
+  await tap('ArrowDown'); await tap('ArrowRight'); await tap('KeyZ'); res.df = await act(); await ready();
+  await tap('ArrowRight'); await tap('ArrowDown'); await tap('KeyZ'); res.fd = await act(); await ready();
+  await tap('ArrowDown'); await tap('ArrowDown'); await tap('KeyX'); res.ddX = await act(); await ready();
+  await tap('KeyZ'); res.z = await act(); await ready();
+  await tap('ArrowLeft'); await tap('ArrowRight'); await tap('ArrowRight'); await tap('KeyZ'); res.bff = await act(); await ready();
+  await page.evaluate(() => { const p = game.player; p.face = 1; });
+  await kb.down('ArrowUp'); await stepped(); await tap('KeyZ'); await kb.up('ArrowUp'); res.u = await act(); await ready();
   // 指令键 2（Space，和 Z 分开）：↓↑+Space 血之狂暴、↓↑+Z 怒气爆发（狂战士）
-  await page.waitForFunction(() => { const p = game.player; return p.z === 0 && p.free; });
   await page.evaluate(() => { game.job = 'berserker'; for (const id of classSkills('sword', 'berserker')) game.skillLv[id] = 5; });
-  await tap('ArrowDown'); await tap('ArrowUp'); await tap('Space'); await wait(60); res.duSpace = await skill(); await wait(700);
-  await tap('ArrowDown'); await tap('ArrowUp'); await tap('KeyZ'); await wait(60); res.duZ = await skill(); await wait(800);
+  await tap('ArrowDown'); await tap('ArrowUp'); await tap('Space'); res.duSpace = await act(); await ready();
+  await tap('ArrowDown'); await tap('ArrowUp'); await tap('KeyZ'); res.duZ = await act(); await ready();
   await page.evaluate(() => { game.job = 'blade'; });
   report('指令：↓→+Z 地裂·波动剑 / →↓+Z 崩山击 / ↓↓+X 格挡 / Z 上挑 / ←→→+Z 破军升龙击 / ↑+Z 鬼斩 / ↓↑+Space 血之狂暴 / ↓↑+Z 怒气爆发', res.df === 'wave' && res.fd === 'slam' && res.ddX === 'guard' && res.z === 'upslash' && res.bff === 'rise' && res.u === 'ghost' && res.duSpace === 'frenzy' && res.duZ === 'outrage', res);
   // 连招：X×3 → 上挑（技能取消普攻）→ 跳起 X（空中追击）→ 落地后鬼斩；木桩全程浮空 / 倒地，连击数 ≥ 7

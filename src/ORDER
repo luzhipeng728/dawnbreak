@@ -28,6 +28,9 @@ content/classes/common.js
 content/classes/sword.js
 content/classes/sword_blade.js
 content/classes/sword_berserker.js
+content/classes/sword_asura.js
+content/classes/sword_soul.js
+content/classes/sword_ghost.js
 content/classes/gunner.js
 content/classes/gun_ranger.js
 content/classes/gun_launcher.js
@@ -36,6 +39,7 @@ content/classes/gun_paramedic.js
 content/classes/mage.js
 content/classes/mage_elemental.js
 content/classes/mage_battle.js
+content/classes/mage_witch.js
 engine/touch.js
 game/drops.js
 game/progress.js
@@ -91,6 +95,7 @@ content/quests/hidden.js
 content/quests/side.js
 content/quests/daily.js
 content/quests/job.js
+content/quests/witch.js
 content/quests/sky.js
 content/quests/behemoth.js
 # 装备深化：深渊派对（深渊地下城、封印之门与三波派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前

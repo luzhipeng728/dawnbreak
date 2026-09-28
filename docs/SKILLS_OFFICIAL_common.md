@@ -182,13 +182,27 @@
 | `S.morph(p)` → 替代技能 id | 某状态下同一个键放另一个技能（替代技能没学时用原技能的等级） | 剑士（暗天波动眼） |
 | `S.whenHit` = `true` 或 `fn(p)` + `S.hitStates` / `S.hitWin` | 受击时才能放：`whenHit` 为 true（或函数返回 true）表示限制生效——只有 `hitStates` 里的状态（默认 `['hit', 'down']`，可以加 `'air'`）或受击后 `hitWin` 秒内能放；函数返回 false 表示这次不限制（例：学了“实战型替身草人”平时也能放）。被抓、冰冻、眩晕时不行。受击 / 倒地 / 浮空状态下只扫描这类技能 | 魔法师 替身草人、剑士 幻鬼步（三觉后 `hitStates: ['hit', 'down', 'air']`）、女漫游 心灵反击（`hitWin: 1`） |
 | `S.airIf(p)` | 满足时可以在空中放 | 魔法师（空中施放：杰克爆弹） |
-| `S.recast = { ok(p), act(lv, p), cd, mp }` | 召唤物 / 放置物在场时再按技能键（在冷却检查之前；内部冷却 `p.cool[id + '~']`）；技能栏画绿框 | 魔法师、机械师、弹药专家 |
+| `S.recast = { ok(p), act(lv, p), cd, mp, instant }` | 召唤物 / 放置物在场时再按技能键（在冷却检查之前；内部冷却 `p.cool[id + '~']`）；技能栏画绿框。`instant`（true 或 fn(p)）：无动作的再按——只调用 `act(lv, p)`（返回值不用），人物不做动作、不打断当前动作、不改朝向 | 魔法师、机械师（G-1 补射、G-3 召回……）、弹药专家 |
 | `S.instant(lv, p, extra)` | 无动作施放：不调用 `doAct`、不打断当前动作、不走取消规则 | 协战师、剑影、鬼泣 |
 | `S.only` / `S.excl` + `skillAllowed(id, job)` | 基础技能的转职限制（没转职时都能学）；classSkills、hasSkill、技能窗口、castSkill 都已接上 | 全部（例：EZ-8 只有机械师） |
 | `S.charges`、`S.reload` | 装填次数制（`p.charges[id] = { n, t }`；快捷栏显示 ×n） | 女枪 G-14、弹药专家手雷 |
 | `S.noWtype: [武器类型…]` | 这些武器不能用 | 女枪 烟尘弹（手炮不能用） |
 | `CLASSES[cls].onHurt(p, 攻击者, h, dmg)` | 受击后（makePlayer 里接好了 `p.onHurt`，同时记 `p.hurtT`） | 剑士（挫折意志等） |
 | `CLASSES[cls].airMaxOf(p)` | 每次跳跃的空中攻击上限 | 女枪（按武器 + 空中射击） |
+| `CLASSES[cls].airControl(p, I, dt)` → true | 跳跃状态（含后跳结束后的下落）和空中动作（`act.airOnly`：跳攻、空中技能，在技能判断之后、普攻连段之前）每帧调；返回 true 这一帧不走默认的空中移动 / 跳攻 / 连段，自己看 `p.st`、`p.act` | 魔道学者（扫把：空中冲刺、缓降）、弹药专家（空中 Space 急降） |
+| `CLASSES[cls].preControl(p, I, dt)` → true | `playerControl` 最前面（装填计时之后、受击 / 后跳 / 技能之前），所有状态每帧都调；返回 true 这一帧不再往下走 | 弹药专家（单兵推进器、姿态恢复） |
+| `CLASSES[cls].airOk(p, S)` | 空中时额外放行的技能（`S.air` / `S.airIf` 之外） | 弹药专家（有推进器次数时基础技能能在空中放） |
+| `CLASSES[cls].onCast(p, id, act, how)` | 扣完 MP / 冷却 / 装填、动作开始之后调；无动作施放 `act = null`；再按（recast）时 `how = 'recast'` | 枪炮师、弹药专家 |
+| 转职 `jobs[j].quests` / `trial` / `save.data.jobPick` | 专属转职任务线（`quests/job.js` 统一登记，cond = 接了这个方向）；转职窗口：没完成 `trial` 不能转；按钮「接受 X 的转职任务」设 `jobPick` 并接第一步，换方向时放弃旧任务线进行中的那一步 | 机械师、弹药专家、协战师、魔道学者…… |
+| 转职 `jobs[j].direct` | 官方没有转职任务的方向：Lv.15 在导师处直接可选，不用先做职业的转职试炼（`q_job_<职业>_final`）；职业的转职任务链只给还没转职的角色（`job: false`），一觉任务只要求已转职 | 协战师 |
+| 转职 `jobs[j].anims` | 这个转职的人物动作片段，`content/sprites.js` 合进 `SPR_ANIMS[cls]`（帧名用自己的前缀） | 新转职 |
+| 转职 `awakenName2` / `awakenName3`（+ `awaken2` / `awaken3` 技能 id） | 二觉 / 三觉名称，转职窗口显示“觉醒之路” | 全部转职 |
+| `S.tier: 1 / 2 / 3` + `tierUnlocked(n)` | 觉醒阶段：一觉（`flags.awaken`）/ 二觉（`flags.awaken2`）/ 三觉（`flags.awaken3`）的技能，没完成对应觉醒任务时不能学、不能放；技能窗口提示“需要完成二次觉醒任务” | 全部转职（第 2 阶段） |
+| `S.lvFrom: 技能id` | 等级跟另一个技能走（派生技能不单独学） | 女漫游 双枪极舞刃的 4 个派生 |
+| `S.hidden` | 不在技能窗口 / 快捷栏里出现（只能靠派生键、指令放） | 同上 |
+| 转职 `jobs[j].auto: [技能id…]` + `learnAutoSkills` | 转职时自动学会（官方“转职自动习得”的被动）；存档迁移也会补上 | 女漫游 双枪极舞刃、女枪炮 重火器奥义 |
+| `CLASSES[cls].lvBonus(p, id)` / `mpMul(p, id)` / `onCast(p, id, act)` | 技能等级加成 / MP 倍率 / 施放后回调（`skillLvOf`、`castSkill` 里接好） | 女枪炮 重火器奥义 +1、重火器精通、拔击 |
+| `cutinWho(e, tier)` | 二觉 / 三觉插图：有 `cutin/<转职>2`、`cutin/<转职>3` 就用，没有退回一觉的 `cutin/<转职>` | 全部转职的二觉 / 三觉 |
 - 受击前钩子（beforeHurt：减伤 / 格挡 / 不硬直）在 `engine/combat.js`，由魔法师组负责（主线程分配）。
 - 注意：技能 → 技能的默认互取消已经全部关掉，各职业需要的衔接都要写成 `links`（剑士 7 项、魔法师见各自文档；神枪手见 gun 文档第 3.2 节）。AI 的连招改成“普攻起手接技能”。
 
@@ -300,6 +314,8 @@
 | 9 | 每级 SP 固定：基础技能 20、转职技能 25、被动 15、觉醒 60（各职业可以用 `sp` 覆盖）；学习间隔默认：基础技能 2 级、转职 / 觉醒技能 1 级（官方间隔按等级表压缩后接近 1） | 官方是每级固定；数值取官方常见值 |
 | 10 | 普攻「按住 X 连发」保留为默认 | 用户确认；现版官方有这个设置 |
 | 11 | 协战师（辅助）也要做，放在最后 | 主线程：用户要全部转职 |
+| 12 | 二觉 / 三觉任务（`quests/job.js`）：二觉 26 级（冒险级以上：天帷巨兽炼狱 ×3 → 极昼 C 评价以上），三觉 30 级（冒险级以上：第二脊椎 ×2 → 天帷禁地），完成后 `flags.awaken2` / `awaken3` | 等级按第 7 节；地下城用本作已有的最高难度区域 |
+| 13 | 神枪手 / 魔法师原装帧必须戴着默认帽子：`art/tools/avatar_hatcheck.py` 进了 `test/all.sh` | 主线程：缺帽子的帧放技能时帽子会闪 |
 
 ---
 

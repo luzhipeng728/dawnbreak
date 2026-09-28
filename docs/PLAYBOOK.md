@@ -54,6 +54,7 @@
 | 快速回归 | `sh test/quick.sh`（约 4 分钟） |
 | 完整回归 | `sh test/all.sh`（约 70 分钟，后台跑，跑的时候别重新构建） |
 | 技能连拍体检 | `node test/skillshots.mjs <职业:转职,...>` 或 `all` |
+| 技能机制体检（命中数 / 浮空 / 追加浮空 / 倒地 / 弹地 / 抓取 / 原生霸体·无敌比例 / 位移 / 范围 / 冷却 / 召唤物，逐帧确定性，约 1 秒一个转职） | `node test/skillaudit.mjs <职业:转职,...> [--compare] [--only id,...] [--weapon 武器]`；和官方规格 `docs/skills/<职业>.json` 对比用 `--compare`（没写理由的不一致 → 退出码 1）。规格字段、输入方式（pre / input / hp / dir / presses / watch / at / air）见脚本头注释和 `docs/skills/sword.json` 的 `_meta`；输出 `test/shots/audit/<职业>-<转职>.json` |
 | 数据库备份 | `ssh cc 'sudo /opt/dawnbreak-server/backup.sh'`（每天 04:17 也会自动备份） |
 
 改完存档让玩家**刷新页面**，弹“存档冲突”时选**使用云端存档**。

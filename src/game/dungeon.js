@@ -229,7 +229,8 @@ class Dungeon {
     // 实时评价（右下）
     if (!(typeof uiPref === 'function' && uiPref('hideRank'))) {   // End 键 / 设置里可以隐藏
       const S = this.score(), rk = rankOf(S.total);
-      const ry = 700;   // 右下角留给菜单按钮栏，评价面板放在它上方
+      const mb = typeof menubar !== 'undefined' && menubar.el && !menubar.el.hidden ? menubar.el : null;
+      const ry = mb ? Math.min(700, Math.round(mb.offsetTop / (dom.clientHeight || 1) * 1080) - 106) : 830;   // 右下角留给菜单按钮栏（按它实际的高度），评价面板放在它上方
       c.fillStyle = 'rgba(8,6,10,.6)'; c.fillRect(1640, ry, 260, 96);
       uiText(rk[0], 1890, ry + 72, { size: 62, align: 'right', color: RANK_COL[rk[0]], sw: 7, font: '"Arial Black",sans-serif', weight: 900, stroke: '#1a0a00' });
       uiText(`操作 ${S.ops}`, 1652, ry + 30, { size: 18, color: '#ffe8c0', sw: 3 });

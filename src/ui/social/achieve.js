@@ -35,6 +35,7 @@ addStyle(`
 .achw .ovcat b{display:block;margin-bottom:.2em}
 .achw .recent .r{display:flex;gap:.5em;align-items:center;font-size:.85em;padding:.2em 0}
 .achw .recent .ach-medal{width:1.6em;height:1.6em;font-size:.7em}
+#dom:has(#result) #achpop{bottom:auto;top:calc(var(--u) * 24px)}
 #achpop{position:absolute;left:50%;bottom:calc(var(--u) * 175px);transform:translateX(-50%);z-index:30;pointer-events:none!important;display:flex;flex-direction:column-reverse;gap:.4em;align-items:center}
 #achpop .p{display:flex;gap:.7em;align-items:center;padding:.5em 1.1em .5em .6em;border-radius:3em;background:linear-gradient(90deg,rgba(30,20,8,.94),rgba(60,42,12,.94));border:.12em solid #c8a24a;box-shadow:0 .3em 1.2em rgba(0,0,0,.6),0 0 1.2em rgba(255,200,60,.3);animation:achin 3.6s ease forwards;min-width:18em}
 #achpop .p.t3{border-color:#ffd23a;box-shadow:0 .3em 1.2em rgba(0,0,0,.6),0 0 2em rgba(255,210,60,.65)}

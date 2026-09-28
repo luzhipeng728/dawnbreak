@@ -199,17 +199,93 @@ async function jobTrial() {
 async function awaken() {
   await quickStart();
   await skipTo(18, ['q_job_kill', `q_job_visit_${CLS}`, ...[1, 2, 3, 4, 5, 6].map(i => `q_job_${CLS}_${i}`), `q_job_${CLS}_final`, `q_job_${CLS}_change`, 'q_hidden_frozen', 'q_dark_1', 'q_dark_2', 'q_hidden_dark']);
-  await page.evaluate(() => { const j = Object.keys(CLASSES[game.player.cls].jobs)[0]; game.job = j; if (typeof onJobChange === 'function') onJobChange(game.player, j); save.write(); });
+  // 跳级：已转职（第一个方向）、烈焰格拉卡已经打到勇士难度（相当于之前通关过普通 / 冒险）
+  await page.evaluate(() => { const j = Object.keys(CLASSES[game.player.cls].jobs)[0]; game.job = j; if (typeof onJobChange === 'function') onJobChange(game.player, j); save.data.unlocked.blazing_graca = 1; save.data.unlocked.dark_thunder = 1; save.write(); });
+  const skip1 = !!process.env.AW_SKIP1;   // 觉醒任务 1（暗黑雷鸣废墟 ×3）这个职业已经实测过：直接记为完成，从任务 2 开始
+  if (skip1) await page.evaluate(c => { save.data.questDone[`q_awaken_${c}_1`] = 1; save.write(); }, CLS);
   const mScene = await page.evaluate(id => qSceneOfNpc(id).id, MENTOR);
   check(await goScene(mScene), '走不到导师处');
-  check(await P.talk(MENTOR), '和导师对话失败'); await P.shot('awaken-offer');
-  step('觉醒任务：' + await P.dialogTo(['接受'])); await P.closeAll(); await P.shot('awaken-accepted');
-  // 暗黑雷鸣废墟（隐藏地下城）打一次
+  check(await P.talk(MENTOR), '和导师对话失败'); await P.shot('aw1-offer');
+  step('觉醒任务 1：' + await P.dialogTo(['接受'])); await P.closeAll();
+  if (!skip1) {
+  // 暗黑雷鸣废墟 ×3（结算时点“再次挑战”，最后一次返回城镇）
   check(await goScene('gf_thunder'), '走不到雷鸣废墟区域'); await P.shot('thunder-field');
-  check(await P.toGate('dark_thunder'), '暗黑雷鸣废墟门口没弹窗');
-  await P.enterDungeon(); const r = await P.fightDungeon({ onRoom: async s => { if (s.d.boss) await P.shot('dark-boss'); } });
-  step('暗黑雷鸣废墟：' + JSON.stringify(r)); if (r.state === 'result') { await P.shot('dark-result'); await P.flipAndReturn(); }
-  step('觉醒任务进度：' + await page.evaluate(c => JSON.stringify(save.data.quests[`q_awaken_${c}_1`]), CLS));
+  check(await P.toGate('dark_thunder'), '暗黑雷鸣废墟门口没弹窗'); await P.shot('dark-gate');
+  await P.enterDungeon();
+  for (let i = 1; i <= 3; i++) {
+    const r = await P.fightDungeon({ onRoom: async s => { if (s.d.boss && i === 1) await P.shot('dark-boss'); } });
+    step(`暗黑雷鸣废墟第 ${i} 次：${JSON.stringify(r)}`);
+    if (r.state !== 'result') { P.note(`暗黑雷鸣废墟第 ${i} 次没打到结算：${r.state}`); break; }
+    await P.flipAndReturn(i < 3);
+  }
+  const q1 = await page.evaluate(c => questState(`q_awaken_${c}_1`), CLS); step('觉醒任务 1 状态：' + q1); check(q1 === 'ready', '暗黑雷鸣废墟 3 次后觉醒任务 1 没有达成');
+  // 回导师处交任务 1、接任务 2（目标栏里应该出现“勇士级烈焰格拉卡 S 评价”和“30 个无色小晶块”）
+  check(await goScene(mScene), '回不到导师处');
+  check(await P.talk(MENTOR), '回来和导师对话失败');
+  step('交觉醒任务 1：' + await P.dialogTo(['完成任务'])); await wait(500);
+  if (await page.evaluate(() => menus.isOpen('npcquest'))) { await P.tap('KeyX'); await wait(400); }
+  step('觉醒任务 2：' + await P.dialogTo(['接受'])); await P.shot('aw2-accepted'); await P.closeAll();
+  } else { step('觉醒任务 2：' + await page.evaluate(() => npcUI.mode)); await P.shot('aw2-accepted'); await P.closeAll(); }
+  // 买 30 个无色小晶块（导师附近的商店：鬼剑士 → 辛达，神枪手 → 诺顿，魔法师 → 卡坤），Shift + 点击输入数量
+  const shopNpc = ['sinda', 'norton', 'kakun'][ci];
+  const need = await page.evaluate(() => Math.max(0, 30 - inv.count('crystal')));
+  if (need > 0) {
+    if (await page.evaluate(id => qSceneOfNpc(id).id, shopNpc) !== await page.evaluate(() => world.S.id)) check(await goScene(await page.evaluate(id => qSceneOfNpc(id).id, shopNpc)), '走不到商店');
+    check(await P.talk(shopNpc), `和 ${shopNpc} 对话失败`); await P.npcService('商店'); await wait(300);
+    await page.click('.shopwin .cat:has-text("材料")').catch(() => {}); await wait(200);
+    const row = page.locator('.shopwin .srow', { hasText: '无色小晶块' }).first();
+    await row.click({ modifiers: ['Shift'] }); await wait(300);
+    await page.fill('.idlg input[type=number]', String(need)); await wait(100); await P.shot('buy-crystal-qty');
+    await page.locator('.idlg .row .btn').last().click(); await wait(300);
+    await page.click('.shopwin .btn:has-text("购买选中")'); await wait(300);
+    if (await page.locator('.idlg').count()) await page.locator('.idlg .row .btn').last().click();
+    await wait(300); await P.shot('buy-crystal');
+    step('无色小晶块：' + await page.evaluate(() => inv.count('crystal'))); await P.closeAll();
+  }
+  // 冒险级烈焰格拉卡，A 评价（最多 3 次）
+  check(await goScene('gf_graca'), '走不到格拉卡区域');
+  let okS = false;
+  for (let t = 1; t <= 3 && !okS; t++) {
+    check(await P.toGate('blazing_graca'), '烈焰格拉卡门口没弹窗'); if (t === 1) await P.shot('warrior-gate');
+    await P.enterDungeon('冒险');
+    const r = await P.fightDungeon({ onRoom: async s => { if (s.d.boss && t === 1) await P.shot('warrior-boss'); } });
+    step(`冒险级烈焰格拉卡第 ${t} 次：${JSON.stringify(r)}`);
+    if (r.state === 'result') { await P.shot(`warrior-result-${t}`); await P.flipAndReturn(); }
+    okS = await page.evaluate(c => questRec(`q_awaken_${c}_2`) && goalVal(QUESTS[`q_awaken_${c}_2`], questRec(`q_awaken_${c}_2`), 0) >= 1, CLS);
+  }
+  check(okS, '冒险级烈焰格拉卡 3 次都没打到 A');
+  const q2 = await page.evaluate(c => questState(`q_awaken_${c}_2`), CLS); step('觉醒任务 2 状态：' + q2);
+  // 交任务 → 觉醒
+  check(await goScene(mScene), '回不到导师处');
+  check(await P.talk(MENTOR), '和导师对话失败');
+  step('交觉醒任务 2：' + await P.dialogTo(['完成任务'])); await wait(600); await P.shot('awaken-done');
+  if (await page.evaluate(() => menus.isOpen('npcquest'))) { await P.tap('KeyX'); await wait(400); }
+  await P.closeAll();
+  step('觉醒标记：' + await page.evaluate(() => awakenUnlocked()) + ' 晶块剩 ' + await page.evaluate(() => inv.count('crystal')));
+  // 学觉醒技能，拖到技能栏最后一格（Y），进地下城按 Y 放出来
+  const aw = await page.evaluate(() => { const J = CLASSES[game.player.cls].jobs[game.job]; return J.awaken; });
+  await P.tap('KeyK'); await wait(400);
+  await page.click('.sktab:has-text("转职技能")'); await wait(300);
+  await page.click(`.sklist2 .skic[data-id="${aw}"]`).catch(() => P.note('技能窗口里找不到觉醒技能')); await wait(300);
+  await page.click('.skdetail .btn:has-text("学习")').catch(() => P.note('觉醒技能没有“学习”按钮')); await wait(300);
+  await P.shot('awaken-skill');
+  const lv = await page.evaluate(id => game.skillLv[id] || 0, aw); step(`觉醒技能 ${aw} 等级：${lv}`); check(lv > 0, '觉醒技能学不了');
+  const target = await page.evaluate(() => { const R = hudSkillRect(11), r = ucan.getBoundingClientRect(); return { x: r.left + (R.x + R.s / 2) / 1920 * r.width, y: r.top + (R.y + R.s / 2) / 1080 * r.height }; });
+  const bx = await page.locator(`.sklist2 .skic[data-id="${aw}"]`).boundingBox();
+  if (bx) { await page.mouse.move(bx.x + bx.width / 2, bx.y + bx.height / 2); await page.mouse.down(); await page.mouse.move(target.x, target.y, { steps: 12 }); await page.mouse.up(); await wait(300); }
+  check(await page.evaluate(id => game.skillBar[11] === id, aw), '觉醒技能没拖进技能栏 Y 格');
+  await P.closeAll();
+  check(await goScene('gf_graca'), '走不到格拉卡区域');
+  check(await P.toGate('graca'), '格拉卡门口没弹窗'); await P.enterDungeon();
+  const t0 = Date.now(); let cast = false;
+  while (Date.now() - t0 < 60000 && !cast) {
+    const s = await P.st(); if (!s.en || !s.en.length) { await wait(300); continue; }
+    const e = s.en[0]; await P.walkTo(e.x - 80, e.y, { maxMs: 4000 });
+    await P.tap('KeyY'); await wait(250);
+    cast = await page.evaluate(id => !!(game.cutin) || (game.player.act && game.player.act.id === id) || (game.player.cool[id] || 0) > 0, aw);
+  }
+  await wait(300); await P.shot('awaken-cast'); await wait(900); await P.shot('awaken-cast2');
+  step('觉醒技能释放：' + cast); check(cast, '按 Y 放不出觉醒技能');
 }
 async function hidden() {
   await quickStart();

@@ -277,10 +277,13 @@ function drawOwnLabel(c, taken) {
   const C = CLASSES[p.cls], J = game.job && C.jobs && C.jobs[game.job];
   const t1 = `Lv.${game.lvl} ${d.name || C.name}`, job = J ? J.name : C.name;
   const me = typeof net !== 'undefined' && net.user ? net.user.id : null, tag = me != null && typeof netTagOf === 'function' ? netTagOf(me) : null;
-  const t2 = tag ? `<${tag}> ${job}` : job, X = sx(p.x), ny = sy(p.y, 124 + (p.z || 0));
+  const t2 = tag ? `<${tag}> ${job}` : job, X = sx(p.x);
+  let ny = sy(p.y, 124 + (p.z || 0));
   c.save(); c.textAlign = 'center';
   c.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
   const half = Math.max(c.measureText(t1).width, c.measureText(t2).width * 0.8) / 2 + 2;
+  // 站在 NPC 跟前时会和 NPC 的名牌叠在一起：挪到 NPC 名牌下面（贴着自己头顶）
+  { const hits = taken.filter(o => X - half < o.x1 && X + half > o.x0 && ny - 20 < o.y1 && ny + 3 > o.y0); if (hits.length) ny = Math.max(...hits.map(o => o.y1)) + 21; }
   c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.85)'; c.strokeText(t1, X, ny); c.fillStyle = '#ffe8a8'; c.fillText(t1, X, ny);
   c.font = 'bold 8px "PingFang SC","Microsoft YaHei",sans-serif'; c.strokeText(t2, X, ny - 11); c.fillStyle = tag ? '#9aff7a' : '#e8dcc0'; c.fillText(t2, X, ny - 11);
   c.restore();

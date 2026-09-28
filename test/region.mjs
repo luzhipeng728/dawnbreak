@@ -347,6 +347,33 @@ if (parts.includes('abyss')) {
     return E;
   }, id);
   for (const e of errs) check(false, e);
+  // 找得到深渊：开放提示 + 自动前往、总览（不找 NPC 也能看）+ 前往门口、世界地图标记、不限购、普通地下城的邀请函掉率
+  const disc = await page.evaluate(async () => {
+    const r = {}, d = save.data, A0 = Object.values(ABYSS).find(A => !(QUESTS[A.quest].pre || []).length), q = A0.quest;
+    delete d.questDone[q]; delete (d.quests || {})[q]; abyssData().told = {}; game.lvl = Math.max(game.lvl, QUESTS[q].lvl); recalcStats(game.player);
+    abyssNoticeCheck(); const note = document.getElementById('abynote');
+    r.note = !!note && note.textContent.includes(QUESTS[q].name) && !!abyssData().told[q];
+    note.querySelector('button').click(); const f1 = guide.focus(); r.goQuest = guide.pin === q && !!f1 && f1.npc === QUESTS[q].npc;
+    menus.open('abyss'); await new Promise(res => setTimeout(res, 150));
+    const rows = [...document.querySelectorAll('[data-win=abyss] [data-aby]')];
+    r.rows = rows.length === Object.keys(ABYSS).length && rows.every(x => x.querySelector('.abygo') && /资格/.test(x.textContent));
+    r.tabs = document.querySelectorAll('[data-win=abyss] .itab').length;
+    d.questDone[q] = Date.now(); menus.close('abyss'); menus.open('abyss'); await new Promise(res => setTimeout(res, 150));
+    document.querySelector(`[data-win=abyss] [data-aby="${A0.id}"] .abygo`).click(); const f2 = guide.focus();
+    r.goGate = guide.abyGate === A0.id && !!f2 && f2.gate === A0.id; guide.abyGate = null; guide.auto = false;
+    menus.open('worldmap'); await new Promise(res => setTimeout(res, 150));
+    r.map = !!document.querySelector(`.wm-node[data-id="${A0.scene}"] .wm-aby`) && !!document.querySelector('[data-sk=abyov]'); menus.close('worldmap');
+    game.gold = 1e7; const t0 = inv.count('abyss_ticket'); for (let i = 0; i < 7; i++) abyssBuyTicket(null); r.buy = inv.count('abyss_ticket') - t0;
+    const D = Object.values(DUNGEONS).find(D => !D.abyss && !D.hidden && D.lvl[1] >= 20), dg = { def: D, diff: 0, D: DIFFS[0] }, n0 = drops.length; let n = 0;
+    for (let i = 0; i < 400; i++) { drops.length = 0; abyssExtraDrops({ kind: 'x', boss: true, x: 100, y: 50, z: 0 }, dg); n += drops.filter(x => x.item && x.item.key === 'abyss_ticket').length; }
+    drops.length = n0; r.bossRate = n / 400;
+    return r;
+  });
+  check(disc.note && disc.goQuest, `深渊开放提示 + 自动前往接资格任务 ${JSON.stringify(disc)}`);
+  check(disc.rows && disc.tabs === 2 && disc.goGate, '深渊总览（不找 NPC 也能打开）：每个深渊都有资格状态和“前往”，资格完成后“前往”走到深渊门口');
+  check(disc.map, '世界地图上有深渊标记和“深渊派对总览”按钮');
+  check(disc.buy === 7, `歌兰蒂斯的邀请函不限购（买了 ${disc.buy} 张）`);
+  check(disc.bossRate > 0.45 && disc.bossRate < 0.65, `普通地下城领主掉邀请函约 55%（实测 ${disc.bossRate}）`);
   const AB = await page.evaluate(id => REGIONS[id].abyss, id);
   for (const aid of AB) {
     // 进图：扣 cost 张邀请函
@@ -359,58 +386,68 @@ if (parts.includes('abyss')) {
     }, aid);
     await page.waitForFunction(aid => game.scene === 'dungeon' && game.dungeon && game.dungeon.def.id === aid, aid, { timeout: 20000 });
     await wait(300);
-    const e1 = await page.evaluate(() => ({ tk: inv.count('abyss_ticket'), lord: game.dungeon.def.boss.kind, theme: game.room.theme }));
+    const e1 = await page.evaluate(() => { const dg = game.dungeon; return { tk: inv.count('abyss_ticket'), lord: dg.def.abyssLord, boss: dg.def.boss.kind, room: !!dg.abyssRoom && dg.abyssRoom.type !== 'boss' && dg.abyssRoom.type !== 'start' }; });
     check(e0.ok && e1.tk === 1, `${aid}: 进图消耗 ${e0.cost} 张邀请函（剩 ${e1.tk}）`);
-    // 深渊之间：封印之门 → 堕落守护者 → 配置的几波 → 深渊领主
-    await page.evaluate(() => { window.__keepA ??= setInterval(() => { const q = game.player; q.hp = q.hpMax; q.mp = q.mpMax; q.dead = false; }, 40); const dg = game.dungeon, p = game.player; p.invul = 1e9; for (const r of dg.layout.rooms) if (r !== dg.layout.boss) { r.visited = true; r.cleared = true; } dg.enter(dg.layout.boss, 'left'); });
+    check(e1.room && e1.lord && e1.boss, `${aid}: 深渊柱在一个普通房间，深渊领主 ${e1.lord}，领主房是 ${e1.boss}`);
+    // 深渊柱所在的房间：打破深渊柱 → 第 1 轮深渊怪物 → 第 2 轮深渊精英 + 深渊领主；两轮打完之前门是锁着的
+    await page.evaluate(() => { window.__keepA ??= setInterval(() => { const q = game.player; q.hp = q.hpMax; q.mp = q.mpMax; q.dead = false; }, 40); const dg = game.dungeon, p = game.player; p.invul = 1e9; const r = dg.abyssRoom; for (const o of dg.layout.rooms) if (o !== r && o.type !== 'boss') { o.visited = true; o.cleared = true; } dg.enter(r, 'left'); });
     await wait(500);
-    const seal = await page.evaluate(() => { const s = ents.find(e => e.kind === 'abyssSeal'); if (s) { s.hp = Math.round(s.hpMax * 0.45); s.onDamaged(s); } return { seal: !!s, phase: game.dungeon.abyssRun && game.dungeon.abyssRun.phase }; });
-    check(seal.seal && seal.phase === 'seal', `${aid}: 封印之门`);
-    await wait(200);
-    check(await page.evaluate(() => ents.some(e => e.guardian)), `${aid}: 堕落守护者`);
+    const pil = await page.evaluate(() => { const dg = game.dungeon, s = ents.find(e => e.kind === 'abyssPillar'); return { pillar: !!s, phase: dg.abyssRun.phase, doors: dg.doorsOpen }; });
+    check(pil.pillar && pil.phase === 'pillar' && !pil.doors, `${aid}: 深渊柱出现，门锁着`);
+    await page.evaluate(() => { for (const e of [...ents]) if (e.team === 'e' && !e.dead && e.kind !== 'abyssBlock') { e.invul = 0; e.hp = 0; killEnt(e, game.player, {}); } drops.length = 0; });
     const seen = [];
+    let lordIn = null;
     for (let i = 0; i < 60; i++) {
-      const r = await page.evaluate(() => { const kinds = []; for (const e of ents) if (e.team === 'e' && !e.dead && !e.boss) { if (e.abyssMob) kinds.push(e.kind + (e.elite ? '*' : '')); e.hp = 0; killEnt(e, game.player, {}); } drops.length = 0; const R = game.dungeon.abyssRun; return { ph: R.phase, w: R.wave, kinds }; });
-      if (r.kinds.length) seen.push({ w: r.w, kinds: r.kinds });
-      if (r.ph === 'lord') break;
-      await wait(250);
+      await wait(300);
+      const r = await page.evaluate(() => { const dg = game.dungeon, R = dg.abyssRun, kinds = []; let lord = null;
+        for (const e of ents) if (e.team === 'e' && !e.dead && !e.remove && e !== R.block) { if (e.abyssLord) { lord = { kind: e.kind, boss: !!e.boss, name: e.name, mechs: (e.msMechs || []).map(s => s.id) }; continue; } if (e.abyssMob) kinds.push(e.kind + (e.elite ? '*' : '')); e.hp = 0; killEnt(e, game.player, {}); }
+        drops.length = 0; return { ph: R.phase, round: R.round, kinds, lord, doors: dg.doorsOpen, cleared: dg.room.cleared }; });
+      if (r.kinds.length) seen.push({ w: r.round, kinds: r.kinds });
+      if (r.ph === 'round' && r.doors) { check(false, `${aid}: 深渊派对进行中门却开着`); break; }
+      if (r.lord) { lordIn = r; break; }
     }
-    await wait(1200);
-    const lord = await page.evaluate(aid => { const A = ABYSS[aid], b = game.dungeon.boss, want = [...A.lord.mechs.map(m => m.use)]; return { in: !!b && ents.includes(b) && b.name.startsWith('深渊领主'), waves: game.dungeon.abyssRun.wave, n: A.waves.length, mechs: (b.msMechs || []).map(s => s.id), want, hp: b.hp / b.hpMax }; }, aid);
-    const waveOk = await page.evaluate(({ aid, seen }) => { const A = ABYSS[aid], dg = game.dungeon; return seen.every(s => { const W = A.waves[s.w - 1] || {}, ok = new Set([...(W.mobs || dg.def.mobs).map(m => m[0]), ...(W.elites || []), dg.def.elite]); return s.kinds.every(k => ok.has(k.replace('*', ''))); }); }, { aid, seen });
-    check(lord.in && lord.waves === lord.n, `${aid}: ${lord.n} 波深渊派对之后深渊领主降临（${lord.waves} 波）`);
-    check(waveOk, `${aid}: 每一波的怪物和配置一致 ${JSON.stringify(seen.map(s => s.w + ':' + [...new Set(s.kinds)].join('/')))}`);
-    check(lord.want.every(u => lord.mechs.includes(u)), `${aid}: 深渊领主带上了机制 ${lord.want}（实际 ${lord.mechs}）`);
+    const waveOk = await page.evaluate(({ aid, seen }) => { const A = ABYSS[aid], dg = game.dungeon; return seen.length >= 2 && seen.every(s => { const W = (s.w === 1 ? A.waves[0] : A.waves[A.waves.length - 1]) || {}, ok = new Set([...(W.mobs || dg.def.mobs).map(m => m[0]), ...(W.elites || []), dg.def.elite]); return s.kinds.every(k => ok.has(k.replace('*', ''))); }); }, { aid, seen });
+    const want = await page.evaluate(aid => ABYSS[aid].lord.mechs.map(m => m.use), aid);
+    check(!!lordIn && lordIn.round === 2 && lordIn.lord.boss && lordIn.lord.name.startsWith('深渊领主'), `${aid}: 第 2 轮深渊领主降临 ${JSON.stringify(lordIn && lordIn.lord)}`);
+    check(waveOk, `${aid}: 两轮的怪物和配置一致 ${JSON.stringify(seen.map(s => s.w + ':' + [...new Set(s.kinds)].join('/')))}`);
+    check(lordIn && want.every(u => lordIn.lord.mechs.includes(u)), `${aid}: 深渊领主带上了机制 ${want}`);
     await page.screenshot({ path: `${out}/abyss-${aid}-lord.png` });
     // 领主的循环机制（cycle）：撑 30 秒（游戏时间），至少触发一次
     const m0 = await page.evaluate(() => ({ ...MS_STATS.mech }));
-    await page.evaluate(() => { const b = game.dungeon.boss; b.hp = Math.round(b.hpMax * 0.4); });
+    await page.evaluate(() => { const b = game.dungeon.abyssRun.lord; b.hp = Math.round(b.hpMax * 0.4); });
     await simWait(32);
     const m1 = await page.evaluate(() => ({ ...MS_STATS.mech }));
     const cyc = await page.evaluate(aid => ABYSS[aid].lord.cycle.map(c => c.mech.use), aid);
     check(!cyc.length || cyc.some(u => (m1[u] || 0) > (m0[u] || 0)), `${aid}: 领主的循环机制触发了（${cyc.map(u => `${u} ${(m0[u] || 0)}→${(m1[u] || 0)}`).join('，')}）`);
-    // 保底：这一趟没出过史诗 + 已经连续 pity-1 次 → 领主必掉本区域的深渊专属（压住随机数，让普通几率不出）
+    // 保底：这一趟没出过史诗 + 已经连续 pity-1 次 → 深渊领主必掉本区域的深渊专属（压住随机数，让普通几率不出）；深渊领主死了不结算地下城
     const pity = await page.evaluate(aid => {
-      const dg = game.dungeon, b = dg.boss, A = ABYSS[aid]; dg.abyssEpics = 0; drops.length = 0; dg._fin = dg.finish; dg.finish = () => {}; b.invul = 0;
+      const dg = game.dungeon, b = dg.abyssRun.lord, A = ABYSS[aid]; dg.abyssEpics = 0; drops.length = 0; b.invul = 0; for (const s of b.msMechs || []) msMechEnd(b, s);
       const R = Math.random; Math.random = () => 0.9; try { b.hp = 0; killEnt(b, game.player, {}); } finally { Math.random = R; }
       const ep = drops.filter(d => d.item && d.item.rar >= 5);
-      // 再模拟一趟没出史诗的：计数 +1
-      const before = abyssData().pity[aid]; Math.random = () => 0.9; try { abyssExtraDrops({ kind: b.kind, boss: true, x: b.x, y: b.y, z: 0 }, { def: dg.def, diff: 0, D: dg.D }); } finally { Math.random = R; }
-      return { epics: ep.map(d => ({ key: d.item.key, abyss: !!d.abyss, own: ITEMS[d.item.key].abyssRegion === A.region })), after: before, next: abyssData().pity[aid] };
+      const before = abyssData().pity[aid]; Math.random = () => 0.9; try { abyssExtraDrops({ kind: b.kind, abyssLord: true, x: b.x, y: b.y, z: 0 }, { def: dg.def, diff: 0, D: dg.D }); } finally { Math.random = R; }
+      return { epics: ep.map(d => ({ key: d.item.key, abyss: !!d.abyss, own: ITEMS[d.item.key].abyssRegion === A.region })), after: before, next: abyssData().pity[aid], state: dg.state };
     }, aid);
     check(pity.epics.length >= 1 && pity.epics[0].abyss && pity.epics[0].own, `${aid}: 保底掉落本区域的深渊专属 ${pity.epics.map(e => e.key)}`);
     check(pity.after === 0 && pity.next === 1, `${aid}: 出了史诗保底清零，没出 +1（${pity.after} → ${pity.next}）`);
-    // 结算：深渊宝藏（三张紫卡，免费翻一张）
-    await page.evaluate(() => { const dg = game.dungeon; dg.finish = dg._fin; dg.finish(); });
-    await page.waitForFunction(() => menus.isOpen('result'), null, { timeout: 10000 });
-    await wait(400);
-    const c0 = await page.evaluate(() => ({ n: document.querySelectorAll('#result .abyrow .card').length, first: document.querySelector('#result .card') && !document.querySelector('#result .card').closest('.abyrow'), items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));
-    check(c0.n === 3 && c0.first, `${aid}: 结算界面有三张「深渊宝藏」（${c0.n}），普通翻牌仍在最前面`);
-    await page.screenshot({ path: `${out}/abyss-${aid}-result.png` });
-    await page.click('#result .abyrow .card >> nth=1'); await wait(900);
-    const c1 = await page.evaluate(() => ({ flip: document.querySelectorAll('#result .abyrow .card.flip').length, items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));
+    check(pity.state === 'play', `${aid}: 打倒深渊领主不结算，地下城照常往下打（${pity.state}）`);
+    // 两轮打完：原地弹出深渊宝藏（三张紫卡，免费翻一张），门打开
+    await page.evaluate(() => { for (const e of [...ents]) if (e.team === 'e' && !e.dead && e !== game.dungeon.abyssRun.block) { e.hp = 0; killEnt(e, game.player, {}); } });
+    await page.waitForFunction(() => !!document.querySelector('#abytreasure .card'), null, { timeout: 10000 }).catch(() => {});
+    await wait(500);
+    const c0 = await page.evaluate(() => ({ n: document.querySelectorAll('#abytreasure .card').length, phase: game.dungeon.abyssRun.phase, doors: game.dungeon.doorsOpen, items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));
+    check(c0.n === 3 && c0.phase === 'done' && c0.doors, `${aid}: 两轮打完弹出三张「深渊宝藏」（${c0.n}），门打开了`);
+    await page.screenshot({ path: `${out}/abyss-${aid}-treasure.png` });
+    await page.click('#abytreasure .card >> nth=1'); await wait(900);
+    const c1 = await page.evaluate(() => ({ flip: document.querySelectorAll('#abytreasure .card.flip').length, items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));
     check(c1.flip === 3 && (c1.items > c0.items || c1.gold > c0.gold), `${aid}: 翻开一张拿到奖励，另外两张亮出来（物品 ${c0.items}→${c1.items}，金币 ${c0.gold}→${c1.gold}）`);
-    await page.screenshot({ path: `${out}/abyss-${aid}-flip.png` });
+    // 领主房：普通领主，打倒才结算
+    await page.evaluate(() => { const dg = game.dungeon; dg.enter(dg.layout.boss, 'left'); });
+    await wait(600);
+    const bs = await page.evaluate(() => { const dg = game.dungeon, b = dg.boss; return { kind: b && b.kind, abyss: !!(b && b.abyssLord), pillar: ents.some(e => e.kind === 'abyssPillar') }; });
+    check(bs.kind === e1.boss && !bs.abyss && !bs.pillar, `${aid}: 领主房是普通的 ${bs.kind}`);
+    await page.evaluate(() => { const b = game.dungeon.boss; for (const s of b.msMechs || []) msMechEnd(b, s); b.invul = 0; b.hp = 1; applyHit(game.player, b, { dmg: 50, sure: true }, { proj: true }); });
+    await page.waitForFunction(() => menus.isOpen('result'), null, { timeout: 10000 }).catch(() => {});
+    check(await page.evaluate(() => menus.isOpen('result')), `${aid}: 打倒领主房的领主 → 结算`);
     await page.evaluate(() => { menus.close('result'); lootAll(); return goTown(); }); await wait(500);
   }
   console.log(`深渊：${AB.join(', ')}（${errs.length ? errs.length + ' 个数据问题' : '数据通过'}）`);

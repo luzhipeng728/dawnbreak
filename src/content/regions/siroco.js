@@ -159,8 +159,8 @@ defineRegion({
       drops: { boss: [['ep_si_neck', 0.04], ['ep_si_bracelet', 0.04], ['ep_si_ring', 0.04], ['ep_si_gate', 0.02], ['ep_si_nex', 0.02], ['lg_karo_eye', 0.02]], mats: [['crystal', 0.14, 12], ['m_soul', 0.004, 1], ['m_diamond', 0.012, 1]] } },
   },
 
-  /* ---- 深渊派对（content/abyss.js 展开，字段见 docs/REGION_PIPELINE.md §2.1）：资格任务 → 隐藏门 → 封印之门 → waves 几波派对 → 深渊领主（lords 随机，lord.mechs / cycle 加领主机制）
-          cost 每次消耗的邀请函；pity 保底次数；seal 封印之门血量倍率；items 里标了 abyss 的套装 / 史诗是本区域的深渊专属 ---- */
+  /* ---- 深渊派对（content/abyss.js 展开，字段见 docs/REGION_PIPELINE.md §2.1）：资格任务 → 隐藏门 → 深渊柱（随机一个普通房间）→ 两轮派对（waves 第一项 / 最后一项）→ 深渊领主（lords 随机，lord.mechs / cycle 加领主机制）
+          cost 每次消耗的邀请函；pity 保底次数；seal 深渊柱血量倍率；items 里标了 abyss 的套装 / 史诗是本区域的深渊专属 ---- */
   abyss: {
     abyss_siroco: { name: '魔界深渊', lvl: [30, 31], lordLvl: 33, cost: 2, pity: 8, seal: 4, themeFrom: 'siroPain', theme: 'abyssSiroco', tint: 'rgba(90,10,110,0.34)',
       mobs: [['phantomBlade', 2], ['phantomStalker', 2], ['voidCaster', 1.5], ['hellHound', 2], ['burstShade', 1], ['gazer', 1]], elite: 'jailer',

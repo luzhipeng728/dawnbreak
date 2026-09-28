@@ -1,5 +1,5 @@
 // 装备深化测试：新史诗 / 套装、绑定与交易、增幅（净化 / 成功 / 失败 / 归零 / 破碎 / 保护券）、锻造、附魔、装备图鉴、装备评分、
-// 装备特效（proc）、深渊派对（邀请函 → 封印之门 → 三波 → 深渊领主 → 史诗光柱 → 拾取公告）、各窗口截图、刷新后数据仍在
+// 装备特效（proc）、深渊派对（邀请函 → 深渊柱 → 两轮 → 深渊领主 → 史诗光柱 → 拾取公告）、各窗口截图、刷新后数据仍在
 // 用法：node build.mjs --offline && node test/gear.mjs [cls]
 import { launch, URL_BASE } from './lib.mjs';
 import fs from 'fs';
@@ -188,27 +188,24 @@ await wait(300);
 const dg0 = await ev(() => ({ tk: inv.count('abyss_ticket'), lord: game.dungeon.def.boss.kind, theme: game.room.theme, bg: !!IMG['bg/abyssGF_far'] }));
 check(dg0.tk === 1 && dg0.theme === 'abyssGF' && dg0.bg, `消耗 1 张邀请函进入格兰之森深渊（深渊背景，本次深渊领主 ${dg0.lord}）`);
 await shot('11-abyss-room');
-// 直接进深渊之间
-await ev(() => { const dg = game.dungeon, p = game.player; p.invul = 999; for (const r of dg.layout.rooms) if (r !== dg.layout.boss) { r.visited = true; r.cleared = true; } dg.enter(dg.layout.boss, 'left'); });
+// 直接进深渊柱所在的房间（官方：深渊柱在某个普通房间，打破后两轮）
+await ev(() => { const dg = game.dungeon, p = game.player; p.invul = 999; const r = dg.abyssRoom; for (const o of dg.layout.rooms) if (o !== r && o.type !== 'boss') { o.visited = true; o.cleared = true; } dg.enter(r, 'left'); });
 await wait(500);
-const seal = await ev(() => { const s = ents.find(e => e.kind === 'abyssSeal'); return { seal: !!s, boss: ents.includes(game.dungeon.boss), phase: game.dungeon.abyssRun && game.dungeon.abyssRun.phase }; });
-check(seal.seal && !seal.boss && seal.phase === 'seal', '深渊之间：封印之门出现，深渊领主还没出场');
+const seal = await ev(() => { const s = ents.find(e => e.kind === 'abyssPillar'), dg = game.dungeon; return { seal: !!s, room: dg.abyssRoom.type, doors: dg.doorsOpen, phase: dg.abyssRun && dg.abyssRun.phase }; });
+check(seal.seal && seal.room !== 'boss' && !seal.doors && seal.phase === 'pillar', '深渊柱出现在普通房间，门锁着');
 await shot('12-abyss-seal');
-await ev(() => { const s = ents.find(e => e.kind === 'abyssSeal'); s.hp = Math.round(s.hpMax * 0.45); s.onDamaged(s); });
-await wait(200);
-check(await ev(() => ents.some(e => e.guardian)), '封印之门血量过半：堕落守护者出现');
-// 一波一波清怪，直到深渊领主降临
+// 打破深渊柱 → 第 1 轮深渊怪物 → 第 2 轮深渊精英 + 深渊领主
 for (let i = 0; i < 40; i++) {
-  const ph = await ev(() => { for (const e of ents) if (e.team === 'e' && !e.dead && !e.boss) { e.hp = 0; killEnt(e, game.player, {}); } drops.length = 0; const R = game.dungeon.abyssRun; return R.phase + R.wave; });
-  if (ph.startsWith('lord')) break;
-  await wait(500);
+  const ph = await ev(() => { const R = game.dungeon.abyssRun; for (const e of ents) if (e.team === 'e' && !e.dead && !e.abyssLord && e !== R.block) { e.invul = 0; e.hp = 0; killEnt(e, game.player, {}); } drops.length = 0; return R.lord ? 'lord' : R.phase + R.round; });
+  if (ph === 'lord') break;
+  await wait(400);
 }
 await wait(1500);
-const lord = await ev(() => { const b = game.dungeon.boss; return { lord: !!b && ents.includes(b) && b.name.startsWith('深渊领主'), waves: game.dungeon.abyssRun.wave }; });
-check(lord.lord && lord.waves === 3, '三波深渊派对之后深渊领主降临');
+const lord = await ev(() => { const R = game.dungeon.abyssRun, b = R.lord; return { lord: !!b && ents.includes(b) && b.name.startsWith('深渊领主'), round: R.round, doors: game.dungeon.doorsOpen }; });
+check(lord.lord && lord.round === 2 && !lord.doors, '打破深渊柱，两轮深渊派对的第 2 轮深渊领主降临');
 await shot('13-abyss-lord');
-// 击杀领主：强制史诗掉落（把随机数压到 0）
-await ev(() => { const dg = game.dungeon, b = dg.boss; dg._fin = dg.finish; dg.finish = () => {}; b.invul = 0; const R = Math.random; Math.random = () => 0.001; try { b.hp = 0; killEnt(b, game.player, {}); } finally { Math.random = R; } });
+// 击杀深渊领主：强制史诗掉落（把随机数压到 0）；不会结算地下城
+await ev(() => { const b = game.dungeon.abyssRun.lord; b.invul = 0; const R = Math.random; Math.random = () => 0.001; try { b.hp = 0; killEnt(b, game.player, {}); } finally { Math.random = R; } });
 await wait(3200);
 const dr = await ev(() => ({ n: drops.length, epic: drops.filter(d => d.item && d.item.rar >= 5).map(d => ({ key: d.item.key, abyss: !!d.abyss, landed: d.landT != null })), soul: drops.some(d => d.item && d.item.key === 'm_cosmos') }));
 check(dr.epic.length >= 1 && dr.epic[0].abyss && dr.epic[0].landed && dr.soul, `深渊领主掉落：史诗 ${dr.epic.map(x => x.key).join(',')}（深渊光柱，已落地）、宇宙灵魂`);
@@ -216,7 +213,7 @@ await ev(() => { const d = drops.find(d => d.item && d.item.rar >= 5); cam.x = c
 await wait(300); await shot('14-epic-pillar');
 const pick = await ev(() => { const d = drops.find(d => d.item && d.item.rar >= 5), key = d.item.key, p = game.player; p.x = d.x; p.y = d.y; const n0 = window.__ann.length; const ok = tryPickup(game.player); return { ok, key, ann: window.__ann.slice(n0).find(a => a.kind === 'epic'), codex: !!save.data.codex[key], rec: save.data.codex[key] && save.data.codex[key].src }; });
 check(pick.ok && pick.ann && pick.ann.abyss && pick.codex, `拾取深渊史诗：全服公告（abyss: true），图鉴登记（${pick.rec}）`);
-await ev(() => { const dg = game.dungeon; dg.finish = dg._fin; dg.finish(); }); await wait(600);
+await ev(() => { document.getElementById('abytreasure')?.remove(); game.dungeon.finish(); }); await wait(600);
 check(await ev(() => menus.isOpen('result')), '通关结算');
 await ev(() => { menus.close('result'); lootAll(); return goTown(); }); await wait(600);
 

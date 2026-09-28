@@ -81,7 +81,7 @@ if (parts.includes('skills')) {
   for (let i = 0; i < L.length; i++) {
     const r0 = await page.evaluate(i => {
       for (let k = ents.length - 1; k >= 0; k--) if (ents[k].team === 'e' && ents[k].kind !== 'msLab') ents.splice(k, 1);
-      const p = game.player; p.x = 300; p.y = 100; if (p.heldBy) releaseHeld(p); p.setState('idle'); p.face = 1;
+      const p = game.player; p.x = 300; p.y = 100; p.z = 0; if (p.heldBy) releaseHeld(p); if (p.act) p.endAct(); p.setState('idle'); p.face = 1; p.invul = 0; p.grabProt = 0; p.status = {};   // 上一个技能的起身无敌 / 抓取保护不能带到下一个
       let m = ents.find(e => e.kind === 'msLab' && !e.dead); if (!m) m = window.__lab = spawnMonster('msLab', 360, 100, { lvl: 30 });
       m.x = 360; m.y = 100; m.invul = 0; m.hp = m.hpMax; m.aiCd = 99; m.face = -1; groundFx.length = 0; window.__tele = 0; window.__held = 0;
       window.__heldT = setInterval(() => { if (game.player.st === 'held') __held = 1; }, 20);

@@ -51,31 +51,37 @@ const AVATAR_ACC = {
 const AVATAR_ACC_SCALE = 0.8;   // 配件图比游戏里画的大 1.25 倍（art/tools/avatar_acc.py）
 /* 外观规则（写给玩家看的说明也用这一段）：
    1. 武器：换武器类型 / 史诗武器，手里的武器跟着变；没装备武器就空手。
-   2. 身体（可以混搭）：上身（上衣、胸部）按上衣那套画，下身（下装、腰带以下）按下装那套，脚按鞋那套；没穿的部位是职业默认造型。
-      躺地 / 缩成一团等拼不了的动作帧，整个人用穿得最多的那套。
+   2. 身体（可以混搭，官方同款）：上身（头 + 躯干 + 手臂）按上衣那套画，下身按下装那套，脚按鞋那套；没穿的部位是职业默认造型。
+      躺地 / 缩成一团等拼不了的动作帧，整个人按身体部位（上衣 / 下装 / 胸部 / 腰带 / 鞋）里件数最多的那一套画（lookBodySet）。
    3. 帽子 / 头部 / 脸部：单独叠加在头上；职业默认造型自带帽子（神枪手的报童帽、魔法师的巫师帽）时，帽子和发饰只在上身换成时装后显示。 */
 const AVATAR_HAT_CLS = { gun: 1, mage: 1 };   // 默认造型自带帽子的职业
 // 某件时装对应的帧集 id（这个职业有这套帧才算）
 const avatarSetOf = (cls, it) => { const S = it && it.set && AVATAR_SETS[it.set]; return S && SPR_DATA[`${cls}@${S.id}`] ? S.id : null; };
 /* 混搭（官方同款：每个部位显示自己那套）：上身（头 + 躯干 + 手臂）= 上衣那套，下身 = 下装那套，脚 = 鞋那套；没穿的部位用职业默认造型。
    三段都一样（或都没穿）→ parts = null，照旧整套换帧（上衣 / 下装 / 鞋都是同一套才整套换；只穿上衣 = 时装上身 + 默认下身）。
-   每帧的分割线在原装 spr.json 的 F.cut（art/tools/avatar_cuts.py）；没有分割线的帧整套用穿得最多的那套（look.set）。 */
+   每帧的分割线在原装 spr.json 的 F.cut（art/tools/avatar_cuts.py）；没有分割线的帧整套用 lookBodySet 选出的那套（look.set）。
+   上衣 / 下装 / 鞋都没穿时 parts = null，身体按 lookBodySet（例如神枪手 / 魔法师只戴时装帽子 → 整套换成那套，帽子才显示得出来）。 */
 function avatarParts(cls, eq) {
   const up = avatarSetOf(cls, eq.av_top), low = avatarSetOf(cls, eq.av_bottom), feet = avatarSetOf(cls, eq.av_shoes);
   return up === low && low === feet ? null : { up, low, feet };
 }
-// 整套外观：穿得最多的那套（件数相同取上衣那套）；混搭拼不了的帧（缩成一团等）也用它
-function avatarMajority(cls, eq) {
-  const n = {};
-  for (const slot of AV_SLOTS) { const id = avatarSetOf(cls, eq[slot]); if (id) n[id] = (n[id] || 0) + 1; }
-  const top = avatarSetOf(cls, eq.av_top); let best = null;
-  for (const id in n) if (!best || n[id] > n[best] || (n[id] === n[best] && id === top)) best = id;
-  return best;
+const AV_BODY_SLOTS = ['av_top', 'av_bottom', 'av_chest', 'av_belt', 'av_shoes'];
+function lookBodySet(cls, eq, prefer) {
+  const P = prefer && AVATAR_SETS[prefer]; if (P && SPR_DATA[`${cls}@${P.id}`]) return P.id;   // 商城试穿：正在试的那套优先
+  const setOf = slot => { const it = eq[slot], S = it && it.set && AVATAR_SETS[it.set]; return S && SPR_DATA[`${cls}@${S.id}`] ? S.id : null; };
+  // 身体部位决定整体造型：件数多的优先，同样多时比头部配件件数，再比上衣 > 下装
+  const score = {};
+  for (const slot of AV_BODY_SLOTS) { const id = setOf(slot); if (!id) continue; const s = score[id] = score[id] || [0, 0, 0]; s[0]++; if (slot === 'av_top') s[2] += 2; if (slot === 'av_bottom') s[2] += 1; }
+  for (const slot of ['av_hat', 'av_hair', 'av_face']) { const id = setOf(slot); if (id && score[id]) score[id][1]++; }
+  const better = (a, b) => { for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] > b[i]; return false; };
+  let best = null; for (const id in score) if (!best || better(score[id], score[best])) best = id;
+  if (best) return best;
+  // 没穿身体部位：默认造型自带帽子的职业戴了时装帽子 / 发饰 → 换成那套，帽子才显示得出来（只戴眼镜不换）
+  return AVATAR_HAT_CLS[cls] ? setOf('av_hat') || setOf('av_hair') : null;
 }
-function lookFromEquip(cls, eq) {
+function lookFromEquip(cls, eq, prefer) {
   eq = eq || {};
-  const parts = avatarParts(cls, eq);
-  const set = parts ? avatarMajority(cls, eq) : avatarSetOf(cls, eq.av_top), upCostume = parts ? !!parts.up : !!set;
+  const set = lookBodySet(cls, eq, prefer), parts = prefer ? null : avatarParts(cls, eq), upCostume = parts ? !!parts.up : !!set;   // 商城试穿（prefer）整套看
   const acc = [];
   for (const slot of ['av_hat', 'av_hair', 'av_face']) {
     const it = eq[slot]; if (!it || !AVATAR_ACC[it.key]) continue;

@@ -13,6 +13,7 @@
    性能：每帧只多 1 次 drawImage + 变换（身前武器再多 1 次握拳小图）；换装 / 首次用到某帧时才分配对象。
    ===================================================================== */
 const AVATAR_CLS = { sword: 1, gun: 1, mage: 1 };
+const AVATAR_SIG_SLOTS = ['weapon', 'av_weapon', 'av_top', 'av_bottom', 'av_chest', 'av_belt', 'av_shoes', 'av_hat', 'av_hair', 'av_face'];   // 这些部位换了就重算外观
 class AvatarLayer {
   constructor(m) {
     this.m = m; this.cls = m.key; this.fixed = null; this.look = null; this.own = null; this.sig = [];
@@ -24,8 +25,8 @@ class AvatarLayer {
     const p = typeof game !== 'undefined' && game.player, own = !!(p && p.model === this.m);
     if (own) {
       const e = inv.equip, s = this.sig;
-      if (this.own && s[0] === e.weapon && s[1] === e.av_top && s[2] === e.av_bottom && s[3] === e.av_hat && s[4] === e.av_hair && s[5] === e.av_face && s[6] === e.av_weapon && s[7] === e.av_shoes && s[8] === e) return;
-      this.sig = [e.weapon, e.av_top, e.av_bottom, e.av_hat, e.av_hair, e.av_face, e.av_weapon, e.av_shoes, e];
+      if (this.own && s[0] === e && AVATAR_SIG_SLOTS.every((k, i) => s[i + 1] === e[k])) return;
+      this.sig = [e, ...AVATAR_SIG_SLOTS.map(k => e[k])];
       this.own = true; this.apply(lookFromEquip(this.cls, e)); return;
     }
     if (this.own === false && this.look) return;

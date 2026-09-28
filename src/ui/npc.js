@@ -113,6 +113,7 @@ Object.assign(menus, {
     if (!last) btns.append(h('button', { class: 'btn', onclick: () => npcAdvance() }, '下一页 ▶'), h('button', { class: 'btn blue', title: '跳过剧情，直接到接受 / 完成', onclick: () => npcSkip() }, `跳过 ${keyName('menu')}`));
     else if (q && U.mode === 'offer') btns.append(h('button', { class: 'btn big', onclick: () => { if (questAccept(q.id)) { npcSet(N, 'after', q.id); this.refresh('npc', N); } } }, '接受'), h('button', { class: 'btn blue', onclick: () => { sfx.click(); npcSet(N, 'greet', null, ['……是吗，那等你改变主意了再来找我吧。']); this.refresh('npc', N); } }, '拒绝'));
     else if (q && U.mode === 'done') btns.append(h('button', { class: 'btn big', onclick: () => npcFinish(N, q) }, '完成任务'));
+    else if (q && U.mode === 'doing' && q.goals.some(g => g.type === 'job') && typeof jobAvailable === 'function' && jobAvailable(N)) btns.append(h('button', { class: 'btn big', onclick: () => { sfx.click(); this.open('job', N); } }, '去转职'));   // 转职任务：直接从这里打开转职窗口
     else if (U.mode !== 'greet') btns.append(h('button', { class: 'btn', onclick: () => { sfx.click(); npcSet(N, 'greet'); this.refresh('npc', N); } }, '确定'));
     const el = h('div', { class: 'npcwin', 'data-block': '1', 'data-hud': 'hide' },
       npcPortrait(N),

@@ -261,6 +261,7 @@ class Passerby {
 function drawCrowdLabels(c, npcRects) {
   const taken = npcRects.slice(), hit = r => taken.some(o => r.x0 < o.x1 && r.x1 > o.x0 && r.y0 < o.y1 && r.y1 > o.y0);
   c.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif';
+  drawOwnLabel(c, taken);   // 自己的名牌最先放，其他名牌避让它
   for (const w of [...world.crowd].sort((a, b) => b.y - a.y)) {
     const X = sx(w.x); if (w.a <= 0.05 || X < -80 || X > WW + 80) continue;
     const half = Math.max(c.measureText(w.name).width, w.guild ? c.measureText(`<${w.guild}>`).width : 0) / 2 + 2, top = w.guild ? 20 : 10;
@@ -269,6 +270,21 @@ function drawCrowdLabels(c, npcRects) {
     if (!r) continue;
     taken.push(r); w.drawLabel(c, X, ny);
   }
+}
+// 自己头顶的名牌（官方也显示）：Lv + 角色名（暖金色，和队友橙 / 好友绿 / 其他人蓝区分）+ 〈公会〉职业
+function drawOwnLabel(c, taken) {
+  const p = game.player, d = save.data; if (!p || !d || p.dead) return;
+  const C = CLASSES[p.cls], J = game.job && C.jobs && C.jobs[game.job];
+  const t1 = `Lv.${game.lvl} ${d.name || C.name}`, job = J ? J.name : C.name;
+  const me = typeof net !== 'undefined' && net.user ? net.user.id : null, tag = me != null && typeof netTagOf === 'function' ? netTagOf(me) : null;
+  const t2 = tag ? `<${tag}> ${job}` : job, X = sx(p.x), ny = sy(p.y, 124 + (p.z || 0));
+  c.save(); c.textAlign = 'center';
+  c.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+  const half = Math.max(c.measureText(t1).width, c.measureText(t2).width * 0.8) / 2 + 2;
+  c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.85)'; c.strokeText(t1, X, ny); c.fillStyle = '#ffe8a8'; c.fillText(t1, X, ny);
+  c.font = 'bold 8px "PingFang SC","Microsoft YaHei",sans-serif'; c.strokeText(t2, X, ny - 11); c.fillStyle = tag ? '#9aff7a' : '#e8dcc0'; c.fillText(t2, X, ny - 11);
+  c.restore();
+  taken.push({ x0: X - half, x1: X + half, y0: ny - 20, y1: ny + 3 });
 }
 function crowdSize(S) { return S.crowd ?? (S.interior ? 0 : S.kind === 'field' ? 2 : Math.max(3, Math.round(S.width / 650))); }
 function spawnCrowd(S) {

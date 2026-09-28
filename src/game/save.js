@@ -8,7 +8,7 @@ const SAVE_V = 4, MAX_CHARS = 6;
 const DUNGEON_ALIAS = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
 /* 存档结构：{ v, cur, chars: [角色数据...] }，每个角色独立保存等级 / 背包 / 任务 / 位置等（官方的角色选择） */
 const save = {
-  key: ['test', 'dungeon', 'town', 'bot', 'cls', 'duel'].some(k => PARAMS.has(k)) ? 'dawnbreak_dev' : 'dawnbreak_save_v1', data: null, chars: [], cur: -1, live: false,   // 调试参数用独立存档，不碰玩家的正式存档
+  key: ['test', 'dungeon', 'town', 'bot', 'cls', 'duel'].some(k => PARAMS.has(k)) ? 'dawnbreak_dev' : 'dawnbreak_save_v1', data: null, chars: [], cur: -1, live: false, acct: {},   // 调试参数用独立存档，不碰玩家的正式存档
   defaults(cls = 'sword', name = '勇士') {
     return { v: SAVE_V, cls, name, job: null, lvl: 1, exp: 0, sp: 150, gold: 1500, skillLv: {}, skillBar: Array(12).fill(null), inv: [], equip: {}, quick: [null, null, null, null, null, null], storage: [],
       fatigue: FATIGUE_MAX, day: dayKey(), coins: 5, unlocked: {}, best: {}, weak: 0, clears: 0, created: Date.now(), playTime: 0, quests: {}, questDone: {}, loc: null, seen: {}, titles: [], buyback: [],
@@ -16,16 +16,18 @@ const save = {
   },
   // 读取全部角色；返回是否至少有一个角色
   loadAll() {
-    this.chars = []; this.cur = -1; this.live = false;
+    this.chars = []; this.cur = -1; this.live = false; this.acct = {};
     if (PARAMS.has('fresh')) return false;
     try {
       const raw = localStorage.getItem(this.key); if (!raw) return false;
       const d = JSON.parse(raw);
-      if (d.chars) { this.chars = d.chars; this.cur = d.cur ?? 0; }
+      if (d.chars) { this.chars = d.chars; this.cur = d.cur ?? 0; this.acct = d.acct || {}; }
       else { this.chars = [d]; this.cur = 0; }            // v1/v2：单角色存档
       this.chars = this.chars.filter(c => c && CLASSES[c.cls]).map(c => this.migrate({ ...this.defaults(c.cls), ...c, v: c.v || 1, opts: { ...this.defaults().opts, ...(c.opts || {}) } }));
     } catch (e) { this.chars = []; }
     if (this.cur >= this.chars.length) this.cur = this.chars.length - 1;
+    for (const c of this.chars) if (!c.name || !String(c.name).trim()) c.name = CLASSES[c.cls].name;   // 早期存档 / 本机导入的角色可能没有名字
+    this.mergeAcctCurrency();
     return this.chars.length > 0;
   },
   // 兼容旧接口：读取并选中上次的角色
@@ -41,9 +43,19 @@ const save = {
     this.chars[this.cur] = d;
     this.persist();
   },
+  // 点券 / 魔盒碎片 / 礼包币是账号共享的（官方也是）：存在根部的 acct 里，所有角色共用。
+  // 老存档 / 本机导入的角色身上还留着的余额，读取时收进账号（收完清零，重复执行也不会多算）
+  mergeAcctCurrency() {
+    const A = this.acct;
+    A.cera = A.cera || 0; A.shard = A.shard || 0; A.gcoin = A.gcoin || 0;
+    for (const c of this.chars) {
+      A.cera += c.cera || 0; c.cera = 0;
+      if (c.shop) { A.shard += c.shop.shard || 0; A.gcoin += c.shop.gcoin || 0; c.shop.shard = 0; c.shop.gcoin = 0; }
+    }
+  },
   // 写进 localStorage；登录后同时通知云存档（net/account.js 防抖上传）
   persist() {
-    try { localStorage.setItem(this.key, JSON.stringify({ v: SAVE_V, cur: this.cur, chars: this.chars })); } catch (e) { /* 存储已满或无痕模式 */ }
+    try { localStorage.setItem(this.key, JSON.stringify({ v: SAVE_V, cur: this.cur, chars: this.chars, acct: this.acct })); } catch (e) { /* 存储已满或无痕模式 */ }
     if (typeof cloudSave !== 'undefined') cloudSave.changed();
   },
   // 旧版本存档升级

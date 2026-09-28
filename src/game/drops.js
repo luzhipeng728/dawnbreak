@@ -74,7 +74,7 @@ function spawnCoins(e, amount) {
 function spawnDrop(o) {
   const d = { t: 0, vx: rnd(-70, 70), vy: rnd(-25, 25), vz: rnd(220, 320), bounce: 0, landT: null, ...o };
   d.draw = drawDrop; drops.push(d);
-  if (d.item) { const r = d.item.rar || 0; if (r >= 5) { sfx.tone('triangle', 1200, 1800, 0.12, 0.08); const dg = game.dungeon; bus.emit('epicDrop', { item: d.item, dungeon: dg && dg.def.id, abyss: !!(dg && dg.def.abyss) }); } else sfx.drop(r); }
+  if (d.item) { const r = d.item.rar || 0; if (r >= 5) { gearSfx.epicRise(); const dg = game.dungeon; bus.emit('epicDrop', { item: d.item, dungeon: dg && dg.def.id, abyss: !!(dg && dg.def.abyss) }); } else sfx.drop(r); }
   return d;
 }
 function updateDrops(dt) {
@@ -96,7 +96,7 @@ function updateDrops(dt) {
 function dropLanded(d) {
   d.landT = game.t;
   const r = d.item ? d.item.rar || 0 : 0;
-  if (r >= 5) { gearSfx.epicDrop(); cam.shake = Math.max(cam.shake, 3); toastMsg(`史诗装备 ${d.item.name} 掉落了！`, RARITY[5].col); }
+  if (r >= 5) { gearSfx.epicDrop(); cam.shake = Math.max(cam.shake, 4); cam.flash = Math.max(cam.flash, 0.13); cam.flashCol = '#ffe7a0'; toastMsg(`史诗装备 ${d.item.name} 掉落了！`, RARITY[5].col); }
   else if (r === 4) gearSfx.legendDrop();
 }
 function tryPickup(p) {

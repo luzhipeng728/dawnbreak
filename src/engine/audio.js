@@ -26,9 +26,18 @@ const sfx = {
     if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.9);
     o.connect(g); this.env(g.gain, t, attack, vol, dur); o.start(t); o.stop(t + attack + dur + 0.05); this.done(o, [g]);
   },
-  noise(type, f0, f1, dur, vol, q = 1, delay = 0) {
+  // 混响总线（懒建）：接到这里的声音带约 2.4 秒的空间尾音，史诗掉落等“大场面”音效用
+  rev() {
+    if (this.revIn) return this.revIn;
+    const c = this.ctx, n = Math.floor(c.sampleRate * 2.4), b = c.createBuffer(2, n, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3.2); }
+    const cv = c.createConvolver(); cv.buffer = b; cv.connect(this.g(0.55, this.bus));
+    this.revIn = this.g(1, this.bus); this.revIn.connect(cv);
+    return this.revIn;
+  },
+  noise(type, f0, f1, dur, vol, q = 1, delay = 0, dest) {
     if (!this.ok || this.voices > 90) return; const t = this.ctx.currentTime + 0.003 + delay;
-    const s = this.ctx.createBufferSource(); s.buffer = this.noiseBuf; const fl = this.f(type, f0, q), g = this.g(0, this.bus);
+    const s = this.ctx.createBufferSource(); s.buffer = this.noiseBuf; const fl = this.f(type, f0, q), g = this.g(0, dest || this.bus);
     fl.frequency.setValueAtTime(f0, t); if (f1 && f1 !== f0) fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
     s.connect(fl); fl.connect(g); this.env(g.gain, t, 0.003, vol, dur); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.06); this.done(s, [fl, g]);
   },

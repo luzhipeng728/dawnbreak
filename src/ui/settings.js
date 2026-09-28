@@ -24,6 +24,12 @@ Object.assign(menus, {
     let page;
     if (tab === 'sound') page = h('div', { class: 'col' },
       slider('音乐音量', 'music', 0, 1, 0.05, pct, applyVolumes), slider('音效音量', 'sfx', 0, 1, 0.05, pct, () => { applyVolumes(); sfx.click(); }),
+      h('div', { class: 'setrow', 'data-epicsnd': 1 }, h('span', {}, '史诗掉落音效', h('span', { class: 'small dim' }, epicSnd.name() ? `  自定义：${epicSnd.name()}` : '  内置')),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn', onclick: () => epicSnd.preview() }, '试听'),
+          h('button', { class: 'btn', onclick: () => epicSnd.pick(rf) }, '用本地文件'),
+          epicSnd.name() ? h('button', { class: 'btn', onclick: () => { epicSnd.clear(); sfx.click(); rf(); } }, '恢复内置') : null)),
+      h('div', { class: 'small dim' }, '可以换成你电脑里的任意音频（几秒的短音效，800 KB 以内）；只保存在本机浏览器，不会上传'),
       sfx.muted ? h('div', { class: 'small dim' }, '当前以 ?mute 参数启动，声音已静音') : null);
     else if (tab === 'video') page = h('div', { class: 'col' },
       toggle('伤害数字', 'dmgNum', '打中敌人时弹出的数字'),

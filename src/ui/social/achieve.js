@@ -95,7 +95,13 @@ function achClaimAllBtn(el, list) {
 function achDoClaim(el, ids) {
   const got = [];
   for (const id of ids) { const r = achClaim(id); if (r.err) { toastMsg(r.err, '#ff6a6a'); sfx.error(); break; } if (r.text) got.push(r.text); }
-  if (got.length) { sfx.coin(); toastMsg(`领取了成就奖励：${got.join('、').slice(0, 80)}`, '#ffe8a8'); }
+  if (got.length) {
+    sfx.coin();
+    const sum = new Map(); for (const t of got.flatMap(t => String(t).split('、'))) { const m = t.match(/^(.*?)\s*[×x]?\s*([\d,]+)$/), k = m ? m[1].trim() : t; sum.set(k, (sum.get(k) || 0) + (m ? +m[2].replace(/,/g, '') : 1)); }
+    const txt = [...sum].map(([k, n]) => /点券|金币|G$/.test(k) ? `${k} ${fmtNum(n)}` : n > 1 ? `${k} ×${n}` : k).join('、');
+    toastMsg(`领取了 ${ids.length} 个成就奖励：${txt.length > 60 ? txt.slice(0, 58) + '…' : txt}`, '#ffe8a8');
+    if (txt.length > 60 && typeof ui !== 'undefined') ui.pushLog(`成就奖励：${txt}`, '#ffe8a8');
+  }
   el._render();
 }
 function achOverview(el, d, L) {

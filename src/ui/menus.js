@@ -22,6 +22,8 @@ function addStyle(css) { document.head.appendChild(h('style', {}, css)); }
 addStyle(`body.touchui #result{gap:.3em;justify-content:safe center;overflow-y:auto}body.touchui #result .ttl{font-size:2em}body.touchui #result .rank{font-size:4.6em}
 body.touchui #result .line{font-size:1em;gap:1.2em}body.touchui .cards{grid-template-columns:repeat(2,6.4em);gap:.5em;margin-top:.2em}body.touchui .card{width:6.4em;height:7.6em}body.touchui .card .f img{width:2.6em;height:2.6em}`);
 addStyle('[hidden]{display:none!important}');
+// 标题画面的说明小字：背景是明亮的天空，原来几乎看不见——加深色描边和底
+addStyle('#title .small.dim{color:#efe4c8;text-shadow:0 0 .25em #000,0 0 .5em #000,0 .08em .1em #000;background:rgba(8,6,10,.45);border-radius:.3em;padding:.15em .7em}');
 // 小屏（手机横屏 / 很小的浏览器窗口，不管是不是触屏模式）：窗口和提示框的文字和触屏模式一样有最小字号（右下菜单栏、指引条这些 HUD 元素保持原比例，不然会挤爆）；
 // 商城这类小字很多的窗口，小字再托底
 addStyle(`body.smallui:not(.touchui) :is(.win,#tip){font-size:max(calc(var(--u) * 18.4px), 9.9px)}

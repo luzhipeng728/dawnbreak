@@ -144,13 +144,14 @@ function toastMsg(msg, col = '#fff', kind) {
   if ((kind || (TOAST_LOG_RE.test(msg) ? 'log' : 'banner')) === 'log' && typeof ui !== 'undefined' && ui.inGame()) { ui.pushLog(msg, col); return; }
   const same = toastList.find(m => m.msg === msg);
   if (same) { if (same === toastList[0] && same.t > 0.3) { same.t = 0.3; same.end = Math.max(same.end, 2.6); } return; }
-  toastList.push({ msg, col, t: 0, end: 2.6 });
+  toastList.push({ msg, col, t: 0, end: 2.6, born: performance.now() });
   if (toastList.length > 4) toastList.splice(1, 1);   // 排得太多：丢掉最早排队的（正在显示的那条不动）
 }
 // 横幅用 DOM 画在所有窗口之上（画在画布上会被商店 / 背包等窗口挡住）；ui.draw 每帧开始时清标记，谁这一帧调用了就显示，没人调用就隐藏
 const toastBar = { el: null, shown: false, sig: '' };
 function drawToastBanner(c, y = 380) {
   const now = performance.now(), dt = Math.min(0.1, (now - (drawToastBanner.last || now)) / 1000); drawToastBanner.last = now;
+  while (toastList.length && !toastList[0].t && now - (toastList[0].born || now) > 20000) toastList.shift();
   const m = toastList[0]; if (!m) return;
   m.t += dt;
   if (toastList.length > 1) m.end = Math.min(m.end, Math.max(1.2, m.t + 0.35));   // 后面有排队的：至少显示 1.2 秒就换下一条

@@ -140,6 +140,8 @@
 | S→C | `room` / `room:closed` / `room:left` / `room:lag` / `r` | room, resume? / why / user / user, on / f, d | resume = 宽限期内重连回来 |
 | C→S | `duel:ask` / `duel:accept` / `duel:decline` / `duel:cancel` | to / from / from, why / to | 好友决斗邀请（20 秒过期） |
 | S→C | `duel:asked` / `duel:declined` / `duel:cancelled` / `duel:note` | | |
+| C→S | `arena:join` / `arena:leave` / `arena:end` | cid, char / – / id, win, draw, abort? | 决斗场排位（`server/modules/arena.js`）：排队 / 退队 / 上报结果（abort 1 = 没开打→作废，2 = 中途离开→判负） |
+| S→C | `arena:queued` / `arena:left` / `arena:note` / `arena:match` / `arena:result` | rating, tier / why / text / id, ai, host, vs / id, win, draw, void, why, delta, rating, tier, reward | 真人对局随后收到 `room`（kind duel，`meta.arena` = 对局 id），走好友决斗的流程 |
 
 ### 组队刷图（`r` 里的 d.k）
 | 谁发 | k | 内容 |
@@ -164,3 +166,11 @@
 - **自带 AI 的怪**：主机上用访问器包住怪物的 `control`，生成之后再换 AI（龙之雕像 `m.control = skyStatueAI`）也会先在全队活着的人里选目标。招式表以外的出招会带上 AI 函数名，队员那边用同一个 AI 函数在傀儡身上现场出招（事件、投射物都一样，打到的是被瞄准的队员）。排查过的自定义逻辑：`monsterAI` / `cowardAI`、龙之雕像、悬空城石像骑兵（苏醒按最近的人；队员也看到石像外观）、天帷巨兽的触手横扫 / 连砸 / 墨汁等延时攻击（施放时就记下目标）、神殿外围的大祭司护盾（队员看不到的受伤倍率由主机按比例补上）、第二脊椎的黑章鱼、石巨人操纵师死亡联动、猫妖 / 毒雾 / 放电等受击反击（队员本地也跑一遍，打到的是自己）、深渊派对（封印之门、三波、领主降临时重发生成信息）。
 - **服务端重启**：服务端 `welcome` 带启动编号；客户端发现编号变了 → 队长 / 决斗发起方 `restore:host { party, room }`，其他人 `restore:claim { host }`；双方对上才加入（名单外的人认领无效），被认领的人收到 `room { resume, restored }` 接着玩（队员要一次补发，对齐房间和怪物）。限时（`DNF_RESTORE_MS`）内没回来的成员，房主收到 `room:left { why: 'timeout' }`。决斗在任一方断线期间暂停（计时不走），恢复后继续；恢复不了的给出明确提示再回城。
 - **深渊邀请函**：进图时对比 `beforeEnter` 前后的背包记下消耗；进图没成功（取消、没建好房间、队员没跟上、服务端重启）就原样退还。深渊领主（每次随机）以队长为准，队员按它加载素材。
+
+### 决斗场排位（`server/modules/arena.js` + `src/net/arena.js`，09-28）
+- 匹配：积分差 100 起，每等 1 秒 +30（最多 600）；同账号只能排一次；5 分钟内打过的两个账号不再匹配；断线 / 进地下城移出队列。等 12 秒（`cfg.arenaAiMs`）没人 → AI 对手（18 种职业 / 转职随机、像玩家的名字 +「AI」、积分在附近、难度按段位 1..3），客户端用 `game/duel.js` 本地打完上报。
+- 积分：Elo，K = 32，新角色 1000；段位 青铜 / 白银 1100 / 黄金 1300 / 白金 1500 / 钻石 1700 / 斗神 1900。**AI 局积分 × 0.5，白金以上赢 AI 不加分**（防刷，天梯上半段只能打真人）。
+- 结果：真人局双方各报一次，一致才结算，只有一方报就等 `cfg.arenaReportMs` 按它算，对不上作废；排位房间关闭时（`room.closeHooks`）还没结果：开打 30 秒内作废，之后走掉的一方判负。AI 局没报完就重新排队 / 超时 6 分钟 = 判负。对局记在 `arena_match`，服务端重启后结果照样能结算。
+- 奖励：系统邮件，每胜 2000 金币（AI 1000，每天前 10 胜）+ 5 点券（每天最多 30），每日首胜 +5000 金币 +20 点券。
+- 排行榜：`GET /api/rank?board=arena`；个人：`GET /api/arena?cid=`。
+

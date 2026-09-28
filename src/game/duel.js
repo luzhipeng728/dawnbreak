@@ -13,14 +13,53 @@ const DUEL_BASE = {   // 每个职业的 PvP 基准属性（天平后）
 };
 function duelStats(p) {
   const B = DUEL_BASE[p.cls], C = CLASSES[p.cls];
-  Object.assign(p, { hpMax: B.hp, hp: B.hp, mpMax: B.mp, mp: B.mp, atk: B.atk, matk: B.matk, indep: B.atk, def: B.def, mdef: B.mdef, crit: 0.12, mcrit: 0.12, baseCrit: 0.12, critDmg: 1.5,
-    aspd: 1, cspd: 1, mspd: 1, hitRate: 0.05, evade: 0.03, hardness: 0, stagger: 0, elem: null, res: null, cdMul: 1, dmgUp: 0, dmgTaken: 1, atkElem: null, lvl: DUEL_CFG.lv });
+  Object.assign(p, { hpMax: B.hp, hp: B.hp, mpMax: B.mp, mp: B.mp, atk: B.atk, matk: B.matk, indep: B.atk, def: B.def, mdef: B.mdef, crit: 0.12, mcrit: 0.12, baseCrit: 0.12, baseMcrit: 0.12, critDmg: 1.5,
+    aspd: 1, cspd: 1, mspd: 1, hitRate: 0.05, evade: 0.03, hardness: 0, stagger: 0, elem: null, res: null, cdMul: 1, dmgUp: 0, dmgTaken: 1, atkElem: null, lvl: DUEL_CFG.lv,
+    // 公正决斗：装备 / 强化 / 增幅 / 锻造 / 宝珠 / 附魔 / 套装 / 史诗特效 / 时装 / 宠物 / 称号 / 图鉴 / 公会 / 虚弱全部不带进来（这些都在 recalcStats 里，决斗角色不走它）
+    gearProcs: [], sets: {}, mastery: null, masteryN: 0, killHeal: 0, killMp: 0, mpRegen: 1, weak: false, goldUp: 0, expUp: 0 });
   const J = C.jobs && p.kit && C.jobs[p.kit.job];
+  const pj = PVP_JOB[p.cls + ':' + ((p.kit && p.kit.job) || '')] ?? 1;   // 职业平衡修正（docs/PVP.md，AI 循环赛调出来的）：造成伤害倍率 [, 受到伤害倍率]
+  p.dmgUp = (Array.isArray(pj) ? pj[0] : pj) - 1; p.dmgTaken = Array.isArray(pj) ? pj[1] : 1;
   if (J && J.dmgType === 'mag') { p.matk = Math.max(B.matk, B.atk); p.dmgType = 'mag'; }   // 神枪手里的魔法转职（机械师）：决斗魔攻不低于同职业物理转职的物攻
   p.baseStats = { atk: B.atk, speed: C.speed * 1.1, runSpeed: C.runSpeed * 1.1 };
   applyBuffs(p);
 }
 const firstJob = cls => Object.keys(CLASSES[cls].jobs || {})[0] || null;
+/* ---- 公正决斗（排位 / 练习 / 好友决斗都一样，地下城不受影响）：规则见 docs/PVP.md ----
+   技能等级：决斗等级（30）下本职业 + 转职能学的技能全部按标准等级 1 + ⌊(30 − 需求等级) / 3⌋（不超过满级），和 SP 加点、装备的技能等级无关；
+   觉醒（一 / 二 / 三觉）在决斗里全部可用，不看觉醒任务；每局最多放一次（冷却至少 61 秒，每局开始冷却清零）。技能栏沿用玩家自己的摆放（只保留能用的技能） */
+function duelKit(cls, job, bar) {
+  const K = aiKit(cls, job, DUEL_CFG.lv);
+  if (Array.isArray(bar) && bar.some(Boolean)) K.bar = Array.from({ length: SKILL_SLOTS }, (_, i) => { const id = bar[i]; return id && K.lv[id] > 0 && SKILLS[id] && !SKILLS[id].passive ? id : null; });
+  const J = CLASSES[cls].jobs && CLASSES[cls].jobs[job];
+  if (J && J.auto) for (const id of J.auto) if (!(K.lv[id] > 0)) K.lv[id] = 1;
+  return K;
+}
+// 决斗里对照用的“公正属性”快照（测试 / 联机两端核对）
+function duelFairSnap(p) {
+  const r = v => Math.round(v * 1000) / 1000;
+  return { cls: p.cls, job: (p.kit && p.kit.job) || null, lvl: p.lvl, hpMax: p.hpMax, mpMax: p.mpMax, atk: r(p.baseStats ? p.baseStats.atk : p.atk), matk: r(p.matk), indep: r(p.indep), def: r(p.def), mdef: r(p.mdef),
+    crit: r(p.baseCrit), critDmg: p.critDmg, aspd: p.aspd, cspd: p.cspd, mspd: p.mspd, cdMul: p.cdMul, dmgUp: r(p.dmgUp), dmgTaken: p.dmgTaken, hitRate: p.hitRate, evade: p.evade,
+    skills: Object.keys((p.kit && p.kit.lv) || {}).sort().map(k => k + ':' + p.kit.lv[k]).join(','), procs: (p.gearProcs || []).length, sets: Object.keys(p.sets || {}).length };
+}
+// 决斗中别的系统（换装 / 公会 / 任务 / 装备损坏）想重算属性：决斗角色一律忽略
+{ const rs0 = recalcStats; recalcStats = function (p) { if (p && p.fighter && game.pvp && game.duel && p.kit) return; return rs0(p); }; }
+// 决斗里所有觉醒都能放（不看觉醒任务）
+{ const tu0 = tierUnlocked; tierUnlocked = function (n) { return game.pvp && game.duel ? true : tu0(n); }; }
+/* ---- 决斗场伤害修正（全局 PVP.dmg 之外，按技能类型的默认系数；职业文件里写了 S.pvp 的以职业为准）---- */
+const PVP_SKILL = { awaken: 0.5, grab: 0.8, summon: 0.8, burst: 0.85, aoe: 0.9 };
+// 职业（转职）整体修正：AI 循环赛（node test/pvp_balance.mjs 6 all 6）自动调出来的，1 = 不修正；数组 = [造成伤害, 受到伤害]（未转职技能太少，只加伤害追不上）
+const PVP_JOB = {
+  'sword:': [2.5, 0.65], 'sword:blade': 0.84, 'sword:berserker': 1.03, 'sword:asura': 0.5, 'sword:soulbender': 1.09, 'sword:ghostblade': 0.72,
+  'gun:': [2.5, 0.65], 'gun:ranger': 1, 'gun:launcher': 1.1, 'gun:spitfire': 0.62, 'gun:mechanic': 0.54, 'gun:paramedic': 1.67,
+  'mage:': 1.53, 'mage:elemental': 0.75, 'mage:battlemage': 0.81, 'mage:summoner': 0.54, 'mage:witch': 0.96, 'mage:enchantress': 0.87,
+};
+for (const id in SKILLS) {
+  const S = SKILLS[id]; if (!S || S.passive) continue;
+  const kind = S.awaken ? 'awaken' : S.ai && S.ai.summon ? 'summon' : S.ai && S.ai.kind;
+  if (S.pvp === undefined && PVP_SKILL[kind]) S.pvp = PVP_SKILL[kind];
+  if (S.awaken && S.cd && S.cd * (S.pvpCd || 1) < 61) S.pvpCd = 61 / S.cd;   // 觉醒每局一次
+}
 const duel = {
   state: 'none', t: 0, round: 1, wins: [0, 0], a: null, b: null, msg: '', msgT: 0, timer: 60, koT: 0, result: null,
   start(o) {
@@ -29,12 +68,11 @@ const duel = {
     game.scene = 'test'; game.pvp = true; game.duel = this; game.dungeon = null; game.lvl = o.lv;
     game.room = { x0: 0, x1: 1120, theme: o.theme, seed: 11 }; buildRoomArt(game.room);
     // 玩家一方：技能栏 / 等级写进 game（HUD 用），角色用同一份 kit
-    const kA = aiKit(o.a, o.ja, o.lv);
-    if (o.me && o.me.skillLv) { kA.lv = { ...o.me.skillLv }; if (o.me.skillBar && o.me.skillBar.some(Boolean)) kA.bar = o.me.skillBar.slice(0, SKILL_SLOTS); }   // 我的角色：用自己的技能等级与技能栏
+    const kA = duelKit(o.a, o.ja, o.me && o.me.skillBar);   // 我的角色：标准技能等级 + 自己的技能栏
     game.job = o.ja; game.skillLv = kA.lv; game.skillBar = kA.bar;
     const a = makePlayer(o.a, { kit: { bar: game.skillBar, lv: game.skillLv, job: o.ja, wtype: null }, name: o.nameA || CLASSES[o.a].name });
     if (o.auto) { a.pad = new Pad(); a.brain = new FighterBrain(a, o.ai); }
-    const b = makePlayer(o.b, { team: 'e', pad: new Pad(), kit: aiKit(o.b, o.jb, o.lv), name: 'AI · ' + CLASSES[o.b].name });
+    const b = makePlayer(o.b, { team: 'e', pad: new Pad(), kit: duelKit(o.b, o.jb), name: o.nameB || 'AI · ' + CLASSES[o.b].name });
     b.brain = new FighterBrain(b, o.ai);
     for (const p of [a, b]) { duelStats(p); const inner = p.brain ? aiFighterControl : playerControl; p.control = (e, dt) => { if (duel.state === 'fight') inner(e, dt); else if (e.pad !== input) { e.pad.frame(game.t); } }; }
     game.player = a; this.a = a; this.b = b; ents.push(a, b);
@@ -59,7 +97,7 @@ const duel = {
     if (this.state === 'fight') {
       this.timer -= dt;
       for (const p of [A, B]) if (!p.burning && !p.dead && p.hp < p.hpMax * 0.25) { p.burning = true; p.buffs.burn_mode = { t: 999, atk: 0.15, taken: -0.1 }; fxText('燃斗模式', p.x, p.y, p.z + 20, { col: '#ff7a3a', size: 14, dur: 1.2 }); fxAura(p, '#ff6a2a', 1); }
-      if (A.dead || B.dead || this.timer <= 0) this.ko(A.dead && B.dead ? -1 : A.dead ? 1 : B.dead ? 0 : (A.hp / A.hpMax >= B.hp / B.hpMax ? 0 : 1));
+      if (A.dead || B.dead || this.timer <= 0) this.ko(A.dead && B.dead ? -1 : A.dead ? 1 : B.dead ? 0 : (Math.abs(A.hp / A.hpMax - B.hp / B.hpMax) < 1e-6 ? -1 : A.hp / A.hpMax > B.hp / B.hpMax ? 0 : 1));   // 时间到：剩余 HP 比例高的赢，一样就平局
       return;
     }
     if (this.state === 'ko') {

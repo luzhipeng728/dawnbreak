@@ -1,6 +1,7 @@
 // 排行榜（社交与经济服务）：按角色上榜（cid = 角色创建时间），全部玩家榜 / 好友榜
-// 榜单：lvl 等级、score 装备评分、duel 好友决斗胜场、clear 地下城最快通关时间（按地下城 + 难度）、epic 史诗收集数、ach 成就点
+// 榜单：lvl 等级、score 装备评分、duel 好友决斗胜场、arena 决斗场段位积分（arena.js 的表）、clear 地下城最快通关时间（按地下城 + 难度）、epic 史诗收集数、ach 成就点
 import { now } from './mail.js';
+import { tierOf } from './arena.js';
 const txt = (s, n) => String(s ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n);
 const int = (v, lo, hi) => { const n = Math.floor(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : lo; };
 const cidOf = v => txt(v, 24) || '0';
@@ -77,6 +78,11 @@ export default {
       const ids = q.scope === 'friends' ? friendIds(ctx, uid) : null;
       const inIds = ids ? ` AND c.user_id IN (${ids.map(x => int(x, 0, 1e15)).join(',')})` : '';
       let rows;
+      if (board === 'arena') {   // 决斗场排位：按积分（打过至少一场的角色）
+        rows = ctx.db.all(`SELECT * FROM arena c WHERE c.win + c.lose + c.draw + c.ai_win + c.ai_lose > 0${inIds} ORDER BY c.rating DESC, c.updated ASC LIMIT 2000`);
+        const all = rows.map((r, i) => ({ rank: i + 1, user: r.user_name, uid: r.user_id, cid: r.cid, char: r.char_name, cls: r.cls, job: r.job, rating: r.rating, tier: tierOf(r.rating), win: r.win, lose: r.lose, draw: r.draw, aiWin: r.ai_win, aiLose: r.ai_lose }));
+        return { board, scope: ids ? 'friends' : 'all', total: all.length, list: all.slice(0, TOP), me: all.filter(e => e.uid === uid), now: now(ctx) };
+      }
       if (board === 'clear') {
         const dg = txt(q.dungeon, 40), diff = int(q.diff || 0, 0, 9);
         rows = ctx.db.all(`SELECT k.time_ms, k.diff, k.at, c.* FROM rank_clear k JOIN rank_char c ON c.user_id = k.user_id AND c.cid = k.cid

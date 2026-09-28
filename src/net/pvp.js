@@ -57,7 +57,7 @@ const netDuel = {
     const o = { a: mine.cls, b: k.cls, ja: mine.job, jb: k.job, lv: DUEL_CFG.lv, ai: 2, auto: false, theme: DUEL_THEME, nameA: mine.name, me: { skillLv: mine.lv, skillBar: mine.bar } };
     duel.start(o);
     const b = duel.b;
-    b.brain = null; b.kit = { bar: k.bar.slice(0, 12), lv: { ...k.lv }, job: k.job, wtype: null }; b.name = k.name;
+    b.brain = null; b.kit = duelKit(k.cls, k.job, k.bar); b.name = k.name;   // 公正决斗：标准技能等级（和对方的加点无关）
     b.pad = new Pad();
     b.control = (e, dt) => { if (duel.state === 'fight') { netDuel.feed(e); playerControl(e, dt); } else { netDuel.inQ.length = 0; e.pad.frame(game.t); } };
     if (typeof avatarSetLook === 'function' && k.look) avatarSetLook(b.model, k.look);
@@ -95,10 +95,10 @@ const netDuel = {
       clearTimeout(this.setupT);
       this.freeze();
       ents.length = 0; projs.length = 0; fxList.length = 0; drops.length = 0; groundFx.length = 0; numList.length = 0;
-      game.scene = 'test'; game.pvp = true; game.dungeon = null; game.timeStop = 0; game.cutin = null; game.slowmo = false;
+      game.scene = 'test'; game.pvp = true; game.dungeon = null; game.lvl = DUEL_CFG.lv; game.timeStop = 0; game.cutin = null; game.slowmo = false;
       game.room = { x0: 0, x1: 1120, theme: d.theme || DUEL_THEME, seed: 11 }; buildRoomArt(game.room);
       const mk = (k, team) => {
-        const p = makePlayer(k.cls, { team, kit: { bar: k.bar.slice(0, 12), lv: { ...k.lv }, job: k.job, wtype: null }, name: k.name, pad: new Pad() });
+        const p = makePlayer(k.cls, { team, kit: duelKit(k.cls, k.job, k.bar), name: k.name, pad: new Pad() });
         duelStats(p); p.ghost = true; p.control = null; p.netBuf = []; p.netClip = 'idle'; p.netT = 0; p.update = duelViewUpdate;
         if (typeof avatarSetLook === 'function' && k.look) avatarSetLook(p.model, k.look);
         return p;
@@ -256,13 +256,14 @@ net.on('duel:asked', m => {
 net.on('duel:cancelled', () => { if (menus.isOpen('nd_duelask')) menus.close('nd_duelask'); chatSys('对方取消了决斗邀请'); });
 net.on('duel:declined', m => { netDuel.asking = null; const t = m.why === 'timeout' ? `${m.by} 没有回应决斗邀请` : m.why === 'busy' ? `${m.by} 正忙，没法决斗` : `${m.by} 拒绝了决斗`; chatSys(t); toastMsg(t, '#ffb08a'); });
 net.on('room', m => netDuel.onRoom(m));
+const netDuelRanked = () => !!(netDuel.room && netDuel.room.meta && netDuel.room.meta.arena);   // 决斗场排位赛：中途掉线 / 离开按逃跑判负（服务端结算，见 server/modules/arena.js）
 net.on('room:closed', m => {
   if (!netDuel.room || m.id !== netDuel.room.id) return;
-  netDuel.room = null;
+  const ranked = netDuelRanked(); netDuel.room = null;
   if (netDuel.state === 'end' || netDuel.state === 'none') return;
-  netDuel.abort(m.why === 'host-lost' || m.why === 'peer-left' || m.why === 'timeout' ? '对方掉线了，决斗结束（不计胜负）' : '对方离开了决斗');
+  netDuel.abort(m.why === 'host-lost' || m.why === 'peer-left' || m.why === 'timeout' ? `对方掉线了，决斗结束${ranked ? '（排位赛按对方逃跑结算）' : '（不计胜负）'}` : '对方离开了决斗');
 });
-net.on('room:left', m => { if (netDuel.room && m.id === netDuel.room.id && netDuel.state !== 'end') netDuel.abort('对方掉线了，决斗结束（不计胜负）'); });
+net.on('room:left', m => { if (netDuel.room && m.id === netDuel.room.id && netDuel.state !== 'end') netDuel.abort(`对方掉线了，决斗结束${netDuelRanked() ? '（排位赛按对方逃跑结算）' : '（不计胜负）'}`); });
 net.on('room:lag', m => { if (netDuel.room && m.id === netDuel.room.id && netDuel.active()) { netDuel.peerLag = m.on; chatSys(m.on ? '对方的连接中断了，决斗暂停，等待重连…' : '对方重新连上了，决斗继续'); } });
 net.on('r', m => {
   if (!netDuel.room || !netDuel.peer || m.f !== netDuel.peer.id) return;

@@ -29,6 +29,7 @@ const PVP = {
   getupInvul: 0.7, techInvul: 0.6,
   grabProt: 1.5,             // 被抓取释放后这段时间不能再被抓
   downTime: 0.7,
+  stunDecay: 0.025, stunMin: 0.6,   // 连击硬直衰减：同一轮连击每多挨一下，硬直 −2.5%，最低 60%（官方“连招越长硬直越短”）
 };
 const isPvp = (a, t) => !!(a && t && a.fighter && t.fighter && a.team !== t.team);
 // 地下城里玩家的技能释放期间自带霸体（后来的官方版本也是大部分技能有霸体；用户反馈技能总被打断）。
@@ -218,7 +219,7 @@ function react(a, t, h, src, counter, pvp) {
     c.standDmg = 0; t.vz = 200; t.z = 1; t.vx = dir * 160; t.setState('air'); t.bounced = true; c.air++;
     fxText('平推保护', t.x, t.y, t.z, { col: '#ff9a9a', size: 10 });
   } else {
-    const stun = (h.stun ?? 0.32) * stunMul(a, t) * (counter ? COMBAT.counterStun : 1) * (pvp ? PVP.stun : 1) / sw;
+    const stun = (h.stun ?? 0.32) * stunMul(a, t) * (counter ? COMBAT.counterStun : 1) * (pvp ? PVP.stun * Math.max(PVP.stunMin, 1 - PVP.stunDecay * (c.hits || 0)) : 1) / sw;
     t.setState('hit'); t.stun = stun; t.vx = dir * kb;
     t.hitHeavy = !!h.heavy || stun > 0.46 || kb > 190;
     t.play(t.hitHeavy ? t.clipOr('hit2', 'hit') : 'hit', true);

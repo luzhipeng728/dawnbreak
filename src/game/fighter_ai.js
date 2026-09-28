@@ -12,8 +12,8 @@ const AI_LEVELS = {
 // 技能种类优先级（组 AI 的技能栏用）
 const AI_KIND_RANK = { launch: 0, grab: 1, awaken: 2, burst: 3, gap: 4, aoe: 5, poke: 6, proj: 7, buff: 8, stance: 9, air: 10, mode: 11, guard: 12, escape: 13 };
 function aiKit(cls, job, lv = 30) {
-  const ids = classSkills(cls, job).filter(id => { const S = SKILLS[id]; return S && !S.passive && S.act && S.lvReq <= lv && S.ai; });
-  ids.sort((a, b) => (AI_KIND_RANK[SKILLS[a].ai.kind] ?? 20) - (AI_KIND_RANK[SKILLS[b].ai.kind] ?? 20) || (SKILLS[b].job ? 1 : 0) - (SKILLS[a].job ? 1 : 0));
+  const ids = classSkills(cls, job).filter(id => { const S = SKILLS[id]; return S && !S.passive && (S.act || S.instant) && S.lvReq <= lv && S.ai; });
+  ids.sort((a, b) => (SKILLS[b].ai.core ? 1 : 0) - (SKILLS[a].ai.core ? 1 : 0) || (AI_KIND_RANK[SKILLS[a].ai.kind] ?? 20) - (AI_KIND_RANK[SKILLS[b].ai.kind] ?? 20) || (SKILLS[b].job ? 1 : 0) - (SKILLS[a].job ? 1 : 0));
   const bar = ids.slice(0, SKILL_SLOTS); while (bar.length < SKILL_SLOTS) bar.push(null);
   const L = {}; for (const id of classSkills(cls, job)) { const S = SKILLS[id]; if (S.lvReq <= lv) L[id] = Math.max(1, Math.min(S.maxLv, 1 + Math.floor((lv - S.lvReq) / 3))); }
   return { bar, lv: L, job: job || null, wtype: null };

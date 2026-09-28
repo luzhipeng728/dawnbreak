@@ -43,6 +43,8 @@ for (const item of items) {
     await wait(awk ? 1300 : 350);
     await page.screenshot({ path: `${out}/${tag}-s${i}-${id}.png` });
     await wait(awk ? 1800 : 600);
+    // 模式类技能（移动射击等：C 退出）放完就退出，免得占住后面的按键
+    if (await page.evaluate(id => !!(SKILLS[id].ai && SKILLS[id].ai.kind === 'mode' && __G.player.act && __G.player.act.skill === id), id)) { await tap('KeyC'); await wait(400); }
   }
   console.log(tag, 'skills', cast.join(' '), JSON.stringify(await info()));
   if (!job) { for (const seq of [['ArrowDown', 'ArrowRight'], ['ArrowRight', 'ArrowDown'], ['ArrowLeft', 'ArrowRight'], ['ArrowDown', 'ArrowDown'], ['ArrowUp']]) { for (const k of seq) await tap(k, 30); await tap('KeyZ'); await wait(700); } console.log(tag, 'cmds', JSON.stringify(await info())); }

@@ -55,11 +55,12 @@ defSkill('c_bsup', { name: '后跳-强化', cls: null, lvReq: 10, maxLv: 1, sp: 
 // 把通用技能挂到每个职业的技能表最前面（职业文件都加载完之后调用一次，见 content/sprites.js）
 function addCommonSkills() { for (const c in CLASSES) { const L = CLASSES[c].skills; if (L) for (const id of [...COMMON_SKILLS].reverse()) if (!L.includes(id)) L.unshift(id); } }
 // 是否学会（被动 / 转职技能要求转职一致）
-const hasSkill = (p, id) => { const S = SKILLS[id]; return !!S && lvOf(p, id) > 0 && (!S.job || S.job === jobOf(p)) && skillAllowed(id, jobOf(p)); };
-const skLv = (p, id) => hasSkill(p, id) ? lvOf(p, id) : 0;
+const hasSkill = (p, id) => { const S = SKILLS[id]; return !!S && skillLvOf(p, id) > 0 && (!S.job || S.job === jobOf(p)) && skillAllowed(id, jobOf(p)); };
+const skLv = (p, id) => hasSkill(p, id) ? skillLvOf(p, id) : 0;
 // 转职完成后调用（任务组的转职流程）：重算属性、刷新指令文字、被动
 function onJobChange(p, job) {
   p = p || game.player; if (!p) return;
+  learnAutoSkills(p, job);
   cmdLabel(p.cls); if (!p.kit && typeof recalcStats === 'function') recalcStats(p);
   // 转职后学不了的基础技能（例如战斗法师的杰克爆弹）：返还 SP、从技能栏移除
   if (isHuman(p) && game.skillLv && typeof skillAllowed === 'function') {   // skillAllowed 由通用组提供（读 S.excl / S.only）
@@ -72,6 +73,23 @@ function onJobChange(p, job) {
   const J = CLASSES[p.cls].jobs && CLASSES[p.cls].jobs[job];
   if (J && isHuman(p)) { fxAura(p, '#ffd23a', 1.4); fxText(J.name, p.x, p.y, p.z + 20, { col: '#ffe070', size: 16, dur: 1.4 }); }
 }
+// 转职时自动学会的技能（CLASSES[cls].jobs[job].auto，例如女漫游的双枪极舞刃）：没学过就给 1 级（不花 SP、不能降到 0）
+function learnAutoSkills(p, job) {
+  const J = CLASSES[p.cls].jobs && CLASSES[p.cls].jobs[job], L = p.kit ? p.kit.lv : game.skillLv;
+  if (J && J.auto && L) for (const id of J.auto) if (!(L[id] > 0)) L[id] = 1;
+}
+/* ---- 觉醒阶段：S.tier = 1 一觉 / 2 二觉 / 3 三觉（主动觉醒技能另标 awaken）。该阶段的技能（含被动）要先完成对应的觉醒任务才能学、才能放；
+   任务把 save.data.flags.awaken / awaken2 / awaken3 置为 true（content/quests/job.js）。AI / 网络格斗者不检查 ---- */
+const tierOf = S => S ? S.tier || (S.awaken ? 1 : 0) : 0;
+const TIER_NAME = { 1: '一次觉醒', 2: '二次觉醒', 3: '三次觉醒' };
+function tierUnlocked(n) {
+  if (!n) return true;
+  if (n === 1 && typeof awakenUnlocked === 'function') return awakenUnlocked();
+  const f = save.data && save.data.flags; return !!(f && f[n === 1 ? 'awaken' : 'awaken' + n]);
+}
+// 技能的等级：子技能（S.lvFrom = 母技能 id，例如双枪极舞刃的 4 个派生）用母技能的等级
+// 职业的等级加成（CLASSES[cls].lvBonus(p, id)，例：枪炮师「重火器奥义」所有重火器技能 +1 级；只加在已经学会的技能上）
+const skillLvOf = (p, id) => { const S = SKILLS[id], lv = lvOf(p, (S && S.lvFrom) || id); if (lv <= 0) return 0; const C = CLASSES[p.cls]; return lv + (C && C.lvBonus ? C.lvBonus(p, id) : 0); };
 // 被动技能：每 0.25 秒按条件刷新（p.buffs 里的伪 BUFF，t 很短；HUD 会显示图标）
 function tickPassives(p, dt) {
   p._psvT = (p._psvT || 0) - dt; if (p._psvT > 0) return; p._psvT = 0.25;
@@ -83,7 +101,7 @@ function setPassive(p, id, on, fx) { if (on) p.buffs[id] = { t: 0.4, passive: tr
 function toggleBuff(p, id, dur, fx) { if (p.buffs[id]) { delete p.buffs[id]; fxText('解除', p.x, p.y, p.z + 10, { col: '#ccc', size: 10 }); return false; } p.buffs[id] = { t: dur, ...fx }; return true; }
 
 // 觉醒插图：有转职插图（art/final/cutin/<转职>.webp）时用转职的，否则用职业的（HUD 按 who.cls 取 IMG['cutin/…']）
-const cutinWho = e => { const j = jobOf(e); return j && IMG['cutin/' + j] ? { cls: j, model: e.model, x: e.x } : e; };
+const cutinWho = (e, tier = 1) => { let j = jobOf(e); if (j && tier > 1 && IMG[`cutin/${j}${tier}`]) j += tier; return j && IMG['cutin/' + j] ? { cls: j, model: e.model, x: e.x } : e; };   // tier 2 / 3：二觉 / 三觉插图 cutin/<转职>2、3，没有就用一觉的
 /* ---- 常用构件 ---- */
 // 攻击判定：box = [前沿0, 前沿1, 纵深半宽, z0, z1]
 const HB = (t0, t1, box, dmg, o) => ({ t0, t1, box, dmg, ...o });

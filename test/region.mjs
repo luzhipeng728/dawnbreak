@@ -6,7 +6,7 @@
 //   scenes   每个场景能进、背景加载、出口能走通（含从已有世界接进来的入口）
 //   quest    主线任务链从头做到尾
 //   abyss    深渊派对（spec.abyss）：所有深渊的数据、进图扣票、封印之门 → 配置的几波 → 深渊领主（机制 / 循环机制）→ 保底 → 深渊宝藏翻牌
-//   bot      机器人以区域等级（Lv30 全身 +12 史诗）通关每个地下城，统计用时 / 被击 / 死亡（BOT=abyss_<id>:sword 也能跑深渊）
+//   bot      机器人以区域等级（Lv30 全身 +12 史诗）通关每个地下城，统计用时 / 被击 / 死亡（BOT=abyss_<id>:sword 也能跑深渊；GEAR=base 只穿稀有装备、LV=等级，用来和老区域对照难度）
 // 默认全跑；环境变量 SPEED（默认 3）、BOT=地下城:职业,...（覆盖机器人的分配）。截图在 test/shots/region_<id>/
 // 整个测试只开一个无头浏览器（各部分用同一个页面换地址）
 import { launch, URL_BASE } from './lib.mjs';
@@ -39,7 +39,7 @@ if (parts.includes('data')) {
       if (!THEMES[D.theme] || !BG_GRADE[D.theme]) E.push(`${did}: 主题 ${D.theme} 缺少 THEMES / BG_GRADE`);
       for (const k of ['far', 'floor', 'edge']) if (!has(`bg/${D.theme}_${k}`)) E.push(`${did}: 缺少背景 bg/${D.theme}_${k}`);
       for (const b of monBundles([...D.mobs.map(m => m[0]), D.boss.kind, D.elite])) if (!Object.values(ASSET_BUNDLE).includes(b)) E.push(`${did}: 分包 ${b} 没有素材`);
-      if (!(D.lvl[0] >= sp.lvl && D.lvl[1] <= sp.lvl + 3 && D.boss.lvl >= D.lvl[1])) E.push(`${did}: 等级 ${D.lvl} / 领主 ${D.boss.lvl} 超出区域等级 ${sp.lvl}`);
+      if (!(D.lvl[0] >= sp.lvl && D.lvl[1] <= (sp.lvlMax ?? sp.lvl + 3) && D.boss.lvl >= D.lvl[1])) E.push(`${did}: 等级 ${D.lvl} / 领主 ${D.boss.lvl} 超出区域等级 ${sp.lvl}~${sp.lvlMax ?? sp.lvl + 3}`);   // lvlMax：跨好几级的区域（60 版本区域）
       const T = DROP_TABLES[did]; if (!T) E.push(`${did}: 没有掉落表`); else for (const [k] of [...T.boss, ...T.mats]) if (!ITEMS[k]) E.push(`${did}: 掉落表里的 ${k} 不存在`);
       if (!Object.values(SCENES).some(S => S.gates.some(g => g.dungeon === did))) E.push(`${did}: 没有放进区域地图`);
     }
@@ -49,7 +49,7 @@ if (parts.includes('data')) {
       for (const n of S.npcs) if (!NPCS[n.npc] || !has(NPCS[n.npc].art)) E.push(`${sid}: NPC ${n.npc} 缺少立绘`);
       for (const g of S.gates) if (!has(gateArt(DUNGEONS[g.dungeon]).art) || gateArt(DUNGEONS[g.dungeon]).art === 'world/b_gate') E.push(`${sid}: 门 ${g.dungeon} 没有专属美术`);
     }
-    const ES = SCENES[R.entry.scene]; if (!ES || !ES.exits.some(x => x.to === R.entry.to)) E.push(`入口 ${R.entry.scene} → ${R.entry.to} 没接上`);
+    if (R.entry) { const ES = SCENES[R.entry.scene]; if (!ES || !ES.exits.some(x => x.to === R.entry.to)) E.push(`入口 ${R.entry.scene} → ${R.entry.to} 没接上`); }   // 远古地下城没有自己的场景 / 入口（门放在已有场景上）
     const I = sp.items || {};
     for (const k of [...(I.epics || []).map(e => e.key), ...(I.sets || []).flatMap(s => s.pieces.map(p => p.key))]) { if (!ITEMS[k]) E.push(`史诗 ${k} 没有定义`); else if (!has('icon/item_' + k)) E.push(`史诗 ${k} 没有图标`); }
     for (const q of I.quest || []) if (!has('icon/' + q.key)) E.push(`任务道具 ${q.key} 没有图标`);
@@ -107,7 +107,7 @@ if (parts.includes('skills')) {
 /* ---------------- 3. 领主机制 ---------------- */
 if (parts.includes('mechs')) {
   await reset();
-  const boss = R.bosses.find(b => b === 'siroco') || R.bosses[R.bosses.length - 1];
+  const boss = R.bosses.find(b => b === 'siroco') || R.bosses.find(b => R.shades.includes(b + 'Shade')) || R.bosses[R.bosses.length - 1];   // 分身机制要用领主的暗影：挑一个有暗影的
   const fresh = () => page.evaluate(boss => {
     for (let k = ents.length - 1; k >= 0; k--) if (ents[k].team === 'e') ents.splice(k, 1);
     groundFx.length = 0; game.timers.length = 0; const p = game.player; p.x = 300; p.y = 100; p.invul = 0; if (p.heldBy) releaseHeld(p);
@@ -122,7 +122,7 @@ if (parts.includes('mechs')) {
   await fresh();
   S.groggy = await page.evaluate(async () => { const m = __b, st = m.msMechs.find(s => s.id === 'groggy'); let n = 0; while (!(st.stun > 0) && n++ < 3000) { m.invul = 0; applyHit(game.player, m, { dmg: 20, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); } return { hits: n, stun: st.stun, broke: MS_STATS.mech.groggyBreak || 0 }; });
   await simWait(0.2);
-  S.groggy.mul = await page.evaluate(() => __b.dmgTakenMul);
+  S.groggy.mul = await page.evaluate(() => __b.msMul.groggy);   // 只看破招这一项（领主出场自带连线等机制时总倍率会再乘别的）
   check(S.groggy.stun > 0 && S.groggy.broke > 0 && S.groggy.mul > 1, `破招槽没有破：${JSON.stringify(S.groggy)}`);
   // 无敌阶段：水晶（领主藏起来 → 打碎水晶 → 现身）
   await clearMechs();
@@ -144,7 +144,7 @@ if (parts.includes('mechs')) {
   check(hp1.hp === hp0 && hp1.mul === 0 && surv.ended && surv.mul === 1, `无敌阶段（撑过）不对：${JSON.stringify(S.invulnSurvive)}`);
   // 可破护盾
   await clearMechs();
-  await page.evaluate(() => { window.__st = msMechStart(__b, { use: 'shield', hp: 0.004 }); });
+  await page.evaluate(() => { window.__st = msMechStart(__b, { use: 'shield', hits: 3 }); });
   const sh0 = await page.evaluate(() => __b.hp); await hit(20);
   const sh1 = await page.evaluate(() => ({ hp: __b.hp, left: __st.hp, max: __st.max }));
   await page.evaluate(() => { let n = 0; while (!__st.done && n++ < 2000) { __b.invul = 0; applyHit(game.player, __b, { dmg: 30, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); } });
@@ -176,7 +176,8 @@ if (parts.includes('mechs')) {
   await page.evaluate(() => { window.__st = msMechStart(__b, { use: 'enrage', t: 0.4 }); window.__atk0 = __b.atk; });
   await simWait(0.8); S.enrage = await page.evaluate(() => ({ fired: !!__st.fired, cd: __b.msCdMul, atk: __b.atk > __atk0 }));
   check(S.enrage.fired && S.enrage.cd < 1 && S.enrage.atk, `狂暴计时没有触发：${JSON.stringify(S.enrage)}`);
-  // 分身：打中本体 → 分身散掉；打分身 → 惩罚
+  // 分身：打中本体 → 分身散掉；打分身 → 惩罚（区域里没有带分身的领主就跳过：分身要用领主自己的暗影）
+  if (R.shades.includes(boss + 'Shade')) {
   await clearMechs();
   await page.evaluate(() => { window.__st = msMechStart(__b, { use: 'clones', n: 2, dur: 30 }); });
   await simWait(0.6);
@@ -189,11 +190,12 @@ if (parts.includes('mechs')) {
   await simWait(0.3); const c3 = await page.evaluate(() => (MS_STATS.mech.clonePunish || 0) - __p0);
   S.clones = { spawned: c1, afterHit: c2, punish: c3 };
   check(c1 === 2 && c2.ended && c2.left === 0 && c3 > 0, `分身机制不对：${JSON.stringify(S.clones)}`);
+  }
   // 属性切换：站错位置伤害打折，站进相克的法阵里全额
   await clearMechs();
-  await page.evaluate(() => { const p = game.player; p.x = (game.room.x1) / 2; p.y = 100; window.__st = msMechStart(__b, { use: 'element', mul: 0.3, every: 999 }); });
+  await page.evaluate(() => { const p = game.player; if (p.act) p.endAct(); p.x = (game.room.x1) / 2; p.y = 100; p.z = 0; p.vx = p.vy = p.vz = 0; p.setState('idle'); window.__st = msMechStart(__b, { use: 'element', mul: 0.3, every: 999 }); });
   await simWait(0.3); const e1 = await page.evaluate(() => __b.dmgTakenMul);
-  await page.evaluate(() => { const z = __st.zones.find(z => z.md !== __st.p.modes[__st.mode]); const p = game.player; p.x = z.x; p.y = z.y; });
+  await page.evaluate(() => { const z = __st.zones.find(z => z.md !== __st.p.modes[__st.mode]); const p = game.player; if (p.act) p.endAct(); p.x = z.x; p.y = z.y; p.z = 0; p.vx = p.vy = p.vz = 0; p.setState('idle'); });
   await simWait(0.3); const e2 = await page.evaluate(() => __b.dmgTakenMul);
   S.element = { wrong: e1, right: e2 };
   check(Math.abs(e1 - 0.3) < 1e-6 && e2 === 1, `属性切换不对：${JSON.stringify(S.element)}`);
@@ -254,7 +256,7 @@ if (parts.includes('monsters')) {
     await page.waitForFunction(() => __acts.length > 0, null, { timeout: 8000 }).catch(() => {});
     await page.screenshot({ path: `${out}/${kind}.png` });
     const r = await page.evaluate(() => {
-      const m = __m, sprite = !!(m.model && m.model.constructor && m.model.constructor.name === 'SpriteModel'), acted = __acts.length;
+      const m = __m, sprite = !!(m.def_.customModel || m.model && m.model.constructor && m.model.constructor.name === 'SpriteModel'), acted = __acts.length;   // customModel：手画的模型（远古的魔剑阿波菲斯）
       for (const s of m.msMechs || []) msMechEnd(m, s); m.msMechs = []; m.msMul = {}; m.dmgTakenMul = 1; if (m.msHidden) msHide(m, false); m.msShieldHp = 0;
       m.invul = 0; m.hp = 1; applyHit(game.player, m, { dmg: 50, sure: true }, { proj: true });
       return { hp: m.hpMax, atk: m.atk, sprite, acted, tele: __tele, dead: m.dead };
@@ -286,13 +288,15 @@ if (parts.includes('scenes')) {
       check(back && (await sceneNow()) === sid, `从 ${to} 回不到 ${sid}`);
     }
   }
-  // 从已有世界接进来的入口（例如天帷巨兽 · 脊背的次元裂缝）
+  // 从已有世界接进来的入口（例如天帷巨兽 · 脊背的次元裂缝）；远古地下城没有入口，门在已有场景上
+  if (R.entry) {
   await page.evaluate(E => enterScene(E.scene), R.entry); await wait(700);
   await page.evaluate(E => useExit(world.S.exits.find(x => x.to === E.to)), R.entry); await wait(900);
   check((await sceneNow()) === R.entry.to, `入口 ${R.entry.scene} → ${R.entry.to} 走不通`);
   await page.evaluate(L => { game.lvl = L - 1; }, R.entry.minLv); await page.evaluate(E => enterScene(E.scene), R.entry); await wait(700);
   await page.evaluate(E => useExit(world.S.exits.find(x => x.to === E.to)), R.entry); await wait(700);
   check((await sceneNow()) === R.entry.scene, `入口的等级限制 Lv.${R.entry.minLv} 没拦住`);
+  }
   await page.evaluate(L => { game.lvl = L; }, R.lvl);
   console.log('场景：完成');
 }
@@ -300,7 +304,7 @@ if (parts.includes('scenes')) {
 /* ---------------- 6. 主线任务链 ---------------- */
 if (parts.includes('quest')) {
   const res = await page.evaluate(async ({ id, R }) => {
-    game.lvl = R.lvl; const d = save.data; d.questDone ??= {}; const sp = REGIONS[id].spec; d.questDone[sp.story.pre] = Date.now();
+    const sp = REGIONS[id].spec; game.lvl = sp.lvlMax ?? R.lvl; const d = save.data; d.questDone ??= {}; d.questDone[sp.story.pre] = Date.now();
     const rows = [];
     for (const q of R.quests) {
       const Q = QUESTS[q], s0 = questState(q); questAccept(q); const s1 = questState(q);
@@ -411,6 +415,8 @@ if (parts.includes('abyss')) {
     // 领主的循环机制（cycle）：撑 30 秒（游戏时间），至少触发一次
     const m0 = await page.evaluate(() => ({ ...MS_STATS.mech }));
     await page.evaluate(() => { const b = game.dungeon.abyssRun.lord; b.hp = Math.round(b.hpMax * 0.4); });
+    await simWait(2);   // 领主自己的阶段可能会“隐入 / 钻地”（无敌阶段）：结束掉，让循环机制有机会出手
+    await page.evaluate(() => { const b = game.dungeon.abyssRun.lord; for (const s of b.msMechs || []) if (s.id === 'invuln') { for (const o of s.objs || []) o.remove = true; msMechEnd(b, s); } if (b.msHidden) msHide(b, false); });
     await simWait(32);
     const m1 = await page.evaluate(() => ({ ...MS_STATS.mech }));
     const cyc = await page.evaluate(aid => ABYSS[aid].lord.cycle.map(c => c.mech.use), aid);
@@ -428,7 +434,7 @@ if (parts.includes('abyss')) {
     check(pity.state === 'play', `${aid}: 打倒深渊领主不结算，地下城照常往下打（${pity.state}）`);
     // 两轮打完：原地弹出深渊宝藏（三张紫卡，免费翻一张），门打开
     await page.evaluate(() => { for (const e of [...ents]) if (e.team === 'e' && !e.dead && e !== game.dungeon.abyssRun.block) { e.hp = 0; killEnt(e, game.player, {}); } });
-    await page.waitForFunction(() => !!document.querySelector('#abytreasure .card'), null, { timeout: 10000 }).catch(() => {});
+    await page.waitForFunction(() => { const dg = game.dungeon; return !!document.querySelector('#abytreasure .card') && dg.abyssRun.phase === 'done' && dg.doorsOpen; }, null, { timeout: 30000 }).catch(() => {});   // 并行负载下清房 / 开门会晚几帧
     await wait(500);
     const c0 = await page.evaluate(() => ({ n: document.querySelectorAll('#abytreasure .card').length, phase: game.dungeon.abyssRun.phase, doors: game.dungeon.doorsOpen, items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));
     check(c0.n === 3 && c0.phase === 'done' && c0.doors, `${aid}: 两轮打完弹出三张「深渊宝藏」（${c0.n}），门打开了`);
@@ -452,19 +458,22 @@ if (parts.includes('abyss')) {
 /* ---------------- 7. 机器人通关（区域等级 全身 +12 史诗）---------------- */
 if (parts.includes('bot')) {
   const CLS = ['sword', 'gun', 'mage'];
+  const DUNGEONS_LV = await page.evaluate(ids => Object.fromEntries(ids.filter(d => DUNGEONS[d]).map(d => [d, DUNGEONS[d].lvl[1]])), [...R.dungeons, ...(process.env.BOT || '').split(',').map(x => x.split(':')[0])]);   // 机器人用各地下城自己的等级
   const plan = process.env.BOT ? process.env.BOT.split(',').map(s => s.split(':')) : R.dungeons.map((d, i) => [d, CLS[i % 3]]);
   const rows = [];
   for (const [did, cls] of plan) {
     await open(`town&mute&cls=${cls}`);
-    const setup = await page.evaluate(({ did, lv }) => {
-      testLoadout(lv); const p = game.player, eq = [], A = typeof ABYSS !== 'undefined' && ABYSS[did];
+    const setup = await page.evaluate(({ did, lv, base, enh }) => {
+      testLoadout(lv); const p = game.player, eq = [], A = typeof ABYSS !== 'undefined' && ABYSS[did], U = DUNGEONS[did].unlock;
       if (A) { save.data.questDone[A.quest] = Date.now(); inv.add(makeItem('abyss_ticket', A.cost)); }
-      for (const s of Object.keys(SLOT_WEIGHT)) { const it = rollEquip({ slot: s, lvl: lv, rar: 5, cls: p.cls }) || inv.equip[s]; if (it) { it.enh = 12; inv.equip[s] = it; eq.push(it.rar); } }
+      if (U && U.quest) save.data.questDone[U.quest] = Date.now();
+      // GEAR=base：只有 testLoadout；GEAR=rare：全身同等级稀有 +ENH（默认 7，“等级合适的稀有装”）；默认：全身史诗 +12
+      if (base !== 'base') for (const s of Object.keys(SLOT_WEIGHT)) { const it = rollEquip({ slot: s, lvl: lv, rar: base === 'rare' ? 2 : 5, cls: p.cls }) || inv.equip[s]; if (it) { it.enh = base === 'rare' ? enh : 12; inv.equip[s] = it; eq.push(it.rar); } }
       recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax; save.data.fatigue = 999; bot.on = true; window.__botDone = null;
       enterDungeon(did, 0);
       return { epics: eq.filter(r => r === 5).length, slots: eq.length, atk: Math.round(p.atk || 0), hp: p.hpMax };
-    }, { did, lv: R.lvl });
-    const limit = did.includes('coffin') ? 900 : 600, t0 = Date.now(); let done = null, n = 0, last = null;
+    }, { did, lv: +(process.env.LV || (DUNGEONS_LV[did] ?? R.lvl)), base: process.env.GEAR || '', enh: +(process.env.ENH || 7) });
+    const limit = +(process.env.LIMIT || (did.includes('coffin') ? 900 : 600)), t0 = Date.now(); let done = null, n = 0, last = null;
     while (!done && (Date.now() - t0) / 1000 * speed < limit) {
       await wait(3000); done = await page.evaluate(() => window.__botDone || null);
       last = await page.evaluate(() => { const D = game.dungeon; return D ? { room: D.layout.rooms.indexOf(D.room), boss: D.room.type === 'boss', hp: Math.round(game.player.hp / game.player.hpMax * 100), bossHp: D.boss ? Math.round(D.boss.hp / D.boss.hpMax * 100) : null, phase: D.boss ? D.boss.msPhase : null, t: Math.round(D.t) } : null; });

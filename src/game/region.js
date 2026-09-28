@@ -23,6 +23,7 @@ const REGION_LAYOUT = {
   standard: { rooms: 6, branches: 2, rows: 3, cols: 5 },
   long: { rooms: 7, branches: 3, rows: 4, cols: 5 },
   raid: { rooms: 4, branches: 0, rows: 1, cols: 4 },   // 一条直线：入口 → 两个前哨房 → 领主房
+  ancient: { rooms: 6, branches: 0, rows: 1, cols: 6 },   // 远古：一条直线 6 房，每个房间由钩子脚本单独布置（content/regions/ancient_rooms.js）
 };
 // ---- 没有逐帧精灵时的程序外观（美术还没出的时候也能先跑通）----
 const REGION_LOOKS = { zombie: pal => buildZombie(pal), cat: pal => buildCat(pal), tau: pal => buildTau(pal, { weapon: 'none' }), goblin: pal => buildGoblin({ ...PAL_GOB, ...pal }) };

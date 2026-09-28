@@ -27,34 +27,80 @@ const BEAST_CLIPS = { ...GOB_CLIPS,
   bite: { dur: 0.8, fps: 14, keys: [k(0, POSE.idle), k(0.3, POSE.bite, 'out'), k(0.5, POSE.bite), k(0.8, POSE.idle)] },
   heal: { dur: 0.8, loop: true, fps: 8, keys: [k(0, POSE.heal), k(0.4, P(POSE.heal, { uaF: 140, uaB: 160 }))] },
 };
-/* ---- 异常状态 ---- */
-const STATUS_COL = { burn: '#ff7a2a', poison: '#b05aff', bleed: '#e02a2a', freeze: '#8ae0ff', stun: '#ffe070', slow: '#6ab0ff', blind: '#202030' };
-const STATUS_NAME = { burn: '灼烧', poison: '中毒', bleed: '出血', freeze: '冰冻', stun: '眩晕', slow: '减速', blind: '失明' };
+/* ---- 异常状态 ----
+   addStatus(t, kind, dur, o)：o = { src, dps, force, amt, hitDmg }
+   原有：burn 灼烧 / poison 中毒 / bleed 出血（持续伤害 dps）、freeze 冰冻、stun 眩晕、slow 减速、blind 失明
+   新增（魔法师对齐组维护，接口见协作板）：
+     shock   感电：持续期间每次受到攻击，额外受到一次光属性伤害 hitDmg（默认 = 施加者攻击力 × 0.1），同一目标每 0.1 秒最多触发一次
+     curse   诅咒：受到的伤害 +amt（默认 10%，相当于降低防御），自己造成的伤害 −amt
+     sleep   睡眠：不能行动；受到攻击时醒来，唤醒的这一击伤害 ×1.5
+     root    定身：不能移动、不能行动；能被打，但不会被击退 / 浮空 / 倒地（领主改为减速）
+     bind    束缚：不能移动，但还能攻击（领主改为减速）
+     taunt   挑衅：怪物的攻击目标强制切到施加者 src
+     confuse 混乱：怪物乱走、不出招；玩家方向键反转（player.js 读 statusConfused(e)）
+   免疫：t.statusImmune = { kind: true }；受击前钩子返回 noStatus 时，同一帧内不附加任何状态 */
+const STATUS_COL = { burn: '#ff7a2a', poison: '#b05aff', bleed: '#e02a2a', freeze: '#8ae0ff', stun: '#ffe070', slow: '#6ab0ff', blind: '#202030',
+  shock: '#fff38a', curse: '#9a4ad0', sleep: '#a8b0ff', root: '#d0a060', bind: '#7aa05a', taunt: '#ff5a3a', confuse: '#ff8ae0' };
+const STATUS_NAME = { burn: '灼烧', poison: '中毒', bleed: '出血', freeze: '冰冻', stun: '眩晕', slow: '减速', blind: '失明',
+  shock: '感电', curse: '诅咒', sleep: '睡眠', root: '定身', bind: '束缚', taunt: '挑衅', confuse: '混乱' };
+const STATUS_HARD = { stun: 1, freeze: 1, sleep: 1, root: 1 };   // 硬控：不能行动（进入 hit 状态）
 function addStatus(t, kind, dur, o = {}) {
   if (t.dead || t.invul > 0 || t.remove) return;
-  const sa = t.superArmor > 0 || (t.act && t.act.superArmor), hard = kind === 'stun' || kind === 'freeze';
+  if (t.statusImmune && t.statusImmune[kind]) return;
+  if (t._noStatusT === game.t && !o.force) return;   // 受击前钩子 noStatus：这一帧不附加状态
+  if ((kind === 'root' || kind === 'bind') && t.boss && !o.force) kind = 'slow';   // 领主：定身 / 束缚改为减速
+  const sa = t.superArmor > 0 || (t.act && t.act.superArmor), hard = !!STATUS_HARD[kind];
   if (hard && (t.boss || sa) && !o.force) dur *= 0.3;
   t.status = t.status || {};
   const cur = t.status[kind];
-  t.status[kind] = { t: Math.max(dur, cur ? cur.t : 0), dps: Math.max(o.dps || 0, cur ? cur.dps : 0), src: o.src || (cur && cur.src) || null, tick: cur ? cur.tick : 0.5 };
+  t.status[kind] = { t: Math.max(dur, cur ? cur.t : 0), dps: Math.max(o.dps || 0, cur ? cur.dps : 0), src: o.src || (cur && cur.src) || null, tick: cur ? cur.tick : 0.5,
+    amt: o.amt ?? (cur ? cur.amt : undefined), hitDmg: Math.max(o.hitDmg || 0, cur ? cur.hitDmg || 0 : 0) };
   // 硬控：霸体动作中不打断（除非强制），浮空 / 倒地时等落地再生效
   if (hard && (!sa || o.force) && t.st !== 'air' && t.st !== 'down' && t.z <= 2) { if (t.act) { const a = t.act; t.act = null; if (a.onEnd) a.onEnd(t, true); } t.setState('hit'); t.stun = dur; t.vx *= 0.3; }
+  if (kind === 'root' || kind === 'bind') { t.vx = t.vy = 0; }
   if (!cur) fxText(STATUS_NAME[kind], t.x, t.y, t.z + 20, { col: STATUS_COL[kind], size: 10, dur: 0.8 });
 }
+const hasStatus = (t, k) => !!(t && t.status && t.status[k]);
+const statusNoMove = e => hasStatus(e, 'root') || hasStatus(e, 'bind');   // 不能移动（player.js / 怪物 AI 读取）
+const statusConfused = e => hasStatus(e, 'confuse');                      // 方向键反转（player.js 读取）
+const statusRooted = e => hasStatus(e, 'root') && !e.boss;                // 定身：受击不击退 / 不浮空
+// 伤害修正（applyHit 调用）：受到的（诅咒 +、睡眠唤醒 ×1.5）× 造成的（诅咒 −）
+function statusDmgMul(a, t) {
+  let m = 1; const S = t.status, A = a && a.status;
+  if (S) { if (S.curse) m *= 1 + (S.curse.amt ?? 0.1); if (S.sleep) m *= 1.5; }
+  if (A && A.curse) m *= 1 - (A.curse.amt ?? 0.1);
+  return m;
+}
+// 受击后（applyHit 调用）：感电追加伤害、睡眠被打醒
+function statusOnHit(t, a, dmg, h) {
+  const S = t.status; if (!S || t.dead) return;
+  if (S.sleep) { delete S.sleep; if (t.st === 'hit') t.stun = Math.min(t.stun, 0.25); fxText('醒了！', t.x, t.y, t.z + 24, { col: STATUS_COL.sleep, size: 10, dur: 0.6 }); }
+  if (S.shock && !h.shockProc && game.t - (t._shockT || -9) >= 0.1) {
+    t._shockT = game.t; const src = S.shock.src || a;
+    const x = Math.max(1, Math.round(S.shock.hitDmg || (src ? atkOf(src, 'mag') * 0.1 : dmg * 0.1)));
+    t.hp -= x; addNumber(x, t.x, t.y, t.z + 10, { player: t.team === 'p' && !t.summon, col: STATUS_COL.shock });
+    if (Math.random() < 0.5) fxSpr('spark', t.x + rnd(-8, 8), t.y + 1, t.z + t.h * 0.6, { w: 30, dur: 0.15 });
+    if (t.hp <= 0 && !t.dead) { t.hp = 0; killEnt(t, src || t, {}); }
+  }
+}
+// 挑衅：怪物 AI 的目标
+const tauntSrc = m => { const s = m.status && m.status.taunt && m.status.taunt.src; return s && !s.dead && !s.remove ? s : null; };
 function updateStatus(t, dt) {
   const S = t.status; if (!S) return;
   for (const k in S) {
     const s = S[k]; s.t -= dt;
-    if (s.dps) { s.tick -= dt; if (s.tick <= 0) { s.tick = 0.5; const dmg = Math.max(1, Math.round(s.dps * 0.5)); t.hp -= dmg; addNumber(dmg, t.x, t.y, t.z, { player: t.team === 'p', col: STATUS_COL[k] }); if (t.hp <= 0 && !t.dead) { t.hp = 0; killEnt(t, s.src || t, {}); return; } } }
-    if (k === 'stun' || k === 'freeze') {
+    if (s.dps) { s.tick -= dt; if (s.tick <= 0) { s.tick = 0.5; const dmg = Math.max(1, Math.round(s.dps * 0.5)); t.hp -= dmg; addNumber(dmg, t.x, t.y, t.z, { player: t.team === 'p' && !t.summon, col: STATUS_COL[k] }); if (t.hp <= 0 && !t.dead) { t.hp = 0; killEnt(t, s.src || t, {}); return; } } }
+    if (STATUS_HARD[k]) {
       const sa = t.superArmor > 0 || (t.act && t.act.superArmor);
-      if (t.st !== 'hit' && t.st !== 'air' && t.st !== 'down' && t.st !== 'getup' && !sa) { if (t.act) { const a = t.act; t.act = null; if (a.onEnd) a.onEnd(t, true); } t.setState('hit'); t.stun = s.t; }
-      if (k === 'freeze' && t.st === 'hit') t.animT -= dt;
+      if (t.st !== 'hit' && t.st !== 'air' && t.st !== 'down' && t.st !== 'getup' && t.st !== 'held' && !sa) { if (t.act) { const a = t.act; t.act = null; if (a.onEnd) a.onEnd(t, true); } t.setState('hit'); t.stun = s.t; }
+      if (t.st === 'hit' && t.stun < s.t && (k === 'root' || k === 'sleep')) t.stun = Math.min(s.t, t.stun + dt * 2);
+      if ((k === 'freeze' || k === 'sleep' || k === 'root') && t.st === 'hit') t.animT -= dt;
     }
+    if ((k === 'root' || k === 'bind') && t.z <= 2) { t.vx = 0; t.vy = 0; }
     if ((k === 'burn' || k === 'poison' || k === 'bleed') && Math.random() < dt * 18) {
       addFx({ x: t.x + rnd(-t.w, t.w), y: t.y + 1, z: t.z + rnd(10, t.h * 0.8), vz: k === 'bleed' ? -30 : 40, dur: 0.5, col: STATUS_COL[k], update(dt) { this.z += this.vz * dt; }, draw(cc) { const kk = this.t / this.dur; cc.fillStyle = shade(this.col, 0.2, 0.8 * (1 - kk)); cc.beginPath(); cc.arc(sx(this.x), sy(this.y, this.z), 2.2 * (1 - kk * 0.5), 0, TAU); cc.fill(); } });
     }
-    if (s.t <= 0) delete S[k];
+    if (s.t <= 0) { delete S[k]; if (STATUS_HARD[k] && t.st === 'hit' && !Object.keys(S).some(q => STATUS_HARD[q])) t.stun = Math.min(t.stun, 0.05); }
   }
 }
 function drawStatus(c, t) {
@@ -63,6 +109,12 @@ function drawStatus(c, t) {
   if (S.stun) { for (let i = 0; i < 3; i++) { const a = game.t * 5 + i * TAU / 3; c.fillStyle = '#ffe070'; c.font = 'bold 9px sans-serif'; c.textAlign = 'center'; c.fillText('★', X + Math.cos(a) * 10, top + Math.sin(a) * 3); } }
   if (S.freeze) { c.save(); c.globalAlpha = 0.55; c.fillStyle = '#bfefff'; c.strokeStyle = '#ffffff'; c.lineWidth = 1; const w = t.w * 1.6, hh = t.h * (t.scale || 1) * 0.9, y0 = sy(t.y, t.z); c.beginPath(); c.moveTo(X - w, y0); c.lineTo(X - w * 0.8, y0 - hh * 0.8); c.lineTo(X - w * 0.2, y0 - hh); c.lineTo(X + w * 0.7, y0 - hh * 0.85); c.lineTo(X + w, y0 - hh * 0.2); c.lineTo(X + w * 0.9, y0); c.closePath(); c.fill(); c.stroke(); c.restore(); }
   if (S.slow) { c.strokeStyle = 'rgba(100,170,255,.5)'; c.lineWidth = 1; c.beginPath(); c.ellipse(X, sy(t.y, 0), 14 + Math.sin(game.t * 6) * 2, 4, 0, 0, TAU); c.stroke(); }
+  if (S.sleep) { c.fillStyle = '#c8d0ff'; c.font = 'bold 10px sans-serif'; c.textAlign = 'center'; for (let i = 0; i < 2; i++) { const q = (game.t * 0.8 + i * 0.5) % 1; c.globalAlpha = 1 - q; c.fillText('Z', X + 6 + q * 10, top - q * 14); } c.globalAlpha = 1; }
+  if (S.shock && Math.floor(game.t * 12) % 3 === 0) { c.strokeStyle = '#fff38a'; c.lineWidth = 1.5; const y0 = sy(t.y, t.z + t.h * 0.5), w = t.w * 1.4; c.beginPath(); c.moveTo(X - w, y0 - 6); c.lineTo(X - 2, y0 + 4); c.lineTo(X + 3, y0 - 8); c.lineTo(X + w, y0 + 2); c.stroke(); }
+  if (S.curse) { c.fillStyle = 'rgba(120,40,170,.55)'; for (let i = 0; i < 3; i++) { const a = game.t * 2 + i * TAU / 3; c.beginPath(); c.arc(X + Math.cos(a) * 11, top + 4 + Math.sin(a) * 3, 2.5, 0, TAU); c.fill(); } }
+  if (S.root || S.bind) { c.strokeStyle = S.root ? 'rgba(210,160,90,.8)' : 'rgba(122,160,90,.8)'; c.lineWidth = 2; const Y0 = sy(t.y, 0); for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(X + i * 8, Y0); c.quadraticCurveTo(X + i * 12, Y0 - 12, X + i * 4, Y0 - 22); c.stroke(); } }
+  if (S.taunt) { c.fillStyle = '#ff5a3a'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText('!', X, top - 6 + Math.sin(game.t * 10) * 2); }
+  if (S.confuse) { c.fillStyle = '#ff8ae0'; c.font = 'bold 10px sans-serif'; c.textAlign = 'center'; for (let i = 0; i < 2; i++) { const a = game.t * 4 + i * Math.PI; c.fillText('?', X + Math.cos(a) * 10, top + Math.sin(a) * 3); } }
 }
 // 失明：视野只剩角色周围一小圈
 function drawBlind(c) {

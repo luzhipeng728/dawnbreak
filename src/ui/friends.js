@@ -1,5 +1,5 @@
 /* =====================================================================
-   好友：好友列表窗口（在线状态、在哪、私聊 / 邀请组队 / 决斗 / 删除）、好友申请、按名字加好友
+   好友：好友列表窗口（在线状态、在哪、前往 / 私聊 / 邀请组队 / 决斗 / 删除）、好友申请、按名字加好友
    玩家菜单：城镇里点其他玩家（或好友列表 / 队伍窗口里的名字）弹出：查看信息、私聊、加好友、邀请组队、发起决斗
    ===================================================================== */
 const netFriends = {
@@ -64,6 +64,7 @@ Object.assign(menus, {
         h('div', { class: 'col', style: 'gap:0;min-width:0;flex:1' },
           h('span', {}, h('b', { class: 'frname', onclick: ev => netPlayerMenu({ id: f.id, name: f.name, char: f.char }, ev) }, f.name), f.char ? h('span', { class: 'small dim' }, '  ' + netCharLine(f.char)) : null),
           h('span', { class: 'small', style: `color:${f.online ? '#8aff9a' : '#8a8a8a'}` }, where)),
+        f.online && f.scene && SCENES[f.scene] ? h('button', { class: 'btn', style: 'border-color:#ffd23a;color:#ffe070', title: '自动走到好友身边（按方向键取消；聊天里也可以用 /找 名字）', onclick: () => { sfx.click(); if (guide.goFriend(f)) this.close('friends'); } }, '前往') : null,
         f.online ? h('button', { class: 'btn', title: '私聊', onclick: () => chat.whisper(f.name) }, '私聊') : null,
         f.online ? h('button', { class: 'btn', title: '邀请组队', onclick: () => netPartyInvite(f.id, f.name) }, '组队') : null,
         f.online ? h('button', { class: 'btn', title: '好友决斗', onclick: () => netDuelAsk({ id: f.id, name: f.name, char: f.char }) }, '决斗') : null,

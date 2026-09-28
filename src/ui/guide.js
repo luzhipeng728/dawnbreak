@@ -4,6 +4,7 @@
      可交付 → 交付 NPC；否则第一个没完成的目标：对话 → NPC，到达 → 场景，通关 / 击杀 / 收集 → 地下城的门
    - 路线：沿场景出口（城镇 / 区域地图的连接）做最短路径；当前画面里的下一站头顶有跳动的金色箭头，画面外在屏幕边缘指方向
    - 左上角的指引条显示完整路线，点“自动前往”角色会自己走过去（模拟按方向键，走到 NPC 身边自动对话，走到门口弹出地下城窗口）；按任意方向键取消
+   - 寻找好友（好友列表“前往” / 聊天 /找 名字）：优先于任务。同区域跟着对方的实时位置走；在别的区域就按好友列表里的所在区域规划路线（每 3 秒刷新一次）
    ===================================================================== */
 addStyle(`
 #qguide{position:absolute;left:calc(var(--u) * 14px);top:calc(var(--u) * 14px);max-width:calc(var(--u) * 560px);background:linear-gradient(90deg,rgba(20,14,8,.86),rgba(20,14,8,.55));border:.08em solid rgba(232,194,106,.55);border-left:.25em solid #ffd23a;border-radius:.3em;padding:.35em .6em;color:#f0dcb0;font-size:.92em;line-height:1.45;z-index:1;box-shadow:0 .2em .6em rgba(0,0,0,.5)}
@@ -19,9 +20,43 @@ body.touchui #qguide{top:12vh}
 const guide = {
   el: null, t: 0, cur: null, auto: false, autoT: 0, arrived: false, pin: null,
   // 任务日志里点“自动前往”：指引切到这个任务并开始走
-  goTo(id) { this.pin = id; this.auto = true; this.arrived = false; if (this.el) this.el._sig = null; },
+  goTo(id) { this.follow = null; this.pin = id; this.auto = true; this.arrived = false; if (this.el) this.el._sig = null; },
+  // ---- 寻找好友 / 同区域的玩家 ----
+  follow: null, followT: 0,
+  goPlayer(id, name) {
+    if (game.scene !== 'town') { toastMsg('在城镇里才能自动前往', '#ffb0a0'); sfx.error(); return false; }
+    this.follow = { id, name, t0: performance.now(), waitT: 0 }; this.pin = null; this.followT = 0; this.auto = true; this.arrived = false; if (this.el) this.el._sig = null;
+    toastMsg(`自动前往 ${name} 身边（按方向键取消）`, '#8aff9a', 'log'); return true;
+  },
+  goFriend(f) {
+    if (!f || !f.online) { toastMsg(`${f ? f.name : '好友'} 不在线`, '#ffb0a0'); sfx.error(); return false; }
+    return this.goPlayer(f.id, f.char ? f.char.name : f.name);
+  },
+  // 按名字找：好友（账号名或角色名）→ 同区域的其他玩家（角色名或账号名）
+  goByName(n) {
+    const f = (typeof netFriends !== 'undefined' ? netFriends.list : []).find(f => f.name === n || (f.char && f.char.name === n));
+    if (f) return this.goFriend(f);
+    const P = typeof netTown !== 'undefined' && [...netTown.peers.values()].find(P => P.acct === n || (P.char && P.char.name === n));
+    if (P) return this.goPlayer(P.id, P.char ? P.char.name : P.acct);
+    toastMsg(`没有找到「${n}」：只能找好友，或者和你在同一区域的玩家`, '#ffb0a0'); sfx.error(); return false;
+  },
+  stopFollow(msg, col = '#ffb0a0') { if (msg) toastMsg(msg, col); this.follow = null; this.auto = false; this.release(); if (this.el) this.el._sig = null; },
+  followTarget() {
+    const F = this.follow, now = performance.now(), q = { id: 'player:' + F.id, name: `寻找 ${F.name}` };
+    const P = typeof netTown !== 'undefined' && netTown.peers.get(F.id);
+    if (P && !P.gone && world && world.S) { F.waitT = 0; return { scene: world.S.id, x: P.x, y: P.y, kind: 'player', name: F.name, what: `去找 ${F.name}`, q }; }
+    const f = typeof netFriends !== 'undefined' && netFriends.byId(F.id);
+    if (f && now - this.followT > 3000) { this.followT = now; netFriends.load(); }   // 好友换了区域：刷新所在区域
+    if (f && f.online && f.scene && SCENES[f.scene] && world && world.S && f.scene !== world.S.id) { F.waitT = 0; return { scene: f.scene, kind: 'scene', name: F.name, what: `去找 ${F.name}`, q }; }
+    // 同区域但还没看到人（刚进场景 / 列表还没刷新）：等一会儿；等不到就放弃
+    if (!F.waitT) F.waitT = now;
+    if (now - F.waitT < 4000) return { wait: true, what: `正在寻找 ${F.name}…`, q, none: true };
+    this.stopFollow(f && f.online && !f.scene ? `${F.name} 在地下城或决斗中，没法走过去` : f && !f.online ? `${F.name} 已经下线了` : `没有找到 ${F.name}（可能刚离开这个区域）`);
+    return null;
+  },
   // ---- 目标 ----
   focus() {
+    if (this.follow) { const t = this.followTarget(); if (t) return t; }
     const d = typeof qdata === 'function' && qdata(); if (!d) return null;
     const pq = this.pin && QUESTS[this.pin];
     if (pq) { const st = questState(pq.id), t = st === 'avail' ? pq.npc && this.npcT(pq.npc, `接取「${pq.name}」`, pq) : st === 'active' || st === 'ready' ? this.targetOf(pq) : null; if (t) return t; this.pin = null; }
@@ -95,24 +130,29 @@ const guide = {
     const sig = `${T.q.id}|${T.what}|${where}|${lock}|${this.auto}`; if (this.el._sig === sig) return; this.el._sig = sig;
     const canGo = !T.none && P.next && !P.next.lock;
     this.el.replaceChildren(
-      h('div', {}, h('span', { class: 't' }, '任务指引'), h('span', { class: 'tgt' }, T.what),
+      h('div', {}, h('span', { class: 't' }, String(T.q.id).startsWith('player:') ? '寻找玩家' : '任务指引'), h('span', { class: 'tgt' }, T.what),
         canGo ? h('button', { class: this.auto ? 'stop' : '', onclick: e => { e.currentTarget.blur(); this.toggleAuto(); } }, this.auto ? '停止' : '自动前往') : null),
       T.none ? h('div', { class: 'rt' }, `「${T.q.name}」`) : h('div', { class: 'rt' }, T.scene === world.S.id ? '目标在当前区域 · ' : '路线：', h('b', {}, where), lock));
   },
-  toggleAuto() { this.auto = !this.auto; this.arrived = false; if (!this.auto) this.release(); sfx.click(); this.el._sig = null; },
+  toggleAuto() { this.auto = !this.auto; this.arrived = false; if (!this.auto) { this.release(); this.follow = null; } sfx.click(); this.el._sig = null; },
   release() { const V = input.virt; for (const k of ['left', 'right', 'up', 'down']) delete V[k]; input.runDir = 0; },
   // ---- 自动前往：模拟按方向键 ----
   drive(dt) {
     if (!this.auto) return;
     const p = game.player, P = this.cur, n = P && P.next;
     const cancel = ['left', 'right', 'up', 'down'].some(a => (KEYMAP[a] || []).some(k => input.down.has(k)));
-    if (cancel || !n || n.lock || !p) { this.auto = false; this.release(); if (this.el) this.el._sig = null; return; }
+    if (!cancel && P && P.T && P.T.wait) { this.release(); return; }   // 寻找好友：同区域但还没看到人，原地等
+    if (cancel || !n || n.lock || !p) { this.auto = false; this.follow = null; this.release(); if (this.el) this.el._sig = null; return; }
     if (menus.modal() || menus.isOpen('dungeon')) { this.release(); if (menus.isOpen('dungeon') || menus.isOpen('npc')) { this.auto = false; if (this.el) this.el._sig = null; } return; }
     const V = input.virt; this.release();
     let tx = n.x, ty = n.y;
-    if (n.final && P.T.kind === 'npc') {   // 走到 NPC 身边：站在 NPC 靠近玩家的一侧
+    if (n.final && (P.T.kind === 'npc' || P.T.kind === 'player')) {   // 走到 NPC / 玩家身边：站在对方靠近自己的一侧
       tx = n.x + (p.x < n.x ? -46 : 46); ty = n.y;
-      if (Math.abs(p.x - tx) < 18 && Math.abs(p.y - ty) < 14) { this.auto = false; this.release(); this.el._sig = null; const e = world.npcs.find(x => x.npc.id === P.T.npc); if (e) openNpc(e.npc); return; }
+      if (Math.abs(p.x - tx) < 18 && Math.abs(p.y - ty) < 14) {
+        this.auto = false; this.release(); this.el._sig = null;
+        if (P.T.kind === 'player') { this.follow = null; toastMsg(`到达 ${P.T.name} 身边`, '#8aff9a'); sfx.click(); return; }
+        const e = world.npcs.find(x => x.npc.id === P.T.npc); if (e) openNpc(e.npc); return;
+      }
     }
     const dx = tx - p.x, dy = ty - p.y, ex = n.ex;
     // 出口：到了边缘继续往外推，触发换场景

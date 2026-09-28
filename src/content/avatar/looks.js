@@ -88,7 +88,7 @@ function lookFromEquip(cls, eq, prefer) {
     if (slot !== 'av_face' && AVATAR_HAT_CLS[cls] && !upCostume) continue;   // 默认上身自带帽子：上身换成时装后才显示帽子 / 发饰
     acc.push(it.key);
   }
-  return { wpn: weaponArtOf(eq.weapon, cls, eq.av_weapon), set, parts, acc };
+  return { wpn: weaponArtOf(eq.weapon, cls, eq.av_weapon), set, parts, acc, glow: vanityGlowOf(eq.weapon) };   // glow：强化 / 增幅光效（game/vanity.js）
 }
 // 职业默认外观（选角立绘、路人、决斗场对手等没有装备信息的模型）
 function defaultLook(cls) {

@@ -131,6 +131,8 @@ game/shop_box.js
 game/shop_pet.js
 ui/cash/shop.js
 ui/cash/box.js
+# 面子系统：强化 / 增幅武器光效、时装城镇移速、天空套 8 件特效、名牌徽章（外观层 / 名牌 / 商城光效调这里）
+game/vanity.js
 game/flow.js
 ui/artlab.js
 game/bot.js

@@ -156,14 +156,21 @@ def icon_items(spec):
 def st_icons(spec, only):
     import gear_icons as G
     G.SRC = os.path.join(A.SRC, 'icons')
-    items = icon_items(spec); sheets = {}
+    icon = os.path.join(A.HERE, 'final', 'icon')
+    have = lambda k: os.path.exists(os.path.join(icon, (k if k.startswith('q_') else f'item_{k}') + '.webp'))
+    items = [x for x in icon_items(spec) if not have(x[0])]; sheets = {}   # 只出还没有图标的（后来加的史诗 / 深渊专属另起一张表，不打乱已有的表）
     for i in range(0, len(items), 6):
         chunk = items[i:i + 6]; chunk += [('gear_spare', 'a small plain round glass potion bottle with a violet cork')] * (6 - len(chunk))
-        sheets[f'{spec["id"]}_icons{i // 6 + 1}'] = chunk
+        sheets[f'{spec["id"]}_icons_{chunk[0][0]}'] = chunk
     G.SHEETS.update(sheets)
     G.cmd_gen(list(sheets))
-    for n in sheets: G.cut_sheet(n)
-    icon = os.path.join(A.HERE, 'final', 'icon')
+    for n in sheets:
+        p = os.path.join(G.SRC, n + '.png')
+        if os.path.exists(p):   # 生成的表偶尔带一圈细边框，切图时会被算进图标的包围盒（图标缩成一小点）：先把边缘 10px 刷白
+            im = Image.open(p).convert('RGB'); d = ImageDraw.Draw(im); W, H = im.size
+            for b in ((0, 0, W, 10), (0, H - 10, W, H), (0, 0, 10, H), (W - 10, 0, W, H)): d.rectangle(b, fill=(255, 255, 255))
+            im.save(p)
+        G.cut_sheet(n)
     for k, _ in items:   # 任务道具的图标名是 q_*（不带 item_ 前缀）
         if k.startswith('q_') and os.path.exists(os.path.join(icon, f'item_{k}.webp')): os.replace(os.path.join(icon, f'item_{k}.webp'), os.path.join(icon, f'{k}.webp'))
 

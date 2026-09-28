@@ -39,6 +39,7 @@ run hatcheck  python3 art/tools/avatar_hatcheck.py   # 神枪手 / 魔法师原�
 run shop      node test/shop.mjs
 run shopecon  node test/shop_econ.mjs
 run shopsynth node test/shop_synth.mjs
+run vanity    node test/vanity.mjs   # 强化 / 增幅武器光效、时装城镇移速、天空套特效、城镇 8 人帧率
 run acct      node test/acct.mjs
 run bag       node test/bag.mjs
 run skyguide  node test/skyguide.mjs

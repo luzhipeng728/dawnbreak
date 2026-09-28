@@ -70,6 +70,7 @@ function netNamePlate(c, X, ny, ch, acct, id, a = 1, hot = false) {
   const t1 = `Lv.${ch.lvl} ${ch.name}`, t2 = J ? J.name : (CLASSES[ch.cls] ? CLASSES[ch.cls].name : '');
   c.save(); c.globalAlpha = a; c.textAlign = 'center';
   c.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+  vanityPlate(c, X, ny, c.measureText(t1).width / 2, ch.look);   // +13 徽章 / 天空套边框（game/vanity.js）
   if (hot) { const w = c.measureText(t1).width + 14; c.fillStyle = 'rgba(10,8,14,.75)'; c.fillRect(X - w / 2, ny - 22, w, 27); c.strokeStyle = col; c.lineWidth = 1; c.strokeRect(X - w / 2 + 0.5, ny - 21.5, w - 1, 26); }
   c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.85)'; c.strokeText(t1, X, ny); c.fillStyle = col; c.fillText(t1, X, ny);
   const tag = netTagOf(id);
@@ -138,7 +139,7 @@ net.on('pchar', m => { const P = netTown.peers.get(m.id); if (P) P.setChar(m.cha
 bus.on('netOpen', () => { netTown.scene = null; netTown.helloSig = ''; netTown.hello(true); netTown.sync(); });
 bus.on('netClose', () => { netTown.scene = null; netTown.clear(); });
 bus.on('sceneEnter', () => { netTown.hello(); netTown.sync(); });
-for (const ev of ['levelUp', 'jobChange', 'equip']) bus.on(ev, () => setTimeout(() => netTown.hello(), 50));
+for (const ev of ['levelUp', 'jobChange', 'equip', 'enhance', 'amplify']) bus.on(ev, () => setTimeout(() => netTown.hello(), 50));
 bus.on('charLeave', () => { netTown.helloSig = ''; setTimeout(() => netTown.sync(), 0); });
 netTown.tick = 0;
 netTown.timer = setInterval(() => { if (netOn()) { netTown.sync(); if (++netTown.tick % 20 === 0) netTown.hello(); } }, 100);

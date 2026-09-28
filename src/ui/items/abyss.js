@@ -37,10 +37,11 @@ Object.assign(menus, {
       if (tab === 'info') {
         body = h('div', { class: 'abydg', 'data-sk': 'aby' }, Object.keys(ABYSS).map(id => {
           const D = DUNGEONS[id], A = ABYSS[id], un = dungeonUnlocked(D), Q = QUESTS[A.quest], sc = SCENES[A.scene];
-          const cls = game.player.cls, pool = EPICS.filter(E => { const I = ITEMS[E.key]; return I && I.abyss && E.lvl <= A.lordLvl + 3 && E.lvl >= D.lvl[0] - 6 && (!E.cls || E.cls === cls); }).sort((a, b) => b.lvl - a.lvl).slice(0, 24);   // 和 rollEpic(领主等级, { abyss }) 能出的深渊专属一致
+          const cls = game.player.cls, own = abyssPool(A), pool = [...own.map(k => ({ key: k })), ...EPICS.filter(E => { const I = ITEMS[E.key]; return I && I.abyss && !own.includes(E.key) && E.lvl <= A.lordLvl + 3 && E.lvl >= D.lvl[0] - 6 && (!E.cls || E.cls === cls); }).sort((a, b) => b.lvl - a.lvl)].slice(0, 24);   // 本区域的深渊专属排前面；其余和 rollEpic(领主等级, { abyss }) 能出的一致
           return h('div', { class: 'dgcard' + (un ? '' : ' lock') },
             h('div', { class: 'nm' }, D.name, h('span', { class: 'sub', style: 'margin-left:.6em' }, `推荐 Lv.${D.lvl[0]}~${D.lvl[1]} · 深渊领主 Lv.${A.lordLvl}（随机：${A.lords.map(k => (MON[k] || {}).name || k).join(' / ')}）`)),
-            h('div', { class: 'sub' }, un ? `入口：${sc ? sceneTitle(sc) : A.scene}（紫色的深渊之门）· 通关 ${S.clears[id] || 0} 次` : `未解锁：完成任务「${Q ? Q.name : A.quest}」（Lv.${Q ? Q.lvl : '?'}，歌兰蒂斯）`),
+            h('div', { class: 'sub' }, un ? `入口：${sc ? sceneTitle(sc) : A.scene}（紫色的深渊之门）· 每次消耗邀请函 ×${A.cost} · 通关 ${S.clears[id] || 0} 次` : `未解锁：完成任务「${Q ? Q.name : A.quest}」（Lv.${Q ? Q.lvl : '?'}，${Q && NPCS[Q.npc] ? NPCS[Q.npc].name : '歌兰蒂斯'}）`),
+            h('div', { class: 'sub', style: 'color:#ffd88a' }, `史诗保底 ${(S.pity || {})[id] || 0}/${A.pity}：连续 ${A.pity - 1} 次没出史诗，第 ${A.pity} 次深渊领主必掉（优先本区域的深渊专属）`),
             h('div', { class: 'sub', style: 'color:#e0c8f0' }, D.desc.replace(/^【深渊派对】/, '')),
             h('div', { class: 'pool' }, pool.map(E => itemSlot(codexItemOf(E.key), { cmp: false }))));
         }));
@@ -53,7 +54,7 @@ Object.assign(menus, {
             h('button', { class: 'btn sm' + (stone ? '' : ' off'), onclick: () => abyssTrade(el, 'm_soul', 1, 'abyss_ticket', 3) }, '兑换')),
           h('div', { class: 'exrow' }, itemSlot(codexItemOf('m_cosmos')), h('div', {}, h('b', {}, '宇宙灵魂 ×3 → 邀请函 ×1'), h('div', { class: 'small dim' }, '急着进深渊的时候用')), h('span', { class: 'sp' }),
             h('button', { class: 'btn sm' + (soul >= 3 ? '' : ' off'), onclick: () => abyssTrade(el, 'm_cosmos', 3, 'abyss_ticket', 1) }, '兑换')),
-          h('div', { class: 'ihint' }, `邀请函的来源：Lv12 以上地下城的领主（难度越高越容易掉）、每天第 3 次通关地下城时歌兰蒂斯送 2 张（今天 ${Math.min(ABYSS_DAILY_N, S.dailyDay === dayKey() ? S.dailyN || 0 : 0)}/${ABYSS_DAILY_N}）、这里购买 / 兑换、商城礼盒。`));
+          h('div', { class: 'ihint' }, `邀请函的来源：Lv12 以上地下城的领主（难度越高越容易掉）、深渊领主和「深渊宝藏」翻牌、每天第 3 次通关地下城时歌兰蒂斯送 2 张（今天 ${Math.min(ABYSS_DAILY_N, S.dailyDay === dayKey() ? S.dailyN || 0 : 0)}/${ABYSS_DAILY_N}）、这里购买 / 兑换、商城礼盒。`));
       } else if (tab === 'epic') {
         const keys = abyssExchangeKeys(), g = h('div', { class: 'igrid exgrid', 'data-sk': 'abye' }), sel = keys.includes(IW.abySel) ? IW.abySel : null;
         for (const k of keys) g.append(itemSlot(codexItemOf(k), { cmp: true, sel: k === sel, onClick: () => { IW.abySel = k; sfx.click(); el._render(); } }));

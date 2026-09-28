@@ -605,8 +605,8 @@ function coopInterp(e, dt, k = 18, keepZ = false) {
 function coopActStep(e, dt) {
   const a = e.act; if (e.st !== 'act' || !a) return 1;
   const spd = a.spd || 1;
-  if (a.invul && inWin(a.invul, a.actT)) e.invul = Math.max(e.invul, 0.02);
-  if (a.superArmor && a.superArmor !== true && inWin(a.superArmor, a.actT)) e.superArmor = Math.max(e.superArmor, 0.02);
+  if (a.invul && inWin(a.invul, e.actT)) e.invul = Math.max(e.invul, 0.02);   // 动作时间在实体上（e.actT），不在动作对象上
+  if (a.superArmor && a.superArmor !== true && inWin(a.superArmor, e.actT)) e.superArmor = Math.max(e.superArmor, 0.02);
   if (a.charge && !a.chargeDone && e.actT >= a.charge.at) { a.chargeDone = true; if (a.charge.onRelease) a.charge.onRelease(e, 0); }
   e.actT += dt * spd;
   if (a.update) a.update(e, dt);

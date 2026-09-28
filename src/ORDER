@@ -22,6 +22,8 @@ models/beast_models.js
 content/monsters/bestiary.js
 game/room.js
 game/themes.js
+# 召唤物框架（魔法师对齐组）：follower / field / attach；职业技能文件会用到，所以放在 content/classes 之前、bestiary 之后
+game/summon.js
 content/classes/common.js
 content/classes/sword.js
 content/classes/sword_blade.js

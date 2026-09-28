@@ -1,7 +1,7 @@
 /* =====================================================================
    聊天框（官方式，左下角）：世界 / 队伍 / 私聊；回车打开输入框，回车发送，Esc 收起
    - 输入框聚焦时游戏按键全部失效（core.js 的 isTyping()），打开时清掉已按住的方向键，角色不会自己走
-   - 命令：/w 名字 内容（私聊）、/r 内容（回复最近的私聊）、/p 内容（队伍）、/s 内容（世界）
+   - 命令：/w 名字 内容（私聊）、/r 内容（回复最近的私聊）、/p 内容（队伍）、/s 内容（世界）、/找 名字（自动走到好友或同区域玩家身边，也可以写 /f）
    - 点消息里的名字 = 对他私聊；顶部一行是联机按钮：好友、队伍、延迟
    ===================================================================== */
 const CHAT_CH = { world: ['世界', '#f0e6d0'], party: ['队伍', '#8ad8ff'], whisper: ['私聊', '#ff9ad8'], sys: ['系统', '#ffd86a'] };
@@ -70,6 +70,7 @@ const chat = {
   },
   sendText(text) {
     let ch = this.ch, to = this.toEl.value.trim(), m;
+    if ((m = /^\/(?:找|f)\s+(\S+)\s*$/i.exec(text))) { guide.goByName(m[1]); return; }
     if ((m = /^\/w\s+(\S+)\s+(.+)$/i.exec(text))) { ch = 'whisper'; to = m[1]; text = m[2]; this.setCh('whisper'); this.toEl.value = to; }
     else if ((m = /^\/r\s+(.+)$/i.exec(text))) { if (!this.lastFrom) { this.add({ ch: 'sys', text: '还没有人私聊过你' }); return; } ch = 'whisper'; to = this.lastFrom; text = m[1]; }
     else if ((m = /^\/p\s+(.+)$/i.exec(text))) { ch = 'party'; text = m[1]; }

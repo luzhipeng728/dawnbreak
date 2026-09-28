@@ -92,6 +92,8 @@ function resolveHits() {
           if (!h.rep || a.actT - last < h.rep) continue;
           if (h.max) { const nk = key + 50, n = a.hitsDone.get(nk) || 1; if (n >= h.max) continue; a.hitsDone.set(nk, n + 1); }
         }
+        const G = act.hitGroup;   // 共享“已命中”表（召唤框架 hitGroup：本体和召唤物同时出招，同一目标只结算一次）
+        if (G) { const l = G.last.get(t.id); if (l !== undefined && game.t - l < G.win) continue; G.last.set(t.id, game.t); }
         a.hitsDone.set(key, a.actT);
         applyHit(a, t, h);
         if (a.act !== act || (h.grab && a.grabbed)) break;
@@ -111,6 +113,10 @@ function instantHit(e, h) {
 function applyHit(a, t, h, opt = {}) {
   if (a.ghost || t.ghost) return false;   // 组队刷图：队友的影子（net/coop.js）只做表现，不造成也不承受伤害（伤害由各自的客户端结算）
   const src = opt.src || a, act = a.act;
+  // 受击前钩子（职业）：CLASSES[cls].beforeHurt(t, a, h, opt) → { block, mul, minHp, noStun, noStatus }（鬼剑士 自动格挡 / 心眼 / 狂气涌动……）
+  const Ct = t.fighter && CLASSES[t.cls], bh = Ct && Ct.beforeHurt ? Ct.beforeHurt(t, a, h, opt) : null;
+  if (bh && bh.block) return false;
+  if (bh && bh.noStatus) t._noStatusT = game.t;
   const type = h.type || opt.type || (act && act.type) || a.dmgType || 'phys';
   const elem = h.elem || opt.elem || (act && act.elem) || a.atkElem || null;   // 没有指定属性时用武器附带属性
   const pvp = isPvp(a, t);
@@ -131,6 +137,8 @@ function applyHit(a, t, h, opt = {}) {
   dmg *= 1 + buffVal(a, 'dmg');                                      // 技能 BUFF / 被动的伤害加成
   if (a.dmgUp) dmg *= 1 + a.dmgUp;                                   // 额外伤害（装备词条）
   dmg *= (t.dmgTaken ?? 1) * (t.dmgTakenMul || 1) * (1 + buffVal(t, 'taken'));
+  if (bh && bh.mul !== undefined) dmg *= bh.mul;
+  if (t.status || a.status) dmg *= statusDmgMul(a, t);   // 异常状态：诅咒 / 睡眠唤醒（content/monsters/bestiary.js）
   // 格挡：正面的非抓取攻击被吸收大部分伤害，不硬直（被打会后退）
   const guard = t.st === 'act' && t.act && t.act.guard && !h.grab && !h.unblockable && Math.sign(src.x - t.x || 1) === t.face;
   if (guard) dmg *= 1 - t.act.guard;
@@ -138,6 +146,7 @@ function applyHit(a, t, h, opt = {}) {
   const sh = buffVal(t, 'shield'); if (sh > 0 && t.mp > 0) { const take = Math.min(t.mp, dmg * sh); t.mp -= take; dmg -= take; }
   dmg = Math.max(1, Math.round(dmg));
   t.hp -= dmg; t.lastDmg = dmg; t.lastHitBy = a;
+  if (bh && bh.minHp !== undefined && t.hp < bh.minHp) t.hp = bh.minHp;
   const c = t.cmb; c.hits++; c.dmg += dmg;
   if (t.st === 'air' || t.z > 2) c.airDmg += dmg;
   if (t.st === 'down') c.downDmg += dmg;
@@ -145,7 +154,7 @@ function applyHit(a, t, h, opt = {}) {
   // ---- 表现 ----
   const hx = (Math.max(Math.min(t.x + t.w, src.x + (h.box ? h.box[1] : 20) * src.face), t.x - t.w) + t.x) / 2;
   const hz = clamp(src.z + (h.box ? (h.box[3] + h.box[4]) / 2 : 40), t.z + 10, t.z + t.hurtH() - 8);
-  addNumber(dmg, t.x, t.y, t.z, { crit, player: t.team === 'p' });
+  addNumber(dmg, t.x, t.y, t.z, { crit, player: t.team === 'p' && !t.summon });
   fxHit(hx, t.y, hz, src.face, { col: h.col || (elem && ELEM_COL[elem]) || (a.team === 'p' ? '#bfe8ff' : '#ffd0a0'), big: h.big || 1, crit });
   if (counter) fxText('COUNTER', t.x, t.y, t.z, { col: '#ff4a2a' });
   else if (back && a.fighter) fxText('BACK ATTACK', t.x, t.y, t.z, { col: '#ffb030', size: 11 });
@@ -156,10 +165,11 @@ function applyHit(a, t, h, opt = {}) {
   if (h.shake) cam.shake = Math.max(cam.shake, h.shake * (crit ? 1.4 : 1));
   sfx.hit(h.snd || (crit ? 'crit' : 'slash'), crit);
   if (a.team === 'p') game.onPlayerHit(t, dmg, crit, counter, back);
-  if (t.team === 'p') game.onPlayerHurt(t, dmg, a);
+  if (t.team === 'p' && !t.summon) game.onPlayerHurt(t, dmg, a);   // 召唤物挨打不算玩家被击
   if (h.onHit) h.onHit(a, t, dmg);
   const Ca = a.fighter && CLASSES[a.cls]; if (Ca && Ca.onHit) Ca.onHit(a, t, h, dmg, opt.proj ? null : act, opt);   // 职业命中钩子（狂暴出血、炫纹……）
   if (t.onDamaged) t.onDamaged(t, a, dmg, crit, h);
+  if (t.status) statusOnHit(t, a, dmg, h);   // 感电追加伤害、睡眠被打醒
   if (elem === 'fire' && t.status && t.status.freeze) { delete t.status.freeze; if (t.st === 'hit') t.stun = Math.min(t.stun, 0.2); }   // 火属性攻击解冻
   // ---- 死亡 ----
   if (t.hp <= 0) {
@@ -168,7 +178,8 @@ function applyHit(a, t, h, opt = {}) {
     killEnt(t, a, h); return true;
   }
   if (guard) { t.vx = -t.face * (h.knock ?? 80) * 0.8; fxGuard(t); if (t.onHurt) t.onHurt(a, h); return true; }
-  react(a, t, h, src, counter, pvp);
+  if ((bh && bh.noStun) || (statusRooted(t) && !h.grab)) t.flash = 0.1;   // 按霸体处理（钩子）/ 定身：只受伤，不击退、不浮空
+  else react(a, t, h, src, counter, pvp);
   if (t.onHurt) t.onHurt(a, h);
   return true;
 }

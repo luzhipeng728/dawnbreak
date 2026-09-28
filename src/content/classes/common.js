@@ -61,6 +61,14 @@ const skLv = (p, id) => hasSkill(p, id) ? lvOf(p, id) : 0;
 function onJobChange(p, job) {
   p = p || game.player; if (!p) return;
   cmdLabel(p.cls); if (!p.kit && typeof recalcStats === 'function') recalcStats(p);
+  // 转职后学不了的基础技能（例如战斗法师的杰克爆弹）：返还 SP、从技能栏移除
+  if (isHuman(p) && game.skillLv && typeof skillAllowed === 'function') {   // skillAllowed 由通用组提供（读 S.excl / S.only）
+    let back = 0;
+    for (const id of CLASSES[p.cls].skills) { const lv = game.skillLv[id] || 0, S = SKILLS[id]; if (!lv || skillAllowed(id, job)) continue;
+      for (let l = 1; l <= lv; l++) back += typeof skCost === 'function' ? skCost(S, l) : typeof skillCost === 'function' ? skillCost(S, l) : 0;
+      delete game.skillLv[id]; if (game.skillBar) game.skillBar.forEach((b, i) => { if (b === id) game.skillBar[i] = null; }); }
+    if (back) { game.sp = (game.sp || 0) + back; if (save.data) save.data.sp = game.sp; }
+  }
   const J = CLASSES[p.cls].jobs && CLASSES[p.cls].jobs[job];
   if (J && isHuman(p)) { fxAura(p, '#ffd23a', 1.4); fxText(J.name, p.x, p.y, p.z + 20, { col: '#ffe070', size: 16, dur: 1.4 }); }
 }

@@ -24,6 +24,7 @@ run world     node test/world.mjs
 run polish    node test/polish.mjs
 run combat    node test/combat.mjs
 run skillsa   node test/skill_sa.mjs
+run sword     node test/sword.mjs
 run summon    node test/summon.mjs
 run gunner    node test/gunner.mjs
 run gunjobs   node test/gunner_jobs.mjs
@@ -35,7 +36,7 @@ run shopsynth node test/shop_synth.mjs
 run acct      node test/acct.mjs
 run bag       node test/bag.mjs
 run skyguide  node test/skyguide.mjs
-run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,gun:ranger,gun:launcher,mage:elemental,mage:battlemage
+run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,sword:asura,sword:soulbender,sword:ghostblade,gun:ranger,gun:launcher,mage:elemental,mage:battlemage
 [ "$1" = quick ] && exit 0
 run bestiary  node test/bestiary.mjs
 run sky       node test/sky.mjs

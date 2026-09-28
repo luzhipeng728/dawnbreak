@@ -126,7 +126,7 @@ try {
 
   step('成就：达成弹窗、领奖、点券、称号');
   await closeWins(A);
-  const ach0 = await ev(A, () => ({ done: Object.keys(achData().done), cera: save.data.cera || 0 }));
+  const ach0 = await ev(A, () => ({ done: Object.keys(achData().done), cera: save.acct.cera || 0 }));
   ok(ach0.done.includes('guildLead') && ach0.done.includes('guildJoin'), '社交成就：创建公会 / 加入公会', ach0.done);
   // 百战勇士（商城旧成就 kill500，200 点券）：不管是商城的兜底先发，还是本系统领取，合计只能拿到一次 200
   await ev(A, () => { for (let i = 0; i < 500; i++) bus.emit('kill', { kind: 'goblin', lvl: 1, dungeon: 'lorien' }); });
@@ -136,7 +136,7 @@ try {
   await sleep(500); await shot(A, '10-popup');
   const k = await ev(A, () => { const d = achData(); if (!d.got.kill500) achClaim('kill500'); return { shop: !!(save.data.shop.ach || {}).kill500, got: !!d.got.kill500 }; });
   await sleep(300);
-  const k2 = await ev(A, () => { achClaim('kill500'); achCheck(); return save.data.cera || 0; });
+  const k2 = await ev(A, () => { achClaim('kill500'); achCheck(); return save.acct.cera || 0; });
   ok(k.shop && k.got && k2 - ach0.cera === 200, `“百战勇士”的 200 点券只发了一次（${ach0.cera} → ${k2}）`, k);
   // 本系统自己的成就：击败 10 次领主 → 窗口里领取
   await ev(A, () => { for (let i = 0; i < 10; i++) bus.emit('kill', { kind: 'goblinChief', lvl: 3, boss: true, dungeon: 'lorien' }); });
@@ -145,9 +145,9 @@ try {
   await shot(A, '11-ach-overview');
   await A.page.click('.achw .acat:has-text("战斗")'); await until(A.page, () => document.querySelector('.achw .arow.claim'));
   await shot(A, '12-ach-fight');
-  const beforeClaim = await ev(A, () => save.data.cera || 0), rw = await ev(A, () => ACHIEVEMENTS.boss10.reward.cera);
+  const beforeClaim = await ev(A, () => save.acct.cera || 0), rw = await ev(A, () => ACHIEVEMENTS.boss10.reward.cera);
   await A.page.click('.achw .arow.claim:has-text("领主猎手") button:has-text("领取")');
-  ok(await until(A.page, ([c, r]) => (save.data.cera || 0) === c + r, [beforeClaim, rw]), `领取“领主猎手”：点券 +${rw}`);
+  ok(await until(A.page, ([c, r]) => (save.acct.cera || 0) === c + r, [beforeClaim, rw]), `领取“领主猎手”：点券 +${rw}`);
   const again = await ev(A, () => achClaim('boss10'));
   ok(again.err, '不能重复领取', again);
   // 称号奖励：成就点达到 2000 → 称号「成就大师」
@@ -158,7 +158,7 @@ try {
   });
   ok(tt.done && tt.pts >= 2000 && tt.r.ok && tt.has, `成就点 ${tt.pts} ≥ 2000：达成“成就大师”，领取称号「成就大师」`, tt);
   // 商城旧成就：已经在商城领过点券的，读档后直接算已领奖
-  const mig = await ev(A, () => { save.data.shop.ach.sss = Date.now() - 86400000; const c = save.data.cera; achCheck(); const d = achData(); return { done: !!d.done.sss, got: !!d.got.sss, cera: save.data.cera === c }; });
+  const mig = await ev(A, () => { save.data.shop.ach.sss = Date.now() - 86400000; const c = save.acct.cera; achCheck(); const d = achData(); return { done: !!d.done.sss, got: !!d.got.sss, cera: save.acct.cera === c }; });
   ok(mig.done && mig.got && mig.cera, '商城旧成就 sss 已领过：直接算达成且已领奖，不再发点券', mig);
 
   step('金色成就全服公告、成就点排行');

@@ -1,7 +1,7 @@
 /* =====================================================================
    商城核心（商城组）：点券与兑换货币、购买 / 限购 / 购买记录、限时特惠、多买多送、不放回抽奖、兑换商店、
    点券产出（升级 / 首通 / 评价 / 每日任务 / 成就 / 金币兑换）、自选属性、券的使用
-   数据：save.data.cera（点券）+ save.data.shop（其余，懒初始化，随云存档同步）
+   数据：点券 / 魔盒碎片 / 礼包币是账号共享的，存在 save.acct（随云存档同步）；其余在 save.data.shop（懒初始化）
    随机数：cashRng()（测试可以用 cashSeed(种子) 固定）
    对外：addCera(n, 来源) / spendCera(n, 原因) / cashBal(cur) / cashBuy(pid, n, opt) / giveItem(makeItem('cera', n))
    ===================================================================== */
@@ -14,7 +14,7 @@ const cashDayNo = () => Math.floor((Date.now() - 6 * 3600 * 1000 - new Date().ge
 const cashWeekKey = () => 'w' + Math.floor((cashDayNo() + 3) / 7);
 function cashData() {
   const d = save.data; if (!d) return null;
-  d.cera ??= 0;
+  const A = save.acct || (save.acct = {}); A.cera ??= 0; A.shard ??= 0; A.gcoin ??= 0;
   const S = d.shop ??= {};
   S.shard ??= 0; S.gcoin ??= 0; S.log ??= []; S.buys ??= []; S.lim ??= {}; S.pity ??= {}; S.stat ??= {}; S.ach ??= {}; S.first ??= {};
   S.multi ??= 0; S.multiGot ??= {}; S.lotto ??= { got: [], resets: 0, done: 0 }; S.today ??= {}; S.opened ??= 0;
@@ -23,15 +23,15 @@ function cashData() {
 }
 /* ---- 货币 ---- */
 const CUR_NAME = { cera: '点券', shard: '魔盒碎片', gcoin: '礼包币' };
-function cashBal(cur = 'cera') { const S = cashData(); if (!S) return 0; return cur === 'cera' ? save.data.cera : S[cur] || 0; }
+function cashBal(cur = 'cera') { const S = cashData(); if (!S) return 0; return save.acct[cur] || 0; }   // 账号共享
 function cashAdd(cur, n, why) {
   const S = cashData(); if (!S || !n) return false;
   n = Math.round(n);
   if (cur === 'cera') {
-    save.data.cera = Math.max(0, save.data.cera + n);
+    save.acct.cera = Math.max(0, (save.acct.cera || 0) + n);
     S.log.unshift({ t: Date.now(), n, why: why || '' }); if (S.log.length > 50) S.log.length = 50;
     if (n > 0) bus.emit('ceraGain', { n, why });
-  } else S[cur] = Math.max(0, (S[cur] || 0) + n);
+  } else save.acct[cur] = Math.max(0, (save.acct[cur] || 0) + n);
   return true;
 }
 const addCera = (n, why) => cashAdd('cera', Math.abs(n), why);

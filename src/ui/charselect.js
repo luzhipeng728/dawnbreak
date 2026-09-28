@@ -1,6 +1,6 @@
 /* =====================================================================
    标题 → 角色选择 → 创建角色（官方式）
-   - 角色选择：最多 MAX_CHARS 个角色位，显示立绘、名字、等级、职业 / 转职、所在位置；开始游戏 / 创建角色 / 删除角色（输入角色名确认）
+   - 角色选择：最多 MAX_CHARS 个角色位，显示立绘、名字、等级、职业 / 转职、所在位置；开始游戏 / 创建角色 / 改名 / 删除角色（输入角色名确认）
    - 创建角色：选职业（立绘、介绍、转职方向预览）→ 输入角色名（长度 / 字符 / 重名校验）→ 出生在 START_SCENE
    - 系统菜单“返回角色选择”：backToCharSelect() 保存并清场
    注意：选角界面上 save.data 保持为 null，避免关页面时 save.write() 把当前（空的）游戏状态写进某个角色
@@ -89,12 +89,20 @@ Object.assign(menus, {
         input: { placeholder: d.name, max: 16, check: v => v === d.name ? null : '输入的角色名不一致' },
         ok: () => { save.remove(sel); save.data = null; this.csSel = Math.min(sel, save.chars.length - 1); toastMsg(`角色 ${d.name} 已删除`, '#ffb0a0'); this.refresh('charselect'); } });
     };
+    const rename = () => {
+      if (!d) return; sfx.click();
+      this.ask({ title: '角色改名', okText: '改名',
+        text: `给 <b class="gold">${escHtml(d.name)}</b>（Lv.${d.lvl} ${escHtml(csClassName(d.cls, d.job))}）起个新名字（${NAME_RULE.min}~${NAME_RULE.max} 个字符，汉字算 2 个）：`,
+        input: { placeholder: d.name, max: 16, check: v => v === d.name ? '和现在的名字一样' : checkCharName(v, sel) },
+        ok: v => { const old = d.name; d.name = v; save.persist(); toastMsg(`${old} 已改名为 ${v}`, '#8aff9a'); this.refresh('charselect'); } });
+    };
     const el = h('div', { id: 'charsel', 'data-block': '1' },
       h('div', { class: 'cshd' }, h('div', { class: 'logo' }, '选择角色'), h('div', { class: 'small dim' }, `角色位 ${chars.length}/${MAX_CHARS}`)),
       h('div', { class: 'csrow' }, slots), info,
       h('div', { class: 'row csbtns' },
         h('button', { class: 'btn big' + (d ? '' : ' off'), onclick: () => start(sel) }, '开始游戏'),
         h('button', { class: 'btn big blue' + (full ? ' off' : ''), onclick: () => { sfx.click(); this.close('charselect'); this.open('newgame'); } }, '创建角色'),
+        h('button', { class: 'btn' + (d ? '' : ' off'), onclick: rename }, '改名'),
         h('button', { class: 'btn red' + (d ? '' : ' off'), onclick: del }, '删除角色'),
         h('button', { class: 'btn', onclick: () => { sfx.click(); this.close('charselect'); this.open('title'); } }, '返回')),
       full ? h('div', { class: 'small dim' }, `角色位已满（最多 ${MAX_CHARS} 个），删除角色后才能创建新角色`) : null);

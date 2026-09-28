@@ -357,6 +357,29 @@ def jobs_ref(only):
             L.append({'out': os.path.join(OUT, 'refs', f'{name}.png'), 'refs': [os.path.join(SRC, f'{cls}_ref.png')], 'prompt': ref_prompt(cls, outfit), 'size': '1024x1536'})
     return L
 
+def unify_prompt(cls, outfit, has_stick=True):
+    """时装表“统一细节”：拿已经生成好的时装表再改一遍，让 9 个人的衣服完全一样（同一片段逐帧闪烁的问题）"""
+    stick = ('Keep the flat pure green (#00FF00) sticks exactly as they are (same position, angle and length, flat pure green, no outline). ' if has_stick else '')
+    return ('The FIRST image is a 2D game sprite animation sheet (3x3 grid, 9 frames) of one chibi character in an outfit. The SECOND image is the reference of that outfit. '
+            'In the first image the outfit details differ slightly from frame to frame, which makes the animation flicker. Redraw the FIRST image so that the outfit is IDENTICAL in all 9 frames: '
+            'exactly the same patterns and prints in exactly the same places on the garment, the same trims, the same number and position of buttons and ornaments, '
+            'the same colors and the same shading brightness, exactly like frame 1 and the second image. '
+            f'Outfit: {outfit} '
+            'Do NOT change anything else: keep the same 3x3 layout, the same poses, the same positions and sizes of every frame, the same face, hair and art style. '
+            f'{stick}No hat, no glasses, no hair ornament. Plain pure white background, no text.')
+
+def jobs_unify(only):
+    """--only 'spring/sword_walk,summer/gun_run'：输出 art/src/avatar/unify/<套装>/<表>.png（不覆盖原来的时装表，人工比较后再换）"""
+    L = []
+    for sid, per in SETS.items():
+        for name in source_sheets():
+            cls = name.split('_')[0]
+            if cls not in per or not any(f'{sid}/{name}' == o or (o.endswith('*') and f'{sid}/{name}'.startswith(o[:-1])) for o in only.split(',')): continue
+            src = os.path.join(OUT, 'sets', sid, f'{name}.png'); ref = os.path.join(OUT, 'refs', f'{cls}@{sid}.png')
+            if not os.path.exists(src): continue
+            L.append({'out': os.path.join(OUT, 'unify', sid, f'{name}.png'), 'refs': [src, ref], 'prompt': unify_prompt(cls, per[cls], name not in NO_WPN)})
+    return L
+
 def set_prompt_plain(cls, outfit):
     """没有占位棍的表（枪炮师的重武器等技能道具）：只换衣服"""
     return ('The FIRST image is a 2D game sprite animation sheet (3x3 grid, 9 frames) of a chibi character. The SECOND image shows the same character in a new outfit. '
@@ -446,6 +469,7 @@ def main():
     elif a.cmd == 'ref': L = jobs_ref(a.only)
     elif a.cmd == 'set': L = jobs_set(a.only)
     elif a.cmd == 'acc': L = jobs_acc(a.only)
+    elif a.cmd == 'unify': L = jobs_unify(a.only)
     else: sys.exit('未知命令 ' + a.cmd)
     print(f'{len(L)} jobs', flush=True)
     with ThreadPoolExecutor(min(2, a.j)) as ex:

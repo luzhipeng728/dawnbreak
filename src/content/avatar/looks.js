@@ -51,20 +51,38 @@ const AVATAR_ACC = {
 const AVATAR_ACC_SCALE = 0.8;   // 配件图比游戏里画的大 1.25 倍（art/tools/avatar_acc.py）
 /* 外观规则（写给玩家看的说明也用这一段）：
    1. 武器：换武器类型 / 史诗武器，手里的武器跟着变；没装备武器就空手。
-   2. 身体：同一套时装的「上衣 + 下装」都穿上，整个人换成这套时装（胸部、腰带、鞋的样子按这套画）；只穿一件不换。
-   3. 帽子 / 头部 / 脸部：单独叠加在头上；职业默认造型自带帽子（神枪手的报童帽、魔法师的巫师帽）时，帽子和发饰只在换上整套时装后显示。 */
+   2. 身体（可以混搭）：上身（上衣、胸部）按上衣那套画，下身（下装、腰带以下）按下装那套，脚按鞋那套；没穿的部位是职业默认造型。
+      躺地 / 缩成一团等拼不了的动作帧，整个人用穿得最多的那套。
+   3. 帽子 / 头部 / 脸部：单独叠加在头上；职业默认造型自带帽子（神枪手的报童帽、魔法师的巫师帽）时，帽子和发饰只在上身换成时装后显示。 */
 const AVATAR_HAT_CLS = { gun: 1, mage: 1 };   // 默认造型自带帽子的职业
+// 某件时装对应的帧集 id（这个职业有这套帧才算）
+const avatarSetOf = (cls, it) => { const S = it && it.set && AVATAR_SETS[it.set]; return S && SPR_DATA[`${cls}@${S.id}`] ? S.id : null; };
+/* 混搭（官方同款：每个部位显示自己那套）：上身（头 + 躯干 + 手臂）= 上衣那套，下身 = 下装那套，脚 = 鞋那套；没穿的部位用职业默认造型。
+   三段都一样（或都没穿）→ parts = null，照旧整套换帧（上衣 / 下装 / 鞋都是同一套才整套换；只穿上衣 = 时装上身 + 默认下身）。
+   每帧的分割线在原装 spr.json 的 F.cut（art/tools/avatar_cuts.py）；没有分割线的帧整套用穿得最多的那套（look.set）。 */
+function avatarParts(cls, eq) {
+  const up = avatarSetOf(cls, eq.av_top), low = avatarSetOf(cls, eq.av_bottom), feet = avatarSetOf(cls, eq.av_shoes);
+  return up === low && low === feet ? null : { up, low, feet };
+}
+// 整套外观：穿得最多的那套（件数相同取上衣那套）；混搭拼不了的帧（缩成一团等）也用它
+function avatarMajority(cls, eq) {
+  const n = {};
+  for (const slot of AV_SLOTS) { const id = avatarSetOf(cls, eq[slot]); if (id) n[id] = (n[id] || 0) + 1; }
+  const top = avatarSetOf(cls, eq.av_top); let best = null;
+  for (const id in n) if (!best || n[id] > n[best] || (n[id] === n[best] && id === top)) best = id;
+  return best;
+}
 function lookFromEquip(cls, eq) {
   eq = eq || {};
-  const top = eq.av_top, bot = eq.av_bottom, S = top && bot && top.set && top.set === bot.set && AVATAR_SETS[top.set];
-  const set = S && SPR_DATA[`${cls}@${S.id}`] ? S.id : null;
+  const parts = avatarParts(cls, eq);
+  const set = parts ? avatarMajority(cls, eq) : avatarSetOf(cls, eq.av_top), upCostume = parts ? !!parts.up : !!set;
   const acc = [];
   for (const slot of ['av_hat', 'av_hair', 'av_face']) {
     const it = eq[slot]; if (!it || !AVATAR_ACC[it.key]) continue;
-    if (slot !== 'av_face' && AVATAR_HAT_CLS[cls] && !set) continue;
+    if (slot !== 'av_face' && AVATAR_HAT_CLS[cls] && !upCostume) continue;   // 默认上身自带帽子：上身换成时装后才显示帽子 / 发饰
     acc.push(it.key);
   }
-  return { wpn: weaponArtOf(eq.weapon, cls, eq.av_weapon), set, acc };
+  return { wpn: weaponArtOf(eq.weapon, cls, eq.av_weapon), set, parts, acc };
 }
 // 职业默认外观（选角立绘、路人、决斗场对手等没有装备信息的模型）
 function defaultLook(cls) {

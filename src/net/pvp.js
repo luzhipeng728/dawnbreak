@@ -7,13 +7,13 @@
    - 结束：bus.emit('pvpResult', { win, vs, wins, draw })（社交组的胜场排行用）
    入口：点其他玩家 / 好友列表的“决斗”，或者维尔·克鲁的决斗场窗口里的“好友决斗”
    ===================================================================== */
-const DUEL_NET_ACTS = ['left', 'right', 'up', 'down', 'attack', 'jump', 'cmd', 'cmdB', 'dodge', 's0', 's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11'];
+const DUEL_NET_ACTS = ['left', 'right', 'up', 'down', 'attack', 'jump', 'cmd', 'cmdB', 's0', 's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12', 's13'];
 const DUEL_THEME = 'ruinsDark';
 const netDuel = {
   asking: null, role: null, state: 'none', room: null, peer: null, inQ: [], lastHeld: 0, recs: [], saved: null, view: null, lastSnap: 0, endT: 0, result: null, t0: 0,
   active() { return this.state !== 'none'; },
   send(d) { return net.send({ t: 'r', d }); },
-  kit() { const d = save.data, p = game.player; return { cls: p.cls, job: game.job || null, lv: { ...game.skillLv }, bar: game.skillBar.slice(0, 12), name: d.name || CLASSES[p.cls].name, look: netCharInfo() ? netCharInfo().look : null }; },
+  kit() { const d = save.data, p = game.player; return { cls: p.cls, job: game.job || null, lv: { ...game.skillLv }, bar: game.skillBar.slice(0, SKILL_SLOTS), name: d.name || CLASSES[p.cls].name, look: netCharInfo() ? netCharInfo().look : null }; },
   // 房间建好了（双方都会收到）
   onRoom(m) {
     const R = m.room; if (R.kind !== 'duel') return;
@@ -79,7 +79,6 @@ const netDuel = {
     const m = { k: 'da', w, f: p.face };
     if (extra && extra.skill) { m.s = extra.skill; m.lv = extra.lv || 1; if (prev && prev.skill === extra.skill && prev.follow) m.fo = 1; if (typeof extra.speed === 'number') m.sp = +extra.speed.toFixed(2); }
     else if (def === BACKSTEP || (p.acts && def === p.acts.back)) m.b = 'back';
-    else if (def && def.name === 'dodge') m.dg = 1;
     else { let key = null; if (p.acts) for (const k in p.acts) if (p.acts[k] === def) { key = k; break; } if (key) m.b = key; else { m.c = def.clip || def.name; m.du = +(def.dur || 0.5).toFixed(2); } }
     this.send(m);
   },
@@ -148,7 +147,6 @@ const netDuel = {
       let def = null, extra;
       if (d.s && SKILLS[d.s] && SKILLS[d.s].act) { g.kit.lv[d.s] = d.lv || 1; extra = { skill: d.s, lv: d.lv || 1, type: SKILLS[d.s].type || g.dmgType, speed: d.sp || (SKILLS[d.s].cast ? 'cspd' : 1) }; def = d.fo && g.act && g.act.follow ? g.act.follow(g) : SKILLS[d.s].act(d.lv || 1, g); }
       else if (d.b) def = d.b === 'back' ? (g.acts && g.acts.back) || BACKSTEP : g.acts && g.acts[d.b];
-      else if (d.dg) { doDodge(g, false); return; }
       if (!def) def = { name: d.c || 'idle', clip: d.c || 'idle', dur: d.du || 0.4 };
       g.doAct(def, extra);   // 决斗里觉醒的定格 / 插图两边都要看到：这里不屏蔽 timeStop / cutin
     } catch (e) { console.error('决斗动作重放出错', e); }

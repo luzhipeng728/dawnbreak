@@ -22,7 +22,7 @@ GREEN = '#00FF00'
 # 各职业原本画在手里的武器（改图时要替换掉的东西）
 WEAPON_WORD = {'sword': 'katana (the blade, the round golden guard and the wrapped hilt)', 'gun': 'silver revolver', 'mage': 'crystal staff'}
 # 不画占位棍的表（技能道具：肩炮、喷火器等保持原样）
-NO_WPN = {'gun_launcher'}
+NO_WPN = {'gun_launcher', 'gun_launcher2'}
 # 动作表来源（后面的目录优先）
 SHEET_DIRS = [os.path.join(SRC, 'sheets2'), os.path.join(SRC, 'combat', 'sheets')]
 
@@ -146,8 +146,9 @@ def recell(sid, name, cells, base, key):
         i, bx, canvas, msg = r; sh.paste(canvas, bx[:2]); print(msg)
     sh.save(sp)
 
-def touch(sheet_png, cells, prompt, base, key, src_png=None):
-    """src_png：从另一张表（通常是战斗组的原表）取这一格来改，结果贴回 sheet_png（改图把武器弄丢了的格子用）"""
+def touch(sheet_png, cells, prompt, base, key, src_png=None, keep=False):
+    """src_png：从另一张表（通常是战斗组的原表）取这一格来改，结果贴回 sheet_png（改图把武器弄丢了的格子用）
+    keep：换姿势重画（例如站姿改成单膝跪地）时不按身体高度缩放，保持模型画出来的大小，只按脚底对齐"""
     """sheet_png 就地修改（原图备份成 *_pre<n>.png）"""
     import numpy as np
     from PIL import Image
@@ -166,7 +167,7 @@ def touch(sheet_png, cells, prompt, base, key, src_png=None):
         if not r.startswith('ok'): return r
         fix = Image.open(out).convert('RGB').resize((cw, ch), Image.LANCZOS)
         a0, a1 = body_box(np.array(cell)), body_box(np.array(fix))
-        k = (a0[3] - a0[1]) / (a1[3] - a1[1])
+        k = 1.0 if keep else (a0[3] - a0[1]) / (a1[3] - a1[1])
         fx = fix.resize((max(1, round(cw * k)), max(1, round(ch * k))), Image.LANCZOS)
         # 身体外框底边中点对齐
         dx = round((a0[0] + a0[2]) / 2 - (a1[0] + a1[2]) / 2 * k); dy = round(a0[3] - a1[3] * k)
@@ -415,11 +416,19 @@ def jobs_unify(only):
             L.append({'out': os.path.join(OUT, 'unify', sid, f'{name}.png'), 'refs': [src, ref], 'prompt': unify_prompt(cls, per[cls], name not in NO_WPN)})
     return L
 
-def set_prompt_plain(cls, outfit):
+# 没有占位棍的表里，时装版必须原样保留的道具（重火器画在帧里；装甲罩在衣服外面，时装版只换头和头发）
+PLAIN_KEEP = {
+    'gun_launcher2': ('Keep EVERY weapon exactly the same shape, size, angle and colors as in the first image: the olive-green tube grenade launcher (frame 2), '
+                      'the gun-metal plasma emitter with glowing purple coils (frame 3), the black compressed-air cannon with a blue tank (frames 4 and 5), '
+                      'the two black machine guns (frame 8) and the gold laser cannon (frame 9). Frames 6 and 7 show her inside a bulky red-and-gold powered armor suit: '
+                      'keep that armor EXACTLY as it is (same shape, same red and gold colors, no outfit colors on it); in those two frames only the head and hair change (no cap). '),
+}
+def set_prompt_plain(cls, outfit, name=''):
     """没有占位棍的表（枪炮师的重武器等技能道具）：只换衣服"""
     return ('The FIRST image is a 2D game sprite animation sheet (3x3 grid, 9 frames) of a chibi character. The SECOND image shows the same character in a new outfit. '
             'Redraw the FIRST image exactly: the same 3x3 layout, the same poses, the same positions and sizes of every frame, the same props, weapons and effects, '
             f'but dress the character in EVERY frame in the outfit of the second image: {outfit} '
+            f'{PLAIN_KEEP.get(name, "")}'
             'Keep the face, the hair and the art style. No hat, no glasses, no hair ornament. Plain pure white background, no text.')
 
 def jobs_set(only):
@@ -434,7 +443,7 @@ def jobs_set(only):
             if not os.path.exists(ref): print('缺时装参考图，先跑 ref：', ref); continue
             ph = os.path.join(sd, f'{name}.png')
             if os.path.exists(ph): L.append({'out': os.path.join(OUT, 'sets', sid, f'{name}.png'), 'refs': [ph, ref], 'prompt': set_prompt(cls, per[cls])})
-            elif name in NO_WPN: L.append({'out': os.path.join(OUT, 'sets', sid, f'{name}.png'), 'refs': [src, ref], 'prompt': set_prompt_plain(cls, per[cls])})
+            elif name in NO_WPN: L.append({'out': os.path.join(OUT, 'sets', sid, f'{name}.png'), 'refs': [src, ref], 'prompt': set_prompt_plain(cls, per[cls], name)})
             else: print('缺占位表，先跑 wpn：', ph)
     return L
 
@@ -494,13 +503,14 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument('cmd'); ap.add_argument('--only', default=''); ap.add_argument('-j', type=int, default=2)
     ap.add_argument('--force', action='store_true'); ap.add_argument('--tag', default='')
     ap.add_argument('--sheet', default=''); ap.add_argument('--cells', default=''); ap.add_argument('--prompt', default=''); ap.add_argument('--from', dest='src', default='')
+    ap.add_argument('--keep', action='store_true')   # touch：换姿势，不按身体高度缩放
     a = ap.parse_args()
     base, key, _ = gi.load_cfg()
     if a.cmd == 'recell':   # avatar_gen.py recell --only summer/mage_react2 --cells 8
         sid, name = a.only.split('/'); return recell(sid, name, [int(x) for x in a.cells.split(',')], base, key)
     if a.cmd == 'touch':   # avatar_gen.py touch --sheet art/src/avatar/sheets/sword_walk.png --cells 0,3,7 [--prompt ring|文字]
         p = RING if a.prompt in ('', 'ring') else CELL.get(a.prompt, a.prompt)
-        return touch(a.sheet, [int(x) for x in a.cells.split(',')], p, base, key, a.src or None)
+        return touch(a.sheet, [int(x) for x in a.cells.split(',')], p, base, key, a.src or None, a.keep)
     if a.cmd == 'wpn': L = jobs_wpn(a.only, a.tag)
     elif a.cmd == 'weapons': L = jobs_weapons(a.only)
     elif a.cmd == 'ref': L = jobs_ref(a.only)

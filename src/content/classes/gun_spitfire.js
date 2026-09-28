@@ -598,7 +598,7 @@ defSkill('gs_final', { name: '终解·制空霸权', cls: 'gun', job: SF, lvReq:
       else if (t < 3.4) { e.play('sfDashAtk'); e.vz = -240 / 1.1 - 40; e.vx = e.face * 330; }
       else { e.vx *= 0.8; } },
     events: [...Array.from({ length: 7 }, (_, i) => evAt(0.75 + i * 0.2, e => { const a = e.act, x = e.x + e.face * (120 + i * 60 + rnd(-20, 20)), y = clamp(e.y + rnd(-60, 60), 8, DEPTH - 8);
-        sfx.swing(false); lobProj(e, x, y, 0.35, { img: IMG['fx/sf_bomb'] ? 'sf_bomb' : 'bomb', h: 20, z0: -20, vz: 0, onLand: pr => { meteorImpact(pr, 0.8);
+        sfx.swing(false); lobProj(e, x, y, 0.35, { img: IMG['fx/sf_bomb'] ? 'sf_bomb' : 'bomb', h: 26, z0: -20, vz: 0, spinV: 0, update: pr => { pr.spin = IMG['fx/sf_bomb'] ? Math.PI : 0; }, onLand: pr => { meteorImpact(pr, 0.8);
           blast(e, pr.x, pr.y, 110, { dmg: a.D * 0.05, type: 'indep', launch: 360, knock: 90, hs: 0.06, downHit: true, snd: 'fire' }, { zMax: 300 }); } }); })),
       ...Array.from({ length: 5 }, (_, i) => evAt(2.35 + i * 0.2, e => { const a = e.act; muzzle(e); sfx.cannon(0.8); cam.shake = Math.max(cam.shake, 6);
         sfTracer(e, e.x + e.face * 30, e.z + 50, e.x + e.face * 260, 0, '#ffe07a', 6); fxSpr('explosion', e.x + e.face * 160, e.y, 20, { w: 180, dur: 0.35 });
@@ -623,8 +623,8 @@ const sfCutin = (e, n) => IMG['cutin/spitfire' + n] ? { cls: 'spitfire' + n, mod
   const C = CLASSES.gun;
   const pre0 = C.preControl; C.preControl = (p, I, dt) => (isSf(p) && sfPreControl(p, I, dt)) || (pre0 ? pre0(p, I, dt) : false);
   const air0 = C.airControl; C.airControl = (p, I, dt) => (isSf(p) && sfAirControl(p, I, dt)) || (air0 ? air0(p, I, dt) : false);
-  // 空中技能许可：转职技能各自写了 airIf；基础技能里 G-14 / 银弹 / 空中射击 在有推进器次数时也能在空中放
-  const SF_AIR_BASE = ['g_grenade', 'g_silver', 'g_aerial'];
+  // 空中技能许可：转职技能各自写了 airIf；基础技能里 G-14 在有推进器次数时也能在空中投（Buff 类只能在地面放，避免和空中 Space 急降抢键）
+  const SF_AIR_BASE = ['g_grenade'];
   const aok0 = C.airOk; C.airOk = (p, S) => (isSf(p) && SF_AIR_BASE.includes(S.id) && sfCanAir(p)) || (aok0 ? aok0(p, S) : false);
   // 施放钩子：基础技能在空中施放时耗推进器（转职技能在 sfAct 里扣）；空中投 G-14 间隔 0.5 秒；空袭战略中的强化 G-14
   const cast0 = C.onCast; C.onCast = (p, id, act, how) => { if (cast0) cast0(p, id, act, how);

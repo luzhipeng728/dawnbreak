@@ -162,7 +162,7 @@ from importlib import util as _u
 def _job_prep():
     spec = _u.spec_from_file_location('job_art_mod', os.path.join(os.path.dirname(__file__), 'job_art.py'))
     src = open(spec.origin).read().split('os.makedirs(OUT, exist_ok=True)')[0]   # 只要函数定义，不跑它的批处理
-    g = {}; exec(compile(src, spec.origin, 'exec'), g)
+    g = {'__file__': spec.origin}; exec(compile(src, spec.origin, 'exec'), g)
     from PIL import Image
     p = os.path.join(C.SRC, 'quests', 'job_spitfire.png')
     if not os.path.exists(p): print('missing', p); return
@@ -195,9 +195,9 @@ if __name__ == '__main__':
     elif ph == 'iconcut':
         import icons; sys.argv = ['icons.py', '--combat'] + (['--only', 'sf_icons'] if not only else ['--only', only]); icons.main()
     elif ph == 'sheets': run_jobs(C.sheet_jobs(), only)
-    elif ph == 'icons': run_jobs([{'out': os.path.join(C.OUT, 'icons', f'{n}.png'), 'prompt': C.icon_prompt([d for _, d in items]), 'size': '2048x2048' if len(items) > 12 else '2048x1536'} for n, items in C.ICON_SHEETS.items()], only)
+    elif ph == 'icons': run_jobs([{'out': os.path.join(C.OUT, 'icons', f'{n}.png'), 'prompt': C.icon_prompt([d for _, d in items]), 'size': '2048x2048'} for n, items in C.ICON_SHEETS.items()], only)
     elif ph == 'fx': run_jobs([{'out': os.path.join(C.OUT, 'fx', f'{n}.png'), 'prompt': f'{d}. {C.GLOW if g else C.SOLID}', 'size': sz} for n, (d, sz, g) in C.FX.items()], only)
-    elif ph == 'props': run_jobs([{'out': os.path.join(C.OUT, 'fx', 'sf_props.png'), 'prompt': props_prompt(), 'size': '2048x1536'}])
+    elif ph == 'props': run_jobs([{'out': os.path.join(C.OUT, 'fx', 'sf_props.png'), 'prompt': props_prompt(), 'size': '2048x2048'}])
     elif ph == 'fxprep': glow_prep(); props_cut()
     elif ph == 'cutin': run_jobs(C.cutin_jobs(), only)
     elif ph == 'cutinprep': C.cutin_prep()

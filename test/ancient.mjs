@@ -21,7 +21,7 @@ async function enter(id) {
   await page.goto(`${URL_BASE}?town&mute&cls=sword`); await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 30000 });
   await ev(({ id, speed }) => {
     game.speedMul = speed; for (const w of ['help', 'guide']) if (menus.isOpen(w)) menus.close(w);
-    testLoadout(28); save.data.fatigue = 999; save.data.questDone[DUNGEONS[id].unlock.quest] = Date.now();
+    testLoadout(DUNGEONS[id].lvl[1]); save.data.fatigue = 999; save.data.questDone[DUNGEONS[id].unlock.quest] = Date.now();
     window.__keep = setInterval(() => { const q = game.player; if (window.__noKeep) return; q.hp = q.hpMax; q.mp = q.mpMax; q.dead = false; }, 40);
     enterDungeon(id, 0);
   }, { id, speed });

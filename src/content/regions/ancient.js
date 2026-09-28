@@ -8,10 +8,10 @@
      → 骷髅凯恩 → 戮蛊幼虫（法阵保护，幼虫互相吞噬变成成虫）→ 虫王戮蛊（喷毒、钻地破土卷起旋风、转圈、甩针、吐幼虫，幼虫爬到它身边会被吃掉回血）。
      70 版加的「魔剑阿波菲斯」房（盗墓者挖出魔剑，限时没打掉它，盗墓者回满血狂暴）也做进来，魔剑掉落 epics3.js 的「魔剑-阿波菲斯」。
    这个文件只放外壳（怪物数值 / 招式、领主、掉落、门、任务）；每个房间的机关和领主的专属机制在 content/regions/ancient_rooms.js（手写钩子）。
-   等级：牛头 Lv27~28（洛兰的隐藏门），虫穴 Lv28~29（暗精灵地区的隐藏门），都算远古地下城。
+   等级（满级 60 后）：牛头 Lv44~45（洛兰的隐藏门），虫穴 Lv49~50（暗精灵地区的隐藏门），都算远古地下城。
    ===================================================================== */
 defineRegion({
-  id: 'ancient', name: '远古地下城', lvl: 27, power: 1.4, bossPower: 1.1, atkPower: 1.15,
+  id: 'ancient', name: '远古地下城', lvl: 44, lvlMax: 50, power: 1.4, bossPower: 1.1, atkPower: 1.15,
 
   themes: {
     bmLab: { edgeHoles: true, grade: { tint: 'rgba(90,80,60,0.12)', fog: 'rgba(255,220,160,0.06)' }, ambient: 'motes', rgb: '255,220,170', floorW: 1700,
@@ -71,7 +71,7 @@ defineRegion({
 
   /* ---- 领主（专属机制：REGION_HOOKS.mechKing / bugKing，在 ancient_rooms.js）---- */
   bosses: {
-    mechKing: { name: '牛头械王', lvl: 29, size: [22, 16, 150], weight: 7, speed: 80, elem: 'fire', art: 'bmMechTau', scale: 1.3, pref: 120, hook: 'mechKing', traits: { sa: 'cast' },
+    mechKing: { name: '牛头械王', lvl: 46, size: [22, 16, 150], weight: 7, speed: 80, elem: 'fire', art: 'bmMechTau', scale: 1.3, pref: 120, hook: 'mechKing', traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 5 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'axe', reach: 120, width: 34, windup: 0.6, dmg: 1.1, launch: 620, cd: [2.4, 3.4], w: 2, say: '' },
@@ -81,7 +81,7 @@ defineRegion({
         { at: 0.25, enter: { say: '启动保护模式！', col: '#8ad8ff', mechs: [{ use: 'invuln', until: 'adds', kind: 'bmRobot', n: 4, hide: false }] },
           skills: [{ use: 'rain', kind: 'bolt', n: 5, r: 44, windup: 1.0, dmg: 1.0, status: 'shock', col: '#fff38a', cd: [8, 10] }] },
       ] },
-    bugKing: { name: '虫王戮蛊', lvl: 30, size: [46, 22, 130], weight: 8, speed: 75, elem: 'dark', art: 'wcBugKing', scale: 2.2, pref: 170,   // 远古最难的最终领主：画面约 240 高、300 长 hook: 'bugKing', traits: { sa: 'cast' },
+    bugKing: { name: '虫王戮蛊', lvl: 51, size: [46, 22, 130], weight: 8, speed: 75, elem: 'dark', art: 'wcBugKing', scale: 2.2, pref: 170,   // 远古最难的最终领主：画面约 240 高、300 长 hook: 'bugKing', traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 5 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'bite', reach: 190, width: 44, dmg: 1.2, cd: [2, 3], w: 2 },
@@ -97,39 +97,39 @@ defineRegion({
 
   items: {
     epics: [
-      { key: 'ep_an_bullcore', slot: 'support', lvl: 28, name: '牛头械王的动力核心', fx: { dmgUp: 0.08, fire: 20, hardness: 20 },
+      { key: 'ep_an_bullcore', slot: 'support', lvl: 45, name: '牛头械王的动力核心', fx: { dmgUp: 0.08, fire: 20, hardness: 20 },
         proc: { chance: 0.05, cd: 3, act: 'strike', mul: 1.8, aoe: 120, elem: 'light', vis: 'bolt', name: '三道落雷' }, desc: '比尔马克帝国拿来驱动牛头械王的核心，拆下来以后还在嗡嗡作响。',
         look: 'a heavy brass and steel machine core with a glowing orange furnace window, small pipes and a bull horn emblem' },
-      { key: 'ep_an_bugfang', slot: 'ring', lvl: 29, name: '虫王戮蛊的毒牙', fx: { dmgUp: 0.08, dark: 25, crit: 0.03 },
+      { key: 'ep_an_bugfang', slot: 'ring', lvl: 50, name: '虫王戮蛊的毒牙', fx: { dmgUp: 0.08, dark: 25, crit: 0.03 },
         proc: { chance: 0.06, cd: 2, act: 'status', status: 'poison', dur: 5, name: '戮蛊之毒', desc: '攻击时 6% 几率让敌人中毒 5 秒。' }, desc: '悲鸣洞穴最深处的虫王留下的毒牙，做成了戒指。',
         look: 'a dark silver ring set with a curved violet insect fang dripping a tiny drop of glowing poison' },
     ],
   },
 
   dungeons: {
-    bilmark: { name: '比尔马克帝国试验场', lvl: [27, 28], bossLvl: 29, theme: 'bmLab', layout: 'ancient', hidden: true, unlock: { quest: 'q_an01' },
+    bilmark: { name: '比尔马克帝国试验场', lvl: [44, 45], bossLvl: 46, theme: 'bmLab', layout: 'ancient', hidden: true, unlock: { quest: 'q_an01' },
       mobs: [['bloodCat', 3], ['fickleCat', 1], ['tauCalf', 1], ['ivan', 1], ['ivanColonel', 0], ['hanik', 0]], elite: 'tauCommander', boss: 'mechKing', bossAdds: 0, bgm: 'dungeon3', bossBgm: 'boss',
       gate: { scene: 'gf_lorien', x: 1980, col: '255,190,110' },
       desc: '【远古】洛兰深处的帝国秘密试验场（俗称「牛头 / 机械牛」）。伊凡房：清光柱子召唤的伊凡，路障才会炸开；统帅房：先拆掉召唤小牛的柱子；牛头械王倒地起身会朝前方落三道雷，「保护模式」时必须在限时内打掉机器人，否则它们会变成牛头统帅。',
-      drops: { boss: [['ep_an_bullcore', 0.05], ['ep_sup_paris', 0.012], ['ep_head_jeno', 0.012]], mats: [['crystal', 0.12, 10], ['m_iron', 0.05, 2], ['m_obsidian', 0.008, 1]] } },
-    wailing_cave: { name: '悲鸣洞穴', lvl: [28, 29], bossLvl: 30, theme: 'wcCave', layout: 'ancient', hidden: true, unlock: { quest: 'q_an03' },
+      drops: { boss: [['ep_an_bullcore', 0.05]], mats: [['crystal', 0.12, 10], ['m_iron', 0.05, 2], ['m_obsidian', 0.008, 1]] } },
+    wailing_cave: { name: '悲鸣洞穴', lvl: [49, 50], bossLvl: 51, theme: 'wcCave', layout: 'ancient', hidden: true, unlock: { quest: 'q_an03' },
       mobs: [['jungleZombie', 3], ['graveDigger', 1], ['larva', 1], ['fabroMember', 1], ['fabroCaptain', 0], ['adultBug', 0]], elite: 'kain', boss: 'bugKing', bossAdds: 0, bgm: 'abyss', bossBgm: 'boss',
       gate: { scene: 'darkelf_field', x: 3780, col: '200,150,255' },
       desc: '【远古】暗黑城地下的虫王巢穴（俗称「虫穴」）。紫色法阵里的怪打不到——引出来或打碎法阵；先杀法布罗队长；限时打掉魔剑阿波菲斯；幼虫会互相吞噬变成成虫，爬到虫王身边会被吃掉给它回血。',
-      drops: { boss: [['ep_an_bugfang', 0.05], ['ep_gs_apophis', 0.03], ['ep_de_cross', 0.01]], mats: [['crystal', 0.12, 10], ['m_bone', 0.05, 2], ['m_soul', 0.004, 1]] } },
+      drops: { boss: [['ep_an_bugfang', 0.05], ['ep_gs_apophis', 0.03], ['ep_an_bullcore', 0.01]], mats: [['crystal', 0.12, 10], ['m_bone', 0.05, 2], ['m_soul', 0.004, 1]] } },
   },
 
-  story: { chapter: '远古 · 机制地下城', prefix: 'q_an', pre: 'q_b06', npc: 'tuguan', scene: 'gf_lorien', steps: [
-    { t: 'talk', with: 'tuguan', name: '比尔马克试验场', lvl: 27, reward: { exp: 0.03, gold: 1500 },
+  story: { chapter: '远古 · 机制地下城', prefix: 'q_an', pre: 'q_de15', npc: 'tuguan', scene: 'gf_lorien', steps: [
+    { t: 'talk', with: 'tuguan', name: '比尔马克试验场', lvl: 44, reward: { exp: 0.03, gold: 1500 },
       desc: '土罐在洛兰深处捡到了一块刻着帝国纹章的铁片。去问问他。',
       talk: { offer: ['嘘——小声点。我在洛兰深处的树林里，捡到了这个。', '比尔马克帝国的纹章……那里有一座帝国的秘密试验场，传说关着一头机械做的牛头王。'], done: ['入口我已经帮你找到了，就在洛兰的最右边。', '那里的机关可不是光靠蛮力能过的——看清楚再打。'] } },
-    { t: 'boss', dungeon: 'bilmark', name: '牛头械王', lvl: 28, reward: { exp: 0.12, gold: 5000 },
+    { t: 'boss', dungeon: 'bilmark', name: '牛头械王', lvl: 44, reward: { exp: 0.12, gold: 5000 },
       desc: '闯过比尔马克帝国试验场，打倒牛头械王。',
       talk: { offer: ['伊凡会自爆——在它们爆炸之前清掉；柱子会一直召唤，路障要清光伊凡才会炸开。', '牛头械王被打倒爬起来的时候，千万别站在它前面。', '它喊「保护模式」的时候，赶紧打掉机器人。'], doing: ['跳起来能躲它的全屏吼叫。'], done: ['你真的把那头机械牛拆了？！', '暗精灵那边……也有一个我一直不敢提的地方。'] } },
-    { t: 'talk', npc: 'tuguan', with: 'kurent', name: '悲鸣洞穴', lvl: 28, reward: { exp: 0.03, gold: 1500 },
+    { t: 'talk', npc: 'tuguan', with: 'kurent', name: '悲鸣洞穴', lvl: 49, reward: { exp: 0.03, gold: 1500 },
       desc: '土罐说暗黑城的地下还有一个叫「悲鸣洞穴」的地方。去阿法利亚营地问问克伦特。',
       talk: { offer: ['暗黑城的地下有个洞穴，一到晚上就传出哭声。暗精灵叫它「悲鸣洞穴」。', '去阿法利亚营地问问克伦特吧。'], done: ['……你想去悲鸣洞穴？', '那里是虫王戮蛊的巢穴。它的幼虫什么都吃——包括彼此。入口在暗精灵地区的最右边，我替你打开。'] } },
-    { t: 'boss', dungeon: 'wailing_cave', name: '虫王戮蛊', npc: 'kurent', lvl: 29, reward: { exp: 0.14, gold: 6000 },
+    { t: 'boss', dungeon: 'wailing_cave', name: '虫王戮蛊', npc: 'kurent', lvl: 49, reward: { exp: 0.14, gold: 6000 },
       desc: '深入悲鸣洞穴，打倒虫王戮蛊。',
       talk: { offer: ['紫色法阵里的东西打不到——把它们引出来，或者打碎法阵。', '魔剑阿波菲斯一出土就要马上打掉，拖久了盗墓者会发狂。', '虫王钻进地下的时候，别让幼虫爬到它身边。'], doing: ['幼虫凑在一起会互相吞噬，长成成虫就麻烦了。'], done: ['……悲鸣停了。', '这颗毒牙你收着吧。'] } },
   ] },

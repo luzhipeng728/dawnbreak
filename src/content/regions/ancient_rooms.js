@@ -279,7 +279,7 @@ function mechKingLanes(m) {
       for (const t of ancFoes()) {
         const dx = (t.x - g.x) * g.face;
         if (Math.abs(t.y - g.y) > g.hw + 10 || dx < -10 || dx > g.len || t.invul > 0) continue;
-        applyHit(m, t, { dmg: 1.5, sure: true, knock: 140, stun: 0.4, hs: 0.05 }, { proj: true }); addStatus(t, 'shock', 4, { src: m, force: true }); ancStat('laneHit');
+        addStatus(t, 'shock', 4, { src: m, force: true }); applyHit(m, t, { dmg: 1.5, sure: true, knock: 140, stun: 0.4, hs: 0.05 }, { proj: true }); ancStat('laneHit');   // 先感电：挨打后的无敌帧会挡住状态
       }
     } });
   }

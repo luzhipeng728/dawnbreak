@@ -1,5 +1,5 @@
 /* =====================================================================
-   区域：暗精灵地区 · 阿法利亚营地与暗黑城（官方 60 版本 Lv38~55 的「暗黑城」，本作压缩到 Lv26~29，和天帷巨兽后半并行）
+   区域：暗精灵地区 · 阿法利亚营地与暗黑城（官方 60 版本 Lv38~55 的「暗黑城」；满级 60 后放在 Lv31~38，天帷巨兽之后的第一段）
    官方依据（国服 60 版本）：传染病传进了暗精灵的城镇诺伊佩拉，暗精灵以为是人类带来的灾难，向贝尔玛尔公国宣战；冒险家从阿法利亚营地山脚的入口
    进入地下的暗黑城，想去暗精灵的首都安达夫多澄清误会。地下城与领主都是官方的：浅栖之地（怨恨之摩根）、蜘蛛洞穴（艾克洛索）、暗精灵墓地（邪龙斯皮兹）、
    熔岩穴（歌利亚 / 泰坦 / 阿特拉斯）、王的遗迹（隐藏，锤王波罗丁与王的五骑士）、暗黑城入口（无头骑士，谨慎的仃高 / 沉默的亨普利）、远古诺伊佩拉（狄瑞吉的幻影）。
@@ -7,11 +7,11 @@
    任务名多数取自官方主线（前往阿法利亚营地 / 没有送出的信 / 调查蜘蛛洞穴 / 失踪的大使 / 存在的邪龙 / 通向暗黑城之路 / 王的五骑士 / 伟大的波罗丁王 / 最后的决斗）。
    本作原创：各怪物 / 领主的具体招式与机制组合、区域的史诗（摩根的炼金毒瓶），格拉西亚家族遗物做成首饰（官方是诺伊佩拉兑换的防具套）。
    这个文件是纯数据：代码由 game/region.js 的 defineRegion 展开，深渊由 content/abyss.js 展开，美术由 art/tools/region_art.py darkelf 读同一份数据生成。
-   入口：西海岸（x 1800 往上，Lv.26）
+   入口：西海岸（x 1800 往上，Lv.31）
    ===================================================================== */
 defineRegion({
-  id: 'darkelf', name: '暗精灵地区 · 暗黑城', lvl: 26, power: 1.25, bossPower: 1, atkPower: 1.1,   // 难度：和天帷巨兽同一条曲线略高一点（稀有装备的机器人对照炼狱 / 极昼调，见 docs/PLAYBOOK.md §2.3）
-  entry: { scene: 'west_coast', side: 'up', x: 1800, to: 'aferia_camp', minLv: 26, label: '阿法利亚营地' },
+  id: 'darkelf', name: '暗精灵地区 · 暗黑城', lvl: 31, lvlMax: 38, power: 1.25, bossPower: 1, atkPower: 1.1,   // 难度：稀有装备的机器人在各地下城的等级对照调（见 docs/PLAYBOOK.md §2.3）
+  entry: { scene: 'west_coast', side: 'up', x: 1800, to: 'aferia_camp', minLv: 31, label: '阿法利亚营地' },
 
   /* ---- 场景主题 ---- */
   themes: {
@@ -115,7 +115,7 @@ defineRegion({
 
   /* ---- 领主 ---- */
   bosses: {
-    morgan: { name: '怨恨之摩根', lvl: 27, size: [14, 12, 112], elem: 'dark', art: 'deMorgan', pref: 160,
+    morgan: { name: '怨恨之摩根', lvl: 32, size: [14, 12, 112], elem: 'dark', art: 'deMorgan', pref: 160,
       mechs: [{ use: 'groggy', max: 90, dur: 6 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', n: 2, reach: 80, dmg: 1.0, cd: [1.6, 2.6], w: 2 }, { use: 'shot', clip: 'throw', mode: 'arc', n: 3, r: 50, dmg: 0.9, status: 'poison', cd: [4.5, 6], w: 1.5, say: '炼金毒瓶！', col: '#c8e070' },
@@ -124,7 +124,7 @@ defineRegion({
         { at: 0.5, enter: { say: '摩根喝下了狂化药剂！', col: '#d8f080', mechs: [{ use: 'hazard', kind: 'fire', every: 4, n: 2, col: '#c8e070' }] },
           skills: [{ use: 'buff', kind: 'haste', target: 'self', dur: 8, cd: [16, 20], say: '更快……更快！' }, { use: 'summon', kind: 'boneThrower', n: 2, max: 3, cd: [16, 20], w: 0.8 }] },
       ] },
-    ekloso: { name: '艾克洛索', lvl: 27, size: [26, 16, 90], weight: 4, speed: 105, art: ['deSpider', { hue: 80, sat: 1.2, bright: 0.8, only: [230, 330] }], scale: 1.9, pref: 110,
+    ekloso: { name: '艾克洛索', lvl: 33, size: [26, 16, 90], weight: 4, speed: 105, art: ['deSpider', { hue: 80, sat: 1.2, bright: 0.8, only: [230, 330] }], scale: 1.9, pref: 110,
       mechs: [{ use: 'groggy', max: 100, dur: 6 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'bite', reach: 110, width: 30, dmg: 1.2, status: 'poison', cd: [1.8, 2.8], w: 2 },
@@ -133,7 +133,7 @@ defineRegion({
         { at: 0.6, enter: { say: '艾克洛索躲进了蛛网——击破蜘蛛卵！', col: '#e8e0ff', mechs: [{ use: 'invuln', until: 'crystals', n: 3, name: '蜘蛛卵', hpFrac: 0.03 }] },
           skills: [{ use: 'aoe', shape: 'circle', at: 'self', r: 180, windup: 1.3, dmg: 1.3, jump: true, status: 'poison', cd: [9, 12], say: '毒液喷发——跳起来！', col: '#c8e070' }] },
       ] },
-    spiz: { name: '邪龙斯皮兹', lvl: 28, size: [26, 16, 120], weight: 6, speed: 60, elem: 'dark', art: 'deSpiz', scale: 1.3, pref: 130, traits: { sa: 'cast' },
+    spiz: { name: '邪龙斯皮兹', lvl: 34, size: [26, 16, 120], weight: 6, speed: 60, elem: 'dark', art: 'deSpiz', scale: 1.3, pref: 130, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'bite', reach: 130, width: 34, dmg: 1.3, down: true, cd: [2, 3], w: 2 }, { use: 'laser', windup: 1.2, dur: 1.4, sweep: 60, dmg: 0.5, cd: [7, 9], say: '龙息！', col: '#b070ff' },
@@ -141,7 +141,7 @@ defineRegion({
         { at: 0.5, enter: { say: '邪龙发出了咆哮——站进光圈！', col: '#e8d8ff', mechs: [{ use: 'safezone', windup: 3.4, n: 2, r: 72, frac: 0.35, say: '邪龙的咆哮——站进光圈！' }] },
           skills: [{ use: 'mech', mech: { use: 'safezone', windup: 3.4, n: 2, r: 72, frac: 0.35, say: '邪龙的咆哮——站进光圈！' }, cd: [24, 30] }, { use: 'aoe', shape: 'line', at: 'front', len: 420, hw: 30, windup: 1.1, dmg: 1.3, cd: [7, 9] }] },
       ] },
-    goliath: { name: '歌利亚', lvl: 28, size: [22, 16, 150], weight: 6, speed: 70, elem: 'fire', art: 'deGiant', scale: 1.2, pref: 110, traits: { sa: 'cast' },
+    goliath: { name: '歌利亚', lvl: 35, size: [22, 16, 150], weight: 6, speed: 70, elem: 'fire', art: 'deGiant', scale: 1.2, pref: 110, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }, { use: 'tether', kind: 'titan', mode: 'share', share: 0.5, hp: 0.35, onBreak: 'groggy', say: '泰坦和歌利亚一起上了——伤害会被分担，先打倒泰坦！', col: '#ffb070' }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'slam', reach: 120, width: 34, windup: 0.7, dmg: 1.4, down: true, sa: true, cd: [2, 3], w: 2 }, { use: 'grab', reach: 80, hold: 0.9, throwDmg: 1.6, cd: [8, 10] },
@@ -149,7 +149,7 @@ defineRegion({
         { at: 0.5, enter: { say: '阿特拉斯也来了！熔岩在沸腾！', col: '#ff8a4a', mechs: [{ use: 'tether', kind: 'atlas', mode: 'guard', mul: 0.35, hp: 0.25, onBreak: 'groggy', col: '#ff6a3a' }, { use: 'hazard', kind: 'fire', every: 3.5, n: 3, col: '#ff7a2a' }] },
           skills: [{ use: 'rain', kind: 'hex', n: 5, r: 48, windup: 1.2, dmg: 1.1, col: '#ff7a3a', cd: [8, 10], say: '熔岩喷发' }] },
       ] },
-    boroding: { name: '锤王波罗丁', lvl: 29, size: [18, 14, 132], weight: 5, speed: 85, elem: 'dark', art: 'deBoroding', scale: 1.15, pref: 100, traits: { sa: 'cast' },
+    boroding: { name: '锤王波罗丁', lvl: 36, size: [18, 14, 132], weight: 5, speed: 85, elem: 'dark', art: 'deBoroding', scale: 1.15, pref: 100, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }, { use: 'enrage', t: 240 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'slam', reach: 120, width: 34, windup: 0.7, dmg: 1.4, down: true, sa: true, cd: [2, 3], w: 2 }, { use: 'aoe', shape: 'cross', at: 'target', hw: 26, windup: 1.2, dmg: 1.3, cd: [7, 9], say: '裂地锤' },
@@ -159,7 +159,7 @@ defineRegion({
         { at: 0.3, enter: { say: '不灭之王！', col: '#c8a0ff', mechs: [{ use: 'shield', hp: 0.05, dur: 14, punish: 'nova', onBreak: 'groggy', col: '#c8a0ff' }] },
           skills: [{ use: 'rain', kind: 'bolt', n: 6, r: 44, windup: 1.0, dmg: 1.1, col: '#c8a0ff', cd: [7, 9] }] },
       ] },
-    headlessKnight: { name: '无头骑士', lvl: 29, size: [16, 14, 128], speed: 120, elem: 'dark', art: 'deHeadless', scale: 1.15, pref: 150, traits: { sa: 'always' },
+    headlessKnight: { name: '无头骑士', lvl: 37, size: [16, 14, 128], speed: 120, elem: 'dark', art: 'deHeadless', scale: 1.15, pref: 150, traits: { sa: 'always' },
       mechs: [{ use: 'groggy', max: 120, dur: 5 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', n: 3, reach: 104, width: 24, dmg: 1.0, cd: [1.6, 2.4], w: 2 }, { use: 'dash', len: 480, speed: 820, windup: 0.8, dmg: 1.4, cd: [4.5, 6], w: 1.5, say: '冲锋！' },
@@ -167,7 +167,7 @@ defineRegion({
         { at: 0.6, enter: { say: '无头骑士分出了幻影——找出本体！', mechs: [{ use: 'clones', n: 3, dur: 12, punish: 'nova' }] },
           skills: [{ use: 'mech', mech: { use: 'clones', n: 3, dur: 12, punish: 'nova' }, cd: [22, 28], say: '幻影冲锋！' }] },
       ] },
-    diregie: { name: '狄瑞吉的幻影', tier: 'raid', lvl: 30, size: [18, 15, 130], speed: 95, elem: 'dark', art: 'deDiregie', scale: 1.4, pref: 140,
+    diregie: { name: '狄瑞吉的幻影', tier: 'raid', lvl: 39, size: [18, 15, 130], speed: 95, elem: 'dark', art: 'deDiregie', scale: 1.4, pref: 140,
       mechs: [{ use: 'groggy', max: 120, dur: 7, mul: 1.6 }, { use: 'enrage', t: 300 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', n: 2, reach: 110, width: 28, dmg: 1.1, cd: [1.6, 2.4], w: 2 },
@@ -184,15 +184,15 @@ defineRegion({
   /* ---- 史诗（区域掉落）+ 深渊专属（abyss: true）---- */
   items: {
     epics: [
-      { key: 'ep_de_morgan', slot: 'support', lvl: 27, name: '摩根的炼金毒瓶', fx: { dmgUp: 0.07, allStat: 18 },
+      { key: 'ep_de_morgan', slot: 'support', lvl: 32, name: '摩根的炼金毒瓶', fx: { dmgUp: 0.07, allStat: 18 },
         proc: { chance: 0.06, cd: 2, act: 'status', status: 'poison', dur: 4, name: '炼金剧毒', desc: '攻击时 6% 几率让敌人中毒 4 秒。' }, desc: '怨恨之摩根到死都攥在手里的毒瓶。他本想用它找出传染病的解药。',
         look: 'a round alchemist flask with a long thin neck full of bubbling violet liquid, a skull-shaped cork and a small brass label, dark elf style silver filigree' },
-      { key: 'ep_de_cross', slot: 'stone', lvl: 29, name: '燃烧之血十字架', fx: { fire: 30, dark: 20, dmgUp: 0.06 }, desc: '诺伊佩拉的祭坛上燃烧的血色十字架（官方远古地下城「诺伊佩拉」的专属神器）。',
+      { key: 'ep_de_cross', slot: 'stone', lvl: 38, name: '燃烧之血十字架', fx: { fire: 30, dark: 20, dmgUp: 0.06 }, desc: '诺伊佩拉的祭坛上燃烧的血色十字架（官方远古地下城「诺伊佩拉」的专属神器）。',
         look: 'a small blood red crystal cross wrapped in dark flames at its edges, set in a blackened silver frame' },
     ],
     sets: [
       // 深渊专属（暗黑城深渊）：官方诺伊佩拉用格拉西亚家族徽章兑换的「格拉西亚家族遗物」（官方是防具套，本作做成首饰）
-      { id: 'set_gracia', name: '格拉西亚家族遗物', lvl: 29, abyss: true, desc: '诺伊佩拉的名门格拉西亚家族留下的遗物，家徽是一头獠牙野猪。',
+      { id: 'set_gracia', name: '格拉西亚家族遗物', lvl: 38, abyss: true, desc: '诺伊佩拉的名门格拉西亚家族留下的遗物，家徽是一头獠牙野猪。',
         bonus: { 2: { st: { crit: 0.05, mcrit: 0.05, aspd: 0.05, cspd: 0.05 }, desc: '暴击率 +5%，攻击 / 施放速度 +5%' },
           3: { st: { dmgUp: 0.13, critDmg: 0.1 }, desc: '【家族荣耀】伤害增加 13%，暴击伤害 +10%；攻击时 5% 几率唤来格拉西亚家族的守护灵（周围 150% 光属性伤害）',
             proc: { chance: 0.05, cd: 1.5, act: 'strike', mul: 1.5, aoe: 110, elem: 'light', vis: 'holy', name: '家族守护灵' } } },
@@ -207,37 +207,37 @@ defineRegion({
 
   /* ---- 地下城 ---- */
   dungeons: {
-    shallow_haunt: { name: '浅栖之地', lvl: [26, 27], theme: 'deCave', layout: 'standard', mobs: [['corpseThief', 3], ['boneThrower', 2], ['ghost', 2], ['binness', 1.5]], elite: 'boneThrower', boss: 'morgan', bgm: 'dungeon2', bossBgm: 'boss',
+    shallow_haunt: { name: '浅栖之地', lvl: [31, 32], theme: 'deCave', layout: 'standard', mobs: [['corpseThief', 3], ['boneThrower', 2], ['ghost', 2], ['binness', 1.5]], elite: 'boneThrower', boss: 'morgan', bgm: 'dungeon2', bossBgm: 'boss',
       gate: { x: 420, col: '140,190,255' }, desc: '暗精灵的炼金大师摩根为了找出传染病的来源独自进了这里，再也没有回来。他会扔炼金毒瓶、叫起盗尸者；血量过半时喝下狂化药剂，地上会冒出毒沼。',
-      drops: { boss: [['ep_de_morgan', 0.03], ['ep_sup_paris', 0.008], ['ep_head_jeno', 0.008]], mats: [['crystal', 0.1, 8], ['m_bone', 0.03, 2], ['c_blue', 0.02, 1]] } },
-    spider_cave: { name: '蜘蛛洞穴', lvl: [26, 27], theme: 'deCave', layout: 'long', mobs: [['poisonSpider', 3], ['smallSpider', 2], ['wraith', 1.5], ['fierceZombie', 1.5], ['corpseThief', 1], ['binness', 1]], elite: 'poisonSpider', boss: 'ekloso', bgm: 'dungeon3', bossBgm: 'boss',
+      drops: { boss: [['ep_de_morgan', 0.03]], mats: [['crystal', 0.1, 8], ['m_bone', 0.03, 2], ['c_blue', 0.02, 1]] } },
+    spider_cave: { name: '蜘蛛洞穴', lvl: [32, 33], theme: 'deCave', layout: 'long', mobs: [['poisonSpider', 3], ['smallSpider', 2], ['wraith', 1.5], ['fierceZombie', 1.5], ['corpseThief', 1], ['binness', 1]], elite: 'poisonSpider', boss: 'ekloso', bgm: 'dungeon3', bossBgm: 'boss',
       gate: { x: 900, col: '200,190,255' }, desc: '被传染病感染的巨大蜘蛛盘踞的洞穴。艾克洛索吐出的蛛网会让人变慢；它躲进蛛网时，先击破蜘蛛卵。',
-      drops: { boss: [['ep_de_morgan', 0.012], ['ep_sup_paris', 0.008]], mats: [['crystal', 0.1, 8], ['m_leather', 0.03, 2], ['c_white', 0.02, 1]] } },
-    darkelf_tomb: { name: '暗精灵墓地', lvl: [27, 28], theme: 'deTomb', layout: 'standard', mobs: [['tombSkeleton', 3], ['rockSkeleton', 1.5], ['ghost', 1.5], ['wraith', 1.5], ['soulEater', 0.6]], elite: 'rockSkeleton', boss: 'spiz', bgm: 'dungeon2', bossBgm: 'boss',
+      drops: { boss: [['ep_de_morgan', 0.012]], mats: [['crystal', 0.1, 8], ['m_leather', 0.03, 2], ['c_white', 0.02, 1]] } },
+    darkelf_tomb: { name: '暗精灵墓地', lvl: [33, 34], theme: 'deTomb', layout: 'standard', mobs: [['tombSkeleton', 3], ['rockSkeleton', 1.5], ['ghost', 1.5], ['wraith', 1.5], ['soulEater', 0.6]], elite: 'rockSkeleton', boss: 'spiz', bgm: 'dungeon2', bossBgm: 'boss',
       gate: { x: 1380, col: '190,160,255' }, desc: '暗精灵的墓地，贝尔玛尔公国的大使在这里失踪了。墓地深处沉睡着邪龙斯皮兹——它咆哮时，站进白色光圈。',
-      drops: { boss: [['ep_head_jeno', 0.012], ['ep_de_morgan', 0.008]], mats: [['crystal', 0.11, 9], ['m_bone', 0.04, 2], ['c_black', 0.02, 1]] } },
-    lava_cave: { name: '熔岩穴', lvl: [27, 28], theme: 'deLava', layout: 'long', mobs: [['lavaThief', 2.5], ['boneThrower', 1.5], ['fierceZombie', 1.5], ['burningHera', 2], ['soulEater', 0.5]], elite: 'barrelOrik', boss: 'goliath',
+      drops: { boss: [['ep_de_morgan', 0.008]], mats: [['crystal', 0.11, 9], ['m_bone', 0.04, 2], ['c_black', 0.02, 1]] } },
+    lava_cave: { name: '熔岩穴', lvl: [34, 35], theme: 'deLava', layout: 'long', mobs: [['lavaThief', 2.5], ['boneThrower', 1.5], ['fierceZombie', 1.5], ['burningHera', 2], ['soulEater', 0.5]], elite: 'barrelOrik', boss: 'goliath',
       bgm: 'dungeon', bossBgm: 'boss', preBoss: { kind: 'barrelOrik', say: '油桶欧力克扛着油桶冲出来了！' },
       gate: { x: 1860, col: '255,140,90' }, desc: '和火焰圣地的地脉相连的熔岩洞穴。三个巨人守在最深处：泰坦在的时候歌利亚受到的伤害会被分担；阿特拉斯来了以后，先打倒它。地上的熔岩会烫伤人。',
-      drops: { boss: [['ep_sup_paris', 0.012], ['ep_de_cross', 0.006]], mats: [['crystal', 0.11, 9], ['c_red', 0.03, 2], ['m_iron', 0.03, 2]] } },
-    king_ruins: { name: '王的遗迹', lvl: [28, 29], theme: 'deTomb', layout: 'raid', hidden: true, unlock: { quest: 'q_de09' },
+      drops: { boss: [['ep_de_morgan', 0.012]], mats: [['crystal', 0.11, 9], ['c_red', 0.03, 2], ['m_iron', 0.03, 2]] } },
+    king_ruins: { name: '王的遗迹', lvl: [35, 36], theme: 'deTomb', layout: 'raid', hidden: true, unlock: { quest: 'q_de09' },
       mobs: [['tombSkeleton', 2], ['rockSkeleton', 1], ['wraith', 1.5], ['knightWind', 0.3], ['knightGuard', 0.3], ['knightIce', 0.3], ['knightFire', 0.3]], elite: 'knightLight', boss: 'boroding', bossAdds: 1,
       bgm: 'dungeon3', bossBgm: 'boss', preBoss: { kind: 'knightLight', say: '王的五骑士之一——光之沃德咯斯！' },
       gate: { x: 2340, col: '200,160,255' }, desc: '【隐藏】暗精灵古代王国的遗迹，锤王波罗丁和王的五骑士还守着这里。波罗丁会在炎与冰之间切换——站进相反颜色的法阵里打；“不灭之王”的护盾要尽快打碎。',
-      drops: { boss: [['ep_de_cross', 0.012], ['ep_head_jeno', 0.012], ['ep_sup_paris', 0.012]], mats: [['crystal', 0.12, 10], ['m_soul', 0.003, 1], ['m_obsidian', 0.006, 1]] } },
-    darkcity_gate: { name: '暗黑城入口', lvl: [28, 29], theme: 'deGate', layout: 'long', mobs: [['darkElfGuard', 3], ['headlessThief', 2], ['headlessSkel', 2], ['brokenGoliath', 0.6]], elite: 'tinggao', boss: 'headlessKnight',
+      drops: { boss: [['ep_de_cross', 0.012]], mats: [['crystal', 0.12, 10], ['m_soul', 0.003, 1], ['m_obsidian', 0.006, 1]] } },
+    darkcity_gate: { name: '暗黑城入口', lvl: [36, 37], theme: 'deGate', layout: 'long', mobs: [['darkElfGuard', 3], ['headlessThief', 2], ['headlessSkel', 2], ['brokenGoliath', 0.6]], elite: 'tinggao', boss: 'headlessKnight',
       bgm: 'dungeon2', bossBgm: 'boss', preBoss: { kind: 'hempley', say: '沉默的亨普利挡住了去路。' },
       gate: { x: 2820, col: '170,140,255' }, desc: '暗精灵首都的大门。无头骑士一直霸体，冲锋前地上有红线；它分出幻影时，打中本体幻影就会散掉。',
-      drops: { boss: [['ep_de_cross', 0.01], ['ep_head_jeno', 0.01], ['ep_de_morgan', 0.01]], mats: [['crystal', 0.12, 10], ['m_elem2', 0.01, 1], ['c_black', 0.03, 2]] } },
-    neipera: { name: '诺伊佩拉', lvl: [29, 29], bossLvl: 31, theme: 'deNeipera', layout: 'raid', mobs: [['fierceZombie', 2], ['wraith', 1.5], ['soulEater', 1], ['poisonSpider', 1], ['darkElfGuard', 1]], elite: 'soulEater', boss: 'diregie', bossAdds: 0,
+      drops: { boss: [['ep_de_cross', 0.01], ['ep_de_morgan', 0.01]], mats: [['crystal', 0.12, 10], ['m_elem2', 0.01, 1], ['c_black', 0.03, 2]] } },
+    neipera: { name: '诺伊佩拉', lvl: [38, 38], bossLvl: 40, theme: 'deNeipera', layout: 'raid', mobs: [['fierceZombie', 2], ['wraith', 1.5], ['soulEater', 1], ['poisonSpider', 1], ['darkElfGuard', 1]], elite: 'soulEater', boss: 'diregie', bossAdds: 0,
       bgm: 'abyss', bossBgm: 'boss', preBoss: { kind: 'brokenGoliath', say: '被感染的巨人守着城镇的深处……' },
       gate: { x: 3300, col: '220,200,140' }, desc: '【远古】被瘟疫吞没的暗精灵城镇。狄瑞吉的幻影会藏进瘟疫之源（先击破它们），孢子会在地上蔓延；“瘟疫爆发”时远离它。',
-      drops: { boss: [['ep_de_cross', 0.04], ['ep_de_morgan', 0.02], ['ep_head_jeno', 0.02], ['ep_sup_paris', 0.02]], mats: [['crystal', 0.14, 12], ['m_soul', 0.004, 1], ['m_diamond', 0.01, 1]] } },
+      drops: { boss: [['ep_de_cross', 0.04], ['ep_de_morgan', 0.02]], mats: [['crystal', 0.14, 12], ['m_soul', 0.004, 1], ['m_diamond', 0.01, 1]] } },
   },
 
   /* ---- 深渊派对（content/abyss.js 展开，见 docs/REGION_PIPELINE.md §2.1）---- */
   abyss: {
-    abyss_darkelf: { name: '暗黑城深渊', from: 'darkcity_gate', theme: 'abyssDarkelf', tint: 'rgba(80,10,120,0.34)', lvl: [28, 29], lordLvl: 31, cost: 1, pity: 7,
+    abyss_darkelf: { name: '暗黑城深渊', from: 'darkcity_gate', theme: 'abyssDarkelf', tint: 'rgba(80,10,120,0.34)', lvl: [37, 38], lordLvl: 40, cost: 1, pity: 7,
       lords: ['morgan', 'ekloso', 'spiz', 'headlessKnight'], gate: { x: 4060, scene: 'darkelf_field' }, clearExp: 16000,
       waves: [
         { n: 6, mobs: [['headlessThief', 1], ['headlessSkel', 1], ['corpseThief', 1]], elite: 1, say: '无头的尸群涌上来了！' },
@@ -247,7 +247,7 @@ defineRegion({
       lord: { mechs: [{ use: 'enrage', t: 220 }], cycle: [{ every: [22, 28], at: 0.8, say: '深渊护盾！', mech: { use: 'shield', hp: 0.05, dur: 12, punish: 'heal', onBreak: 'groggy', col: '#c890ff' } },
         { every: [28, 34], at: 0.5, mech: { use: 'safezone', windup: 3.2, frac: 0.35, say: '深渊之力——站进光圈！' } }] },
       desc: '【深渊派对】暗黑城入口背后的深渊裂缝。需要消耗 1 张深渊派对邀请函。深渊领主是暗黑城的四个领主之一（每次随机），会张开深渊护盾——打破护盾就能破招。「格拉西亚家族遗物」只在这里出现。',
-      quest: { name: '暗黑城的深渊', lvl: 28, clear: 'darkcity_gate', pre: ['q_abyss_gf'], gold: 6000, desc: '暗黑城入口的背后也裂开了深渊。通关暗黑城入口，歌兰蒂斯就会告诉你暗黑城深渊的入口。',
+      quest: { name: '暗黑城的深渊', lvl: 37, clear: 'darkcity_gate', pre: ['q_abyss_gf'], gold: 6000, desc: '暗黑城入口的背后也裂开了深渊。通关暗黑城入口，歌兰蒂斯就会告诉你暗黑城深渊的入口。',
         offer: ['暗精灵的地下王国……深渊也渗进去了。', '听说诺伊佩拉的名门格拉西亚家族的遗物，就沉在那道深渊里。', '先去通关暗黑城入口吧。'],
         done: ['你回来了。暗精灵地区的最右边，深渊之门已经打开。'] } },
   },
@@ -271,50 +271,50 @@ defineRegion({
   },
 
   /* ---- 主线 ---- */
-  story: { chapter: '暗黑城篇 · 暗精灵的传染病', prefix: 'q_de', pre: 'q_b05', npc: 'kurent', scene: 'aferia_camp', steps: [
-    { t: 'arrive', npc: 'sharan', to: 'kurent', name: '前往阿法利亚营地', scene: 'aferia_camp', reward: { exp: 0.05, gold: 1500 },
+  story: { chapter: '暗黑城篇 · 暗精灵的传染病', prefix: 'q_de', pre: 'q_b09', npc: 'kurent', scene: 'aferia_camp', steps: [
+    { t: 'arrive', npc: 'sharan', to: 'kurent', name: '前往阿法利亚营地', lvl: 31, scene: 'aferia_camp', reward: { exp: 0.05, gold: 1500 },
       desc: '暗精灵向贝尔玛尔公国宣战了。去西海岸北边的阿法利亚营地，找暗精灵的使者克伦特。',
-      talk: { offer: ['暗精灵的城镇爆发了传染病……他们认为那是人类带来的，已经向公国宣战了。', '阿法利亚营地有一位暗精灵的使者，叫克伦特。他想阻止这场战争。去帮帮他吧。'], doing: ['阿法利亚营地在西海岸的北边，Lv.26 才能过去。'], done: ['……莎兰派你来的？', '我是克伦特。暗精灵和人类的战争一触即发——我需要一个能在暗黑城里活下来的人。'] } },
-    { t: 'clear', dungeon: 'shallow_haunt', name: '浅栖之地', reward: { exp: 0.09, gold: 2500 },
+      talk: { offer: ['暗精灵的城镇爆发了传染病……他们认为那是人类带来的，已经向公国宣战了。', '阿法利亚营地有一位暗精灵的使者，叫克伦特。他想阻止这场战争。去帮帮他吧。'], doing: ['阿法利亚营地在西海岸的北边，Lv.31 才能过去。'], done: ['……莎兰派你来的？', '我是克伦特。暗精灵和人类的战争一触即发——我需要一个能在暗黑城里活下来的人。'] } },
+    { t: 'clear', dungeon: 'shallow_haunt', lvl: 31, name: '浅栖之地', reward: { exp: 0.09, gold: 2500 },
       desc: '暗黑城的第一层是「浅栖之地」。通关它，证明你能在地下活下来。',
       talk: { offer: ['暗黑城的入口就在营地后面的山洞里。第一层叫浅栖之地。', '我们的炼金大师摩根为了找出传染病的来源，一个人进去了……再也没有回来。'], doing: ['浅栖之地在暗精灵地区的最左边。'], done: ['你活着回来了。……里面有摩根的气息吗？'] } },
-    { t: 'boss', dungeon: 'shallow_haunt', name: '没有送出的信', collect: { key: 'q_de_letter', item: '无法读取的摩根信函', icon: 'q_de_letter', desc: '封蜡碎了一半，字迹被毒液晕开的信。' }, reward: { exp: 0.1, gold: 3000 },
+    { t: 'boss', dungeon: 'shallow_haunt', lvl: 32, name: '没有送出的信', collect: { key: 'q_de_letter', item: '无法读取的摩根信函', icon: 'q_de_letter', desc: '封蜡碎了一半，字迹被毒液晕开的信。' }, reward: { exp: 0.1, gold: 3000 },
       desc: '摩根被感染成了“怨恨之摩根”。打倒他，把他身上那封没有送出的信带回来。',
       talk: { offer: ['摩根……他被感染了。现在只剩下怨恨。', '他身上应该有一封信——他一直想把研究结果送出来。'], doing: ['他会扔毒瓶。看到地上发绿就走开。'], done: ['信上的字被毒液晕开了……但我认得这几个词：“蜘蛛”“污染”。'] } },
-    { t: 'clear', dungeon: 'spider_cave', name: '调查蜘蛛洞穴', reward: { exp: 0.09, gold: 2500 },
+    { t: 'clear', dungeon: 'spider_cave', lvl: 32, name: '调查蜘蛛洞穴', reward: { exp: 0.09, gold: 2500 },
       desc: '摩根的信里提到了蜘蛛。通关「蜘蛛洞穴」。',
       talk: { offer: ['信里提到了蜘蛛洞穴。那里的蜘蛛……最近变得很奇怪。'], doing: ['蛛网会让你变慢，别站在原地。'], done: ['洞穴深处有一只巨大的蜘蛛——艾克洛索。'] } },
-    { t: 'boss', dungeon: 'spider_cave', name: '被污染的艾克洛索', reward: { exp: 0.1, gold: 3000 },
+    { t: 'boss', dungeon: 'spider_cave', lvl: 33, name: '被污染的艾克洛索', reward: { exp: 0.1, gold: 3000 },
       desc: '蜘蛛洞穴深处的艾克洛索被传染病污染了。打倒它。',
       talk: { offer: ['艾克洛索是和我们签过契约的守护兽……它被污染了。', '它躲进蛛网的时候，先打碎蜘蛛卵。'], doing: ['它读条“毒液喷发”的时候，跳起来。'], done: ['它身上的毒……和城镇里的传染病一模一样。'] } },
-    { t: 'clear', dungeon: 'darkelf_tomb', name: '失踪的大使', reward: { exp: 0.09, gold: 2500 },
+    { t: 'clear', dungeon: 'darkelf_tomb', lvl: 33, name: '失踪的大使', reward: { exp: 0.09, gold: 2500 },
       desc: '贝尔玛尔公国派来的大使在暗精灵墓地失踪了。通关「暗精灵墓地」，找到他的踪迹。',
       talk: { offer: ['公国派来谈和的大使在墓地失踪了。', '如果他死在暗精灵的地盘上……战争就再也停不下来了。'], doing: ['墓地里的骷髅会架起盾牌，别打它的正面。'], done: ['大使还活着……他躲在墓地深处，说是被一条邪龙逼进去的。'] } },
-    { t: 'boss', dungeon: 'darkelf_tomb', name: '存在的邪龙', reward: { exp: 0.1, gold: 3000 },
+    { t: 'boss', dungeon: 'darkelf_tomb', lvl: 34, name: '存在的邪龙', reward: { exp: 0.1, gold: 3000 },
       desc: '墓地深处的邪龙斯皮兹挡住了大使回来的路。打倒它。',
       talk: { offer: ['邪龙斯皮兹……传说中它的身体被封印在更深的地方，露出来的只是一部分。', '它咆哮的时候，站进白色的光圈。'], doing: ['龙息会横扫整个房间。'], done: ['大使回来了。……他说，传染病是从熔岩穴的方向传过来的。'] } },
-    { t: 'clear', dungeon: 'lava_cave', name: '通向暗黑城之路', reward: { exp: 0.09, gold: 2500 },
+    { t: 'clear', dungeon: 'lava_cave', lvl: 34, name: '通向暗黑城之路', reward: { exp: 0.09, gold: 2500 },
       desc: '通往暗精灵首都的路要经过「熔岩穴」。通关它。',
       talk: { offer: ['要去首都，得穿过熔岩穴。那里和火焰圣地的地脉相连。'], doing: ['别在熔岩上停太久。'], done: ['最深处……有三个巨人。'] } },
-    { t: 'boss', dungeon: 'lava_cave', name: '强悍的证明', reward: { exp: 0.1, gold: 3000 },
+    { t: 'boss', dungeon: 'lava_cave', lvl: 35, name: '强悍的证明', reward: { exp: 0.1, gold: 3000 },
       desc: '熔岩穴深处的巨人歌利亚、泰坦、阿特拉斯挡住了去路。打倒歌利亚。',
       talk: { offer: ['泰坦在的时候，歌利亚受到的伤害会被分担。先打倒泰坦。', '阿特拉斯来了以后也一样——先打它，歌利亚就会破招。'], doing: ['震地的时候跳起来。'], done: ['巨人倒下了。……王国的古老传说里，还有一位“不灭之王”。'] } },
-    { t: 'clear', dungeon: 'king_ruins', name: '王的五骑士', reward: { exp: 0.1, gold: 3500 },
+    { t: 'clear', dungeon: 'king_ruins', lvl: 35, name: '王的五骑士', reward: { exp: 0.1, gold: 3500 },
       desc: '暗精灵古代王国的遗迹出现了。除掉守在遗迹里的王的五骑士，通关「王的遗迹」。',
       talk: { offer: ['古代王国的遗迹……王的五骑士还守在那里。', '暗精灵的冤魂都在遗迹里游荡，这是它们的王留下的诅咒。'], doing: ['遗迹的入口是隐藏的——在暗精灵地区，靠右的地方。'], done: ['五骑士倒下了。可是锤王波罗丁……还在。'] } },
-    { t: 'boss', dungeon: 'king_ruins', name: '伟大的波罗丁王', reward: { exp: 0.12, gold: 4000 },
+    { t: 'boss', dungeon: 'king_ruins', lvl: 36, name: '伟大的波罗丁王', reward: { exp: 0.12, gold: 4000 },
       desc: '打倒不灭之王——锤王波罗丁，让遗迹里的冤魂安息。',
       talk: { offer: ['波罗丁会在炎与冰之间切换。站进相反颜色的法阵里再打。', '他喊出“不灭之王”的时候会张开护盾——快打碎它。'], doing: ['他的锤子砸下来之前，地上会出现十字。'], done: ['冤魂安息了。……首都的大门，就在前面。'] } },
-    { t: 'clear', dungeon: 'darkcity_gate', name: '调查暗黑城入口', reward: { exp: 0.09, gold: 3000 },
+    { t: 'clear', dungeon: 'darkcity_gate', lvl: 36, name: '调查暗黑城入口', reward: { exp: 0.09, gold: 3000 },
       desc: '通关「暗黑城入口」。',
       talk: { offer: ['暗黑城入口的守卫都被感染了。仃高和亨普利……他们曾经是我的战友。'], doing: ['亨普利会瞬移到远处放魔法，贴上去打。'], done: ['大门前面站着一个没有头的骑士。'] } },
-    { t: 'boss', dungeon: 'darkcity_gate', name: '最后的决斗', reward: { exp: 0.12, gold: 4000 },
+    { t: 'boss', dungeon: 'darkcity_gate', lvl: 37, name: '最后的决斗', reward: { exp: 0.12, gold: 4000 },
       desc: '无头骑士守着暗黑城的大门。打倒它，开启暗黑城之门。',
       talk: { offer: ['无头骑士一直是霸体。冲锋之前地上有红线——看准了再躲。', '它分出幻影的时候，打中本体幻影就会散掉。'], doing: ['别在它冲锋的直线上停留。'], done: ['门开了。……可是首都里，一个人都没有。', '所有人都逃到了诺伊佩拉——传染病最早爆发的地方。'] } },
-    { t: 'raid', dungeon: 'neipera', name: '狄瑞吉的幻影', reward: { exp: 0.18, gold: 7000, coins: 2 },
+    { t: 'raid', dungeon: 'neipera', lvl: 38, name: '狄瑞吉的幻影', reward: { exp: 0.18, gold: 7000, coins: 2 },
       desc: '传染病的源头在诺伊佩拉。进入被瘟疫吞没的城镇，打倒狄瑞吉的幻影。',
       talk: { offer: ['传染病的源头……是使徒狄瑞吉留下的幻影。', '它会藏进瘟疫之源。先把源头打碎。', '“瘟疫爆发”的时候，离它越远越好。'], doing: ['孢子在地上蔓延的时候，别站在发光的地方。'], done: ['幻影消散了……瘟疫也在退去。', '谢谢你，冒险家。战争——停下来了。'] } },
-    { t: 'handin', to: 'kurent', name: '和平的约定', reward: { exp: 0.08, gold: 4000, items: [{ key: 'ep_de_morgan', n: 1 }] },
+    { t: 'handin', to: 'kurent', lvl: 38, name: '和平的约定', reward: { exp: 0.08, gold: 4000, items: [{ key: 'ep_de_morgan', n: 1 }] },
       desc: '回阿法利亚营地，把好消息告诉克伦特。',
       talk: { offer: ['诺伊佩拉的瘟疫退去了。'], done: ['王国和公国签下了停战的约定。', '这是摩根留下的毒瓶……他一直想找出解药。你收下吧，这是他的心愿。', '——暗黑城篇 · 完——'] } },
   ] },

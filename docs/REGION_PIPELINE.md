@@ -33,7 +33,7 @@
 
 ```js
 defineRegion({
-  id, name, lvl: 30,                     // 区域等级（地下城默认 [lvl, lvl+1]，领主 lvl+2）
+  id, name, lvl: 30, lvlMax?,            // 区域等级（地下城默认 [lvl, lvl+1]，领主 lvl+2）；跨好几级的区域写 lvlMax（地下城等级都在 lvl~lvlMax 之间）
   power: 6.5, bossPower: 0.75, atkPower: 3.2,   // 难度旋钮：普通怪血量、领主血量（再乘 power）、攻击
   entry: { scene, side, x, to, minLv, label },  // 从已有场景接进来的出口（自动加到那个场景上，不改别人的文件）
   themes: { <主题>: { pal, grade, ambient, rgb, floorW, bg: [远景, 地面, 交界带] } },
@@ -175,7 +175,8 @@ abyss: {
 - `monsters`：每个怪物 / 领主 / 暗影有逐帧精灵、会出手、领主每招都能强制放出、能打死。
 - `scenes`：每个场景能进、背景和 NPC 立绘加载、每个出口来回走通、入口的等级限制。
 - `quest`：主线从头做到尾。
-- `bot`：机器人 Lv30 全身 +12 史诗通关每个地下城（`BOT=law_gate:sword,...` 可改分配），要求通关、用时不超限、死亡 ≤ 2、被击 ≤ 160。
+- `bot`：机器人以各地下城自己的等级、全身 +12 史诗通关每个地下城（`BOT=law_gate:sword,...` 可改分配），要求通关、用时不超限、死亡 ≤ 2、被击 ≤ 160。
+  调难度用 `GEAR=rare`（全身同等级稀有 +7，`ENH=` 可改）或 `GEAR=base`（只有 testLoadout），`LV=` 强制等级；把老区域的同类地下城放进同一个 `BOT=` 一起跑当对照。
 `test/quick.sh` 跑前五个快的部分；`test/all.sh` 跑全部。
 
 ## 7. 已知的坑

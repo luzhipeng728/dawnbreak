@@ -39,7 +39,7 @@ if (parts.includes('data')) {
       if (!THEMES[D.theme] || !BG_GRADE[D.theme]) E.push(`${did}: 主题 ${D.theme} 缺少 THEMES / BG_GRADE`);
       for (const k of ['far', 'floor', 'edge']) if (!has(`bg/${D.theme}_${k}`)) E.push(`${did}: 缺少背景 bg/${D.theme}_${k}`);
       for (const b of monBundles([...D.mobs.map(m => m[0]), D.boss.kind, D.elite])) if (!Object.values(ASSET_BUNDLE).includes(b)) E.push(`${did}: 分包 ${b} 没有素材`);
-      if (!(D.lvl[0] >= sp.lvl && D.lvl[1] <= sp.lvl + 3 && D.boss.lvl >= D.lvl[1])) E.push(`${did}: 等级 ${D.lvl} / 领主 ${D.boss.lvl} 超出区域等级 ${sp.lvl}`);
+      if (!(D.lvl[0] >= sp.lvl && D.lvl[1] <= (sp.lvlMax ?? sp.lvl + 3) && D.boss.lvl >= D.lvl[1])) E.push(`${did}: 等级 ${D.lvl} / 领主 ${D.boss.lvl} 超出区域等级 ${sp.lvl}~${sp.lvlMax ?? sp.lvl + 3}`);   // lvlMax：跨好几级的区域（60 版本区域）
       const T = DROP_TABLES[did]; if (!T) E.push(`${did}: 没有掉落表`); else for (const [k] of [...T.boss, ...T.mats]) if (!ITEMS[k]) E.push(`${did}: 掉落表里的 ${k} 不存在`);
       if (!Object.values(SCENES).some(S => S.gates.some(g => g.dungeon === did))) E.push(`${did}: 没有放进区域地图`);
     }
@@ -304,7 +304,7 @@ if (parts.includes('scenes')) {
 /* ---------------- 6. 主线任务链 ---------------- */
 if (parts.includes('quest')) {
   const res = await page.evaluate(async ({ id, R }) => {
-    game.lvl = R.lvl; const d = save.data; d.questDone ??= {}; const sp = REGIONS[id].spec; d.questDone[sp.story.pre] = Date.now();
+    const sp = REGIONS[id].spec; game.lvl = sp.lvlMax ?? R.lvl; const d = save.data; d.questDone ??= {}; d.questDone[sp.story.pre] = Date.now();
     const rows = [];
     for (const q of R.quests) {
       const Q = QUESTS[q], s0 = questState(q); questAccept(q); const s1 = questState(q);
@@ -415,6 +415,8 @@ if (parts.includes('abyss')) {
     // 领主的循环机制（cycle）：撑 30 秒（游戏时间），至少触发一次
     const m0 = await page.evaluate(() => ({ ...MS_STATS.mech }));
     await page.evaluate(() => { const b = game.dungeon.abyssRun.lord; b.hp = Math.round(b.hpMax * 0.4); });
+    await simWait(2);   // 领主自己的阶段可能会“隐入 / 钻地”（无敌阶段）：结束掉，让循环机制有机会出手
+    await page.evaluate(() => { const b = game.dungeon.abyssRun.lord; for (const s of b.msMechs || []) if (s.id === 'invuln') { for (const o of s.objs || []) o.remove = true; msMechEnd(b, s); } if (b.msHidden) msHide(b, false); });
     await simWait(32);
     const m1 = await page.evaluate(() => ({ ...MS_STATS.mech }));
     const cyc = await page.evaluate(aid => ABYSS[aid].lord.cycle.map(c => c.mech.use), aid);
@@ -456,19 +458,22 @@ if (parts.includes('abyss')) {
 /* ---------------- 7. 机器人通关（区域等级 全身 +12 史诗）---------------- */
 if (parts.includes('bot')) {
   const CLS = ['sword', 'gun', 'mage'];
+  const DUNGEONS_LV = await page.evaluate(ids => Object.fromEntries(ids.filter(d => DUNGEONS[d]).map(d => [d, DUNGEONS[d].lvl[1]])), [...R.dungeons, ...(process.env.BOT || '').split(',').map(x => x.split(':')[0])]);   // 机器人用各地下城自己的等级
   const plan = process.env.BOT ? process.env.BOT.split(',').map(s => s.split(':')) : R.dungeons.map((d, i) => [d, CLS[i % 3]]);
   const rows = [];
   for (const [did, cls] of plan) {
     await open(`town&mute&cls=${cls}`);
-    const setup = await page.evaluate(({ did, lv, base }) => {
-      testLoadout(lv); const p = game.player, eq = [], A = typeof ABYSS !== 'undefined' && ABYSS[did];
+    const setup = await page.evaluate(({ did, lv, base, enh }) => {
+      testLoadout(lv); const p = game.player, eq = [], A = typeof ABYSS !== 'undefined' && ABYSS[did], U = DUNGEONS[did].unlock;
       if (A) { save.data.questDone[A.quest] = Date.now(); inv.add(makeItem('abyss_ticket', A.cost)); }
-      if (!base) for (const s of Object.keys(SLOT_WEIGHT)) { const it = rollEquip({ slot: s, lvl: lv, rar: 5, cls: p.cls }) || inv.equip[s]; if (it) { it.enh = 12; inv.equip[s] = it; eq.push(it.rar); } }
+      if (U && U.quest) save.data.questDone[U.quest] = Date.now();
+      // GEAR=base：只有 testLoadout；GEAR=rare：全身同等级稀有 +ENH（默认 7，“等级合适的稀有装”）；默认：全身史诗 +12
+      if (base !== 'base') for (const s of Object.keys(SLOT_WEIGHT)) { const it = rollEquip({ slot: s, lvl: lv, rar: base === 'rare' ? 2 : 5, cls: p.cls }) || inv.equip[s]; if (it) { it.enh = base === 'rare' ? enh : 12; inv.equip[s] = it; eq.push(it.rar); } }
       recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax; save.data.fatigue = 999; bot.on = true; window.__botDone = null;
       enterDungeon(did, 0);
       return { epics: eq.filter(r => r === 5).length, slots: eq.length, atk: Math.round(p.atk || 0), hp: p.hpMax };
-    }, { did, lv: +(process.env.LV || R.lvl), base: process.env.GEAR === 'base' });
-    const limit = did.includes('coffin') ? 900 : 600, t0 = Date.now(); let done = null, n = 0, last = null;
+    }, { did, lv: +(process.env.LV || (DUNGEONS_LV[did] ?? R.lvl)), base: process.env.GEAR || '', enh: +(process.env.ENH || 7) });
+    const limit = +(process.env.LIMIT || (did.includes('coffin') ? 900 : 600)), t0 = Date.now(); let done = null, n = 0, last = null;
     while (!done && (Date.now() - t0) / 1000 * speed < limit) {
       await wait(3000); done = await page.evaluate(() => window.__botDone || null);
       last = await page.evaluate(() => { const D = game.dungeon; return D ? { room: D.layout.rooms.indexOf(D.room), boss: D.room.type === 'boss', hp: Math.round(game.player.hp / game.player.hpMax * 100), bossHp: D.boss ? Math.round(D.boss.hp / D.boss.hpMax * 100) : null, phase: D.boss ? D.boss.msPhase : null, t: Math.round(D.t) } : null; });

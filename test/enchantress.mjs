@@ -99,6 +99,7 @@ const R = await page.evaluate(() => {
   clearMobs(); fresh(); mob(420, 100); p.setState('hit'); p.stun = 1;
   out.guardHit = { ok: castSkill(p, 'en_guard', false, null), stillHit: p.st === 'hit' };
   clearMobs(); fresh(); castSkill(p, 'en_rosewhip', false, null); run(60); out.sinister = +(p.cool.en_rosewhip || 0).toFixed(2);
+  out.reg = { job: !!CLASSES.mage.jobs.enchantress, armor: masteryOf('mage', 'enchantress'), quest: !!QUESTS.q_job_ench_house, anims: !!SPR_ANIMS.mage.enCmd, noShowtime: !skillAllowed('mg_showtime', 'enchantress') };
   } catch (e) { out.err = e.message + ' ' + (e.stack || '').split('\n').slice(0, 3).join(' | '); }
   return out;
 });
@@ -126,6 +127,7 @@ ok(R.short.extended, '三觉：剧场中施放 = 短篇舞台（延长 20 秒）
 ok(R.hut.entered && R.hut.invul && R.hut.left && R.hut.limit, '林中小屋：跳进去无敌、跳出来、每张图最多 2 次', R.hut);
 ok(R.guardHit.ok && R.guardHit.stillHit, '疯熊守护：受击中也能放（主角不脱离受击）', R.guardHit);
 ok(R.sinister <= 1, '不祥的微笑：藤鞭落空冷却 1 秒', R.sinister);
+ok(R.reg.job && R.reg.armor === 'plate' && R.reg.quest && R.reg.anims && R.reg.noShowtime, '转职登记：职业窗口、板甲、转职剧情任务、动作表、魔法秀学不了', R.reg);
 // 截图：疯疯熊站在小魔女身前（游戏比例）
 await page.evaluate(() => { game.paused = false; clearAllSummons('test'); for (const e of ents) if (e.team === 'e') e.remove = true; const p = game.player; p.x = 380; p.y = 110; p.face = 1; p.setState('idle'); });
 await page.waitForTimeout(900);

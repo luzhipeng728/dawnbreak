@@ -83,11 +83,11 @@ function gearAct(p, P, ctx) {
     fxAura(p, P.col || '#8aff9a', 0.6);
   } else if (act === 'shield') {
     gearRt.shield = Math.round(p.hpMax * (P.amt || 0.1)); gearRt.shieldT = game.t + (P.dur || 6);
-    p.buffs = p.buffs || {}; p.buffs.gear_shield = { t: P.dur || 6, name: P.name || '护盾', col: '#6ad0ff' };
+    p.buffs = p.buffs || {}; p.buffs.gear_shield = { t: P.dur || 6, name: P.name || '护盾', col: '#6ad0ff', src: String(P.id || '').split('#')[0] };
     fxAura(p, '#6ad0ff', 0.8);
   } else if (act === 'buff') {
     p.buffs = p.buffs || {}; const key = 'gear_' + (P.key || P.id), cur = p.buffs[key], max = P.stack || 1;
-    const n = Math.min(max, (cur ? cur.n || 1 : 0) + 1), B = { t: P.dur || 5, n, name: `${P.name || '装备特效'}${max > 1 ? ` ×${n}` : ''}`, col: P.col || '#ffb24a' };
+    const n = Math.min(max, (cur ? cur.n || 1 : 0) + 1), B = { t: P.dur || 5, n, name: `${P.name || '装备特效'}${max > 1 ? ` ×${n}` : ''}`, col: P.col || '#ffb24a', src: String(P.id || '').split('#')[0] };
     for (const k in P.buff) B[k] = P.buff[k] * n;
     p.buffs[key] = B;
     if (!cur || n > (cur.n || 1)) { if (max === 1 || n === max) fxAura(p, P.col || '#ffd23a', 0.5); }

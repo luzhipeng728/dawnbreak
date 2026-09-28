@@ -23,7 +23,9 @@ def main():
     if '--combat' in sys.argv:
         from combatgen import ICON_SHEETS, OUT
         sheets, src = {k: [n for n, _ in v] for k, v in ICON_SHEETS.items()}, os.path.join(OUT, 'icons')
+    only = sys.argv[sys.argv.index('--only') + 1] if '--only' in sys.argv else ''   # --only 表名前缀：只切这几张表
     for sheet, names in sheets.items():
+        if not sheet.startswith(only): continue
         p = os.path.join(src, f'{sheet}.png')
         if not os.path.exists(p): print('missing', sheet); continue
         im = remove_bg(Image.open(p)); arr = np.array(im)

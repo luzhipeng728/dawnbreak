@@ -176,7 +176,14 @@ ICON_LIST = [   # (技能 id, 图标描述)；16 个一张表，依次为 cskill
     ('bm_press', 'glowing orbs slamming down onto the ground in an explosion'), ('bm_raid', 'a meteor-like dashing staff strike with a blazing trail'),
     ('bm_dragon', 'a golden dragon emerging from a staff tip with a crescent moon'), ('bm_awaken', 'a fierce warrior goddess silhouette with a golden dragon aura'),
 ]
-ICON_SHEETS = {f'cskills_{c}': ICON_LIST[i * 16:(i + 1) * 16] for i, c in enumerate('abcd')}
+# 官方对齐（神枪手第 1 阶段）：新增的女枪基础技能 + 通用技能（docs/SKILLS_OFFICIAL_gun.md）
+ICON_LIST += [
+    ('g_rx78', 'a small cute grey tracked robot with a round dome head and a blinking red light, a tiny fire spark at its back, rolling forward'),
+    ('g_dust', 'a revolver firing rapid bullets down at the ground kicking up a big cloud of tan dust'),
+    ('g_aerial', 'a revolver firing diagonally downward from high in the sky with small clouds and multiple bullet streaks'),
+    ('c_bsup', 'a nimble boot leaping backward with a cyan afterimage and a curved arrow pointing back'),
+]
+ICON_SHEETS = {f'cskills_{c}': ICON_LIST[i * 16:(i + 1) * 16] for i, c in enumerate('abcde')}
 if _SWA: ICON_SHEETS.update({f'sword_icons_{c}': _SWA.ICONS[i * 16:(i + 1) * 16] for i, c in enumerate('abcdefgh') if _SWA.ICONS[i * 16:(i + 1) * 16]})
 def icon_prompt(items):
     return (f'A sprite sheet of {len(items)} separate game icons arranged in a grid of 4 columns and {len(items) // 4} rows on a plain pure white background, '
@@ -203,6 +210,7 @@ FX = {   # 名字: (描述, 尺寸, 发光?)
     'quantum': ('A single glowing blue quantum energy sphere with electric arcs and a white hot core, sci-fi', Sq, True),
     'darkorb': ('A single dark void energy sphere: a black core with swirling deep purple and magenta energy and sparkles', Sq, True),
     'icewall': ('A single wall of sharp ice crystals rising from the ground: a cluster of tall light-blue translucent ice spikes, wide composition', Wd, False),
+    'rx78': ('A single cute cartoon small self-destruct robot seen from the side facing RIGHT: a squat grey-steel body on little black tank treads, a round light-grey dome head with a blinking red lamp, a yellow hazard stripe and a tiny antenna, compact chunky proportions', Sq, False),
     'jack': ('A single cute cartoon jack-o-lantern pumpkin bomb with a glowing carved face and a short lit fuse on top', Sq, False),
     'jackbig': ('A single giant cute cartoon jack-o-lantern pumpkin with a glowing carved grinning face and a huge lit fuse, glowing orange', Sq, False),
     'snowman': ('A single cute cartoon snowman with a carrot nose, stick arms and a small blue scarf, standing', Sq, False),
@@ -262,7 +270,7 @@ def main():
     ap = argparse.ArgumentParser(); ap.add_argument('phase'); ap.add_argument('--only', default=''); ap.add_argument('-j', type=int, default=3); a = ap.parse_args()
     if a.phase == 'sheets': L = sheet_jobs()
     elif a.phase == 'icons':
-        L = [{'out': os.path.join(OUT, 'icons', f'{n}.png'), 'prompt': icon_prompt([d for _, d in items]), 'size': '2048x2048' if len(items) > 12 else '2048x1536'} for n, items in ICON_SHEETS.items()]
+        L = [{'out': os.path.join(OUT, 'icons', f'{n}.png'), 'prompt': icon_prompt([d for _, d in items]), 'size': '2048x2048' if len(items) > 8 else '2048x1152'} for n, items in ICON_SHEETS.items()]
     elif a.phase == 'fx':
         L = [{'out': os.path.join(OUT, 'fx', f'{n}.png'), 'prompt': f'{d}. {GLOW if g else SOLID}', 'size': sz} for n, (d, sz, g) in FX.items()]
     elif a.phase == 'cutin': L = cutin_jobs()

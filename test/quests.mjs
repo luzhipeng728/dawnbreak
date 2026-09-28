@@ -190,7 +190,7 @@ await page.reload(); await page.waitForFunction(() => window.__READY, null, { ti
 check(await ev(() => game.job) === 'blade', '刷新后转职仍在');
 
 step('8. 觉醒任务 → awakenUnlocked()');
-await ev(() => { game.lvl = 18; questAccept('q_awaken_sword_1'); for (let i = 0; i < 3; i++) bus.emit('dungeonClear', { id: 'dark_thunder', diff: 0, rank: 'B', time: 200, hurt: 10 }); questComplete('q_awaken_sword_1'); questAccept('q_awaken_sword_2'); });
+await ev(() => { game.lvl = 21; questAccept('q_awaken_sword_1'); for (let i = 0; i < 3; i++) bus.emit('dungeonClear', { id: 'dark_thunder', diff: 0, rank: 'B', time: 200, hurt: 10 }); questComplete('q_awaken_sword_1'); questAccept('q_awaken_sword_2'); });
 check(await ev(() => !awakenUnlocked()), '觉醒任务完成前 awakenUnlocked() = false');
 const cr0 = await ev(() => { inv.add(makeConsumable('crystal', 30)); bus.emit('dungeonClear', { id: 'blazing_graca', diff: 2, rank: 'S', time: 150, hurt: 5 }); return inv.count('crystal'); });
 check((await Q('q_awaken_sword_2')).st === 'ready', '勇士级 S 评价 + 30 个无色小晶块 → 可交付');

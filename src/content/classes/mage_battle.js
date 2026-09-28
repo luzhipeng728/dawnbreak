@@ -81,7 +81,7 @@ defSkill('bm_dragon', { name: '煌龙偃月', cls: 'mage', job: 'battlemage', lv
     events: [evAt(0.85, e => { e.play('fang', true); const x = e.x + e.face * 110; cam.flash = 0.15; cam.flashCol = '#fff0b0'; cam.shake = 9; sfx.iai(); sfx.boom(1.1);
       fxSpr('dragonfang', e.x + e.face * 60, e.y, e.z + 60, { w: 240, dur: 0.5, flip: e.face < 0, grow: [0.6, 1.2] }); fxBurst(x, e.y, 60, 240, '#ffd070');
       blast(e, x, e.y, 110, { dmg: skillDmg(4.5, 0.45, lv), launch: 520, knock: 200, hs: 0.14, big: 1.9, col: '#ffe070', type: e.matk !== undefined && e.matk > e.atk ? 'mag' : 'phys' }, { zMax: 200 }); })] }) });
-defSkill('bm_awaken', { name: '变身贝亚娜', cls: 'mage', job: 'battlemage', lvReq: 18, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'mag', awaken: true, col: '#ffd23a',
+defSkill('bm_awaken', { name: '变身贝亚娜', cls: 'mage', job: 'battlemage', lvReq: 21, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'mag', awaken: true, col: '#ffd23a',
   desc: '【觉醒】唤醒斗神之力变身为贝亚娜：30 秒内攻击力、攻击速度、施放速度大幅提升，炫纹上限 +2 并自动生成。变身时释放斗气冲击。', pow: lv => skillDmg(8, 3, lv), ai: { kind: 'awaken', r: [0, 200], dy: 80 },
   infoExtra: lv => [['攻击力', '+' + pct(0.2 + 0.05 * lv)], ['持续', '30 秒']],
   act: (lv) => ({ name: 'bm_awaken', clip: 'bmAwk', dur: 1.6, superArmor: true, noCounter: true, invul: [0, 1.6],

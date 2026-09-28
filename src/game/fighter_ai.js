@@ -1,6 +1,6 @@
 /* =====================================================================
    91b. 格斗者 AI：决斗场对手（以及自动测试里的“玩家”）。只通过虚拟手柄 Pad 按键，走的是和键盘玩家完全相同的角色逻辑
-   - 防守：看到对手出招（有反应延迟）→ 后跳 / 翻滚 / 纵深走位躲投射物 / 格挡 / 抢招破招；倒地按 C 受身；长时间挨打用紧急闪避
+   - 防守：看到对手出招（有反应延迟）→ 后跳 / 纵深走位躲投射物 / 格挡 / 抢招破招；倒地按 C 受身；长时间挨打用后跳-强化脱身（官方没有闪避键）
    - 进攻：对齐纵深 → 近身 / 保持射程 → 普攻起手 → 技能取消普攻 → 浮空追击（跳攻 / 射击托空 / 再次挑空）→ 终结技；有觉醒时找机会放
    - 难度 1..3：反应时间、进攻欲望、防守概率、受身概率、连招完整度
    ===================================================================== */
@@ -14,7 +14,7 @@ const AI_KIND_RANK = { launch: 0, grab: 1, awaken: 2, burst: 3, gap: 4, aoe: 5, 
 function aiKit(cls, job, lv = 30) {
   const ids = classSkills(cls, job).filter(id => { const S = SKILLS[id]; return S && !S.passive && S.act && S.lvReq <= lv && S.ai; });
   ids.sort((a, b) => (AI_KIND_RANK[SKILLS[a].ai.kind] ?? 20) - (AI_KIND_RANK[SKILLS[b].ai.kind] ?? 20) || (SKILLS[b].job ? 1 : 0) - (SKILLS[a].job ? 1 : 0));
-  const bar = ids.slice(0, 12); while (bar.length < 12) bar.push(null);
+  const bar = ids.slice(0, SKILL_SLOTS); while (bar.length < SKILL_SLOTS) bar.push(null);
   const L = {}; for (const id of classSkills(cls, job)) { const S = SKILLS[id]; if (S.lvReq <= lv) L[id] = Math.max(1, Math.min(S.maxLv, 1 + Math.floor((lv - S.lvReq) / 3))); }
   return { bar, lv: L, job: job || null, wtype: null };
 }
@@ -23,7 +23,15 @@ class FighterBrain {
   constructor(p, level = 2) { this.p = p; this.L = AI_LEVELS[level] || AI_LEVELS[2]; this.t = 0; this.nextThink = 0; this.seenAct = null; this.seenT = 0; this.hold = null; this.holdUntil = 0; this.follow = null; this.yWob = 0; this.techRoll = null; }
   reset() { this.t = 0; this.nextThink = 0; this.seenAct = null; this.seenT = 0; this.hold = null; this.holdUntil = 0; this.follow = null; this.techRoll = null; }   // 新回合
   target() { let best = null, bd = 1e9; for (const o of ents) if (foe(this.p, o)) { const d = Math.abs(o.x - this.p.x) + Math.abs(o.y - this.p.y) * 2 + (o.fighter ? -300 : 0); if (d < bd) { bd = d; best = o; } } return best; }
-  ready(id) { const p = this.p, S = SKILLS[id]; return S && lvOf(p, id) > 0 && !(p.cool[id] > 0) && p.mp >= S.mp && (!S.job || S.job === jobOf(p)) && barOf(p).indexOf(id) >= 0; }
+  ready(id) {
+    const p = this.p, S = SKILLS[id]; if (!S || !skillUsable(p, id) || barOf(p).indexOf(id) < 0) return false;
+    const recast = S.recast && S.recast.ok(p);
+    // 召唤类（ai.summon = 召唤物 key）：在场数量到上限就不再放，能再按就改用再按（召唤框架见 docs/SKILLS_OFFICIAL_mage.md 第 6 节）
+    if (S.ai && S.ai.summon && typeof summonsOf === 'function') { const max = S.ai.summonMax ?? (typeof summonDef === 'function' && summonDef(S.ai.summon) ? summonDef(S.ai.summon).max : Infinity); if (summonsOf(p, S.ai.summon).length >= (max ?? Infinity)) return !!recast; }
+    if (recast) return !((p.cool[id + '~'] || 0) > 0);
+    const q = p.charges && p.charges[id]; if (S.charges && q && q.n < 1) return false;
+    return !(p.cool[id] > 0) && p.mp >= S.mp;
+  }
   // 从技能栏里挑一个满足条件的技能
   pickSkill(kinds, adx, ady, inAir) {
     const p = this.p, bar = barOf(p), L = [];
@@ -50,15 +58,16 @@ class FighterBrain {
     if (this.follow && this.t >= this.follow.t) { P.tap(this.follow.key); this.follow = null; }
     const o = this.target(); if (!o) return;
     const dx = o.x - p.x, adx = Math.abs(dx), dy = o.y - p.y, ady = Math.abs(dy), dir = Math.sign(dx) || p.face;
-    // ---- 受身：倒地或快要落地时按 C ----
+    // ---- 受身蹲伏：倒地后按 C；挨了长连段就用后跳-强化脱身 ----
     if (p.st === 'down' || (p.st === 'air' && p.z < 24 && p.vz < 0)) {
+      if (p.st === 'down' && bsupReady(p) && p.cmb.hits >= 5 && Math.random() < L.escape) { P.hold('down'); P.tap('jump'); return; }
       if (this.techRoll === null) this.techRoll = Math.random() < L.tech;
       if (this.techRoll && p.reboundCd <= 0 && p.stT > L.react * 0.4) P.tap('jump');
       return;
     }
     this.techRoll = null;
-    // ---- 挨打中：连段太长就紧急闪避 ----
-    if (p.st === 'hit') { if (game.pvp && !(p.breakCd > 0) && p.cmb.hits >= 4 && Math.random() < L.escape * dt * 6) { P.hold(dir > 0 ? 'left' : 'right'); P.tap('dodge'); } return; }
+    // ---- 挨打中：连段太长就用后跳-强化脱身（↓+C，冷却 30 秒）----
+    if (p.st === 'hit') { if (bsupReady(p) && p.cmb.hits >= 4 && Math.random() < L.escape * dt * 6) { P.hold('down'); P.tap('jump'); } return; }
     if (!p.free && p.st !== 'act') return;
     // ---- 防守：对手出招（反应延迟后）或飞行道具逼近 ----
     if (o.st === 'act' && o.act !== this.seenAct) { this.seenAct = o.act; this.seenT = this.t; this.defRoll = Math.random(); }
@@ -82,10 +91,12 @@ class FighterBrain {
     const p = this.p, P = p.pad, r = Math.random();
     // 破招：对手还在起手、自己离得近并且有快速挑空技 → 抢招
     if (melee && o.actT < o.act.counterEnd * 0.5 && adx < 80 && r < 0.3) { const id = this.pickSkill(['launch', 'grab'], adx, Math.abs(o.y - p.y), false); if (id && this.cast(id, dir)) return true; }
-    if (proj && !melee) { const up = p.y > DEPTH / 2 ? 'up' : 'down'; P.hold(up); if (r < 0.35 && !(p.dodgeCd > 0)) P.tap('dodge'); else if (r < 0.5 && p.free) P.tap('jump'); return true; }
+    if (proj && !melee) { const up = p.y > DEPTH / 2 ? 'up' : 'down'; P.hold(up); if (r < 0.5 && p.free) P.tap('jump'); return true; }
     if (hasSkill(p, 'guard') && this.ready('guard') && r < 0.3) return this.cast('guard', dir);
-    if (r < 0.5 && canBackstep(p)) { P.hold('down'); P.tap('jump'); return true; }
-    if (!(p.dodgeCd > 0)) { P.hold(dir > 0 ? 'left' : 'right'); P.hold(Math.random() < 0.5 ? 'up' : 'down'); P.tap('dodge'); return true; }
+    const bm = backstepMode(p);
+    if (bm === 'free' && r < 0.75) { P.hold('down'); P.tap('jump'); return true; }
+    if (bm === 'up' && r < 0.4) { P.hold('down'); P.tap('jump'); return true; }   // 技能中：后跳-强化（冷却 40 秒，省着用）
+    if (p.free) { P.hold(Math.random() < 0.5 ? 'up' : 'down'); P.hold(dir > 0 ? 'left' : 'right'); return true; }   // 纵深走位
     return false;
   }
   move(o, dx, dy, adx, ady, dir) {
@@ -112,7 +123,7 @@ class FighterBrain {
     const melee = adx < 90 && ady < 22;
     // ---- 浮空追击 ----
     if (oAir && o.lastHitBy === p && Math.random() < L.combo) {
-      if (p.cls === 'gun' && adx < 380 && ady < 20) { P.hold(dir > 0 ? 'right' : 'left'); if (o.z > 50) P.hold('up'); P.tap('attack'); return; }
+      if (p.cls === 'gun' && adx < 380 && ady < 20) { P.hold(dir > 0 ? 'right' : 'left'); P.tap('attack'); return; }
       if (adx < 90 && ady < 24) {
         if (o.z < 55 && o.cmb.air < 7) { const id = this.pickSkill(['launch', 'burst', 'aoe'], adx, ady, inAir); if (id && Math.random() < 0.55) { this.cast(id, dir); return; } }
         if (o.z > 60 && p.free && p.cls !== 'gun' && Math.random() < 0.4) { P.hold(dir > 0 ? 'right' : 'left'); P.tap('jump'); this.follow = { t: this.t + 0.14, key: 'attack' }; return; }

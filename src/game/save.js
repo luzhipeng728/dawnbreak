@@ -4,13 +4,13 @@
    ===================================================================== */
 const FATIGUE_MAX = 156;
 const dayKey = () => { const d = new Date(Date.now() - 6 * 3600 * 1000); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
-const SAVE_V = 4, MAX_CHARS = 6;
+const SAVE_V = 5, MAX_CHARS = 6;
 const DUNGEON_ALIAS = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
 /* 存档结构：{ v, cur, chars: [角色数据...] }，每个角色独立保存等级 / 背包 / 任务 / 位置等（官方的角色选择） */
 const save = {
   key: ['test', 'dungeon', 'town', 'bot', 'cls', 'duel'].some(k => PARAMS.has(k)) ? 'dawnbreak_dev' : 'dawnbreak_save_v1', data: null, chars: [], cur: -1, live: false, acct: {},   // 调试参数用独立存档，不碰玩家的正式存档
   defaults(cls = 'sword', name = '勇士') {
-    return { v: SAVE_V, cls, name, job: null, lvl: 1, exp: 0, sp: 150, gold: 1500, skillLv: {}, skillBar: Array(12).fill(null), inv: [], equip: {}, quick: [null, null, null, null, null, null], storage: [],
+    return { v: SAVE_V, cls, name, job: null, lvl: 1, exp: 0, sp: 150, gold: 1500, skillLv: {}, skillBar: Array(SKILL_SLOTS).fill(null), inv: [], equip: {}, quick: [null, null, null, null, null, null], storage: [],
       fatigue: FATIGUE_MAX, day: dayKey(), coins: 5, unlocked: {}, best: {}, weak: 0, clears: 0, created: Date.now(), playTime: 0, quests: {}, questDone: {}, loc: null, seen: {}, titles: [], buyback: [],
       opts: { music: 0.6, sfx: 0.9 } };
   },
@@ -79,7 +79,24 @@ const save = {
       if (d.opts) d.opts.cmdLock = {};
       this.skillReset = true;
     }
+    if ((d.v || 1) < 5) this.migrateV5(d);
+    if (!Array.isArray(d.skillBar)) d.skillBar = [];
+    while (d.skillBar.length < SKILL_SLOTS) d.skillBar.push(null);   // 技能栏 14 格（旧存档 12 格）
     d.v = SAVE_V; return d;
+  },
+  // v4 → v5：操作与技能体系按官方现版对齐（三职业一起：统一等级表、学习间隔 lvStep、每级固定 SP、前置、指令、取消规则、新技能 / 被动改主动）
+  //   → 和官方大版本一样统一洗点：技能回到初始技能 1 级、按等级返还全部 SP、清空指令锁定；转职保留。
+  //   技能栏保留玩家原来摆的位置（这些技能还在、而且不是被动的；没学之前图标是暗的，学回来就能用），补成 14 格，初始技能不在栏上就补上
+  migrateV5(d) {
+    const C = CLASSES[d.cls]; if (!C) return;
+    const ok = new Set(classSkills(d.cls, d.job || null)), old = Array.isArray(d.skillBar) ? d.skillBar : [];
+    d.skillLv = {}; for (const id of C.start) d.skillLv[id] = 1;
+    d.skillBar = Array(SKILL_SLOTS).fill(null);
+    old.forEach((id, i) => { if (i < SKILL_SLOTS && id && ok.has(id) && SKILLS[id] && !SKILLS[id].passive && !d.skillBar.includes(id)) d.skillBar[i] = id; });
+    for (const id of C.start) if (!d.skillBar.includes(id)) { const k = d.skillBar.indexOf(null); if (k >= 0) d.skillBar[k] = id; }
+    d.sp = 150; for (let l = 2; l <= (d.lvl || 1); l++) d.sp += 28 + l;   // 与 onLevelUp 的 SP 发放一致
+    if (d.opts) d.opts.cmdLock = {};
+    this.skillReset = true;
   },
   apply() {
     const d = this.data; this.live = true;
@@ -92,7 +109,7 @@ const save = {
     this.cur = -1;
     const C = CLASSES[cls];
     for (const id of C.start) this.data.skillLv[id] = 1;
-    C.bar.forEach((id, i) => { this.data.skillBar[i] = id; });
+    C.bar.forEach((id, i) => { if (i < SKILL_SLOTS) this.data.skillBar[i] = id; });
     this.apply();
     inv.starter(cls);
     this.write();

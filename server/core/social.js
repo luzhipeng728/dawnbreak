@@ -95,7 +95,7 @@ export default {
         if (!P) { S.sys(c, '你还没有队伍'); return; }
         for (const id of P.members) ctx.sendTo(id, out);
       } else if (msg.ch === 'whisper') {
-        const to = ctx.findUser(str(msg.to, 32));
+        let to; try { to = ctx.findPlayer(str(msg.to, 32)); } catch (e) { S.sys(c, e.message); return; }   // 账号名或角色名
         if (!to) { S.sys(c, '没有这个玩家'); return; }
         if (to.id === c.user.id) { S.sys(c, '不能给自己发私聊'); return; }
         out.to = { id: to.id, name: to.name };

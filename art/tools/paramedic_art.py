@@ -127,11 +127,13 @@ def cmd_ref(a):
     post(ref_prompt(), [os.path.join(SRC, 'gun_ref.png')], REF, '1024x1536')
 
 def cmd_sheets(a):
-    from sheets2 import prompt as sheet_prompt, guide_prompt
+    from sheets2 import prompt as sheet_prompt, guide_prompt, RUN
     for name, frames in SHEETS.items():
         if a.only and name not in a.only.split(','): continue
         out = sheet_out(name)
         if os.path.exists(out) and not a.force: print('skip', name); continue
+        # 跑步：带姿势参考图时模型把人偶的红蓝色画到了身上、背景变黑，改成只用文字逐帧描述
+        if name == 'run': frames = [(f'run{i + 1}', d + ', running fast with a strong forward lean, arms pumping') for i, d in enumerate(RUN)]
         if frames is None:   # 走 / 跑：加姿势参考图，保证手脚反向摆动
             post(guide_prompt(name, HOLD), [REF, os.path.join(SRC, f'guide_{name}.png')], out, '2048x2048')
         else:
@@ -272,10 +274,36 @@ def cmd_prep(a):
         p = os.path.join(OUT, 'cutin', f'{k}.png')
         if os.path.exists(p): remove_bg(Image.open(p)).resize((720, 480), Image.LANCZOS).save(os.path.join(fin, 'cutin', f'{k}.webp'), 'WEBP', quality=82, method=6); print('cutin', k)
 
+def cmd_contact(a):
+    """验收用总览图（一张）：战斗服全部帧（脚底对齐、旁边放原版女枪 idle 比身高）+ 图标 + 特效 + 立绘 + 插图 → src/paramedic/contact.png"""
+    from PIL import Image, ImageDraw
+    fin = os.path.join(HERE, 'final'); meta = json.load(open(os.path.join(fin, 'spr', 'pmsuit', 'spr.json')))['frames']
+    cw, ch, cols = 150, 150, 12
+    names = sorted(meta); gun = Image.open(os.path.join(fin, 'spr', 'gun', 'idle.webp')).convert('RGBA')
+    items = [('gun idle', gun, 1.0)] + [(n, Image.open(os.path.join(fin, 'spr', 'pmsuit', f'{n}.webp')).convert('RGBA'), 1.0) for n in names]
+    extra = [(f'icon {n}', Image.open(os.path.join(fin, 'icon', f'{n}.webp')).convert('RGBA')) for sh in ICONS.values() for n, _ in sh if os.path.exists(os.path.join(fin, 'icon', f'{n}.webp'))]
+    extra += [(f'fx {n}', Image.open(os.path.join(fin, 'fx', f'{n}.webp')).convert('RGBA')) for n in FX if os.path.exists(os.path.join(fin, 'fx', f'{n}.webp'))]
+    rows = (len(items) + cols - 1) // cols; rows2 = (len(extra) + cols - 1) // cols
+    big = [p for p in [os.path.join(fin, 'job', 'paramedic.webp')] + [os.path.join(fin, 'cutin', f'{k}.webp') for k in CUTIN] if os.path.exists(p)]
+    W = cols * cw; H = rows * ch + rows2 * 120 + (260 if big else 0) + 20
+    sheet = Image.new('RGB', (W, H), (70, 74, 84)); d = ImageDraw.Draw(sheet)
+    for i, (n, im, _) in enumerate(items):
+        x, y = (i % cols) * cw, (i // cols) * ch; F = meta.get(n, {'ax': im.width / 2, 'ay': im.height}) if n != 'gun idle' else {'ax': im.width / 2, 'ay': im.height}
+        k = min(1, (ch - 26) / im.height, (cw - 8) / im.width) * 0.62; sm = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))))
+        sheet.paste(sm, (round(x + cw / 2 - F['ax'] * k), round(y + ch - 14 - F['ay'] * k)), sm); d.line([(x + 4, y + ch - 14), (x + cw - 4, y + ch - 14)], fill=(120, 124, 134)); d.text((x + 4, y + 2), n, fill=(255, 230, 120))
+    y0 = rows * ch
+    for i, (n, im) in enumerate(extra):
+        x, y = (i % cols) * cw, y0 + (i // cols) * 120; k = min(96 / im.width, 96 / im.height); sm = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))))
+        bg = Image.new('RGB', (cw - 6, 104), (10, 10, 14) if n.startswith('fx') else (70, 74, 84)); sheet.paste(bg, (x + 3, y + 14)); sheet.paste(sm, (x + (cw - sm.width) // 2, y + 18), sm); d.text((x + 4, y + 2), n[:22], fill=(160, 230, 255))
+    x = 0
+    for p in big:
+        im = Image.open(p).convert('RGBA'); k = 250 / im.height; sm = im.resize((round(im.width * k), 250)); sheet.paste(sm, (x, H - 256), sm); x += sm.width + 10
+    out = os.path.join(OUT, 'contact.png'); sheet.save(out); print(out, sheet.size)
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('cmd'); ap.add_argument('--only', default=''); ap.add_argument('--force', action='store_true'); ap.add_argument('--keep', action='store_true')
     a = ap.parse_args()
-    {'ref': cmd_ref, 'sheets': cmd_sheets, 'cut': cmd_cut, 'icons': cmd_icons, 'fx': cmd_fx, 'job': cmd_job, 'cutin': cmd_cutin, 'prep': cmd_prep}[a.cmd](a)
+    {'ref': cmd_ref, 'sheets': cmd_sheets, 'cut': cmd_cut, 'icons': cmd_icons, 'fx': cmd_fx, 'job': cmd_job, 'cutin': cmd_cutin, 'prep': cmd_prep, 'contact': cmd_contact}[a.cmd](a)
 
 if __name__ == '__main__':
     main()

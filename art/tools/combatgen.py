@@ -146,6 +146,12 @@ SHEETS['gun_launcher2'] = [(n, d + NOFX) for n, d in [
     ('final2', 'holding both heavy guns joined together as one big golden laser cannon, aiming it forward with both hands, hair blown back'),
 ]]
 NO_HOLD = {'gun_launcher', 'gun_launcher2'}   # 枪炮师拿的是重武器，不强调左轮
+# 鬼剑士五个转职的新表 / 特效 / 图标 / 插图（art/tools/sword_art.py）
+try:
+    import sword_art as _SWA
+    SHEETS.update(_SWA.SHEETS)
+    HOLD.update(_SWA.HOLD)
+except ImportError: _SWA = None
 
 def sheet_jobs():
     L = []
@@ -224,6 +230,7 @@ GUN2_ICONS = [
     ('gl_uht03', 'a roaring burst flamethrower spewing a huge explosive fireball'), ('gl_awaken3', 'twin heavy guns merging into a golden laser cannon firing a giant beam'),
 ]
 for _i, _c in enumerate('abc'): ICON_SHEETS[f'gskills_{_c}'] = GUN2_ICONS[_i * 12:(_i + 1) * 12]
+if _SWA: ICON_SHEETS.update({f'sword_icons_{c}': _SWA.ICONS[i * 16:(i + 1) * 16] for i, c in enumerate('abcdefgh') if _SWA.ICONS[i * 16:(i + 1) * 16]})
 def icon_prompt(items):
     return (f'A sprite sheet of {len(items)} separate game icons arranged in a grid of 4 columns and {len(items) // 4} rows on a plain pure white background, '
             f'evenly spaced with generous white gaps between icons, no icon touching another, {ICON_STYLE}. In reading order (left to right, top to bottom): '
@@ -268,6 +275,7 @@ CUTIN = {
     'elemental': ('mage', 'arms raised summoning meteors of fire, ice, lightning and darkness from a huge glowing magic circle'),
     'battlemage': ('mage', 'fierce battle stance swinging the staff, a golden dragon aura and small glowing orbs circling her'),
 }
+if _SWA: FX.update(_SWA.FX); CUTIN.update(_SWA.CUTIN)
 def cutin_jobs():
     return [{'out': os.path.join(OUT, 'cutin', f'{j}.png'), 'ref': os.path.join(SRC, f'{c}_ref.png'), 'size': '1536x1024', 'model': 'gpt-image-2.5-sunburst',
              'prompt': f'Using this exact chibi character (same design, same colors, same cute art style), draw a dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Plain pure white background, no text.'}

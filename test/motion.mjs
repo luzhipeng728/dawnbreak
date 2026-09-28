@@ -42,7 +42,6 @@ await kb.press('KeyC'); await burst('tech', 600, 60);
 await page.evaluate(() => { const p = __G.player, m = __G.ents.find(e => e.team === 'e'); p.invul = 0; p.x = m.x - 40; m.face = -1; m.doAct({ name: 'grab', dur: 1.0, hits: [], hold: (e, t) => { t.x = e.x + e.face * 40; t.z = 50; t.y = e.y + 0.5; } }); applyHit(m, p, { dmg: 0.01, grab: true }, {}); });
 await burst('held', 700, 70);
 await wait(600); await kb.down('ArrowDown'); await kb.press('KeyC'); await kb.up('ArrowDown'); await burst('backstep', 400, 60);
-await wait(300); await kb.press('ShiftLeft'); await burst('dodge', 450, 60);
 fs.writeFileSync(`${out}/${cls}-list.json`, JSON.stringify(shots, null, 0));
 console.log(shots.length, 'frames', shots.map(s => `${s.tag}:${s.clip}${s.m ? '/' + s.m + (s.mz ? '@' + s.mz : '') : ''}`).join(' '));
 console.log('LOGS', JSON.stringify(logs.filter(l => l.type !== 'warning')));

@@ -7,7 +7,7 @@
 class Pad {
   constructor() {
     this.cur = {}; this.prev = {}; this.want = {};
-    this.lastTap = { left: -9, right: -9 }; this.runDir = 0; this.buf = []; this.dirHist = []; this.t = 0;
+    this.lastTap = { left: -9, right: -9 }; this.runDir = 0; this.buf = []; this.dirHist = []; this.holdT = {}; this.t = 0;
   }
   hold(a) { if (!this.want[a]) this.want[a] = 1; }         // 本帧按住
   tap(a) { this.want[a] = 2; }                             // 本帧按下（即使上一帧也按着）
@@ -22,4 +22,4 @@ class Pad {
   endFrame() { }
   clearAll() { for (const o of [this.cur, this.prev, this.want]) for (const k in o) delete o[k]; this.buf.length = 0; this.dirHist.length = 0; this.runDir = 0; }
 }
-for (const k of ['dx', 'dy', 'command', 'consume', 'buffered']) Pad.prototype[k] = input[k];
+for (const k of ['dx', 'dy', 'command', 'consume', 'buffered', 'heldFor']) Pad.prototype[k] = input[k];

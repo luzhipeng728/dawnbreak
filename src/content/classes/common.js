@@ -3,6 +3,10 @@
    ---------------------------------------------------------------------
    技能定义 defSkill(id, { name, cls, job?, lvReq, maxLv, mp, cd, desc, type('phys'|'mag'|'indep'), elem?, air?, airOnly?,
      passive?(被动，没有 act), buff?, awaken?, pvp?(决斗场伤害修正), pvpCd?, speed?, cast?,
+     lvStep?(学到第 n 级需要 lvReq + (n−1)×lvStep 级；默认基础技能 2、转职 / 觉醒技能 1), sp?(每级固定 SP), pre?({ 技能id: 等级 } 前置),
+     noForce?(不能强制中断普攻；Buff 默认 true), links?([技能id...] 本技能动作中可以接的技能白名单), linkFrom?(秒),
+     charges?(装填次数上限), reload?(每颗补充秒数), noWtype?([武器类型...] 不能用), jobs?([转职...] 基础技能只有这些转职能用),
+     recast?({ ok(p), act(lv,p), cd, mp }：召唤物在场时再按), instant?(fn(lv,p,extra)：无动作施放，不打断当前动作),
      pow(lv)（技能攻击力合计，用于提示）, ai:{ kind, r:[近,远], dy }（AI 用）, act(lv, p) → 动作定义 })
    伤害倍率 dmg 以“攻击力的倍数”计；技能等级成长用 skillDmg(基础, 每级, lv)
    ===================================================================== */
@@ -11,6 +15,10 @@ const skillDmg = (base, per, lv) => base + per * (lv - 1);
 const pct = v => `${Math.round(v * 100)}%`;
 function defSkill(id, S) {
   const s = SKILLS[id] = { id, maxLv: 10, type: undefined, ...S };
+  // 官方技能系统：技能等级上限跟角色等级挂钩（lvStep）、每级 SP 固定（sp）。等级换算见 docs/SKILLS_OFFICIAL_common.md 第 7 节
+  s.lvStep ??= s.job || s.awaken ? 1 : 2;
+  s.sp ??= s.awaken ? 60 : s.passive ? 15 : s.job ? 25 : 20;
+  if (!s.spCost) s.spCost = () => s.sp;
   if (!s.info) s.info = (lv, p) => {
     const L = [];
     if (s.pow) L.push(['技能攻击力', pct(s.pow(Math.max(1, lv)))]);
@@ -20,23 +28,34 @@ function defSkill(id, S) {
   };
   return s;
 }
-// 某个转职能学的全部技能：基础 + 该转职
-function classSkills(cls, job) { const C = CLASSES[cls]; if (!C) return []; const J = job && C.jobs && C.jobs[job]; return J ? C.skills.concat(J.skills) : C.skills.slice(); }
+// 基础技能的转职限制：S.only = 只有这些转职能学 / 用，S.excl = 这些转职学不了（没转职时都能学）。例：EZ-8 自爆者只有机械师能学
+function skillAllowed(id, job) { const S = SKILLS[id]; if (!S) return false; if (!job) return true; if (S.only && !S.only.includes(job)) return false; if (S.excl && S.excl.includes(job)) return false; return true; }
+// 某个转职能学的全部技能：基础（按转职限制过滤）+ 该转职
+function classSkills(cls, job) { const C = CLASSES[cls]; if (!C) return []; const J = job && C.jobs && C.jobs[job], base = C.skills.filter(id => skillAllowed(id, job)); return J ? base.concat(J.skills) : base; }
 const CMD_KEY_TXT = { cmd: 'Z', attack: 'X', buff: 'Space', jump: 'C' };
+const CMD_SEQ_TXT = { hold: '按住→', holdd: '按住↓' };
 // 技能的指令文字（例如 "↓→+Z"），没有指令返回 ''
 function cmdTextOf(id) {
   const S = SKILLS[id]; if (!S) return '';
   if (S.cmdNote) return S.cmdNote;
   const C = CLASSES[S.cls]; if (!C) return '';
   for (const [seq, sid, key] of C.cmds) if (sid === id) {
-    const arrows = seq === 'hold' ? '按住→' : [...seq].map(c => ({ f: '→', b: '←', u: '↑', d: '↓' })[c]).join('');
+    const arrows = CMD_SEQ_TXT[seq] || [...seq].map(c => ({ f: '→', b: '←', u: '↑', d: '↓' })[c]).join('');
     return `${arrows}${arrows ? '+' : ''}${CMD_KEY_TXT[key || 'cmd']}`;
   }
   return '';
 }
 function cmdLabel(cls) { for (const id of classSkills(cls, null).concat(...Object.values(CLASSES[cls].jobs || {}).map(j => j.skills))) if (SKILLS[id]) { const t = cmdTextOf(id); SKILLS[id].cmdTxt = t ? '指令：' + t : ''; } }
+/* ---- 通用技能（所有职业）：后跳-强化（官方 2022 通用被动，替代本作以前的闪避翻滚）。
+   后跳（↓+C）和受身蹲伏（倒地时 C）是自带的动作，见 game/player.js ---- */
+const COMMON_SKILLS = ['c_bsup'];
+defSkill('c_bsup', { name: '后跳-强化', cls: null, lvReq: 10, maxLv: 1, sp: 50, mp: 0, cd: 0, passive: true, col: '#4a9ad8', cmdNote: '技能中 / 受击中 ↓+C',
+  desc: '【被动】放技能的过程中（觉醒除外）可以按 ↓+C 强制后跳，冷却 40 秒；被击中、倒地、被击退时也可以按 ↓+C 后跳脱身，冷却 30 秒。两种用法共用冷却，不受冷却缩减影响。后跳过程中无敌，落地后 1 秒内也无敌。',
+  infoExtra: () => [['技能中后跳冷却', BSUP_CD_SKILL + ' 秒'], ['受击中后跳冷却', BSUP_CD_HIT + ' 秒']] });
+// 把通用技能挂到每个职业的技能表最前面（职业文件都加载完之后调用一次，见 content/sprites.js）
+function addCommonSkills() { for (const c in CLASSES) { const L = CLASSES[c].skills; if (L) for (const id of [...COMMON_SKILLS].reverse()) if (!L.includes(id)) L.unshift(id); } }
 // 是否学会（被动 / 转职技能要求转职一致）
-const hasSkill = (p, id) => { const S = SKILLS[id]; return !!S && lvOf(p, id) > 0 && (!S.job || S.job === jobOf(p)); };
+const hasSkill = (p, id) => { const S = SKILLS[id]; return !!S && lvOf(p, id) > 0 && (!S.job || S.job === jobOf(p)) && skillAllowed(id, jobOf(p)); };
 const skLv = (p, id) => hasSkill(p, id) ? lvOf(p, id) : 0;
 // 转职完成后调用（任务组的转职流程）：重算属性、刷新指令文字、被动
 function onJobChange(p, job) {

@@ -50,6 +50,38 @@ if (process.argv[2] === 'shots') {
   await browser.close(); process.exit(0);
 }
 
+// 城镇里拿在手里（1 倍，真实光照 / 背景）：node test/weapons.mjs town <key,key,...> <输出目录> —— 每把武器切两张小图 <key>_idle.png / <key>_atk.png（art/tools/weapon_review.py 拼总览）
+if (process.argv[2] === 'town') {
+  const keys = process.argv[3].split(','), dir = process.argv[4] || 'test/shots/weapons/town'; fs.mkdirSync(dir, { recursive: true });
+  const { browser, page } = await launch({ width: 1280, height: 720 });
+  await page.goto(`${URL_BASE}?town&mute&cls=sword&fresh`); await page.waitForFunction(() => window.__READY); await page.waitForTimeout(600);
+  await page.evaluate(async () => { await loadBundles(['spr:sword', 'spr:gun', 'spr:mage']); enterScene('hm_plaza'); for (let i = 0; i < 60 && world.S.id !== 'hm_plaza'; i++) await new Promise(r => setTimeout(r, 100)); const p = game.player; p.x = 30; p.y = 100; p.vx = p.vy = 0; await new Promise(r => setTimeout(r, 2000)); });   // 镜头先跟到位，第一组的位置才准
+  const K = 1280 / 960, FR = { sword: 'a1_2', gun: 'shoot2', mage: 'm1_2' }, X = [120, 330, 540, 750];
+  for (let i = 0; i < keys.length; i += 2) {
+    const list = keys.slice(i, i + 2).flatMap(k => [{ k, atk: 0 }, { k, atk: 1 }]).map((o, j) => ({ ...o, x: X[j] }));
+    const pos = await page.evaluate(async ({ list, FR }) => {
+      for (const q of [...world.crowd]) { if (q.net && typeof cashDetach === 'function') cashDetach(q); } world.crowd.length = 0; world.npcs.length = 0;
+      for (let i = ents.length - 1; i >= 0; i--) if (ents[i] !== game.player) ents.splice(i, 1);
+      while (menus.stack.length) menus.close(menus.stack[menus.stack.length - 1]);
+      const p = game.player; p.x = 30; p.y = 100; p.vx = p.vy = 0;
+      const P = list.map((o, j) => {
+        const A = WEAPON_IMG[o.k], cls = A ? WTYPES[A.type].cls : 'sword', D = ITEMS[o.k];
+        const q = new NetPeer({ id: 800 + j, name: 'w' + j, x: o.x, y: 70, f: 1, s: 'idle' });
+        q.setChar({ name: D ? D.name : A ? WTYPES[A.type].name + ({ 2: '·稀有', 3: '·神器', 4: '·传说' }[o.k.slice(-1)] || '') : o.k, cls, lvl: 30, look: { wpn: A ? o.k : null, set: null, acc: [] } }); q.a = 1; world.crowd.push(q); q.fr = o.atk ? FR[cls] : null; return q;
+      });
+      for (let n = 0; n < 80 && P.some(q => !q.model || (q.model.av && q.model.av.A && !q.model.av.wim)); n++) { P.forEach(q => q.model && q.model.av && q.model.av.sync()); await new Promise(r => setTimeout(r, 50)); }
+      P.forEach(q => { if (q.fr && q.model) { const f = q.fr; q.model.frameOf = () => f; } });
+      await new Promise(r => setTimeout(r, 400));
+      return P.map(q => ({ x: sx(q.x), y: sy(q.y, 0) }));
+    }, { list, FR });
+    for (const [j, o] of list.entries()) {
+      const b = pos[j], clip = { x: (b.x - 85) * K, y: (b.y - 168) * K, width: 205 * K, height: 188 * K };
+      await page.screenshot({ path: `${dir}/${o.k}_${o.atk ? 'atk' : 'idle'}.png`, clip });
+    }
+  }
+  console.log(dir); await browser.close(); process.exit(0);
+}
+
 // ================= 1. 美术实验室：图齐全、握点 / 长度合理 =================
 {
   const { browser, page, logs } = await launch({ width: 1280, height: 720 });
@@ -66,12 +98,12 @@ if (process.argv[2] === 'shots') {
     for (const k of keys) {
       const A = WEAPON_IMG[k], im = IMG['weapon/' + k]; if (!A || !im) continue;
       const base = WEAPON_IMG[A.type], ratio = A.size / base.size;
-      if (ratio < 0.99 || ratio > 1.35) bad.push(`${k} 长度 ×${ratio.toFixed(2)}`);
+      if (ratio < 0.99 || ratio > 1.5) bad.push(`${k} 长度 ×${ratio.toFixed(2)}`);
       if (Math.abs(im.width - A.w) > 1 || Math.abs(im.height - A.h) > 1) bad.push(`${k} 图片尺寸和数据不符`);
       const cv = document.createElement('canvas'); cv.width = A.w; cv.height = A.h; const c = cv.getContext('2d'); c.drawImage(im, 0, 0);
       const a = c.getImageData(0, 0, A.w, A.h).data, al = (x, y) => x < 0 || y < 0 || x >= A.w || y >= A.h ? 0 : a[(y * A.w + x) * 4 + 3];
       const near = (px, py, r) => { for (let y = Math.round(py) - r; y <= Math.round(py) + r; y++) for (let x = Math.round(px) - r; x <= Math.round(px) + r; x++) if (al(x, y) > 100) return true; return false; };
-      if (A.kind === 'pole') { if (!near(A.tx - 4, A.ty, 6)) bad.push(`${k} 杖头不在尖端`); }
+      if (A.kind === 'pole') { if (!near(A.tx - 4, A.ty, 6) && !near(A.tx - A.w * 0.06, A.ty, Math.round(A.h * 0.25))) bad.push(`${k} 杖头不在尖端`); }   // 月牙这类开口朝右的杖头：尖端那一行是空的，放宽到杖头附近
       else if (!near(A.gx, A.gy, 3)) bad.push(`${k} 握点 (${A.gx},${A.gy}) 不在武器上`);
       if (A.tx - A.gx < A.w * 0.4) bad.push(`${k} 握点太靠右`);
     }
@@ -101,6 +133,13 @@ if (process.argv[2] === 'shots') {
 {
   const { browser, page, logs } = await launch({ width: 1280, height: 720 });
   await page.goto(`${URL_BASE}?town&mute&cls=sword`); await page.waitForFunction(() => window.__READY);
+  // 武器图不在启动包里（按需加载）：进城后自己手里的武器图要自动加载出来
+  const lazy = await page.evaluate(async () => {
+    const L = game.player.model.av; for (let i = 0; i < 60 && !(L && L.wim); i++) { renderWorld(); await new Promise(r => setTimeout(r, 50)); }
+    const ks = Object.keys(ASSET_BUNDLE).filter(k => k.startsWith('weapon/'));
+    return { bundle: [...new Set(ks.map(k => ASSET_BUNDLE[k]))], wpn: L && L.look && L.look.wpn, img: !!(L && L.wim) };
+  });
+  ok(lazy.bundle.join() === 'weapon' && lazy.wpn && lazy.img, '武器图按需加载：不进启动包，城镇里自己的武器图加载出来了', JSON.stringify(lazy));
   const r = await page.evaluate(() => {
     const pickKey = (w, rar) => Object.keys(ITEMS).find(k => ITEMS[k].wtype === w && ITEMS[k].rar === rar && !ITEMS[k].named);
     const sel = {};

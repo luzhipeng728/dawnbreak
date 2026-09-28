@@ -23,6 +23,7 @@ function bundleOf(key) {
   if (a === 'world') return 'world';                                   // 城镇建筑、地下城门、NPC 立绘
   if (a === 'scene') return 'scene:' + b;                              // 城镇 / 区域场景的专用美术
   if (a === 'job') return 'job';
+  if (a === 'weapon') return 'weapon';                                 // 拿在手里的武器图：用到哪把才加载哪把（loadArtKey），不进启动包
   if (a === 'cash' || a === 'pet' || a === 'aura') return 'cash';                     // 商城图标、宠物、光环（进城后后台加载 / 打开商城时加载）                                       // 转职立绘（和导师对话 / 打开转职窗口时才加载）
   return 'core';                                                       // 图标、特效、标题、职业立绘、觉醒立绘
 }

@@ -77,6 +77,8 @@ AVATAR_NOTES = {
 T_, WD_, SQ_ = '1024x1536', '1536x1024', '1024x1024'
 FX = {   # 名字: (描述, 尺寸, 发光?)；随各阶段补充（发光类黑底，fxprep.py 转透明度）
     'sb_tomb': ('A single cute cartoon grey stone tombstone with a rounded top, a carved cross and a crack, a little moss at the base', SQ_, False),
+    'bz_bloodsword': ('A single giant demonic crimson greatsword pointing straight DOWN: a broad jagged blood-red blade with glowing crimson runes and dripping blood energy, a black hilt with a horned guard and a red gem at the top, vertical tall narrow composition', T_, True),
+    'as_vajra': ('A single glowing golden vajra (thunderbolt scepter weapon) pointing straight DOWN crackling with bright yellow-white lightning, vertical tall narrow composition', T_, True),
 }
 ICONS = [   # (技能 id, 图标描述)；16 个一张，表名 sword_icons_a..（第 1 阶段 17 个 + 第 2 批觉醒前后的技能）
     ('kazan', 'a fierce red ghost demon head with horns floating above a glowing red rune circle'), ('moon', 'a violet crescent moon shaped sword slash with a small rising slash'),
@@ -127,7 +129,8 @@ ICONS = [   # (技能 id, 图标描述)；16 个一张，表名 sword_icons_a..�
     ('gb_kaiten', 'a masked ghost spinning with a wide circular blade sweep'), ('gb_behead', 'an extremely long horizontal sword slash splitting the screen'),
     ('gb_awaken', 'a swordsman and a masked ghost crossing four giant slashes in the dark night'), ('wm_swap', 'two different swords swapping places in a quick circular motion'),
 ]
-FXPREP = {'glow': {'fudo': 384, 'sb_saya': 320, 'sb_plemon': 320, 'sb_rasha': 192, 'sb_blade': 320, 'sb_karo': 160, 'sb_kazan': 320, 'sb_brasha': 448}, 'solid': {'sb_tomb': 96}}   # fxprep.py --combat 的输出尺寸（最长边像素）
+FXPREP = {'glow': {'fudo': 384, 'sb_saya': 320, 'sb_plemon': 320, 'sb_rasha': 192, 'sb_blade': 320, 'sb_karo': 160, 'sb_kazan': 320, 'sb_brasha': 448,
+                   'bz_demon': 448, 'as_raijin': 448, 'sb_jig': 384, 'sb_gate': 448, 'bz_bloodsword': 384, 'as_vajra': 192}, 'solid': {'sb_tomb': 96}}   # fxprep.py --combat 的输出尺寸（最长边像素）
 # 鬼神 / 明王这类“角色型”特效：以召唤师生物的 Q 版画风为参考（art/src/summon/_refs_all.png），黑底发光，fxprep 转成透明加色
 GHOST_STYLE = ('The FIRST image shows cute chibi cartoon game creatures and the SECOND image shows a glowing spectral deity drawn in the same game: use them only as the style reference '
                '(thick dark outlines, simplified chunky shapes, big head and small body, soft cel shading, translucent glowing spectral body on black). Draw ONE new, different character: ')
@@ -152,6 +155,15 @@ GHOSTS = {   # 名字: (描述, 尺寸)
                  'blood-red spectral flames rising from the shoulders, holding a broad curved blade, his lower body fading into red smoke, palette of blood red, crimson and dark maroon, three-quarter view facing right.', '1024x1536'),
     'sb_brasha': ('Brasha, the forbidden seventh ghost: a huge monstrous maw bursting up out of a dark swamp, a gaping round mouth full of jagged teeth with a glowing violet throat, '
                   'tiny glowing eyes above the mouth, dark purple shadowy body with dripping swamp muck and shadowy tendrils, chunky cartoon shapes, palette of dark purple, violet and black, front view, wide composition.', '1536x1024'),
+    # P1：各转职二觉 / 三觉的大型形象
+    'bz_demon': ('the Blood Demon: a huge hulking chibi demon made of swirling crimson blood energy with two curved horns, glowing white eyes, a fanged grin, huge clawed arms, '
+                 'blood dripping and flowing like flames, lower body fading into a crimson blood cloud, palette of crimson, blood red and black, charging forward to the RIGHT, side view.', '1536x1536'),
+    'as_raijin': ('the Thunder God: a heroic chibi thunder deity with a stern face, spiky hair crackling with lightning, a ring of small drums floating behind his back like a halo, '
+                  'arms raised gathering lightning, a flowing sash, body made of glowing yellow-white and electric blue light, lower body fading into storm clouds, front view.', '1024x1536'),
+    'sb_jig': ('Jig, the undead high priest and king of ghosts: a tall gaunt chibi lich priest in a tattered dark purple and gold ceremonial robe with a tall pointed hood, '
+               'a skull-like face with glowing violet eyes, skeletal hands raised commanding spirits, a broken staff, ghostly hands of the dead clutching at his legs from below, palette of dark purple, gold and bone white, front view.', '1024x1536'),
+    'sb_gate': ('the Gate of the Underworld: a huge ancient stone gate with two heavy doors carved with skulls and spirit runes, glowing violet light leaking from the crack between the doors, '
+                'chains across the doors, ghostly wisps swirling around it, chunky cartoon shapes, palette of dark stone grey, violet and black, front view.', '1024x1536'),
 }
 CUTIN = {   # 转职: ('sword', 描述)
     'asura': ('sword', 'eyes covered by a black cloth blindfold with a white X-shaped seal mark, calm and fierce, one open palm pushed toward the viewer releasing swirling blue-violet wave energy, katana held low, ripples of energy in the air'),

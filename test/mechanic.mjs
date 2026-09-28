@@ -161,8 +161,8 @@ const R = await page.evaluate(() => {
   p.gsTfT = 0; p.cool['gm_g3~'] = 0; T.cast('gm_g3'); T.run(2); out.gop.n3 = T.n('mech_g3');
   T.cast('gm_viper'); out.gop.cd = +(p.cool.gm_viper || 0).toFixed(2); game.skillLv.gm_gop = 0;
   T.clear(); T.reset();
-  // 24) G-超级猎鹰：3 次充能；科罗纳形态大范围爆炸 / 旋雷者形态 3 道激光 / 捕食者形态 25 段
-  m = T.mob(500); hp0 = m.hp; out.falcon = { charges: SKILLS.gm_falcon.charges }; T.cast('gm_falcon'); T.sec(0.9); out.falcon.co = dealt(m, hp0);
+  // 24) G-超级猎鹰：3 次充能；第一次按只放出猎鹰，在场时再按才攻击：科罗纳形态大范围爆炸 / 旋雷者形态 3 道激光 / 捕食者形态 25 段
+  m = T.mob(500); hp0 = m.hp; out.falcon = { charges: SKILLS.gm_falcon.charges }; T.cast('gm_falcon'); T.sec(0.5); out.falcon.deploy = dealt(m, hp0); hp0 = m.hp; T.cast('gm_falcon'); T.sec(0.9); out.falcon.co = dealt(m, hp0);
   T.cast('gm_g1'); T.run(30); p.gsTfT = 0; T.cast('gm_g2'); T.run(30); hp0 = m.hp; T.cast('gm_falcon'); T.sec(0.6); out.falcon.rt = dealt(m, hp0);
   p.gsTfT = 0; p.cool.gm_g3 = 0; T.cast('gm_g3'); T.run(30); hp0 = m.hp; T.cast('gm_falcon'); T.sec(2.6); out.falcon.rp = dealt(m, hp0);
   T.clear(); T.reset();
@@ -215,7 +215,7 @@ report('电能转换：RX-78 改成光属性', o.convert === 'light', o.convert)
 report('HS-12：锁定后飞过去自爆', o.hs12.spawned && o.hs12.gone && o.hs12.dmg, o.hs12);
 report('G-4 雷行者：回旋多段、方向键派出（不打断动作）、召回、到时爆炸', o.frisbee.spawned && o.frisbee.dmg && o.frisbee.sent && o.frisbee.noAct && o.frisbee.recalled && o.frisbee.gone, o.frisbee);
 report('G-X 主宰者：旋雷者 4 / 捕食者 7、改装无动作、Buff On!、冷却 -15%', o.gop.form === 'g2' && o.gop.n2 === 4 && o.gop.noAct && o.gop.buffOn && o.gop.n3 === 7 && Math.abs(o.gop.cd - 3.5 * 0.85) < 0.05, o.gop);
-report('G-超级猎鹰：3 次充能；三种形态各自的攻击都打到', o.falcon.charges === 3 && o.falcon.co > 0 && o.falcon.rt > 0 && o.falcon.rp > 0, o.falcon);
+report('G-超级猎鹰：3 次充能；先放出（不攻击），再按按三种形态各自攻击都打到', o.falcon.charges === 3 && o.falcon.deploy === 0 && o.falcon.co > 0 && o.falcon.rt > 0 && o.falcon.rp > 0, o.falcon);
 report('高压电磁场：15 段', o.field.hits === 15 && o.field.dmg, o.field);
 report('二觉 博尔特 MX：步枪 4 发、激光剑 3 次、自爆', o.bolt.spawned && o.bolt.gone && o.bolt.dmg > 0 && o.bolt.rifle === 4 && o.bolt.blade === 3, o.bolt);
 report('微型制导 / 超时空光耀加农炮', o.micro >= 0.2 && o.hyper.dmg, { micro: o.micro, hyper: o.hyper });

@@ -1,0 +1,30 @@
+#!/bin/sh
+# 线上运维一条命令（服务器 cc）。写操作前自动备份数据库；写存档另外留一份 save_history（可从管理员后台恢复）。
+#   sh tools/admin/admin.sh users                                   列出所有账号 / 角色 / 点券
+#   sh tools/admin/admin.sh cera <账号> <点券>                        发点券邮件（大于 1000 万会自动拆成多封）
+#   sh tools/admin/admin.sh maxout <账号> [职业=转职,...] [额外点券]    角色全部满级 / 任务全完成 / 三觉 / 技能学满 / 最强装备 +12
+#       例：sh tools/admin/admin.sh maxout luzhipeng sword=soulbender 99999999
+#       做完让玩家刷新页面；弹“存档冲突”时选“使用云端存档”
+set -e
+cd "$(dirname "$0")/../.."
+HOST=cc DB=/opt/dawnbreak-server/data/dawnbreak.db NODE=/opt/dawnbreak-server/runtime/bin/node
+W=${TMPDIR:-/tmp}/dnf-admin; mkdir -p "$W"
+scp -q tools/admin/remote.js $HOST:/tmp/dnf-remote.js
+R() { ssh $HOST "$NODE --disable-warning=ExperimentalWarning /tmp/dnf-remote.js $DB $*"; }
+RW() { ssh $HOST "sudo /opt/dawnbreak-server/backup.sh && sudo -u dawnbreak $NODE --disable-warning=ExperimentalWarning /tmp/dnf-remote.js $DB $*"; }
+case "$1" in
+  users) R users ;;
+  cera)
+    left=$3
+    while [ "$left" -gt 0 ]; do n=$left; [ $n -gt 10000000 ] && n=10000000; RW mail "$2" $n; left=$((left - n)); done ;;
+  maxout)
+    R dump "$2" > "$W/cloud.json"
+    node build.mjs | tail -1
+    node tools/admin/maxout.mjs "$W" "$3" "${4:-0}"
+    node tools/admin/verify_save.mjs "$W" | tail -3
+    scp -q "$W/maxed.json" $HOST:/tmp/dnf-maxed.json
+    RW put "$2" /tmp/dnf-maxed.json maxout
+    ssh $HOST 'rm -f /tmp/dnf-maxed.json' ;;
+  *) sed -n 2,8p "$0"; exit 1 ;;
+esac
+ssh $HOST 'rm -f /tmp/dnf-remote.js'

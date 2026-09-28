@@ -282,7 +282,8 @@ if (parts.includes('scenes')) {
     check(r.id === sid && r.bg && r.npcs, `场景 ${sid} 没进去 / 背景或 NPC 立绘没加载：${JSON.stringify(r)}`);
     for (let i = 0; i < (await page.evaluate(sid => SCENES[sid].exits.length, sid)); i++) {
       await page.evaluate(sid => enterScene(sid), sid); await wait(600);
-      const to = await page.evaluate(i => { const ex = world.S.exits[i]; useExit(ex); return ex.to; }, i); await wait(900);
+      // 别的区域接到本区域场景上的入口（例：时空之门往上的魔界 Lv.60）可能高于本区域的等级：走这个出口时临时升到它的 minLv
+      const to = await page.evaluate(([i, L]) => { const ex = world.S.exits[i]; game.lvl = Math.max(L, ex.minLv || 0); useExit(ex); return ex.to; }, [i, R.lvlMax]); await wait(900);
       check((await sceneNow()) === to, `场景 ${sid} 的第 ${i} 个出口走不到 ${to}`);
       const back = await page.evaluate(from => { const ex = world.S.exits.find(e => e.to === from); if (ex) useExit(ex); return !!ex; }, sid); await wait(900);
       check(back && (await sceneNow()) === sid, `从 ${to} 回不到 ${sid}`);

@@ -4,12 +4,12 @@
    与「讨伐战」（无形棺柩 · 希洛克的幻界）。奈克斯、暗杀者、守门人、卢克西都是攻坚战里的官方首领名；阿甘左是官方 NPC（卢克西是他的妻子）。
    本作原创：暗黑城的商人米拉、各种小怪的名字与造型、凝视机制的具体做法。
    这个文件是纯数据：代码由 game/region.js 的 defineRegion 展开，美术由 art/tools/region_art.py siroco 读同一份数据生成。
-   入口（临时）：天帷巨兽 · 脊背（x 2200 的次元裂缝，Lv.30 就能过去，地下城选择界面会提示等级偏低）。
-     31~59 的 60 版本区域做好后，把 entry 挪到最后一个区域（时空之门）的场景、minLv 改成 60（等级组约定，见 docs/GEAR.md「等级段」）
+   入口：时空之门（x 1900 往上的次元裂缝，Lv.60）；主线接时空之门篇的最后一个任务 q_tg14（等级组约定，见 docs/GEAR.md「等级段」）。
+     以前临时放在天帷巨兽 · 脊背（Lv.30），31~59 的区域做完后挪了过来。
    ===================================================================== */
 defineRegion({
   id: 'siroco', name: '魔界 · 潜行者希洛克', lvl: 60, power: 6.5, bossPower: 0.75, atkPower: 3.2,   // 难度：按 Lv30 全身 +12 史诗调（机器人实测见 docs/REGION_PIPELINE.md）；移到 Lv60 后靠怪物等级公式（game/monsters.js monLvScale）保持同样手感
-  entry: { scene: 'behemoth_spine', side: 'up', x: 2200, to: 'siroco_town', minLv: 30, label: '次元裂缝 · 魔界（Lv.60）' },
+  entry: { scene: 'time_gate', side: 'up', x: 1900, to: 'siroco_town', minLv: 60, label: '次元裂缝 · 魔界（Lv.60）' },
 
   /* ---- 场景主题（pal = 程序兜底画面的配色；bg = 手绘背景的远景 / 地面 / 交界带描述）---- */
   themes: {
@@ -193,16 +193,16 @@ defineRegion({
     siroco_town: { name: '暗黑城', area: '魔界入口', kind: 'town', width: 2400, theme: 'siroTown', bgm: 'guild', ambient: 'magic', map: [6, -6],
       props: [{ art: 'world/b_teleporter', x: 260, h: 230 }, { art: 'world/p_magiclamp', x: 560, h: 110, y: 20 }, { art: 'world/p_crystal', x: 1250, h: 90, y: 150 }, { art: 'world/p_magiclamp', x: 1700, h: 110, y: 20 }, { art: 'world/p_crates', x: 1960, h: 80, y: 30 }],
       npcs: [{ npc: 'agonzo', x: 900, y: 50 }, { npc: 'mira', x: 1480, y: 60 }],
-      exits: [{ side: 'left', to: 'behemoth_spine' }, { side: 'right', to: 'siroco_field' }] },
+      exits: [{ side: 'left', to: 'time_gate' }, { side: 'right', to: 'siroco_field' }] },
     siroco_field: { name: '魔界', area: '希洛克的幻界', kind: 'field', width: 3000, theme: 'siroCoffin', bgm: 'field', map: [20, -7],
       exits: [{ side: 'left', to: 'siroco_town' }] },
   },
 
   /* ---- 主线（任务模板）：arrive 到达 | talk 对话 | clear 通关 | boss 打倒领主（collect = 顺便收集任务道具）| raid | handin 交付 ---- */
-  story: { chapter: '第七章 · 潜行者希洛克', prefix: 'q_si', pre: 'q_b09', npc: 'agonzo', scene: 'siroco_town', steps: [
-    { t: 'arrive', npc: 'sharan', to: 'agonzo', name: '来自魔界的求援', scene: 'siroco_town', reward: { exp: 0.05, gold: 2000 },
-      desc: '天帷巨兽的脊背上裂开了一道通往魔界的次元裂缝。穿过裂缝，去暗黑城找剑圣阿甘左。',
-      talk: { offer: ['天帷巨兽的脊背上……裂开了一道次元裂缝。', '有人从那边传来了求援——是剑圣阿甘左。去魔界的暗黑城找他吧。'], doing: ['裂缝在脊背那张图的中间。那边的怪物都有 Lv.60，做好准备再过去。'], done: ['……莎兰让你来的？', '我是阿甘左。我的妻子卢克西，被魔界的第五使徒——潜行者希洛克带走了。'] } },
+  story: { chapter: '第七章 · 潜行者希洛克', prefix: 'q_si', pre: 'q_tg14', npc: 'agonzo', scene: 'siroco_town', steps: [
+    { t: 'arrive', npc: 'silan', to: 'agonzo', name: '来自魔界的求援', scene: 'siroco_town', reward: { exp: 0.05, gold: 2000 },
+      desc: '时空之门的上方裂开了一道通往魔界的次元裂缝。穿过裂缝，去暗黑城找剑圣阿甘左。',
+      talk: { offer: ['时空之门的上方……裂开了一道次元裂缝。', '有人从那边传来了求援——是剑圣阿甘左。去魔界的暗黑城找他吧。'], doing: ['裂缝在时空之门往上走，Lv.60 才能过去。'], done: ['……西岚让你来的？', '我是阿甘左。我的妻子卢克西，被魔界的第五使徒——潜行者希洛克带走了。'] } },
     { t: 'clear', dungeon: 'law_gate', name: '法则之门', reward: { exp: 0.1, gold: 3000 },
       desc: '希洛克的幻界有三道门。先通关「法则之门」。',
       talk: { offer: ['希洛克躲在她的幻界里，入口有三道门：法则、知性、痛苦。', '先去法则之门。那里的狱卒会抓人，看到它伸手就后撤。'], doing: ['法则之门在幻界入口的最左边。'], done: ['你回来了。……门后面还有东西在守着。'] } },

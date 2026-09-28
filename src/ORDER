@@ -109,14 +109,16 @@ content/quests/behemoth.js
 # 区域流水线（docs/REGION_PIPELINE.md）：怪物技能库 + 领主机制库 → defineRegion(spec) 生成器 → 每个区域一个纯数据 spec（+ 可选的领主自定义钩子）
 game/mon_skills.js
 game/region.js
-content/regions/siroco_bosses.js
-content/regions/siroco.js
 content/regions/darkelf.js
 content/regions/snow.js
 content/regions/gent.js
 content/regions/ancient.js
 content/regions/ancient_rooms.js
 content/regions/train.js
+content/regions/timegate.js
+# 希洛克（Lv60）的入口在时空之门的场景上：要放在 timegate.js 后面
+content/regions/siroco_bosses.js
+content/regions/siroco.js
 # 装备深化：深渊派对（深渊地下城、深渊柱与两轮派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
 content/abyss.js
 ui/quest.js

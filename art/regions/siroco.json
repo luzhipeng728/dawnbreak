@@ -1,17 +1,17 @@
 {
  "id": "siroco",
  "name": "魔界 · 潜行者希洛克",
- "lvl": 30,
+ "lvl": 60,
  "power": 6.5,
  "bossPower": 0.75,
  "atkPower": 3.2,
  "entry": {
-  "scene": "behemoth_spine",
+  "scene": "time_gate",
   "side": "up",
-  "x": 2200,
+  "x": 1900,
   "to": "siroco_town",
-  "minLv": 30,
-  "label": "次元裂缝 · 魔界"
+  "minLv": 60,
+  "label": "次元裂缝 · 魔界（Lv.60）"
  },
  "themes": {
   "siroTown": {
@@ -633,7 +633,7 @@
  "bosses": {
   "nex": {
    "name": "奈克斯",
-   "lvl": 32,
+   "lvl": 62,
    "size": [
     16,
     14,
@@ -718,8 +718,8 @@
       "mechs": [
        {
         "use": "shield",
-        "hp": 0.05,
-        "dur": 14,
+        "hp": 0.035,
+        "dur": 16,
         "punish": "heal",
         "onBreak": "groggy",
         "col": "#7ae0c8"
@@ -731,8 +731,8 @@
        "use": "mech",
        "mech": {
         "use": "shield",
-        "hp": 0.05,
-        "dur": 14,
+        "hp": 0.035,
+        "dur": 16,
         "punish": "heal",
         "onBreak": "groggy",
         "col": "#7ae0c8"
@@ -762,7 +762,7 @@
   },
   "assassin": {
    "name": "暗杀者",
-   "lvl": 32,
+   "lvl": 62,
    "size": [
     14,
     12,
@@ -889,7 +889,7 @@
   },
   "gatekeeper": {
    "name": "守门人",
-   "lvl": 32,
+   "lvl": 62,
    "size": [
     20,
     15,
@@ -1019,7 +1019,7 @@
   "siroco": {
    "name": "潜行者 希洛克",
    "tier": "raid",
-   "lvl": 33,
+   "lvl": 63,
    "size": [
     18,
     15,
@@ -1240,7 +1240,7 @@
    {
     "key": "ep_si_nex",
     "slot": "support",
-    "lvl": 30,
+    "lvl": 60,
     "name": "奈克斯的锁链",
     "fx": {
      "dmgUp": 0.09,
@@ -1261,7 +1261,7 @@
    {
     "key": "ep_si_gate",
     "slot": "stone",
-    "lvl": 30,
+    "lvl": 60,
     "name": "守门人的幻灭之石",
     "fx": {
      "light": 30,
@@ -1276,7 +1276,7 @@
    {
     "id": "set_siroco",
     "name": "潜行者希洛克的残香",
-    "lvl": 30,
+    "lvl": 60,
     "desc": "希洛克留在幻界里的残香凝成的首饰。",
     "bonus": {
      "2": {
@@ -1329,7 +1329,7 @@
    {
     "id": "set_armygod",
     "name": "军神的隐秘遗产",
-    "lvl": 30,
+    "lvl": 60,
     "abyss": true,
     "desc": "沉在魔界深渊里的军神遗物。据说它的主人一生从未败过。",
     "bonus": {
@@ -1378,8 +1378,8 @@
   "law_gate": {
    "name": "法则之门",
    "lvl": [
-    30,
-    31
+    60,
+    61
    ],
    "theme": "siroLaw",
    "layout": "standard",
@@ -1451,8 +1451,8 @@
   "wit_gate": {
    "name": "知性之门",
    "lvl": [
-    30,
-    31
+    60,
+    61
    ],
    "theme": "siroWit",
    "layout": "long",
@@ -1524,8 +1524,8 @@
   "pain_gate": {
    "name": "痛苦之门",
    "lvl": [
-    30,
-    31
+    60,
+    61
    ],
    "theme": "siroPain",
    "layout": "long",
@@ -1601,10 +1601,10 @@
   "siroco_coffin": {
    "name": "无形棺柩",
    "lvl": [
-    31,
-    32
+    61,
+    62
    ],
-   "bossLvl": 33,
+   "bossLvl": 63,
    "theme": "siroCoffin",
    "layout": "raid",
    "mobs": [
@@ -1694,10 +1694,10 @@
   "abyss_siroco": {
    "name": "魔界深渊",
    "lvl": [
-    30,
-    31
+    60,
+    61
    ],
-   "lordLvl": 33,
+   "lordLvl": 63,
    "cost": 2,
    "pity": 8,
    "seal": 4,
@@ -1740,7 +1740,7 @@
     "scene": "siroco_field",
     "x": 2880
    },
-   "clearExp": 19000,
+   "clearExp": 37000,
    "waves": [
     {
      "n": 6,
@@ -1849,7 +1849,7 @@
    "desc": "【深渊派对】希洛克消散之后，魔界深处裂开了一道深渊。每次消耗 2 张深渊派对邀请函。深渊领主是幻界的三个首领之一（每次随机），降临后会引发落石，血量过半时用「深渊的凝视」逼你站进光圈。魔界专属史诗「军神的隐秘遗产」只在这里出现。",
    "quest": {
     "name": "魔界的深渊",
-    "lvl": 30,
+    "lvl": 60,
     "clear": "siroco_coffin",
     "pre": [
      "q_abyss_gf"
@@ -1963,7 +1963,7 @@
    "exits": [
     {
      "side": "left",
-     "to": "behemoth_spine"
+     "to": "time_gate"
     },
     {
      "side": "right",
@@ -1993,13 +1993,13 @@
  "story": {
   "chapter": "第七章 · 潜行者希洛克",
   "prefix": "q_si",
-  "pre": "q_b09",
+  "pre": "q_tg14",
   "npc": "agonzo",
   "scene": "siroco_town",
   "steps": [
    {
     "t": "arrive",
-    "npc": "sharan",
+    "npc": "silan",
     "to": "agonzo",
     "name": "来自魔界的求援",
     "scene": "siroco_town",
@@ -2007,17 +2007,17 @@
      "exp": 0.05,
      "gold": 2000
     },
-    "desc": "天帷巨兽的脊背上裂开了一道通往魔界的次元裂缝。穿过裂缝，去暗黑城找剑圣阿甘左。",
+    "desc": "时空之门的上方裂开了一道通往魔界的次元裂缝。穿过裂缝，去暗黑城找剑圣阿甘左。",
     "talk": {
      "offer": [
-      "天帷巨兽的脊背上……裂开了一道次元裂缝。",
+      "时空之门的上方……裂开了一道次元裂缝。",
       "有人从那边传来了求援——是剑圣阿甘左。去魔界的暗黑城找他吧。"
      ],
      "doing": [
-      "裂缝在脊背那张图的中间，Lv.30 才能过去。"
+      "裂缝在时空之门往上走，Lv.60 才能过去。"
      ],
      "done": [
-      "……莎兰让你来的？",
+      "……西岚让你来的？",
       "我是阿甘左。我的妻子卢克西，被魔界的第五使徒——潜行者希洛克带走了。"
      ]
     }

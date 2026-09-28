@@ -25,7 +25,9 @@ function drawSpr(c, img, x, y, w, h, o = {}) {
   if (typeof img === 'string') img = IMG['fx/' + img]; if (!img) return;
   if (!h) h = w * img.height / img.width; if (!w) w = h * img.width / img.height;
   c.save(); if (o.add !== false) c.globalCompositeOperation = 'lighter'; if (o.alpha !== undefined) c.globalAlpha *= clamp(o.alpha, 0, 1);
-  c.translate(x, y); if (o.rot) c.rotate(o.rot); if (o.flip) c.scale(-1, 1);
+  c.translate(x, y);
+  if (o.ground) { c.scale(1, h / w); if (o.rot) c.rotate(o.rot); c.drawImage(img, -w / 2, -w / 2, w, w); c.restore(); return; }   // 平躺在地面的法阵：在地面平面里转，再按透视压扁（不会像立着的圆盘那样原地转）
+  if (o.rot) c.rotate(o.rot); if (o.flip) c.scale(-1, 1);
   c.drawImage(img, -w * (o.ax ?? 0.5), -h * (o.ay ?? 0.5), w, h); c.restore();
 }
 /* ---- 刀光：新月形刀光素材，沿 a0→a1（弧度，0 = 朝右）扫出来；扇形裁剪做出“挥过去”的过程 ---- */

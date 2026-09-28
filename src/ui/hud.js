@@ -5,7 +5,7 @@
    - hudSkillSlotAt(x, y) / hudQuickSlotAt(x, y)：UW×UH 逻辑坐标 → 格子下标或 -1（布局可能会变，别写死坐标）
    - uiPref('hudMode')：'full' 完整 / 'lite' 简洁（Tab 切换）
    ===================================================================== */
-const SKILL_KEYS = ['A', 'S', 'D', 'F', 'G', 'H', 'Q', 'W', 'E', 'R', 'T', 'Y', 'Alt', 'V'];   // 旧常量（默认键位），显示请用 keyName('s' + i)
+const SKILL_KEYS = ['A', 'S', 'D', 'F', 'G', 'H', 'Q', 'W', 'E', 'R', 'T', 'Y', 'Shift', 'V'];   // 旧常量（默认键位），显示请用 keyName('s' + i)
 const iconCache = {};
 function skillIcon(id, size = 64) {
   const key = id + size; if (iconCache[key]) return iconCache[key];
@@ -65,7 +65,7 @@ const HUD = {
   y0: 940, x0: 452, x1: 1468,                      // 面板上沿 / 左右边
   hp: { x: 372, y: 994, r: 78 }, mp: { x: 1548, y: 994, r: 78 },
   quick: { x: 478, y: 962, s: 52, gap: 58 },       // 消耗品栏 1~6：一排
-  skill: { x: 1040, y: 962, s: 52, gap: 60, row: 58 },   // 技能栏 2×7：第 1 排 s0..s5 + s12（Alt），第 2 排 s6..s11 + s13
+  skill: { x: 1040, y: 962, s: 52, gap: 60, row: 58 },   // 技能栏 2×7：第 1 排 s0..s5 + s12（左 Shift），第 2 排 s6..s11 + s13
   dodge: { x: 912, y: 1018, r: 30 },                    // 后跳-强化的冷却（原来的闪避位置；字段名保留，别的模块可能在读）
 };
 // 右上角小地图有 4 行时比较高：连击数和地下城里的任务追踪栏跟着往下挪，不和小地图重叠（小地图见 dungeon.drawUI：y0=70，格子 34）

@@ -181,6 +181,7 @@ bus.on('dungeonEnter', () => {
 bus.on('roomEnter', e => {
   const dg = game.dungeon; if (!dg || !dg.def.abyss || e.room !== dg.abyssRoom || abyssGuest()) return;
   const A = ABYSS[dg.def.id]; if (!A) return;
+  dg.waves = [];   // 大房间的第二波由深渊派对代替（不然两轮打完又刷一波，门迟迟不开）
   const W = game.room.x1, pl = spawnMonster('abyssPillar', W * 0.64, DEPTH / 2, { lvl: dg.def.lvl[1], mul: dg.D.hp * A.seal });
   pl.noGrab = true; pl.face = -1;
   const block = spawnMonster('abyssBlock', 20, 8, { lvl: 1 }); block.invul = 1e9; block.botSkip = true; block.noGrab = true;   // 两轮打完之前房间不算清完（门锁着）

@@ -23,7 +23,7 @@ const wait = ms => page.waitForTimeout(ms);
 const simWait = s => wait(Math.round(s * 1000 / speed) + 60);
 
 await open('test&mute&mon=msLab');
-const R = await page.evaluate(id => { const R = REGIONS[id]; if (!R) return null; return { monsters: R.monsters, bosses: R.bosses, dungeons: R.dungeons, scenes: R.scenes, quests: R.quests, entry: R.spec.entry, lvl: R.spec.lvl,
+const R = await page.evaluate(id => { const R = REGIONS[id]; if (!R) return null; return { monsters: R.monsters, bosses: R.bosses, dungeons: R.dungeons, scenes: R.scenes, quests: R.quests, entry: R.spec.entry, lvl: R.spec.lvl, lvlMax: R.spec.lvlMax ?? R.spec.lvl,
   shades: Object.keys(MON).filter(k => MON[k].region === id && MON[k].msShadeOf) }; }, id);
 if (!R) { console.log(`✗ 没有区域 ${id}（src/content/regions/${id}.js 有没有加进 src/ORDER？）`); process.exit(1); }
 const ALL = [...R.monsters, ...R.bosses, ...R.shades];
@@ -115,7 +115,7 @@ if (parts.includes('mechs')) {
     m.control = (m, dt) => { m.aiCd = 99; regionAI(m, dt); };   // 只跑机制，不出招
     return m.msMechs.map(s => s.id);
   }, boss);
-  const clearMechs = () => page.evaluate(() => { const m = __b; for (const s of m.msMechs) msMechEnd(m, s); m.msMechs = []; m.msMul = {}; m.dmgTakenMul = 1; if (m.gaze) m.gaze.next = 999; });
+  const clearMechs = () => page.evaluate(() => { const m = __b; for (const s of m.msMechs) msMechEnd(m, s); m.msMechs = []; m.msMul = {}; m.dmgTakenMul = 1; if (m.gaze) m.gaze.next = 999; for (const e of ents) if (e.team === 'e' && e !== m && !e.dead) e.remove = true; });   // 领主出场自带的连线搭档之类也清掉，免得干扰下一项
   const hit = (dmg = 20, who = '__b') => page.evaluate(({ dmg, who }) => { const t = window[who]; t.invul = 0; return applyHit(game.player, t, { dmg, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); }, { dmg, who });
   const S = {};
   // 破招槽
@@ -273,7 +273,7 @@ if (parts.includes('monsters')) {
 /* ---------------- 5. 场景 ---------------- */
 if (parts.includes('scenes') || parts.includes('quest')) await open('town&mute&cls=sword');
 if (parts.includes('scenes')) {
-  await page.evaluate(L => { game.lvl = L; }, R.lvl);   // 区域等级（满级 60 后希洛克是 Lv60）
+  await page.evaluate(L => { game.lvl = L; }, R.lvlMax);   // 区域的最高等级（区域里的出口可能有等级限制）
   const sceneNow = () => page.evaluate(() => world && world.S && world.S.id);
   for (const sid of R.scenes) {
     await page.evaluate(sid => enterScene(sid), sid); await wait(900);
@@ -436,8 +436,8 @@ if (parts.includes('abyss')) {
     await page.evaluate(() => { for (const e of [...ents]) if (e.team === 'e' && !e.dead && e !== game.dungeon.abyssRun.block) { e.hp = 0; killEnt(e, game.player, {}); } });
     await page.waitForFunction(() => { const dg = game.dungeon; return !!document.querySelector('#abytreasure .card') && dg.abyssRun.phase === 'done' && dg.doorsOpen; }, null, { timeout: 30000 }).catch(() => {});   // 并行负载下清房 / 开门会晚几帧
     await wait(500);
-    const c0 = await page.evaluate(() => ({ n: document.querySelectorAll('#abytreasure .card').length, phase: game.dungeon.abyssRun.phase, doors: game.dungeon.doorsOpen, items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));
-    check(c0.n === 3 && c0.phase === 'done' && c0.doors, `${aid}: 两轮打完弹出三张「深渊宝藏」（${c0.n}），门打开了`);
+    const c0 = await page.evaluate(() => ({ n: document.querySelectorAll('#abytreasure .card').length, phase: game.dungeon.abyssRun.phase, round: game.dungeon.abyssRun.round, doors: game.dungeon.doorsOpen, alive: ents.filter(e => e.team === 'e' && !e.dead && !e.remove).map(e => e.kind), state: game.dungeon.state, items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));
+    if (!check(c0.n === 3 && c0.phase === 'done' && c0.doors, `${aid}: 两轮打完弹出三张「深渊宝藏」（${c0.n}），门打开了 ${JSON.stringify({ phase: c0.phase, round: c0.round, doors: c0.doors, alive: c0.alive, state: c0.state })}`)) continue;
     await page.screenshot({ path: `${out}/abyss-${aid}-treasure.png` });
     await page.click('#abytreasure .card >> nth=1'); await wait(900);
     const c1 = await page.evaluate(() => ({ flip: document.querySelectorAll('#abytreasure .card.flip').length, items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));

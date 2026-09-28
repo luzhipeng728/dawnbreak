@@ -1,0 +1,2813 @@
+{
+ "id": "gent",
+ "name": "诺斯玛尔 · 天界根特",
+ "lvl": 44,
+ "lvlMax": 52,
+ "power": 1.3,
+ "bossPower": 1,
+ "atkPower": 1.12,
+ "entry": {
+  "scene": "hendon_myre",
+  "side": "up",
+  "x": 2400,
+  "to": "norsemar",
+  "minLv": 44,
+  "label": "诺斯玛尔"
+ },
+ "themes": {
+  "nmTown": {
+   "edgeHoles": true,
+   "grade": {
+    "tint": "rgba(90,80,100,0.14)",
+    "fog": "rgba(200,190,210,0.10)"
+   },
+   "ambient": "wisps",
+   "rgb": "210,200,220",
+   "floorW": 1700,
+   "pal": {
+    "sky": [
+     "#20202a",
+     "#3a3848",
+     "#6a6478"
+    ],
+    "haze": "#c8c0d8",
+    "floor": [
+     "#34323a",
+     "#3e3c44",
+     "#2a282e"
+    ]
+   },
+   "bg": [
+    "Norsemar, a once prosperous town north of Hendon Myre now a silent ghost town after a plague: empty stone houses with broken windows, faded festival banners, a dry fountain, bandit graffiti and crude barricades, grey overcast sky and drifting pale mist.",
+    "cracked cobblestone street with scattered crates, torn posters and dry leaves",
+    "broken wooden barricades, overturned carts and wanted posters on a low stone wall"
+   ]
+  },
+  "nmHamelin": {
+   "grade": {
+    "tint": "rgba(110,90,60,0.12)",
+    "fog": "rgba(230,210,160,0.08)"
+   },
+   "ambient": "motes",
+   "rgb": "240,220,170",
+   "floorW": 1700,
+   "pal": {
+    "sky": [
+     "#3a2a20",
+     "#6a5038",
+     "#b09060"
+    ],
+    "haze": "#e8d0a0"
+   },
+   "bg": [
+    "Hamelin, the \"village of confusion\": a small old farming village with thatched roofs and a creaky windmill, golden wheat fields gone wild, piles of grain sacks gnawed by rats, a small church tower, a strange dusk light as if a flute tune hangs in the air.",
+    "a dirt village road with scattered straw, grain and tiny rat tracks",
+    "wooden fences, grain sacks with holes, broken barrels and rat holes in the ground"
+   ]
+  },
+  "gtCamp": {
+   "grade": {
+    "tint": "rgba(90,110,130,0.10)",
+    "fog": "rgba(200,220,240,0.08)"
+   },
+   "ambient": "motes",
+   "rgb": "220,230,245",
+   "floorW": 1700,
+   "pal": {
+    "sky": [
+     "#3a4a6a",
+     "#7a90b0",
+     "#c8d4e4"
+    ],
+    "haze": "#dfe8f4"
+   },
+   "bg": [
+    "The Heaven Gate camp in the Antebellum Canyon of the Heavenly Realm: a resistance camp of the capital Gent built on canyon cliffs, steampunk airships moored on wooden docks, gear-driven cranes, canvas tents, supply crates, soldiers' banners with a silver eagle, bright high-altitude sky.",
+    "wooden plank decks over rocky ground with metal rivets and coiled ropes",
+    "stacked supply crates, a brass railing and coiled ropes along the cliff edge"
+   ]
+  },
+  "gtOut": {
+   "edgeHoles": true,
+   "grade": {
+    "tint": "rgba(130,70,40,0.14)",
+    "fog": "rgba(255,160,100,0.08)"
+   },
+   "ambient": "wisps",
+   "rgb": "255,170,120",
+   "floorW": 1700,
+   "pal": {
+    "sky": [
+     "#2a1810",
+     "#5a3020",
+     "#a06040"
+    ],
+    "haze": "#ffb080"
+   },
+   "bg": [
+    "The outskirts of the imperial capital Gent under siege by the Kartel army: burning buildings, smoke columns, sandbag barricades, broken cannons, the huge walls of Gent in the distance, an orange-red war-torn sky.",
+    "war-torn paved road with shell craters, scattered bricks and spent shell casings",
+    "sandbag barricades, barbed wire and broken wooden crates"
+   ]
+  },
+  "gtGate": {
+   "grade": {
+    "tint": "rgba(70,80,100,0.12)",
+    "fog": "rgba(180,200,230,0.08)"
+   },
+   "ambient": "motes",
+   "rgb": "200,215,235",
+   "floorW": 1800,
+   "pal": {
+    "sky": [
+     "#1a2030",
+     "#34405a",
+     "#6a7a98"
+    ],
+    "haze": "#b8c8e0"
+   },
+   "bg": [
+    "The great gates of the imperial capital Gent: colossal stone walls with blue banners and a silver eagle crest, huge iron gate doors, gun turrets and searchlights on the walls, Kartel siege engines and tanks in the distance, a cold dawn sky.",
+    "large flagstones of a fortified plaza with tank tread marks and scorch marks",
+    "stone battlement blocks, sandbags and a toppled searchlight"
+   ]
+  }
+ },
+ "monsters": {
+  "madBandit": {
+   "name": "疯狂盗贼",
+   "tier": "normal",
+   "arch": "aggressive",
+   "size": [
+    13,
+    12,
+    100
+   ],
+   "art": "nmBandit",
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 2,
+     "dmg": 1,
+     "cd": [
+      1.4,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "len": 300,
+     "speed": 680,
+     "windup": 0.7,
+     "dmg": 1.1,
+     "cd": [
+      4.5,
+      6
+     ]
+    }
+   ]
+  },
+  "madBanditF": {
+   "name": "疯狂女盗贼",
+   "tier": "caster",
+   "arch": "kiter",
+   "size": [
+    13,
+    12,
+    98
+   ],
+   "art": [
+    "nmBandit",
+    {
+     "hue": -60,
+     "sat": 1.1
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "dmg": 0.8,
+     "reach": 60,
+     "cd": [
+      2,
+      3
+     ]
+    },
+    {
+     "use": "shot",
+     "clip": "throw",
+     "mode": "spread",
+     "n": 3,
+     "spread": 50,
+     "speed": 320,
+     "dmg": 0.75,
+     "cd": [
+      3.5,
+      5
+     ],
+     "w": 2
+    }
+   ]
+  },
+  "banditGang": {
+   "name": "疯狂盗贼团",
+   "tier": "brute",
+   "arch": "aggressive",
+   "size": [
+    15,
+    12,
+    106
+   ],
+   "scale": 1.1,
+   "weight": 2,
+   "art": [
+    "nmBandit",
+    {
+     "hue": 140,
+     "sat": 0.8,
+     "bright": 0.85
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 3,
+     "reach": 76,
+     "dmg": 1,
+     "cd": [
+      1.8,
+      2.8
+     ],
+     "w": 2
+    },
+    {
+     "use": "grab",
+     "reach": 62,
+     "hold": 0.8,
+     "throwDmg": 1.4,
+     "cd": [
+      7,
+      9
+     ]
+    }
+   ]
+  },
+  "cursedStone": {
+   "name": "妖变的石头",
+   "tier": "brute",
+   "arch": "guard",
+   "size": [
+    20,
+    15,
+    120
+   ],
+   "weight": 4,
+   "hardness": 40,
+   "elem": "dark",
+   "art": [
+    "golem",
+    {
+     "hue": 100,
+     "sat": 0.6,
+     "bright": 0.7
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "slam",
+     "reach": 96,
+     "width": 30,
+     "windup": 0.7,
+     "dmg": 1.3,
+     "down": true,
+     "sa": true,
+     "cd": [
+      2.4,
+      3.6
+     ],
+     "w": 2
+    },
+    {
+     "use": "aoe",
+     "shape": "ring",
+     "at": "self",
+     "r": 150,
+     "r0": 50,
+     "windup": 1.2,
+     "dmg": 1.1,
+     "cd": [
+      8,
+      10
+     ]
+    }
+   ]
+  },
+  "quakeHound": {
+   "name": "魔震的猎犬",
+   "tier": "normal",
+   "arch": "aggressive",
+   "size": [
+    16,
+    12,
+    72
+   ],
+   "speed": 135,
+   "elem": "dark",
+   "art": [
+    "hound",
+    {
+     "hue": -110,
+     "sat": 1
+    }
+   ],
+   "noGrab": false,
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "bite",
+     "reach": 62,
+     "dmg": 0.95,
+     "cd": [
+      1.4,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "clip": "chargeW",
+     "len": 340,
+     "speed": 720,
+     "windup": 0.7,
+     "dmg": 1.1,
+     "cd": [
+      4,
+      6
+     ]
+    }
+   ]
+  },
+  "dogmanHado": {
+   "name": "犬人哈多",
+   "tier": "elite",
+   "arch": "aggressive",
+   "size": [
+    15,
+    12,
+    110
+   ],
+   "speed": 125,
+   "art": "nmDogman",
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 3,
+     "reach": 86,
+     "dmg": 1,
+     "cd": [
+      1.6,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "clip": "pounce",
+     "len": 360,
+     "speed": 740,
+     "windup": 0.6,
+     "dmg": 1.2,
+     "cd": [
+      4,
+      6
+     ]
+    },
+    {
+     "use": "summon",
+     "kind": "quakeHound",
+     "n": 2,
+     "max": 3,
+     "cd": [
+      14,
+      18
+     ]
+    }
+   ]
+  },
+  "shiningSaji": {
+   "name": "闪灵萨吉",
+   "tier": "elite",
+   "arch": "flier",
+   "size": [
+    16,
+    13,
+    96
+   ],
+   "scale": 1.25,
+   "elem": "light",
+   "art": [
+    "deGhost",
+    {
+     "hue": -160,
+     "sat": 0.4,
+     "bright": 1.35
+    }
+   ],
+   "skills": [
+    {
+     "use": "laser",
+     "windup": 1.1,
+     "dur": 1,
+     "sweep": 60,
+     "dmg": 0.45,
+     "col": "#fff0a0",
+     "cd": [
+      6,
+      8
+     ],
+     "w": 1.4
+    },
+    {
+     "use": "seq",
+     "cd": [
+      6,
+      8
+     ],
+     "steps": [
+      {
+       "use": "blink",
+       "to": "behind",
+       "dist": 70
+      },
+      {
+       "use": "aoe",
+       "shape": "circle",
+       "at": "self",
+       "r": 110,
+       "windup": 0.5,
+       "dmg": 1.1
+      }
+     ]
+    }
+   ]
+  },
+  "giantRat": {
+   "name": "巨鼠",
+   "tier": "swarm",
+   "arch": "swarm",
+   "size": [
+    14,
+    10,
+    50
+   ],
+   "scale": 0.9,
+   "speed": 150,
+   "art": "nmRat",
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "bite",
+     "reach": 50,
+     "dmg": 0.75,
+     "status": "poison",
+     "cd": [
+      1.2,
+      2.2
+     ]
+    }
+   ]
+  },
+  "maneater": {
+   "name": "食人鼠",
+   "tier": "normal",
+   "arch": "aggressive",
+   "size": [
+    18,
+    12,
+    60
+   ],
+   "scale": 1.25,
+   "speed": 135,
+   "art": [
+    "nmRat",
+    {
+     "hue": -30,
+     "sat": 1.3,
+     "bright": 0.8
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "bite",
+     "n": 2,
+     "reach": 64,
+     "dmg": 1,
+     "status": "bleed",
+     "cd": [
+      1.4,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "clip": "pounce",
+     "len": 280,
+     "speed": 700,
+     "windup": 0.6,
+     "dmg": 1.1,
+     "cd": [
+      4,
+      6
+     ]
+    }
+   ]
+  },
+  "ratmanSiu": {
+   "name": "鼠头人西乌",
+   "tier": "elite",
+   "arch": "aggressive",
+   "size": [
+    14,
+    12,
+    104
+   ],
+   "art": "nmRatman",
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 3,
+     "reach": 80,
+     "dmg": 1,
+     "cd": [
+      1.6,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "summon",
+     "kind": "giantRat",
+     "n": 3,
+     "max": 5,
+     "cd": [
+      10,
+      14
+     ]
+    },
+    {
+     "use": "aoe",
+     "shape": "circle",
+     "at": "target",
+     "r": 70,
+     "n": 2,
+     "scatter": 120,
+     "windup": 1.1,
+     "dmg": 1,
+     "status": "poison",
+     "col": "#b0e070",
+     "cd": [
+      7,
+      9
+     ]
+    }
+   ]
+  },
+  "rokusha": {
+   "name": "老鼠商人洛克沙",
+   "tier": "elite",
+   "arch": "kiter",
+   "size": [
+    14,
+    12,
+    100
+   ],
+   "art": [
+    "nmRatman",
+    {
+     "hue": 40,
+     "sat": 1.2
+    }
+   ],
+   "skills": [
+    {
+     "use": "shot",
+     "clip": "throw",
+     "mode": "arc",
+     "n": 3,
+     "r": 50,
+     "dmg": 0.9,
+     "cd": [
+      3.5,
+      5
+     ],
+     "w": 2
+    },
+    {
+     "use": "rain",
+     "kind": "hex",
+     "n": 3,
+     "r": 46,
+     "windup": 1.2,
+     "dmg": 1,
+     "col": "#ffcc66",
+     "cd": [
+      8,
+      11
+     ],
+     "say": "金币炸弹！"
+    },
+    {
+     "use": "blink",
+     "to": "away",
+     "dist": 220,
+     "cd": [
+      8,
+      11
+     ],
+     "w": 0.6
+    }
+   ]
+  },
+  "kartelGunner": {
+   "name": "卡勒特弹药兵",
+   "tier": "caster",
+   "arch": "kiter",
+   "size": [
+    13,
+    12,
+    104
+   ],
+   "art": "gtSoldier",
+   "skills": [
+    {
+     "use": "shot",
+     "mode": "straight",
+     "speed": 460,
+     "dmg": 0.85,
+     "cd": [
+      1.6,
+      2.6
+     ],
+     "w": 2.5,
+     "col": "#ffd070"
+    },
+    {
+     "use": "shot",
+     "mode": "spread",
+     "n": 3,
+     "spread": 30,
+     "speed": 460,
+     "dmg": 0.7,
+     "cd": [
+      4,
+      6
+     ]
+    },
+    {
+     "use": "swipe",
+     "dmg": 0.8,
+     "reach": 56,
+     "cd": [
+      2,
+      3
+     ]
+    }
+   ]
+  },
+  "kartelGrenadier": {
+   "name": "卡勒特放火兵",
+   "tier": "caster",
+   "arch": "kiter",
+   "size": [
+    13,
+    12,
+    104
+   ],
+   "elem": "fire",
+   "art": [
+    "gtSoldier",
+    {
+     "hue": -80,
+     "sat": 2.2,
+     "bright": 0.95
+    }
+   ],
+   "skills": [
+    {
+     "use": "shot",
+     "clip": "throw",
+     "mode": "arc",
+     "r": 60,
+     "dmg": 1,
+     "status": "burn",
+     "cd": [
+      3,
+      4.5
+     ],
+     "w": 2,
+     "col": "#ff8a3a"
+    },
+    {
+     "use": "swipe",
+     "dmg": 0.8,
+     "reach": 56,
+     "cd": [
+      2,
+      3
+     ]
+    }
+   ]
+  },
+  "kartelMedic": {
+   "name": "卡勒特医疗兵",
+   "tier": "caster",
+   "arch": "kiter",
+   "size": [
+    13,
+    12,
+    102
+   ],
+   "art": [
+    "gtSoldier",
+    {
+     "sat": 0.1,
+     "bright": 1.5
+    }
+   ],
+   "skills": [
+    {
+     "use": "buff",
+     "kind": "heal",
+     "target": "allies",
+     "r": 300,
+     "amt": 0.12,
+     "cd": [
+      6,
+      8
+     ],
+     "w": 2,
+     "say": "治疗！"
+    },
+    {
+     "use": "shot",
+     "mode": "straight",
+     "speed": 420,
+     "dmg": 0.7,
+     "cd": [
+      2.5,
+      3.5
+     ]
+    }
+   ]
+  },
+  "kartelVanguard": {
+   "name": "卡勒特强化先锋卫队",
+   "tier": "brute",
+   "arch": "guard",
+   "size": [
+    17,
+    13,
+    118
+   ],
+   "scale": 1.12,
+   "weight": 3,
+   "hardness": 40,
+   "art": [
+    "gtSoldier",
+    {
+     "hue": 130,
+     "sat": 1.8,
+     "bright": 0.8
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "guard",
+     "dur": 2.6,
+     "reduce": 0.85,
+     "cd": [
+      6,
+      8
+     ],
+     "w": 1.5,
+     "counter": {
+      "use": "aoe",
+      "shape": "line",
+      "at": "front",
+      "len": 160,
+      "hw": 30,
+      "windup": 0.4,
+      "dmg": 1.2,
+      "knock": 300
+     }
+    },
+    {
+     "use": "swipe",
+     "clip": "slam",
+     "reach": 90,
+     "dmg": 1.2,
+     "down": true,
+     "cd": [
+      2.4,
+      3.4
+     ],
+     "w": 2
+    }
+   ]
+  },
+  "kartelRider": {
+   "name": "卡勒特摩托车兵",
+   "tier": "normal",
+   "arch": "aggressive",
+   "size": [
+    16,
+    12,
+    100
+   ],
+   "speed": 160,
+   "art": [
+    "gtSoldier",
+    {
+     "hue": -50,
+     "sat": 1.8
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "dash",
+     "len": 460,
+     "speed": 820,
+     "windup": 0.6,
+     "dmg": 1.2,
+     "cd": [
+      3,
+      4.5
+     ],
+     "w": 2
+    },
+    {
+     "use": "aoe",
+     "shape": "circle",
+     "at": "self",
+     "r": 110,
+     "windup": 0.5,
+     "dmg": 1,
+     "cd": [
+      6,
+      8
+     ],
+     "say": "旋转！"
+    }
+   ]
+  },
+  "corroder": {
+   "name": "腐蚀弹头团团员",
+   "tier": "elite",
+   "arch": "kiter",
+   "size": [
+    15,
+    12,
+    110
+   ],
+   "scale": 1.15,
+   "art": [
+    "gtSoldier",
+    {
+     "hue": 180,
+     "sat": 1.8,
+     "bright": 0.8
+    }
+   ],
+   "skills": [
+    {
+     "use": "laser",
+     "windup": 1,
+     "dur": 1.4,
+     "sweep": 50,
+     "dmg": 0.5,
+     "col": "#ffd070",
+     "cd": [
+      5,
+      7
+     ],
+     "w": 1.5,
+     "say": "机枪扫射！"
+    },
+    {
+     "use": "shot",
+     "mode": "spread",
+     "n": 5,
+     "spread": 60,
+     "speed": 420,
+     "dmg": 0.6,
+     "status": "poison",
+     "cd": [
+      5,
+      7
+     ]
+    }
+   ]
+  },
+  "flameCorps": {
+   "name": "炙炎魔团团员",
+   "tier": "elite",
+   "arch": "aggressive",
+   "size": [
+    15,
+    12,
+    110
+   ],
+   "scale": 1.15,
+   "elem": "fire",
+   "art": [
+    "gtSoldier",
+    {
+     "hue": -90,
+     "sat": 2.5,
+     "bright": 0.85
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "aoe",
+     "shape": "line",
+     "at": "front",
+     "len": 260,
+     "hw": 34,
+     "windup": 0.8,
+     "dmg": 1.1,
+     "status": "burn",
+     "col": "#ff7a3a",
+     "cd": [
+      4,
+      6
+     ],
+     "w": 1.5,
+     "say": "火焰喷射！"
+    },
+    {
+     "use": "rain",
+     "kind": "hex",
+     "n": 3,
+     "r": 46,
+     "windup": 1.1,
+     "dmg": 1,
+     "col": "#ff7a3a",
+     "cd": [
+      8,
+      10
+     ]
+    }
+   ]
+  },
+  "heavenCannon": {
+   "name": "天堂炮",
+   "tier": "elite",
+   "arch": "guard",
+   "size": [
+    26,
+    16,
+    90
+   ],
+   "weight": 8,
+   "speed": 50,
+   "hardness": 60,
+   "art": "gtTank",
+   "traits": {
+    "sa": "always",
+    "immune": [
+     "stun",
+     "freeze"
+    ]
+   },
+   "skills": [
+    {
+     "use": "shot",
+     "mode": "arc",
+     "r": 70,
+     "dmg": 1.2,
+     "cd": [
+      3,
+      4
+     ],
+     "w": 2,
+     "col": "#ffb050",
+     "say": ""
+    },
+    {
+     "use": "rain",
+     "kind": "hex",
+     "n": 4,
+     "r": 55,
+     "windup": 1.3,
+     "dmg": 1.1,
+     "col": "#ffb050",
+     "cd": [
+      7,
+      9
+     ],
+     "say": "炮击！"
+    },
+    {
+     "use": "dash",
+     "len": 300,
+     "speed": 420,
+     "windup": 1,
+     "dmg": 1.3,
+     "cd": [
+      8,
+      10
+     ]
+    }
+   ]
+  },
+  "rx78": {
+   "name": "RX-78 追击者",
+   "tier": "swarm",
+   "arch": "swarm",
+   "size": [
+    12,
+    10,
+    66
+   ],
+   "speed": 130,
+   "art": [
+    "bmRobot",
+    {
+     "hue": 180,
+     "sat": 0.8
+    }
+   ],
+   "traits": {
+    "onDeath": "explode",
+    "explode": {
+     "r": 80,
+     "windup": 0.8,
+     "dmg": 1
+    }
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "reach": 54,
+     "dmg": 0.75,
+     "cd": [
+      1.4,
+      2.4
+     ]
+    }
+   ]
+  }
+ },
+ "bosses": {
+  "mozhen": {
+   "name": "犬使魔震",
+   "lvl": 45,
+   "size": [
+    18,
+    14,
+    130
+   ],
+   "weight": 5,
+   "speed": 105,
+   "elem": "dark",
+   "art": [
+    "nmDogman",
+    {
+     "hue": -90,
+     "sat": 1.3,
+     "bright": 0.7
+    }
+   ],
+   "scale": 1.3,
+   "pref": 110,
+   "traits": {
+    "sa": "cast"
+   },
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 100,
+     "dur": 6
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "swipe",
+       "n": 3,
+       "reach": 100,
+       "width": 28,
+       "dmg": 1.1,
+       "cd": [
+        1.6,
+        2.4
+       ],
+       "w": 2
+      },
+      {
+       "use": "dash",
+       "clip": "pounce",
+       "len": 380,
+       "speed": 760,
+       "windup": 0.6,
+       "dmg": 1.3,
+       "cd": [
+        4.5,
+        6
+       ]
+      },
+      {
+       "use": "aoe",
+       "shape": "ring",
+       "at": "self",
+       "r": 200,
+       "r0": 60,
+       "windup": 1.2,
+       "dmg": 1.2,
+       "jump": true,
+       "cd": [
+        8,
+        10
+       ],
+       "say": "魔震——跳起来！",
+       "col": "#b070ff"
+      },
+      {
+       "use": "summon",
+       "kind": "quakeHound",
+       "n": 3,
+       "max": 4,
+       "cd": [
+        14,
+        18
+       ],
+       "w": 0.8,
+       "say": "上吧！"
+      }
+     ]
+    },
+    {
+     "at": 0.5,
+     "enter": {
+      "say": "魔震召来了自己的猎犬——它们围着它时，它不会倒下！",
+      "col": "#c890ff",
+      "mechs": [
+       {
+        "use": "invuln",
+        "until": "adds",
+        "kind": "quakeHound",
+        "n": 5,
+        "hide": false
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "buff",
+       "kind": "enrage",
+       "target": "allies",
+       "r": 400,
+       "dur": 8,
+       "cd": [
+        16,
+        20
+       ],
+       "say": "狂吠！"
+      },
+      {
+       "use": "rain",
+       "kind": "hex",
+       "n": 4,
+       "r": 48,
+       "windup": 1.1,
+       "dmg": 1.1,
+       "col": "#a070ff",
+       "cd": [
+        8,
+        10
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "piper": {
+   "name": "魔笛使者皮特",
+   "lvl": 47,
+   "size": [
+    14,
+    12,
+    116
+   ],
+   "speed": 100,
+   "elem": "dark",
+   "art": "nmPiper",
+   "scale": 1.15,
+   "pref": 200,
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 100,
+     "dur": 6
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "shot",
+       "mode": "homing",
+       "n": 3,
+       "spread": 60,
+       "speed": 240,
+       "turn": 2,
+       "dmg": 0.9,
+       "status": "confuse",
+       "sdur": 1.5,
+       "cd": [
+        4.5,
+        6
+       ],
+       "w": 1.6,
+       "say": "迷乱之音",
+       "col": "#e0a0ff"
+      },
+      {
+       "use": "summon",
+       "kind": "giantRat",
+       "n": 4,
+       "max": 8,
+       "cd": [
+        10,
+        13
+       ],
+       "w": 1.2,
+       "say": "♪ 过来吧，孩子们 ♪"
+      },
+      {
+       "use": "aoe",
+       "shape": "ring",
+       "at": "self",
+       "r": 170,
+       "r0": 60,
+       "windup": 1.1,
+       "dmg": 1,
+       "status": "sleep",
+       "sdur": 1.2,
+       "cd": [
+        8,
+        11
+       ],
+       "say": "安眠曲"
+      },
+      {
+       "use": "blink",
+       "to": "away",
+       "dist": 260,
+       "cd": [
+        6,
+        9
+       ],
+       "w": 0.8
+      }
+     ]
+    },
+    {
+     "at": 0.6,
+     "enter": {
+      "say": "皮特吹起了魔笛——鼠群护住了他，先打倒鼠群！",
+      "col": "#e0a0ff",
+      "mechs": [
+       {
+        "use": "invuln",
+        "until": "adds",
+        "kind": "maneater",
+        "n": 4,
+        "hide": false
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "mech",
+       "mech": {
+        "use": "clones",
+        "n": 3,
+        "dur": 12,
+        "punish": "heal"
+       },
+       "cd": [
+        22,
+        28
+       ],
+       "say": "哪个才是我？"
+      }
+     ]
+    },
+    {
+     "at": 0.25,
+     "enter": {
+      "say": "哈穆林的孩子们……都跟我走吧！",
+      "mechs": [
+       {
+        "use": "enrage",
+        "t": 60,
+        "atk": 1.4,
+        "speed": 1.2
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "bentink": {
+   "name": "纵火犯本汀克",
+   "lvl": 49,
+   "size": [
+    16,
+    13,
+    120
+   ],
+   "speed": 110,
+   "elem": "fire",
+   "art": "gtBentink",
+   "scale": 1.15,
+   "pref": 160,
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 100,
+     "dur": 6
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "shot",
+       "clip": "throw",
+       "mode": "arc",
+       "n": 3,
+       "r": 60,
+       "dmg": 1,
+       "status": "burn",
+       "cd": [
+        3.5,
+        5
+       ],
+       "w": 2,
+       "say": "燃油瓶！",
+       "col": "#ff8a3a"
+      },
+      {
+       "use": "aoe",
+       "shape": "circle",
+       "at": "target",
+       "r": 80,
+       "n": 3,
+       "scatter": 150,
+       "windup": 1.3,
+       "dmg": 0.9,
+       "status": "slow",
+       "col": "#6a5a3a",
+       "cd": [
+        7,
+        9
+       ],
+       "say": "泼油"
+      },
+      {
+       "use": "seq",
+       "cd": [
+        10,
+        13
+       ],
+       "w": 1.2,
+       "steps": [
+        {
+         "use": "blink",
+         "to": "center"
+        },
+        {
+         "use": "rain",
+         "kind": "hex",
+         "n": 6,
+         "r": 50,
+         "spread": 260,
+         "windup": 1.2,
+         "dmg": 1.2,
+         "col": "#ff6a2a"
+        }
+       ]
+      },
+      {
+       "use": "swipe",
+       "n": 2,
+       "reach": 70,
+       "dmg": 0.9,
+       "cd": [
+        2,
+        3
+       ]
+      }
+     ]
+    },
+    {
+     "at": 0.5,
+     "enter": {
+      "say": "满地的油烧起来了！",
+      "col": "#ff7a3a",
+      "mechs": [
+       {
+        "use": "hazard",
+        "kind": "fire",
+        "every": 3,
+        "n": 3,
+        "col": "#ff6a2a"
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "explode",
+       "r": 150,
+       "windup": 1.2,
+       "dmg": 1.5,
+       "suicide": false,
+       "cd": [
+        12,
+        15
+       ],
+       "say": "一起烧起来吧！"
+      }
+     ]
+    }
+   ]
+  },
+  "suleide": {
+   "name": "机动队长苏雷德",
+   "lvl": 50,
+   "size": [
+    20,
+    14,
+    124
+   ],
+   "speed": 150,
+   "art": "gtSuleide",
+   "scale": 1.15,
+   "pref": 180,
+   "traits": {
+    "sa": "cast"
+   },
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 110,
+     "dur": 5
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "dash",
+       "len": 520,
+       "speed": 900,
+       "windup": 0.7,
+       "dmg": 1.3,
+       "cd": [
+        3.5,
+        5
+       ],
+       "w": 2,
+       "say": "全速冲锋！"
+      },
+      {
+       "use": "aoe",
+       "shape": "circle",
+       "at": "self",
+       "r": 140,
+       "windup": 0.6,
+       "dmg": 1.2,
+       "cd": [
+        6,
+        8
+       ],
+       "say": "旋转！"
+      },
+      {
+       "use": "laser",
+       "windup": 1,
+       "dur": 1.2,
+       "sweep": 50,
+       "dmg": 0.5,
+       "col": "#ff5a5a",
+       "cd": [
+        8,
+        10
+       ]
+      },
+      {
+       "use": "rain",
+       "kind": "hex",
+       "n": 4,
+       "r": 48,
+       "windup": 1.1,
+       "dmg": 1.1,
+       "col": "#ffb050",
+       "cd": [
+        9,
+        12
+       ],
+       "say": "火箭！"
+      }
+     ]
+    },
+    {
+     "at": 0.55,
+     "enter": {
+      "say": "召唤 RX-78 追击者！",
+      "mechs": [
+       {
+        "use": "hazard",
+        "kind": "debris",
+        "every": 4,
+        "n": 3,
+        "col": "#ffb050"
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "summon",
+       "kind": "rx78",
+       "n": 3,
+       "max": 5,
+       "cd": [
+        12,
+        16
+       ]
+      },
+      {
+       "use": "seq",
+       "cd": [
+        10,
+        13
+       ],
+       "steps": [
+        {
+         "use": "blink",
+         "to": "away",
+         "dist": 300
+        },
+        {
+         "use": "dash",
+         "len": 520,
+         "speed": 900,
+         "windup": 0.5,
+         "dmg": 1.3
+        },
+        {
+         "use": "dash",
+         "len": 520,
+         "speed": 900,
+         "windup": 0.4,
+         "dmg": 1.3
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "gt9600": {
+   "name": "GT-9600",
+   "tier": "raid",
+   "lvl": 52,
+   "size": [
+    26,
+    18,
+    150
+   ],
+   "weight": 9,
+   "speed": 70,
+   "art": "gtMech",
+   "scale": 1.4,
+   "pref": 150,
+   "traits": {
+    "sa": "cast",
+    "immune": [
+     "stun",
+     "freeze"
+    ]
+   },
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 130,
+     "dur": 6,
+     "mul": 1.6
+    },
+    {
+     "use": "enrage",
+     "t": 300
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "dash",
+       "len": 440,
+       "speed": 760,
+       "windup": 0.8,
+       "dmg": 1.4,
+       "cd": [
+        4,
+        6
+       ],
+       "w": 2,
+       "say": "移动模式：冲撞"
+      },
+      {
+       "use": "rain",
+       "kind": "hex",
+       "n": 5,
+       "r": 50,
+       "windup": 1.2,
+       "dmg": 1.1,
+       "col": "#ffb050",
+       "cd": [
+        7,
+        9
+       ],
+       "say": "炮塔射击"
+      },
+      {
+       "use": "swipe",
+       "clip": "slam",
+       "reach": 130,
+       "width": 36,
+       "windup": 0.7,
+       "dmg": 1.4,
+       "down": true,
+       "cd": [
+        2.5,
+        3.5
+       ]
+      },
+      {
+       "use": "mech",
+       "mech": {
+        "use": "shield",
+        "hp": 0.04,
+        "dur": 12,
+        "punish": "nova",
+        "onBreak": "groggy",
+        "col": "#8ad8ff",
+        "say": "防御模式！"
+       },
+       "cd": [
+        24,
+        30
+       ],
+       "say": "切换：防御模式"
+      }
+     ]
+    },
+    {
+     "at": 0.65,
+     "enter": {
+      "say": "GT-9600 进入了防御模式——打破护盾！",
+      "col": "#8ad8ff",
+      "mechs": [
+       {
+        "use": "shield",
+        "hp": 0.05,
+        "dur": 14,
+        "punish": "nova",
+        "onBreak": "groggy",
+        "col": "#8ad8ff"
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "aoe",
+       "shape": "circle",
+       "at": "target",
+       "r": 90,
+       "n": 3,
+       "scatter": 180,
+       "windup": 1.3,
+       "dmg": 1.3,
+       "col": "#8ad8ff",
+       "cd": [
+        8,
+        10
+       ],
+       "say": "量子爆弹"
+      }
+     ]
+    },
+    {
+     "at": 0.3,
+     "enter": {
+      "say": "警告：核心过热！",
+      "col": "#ff6a4a",
+      "mechs": [
+       {
+        "use": "safezone",
+        "mode": "far",
+        "r": 240,
+        "windup": 3.2,
+        "frac": 0.4,
+        "say": "过热爆发——离 GT-9600 远一点！"
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "mech",
+       "mech": {
+        "use": "safezone",
+        "mode": "far",
+        "r": 240,
+        "windup": 3.2,
+        "frac": 0.4,
+        "say": "过热爆发——离 GT-9600 远一点！"
+       },
+       "cd": [
+        24,
+        30
+       ]
+      },
+      {
+       "use": "summon",
+       "kind": "rx78",
+       "n": 3,
+       "max": 5,
+       "cd": [
+        14,
+        18
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "items": {
+  "epics": [
+   {
+    "key": "ep_gt_core",
+    "slot": "stone",
+    "lvl": 52,
+    "name": "GT-9600 的量子核心",
+    "fx": {
+     "dmgUp": 0.08,
+     "light": 25,
+     "cdr": 0.04
+    },
+    "desc": "卡勒特拿来驱动战斗兵器 GT-9600 的量子核心，拆下来以后还在嗡嗡作响。",
+    "look": "a glowing pale blue quantum core sphere inside a brass and steel cage with small pipes and a warning stripe band"
+   }
+  ],
+  "sets": [
+   {
+    "id": "set_piper",
+    "name": "魔笛的旋律",
+    "lvl": 48,
+    "abyss": true,
+    "desc": "魔笛使者皮特吹过的笛子，和他一直盯着的一颗红宝石。",
+    "bonus": {
+     "2": {
+      "st": {
+       "dmgUp": 0.11,
+       "cspd": 0.06,
+       "aspd": 0.06
+      },
+      "desc": "【旋律】伤害增加 11%，攻击 / 施放速度 +6%；攻击时 6% 几率吹响魔笛（周围 150% 暗属性伤害，敌人混乱 1 秒）",
+      "proc": {
+       "chance": 0.06,
+       "cd": 1.5,
+       "act": "strike",
+       "mul": 1.5,
+       "aoe": 110,
+       "elem": "dark",
+       "vis": "dark",
+       "name": "魔笛之音"
+      }
+     }
+    },
+    "pieces": [
+     {
+      "key": "ep_gt_flute",
+      "slot": "support",
+      "name": "皮特的魔笛",
+      "look": "a long slender black wooden flute with silver keys and a small violet ribbon, faint musical note carvings"
+     },
+     {
+      "key": "ep_gt_ratgem",
+      "slot": "stone",
+      "name": "鼠王之眼",
+      "look": "a round ruby magic stone shaped like a rat eye set in a tarnished gold frame with tiny rat tail curls"
+     }
+    ]
+   }
+  ]
+ },
+ "dungeons": {
+  "fallen_bandits": {
+   "name": "堕落的盗贼",
+   "lvl": [
+    44,
+    45
+   ],
+   "theme": "nmTown",
+   "layout": "standard",
+   "mobs": [
+    [
+     "madBandit",
+     3
+    ],
+    [
+     "madBanditF",
+     2
+    ],
+    [
+     "banditGang",
+     1.5
+    ],
+    [
+     "cursedStone",
+     1
+    ],
+    [
+     "quakeHound",
+     1.5
+    ],
+    [
+     "shiningSaji",
+     0
+    ]
+   ],
+   "elite": "dogmanHado",
+   "boss": "mozhen",
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "preBoss": {
+    "kind": "shiningSaji",
+    "say": "闪灵萨吉挡在了前面……"
+   },
+   "gate": {
+    "x": 700,
+    "col": "200,190,230"
+   },
+   "desc": "被疯狂盗贼团占据的幽灵城。犬使魔震带着一群魔震的猎犬；血量过半时猎犬围着它，先打倒猎犬它才会受伤。“魔震”读条时跳起来。",
+   "drops": {
+    "boss": [
+     [
+      "ep_gt_core",
+      0.006
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.12,
+      10
+     ],
+     [
+      "m_leather",
+      0.03,
+      2
+     ],
+     [
+      "c_black",
+      0.02,
+      1
+     ]
+    ]
+   }
+  },
+  "hamelin": {
+   "name": "「迷乱之村」哈穆林",
+   "lvl": [
+    46,
+    47
+   ],
+   "theme": "nmHamelin",
+   "layout": "long",
+   "mobs": [
+    [
+     "giantRat",
+     3
+    ],
+    [
+     "maneater",
+     2
+    ],
+    [
+     "madBandit",
+     1.5
+    ],
+    [
+     "madBanditF",
+     1.5
+    ],
+    [
+     "rokusha",
+     0
+    ]
+   ],
+   "elite": "ratmanSiu",
+   "boss": "piper",
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "preBoss": {
+    "kind": "rokusha",
+    "say": "老鼠商人洛克沙：嘿嘿，这里的东西都是我的！"
+   },
+   "gate": {
+    "x": 1500,
+    "col": "240,220,160"
+   },
+   "desc": "村子深处一直传来笛声。魔笛使者皮特会用笛声迷乱、催眠你；他吹起魔笛时鼠群会护住他——先打倒食人鼠。",
+   "drops": {
+    "boss": [
+     [
+      "ep_gt_core",
+      0.008
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.12,
+      10
+     ],
+     [
+      "m_bone",
+      0.03,
+      2
+     ],
+     [
+      "c_white",
+      0.02,
+      1
+     ]
+    ]
+   }
+  },
+  "gent_outskirts": {
+   "name": "根特外围",
+   "lvl": [
+    48,
+    49
+   ],
+   "theme": "gtOut",
+   "layout": "standard",
+   "mobs": [
+    [
+     "kartelGunner",
+     3
+    ],
+    [
+     "kartelGrenadier",
+     2
+    ],
+    [
+     "kartelMedic",
+     1
+    ],
+    [
+     "flameCorps",
+     0.5
+    ]
+   ],
+   "elite": "flameCorps",
+   "boss": "bentink",
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "gate": {
+    "x": 600,
+    "col": "255,170,110"
+   },
+   "desc": "卡勒特的军队包围了皇都根特。纵火犯本汀克会泼油、扔燃油瓶——满地的油会烧起来，别站在火里。先打医疗兵。",
+   "drops": {
+    "boss": [
+     [
+      "ep_gt_core",
+      0.01
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.12,
+      10
+     ],
+     [
+      "c_red",
+      0.03,
+      2
+     ],
+     [
+      "m_iron",
+      0.03,
+      2
+     ]
+    ]
+   }
+  },
+  "gent_east": {
+   "name": "根特东门",
+   "lvl": [
+    49,
+    50
+   ],
+   "theme": "gtGate",
+   "layout": "long",
+   "mobs": [
+    [
+     "kartelGunner",
+     2.5
+    ],
+    [
+     "kartelRider",
+     2
+    ],
+    [
+     "kartelMedic",
+     1.5
+    ],
+    [
+     "kartelGrenadier",
+     1
+    ]
+   ],
+   "elite": "kartelVanguard",
+   "boss": "suleide",
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "gate": {
+    "x": 1400,
+    "col": "200,215,235"
+   },
+   "desc": "机动队长苏雷德骑着摩托横冲直撞，冲锋前地上有红线；血量过半后会召唤会自爆的 RX-78 追击者。",
+   "drops": {
+    "boss": [
+     [
+      "ep_gt_core",
+      0.012
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.12,
+      10
+     ],
+     [
+      "m_elem2",
+      0.01,
+      1
+     ],
+     [
+      "m_iron",
+      0.03,
+      2
+     ]
+    ]
+   }
+  },
+  "gent_south": {
+   "name": "根特南门",
+   "lvl": [
+    51,
+    52
+   ],
+   "bossLvl": 53,
+   "theme": "gtGate",
+   "layout": "raid",
+   "mobs": [
+    [
+     "kartelGunner",
+     2
+    ],
+    [
+     "kartelGrenadier",
+     1.5
+    ],
+    [
+     "kartelVanguard",
+     1
+    ],
+    [
+     "corroder",
+     0.6
+    ],
+    [
+     "kartelMedic",
+     1
+    ],
+    [
+     "heavenCannon",
+     0
+    ]
+   ],
+   "elite": "corroder",
+   "boss": "gt9600",
+   "bossAdds": 0,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "preBoss": {
+    "kind": "heavenCannon",
+    "say": "天堂炮挡住了南门！"
+   },
+   "gate": {
+    "x": 2200,
+    "col": "140,200,255"
+   },
+   "desc": "【攻坚】卡勒特投入了主力兵器 GT-9600。它会在移动模式和防御模式之间切换——防御模式的护盾要尽快打破；“过热爆发”时离它远一点。",
+   "drops": {
+    "boss": [
+     [
+      "ep_gt_core",
+      0.04
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.14,
+      12
+     ],
+     [
+      "m_soul",
+      0.004,
+      1
+     ],
+     [
+      "m_diamond",
+      0.01,
+      1
+     ]
+    ]
+   }
+  }
+ },
+ "abyss": {
+  "abyss_norsemar": {
+   "name": "诺斯玛尔深渊",
+   "from": "hamelin",
+   "theme": "abyssNorsemar",
+   "tint": "rgba(80,20,110,0.32)",
+   "lvl": [
+    47,
+    48
+   ],
+   "lordLvl": 50,
+   "cost": 1,
+   "pity": 7,
+   "lords": [
+    "mozhen",
+    "piper",
+    "bentink"
+   ],
+   "gate": {
+    "scene": "norsemar",
+    "x": 2500
+   },
+   "clearExp": 18000,
+   "waves": [
+    {
+     "n": 7,
+     "mobs": [
+      [
+       "giantRat",
+       2
+      ],
+      [
+       "maneater",
+       1
+      ],
+      [
+       "madBandit",
+       1
+      ]
+     ],
+     "elite": 1,
+     "say": "鼠群和盗贼团一起涌上来了！"
+    },
+    {
+     "elites": [
+      "dogmanHado",
+      "ratmanSiu"
+     ],
+     "say": "犬人哈多和鼠头人西乌！"
+    }
+   ],
+   "lord": {
+    "mechs": [
+     {
+      "use": "enrage",
+      "t": 220
+     }
+    ],
+    "cycle": [
+     {
+      "every": [
+       22,
+       28
+      ],
+      "at": 0.8,
+      "say": "深渊护盾！",
+      "mech": {
+       "use": "shield",
+       "hp": 0.05,
+       "dur": 12,
+       "punish": "heal",
+       "onBreak": "groggy",
+       "col": "#c890ff"
+      }
+     },
+     {
+      "every": [
+       28,
+       34
+      ],
+      "at": 0.5,
+      "mech": {
+       "use": "safezone",
+       "windup": 3.2,
+       "frac": 0.35,
+       "say": "深渊之力——站进光圈！"
+      }
+     }
+    ]
+   },
+   "desc": "【深渊派对】诺斯玛尔的深处裂开了深渊。需要消耗 1 张深渊派对邀请函。深渊领主是诺斯玛尔 / 根特外围的领主之一（每次随机）。「魔笛的旋律」只在这里出现。",
+   "quest": {
+    "name": "诺斯玛尔的深渊",
+    "lvl": 47,
+    "clear": "hamelin",
+    "pre": [
+     "q_abyss_gf"
+    ],
+    "gold": 7000,
+    "desc": "诺斯玛尔深处裂开了深渊。通关「迷乱之村」哈穆林，歌兰蒂斯就会告诉你入口。",
+    "offer": [
+     "诺斯玛尔……那个被传染病吞掉的城镇，深渊也在那里扎了根。",
+     "听说魔笛使者的笛子，就掉进了那道深渊。先去通关哈穆林吧。"
+    ],
+    "done": [
+     "诺斯玛尔地图的右边，深渊之门已经打开。"
+    ]
+   }
+  }
+ },
+ "npcs": {
+  "kishika": {
+   "name": "玛琳·基希卡",
+   "title": "天界之门 · 修理 / 仓库",
+   "h": 116,
+   "services": [
+    "quest",
+    "repair",
+    "storage"
+   ],
+   "greet": [
+    "欢迎来到天界！……虽然现在这里是战场。"
+   ],
+   "lines": [
+    "卡勒特的军队已经包围了皇都根特。",
+    "天界之门只有拿到冰龙的触角才能打开——你竟然真的做到了。",
+    "外围、东门、南门……一扇一扇地夺回来吧。"
+   ],
+   "look": "Marin Kishika, a young engineer woman of the Heavenly Realm resistance: short auburn hair under a brown leather aviator cap with brass goggles, a practical dark blue military jacket with rolled sleeves, work gloves, a tool belt with wrenches, a confident smile"
+  }
+ },
+ "scenes": {
+  "norsemar": {
+   "name": "诺斯玛尔",
+   "area": "幽灵城",
+   "kind": "field",
+   "width": 3000,
+   "theme": "nmTown",
+   "bgm": "field",
+   "map": [
+    62,
+    24
+   ],
+   "exits": [
+    {
+     "side": "down",
+     "x": 300,
+     "to": "hendon_myre"
+    },
+    {
+     "side": "right",
+     "to": "heaven_gate",
+     "minLv": 48,
+     "label": "天界之门"
+    }
+   ]
+  },
+  "heaven_gate": {
+   "name": "天界",
+   "area": "天界之门",
+   "kind": "town",
+   "width": 2400,
+   "theme": "gtCamp",
+   "bgm": "guild",
+   "ambient": "magic",
+   "map": [
+    80,
+    12
+   ],
+   "props": [
+    {
+     "art": "world/p_crates",
+     "x": 420,
+     "h": 80,
+     "y": 30
+    },
+    {
+     "art": "world/p_magiclamp",
+     "x": 900,
+     "h": 110,
+     "y": 20
+    },
+    {
+     "art": "world/p_crates",
+     "x": 1900,
+     "h": 80,
+     "y": 40
+    }
+   ],
+   "npcs": [
+    {
+     "npc": "kishika",
+     "x": 1200,
+     "y": 50
+    }
+   ],
+   "exits": [
+    {
+     "side": "left",
+     "to": "norsemar"
+    },
+    {
+     "side": "right",
+     "to": "gent_field"
+    }
+   ]
+  },
+  "gent_field": {
+   "name": "天界",
+   "area": "根特外围",
+   "kind": "field",
+   "width": 2800,
+   "theme": "gtOut",
+   "bgm": "field",
+   "map": [
+    92,
+    6
+   ],
+   "exits": [
+    {
+     "side": "left",
+     "to": "heaven_gate"
+    }
+   ]
+  }
+ },
+ "story": {
+  "chapter": "天界篇 · 诺斯玛尔与皇都根特",
+  "prefix": "q_gt",
+  "pre": "q_sn14",
+  "npc": "boken",
+  "scene": "norsemar",
+  "steps": [
+   {
+    "t": "arrive",
+    "npc": "boken",
+    "to": "sherlock",
+    "name": "奇怪的盗贼团",
+    "lvl": 44,
+    "scene": "norsemar",
+    "reward": {
+     "exp": 0.05,
+     "gold": 3000
+    },
+    "desc": "赫顿玛尔北边的诺斯玛尔被传染病吞没，成了幽灵城，现在被疯狂盗贼团占据。先去诺斯玛尔看看，再去后街问问消息灵通的夏洛克。",
+    "talk": {
+     "offer": [
+      "诺斯玛尔……那里的人都死了，传染病和暗精灵城镇的一模一样。",
+      "现在有一群疯狂的盗贼住了进去。公国派去的调查员一个都没回来。",
+      "去看一眼，然后找后街的夏洛克——他什么消息都知道。"
+     ],
+     "doing": [
+      "诺斯玛尔在市政街北边，Lv.44 才能过去。"
+     ],
+     "done": [
+      "嘿嘿，盗贼团的事？我正好知道一点。"
+     ]
+    }
+   },
+   {
+    "t": "clear",
+    "dungeon": "fallen_bandits",
+    "name": "夏洛克的提议",
+    "npc": "sherlock",
+    "lvl": 44,
+    "reward": {
+     "exp": 0.09,
+     "gold": 4000
+    },
+    "desc": "夏洛克说，先把「堕落的盗贼」里的疯狂盗贼清一遍，他才肯说下去。",
+    "talk": {
+     "offer": [
+      "想知道盗贼团的秘密？先去「堕落的盗贼」里把他们揍一顿。"
+     ],
+     "doing": [
+      "妖变的石头打起来很疼，小心。"
+     ],
+     "done": [
+      "好身手！……那帮盗贼说，他们的头儿是一个会使唤猎犬的家伙。"
+     ]
+    }
+   },
+   {
+    "t": "boss",
+    "dungeon": "fallen_bandits",
+    "name": "犬使魔震",
+    "npc": "sherlock",
+    "to": "boken",
+    "lvl": 45,
+    "reward": {
+     "exp": 0.1,
+     "gold": 5000
+    },
+    "desc": "打倒盗贼团的头目——犬使魔震，然后回去告诉博肯。",
+    "talk": {
+     "offer": [
+      "它的猎犬围着它的时候，它是打不动的。先打狗。"
+     ],
+     "doing": [
+      "“魔震”的时候跳起来。"
+     ],
+     "done": [
+      "魔震倒下了……可是城镇深处，还有笛子的声音。"
+     ]
+    }
+   },
+   {
+    "t": "clear",
+    "dungeon": "hamelin",
+    "name": "迷乱之村哈穆林",
+    "npc": "boken",
+    "lvl": 46,
+    "reward": {
+     "exp": 0.09,
+     "gold": 4000
+    },
+    "desc": "诺斯玛尔旁边的村子哈穆林一直传来笛声。通关「迷乱之村」哈穆林。",
+    "talk": {
+     "offer": [
+      "药剂商人索西雅说，她夜里在村子那边听到过笛声。",
+      "去哈穆林看看吧。"
+     ],
+     "doing": [
+      "鼠群会一直涌过来，别站着不动。"
+     ],
+     "done": [
+      "村子深处……有个吹笛子的男人。"
+     ]
+    }
+   },
+   {
+    "t": "boss",
+    "dungeon": "hamelin",
+    "name": "魔笛使者皮特",
+    "npc": "boken",
+    "lvl": 47,
+    "reward": {
+     "exp": 0.1,
+     "gold": 5000
+    },
+    "desc": "打倒魔笛使者皮特。",
+    "talk": {
+     "offer": [
+      "皮特的笛声会让你迷乱、睡着。",
+      "他吹起魔笛时，鼠群会护住他——先打倒食人鼠。"
+     ],
+     "doing": [
+      "打中真正的皮特，幻影就会散掉。"
+     ],
+     "done": [
+      "笛声停了。……可是皮特临死前说了一句话：“天界的主人会来接我的。”"
+     ]
+    }
+   },
+   {
+    "t": "talk",
+    "with": "kishika",
+    "npc": "boken",
+    "name": "终于开启天界之门",
+    "lvl": 48,
+    "reward": {
+     "exp": 0.05,
+     "gold": 3000
+    },
+    "desc": "传染病的线索指向了天界。天界之门只有冰龙的触角才能打开——你已经打倒过冰龙斯卡萨了。穿过诺斯玛尔去天界之门，找玛琳·基希卡。",
+    "talk": {
+     "offer": [
+      "天界之门在诺斯玛尔的另一边。那扇门，只有冰龙的触角才能打开。",
+      "你打倒过冰龙斯卡萨……那就没问题了。去找天界的玛琳·基希卡。"
+     ],
+     "done": [
+      "冰龙的触角……天界之门真的开了！",
+      "我是玛琳。欢迎来到天界——虽然现在这里是战场。卡勒特的军队已经包围了皇都根特。"
+     ]
+    }
+   },
+   {
+    "t": "clear",
+    "dungeon": "gent_outskirts",
+    "name": "根特外围",
+    "npc": "kishika",
+    "lvl": 48,
+    "reward": {
+     "exp": 0.09,
+     "gold": 5000
+    },
+    "desc": "卡勒特的军队在根特外围放火。通关「根特外围」。",
+    "talk": {
+     "offer": [
+      "外围到处都是卡勒特的弹药兵，还有放火的疯子。",
+      "先打医疗兵，不然他们会一直把同伴治好。"
+     ],
+     "doing": [
+      "别站在油里。"
+     ],
+     "done": [
+      "外围夺回来了！可是纵火犯还在。"
+     ]
+    }
+   },
+   {
+    "t": "boss",
+    "dungeon": "gent_outskirts",
+    "name": "纵火犯本汀克",
+    "npc": "kishika",
+    "lvl": 49,
+    "reward": {
+     "exp": 0.1,
+     "gold": 6000
+    },
+    "desc": "打倒纵火犯本汀克。",
+    "talk": {
+     "offer": [
+      "本汀克会泼油，再扔燃油瓶把油点着。",
+      "血量过半以后，满地的油都会烧起来。"
+     ],
+     "doing": [
+      "他要自爆的时候跑远一点。"
+     ],
+     "done": [
+      "火灭了。……东门那边传来了摩托车的声音。"
+     ]
+    }
+   },
+   {
+    "t": "clear",
+    "dungeon": "gent_east",
+    "name": "根特东门",
+    "npc": "kishika",
+    "lvl": 49,
+    "reward": {
+     "exp": 0.09,
+     "gold": 5000
+    },
+    "desc": "通关「根特东门」。",
+    "talk": {
+     "offer": [
+      "东门来的是卡勒特的机动队——骑摩托的。"
+     ],
+     "doing": [
+      "先锋卫队举盾的时候别打正面。"
+     ],
+     "done": [
+      "东门的机动队长……苏雷德还在城门口。"
+     ]
+    }
+   },
+   {
+    "t": "boss",
+    "dungeon": "gent_east",
+    "name": "机动队长苏雷德",
+    "npc": "kishika",
+    "lvl": 50,
+    "reward": {
+     "exp": 0.11,
+     "gold": 6000
+    },
+    "desc": "打倒机动队长苏雷德。",
+    "talk": {
+     "offer": [
+      "苏雷德冲锋之前地上有红线，看准了再躲。",
+      "他血量过半后会叫来会自爆的 RX-78。"
+     ],
+     "doing": [
+      "别在他冲锋的直线上停。"
+     ],
+     "done": [
+      "东门守住了！……可是南门，卡勒特投入了主力兵器。"
+     ]
+    }
+   },
+   {
+    "t": "raid",
+    "dungeon": "gent_south",
+    "name": "GT-9600",
+    "npc": "kishika",
+    "lvl": 51,
+    "reward": {
+     "exp": 0.16,
+     "gold": 8000,
+     "coins": 2
+    },
+    "desc": "卡勒特的战斗兵器 GT-9600 正在攻打南门。打倒它。",
+    "talk": {
+     "offer": [
+      "GT-9600 会在移动模式和防御模式之间切换。防御模式的护盾一定要打破。",
+      "它的核心过热时，离它远一点。"
+     ],
+     "doing": [
+      "天堂炮会在南门前面挡路。"
+     ],
+     "done": [
+      "GT-9600 停下了……皇都根特守住了！"
+     ]
+    }
+   },
+   {
+    "t": "handin",
+    "to": "kishika",
+    "name": "皇都的守护者",
+    "lvl": 52,
+    "reward": {
+     "exp": 0.08,
+     "gold": 5000,
+     "items": [
+      {
+       "key": "ep_gt_core",
+       "n": 1
+      }
+     ]
+    },
+    "desc": "回天界之门，把好消息告诉玛琳。",
+    "talk": {
+     "offer": [
+      "南门守住了。"
+     ],
+     "done": [
+      "这是 GT-9600 的量子核心，我拆下来的——给你。",
+      "卡勒特不会就这么算了……北门那边，还有更大的战斗在等着。",
+      "——天界篇 · 完——"
+     ]
+    }
+   }
+  ]
+ },
+ "art": {
+  "chars": {
+   "nmBandit": {
+    "h": 100,
+    "hold": "holding a curved dagger",
+    "desc": "A crazed bandit of the ghost town Norsemar: a wiry bandit with wild eyes, a tattered hood and a cloth mask over the mouth, patched leather vest over a torn shirt, a red bandana on the arm, baggy trousers and worn boots, holding a curved dagger.",
+    "atk": "the curved dagger",
+    "cast": "raising the dagger and cackling",
+    "low": "lunging forward low with the dagger"
+   },
+   "nmDogman": {
+    "h": 110,
+    "hold": "holding a spiked iron club",
+    "desc": "A dogman warrior: a tall humanoid with the head of a grey wolfhound, sharp ears and snarling fangs, wearing crude leather and iron armor with a spiked collar, a fur cloak, holding a spiked iron club.",
+    "atk": "the spiked club",
+    "cast": "throwing its head back and howling",
+    "low": "charging forward low on all fours"
+   },
+   "nmRat": {
+    "h": 50,
+    "hold": null,
+    "cycle": "trot",
+    "desc": "A giant rat monster of the village of Hamelin: a big fat grey-brown rat as large as a dog, beady red eyes, long whiskers, big yellow front teeth and a long pink tail.",
+    "atk": "its big front teeth",
+    "cast": "rearing up on its hind legs and squeaking",
+    "low": "crouching low ready to pounce"
+   },
+   "nmRatman": {
+    "h": 104,
+    "hold": "holding a rusty scythe",
+    "desc": "A ratman of Hamelin: a hunched humanoid rat with grey fur, a long snout with whiskers, beady red eyes, a patched brown hooded cloak, a leather belt with pouches, a long pink tail, holding a rusty scythe.",
+    "atk": "the rusty scythe",
+    "cast": "raising the scythe as rats squeak around",
+    "low": "scuttling forward low with the scythe"
+   },
+   "nmPiper": {
+    "h": 116,
+    "boss": true,
+    "hold": "holding a long black flute",
+    "desc": "Pete the Pied Piper, the sinister messenger of the magic flute and a menacing boss: a tall gaunt eerie man with sickly grey skin, sunken glowing yellow eyes and an unsettling wide grin, long stringy black hair under a tattered wide-brimmed feathered hat, a long ragged patchwork coat of dark red and mustard yellow stained with dirt, long clawed fingers, several red-eyed rats crawling on his shoulders and coat, holding a long black bone flute. Creepy and threatening, not friendly.",
+    "atk": "the long flute swung like a staff",
+    "cast": "playing the flute with eyes closed",
+    "low": "gliding forward low with the flute pointed"
+   },
+   "gtSoldier": {
+    "h": 104,
+    "hold": "holding a bulky rifle",
+    "desc": "A Kartel army soldier of the Heavenly Realm war: a soldier in a dark grey-green military uniform with brass buttons, a round steel helmet with goggles, a gas mask style face guard, ammo belts across the chest, heavy boots, holding a bulky steampunk rifle.",
+    "atk": "the rifle butt",
+    "cast": "aiming the rifle carefully",
+    "low": "crouching and charging forward with the rifle"
+   },
+   "gtTank": {
+    "h": 90,
+    "hold": null,
+    "cycle": "roll",
+    "desc": "The Heaven Cannon, a small Kartel war tank: a squat steampunk tank with riveted dark green armor plates, short caterpillar treads, a big stubby brass cannon turret, smoke stacks and warning stripes. No legs, a vehicle.",
+    "atk": "its brass cannon",
+    "cast": "raising its cannon barrel high",
+    "low": "lowering its cannon and rushing forward"
+   },
+   "gtBentink": {
+    "h": 120,
+    "boss": true,
+    "hold": "holding a burning oil bottle",
+    "desc": "Bentink the Arsonist, a Kartel boss: a scrawny manic man with wild spiky orange hair and soot-covered face, a crazed grin, a scorched leather apron over a stained shirt, oil canisters strapped to his back, thick gloves, holding a glass oil bottle with a rag.",
+    "atk": "the oil bottle swung forward",
+    "cast": "raising the oil bottle high and laughing madly",
+    "low": "crouching and flinging oil forward"
+   },
+   "gtSuleide": {
+    "h": 124,
+    "boss": true,
+    "cycle": "roll",
+    "hold": "riding a heavy military motorcycle",
+    "desc": "Suleide, the Kartel mobile unit captain: a stern officer with a scarred face, short grey hair and a peaked military cap, a long dark coat with red trims, riding a heavy armored steampunk military motorcycle with a front cannon and big spiked wheels.",
+    "atk": "the spiked front wheel",
+    "cast": "revving the motorcycle with the front wheel raised",
+    "low": "leaning forward low on the speeding motorcycle"
+   },
+   "gtMech": {
+    "h": 150,
+    "boss": true,
+    "hold": null,
+    "desc": "GT-9600, a Kartel combat walker machine: a huge bipedal steampunk war mech with thick dark steel armor, a glowing blue quantum core in the chest, a shoulder cannon turret, heavy hydraulic legs, big claw arms, warning stripes and rivets.",
+    "atk": "its big claw arm",
+    "cast": "raising its arms as the chest core glows",
+    "low": "lowering its body and ramming forward"
+   }
+  },
+  "gates": {
+   "fallen_bandits": "a crooked ghost town archway with a faded town sign, crude bandit barricades and hanging lanterns, a pale grey portal",
+   "hamelin": "a rustic village gate of old wood with a small windmill behind and rats peeking from holes, a golden portal",
+   "gent_outskirts": "a sandbag barricade gate with burning torches, barbed wire and a Kartel banner, an orange portal",
+   "gent_east": "a massive stone city gate of Gent with blue banners and a silver eagle crest, a pale blue portal",
+   "gent_south": "a huge fortified iron gate of Gent with gun turrets on both sides and searchlights, a bright blue portal"
+  }
+ }
+}

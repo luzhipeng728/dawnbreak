@@ -119,7 +119,7 @@ defineRegion({
       drops: { boss: [['ep_an_bugfang', 0.05], ['ep_gs_apophis', 0.03], ['ep_an_bullcore', 0.01]], mats: [['crystal', 0.12, 10], ['m_bone', 0.05, 2], ['m_soul', 0.004, 1]] } },
   },
 
-  story: { chapter: '远古 · 机制地下城', prefix: 'q_an', pre: 'q_de15', npc: 'tuguan', scene: 'gf_lorien', steps: [
+  story: { chapter: '远古 · 机制地下城', prefix: 'q_an', pre: 'q_sn14', npc: 'tuguan', scene: 'gf_lorien', steps: [
     { t: 'talk', with: 'tuguan', name: '比尔马克试验场', lvl: 44, reward: { exp: 0.03, gold: 1500 },
       desc: '土罐在洛兰深处捡到了一块刻着帝国纹章的铁片。去问问他。',
       talk: { offer: ['嘘——小声点。我在洛兰深处的树林里，捡到了这个。', '比尔马克帝国的纹章……那里有一座帝国的秘密试验场，传说关着一头机械做的牛头王。'], done: ['入口我已经帮你找到了，就在洛兰的最右边。', '那里的机关可不是光靠蛮力能过的——看清楚再打。'] } },

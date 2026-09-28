@@ -115,7 +115,7 @@ if (parts.includes('mechs')) {
     m.control = (m, dt) => { m.aiCd = 99; regionAI(m, dt); };   // 只跑机制，不出招
     return m.msMechs.map(s => s.id);
   }, boss);
-  const clearMechs = () => page.evaluate(() => { const m = __b; for (const s of m.msMechs) msMechEnd(m, s); m.msMechs = []; m.msMul = {}; m.dmgTakenMul = 1; if (m.gaze) m.gaze.next = 999; });
+  const clearMechs = () => page.evaluate(() => { const m = __b; for (const s of m.msMechs) msMechEnd(m, s); m.msMechs = []; m.msMul = {}; m.dmgTakenMul = 1; if (m.gaze) m.gaze.next = 999; for (const e of ents) if (e.team === 'e' && e !== m && !e.dead) e.remove = true; });   // 领主出场自带的连线搭档之类也清掉，免得干扰下一项
   const hit = (dmg = 20, who = '__b') => page.evaluate(({ dmg, who }) => { const t = window[who]; t.invul = 0; return applyHit(game.player, t, { dmg, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); }, { dmg, who });
   const S = {};
   // 破招槽

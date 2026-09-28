@@ -1,0 +1,3826 @@
+{
+ "id": "snow",
+ "name": "万年雪山 · 斯顿雪域",
+ "lvl": 36,
+ "lvlMax": 42,
+ "power": 1.25,
+ "bossPower": 1,
+ "atkPower": 1.08,
+ "entry": {
+  "scene": "hm_backstreet",
+  "side": "up",
+  "x": 1960,
+  "to": "storm_pass",
+  "minLv": 36,
+  "label": "斯顿雪域"
+ },
+ "themes": {
+  "snTown": {
+   "grade": {
+    "tint": "rgba(120,150,200,0.08)",
+    "fog": "rgba(230,240,255,0.10)"
+   },
+   "ambient": "motes",
+   "rgb": "240,248,255",
+   "floorW": 1700,
+   "pal": {
+    "sky": [
+     "#6a7a9a",
+     "#a8b8d0",
+     "#e0e8f4"
+    ],
+    "haze": "#e8f0ff",
+    "floor": [
+     "#c8d0dc",
+     "#d8e0ea",
+     "#b8c0cc"
+    ]
+   },
+   "bg": [
+    "Storm Pass, the snowy mountain village of the Bantu tribes: sturdy log houses and hide tents, tall carved totem poles of a wolf, a rabbit and a bison, smoking chimneys, snowy pine trees, the towering white peaks of the Stru mountains behind, gentle snowfall.",
+    "a packed snow village path with wooden boardwalk planks and footprints",
+    "a low wooden fence capped with snow, stacked firewood and small carved totem posts"
+   ]
+  },
+  "snCave": {
+   "grade": {
+    "tint": "rgba(60,110,180,0.12)",
+    "fog": "rgba(170,220,255,0.10)"
+   },
+   "ambient": "motes",
+   "rgb": "190,230,255",
+   "floorW": 1600,
+   "pal": {
+    "sky": [
+     "#0e2238",
+     "#1e3e60",
+     "#3a6a90"
+    ],
+    "haze": "#9ad8ff",
+    "floor": [
+     "#3a5068",
+     "#46607a",
+     "#2e4256"
+    ]
+   },
+   "bg": [
+    "The Frozen Heart cave: a lonely icy cavern where a frozen boy's toys lie scattered, giant blue ice crystals, a toy castle and wooden toy soldiers half encased in ice, soft blue light from above.",
+    "smooth blue ice floor with frost patterns and a few scattered wooden toy blocks",
+    "ice crystals, a broken wooden rocking horse and small frozen toy drums"
+   ]
+  },
+  "snRidge": {
+   "grade": {
+    "tint": "rgba(90,110,150,0.10)",
+    "fog": "rgba(220,230,255,0.12)"
+   },
+   "ambient": "motes",
+   "rgb": "235,242,255",
+   "floorW": 1700,
+   "pal": {
+    "sky": [
+     "#4a5a78",
+     "#8a9ab8",
+     "#c8d4e6"
+    ],
+    "haze": "#dfe8ff",
+    "floor": [
+     "#b8c2d0",
+     "#c8d2de",
+     "#a8b2c0"
+    ]
+   },
+   "bg": [
+    "The Ridge of the Eternal Snow Mountain: a windswept mountain ridge with deep snow, jagged icy cliffs, Bantu war banners with wolf and bison emblems on wooden poles, a frozen waterfall and distant snowy peaks under a grey-blue sky.",
+    "deep packed snow with dark rocks poking through and wind-blown drifts",
+    "snow-covered boulders, broken wooden spears and a low wooden barricade"
+   ]
+  },
+  "snRuins": {
+   "edgeHoles": true,
+   "grade": {
+    "tint": "rgba(110,120,150,0.10)",
+    "fog": "rgba(240,244,255,0.14)"
+   },
+   "ambient": "motes",
+   "rgb": "245,248,255",
+   "floorW": 1600,
+   "pal": {
+    "sky": [
+     "#5a6070",
+     "#9aa0b0",
+     "#d8dce6"
+    ],
+    "haze": "#f0f4ff",
+    "floor": [
+     "#b0b6c0",
+     "#c0c6d0",
+     "#a0a6b0"
+    ]
+   },
+   "bg": [
+    "The White Ruins: ancient stone ruins of an old mountain tribe buried in snow and ice, broken pillars and a collapsed temple, huge hanging icicles, big straw nests of snow apes, pale white fog.",
+    "snowy cracked stone tiles with patches of blue ice",
+    "broken snowy pillar stumps and frozen straw nests"
+   ]
+  },
+  "snPalace": {
+   "grade": {
+    "tint": "rgba(90,140,210,0.10)",
+    "fog": "rgba(200,230,255,0.12)"
+   },
+   "ambient": "motes",
+   "rgb": "210,236,255",
+   "floorW": 1800,
+   "pal": {
+    "sky": [
+     "#1a3050",
+     "#3a6a9a",
+     "#9ad0f0"
+    ],
+    "haze": "#c8ecff",
+    "floor": [
+     "#8ab0d0",
+     "#9ac0e0",
+     "#7aa0c0"
+    ]
+   },
+   "bg": [
+    "The Ice Palace of the Snow Queen Rose: a grand dreamlike palace carved from glittering ice and packed snow, tall crystal spires, ice chandeliers, frozen fountains, pale blue silk banners, a cold magical glow.",
+    "a polished pale blue ice floor with snowflake mosaics",
+    "carved ice balustrades, frozen rose bushes and small ice sculptures"
+   ]
+  },
+  "snNest": {
+   "edgeHoles": true,
+   "grade": {
+    "tint": "rgba(50,90,160,0.14)",
+    "fog": "rgba(190,220,255,0.14)"
+   },
+   "ambient": "wisps",
+   "rgb": "190,225,255",
+   "floorW": 1800,
+   "pal": {
+    "sky": [
+     "#0a1628",
+     "#1a3458",
+     "#4a7aa8"
+    ],
+    "haze": "#a8d8ff"
+   },
+   "bg": [
+    "Skasa's Nest, the lair of the ice dragon at the summit of the eternal snow mountain: a vast frozen crater of blue-white glacier ice, giant dragon claw marks on the walls, frozen bones of great beasts, a howling blizzard, huge ice eggs.",
+    "rough blue-white glacier ice floor with deep claw scratches and drifting snow",
+    "jagged glacier ice shards, frozen beast bones and cracked ice eggs"
+   ]
+  }
+ },
+ "monsters": {
+  "toySoldier": {
+   "name": "普通型玩具士兵",
+   "tier": "normal",
+   "arch": "aggressive",
+   "size": [
+    12,
+    11,
+    84
+   ],
+   "art": "snToy",
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 2,
+     "dmg": 1,
+     "cd": [
+      1.5,
+      2.5
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "len": 260,
+     "speed": 600,
+     "windup": 0.8,
+     "dmg": 1,
+     "cd": [
+      5,
+      7
+     ]
+    }
+   ]
+  },
+  "toyFine": {
+   "name": "精巧型玩具士兵",
+   "tier": "caster",
+   "arch": "kiter",
+   "size": [
+    12,
+    11,
+    84
+   ],
+   "art": [
+    "snToy",
+    {
+     "hue": 120,
+     "sat": 1.1
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "dmg": 0.8,
+     "reach": 60,
+     "cd": [
+      2,
+      3
+     ]
+    },
+    {
+     "use": "shot",
+     "mode": "straight",
+     "speed": 360,
+     "dmg": 0.85,
+     "cd": [
+      2.8,
+      4
+     ],
+     "w": 2
+    },
+    {
+     "use": "shot",
+     "mode": "spread",
+     "n": 3,
+     "spread": 45,
+     "speed": 320,
+     "dmg": 0.7,
+     "cd": [
+      5,
+      7
+     ]
+    }
+   ]
+  },
+  "toyMass": {
+   "name": "量产型玩具士兵",
+   "tier": "swarm",
+   "arch": "swarm",
+   "size": [
+    11,
+    10,
+    70
+   ],
+   "scale": 0.82,
+   "art": [
+    "snToy",
+    {
+     "sat": 0.4,
+     "bright": 0.95
+    }
+   ],
+   "traits": {
+    "onDeath": "explode",
+    "explode": {
+     "r": 70,
+     "windup": 0.8,
+     "dmg": 0.9
+    }
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "dmg": 0.7,
+     "reach": 50,
+     "cd": [
+      1.6,
+      2.6
+     ]
+    }
+   ]
+  },
+  "toyBerserk": {
+   "name": "狂暴型玩具士兵",
+   "tier": "brute",
+   "arch": "aggressive",
+   "size": [
+    14,
+    12,
+    92
+   ],
+   "scale": 1.12,
+   "weight": 2,
+   "art": [
+    "snToy",
+    {
+     "hue": -40,
+     "sat": 1.4,
+     "bright": 0.85
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 3,
+     "reach": 76,
+     "dmg": 1,
+     "cd": [
+      1.8,
+      2.8
+     ],
+     "w": 2
+    },
+    {
+     "use": "buff",
+     "kind": "enrage",
+     "target": "self",
+     "dur": 8,
+     "cd": [
+      14,
+      18
+     ],
+     "say": "狂暴！"
+    }
+   ]
+  },
+  "bantuWarrior": {
+   "name": "班图战士",
+   "tier": "normal",
+   "arch": "aggressive",
+   "size": [
+    14,
+    12,
+    108
+   ],
+   "art": "snBantu",
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 2,
+     "reach": 84,
+     "dmg": 1,
+     "cd": [
+      1.6,
+      2.6
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "len": 300,
+     "speed": 640,
+     "windup": 0.8,
+     "dmg": 1.1,
+     "cd": [
+      5,
+      7
+     ]
+    },
+    {
+     "use": "grab",
+     "reach": 62,
+     "hold": 0.7,
+     "throwDmg": 1.3,
+     "cd": [
+      8,
+      10
+     ],
+     "w": 0.6
+    }
+   ]
+  },
+  "bantuElite": {
+   "name": "班图精锐卫士",
+   "tier": "elite",
+   "arch": "guard",
+   "size": [
+    15,
+    12,
+    112
+   ],
+   "scale": 1.08,
+   "art": [
+    "snBantu",
+    {
+     "hue": -30,
+     "sat": 1.2,
+     "bright": 0.9
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 3,
+     "reach": 88,
+     "dmg": 1,
+     "cd": [
+      1.8,
+      2.8
+     ],
+     "w": 2
+    },
+    {
+     "use": "guard",
+     "dur": 2.2,
+     "reduce": 0.85,
+     "cd": [
+      8,
+      11
+     ],
+     "counter": {
+      "use": "aoe",
+      "shape": "circle",
+      "at": "self",
+      "r": 120,
+      "windup": 0.45,
+      "dmg": 1.2
+     }
+    }
+   ]
+  },
+  "kuniShaman": {
+   "name": "库尼族图腾术士",
+   "tier": "caster",
+   "arch": "kiter",
+   "size": [
+    14,
+    12,
+    104
+   ],
+   "elem": "ice",
+   "art": [
+    "snBantu",
+    {
+     "hue": 150,
+     "sat": 0.9,
+     "bright": 1.05
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "dmg": 0.8,
+     "reach": 60,
+     "cd": [
+      2,
+      3
+     ]
+    },
+    {
+     "use": "shot",
+     "mode": "homing",
+     "n": 2,
+     "spread": 50,
+     "speed": 230,
+     "dmg": 0.8,
+     "status": "slow",
+     "cd": [
+      4,
+      5.5
+     ],
+     "w": 1.5
+    },
+    {
+     "use": "buff",
+     "kind": "shield",
+     "target": "allies",
+     "amt": 0.15,
+     "dur": 8,
+     "cd": [
+      16,
+      22
+     ],
+     "w": 0.6
+    }
+   ]
+  },
+  "avalancheRabina": {
+   "name": "雪崩拉比纳",
+   "tier": "elite",
+   "arch": "aggressive",
+   "size": [
+    15,
+    12,
+    112
+   ],
+   "scale": 1.1,
+   "art": [
+    "snBantu",
+    {
+     "hue": 60,
+     "sat": 0.6,
+     "bright": 1.15
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "slam",
+     "reach": 96,
+     "width": 30,
+     "windup": 0.62,
+     "dmg": 1.3,
+     "down": true,
+     "sa": true,
+     "cd": [
+      2.4,
+      3.6
+     ],
+     "w": 2
+    },
+    {
+     "use": "rain",
+     "kind": "hex",
+     "n": 4,
+     "r": 46,
+     "windup": 1.2,
+     "dmg": 1,
+     "col": "#e8f4ff",
+     "cd": [
+      8,
+      11
+     ],
+     "say": "雪崩！"
+    }
+   ]
+  },
+  "bullBastur": {
+   "name": "野蛮牛族勇士巴斯图鲁",
+   "tier": "elite",
+   "arch": "aggressive",
+   "size": [
+    18,
+    14,
+    120
+   ],
+   "weight": 3,
+   "art": [
+    "tauArmored",
+    {
+     "hue": -160,
+     "sat": 0.7,
+     "bright": 1.05
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "axe",
+     "reach": 96,
+     "width": 30,
+     "windup": 0.6,
+     "dmg": 1.3,
+     "down": true,
+     "cd": [
+      2.2,
+      3.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "clip": "charge",
+     "len": 380,
+     "speed": 680,
+     "windup": 0.8,
+     "dmg": 1.3,
+     "cd": [
+      5,
+      7
+     ]
+    }
+   ]
+  },
+  "bullEmuli": {
+   "name": "野蛮牛族勇士艾穆利",
+   "tier": "elite",
+   "arch": "guard",
+   "size": [
+    18,
+    14,
+    120
+   ],
+   "weight": 3,
+   "art": [
+    "tauArmored",
+    {
+     "hue": 30,
+     "sat": 0.8
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "axe",
+     "reach": 96,
+     "width": 30,
+     "windup": 0.6,
+     "dmg": 1.3,
+     "down": true,
+     "cd": [
+      2.2,
+      3.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "aoe",
+     "shape": "circle",
+     "at": "self",
+     "r": 140,
+     "windup": 1.1,
+     "dmg": 1.2,
+     "jump": true,
+     "cd": [
+      8,
+      10
+     ],
+     "say": "践踏！"
+    }
+   ]
+  },
+  "tulusWarrior": {
+   "name": "图卢斯族战士",
+   "tier": "brute",
+   "arch": "aggressive",
+   "size": [
+    16,
+    13,
+    112
+   ],
+   "weight": 2.5,
+   "art": [
+    "tau",
+    {
+     "hue": -150,
+     "sat": 0.6,
+     "bright": 1.1
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 2,
+     "reach": 84,
+     "dmg": 1.1,
+     "cd": [
+      1.8,
+      2.8
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "clip": "charge",
+     "len": 320,
+     "speed": 640,
+     "windup": 0.8,
+     "dmg": 1.2,
+     "cd": [
+      5,
+      7
+     ]
+    }
+   ]
+  },
+  "tulusElite": {
+   "name": "图卢斯族精英战士",
+   "tier": "elite",
+   "arch": "guard",
+   "size": [
+    18,
+    14,
+    120
+   ],
+   "weight": 3,
+   "art": [
+    "tauArmored",
+    {
+     "hue": -120,
+     "sat": 0.9,
+     "bright": 1.1
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "axe",
+     "reach": 96,
+     "width": 30,
+     "windup": 0.6,
+     "dmg": 1.3,
+     "down": true,
+     "cd": [
+      2.2,
+      3.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "guard",
+     "dur": 2.2,
+     "reduce": 0.85,
+     "cd": [
+      8,
+      11
+     ]
+    },
+    {
+     "use": "aoe",
+     "shape": "cross",
+     "at": "target",
+     "hw": 22,
+     "windup": 1.2,
+     "dmg": 1.2,
+     "cd": [
+      8,
+      11
+     ]
+    }
+   ]
+  },
+  "iceTiger": {
+   "name": "寒冰虎",
+   "tier": "normal",
+   "arch": "aggressive",
+   "size": [
+    18,
+    13,
+    72
+   ],
+   "weight": 1.2,
+   "speed": 130,
+   "elem": "ice",
+   "art": "snTiger",
+   "noGrab": false,
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "bite",
+     "reach": 66,
+     "dmg": 1,
+     "cd": [
+      1.4,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "clip": "pounce",
+     "len": 320,
+     "speed": 700,
+     "windup": 0.7,
+     "dmg": 1.1,
+     "status": "slow",
+     "cd": [
+      4,
+      6
+     ]
+    }
+   ]
+  },
+  "snowApe": {
+   "name": "雪魈",
+   "tier": "brute",
+   "arch": "aggressive",
+   "size": [
+    18,
+    14,
+    110
+   ],
+   "weight": 2.5,
+   "art": "snYeti",
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "slam",
+     "reach": 84,
+     "width": 28,
+     "windup": 0.6,
+     "dmg": 1.2,
+     "down": true,
+     "cd": [
+      2,
+      3
+     ],
+     "w": 2
+    },
+    {
+     "use": "grab",
+     "reach": 66,
+     "hold": 0.8,
+     "throwDmg": 1.5,
+     "cd": [
+      7,
+      9
+     ]
+    }
+   ]
+  },
+  "snowballRului": {
+   "name": "雪球噜噜伊",
+   "tier": "caster",
+   "arch": "kiter",
+   "size": [
+    14,
+    12,
+    76
+   ],
+   "scale": 0.72,
+   "art": [
+    "snYeti",
+    {
+     "hue": 30,
+     "sat": 0.4,
+     "bright": 1.15
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "dmg": 0.8,
+     "reach": 56,
+     "cd": [
+      2,
+      3
+     ]
+    },
+    {
+     "use": "shot",
+     "clip": "throw",
+     "mode": "arc",
+     "r": 50,
+     "dmg": 0.9,
+     "status": "slow",
+     "cd": [
+      3.2,
+      4.5
+     ],
+     "w": 2
+    },
+    {
+     "use": "shot",
+     "clip": "throw",
+     "mode": "straight",
+     "speed": 340,
+     "dmg": 0.8,
+     "cd": [
+      4,
+      6
+     ]
+    }
+   ]
+  },
+  "iceSprite": {
+   "name": "冰精灵史苏克",
+   "tier": "flier",
+   "arch": "flier",
+   "size": [
+    14,
+    12,
+    80
+   ],
+   "elem": "ice",
+   "art": [
+    "deGhost",
+    {
+     "hue": -40,
+     "sat": 1.3,
+     "bright": 1.2
+    }
+   ],
+   "traits": {
+    "immune": [
+     "freeze"
+    ]
+   },
+   "skills": [
+    {
+     "use": "shot",
+     "mode": "spread",
+     "n": 3,
+     "spread": 50,
+     "speed": 260,
+     "dmg": 0.75,
+     "status": "slow",
+     "cd": [
+      4,
+      5.5
+     ],
+     "w": 1.4
+    },
+    {
+     "use": "aoe",
+     "shape": "circle",
+     "at": "target",
+     "r": 62,
+     "windup": 1.1,
+     "dmg": 0.95,
+     "status": "freeze",
+     "sdur": 1.2,
+     "cd": [
+      7,
+      9
+     ]
+    }
+   ]
+  },
+  "iceLurker": {
+   "name": "寒冰潜伏者",
+   "tier": "flier",
+   "arch": "flier",
+   "size": [
+    14,
+    12,
+    84
+   ],
+   "elem": "ice",
+   "art": [
+    "deGhost",
+    {
+     "hue": -70,
+     "sat": 0.9,
+     "bright": 0.7
+    }
+   ],
+   "skills": [
+    {
+     "use": "seq",
+     "cd": [
+      5,
+      7
+     ],
+     "w": 1.5,
+     "steps": [
+      {
+       "use": "blink",
+       "to": "behind",
+       "dist": 60
+      },
+      {
+       "use": "swipe",
+       "n": 2,
+       "dmg": 0.9,
+       "windup": 0.3
+      }
+     ]
+    },
+    {
+     "use": "shot",
+     "mode": "homing",
+     "speed": 220,
+     "dmg": 0.8,
+     "cd": [
+      4,
+      5.5
+     ]
+    }
+   ]
+  },
+  "foamSpider": {
+   "name": "泡沫蜘蛛",
+   "tier": "normal",
+   "arch": "aggressive",
+   "size": [
+    18,
+    13,
+    60
+   ],
+   "art": [
+    "deSpider",
+    {
+     "hue": 150,
+     "sat": 0.6,
+     "bright": 1.2
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "bite",
+     "reach": 62,
+     "dmg": 0.95,
+     "cd": [
+      1.4,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "shot",
+     "mode": "spread",
+     "n": 3,
+     "spread": 50,
+     "speed": 250,
+     "dmg": 0.6,
+     "status": "slow",
+     "cd": [
+      5,
+      7
+     ],
+     "col": "#e8f4ff"
+    }
+   ]
+  },
+  "iceSpider": {
+   "name": "寒冰蜘蛛",
+   "tier": "normal",
+   "arch": "aggressive",
+   "size": [
+    18,
+    13,
+    60
+   ],
+   "elem": "ice",
+   "art": [
+    "deSpider",
+    {
+     "hue": -110,
+     "sat": 1.1,
+     "bright": 1.1
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "bite",
+     "reach": 62,
+     "dmg": 0.95,
+     "status": "slow",
+     "cd": [
+      1.4,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "clip": "pounce",
+     "len": 260,
+     "speed": 640,
+     "windup": 0.7,
+     "dmg": 1,
+     "cd": [
+      5,
+      7
+     ]
+    }
+   ]
+  },
+  "frostGoblin": {
+   "name": "冰霜哥布林",
+   "tier": "swarm",
+   "arch": "swarm",
+   "size": [
+    11,
+    10,
+    72
+   ],
+   "elem": "ice",
+   "art": [
+    "goblin",
+    {
+     "hue": 150,
+     "sat": 0.6,
+     "bright": 1.15,
+     "only": [
+      45,
+      160
+     ]
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "dmg": 0.8,
+     "reach": 56,
+     "cd": [
+      1.4,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "shot",
+     "clip": "throw",
+     "mode": "arc",
+     "r": 44,
+     "dmg": 0.7,
+     "status": "slow",
+     "cd": [
+      4,
+      6
+     ]
+    }
+   ]
+  },
+  "blueGoblin": {
+   "name": "青哥布林",
+   "tier": "swarm",
+   "arch": "swarm",
+   "size": [
+    11,
+    10,
+    72
+   ],
+   "art": [
+    "goblin",
+    {
+     "hue": 115,
+     "only": [
+      45,
+      160
+     ]
+    }
+   ],
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 2,
+     "dmg": 0.8,
+     "reach": 56,
+     "cd": [
+      1.4,
+      2.4
+     ],
+     "w": 2
+    }
+   ]
+  },
+  "catapultCommander": {
+   "name": "哥布林投石车指挥官",
+   "tier": "elite",
+   "arch": "kiter",
+   "size": [
+    13,
+    11,
+    80
+   ],
+   "scale": 1.15,
+   "art": [
+    "goblinCaptain",
+    {
+     "hue": 150,
+     "sat": 0.7,
+     "bright": 1.1
+    }
+   ],
+   "skills": [
+    {
+     "use": "rain",
+     "kind": "hex",
+     "n": 4,
+     "r": 50,
+     "windup": 1.2,
+     "dmg": 1,
+     "col": "#c8d0dc",
+     "cd": [
+      6,
+      8
+     ],
+     "w": 2,
+     "say": "投石车，放！"
+    },
+    {
+     "use": "summon",
+     "kind": "frostGoblin",
+     "n": 2,
+     "max": 4,
+     "cd": [
+      12,
+      16
+     ]
+    }
+   ]
+  },
+  "stormGolem": {
+   "name": "暴风石巨人",
+   "tier": "brute",
+   "arch": "guard",
+   "size": [
+    20,
+    15,
+    120
+   ],
+   "weight": 4,
+   "hardness": 40,
+   "art": [
+    "golem",
+    {
+     "hue": 120,
+     "sat": 0.7,
+     "bright": 1.1
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "slam",
+     "reach": 96,
+     "width": 30,
+     "windup": 0.7,
+     "dmg": 1.3,
+     "down": true,
+     "sa": true,
+     "cd": [
+      2.4,
+      3.6
+     ],
+     "w": 2
+    },
+    {
+     "use": "aoe",
+     "shape": "ring",
+     "at": "self",
+     "r": 150,
+     "r0": 50,
+     "windup": 1.2,
+     "dmg": 1.1,
+     "knock": 260,
+     "cd": [
+      8,
+      10
+     ],
+     "say": "暴风！"
+    }
+   ]
+  },
+  "thunderGolem": {
+   "name": "闪电石巨人",
+   "tier": "brute",
+   "arch": "guard",
+   "size": [
+    20,
+    15,
+    120
+   ],
+   "weight": 4,
+   "hardness": 40,
+   "elem": "light",
+   "art": [
+    "golem",
+    {
+     "hue": 40,
+     "sat": 1.3,
+     "bright": 1.1
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "slam",
+     "reach": 96,
+     "width": 30,
+     "windup": 0.7,
+     "dmg": 1.3,
+     "down": true,
+     "sa": true,
+     "cd": [
+      2.4,
+      3.6
+     ],
+     "w": 2
+    },
+    {
+     "use": "rain",
+     "kind": "bolt",
+     "n": 3,
+     "r": 44,
+     "windup": 1,
+     "dmg": 1,
+     "col": "#ffe070",
+     "cd": [
+      7,
+      9
+     ]
+    }
+   ]
+  },
+  "frostGolem": {
+   "name": "冰霜石巨人",
+   "tier": "brute",
+   "arch": "guard",
+   "size": [
+    20,
+    15,
+    120
+   ],
+   "weight": 4,
+   "hardness": 40,
+   "elem": "ice",
+   "art": [
+    "golem",
+    {
+     "hue": -160,
+     "sat": 0.9,
+     "bright": 1.2
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "slam",
+     "reach": 96,
+     "width": 30,
+     "windup": 0.7,
+     "dmg": 1.3,
+     "down": true,
+     "sa": true,
+     "status": "slow",
+     "cd": [
+      2.4,
+      3.6
+     ],
+     "w": 2
+    },
+    {
+     "use": "aoe",
+     "shape": "cross",
+     "at": "target",
+     "hw": 22,
+     "windup": 1.2,
+     "dmg": 1.1,
+     "status": "freeze",
+     "sdur": 1,
+     "cd": [
+      8,
+      10
+     ]
+    }
+   ]
+  },
+  "babySkasa": {
+   "name": "斯卡萨幼龙",
+   "tier": "flier",
+   "arch": "flier",
+   "size": [
+    16,
+    13,
+    80
+   ],
+   "elem": "ice",
+   "art": [
+    "wyvern",
+    {
+     "hue": 90,
+     "sat": 0.8,
+     "bright": 1.15
+    }
+   ],
+   "skills": [
+    {
+     "use": "shot",
+     "mode": "straight",
+     "speed": 320,
+     "dmg": 0.85,
+     "status": "slow",
+     "cd": [
+      3.2,
+      4.5
+     ],
+     "w": 2,
+     "col": "#bfe6ff"
+    },
+    {
+     "use": "dash",
+     "len": 280,
+     "speed": 660,
+     "windup": 0.7,
+     "dmg": 1,
+     "cd": [
+      5,
+      7
+     ]
+    }
+   ]
+  },
+  "aquiles": {
+   "name": "冰影阿奎利斯",
+   "tier": "elite",
+   "arch": "flier",
+   "size": [
+    18,
+    14,
+    96
+   ],
+   "scale": 1.3,
+   "elem": "ice",
+   "art": [
+    "wyvern",
+    {
+     "hue": 110,
+     "sat": 1.1,
+     "bright": 0.95
+    }
+   ],
+   "traits": {
+    "immune": [
+     "freeze"
+    ]
+   },
+   "skills": [
+    {
+     "use": "laser",
+     "windup": 1.1,
+     "dur": 1,
+     "sweep": 60,
+     "dmg": 0.45,
+     "col": "#bfe6ff",
+     "cd": [
+      6,
+      8
+     ],
+     "w": 1.4,
+     "say": "冰之吐息"
+    },
+    {
+     "use": "rain",
+     "kind": "hex",
+     "n": 4,
+     "r": 46,
+     "windup": 1.1,
+     "dmg": 1,
+     "col": "#bfe6ff",
+     "cd": [
+      8,
+      11
+     ]
+    }
+   ]
+  },
+  "kruse": {
+   "name": "雷剑克鲁斯",
+   "tier": "elite",
+   "arch": "aggressive",
+   "size": [
+    14,
+    12,
+    110
+   ],
+   "speed": 125,
+   "elem": "light",
+   "art": [
+    "snBantu",
+    {
+     "hue": 90,
+     "sat": 0.4,
+     "bright": 1.2
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "n": 3,
+     "reach": 90,
+     "dmg": 0.95,
+     "cd": [
+      1.6,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "len": 400,
+     "speed": 760,
+     "windup": 0.7,
+     "dmg": 1.2,
+     "cd": [
+      4,
+      6
+     ]
+    },
+    {
+     "use": "rain",
+     "kind": "bolt",
+     "n": 4,
+     "r": 44,
+     "windup": 1,
+     "dmg": 1,
+     "col": "#ffe070",
+     "cd": [
+      8,
+      10
+     ]
+    }
+   ]
+  },
+  "frostGiantLik": {
+   "name": "寒冰巨人",
+   "tier": "elite",
+   "arch": "guard",
+   "size": [
+    22,
+    16,
+    150
+   ],
+   "scale": 0.9,
+   "weight": 5,
+   "elem": "ice",
+   "art": [
+    "deGiant",
+    {
+     "hue": -170,
+     "sat": 0.7,
+     "bright": 1.15
+    }
+   ],
+   "traits": {
+    "sa": "cast"
+   },
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "slam",
+     "reach": 110,
+     "width": 32,
+     "windup": 0.7,
+     "dmg": 1.3,
+     "down": true,
+     "sa": true,
+     "cd": [
+      2.4,
+      3.6
+     ],
+     "w": 2
+    },
+    {
+     "use": "grab",
+     "reach": 76,
+     "hold": 0.9,
+     "throwDmg": 1.5,
+     "cd": [
+      8,
+      10
+     ]
+    }
+   ]
+  },
+  "sabertooth": {
+   "name": "冰齿沙凡特",
+   "tier": "elite",
+   "arch": "aggressive",
+   "size": [
+    22,
+    15,
+    90
+   ],
+   "scale": 1.45,
+   "weight": 3,
+   "speed": 135,
+   "elem": "ice",
+   "art": [
+    "snTiger",
+    {
+     "hue": 20,
+     "sat": 0.8,
+     "bright": 0.9
+    }
+   ],
+   "noGrab": true,
+   "skills": [
+    {
+     "use": "swipe",
+     "clip": "bite",
+     "reach": 90,
+     "width": 28,
+     "dmg": 1.2,
+     "cd": [
+      1.6,
+      2.4
+     ],
+     "w": 2
+    },
+    {
+     "use": "dash",
+     "clip": "pounce",
+     "len": 420,
+     "speed": 760,
+     "windup": 0.7,
+     "dmg": 1.3,
+     "cd": [
+      4,
+      6
+     ]
+    }
+   ]
+  }
+ },
+ "bosses": {
+  "charlie": {
+   "name": "查理",
+   "lvl": 37,
+   "size": [
+    20,
+    15,
+    140
+   ],
+   "weight": 5,
+   "speed": 75,
+   "elem": "ice",
+   "art": "snCharlie",
+   "scale": 1.15,
+   "pref": 110,
+   "traits": {
+    "sa": "cast"
+   },
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 90,
+     "dur": 6
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "swipe",
+       "clip": "slam",
+       "reach": 116,
+       "width": 32,
+       "windup": 0.7,
+       "dmg": 1.3,
+       "down": true,
+       "sa": true,
+       "cd": [
+        2,
+        3
+       ],
+       "w": 2
+      },
+      {
+       "use": "aoe",
+       "shape": "circle",
+       "at": "self",
+       "r": 150,
+       "windup": 1.2,
+       "dmg": 1.2,
+       "jump": true,
+       "status": "slow",
+       "cd": [
+        8,
+        10
+       ],
+       "say": "冰冷的拳头——跳起来！"
+      },
+      {
+       "use": "summon",
+       "kind": "toySoldier",
+       "n": 2,
+       "max": 3,
+       "cd": [
+        12,
+        16
+       ],
+       "w": 0.8,
+       "say": "我的玩具……保护我！"
+      },
+      {
+       "use": "shot",
+       "clip": "throw",
+       "mode": "arc",
+       "n": 2,
+       "r": 56,
+       "dmg": 1,
+       "cd": [
+        5,
+        7
+       ]
+      }
+     ]
+    },
+    {
+     "at": 0.5,
+     "enter": {
+      "say": "查理的心脏在发光——打碎守护它的冰晶！",
+      "col": "#bfe6ff",
+      "mechs": [
+       {
+        "use": "shield",
+        "hits": 12,
+        "dur": 14,
+        "punish": "heal",
+        "onBreak": "groggy",
+        "col": "#bfe6ff"
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "mech",
+       "mech": {
+        "use": "shield",
+        "hits": 12,
+        "dur": 14,
+        "punish": "heal",
+        "onBreak": "groggy",
+        "col": "#bfe6ff"
+       },
+       "cd": [
+        26,
+        32
+       ],
+       "say": "冰晶之心！"
+      },
+      {
+       "use": "summon",
+       "kind": "toyBerserk",
+       "n": 1,
+       "max": 2,
+       "cd": [
+        16,
+        20
+       ],
+       "w": 0.7
+      }
+     ]
+    }
+   ]
+  },
+  "lik": {
+   "name": "寒冰巨人利库",
+   "lvl": 38,
+   "size": [
+    22,
+    16,
+    150
+   ],
+   "weight": 6,
+   "speed": 70,
+   "elem": "ice",
+   "art": [
+    "deGiant",
+    {
+     "hue": -170,
+     "sat": 0.9,
+     "bright": 1.1
+    }
+   ],
+   "scale": 1.3,
+   "pref": 110,
+   "traits": {
+    "sa": "cast"
+   },
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 110,
+     "dur": 6
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "swipe",
+       "clip": "slam",
+       "reach": 124,
+       "width": 34,
+       "windup": 0.7,
+       "dmg": 1.4,
+       "down": true,
+       "sa": true,
+       "cd": [
+        2,
+        3
+       ],
+       "w": 2
+      },
+      {
+       "use": "grab",
+       "reach": 84,
+       "hold": 0.9,
+       "throwDmg": 1.6,
+       "cd": [
+        8,
+        10
+       ]
+      },
+      {
+       "use": "aoe",
+       "shape": "cross",
+       "at": "target",
+       "hw": 26,
+       "windup": 1.2,
+       "dmg": 1.3,
+       "status": "freeze",
+       "sdur": 1,
+       "cd": [
+        7,
+        9
+       ],
+       "say": "冰裂！"
+      }
+     ]
+    },
+    {
+     "at": 0.5,
+     "enter": {
+      "say": "利库召来了暴风雪！",
+      "col": "#e8f4ff",
+      "mechs": [
+       {
+        "use": "hazard",
+        "kind": "debris",
+        "every": 4,
+        "n": 3,
+        "col": "#bfe6ff"
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "summon",
+       "kind": "frostGolem",
+       "n": 1,
+       "max": 2,
+       "cd": [
+        18,
+        24
+       ]
+      },
+      {
+       "use": "rain",
+       "kind": "hex",
+       "n": 5,
+       "r": 48,
+       "windup": 1.2,
+       "dmg": 1.1,
+       "col": "#bfe6ff",
+       "cd": [
+        8,
+        10
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "ruug": {
+   "name": "野兽师鲁乌格",
+   "lvl": 39,
+   "size": [
+    15,
+    12,
+    116
+   ],
+   "speed": 110,
+   "art": [
+    "snBantu",
+    {
+     "hue": -60,
+     "sat": 1.1,
+     "bright": 0.85
+    }
+   ],
+   "scale": 1.15,
+   "pref": 150,
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 100,
+     "dur": 6
+    },
+    {
+     "use": "tether",
+     "kind": "sabertooth",
+     "mode": "close",
+     "dist": 200,
+     "hp": 0.4,
+     "onBreak": "groggy",
+     "say": "冰齿沙凡特靠近鲁乌格时会互相回血——把它们分开！",
+     "col": "#bfe6ff"
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "swipe",
+       "n": 2,
+       "reach": 90,
+       "dmg": 1,
+       "cd": [
+        1.6,
+        2.6
+       ],
+       "w": 2
+      },
+      {
+       "use": "shot",
+       "mode": "spread",
+       "n": 3,
+       "spread": 50,
+       "speed": 300,
+       "dmg": 0.85,
+       "cd": [
+        4,
+        5.5
+       ],
+       "say": "飞斧！"
+      },
+      {
+       "use": "summon",
+       "kind": "iceTiger",
+       "n": 2,
+       "max": 3,
+       "cd": [
+        14,
+        18
+       ],
+       "w": 0.8,
+       "say": "去吧，孩子们！"
+      },
+      {
+       "use": "buff",
+       "kind": "haste",
+       "target": "allies",
+       "dur": 8,
+       "cd": [
+        16,
+        20
+       ],
+       "w": 0.6,
+       "say": "狂野的号令"
+      }
+     ]
+    },
+    {
+     "at": 0.5,
+     "enter": {
+      "say": "鲁乌格吹响了兽笛！",
+      "mechs": [
+       {
+        "use": "enrage",
+        "t": 90,
+        "atk": 1.4,
+        "speed": 1.2
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "seski": {
+   "name": "塞斯奇",
+   "lvl": 40,
+   "size": [
+    22,
+    16,
+    140
+   ],
+   "weight": 6,
+   "speed": 60,
+   "art": [
+    "snYeti",
+    {
+     "hue": -20,
+     "sat": 0.8,
+     "bright": 0.85
+    }
+   ],
+   "scale": 1.55,
+   "pref": 110,
+   "traits": {
+    "sa": "cast"
+   },
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 110,
+     "dur": 6
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "grab",
+       "reach": 90,
+       "hold": 1.1,
+       "dmg": 0.7,
+       "throwDmg": 1.6,
+       "cd": [
+        5,
+        7
+       ],
+       "w": 1.6,
+       "say": ""
+      },
+      {
+       "use": "swipe",
+       "clip": "slam",
+       "reach": 120,
+       "width": 34,
+       "windup": 0.6,
+       "dmg": 1.3,
+       "down": true,
+       "cd": [
+        2,
+        3
+       ],
+       "w": 2
+      },
+      {
+       "use": "aoe",
+       "shape": "line",
+       "at": "front",
+       "len": 520,
+       "hw": 30,
+       "windup": 1,
+       "dmg": 1.3,
+       "cd": [
+        7,
+        9
+       ],
+       "say": "雪波！",
+       "col": "#e8f4ff"
+      },
+      {
+       "use": "summon",
+       "kind": "snowApe",
+       "n": 2,
+       "max": 3,
+       "cd": [
+        14,
+        18
+       ],
+       "w": 0.8
+      }
+     ]
+    },
+    {
+     "at": 0.45,
+     "enter": {
+      "say": "塞斯奇捶胸咆哮！",
+      "col": "#e8f4ff",
+      "mechs": [
+       {
+        "use": "safezone",
+        "mode": "far",
+        "r": 220,
+        "windup": 3,
+        "frac": 0.35,
+        "say": "捶地——离塞斯奇远一点！"
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "mech",
+       "mech": {
+        "use": "safezone",
+        "mode": "far",
+        "r": 220,
+        "windup": 3,
+        "frac": 0.35,
+        "say": "捶地——离塞斯奇远一点！"
+       },
+       "cd": [
+        24,
+        30
+       ]
+      },
+      {
+       "use": "aoe",
+       "shape": "line",
+       "at": "front",
+       "len": 520,
+       "hw": 30,
+       "n": 2,
+       "windup": 1,
+       "dmg": 1.2,
+       "cd": [
+        8,
+        10
+       ],
+       "col": "#e8f4ff"
+      }
+     ]
+    }
+   ]
+  },
+  "bwanga": {
+   "name": "布万加",
+   "lvl": 41,
+   "size": [
+    18,
+    14,
+    132
+   ],
+   "weight": 5,
+   "speed": 100,
+   "art": "snBwanga",
+   "scale": 1.15,
+   "pref": 100,
+   "traits": {
+    "sa": "cast"
+   },
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 120,
+     "dur": 6
+    },
+    {
+     "use": "enrage",
+     "t": 200,
+     "say": "认真起来了！"
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "swipe",
+       "clip": "club",
+       "n": 3,
+       "reach": 104,
+       "width": 30,
+       "dmg": 1.1,
+       "cd": [
+        1.6,
+        2.4
+       ],
+       "w": 2
+      },
+      {
+       "use": "dash",
+       "clip": "charge",
+       "len": 400,
+       "speed": 720,
+       "windup": 0.7,
+       "dmg": 1.3,
+       "cd": [
+        5,
+        7
+       ]
+      },
+      {
+       "use": "guard",
+       "dur": 2.4,
+       "reduce": 0.85,
+       "cd": [
+        9,
+        12
+       ],
+       "counter": {
+        "use": "aoe",
+        "shape": "circle",
+        "at": "self",
+        "r": 140,
+        "windup": 0.45,
+        "dmg": 1.4
+       }
+      },
+      {
+       "use": "seq",
+       "cd": [
+        9,
+        12
+       ],
+       "w": 1.2,
+       "steps": [
+        {
+         "use": "blink",
+         "to": "front",
+         "dist": 80
+        },
+        {
+         "use": "swipe",
+         "clip": "slam",
+         "reach": 110,
+         "windup": 0.4,
+         "dmg": 1.3,
+         "down": true
+        },
+        {
+         "use": "aoe",
+         "shape": "cross",
+         "at": "self",
+         "hw": 24,
+         "windup": 0.6,
+         "dmg": 1.2
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "at": 0.5,
+     "enter": {
+      "say": "布万加：“拿出你的勇气，证明你是真正的勇士！”",
+      "col": "#ffd070",
+      "mechs": [
+       {
+        "use": "safezone",
+        "mode": "near",
+        "r": 110,
+        "windup": 3.2,
+        "frac": 0.35,
+        "say": "战吼——贴近布万加！"
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "mech",
+       "mech": {
+        "use": "safezone",
+        "mode": "near",
+        "r": 110,
+        "windup": 3.2,
+        "frac": 0.35,
+        "say": "战吼——贴近布万加！"
+       },
+       "cd": [
+        24,
+        30
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "rose": {
+   "name": "冰雪女王洛丝",
+   "lvl": 42,
+   "size": [
+    15,
+    12,
+    124
+   ],
+   "speed": 95,
+   "elem": "ice",
+   "art": "snRose",
+   "scale": 1.15,
+   "pref": 180,
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 110,
+     "dur": 6
+    },
+    {
+     "use": "tether",
+     "kind": "kruse",
+     "mode": "guard",
+     "mul": 0.35,
+     "hp": 0.22,
+     "onBreak": "groggy",
+     "say": "雷剑克鲁斯把洛丝当成了恋人——先打倒克鲁斯！",
+     "col": "#ffe070"
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "shot",
+       "mode": "homing",
+       "n": 3,
+       "spread": 60,
+       "speed": 230,
+       "turn": 2,
+       "dmg": 0.9,
+       "status": "slow",
+       "cd": [
+        4,
+        5.5
+       ],
+       "w": 1.6,
+       "say": "冰晶",
+       "col": "#bfe6ff"
+      },
+      {
+       "use": "aoe",
+       "shape": "circle",
+       "at": "target",
+       "r": 70,
+       "n": 3,
+       "scatter": 140,
+       "windup": 1.2,
+       "dmg": 1.1,
+       "status": "freeze",
+       "sdur": 1.2,
+       "cd": [
+        7,
+        9
+       ],
+       "col": "#bfe6ff"
+      },
+      {
+       "use": "blink",
+       "to": "away",
+       "dist": 240,
+       "cd": [
+        7,
+        10
+       ],
+       "w": 0.8
+      },
+      {
+       "use": "swipe",
+       "reach": 70,
+       "dmg": 0.9,
+       "cd": [
+        2,
+        3
+       ]
+      }
+     ]
+    },
+    {
+     "at": 0.55,
+     "enter": {
+      "say": "洛丝把梦境投射到了现实——找出真正的洛丝！",
+      "col": "#d8f0ff",
+      "mechs": [
+       {
+        "use": "clones",
+        "n": 3,
+        "dur": 12,
+        "punish": "heal"
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "mech",
+       "mech": {
+        "use": "clones",
+        "n": 3,
+        "dur": 12,
+        "punish": "heal"
+       },
+       "cd": [
+        22,
+        28
+       ],
+       "say": "梦境"
+      },
+      {
+       "use": "laser",
+       "windup": 1.2,
+       "dur": 1.2,
+       "sweep": 70,
+       "dmg": 0.5,
+       "col": "#bfe6ff",
+       "cd": [
+        8,
+        10
+       ]
+      }
+     ]
+    },
+    {
+     "at": 0.25,
+     "enter": {
+      "say": "冰雪宫殿在收缩！",
+      "mechs": [
+       {
+        "use": "hazard",
+        "kind": "shrink",
+        "minW": 680,
+        "speed": 22,
+        "col": "#bfe6ff"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "skasa": {
+   "name": "冰龙斯卡萨",
+   "tier": "raid",
+   "lvl": 43,
+   "size": [
+    30,
+    18,
+    140
+   ],
+   "weight": 8,
+   "speed": 70,
+   "elem": "ice",
+   "art": "snSkasa",
+   "scale": 1.5,
+   "pref": 150,
+   "traits": {
+    "sa": "cast",
+    "immune": [
+     "freeze"
+    ]
+   },
+   "mechs": [
+    {
+     "use": "groggy",
+     "max": 130,
+     "dur": 7,
+     "mul": 1.6
+    },
+    {
+     "use": "enrage",
+     "t": 300
+    }
+   ],
+   "phases": [
+    {
+     "at": 1,
+     "skills": [
+      {
+       "use": "swipe",
+       "clip": "bite",
+       "reach": 140,
+       "width": 36,
+       "dmg": 1.3,
+       "down": true,
+       "cd": [
+        2,
+        3
+       ],
+       "w": 2
+      },
+      {
+       "use": "laser",
+       "windup": 1.2,
+       "dur": 1.5,
+       "sweep": 70,
+       "dmg": 0.5,
+       "status": "slow",
+       "cd": [
+        7,
+        9
+       ],
+       "say": "冰之吐息",
+       "col": "#bfe6ff"
+      },
+      {
+       "use": "rain",
+       "kind": "hex",
+       "n": 6,
+       "r": 48,
+       "interval": 0.28,
+       "windup": 1.1,
+       "dmg": 1.1,
+       "col": "#bfe6ff",
+       "cd": [
+        8,
+        11
+       ],
+       "say": "冰雹"
+      },
+      {
+       "use": "summon",
+       "kind": "babySkasa",
+       "n": 2,
+       "max": 3,
+       "cd": [
+        16,
+        20
+       ],
+       "w": 0.7
+      }
+     ]
+    },
+    {
+     "at": 0.7,
+     "enter": {
+      "say": "斯卡萨冰封了自己——击破冰龙之卵！",
+      "col": "#bfe6ff",
+      "mechs": [
+       {
+        "use": "invuln",
+        "until": "crystals",
+        "n": 4,
+        "name": "冰龙之卵",
+        "hpFrac": 0.02
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "aoe",
+       "shape": "circle",
+       "at": "self",
+       "r": 220,
+       "windup": 1.4,
+       "dmg": 1.3,
+       "jump": true,
+       "status": "freeze",
+       "sdur": 1.2,
+       "cd": [
+        10,
+        13
+       ],
+       "say": "冰封大地——跳起来！",
+       "col": "#bfe6ff"
+      }
+     ]
+    },
+    {
+     "at": 0.45,
+     "enter": {
+      "say": "暴风雪来了！",
+      "col": "#e8f4ff",
+      "mechs": [
+       {
+        "use": "hazard",
+        "kind": "debris",
+        "every": 3.5,
+        "n": 4,
+        "col": "#bfe6ff"
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "mech",
+       "mech": {
+        "use": "safezone",
+        "windup": 3.4,
+        "n": 2,
+        "r": 72,
+        "frac": 0.4,
+        "say": "绝对零度——站进光圈！",
+        "col": "#6aa8ff"
+       },
+       "cd": [
+        26,
+        32
+       ]
+      }
+     ]
+    },
+    {
+     "at": 0.2,
+     "enter": {
+      "say": "斯卡萨之巢在崩塌！",
+      "mechs": [
+       {
+        "use": "hazard",
+        "kind": "shrink",
+        "minW": 640,
+        "speed": 20,
+        "col": "#bfe6ff"
+       }
+      ]
+     }
+    }
+   ]
+  }
+ },
+ "items": {
+  "epics": [
+   {
+    "key": "ep_sn_charlie",
+    "slot": "neck",
+    "lvl": 37,
+    "name": "查理的石晶项链",
+    "fx": {
+     "ice": 25,
+     "dmgUp": 0.07,
+     "hpPct": 0.04
+    },
+    "desc": "巴尔雷娜小时候送给哥哥查理的项链，碎成了好几块，又被一块一块拼了回来。",
+    "look": "a simple leather cord necklace with a pale blue stone crystal pendant that was broken and pieced back together with thin silver wire"
+   }
+  ],
+  "sets": [
+   {
+    "id": "set_skasa",
+    "name": "冰龙斯卡萨的遗骸",
+    "lvl": 42,
+    "abyss": true,
+    "desc": "三十年苏醒一次的冰龙，每次沉睡前都会蜕下一片鳞。",
+    "bonus": {
+     "2": {
+      "st": {
+       "dmgUp": 0.1,
+       "ice": 30,
+       "hpPct": 0.06
+      },
+      "desc": "【冰龙】伤害增加 10%，冰属性强化 +30，HP 上限 +6%；攻击时 6% 几率降下冰龙的冰锥（周围 160% 冰属性伤害，减速 2 秒）",
+      "proc": {
+       "chance": 0.06,
+       "cd": 1.5,
+       "act": "strike",
+       "mul": 1.6,
+       "aoe": 110,
+       "elem": "ice",
+       "vis": "ice",
+       "name": "冰龙的冰锥"
+      }
+     }
+    },
+    "pieces": [
+     {
+      "key": "ep_sn_skasa_scale",
+      "slot": "support",
+      "name": "冰龙的逆鳞",
+      "look": "a single large pale blue ice dragon scale with a frosty sheen, bound with a leather strap and a small silver clasp"
+     },
+     {
+      "key": "ep_sn_skasa_eye",
+      "slot": "stone",
+      "name": "冰龙之眼",
+      "look": "a round icy blue magic gem shaped like a slit-pupil dragon eye, set in a frosted silver claw frame"
+     }
+    ]
+   }
+  ],
+  "quest": [
+   {
+    "key": "q_sn_shard",
+    "look": "a few small broken pieces of a pale blue stone crystal pendant on a torn leather cord"
+   }
+  ]
+ },
+ "dungeons": {
+  "frozen_heart": {
+   "name": "冰心少年",
+   "lvl": [
+    36,
+    37
+   ],
+   "theme": "snCave",
+   "layout": "standard",
+   "mobs": [
+    [
+     "toySoldier",
+     3
+    ],
+    [
+     "toyFine",
+     2
+    ],
+    [
+     "toyMass",
+     2
+    ],
+    [
+     "toyBerserk",
+     1
+    ]
+   ],
+   "elite": "toyBerserk",
+   "boss": "charlie",
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "gate": {
+    "x": 420,
+    "col": "170,220,255"
+   },
+   "desc": "被冰龙变成冰霜巨人的少年查理，和他的玩具士兵们。血量过半时他的心脏会被冰晶护住——打碎冰晶他就会破招。",
+   "drops": {
+    "boss": [
+     [
+      "ep_sn_charlie",
+      0.03
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.1,
+      8
+     ],
+     [
+      "c_white",
+      0.02,
+      1
+     ],
+     [
+      "m_cloth",
+      0.03,
+      2
+     ]
+    ]
+   }
+  },
+  "lik_well": {
+   "name": "利库天井",
+   "lvl": [
+    37,
+    38
+   ],
+   "theme": "snRidge",
+   "layout": "long",
+   "mobs": [
+    [
+     "bantuWarrior",
+     3
+    ],
+    [
+     "frostGoblin",
+     2
+    ],
+    [
+     "foamSpider",
+     1.5
+    ],
+    [
+     "stormGolem",
+     0.7
+    ],
+    [
+     "thunderGolem",
+     0.7
+    ],
+    [
+     "frostGolem",
+     0.7
+    ]
+   ],
+   "elite": "catapultCommander",
+   "boss": "lik",
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "gate": {
+    "x": 900,
+    "col": "200,230,255"
+   },
+   "desc": "冰封的天井里，寒冰巨人利库守着班图族的冰壁。他的冰裂会冻住人；血量过半后会召来暴风雪和冰霜石巨人。",
+   "drops": {
+    "boss": [
+     [
+      "ep_sn_charlie",
+      0.012
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.1,
+      8
+     ],
+     [
+      "m_iron",
+      0.03,
+      2
+     ],
+     [
+      "c_blue",
+      0.02,
+      1
+     ]
+    ]
+   }
+  },
+  "ridge": {
+   "name": "山脊",
+   "lvl": [
+    38,
+    39
+   ],
+   "theme": "snRidge",
+   "layout": "standard",
+   "mobs": [
+    [
+     "bantuWarrior",
+     3
+    ],
+    [
+     "frostGoblin",
+     2
+    ],
+    [
+     "iceTiger",
+     2
+    ],
+    [
+     "iceSprite",
+     1
+    ]
+   ],
+   "elite": "bullBastur",
+   "boss": "ruug",
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "preBoss": {
+    "kind": "bullEmuli",
+    "say": "野蛮牛族勇士艾穆利挡住了去路！"
+   },
+   "gate": {
+    "x": 1380,
+    "col": "220,235,255"
+   },
+   "desc": "班图族勇士们的试炼之地。野兽师鲁乌格和冰齿沙凡特靠在一起时会互相回血——把它们分开，先打倒沙凡特，鲁乌格就会破招。",
+   "drops": {
+    "boss": [
+     [
+      "ep_sn_charlie",
+      0.008
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.11,
+      9
+     ],
+     [
+      "m_leather",
+      0.03,
+      2
+     ],
+     [
+      "c_red",
+      0.02,
+      1
+     ]
+    ]
+   }
+  },
+  "white_ruins": {
+   "name": "白色废墟",
+   "lvl": [
+    39,
+    40
+   ],
+   "theme": "snRuins",
+   "layout": "long",
+   "mobs": [
+    [
+     "snowApe",
+     2.5
+    ],
+    [
+     "iceTiger",
+     1.5
+    ],
+    [
+     "blueGoblin",
+     2
+    ],
+    [
+     "kuniShaman",
+     1.5
+    ],
+    [
+     "snowballRului",
+     2
+    ]
+   ],
+   "elite": "avalancheRabina",
+   "boss": "seski",
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "gate": {
+    "x": 1860,
+    "col": "240,245,255"
+   },
+   "desc": "雪魈占据的古代废墟。巨猿塞斯奇一靠近就会把人抓起来狂揍，双掌震地的雪波直线很长；它捶胸咆哮时，离它远一点。",
+   "drops": {
+    "boss": [
+     [
+      "ep_sn_charlie",
+      0.012
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.11,
+      9
+     ],
+     [
+      "m_bone",
+      0.03,
+      2
+     ],
+     [
+      "c_white",
+      0.03,
+      1
+     ]
+    ]
+   }
+  },
+  "bwanga_dojo": {
+   "name": "布万加的修炼场",
+   "lvl": [
+    40,
+    41
+   ],
+   "theme": "snRidge",
+   "layout": "raid",
+   "hidden": true,
+   "unlock": {
+    "quest": "q_sn09"
+   },
+   "mobs": [
+    [
+     "bantuWarrior",
+     2
+    ],
+    [
+     "bantuElite",
+     1
+    ],
+    [
+     "tulusWarrior",
+     1.5
+    ],
+    [
+     "kuniShaman",
+     1
+    ]
+   ],
+   "elite": "bantuElite",
+   "boss": "bwanga",
+   "bossAdds": 0,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "preBoss": {
+    "kind": "tulusElite",
+    "say": "图卢斯族的精英战士在等你。"
+   },
+   "gate": {
+    "x": 2340,
+    "col": "255,220,140"
+   },
+   "desc": "【隐藏】班图族族长、四剑圣之一的布万加亲自出手的修炼场。他会架起格挡反击；“战吼”读条时要贴近他才安全。",
+   "drops": {
+    "boss": [
+     [
+      "ep_sn_charlie",
+      0.02
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.12,
+      10
+     ],
+     [
+      "m_soul",
+      0.003,
+      1
+     ],
+     [
+      "m_obsidian",
+      0.006,
+      1
+     ]
+    ]
+   }
+  },
+  "ice_palace": {
+   "name": "冰雪宫殿",
+   "lvl": [
+    41,
+    42
+   ],
+   "theme": "snPalace",
+   "layout": "long",
+   "mobs": [
+    [
+     "iceSprite",
+     2
+    ],
+    [
+     "kuniShaman",
+     1.5
+    ],
+    [
+     "tulusWarrior",
+     2
+    ],
+    [
+     "iceLurker",
+     1.5
+    ],
+    [
+     "aquiles",
+     0.5
+    ]
+   ],
+   "elite": "tulusElite",
+   "boss": "rose",
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "gate": {
+    "x": 2820,
+    "col": "190,230,255"
+   },
+   "desc": "冰雪女王洛丝的宫殿。雷剑克鲁斯把洛丝当成了自己的恋人，拼死守护她——先打倒克鲁斯；洛丝把梦境投射到现实时，打中真正的她幻影就会散掉。",
+   "drops": {
+    "boss": [
+     [
+      "ep_sn_charlie",
+      0.012
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.12,
+      10
+     ],
+     [
+      "m_elem2",
+      0.01,
+      1
+     ],
+     [
+      "c_blue",
+      0.03,
+      2
+     ]
+    ]
+   }
+  },
+  "skasa_nest": {
+   "name": "斯卡萨之巢",
+   "lvl": [
+    42,
+    42
+   ],
+   "bossLvl": 44,
+   "theme": "snNest",
+   "layout": "raid",
+   "mobs": [
+    [
+     "tulusWarrior",
+     2
+    ],
+    [
+     "iceLurker",
+     1.5
+    ],
+    [
+     "babySkasa",
+     1.5
+    ],
+    [
+     "iceSpider",
+     1.5
+    ],
+    [
+     "tulusElite",
+     0.5
+    ]
+   ],
+   "elite": "aquiles",
+   "boss": "skasa",
+   "bossAdds": 0,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "preBoss": {
+    "kind": "aquiles",
+    "say": "冰影阿奎利斯守在巢穴前……"
+   },
+   "gate": {
+    "x": 3300,
+    "col": "170,215,255"
+   },
+   "desc": "【攻坚】万年雪山之巅的冰龙巢穴。斯卡萨会冰封自己（先击破冰龙之卵）、召来暴风雪；“绝对零度”时站进光圈，“冰封大地”时跳起来。",
+   "drops": {
+    "boss": [
+     [
+      "ep_sn_charlie",
+      0.04
+     ],
+     [
+      "ep_de_cross",
+      0.01
+     ]
+    ],
+    "mats": [
+     [
+      "crystal",
+      0.14,
+      12
+     ],
+     [
+      "m_soul",
+      0.004,
+      1
+     ],
+     [
+      "m_diamond",
+      0.01,
+      1
+     ]
+    ]
+   }
+  }
+ },
+ "abyss": {
+  "abyss_snow": {
+   "name": "万年雪山深渊",
+   "from": "ice_palace",
+   "theme": "abyssSnow",
+   "tint": "rgba(70,20,120,0.30)",
+   "lvl": [
+    41,
+    42
+   ],
+   "lordLvl": 44,
+   "cost": 1,
+   "pity": 7,
+   "lords": [
+    "charlie",
+    "lik",
+    "seski",
+    "rose"
+   ],
+   "gate": {
+    "scene": "snow_field",
+    "x": 3560
+   },
+   "clearExp": 15000,
+   "waves": [
+    {
+     "n": 6,
+     "mobs": [
+      [
+       "toySoldier",
+       1
+      ],
+      [
+       "toyMass",
+       2
+      ]
+     ],
+     "elites": [
+      "toyBerserk"
+     ],
+     "say": "玩具士兵的游行！"
+    },
+    {
+     "n": 5,
+     "mobs": [
+      [
+       "snowApe",
+       1
+      ],
+      [
+       "snowballRului",
+       1
+      ],
+      [
+       "iceTiger",
+       1
+      ]
+     ],
+     "elite": 1,
+     "say": "雪魈群从雪里钻出来了！"
+    },
+    {
+     "n": 6,
+     "mobs": [
+      [
+       "tulusWarrior",
+       2
+      ],
+      [
+       "iceSprite",
+       1
+      ]
+     ],
+     "elites": [
+      "bullBastur",
+      "bullEmuli"
+     ],
+     "say": "野蛮牛族的勇士们冲进了派对！"
+    }
+   ],
+   "lord": {
+    "mechs": [
+     {
+      "use": "enrage",
+      "t": 220
+     }
+    ],
+    "cycle": [
+     {
+      "every": [
+       20,
+       26
+      ],
+      "mech": {
+       "use": "hazard",
+       "kind": "debris",
+       "every": 3.5,
+       "n": 3,
+       "dur": 10,
+       "col": "#c890ff"
+      }
+     },
+     {
+      "every": [
+       28,
+       34
+      ],
+      "at": 0.6,
+      "mech": {
+       "use": "safezone",
+       "windup": 3.2,
+       "frac": 0.35,
+       "say": "深渊之力——站进光圈！"
+      }
+     }
+    ]
+   },
+   "desc": "【深渊派对】冰雪宫殿深处的深渊裂缝。需要消耗 1 张深渊派对邀请函。深渊领主是万年雪山的四个领主之一（每次随机），降临后会引发落石，血量过半时要站进光圈。「冰龙斯卡萨的遗骸」只在这里出现。",
+   "quest": {
+    "name": "雪山的深渊",
+    "lvl": 41,
+    "clear": "ice_palace",
+    "pre": [
+     "q_abyss_gf"
+    ],
+    "gold": 5500,
+    "desc": "冰雪宫殿深处裂开了深渊。通关冰雪宫殿，歌兰蒂斯就会告诉你万年雪山深渊的入口。",
+    "offer": [
+     "万年雪山也……被深渊渗进去了。",
+     "冰龙每次沉睡前都会蜕下一片鳞，据说那片鳞就掉进了深渊里。",
+     "先去通关冰雪宫殿吧。"
+    ],
+    "done": [
+     "万年雪山地图的最右边，深渊之门已经打开。穿暖和点。"
+    ]
+   }
+  }
+ },
+ "npcs": {
+  "orca": {
+   "name": "奥尔卡",
+   "title": "班图族副族长",
+   "h": 124,
+   "services": [
+    "quest"
+   ],
+   "greet": [
+    "外来的人……拿出你的勇气，证明你是真正的勇士！"
+   ],
+   "lines": [
+    "冰龙每三十年醒一次。每一次，班图族都要翻过斯特鲁山脉。",
+    "我的哥哥布万加是族长。他只认拳头。",
+    "班图族不想打仗——我们只是想活下去。"
+   ],
+   "look": "Orca, the vice-chief of the Bantu tribes: a tall strong man in his thirties with tanned skin, long braided dark hair, a short beard, a thick grey wolf pelt over his shoulders, fur-trimmed leather armor with tribal bead ornaments, a big bone-handled axe on his back"
+  },
+  "balrena": {
+   "name": "巴尔雷娜",
+   "title": "图卢斯族 · 修理 / 仓库",
+   "h": 114,
+   "services": [
+    "repair",
+    "storage"
+   ],
+   "greet": [
+    "哟，冒险家！盔甲坏了？交给大婶就对了！"
+   ],
+   "lines": [
+    "我有个哥哥叫查理……小时候走丢在雪山里了。",
+    "图卢斯族的盔甲，冰龙都咬不穿！"
+   ],
+   "look": "Balrena, a cheerful sturdy middle-aged Tulus tribe woman blacksmith: rosy cheeks, thick brown hair tied up with a cloth, small bison horn ornaments in her hair, a fur-lined leather apron over a warm wool dress, rolled-up sleeves, holding a smithing hammer"
+  }
+ },
+ "scenes": {
+  "storm_pass": {
+   "name": "斯顿雪域",
+   "area": "班图族的村庄",
+   "kind": "town",
+   "width": 2400,
+   "theme": "snTown",
+   "bgm": "guild",
+   "ambient": "magic",
+   "map": [
+    58,
+    64
+   ],
+   "props": [
+    {
+     "art": "world/p_crates",
+     "x": 420,
+     "h": 80,
+     "y": 30
+    },
+    {
+     "art": "world/p_magiclamp",
+     "x": 700,
+     "h": 110,
+     "y": 20
+    },
+    {
+     "art": "world/p_magiclamp",
+     "x": 1700,
+     "h": 110,
+     "y": 20
+    },
+    {
+     "art": "world/p_crates",
+     "x": 2040,
+     "h": 80,
+     "y": 40
+    }
+   ],
+   "npcs": [
+    {
+     "npc": "orca",
+     "x": 980,
+     "y": 50
+    },
+    {
+     "npc": "balrena",
+     "x": 1420,
+     "y": 60
+    }
+   ],
+   "exits": [
+    {
+     "side": "left",
+     "to": "hm_backstreet"
+    },
+    {
+     "side": "right",
+     "to": "snow_field"
+    }
+   ]
+  },
+  "snow_field": {
+   "name": "万年雪山",
+   "area": "斯特鲁山脉",
+   "kind": "field",
+   "width": 3800,
+   "theme": "snRidge",
+   "bgm": "field",
+   "map": [
+    72,
+    64
+   ],
+   "exits": [
+    {
+     "side": "left",
+     "to": "storm_pass"
+    }
+   ]
+  }
+ },
+ "story": {
+  "chapter": "雪山篇 · 冰龙苏醒",
+  "prefix": "q_sn",
+  "pre": "q_de09",
+  "npc": "orca",
+  "scene": "storm_pass",
+  "steps": [
+   {
+    "t": "arrive",
+    "npc": "sharan",
+    "to": "orca",
+    "name": "班图族的侵略",
+    "lvl": 36,
+    "scene": "storm_pass",
+    "reward": {
+     "exp": 0.05,
+     "gold": 1500
+    },
+    "desc": "班图族翻过斯特鲁山脉，冲击了贝尔玛尔公国的防线。去班图族的村庄斯顿雪域，找副族长奥尔卡谈谈。",
+    "talk": {
+     "offer": [
+      "北边的班图族越过了斯特鲁山脉，公国的防线快守不住了。",
+      "可是……他们不像是来打仗的，更像是在逃难。去斯顿雪域，找副族长奥尔卡问清楚吧。"
+     ],
+     "doing": [
+      "斯顿雪域在赫顿玛尔后街的北边，Lv.36 才能过去。"
+     ],
+     "done": [
+      "外来的人？……拿出你的勇气，证明你是真正的勇士！"
+     ]
+    }
+   },
+   {
+    "t": "clear",
+    "dungeon": "ridge",
+    "lvl": 38,
+    "name": "班图族的副族长",
+    "reward": {
+     "exp": 0.09,
+     "gold": 2500
+    },
+    "desc": "奥尔卡不信任外来的人。通关万年雪山的「山脊」，证明你的实力。",
+    "talk": {
+     "offer": [
+      "班图族只相信勇士。去山脊——我们的勇士都是在那里被认可的。"
+     ],
+     "doing": [
+      "寒冰虎扑过来之前会压低身子。"
+     ],
+     "done": [
+      "……你比我想的强。"
+     ]
+    }
+   },
+   {
+    "t": "boss",
+    "dungeon": "ridge",
+    "lvl": 38,
+    "name": "真正的战士",
+    "reward": {
+     "exp": 0.1,
+     "gold": 3000
+    },
+    "desc": "山脊深处的野兽师鲁乌格和他的冰齿沙凡特被冰龙的气息迷了心智。打倒鲁乌格。",
+    "talk": {
+     "offer": [
+      "鲁乌格曾经是族里最好的驯兽师。冰龙醒来以后，他和他的野兽都疯了。",
+      "沙凡特靠近他的时候，两个都会回血——把它们分开。"
+     ],
+     "doing": [
+      "先打沙凡特。"
+     ],
+     "done": [
+      "你是真正的战士。好——我告诉你班图族的事。",
+      "冰龙斯卡萨醒了。雪山上的一切都在结冰，我们只能往南逃。"
+     ]
+    }
+   },
+   {
+    "t": "clear",
+    "dungeon": "frozen_heart",
+    "lvl": 36,
+    "name": "我的孩子",
+    "reward": {
+     "exp": 0.09,
+     "gold": 2500
+    },
+    "desc": "雪山的冰洞里常常传出孩子的声音。通关「冰心少年」。",
+    "talk": {
+     "offer": [
+      "雪山的冰洞里有孩子的声音……可那里不可能有人活着。去看看吧。"
+     ],
+     "doing": [
+      "玩具士兵会自爆，别贴太近。"
+     ],
+     "done": [
+      "冰洞最深处……有一个冰做的巨人，抱着一堆玩具。"
+     ]
+    }
+   },
+   {
+    "t": "boss",
+    "dungeon": "frozen_heart",
+    "lvl": 37,
+    "name": "永恒的悲惨命运",
+    "collect": {
+     "key": "q_sn_shard",
+     "item": "查理的石晶项链碎片",
+     "icon": "q_sn_shard",
+     "desc": "一块淡蓝色石晶的碎片，穿在断掉的皮绳上。"
+    },
+    "npc": "orca",
+    "to": "balrena",
+    "reward": {
+     "exp": 0.1,
+     "gold": 3000
+    },
+    "desc": "冰霜巨人查理身上有一条碎掉的石晶项链。打倒他，把碎片带给图卢斯族的巴尔雷娜。",
+    "talk": {
+     "offer": [
+      "那个冰巨人叫查理……是巴尔雷娜失散多年的哥哥。冰龙把他变成了那样。",
+      "他的心脏被冰晶护着——打碎冰晶，他才会停下来。"
+     ],
+     "doing": [
+      "把项链碎片带给巴尔雷娜。"
+     ],
+     "done": [
+      "这是……我小时候送给哥哥的项链。",
+      "谢谢你让他安息。"
+     ]
+    }
+   },
+   {
+    "t": "clear",
+    "dungeon": "lik_well",
+    "lvl": 37,
+    "name": "利库天井",
+    "reward": {
+     "exp": 0.09,
+     "gold": 2500
+    },
+    "desc": "班图族的冰壁在利库天井。通关它。",
+    "talk": {
+     "offer": [
+      "我们用冰龙的气息把雪山上的怪物冻成了冰壁。可是冰壁在融化……利库天井最危险。"
+     ],
+     "doing": [
+      "石巨人会架起架势，看准了再打。"
+     ],
+     "done": [
+      "冰壁后面醒来的是寒冰巨人利库。"
+     ]
+    }
+   },
+   {
+    "t": "boss",
+    "dungeon": "lik_well",
+    "lvl": 38,
+    "name": "寒冰巨人利库",
+    "reward": {
+     "exp": 0.1,
+     "gold": 3000
+    },
+    "desc": "打倒利库天井深处的寒冰巨人利库。",
+    "talk": {
+     "offer": [
+      "利库的冰裂会把人冻住。看到地上的十字就走开。"
+     ],
+     "doing": [
+      "它召来暴风雪的时候，注意头顶。"
+     ],
+     "done": [
+      "利库倒下了。……白色废墟那边，雪魈们也不安分了。"
+     ]
+    }
+   },
+   {
+    "t": "clear",
+    "dungeon": "white_ruins",
+    "lvl": 39,
+    "name": "白色废墟",
+    "reward": {
+     "exp": 0.09,
+     "gold": 2500
+    },
+    "desc": "通关被雪魈占据的「白色废墟」。",
+    "talk": {
+     "offer": [
+      "白色废墟是古代部族的遗迹，现在是雪魈的窝。"
+     ],
+     "doing": [
+      "噜噜伊会在远处扔雪球。"
+     ],
+     "done": [
+      "雪魈们的头领……是一只巨大的猿。"
+     ]
+    }
+   },
+   {
+    "t": "boss",
+    "dungeon": "white_ruins",
+    "lvl": 40,
+    "name": "塞斯奇",
+    "reward": {
+     "exp": 0.1,
+     "gold": 3000
+    },
+    "desc": "打倒雪魈的头领塞斯奇。",
+    "talk": {
+     "offer": [
+      "塞斯奇一抓住人就不会松手。别贴着它打。",
+      "它捶胸的时候，离它远一点。"
+     ],
+     "doing": [
+      "雪波是一条直线，往旁边躲。"
+     ],
+     "done": [
+      "你真的很强。……族长想见你。他在修炼场等你。"
+     ]
+    }
+   },
+   {
+    "t": "boss",
+    "dungeon": "bwanga_dojo",
+    "lvl": 40,
+    "name": "布万加的修炼场",
+    "reward": {
+     "exp": 0.12,
+     "gold": 3500
+    },
+    "desc": "班图族族长布万加要亲自试一试你。去「布万加的修炼场」，打倒他。",
+    "talk": {
+     "offer": [
+      "我的哥哥布万加——族长，四剑圣之一。他想亲手试试你的实力。",
+      "修炼场的入口是隐藏的，在万年雪山的中间。"
+     ],
+     "doing": [
+      "他架起格挡的时候别打正面。“战吼”的时候贴近他。"
+     ],
+     "done": [
+      "布万加：“哈哈哈！好！你就是真正的勇士！”",
+      "布万加：“冰龙的手下在冰雪宫殿。去吧，班图族跟你一起。”"
+     ]
+    }
+   },
+   {
+    "t": "clear",
+    "dungeon": "ice_palace",
+    "lvl": 41,
+    "name": "冰雪宫殿",
+    "reward": {
+     "exp": 0.09,
+     "gold": 3000
+    },
+    "desc": "冰龙的手下——冰雪女王洛丝的宫殿就在坎纳克山的峡谷里。通关「冰雪宫殿」。",
+    "talk": {
+     "offer": [
+      "洛丝本来只是一片积雪……冰龙给了她人的身体，让她替自己抓走班图族的人。"
+     ],
+     "doing": [
+      "宫殿里的图卢斯族战士都被她控制了。"
+     ],
+     "done": [
+      "宫殿深处，洛丝身边站着一个拿雷剑的男人。"
+     ]
+    }
+   },
+   {
+    "t": "boss",
+    "dungeon": "ice_palace",
+    "lvl": 42,
+    "name": "冰雪女王洛丝",
+    "reward": {
+     "exp": 0.12,
+     "gold": 4000
+    },
+    "desc": "打倒冰雪女王洛丝，把被控制的班图族人救回来。",
+    "talk": {
+     "offer": [
+      "那个男人是雷剑克鲁斯。洛丝在梦里骗他，让他以为自己是他的恋人。先打倒克鲁斯——别杀他。",
+      "洛丝能把梦境变成现实。打中真正的她，幻影就会散掉。"
+     ],
+     "doing": [
+      "宫殿会收缩，别被逼到边上。"
+     ],
+     "done": [
+      "族人们醒过来了。克鲁斯……也醒了。",
+      "冰龙斯卡萨就在山顶的巢穴里。"
+     ]
+    }
+   },
+   {
+    "t": "raid",
+    "dungeon": "skasa_nest",
+    "lvl": 42,
+    "name": "冰龙斯卡萨",
+    "reward": {
+     "exp": 0.18,
+     "gold": 7000,
+     "coins": 2
+    },
+    "desc": "登上万年雪山之巅，讨伐冰龙斯卡萨。",
+    "talk": {
+     "offer": [
+      "斯卡萨会冰封自己，先击破冰龙之卵。",
+      "“冰封大地”的时候跳起来，“绝对零度”的时候站进光圈。",
+      "去吧，勇士。班图族的命运交给你了。"
+     ],
+     "doing": [
+      "暴风雪来的时候注意头顶。"
+     ],
+     "done": [
+      "……冰龙倒下了。雪山的冬天，终于要结束了。"
+     ]
+    }
+   },
+   {
+    "t": "handin",
+    "to": "orca",
+    "lvl": 42,
+    "name": "你就是打败斯卡萨的勇士",
+    "reward": {
+     "exp": 0.08,
+     "gold": 4000,
+     "items": [
+      {
+       "key": "ep_sn_charlie",
+       "n": 1
+      }
+     ]
+    },
+    "desc": "回斯顿雪域，把好消息告诉奥尔卡。",
+    "talk": {
+     "offer": [
+      "冰龙斯卡萨倒下了。"
+     ],
+     "done": [
+      "你就是那位打败斯卡萨的勇士吗？",
+      "巴尔雷娜把查理的项链修好了，她说要交给你——哥哥一定也希望这样。",
+      "——雪山篇 · 完——"
+     ]
+    }
+   }
+  ]
+ },
+ "art": {
+  "chars": {
+   "snToy": {
+    "h": 84,
+    "hold": "holding a wooden toy sword",
+    "desc": "A toy soldier monster brought to life in a frozen cave: a knee-high wooden nutcracker-style toy soldier with a tall red and gold shako hat, a blue painted jacket with gold buttons, white trousers, round painted rosy cheeks, visible wooden joints, holding a wooden toy sword.",
+    "atk": "the wooden toy sword",
+    "cast": "raising the toy sword high and marching in place",
+    "low": "lunging forward low with the toy sword"
+   },
+   "snCharlie": {
+    "h": 140,
+    "boss": true,
+    "hold": "with huge icy fists",
+    "desc": "Charlie the Frozen-Hearted Boy, a boss of the eternal snow mountain: a big childlike frost giant made of pale blue ice and packed snow, a round boyish face with sad big eyes, a small tuft of icy hair, a tattered knitted scarf and a small wooden toy soldier tucked in his belt, a glowing blue ice crystal heart visible in his chest, huge icy fists.",
+    "atk": "his huge icy fist",
+    "cast": "hugging himself as his crystal heart glows",
+    "low": "crouching low and punching the ground"
+   },
+   "snBantu": {
+    "h": 108,
+    "hold": "holding a bone-handled war axe",
+    "desc": "A Bantu tribe warrior of the snowy mountains: a sturdy tanned man with braided dark hair, a grey wolf head pelt worn as a hood, fur-trimmed leather armor with bone and bead ornaments, fur boots, painted tribal marks on the cheeks, holding a bone-handled war axe.",
+    "atk": "the war axe",
+    "cast": "raising the war axe overhead with a war cry",
+    "low": "charging forward low with the axe held back"
+   },
+   "snTiger": {
+    "h": 72,
+    "hold": null,
+    "cycle": "trot",
+    "desc": "An ice tiger monster of the snow mountain: a lean four-legged white tiger with pale blue stripes, frosty fur tips, long ice-blue fangs, glowing light blue eyes and small ice shards along its back.",
+    "atk": "its icy fangs",
+    "cast": "rearing up and roaring",
+    "low": "crouching low ready to pounce"
+   },
+   "snYeti": {
+    "h": 110,
+    "hold": null,
+    "desc": "A snow ape (yeti) monster of the white ruins: a big hunched ape with shaggy white fur, a pale blue-grey face with a heavy brow, long powerful arms with huge hands, a few icicles hanging from its fur, big flat feet.",
+    "atk": "its huge hands",
+    "cast": "beating its chest with both fists",
+    "low": "knuckle-walking forward low"
+   },
+   "snRose": {
+    "h": 124,
+    "boss": true,
+    "hold": "holding a slender ice crystal scepter",
+    "desc": "Rose the Snow Queen, a boss of the Ice Palace: an elegant cold beautiful woman made from snow given a human body, pale blue skin, long flowing white hair with ice crystal ornaments, an ice crown, a long modest high-collared gown of layered pale blue and white frost fabric with long sleeves, holding a slender ice crystal scepter.",
+    "atk": "the ice crystal scepter",
+    "cast": "raising the scepter as her gown flutters",
+    "low": "gliding forward low with the scepter pointed"
+   },
+   "snBwanga": {
+    "h": 132,
+    "boss": true,
+    "hold": "holding a huge spiked iron club",
+    "desc": "Bwanga, the chief of the Bantu tribes and one of the four sword saints: a huge muscular cheerful man with tanned skin, wild long dark hair and a thick beard, a big bear pelt cloak with the head as a hood, heavy fur and leather armor with tribal bone ornaments, bracers, holding a huge spiked iron club on his shoulder.",
+    "atk": "the huge spiked club",
+    "cast": "raising the club high with a hearty laugh",
+    "low": "charging forward low with the club held back"
+   },
+   "snSkasa": {
+    "h": 140,
+    "boss": true,
+    "cycle": "trot",
+    "desc": "Skasa the Ice Dragon, the great dragon of the eternal snow mountain: a huge four-legged dragon with glittering pale blue ice-crystal scales, a white frost mane, long curved icy horns, big folded frosty wings, glowing light blue eyes, sharp icicle spikes along the back and a long tail ending in an ice blade.",
+    "atk": "its huge icy jaws biting",
+    "cast": "rearing its head up and spreading its wings",
+    "low": "lowering its head and lunging forward"
+   }
+  },
+  "gates": {
+   "frozen_heart": "an ice cave entrance framed by giant blue ice crystals with a frozen wooden toy soldier on each side, a pale blue portal",
+   "lik_well": "a deep icy shaft entrance with a wooden Bantu gate frame, hanging ropes and a huge frozen ice wall behind, a white-blue portal",
+   "ridge": "a snowy mountain pass gate made of two tall carved Bantu totem poles with wolf and bison heads and war banners, a pale white portal",
+   "white_ruins": "a crumbling ancient stone archway buried in snow with huge icicles and a straw ape nest on top, a white portal",
+   "bwanga_dojo": "a sturdy Bantu training ground gate made of big logs with a huge carved bear skull and crossed clubs on top, a warm golden portal",
+   "ice_palace": "an elegant gate carved from glittering ice with crystal spires and frozen roses climbing the sides, a pale blue portal",
+   "skasa_nest": "a colossal gate made of two huge frozen dragon ribs meeting at the top with a giant ice dragon skull, a deep blue portal"
+  }
+ }
+}

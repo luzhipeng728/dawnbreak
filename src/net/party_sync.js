@@ -131,7 +131,7 @@ function partyShieldFx(me) {
   me._shFx = addFx({ ent: me, y: me.y, dur: 1e9, add: true,
     update() { const e = this.ent; this.y = e.y + 0.4; if (e.dead || absorbOf(e) <= 0 || (ents.indexOf(e) < 0 && e !== game.player)) this.t = this.dur; },
     draw(c) { const e = this.ent, k = clamp(absorbOf(e) / Math.max(1, e.hpMax * 0.5), 0.25, 1), X = sx(e.x), Y = sy(e.y, e.z + 52), pul = 1 + Math.sin(game.t * 4) * 0.03;
-      if (IMG['fx/pm_bubble']) drawSpr(c, 'pm_bubble', X, Y, 118 * pul, 150 * pul, { alpha: 0.35 + 0.35 * k });
+      if (IMG['fx/pm_bubble']) drawSpr(c, 'pm_bubble', X, Y, 112 * pul, 146 * pul, { alpha: 0.22 + 0.28 * k });
       else { c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.25 + 0.3 * k; c.strokeStyle = '#8fe8ff'; c.lineWidth = 2; c.beginPath(); c.ellipse(X, Y, 44 * pul, 62 * pul, 0, 0, TAU); c.stroke(); c.restore(); } } });
 }
 

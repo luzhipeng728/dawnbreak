@@ -265,6 +265,9 @@ def cmd_prep(a):
         p = os.path.join(OUT, 'fx', f'{n}.png')
         if not os.path.exists(p): continue
         im = glow_to_rgba(Image.open(p)) if glow else remove_bg(Image.open(p))
+        if n == 'pm_medic':   # 医神设备上的小红十字（红十字标志受保护）改成天蓝色
+            A = np.array(im); r, g, b = A[..., 0].astype(int), A[..., 1].astype(int), A[..., 2].astype(int); red = (r > 140) & (r - g > 70) & (r - b > 70)
+            A[red, 0], A[red, 1], A[red, 2] = 70, 190, 240; im = Image.fromarray(A, 'RGBA')
         fit(im, m).save(os.path.join(fin, 'fx', f'{n}.webp'), 'WEBP', quality=80, method=6); print('fx', n)
     p = os.path.join(OUT, 'job_paramedic.png')
     if os.path.exists(p):

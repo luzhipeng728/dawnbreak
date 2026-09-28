@@ -89,7 +89,10 @@ const net = {
       this.connected = true; this.retry = 0; this.user = m.user; this.store(); this.lastPong = performance.now();
       this.clockOff = m.serverTime - Date.now();
       clearInterval(this.pingT); this.pingT = setInterval(() => this.ping(), 2000); this.ping();
-      bus.emit('netOpen', { user: m.user });
+      // 服务端重启过（启动编号变了）：服务端内存里的队伍 / 房间都没了，由各自的客户端重新登记（net/coop.js 的 netRestore）
+      this.restarted = !!(this.boot && m.boot && m.boot !== this.boot); if (m.boot) this.boot = m.boot;
+      bus.emit('netOpen', { user: m.user, restarted: this.restarted });
+      if (this.restarted) bus.emit('netRestart', {});
     } else if (m.t === 'pong') {
       const rtt = performance.now() - m.ts; this.rtt = this.rtt ? this.rtt * 0.7 + rtt * 0.3 : rtt; this.lastPong = performance.now();
     } else if (m.t === 'error') {

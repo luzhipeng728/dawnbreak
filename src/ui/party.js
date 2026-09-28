@@ -13,6 +13,8 @@ const netParty = {
 const PARTY_WHY = { leave: '你离开了队伍', kick: '你被队长请离了队伍', timeout: '掉线太久，已离开队伍', disband: '队伍解散了' };
 net.on('party', m => {
   const was = netParty.p; netParty.p = m.party;
+  if (m.party) netParty.prev = m.party; else if (m.why) netParty.prev = null;   // 正常离队 / 解散才忘掉；服务端重启时不会发这条，留着给恢复用
+  if (m.why === 'restored' && m.party && m.party.members.length > 1 && !netParty.restoredNote) { netParty.restoredNote = true; chatSys('服务器重启后，队伍已恢复'); }
   if (!m.party && was && m.why) chatSys(PARTY_WHY[m.why] || '你离开了队伍');
   if (m.party && !was && m.party.id !== netParty.lastPid) chatSys('已加入队伍（聊天框切到“队伍”频道和队友说话）');
   if (m.party) netParty.lastPid = m.party.id;

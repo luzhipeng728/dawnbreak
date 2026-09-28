@@ -10,7 +10,7 @@ export function makeHub({ server, cfg, ctx, auth, handlers, hooks }) {
   const wss = new WebSocketServer({ noServer: true, maxPayload: cfg.wsMaxPayload, perMessageDeflate: false });
   const clients = new Map();       // userId → client
   const connLimit = limiter(cfg.wsConnRate[0], cfg.wsConnRate[1]);
-  let connSeq = 1;
+  let connSeq = 1, closing = false;
 
   server.on('upgrade', (req, sock, head) => {
     let url; try { url = new URL(req.url, 'http://x'); } catch { sock.destroy(); return; }
@@ -47,7 +47,7 @@ export function makeHub({ server, cfg, ctx, auth, handlers, hooks }) {
     const old = clients.get(user.id);
     if (old && old !== c) { old.replaced = true; old.send({ t: 'kicked', msg: '你的账号在其他地方登录了' }); old.close(4003, 'replaced'); }
     clients.set(user.id, c);
-    c.send({ t: 'welcome', user, ver: NET_VER, serverTime: Date.now() });
+    c.send({ t: 'welcome', user, ver: NET_VER, serverTime: Date.now(), boot: cfg.boot });
     for (const f of hooks.connect) { try { f(c, ctx); } catch (e) { ctx.log('onConnect 出错', e.stack || e); } }
   }
 
@@ -73,7 +73,7 @@ export function makeHub({ server, cfg, ctx, auth, handlers, hooks }) {
     });
     ws.on('close', () => {
       clearTimeout(authTimer);
-      if (!c.user) return;
+      if (!c.user || closing) return;   // 服务端关闭中：不再跑各模块的下线逻辑（数据库马上要关）
       if (clients.get(c.user.id) === c) clients.delete(c.user.id);
       for (const f of hooks.close) { try { f(c, ctx); } catch (e) { ctx.log('onClose 出错', e.stack || e); } }
     });
@@ -97,6 +97,6 @@ export function makeHub({ server, cfg, ctx, auth, handlers, hooks }) {
     sendTo(id, msg) { const c = clients.get(id); return c ? c.send(msg) : false; },
     broadcast(msg, filter) { const s = JSON.stringify(msg); let n = 0; for (const c of clients.values()) if (!filter || filter(c)) { if (c.send(s)) n++; } return n; },
     kick(id, msg) { const c = clients.get(id); if (c) { c.send({ t: 'kicked', msg }); c.close(4004, 'kicked'); } },
-    close() { clearInterval(hb); for (const c of clients.values()) c.close(1001, 'server shutdown'); wss.close(); },
+    close() { closing = true; clearInterval(hb); for (const c of clients.values()) c.close(1001, 'server shutdown'); wss.close(); },
   };
 }

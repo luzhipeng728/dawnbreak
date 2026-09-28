@@ -87,7 +87,7 @@ defSkill('mg_sky', { name: '天击', cls: 'mage', lvReq: 1, mp: 10, cd: 2, type:
     events: [slashAt(0.11, { a0: 1.4, a1: -1.9, r: 56, w: 12, off: [10, 50], col: '#e0c0ff' })], onEnd: e => { e.vy = 0; } }) });
 defSkill('mg_fang', { name: '龙牙', cls: 'mage', lvReq: 5, mp: 12, cd: 2, type: 'phys', col: '#c0c8e0',
   desc: '挥杖向前长距离直刺，命中的敌人陷入长时间僵直；命中后可以立即接天击、落花掌。', pow: lv => skillDmg(1.5, 0.15, lv), ai: { kind: 'poke', r: [0, 100], dy: 20 },
-  act: (lv) => ({ name: 'mg_fang', clip: 'fang', dur: 0.46, cancelFrom: 0.2, move: [[0.08, 0.16, 300]], links: ['mg_sky', 'mg_palm'], hitCancel: true,
+  act: (lv, p) => ({ name: 'mg_fang', clip: 'fang', dur: 0.46, cancelFrom: 0.2, move: [[0.08, 0.16, 300]], links: p && jobOf(p) === 'battlemage' && typeof BM_BODY !== 'undefined' ? BM_BODY : ['mg_sky', 'mg_palm'], hitCancel: true,
     hits: [HB(0.12, 0.2, [0, 100, 22, 30, 90], skillDmg(1.5, 0.15, lv), { stun: 1.0, knock: 30, hs: 0.08, snd: 'stab', chaser: 'ice' })],
     events: [evAt(0.11, e => { sfx.swing(true); fxStreak({ x: e.x + e.face * 10, y: e.y, z: e.z + 56, face: e.face, len: 110, w: 10, col: '#dfe8ff', dur: 0.16 }); })] }) });
 // 魔法护盾（现版）：开关型防御 BUFF（旧版“伤害改扣 MP”已在韩服 2019 年删除）
@@ -209,13 +209,14 @@ defSummon('strawdoll', { kind: 'field', life: 10, max: 1, r: 20, tick: 0.1, keep
   draw(c, s) { const X = sx(s.x), Y = sy(s.y, 0), bob = Math.sin(game.t * 4) * 1.5, a = s.life - s.lifeT < 2 ? 0.5 + 0.5 * Math.sin(game.t * 20) : 1; c.save(); c.globalAlpha = a; c.translate(X, Y - 2 + bob);
     c.fillStyle = '#c8a050'; c.strokeStyle = '#6a4a20'; c.lineWidth = 2; c.beginPath(); c.ellipse(0, -14, 7, 12, 0, 0, TAU); c.fill(); c.stroke(); c.beginPath(); c.arc(0, -30, 6, 0, TAU); c.fill(); c.stroke();
     c.beginPath(); c.moveTo(-11, -18); c.lineTo(11, -18); c.stroke(); c.fillStyle = '#e05a4a'; c.fillRect(-3, -32, 2, 2); c.fillRect(2, -32, 2, 2); c.restore(); } });
-defSkill('mg_phase', { name: '替身草人', cls: 'mage', lvReq: 10, mp: 20, cd: 30, type: 'mag', col: '#b89a50', whenHit: true, cmdNote: '受击中 Space',
+defSkill('mg_phase', { name: '替身草人', cls: 'mage', lvReq: 10, mp: 20, cd: 30, type: 'mag', col: '#b89a50', whenHit: p => !(typeof hasSkill === 'function' && hasSkill(p, 'bm_realphase')), cmdNote: '受击中 Space',
   desc: '只能在受击或倒地时施放（被抓取、冰冻、眩晕时不能用）：瞬间脱身，向后（或方向键指定的方向）瞬移一段距离，之后 0.5 秒无敌；原地留下一个草人，捡到后 10 秒内攻速、移速提高。', infoExtra: lv => [['冷却时间', Math.max(21, 31 - lv) + ' 秒']], ai: { kind: 'escape' },
   act: (lv) => ({ name: 'mg_phase', clip: 'jumpFall', dur: 0.3, noCounter: true, invul: [0, 0.3],
     onStart: e => { const x0 = e.x, y0 = e.y, dx = e.pad ? e.pad.dx() : 0, dy = e.pad ? e.pad.dy() : 0, dir = dx || (dy ? 0 : -e.face);
-      if (e.cool) e.cool.mg_phase = Math.max(21, 31 - lv);
+      const real = hasSkill(e, 'bm_realphase');   // 战斗法师：实战型替身草人（随时可放、冷却 −5 秒、不留草人，改为自己加速 5 秒）
+      if (e.cool) e.cool.mg_phase = Math.max(21, 31 - lv) - (real ? 5 : 0);
       sfx.magic(); fxBurst(x0, y0, 50, 90, '#ffe070'); e.warp(x0 + dir * 170, y0 + dy * 60, 0); e.setState('act'); e.invul = Math.max(e.invul, 0.8); fxBurst(e.x, e.y, 50, 70, '#ffe070');
-      summon(e, 'strawdoll', { x: x0, y: y0 }); } }) });
+      if (real) { e.buffs.mg_doll = { t: 5, aspd: 0.1, mspd: 0.1 }; fxAura(e, '#ffe070', 0.5); } else summon(e, 'strawdoll', { x: x0, y: y0 }); } }) });
 // 落花掌：突进一掌把敌人击飞，被击飞的敌人撞到其他敌人也造成伤害；可蓄气 0.3 秒，满蓄时霸体，把敌人撞到墙上会反弹并追加伤害
 defSkill('mg_palm', { name: '落花掌', cls: 'mage', lvReq: 15, mp: 20, cd: 3, type: 'phys', col: '#e07ab0',
   desc: '向前突进一掌把敌人击飞，被击飞的敌人撞到其他敌人也会造成伤害。可蓄气（最长 0.3 秒）：蓄满时带霸体，敌人撞到墙壁会反弹并受到追加伤害。', pow: lv => skillDmg(2.4, 0.24, lv), ai: { kind: 'poke', r: [0, 70], dy: 20 },

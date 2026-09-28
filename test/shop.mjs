@@ -212,9 +212,15 @@ const earn = await ev(() => {
   const q = Object.values(QUESTS).find(Q => Q.type === 'daily'); bus.emit('questDone', { id: q.id }); const c4 = save.data.cera;
   S.today.exch = 0; const g0 = game.gold; const x = cashExchGold(600); const c5 = save.data.cera;
   S.today.rank = 990; bus.emit('dungeonClear', { id: 'lorien', diff: 0, rank: 'SSS', time: 60, hurt: 0, maxCombo: 30 }); const c6 = save.data.cera;
-  return { first: c1 - c0, s: c2 - c1, lvl: c3 - c2, daily: c4 - c3, exch: c5 - c4, gold: g0 - game.gold, cap: c6 - c5, ach: S.ach.sss ? 1 : 0 };
+  const sys = typeof ACHIEVEMENTS !== 'undefined' && typeof achData === 'function';
+  if (sys && typeof achCheck === 'function') achCheck();   // 成就在事件后 0.4 秒批量检查，这里直接触发一次
+  const ad = sys && achData();
+  const achDone = sys ? Object.keys(ad.done || {}).some(id => ACHIEVEMENTS[id] && ACHIEVEMENTS[id].name === '完美演出') : null;
+  return { first: c1 - c0, s: c2 - c1, lvl: c3 - c2, daily: c4 - c3, exch: c5 - c4, gold: g0 - game.gold, cap: c6 - c5, ach: S.ach.sss ? 1 : 0, sys, achDone };
 });
-check(earn.first === 300 + 80 + 500, `首通 300 + SSS 80 + 成就“完美演出”500 = ${earn.first}`);
+// 有社交组的成就系统时，成就奖励改为在成就窗口领取（不自动到账），这里只确认成就已达成
+if (earn.sys) check(earn.first === 300 + 80 && earn.achDone, `首通 300 + SSS 80 = ${earn.first}；成就“完美演出”已达成，500 点券在成就窗口领取`);
+else check(earn.first === 300 + 80 + 500, `首通 300 + SSS 80 + 成就“完美演出”500 = ${earn.first}`);
 check(earn.s === 40 && earn.lvl === 21 * 40 && earn.daily === 150, `S 评价 40、升级 Lv21 ${earn.lvl}、每日任务 150`, JSON.stringify(earn));
 check(earn.exch === 500 && earn.gold === 25000 && earn.cap === 10, '金币兑换每天 500 封顶（25000 G），评价每天 1000 封顶', JSON.stringify(earn));
 await ev(() => menus.open('cashlog', { tab: 'earn' })); await wait(250); await shot('18-earn'); await closeAll();

@@ -402,7 +402,7 @@ function gsTransform(p, form, o = {}) {
 }
 const gsTfAct = form => ({ name: 'gm_' + form, clip: mclip('mRemote'), dur: 0.4, noCounter: true, events: [evAt(0.12, e => gsTransform(e, form))] });
 const tinyAct = id => ({ name: id, clip: mclip('mRemote'), dur: 0.12, noCounter: true });
-// G-X 主宰者：改装走“再按技能键”的无动作分支（和普通施放一样扣 MP）
+// G-X 主宰者：改装走“再按技能键”分支（和普通施放一样扣 MP）：正在做别的动作时无动作、不打断；空闲时播 0.12 秒的按遥控器动作
 function gopTransform(p, form) {
   const S = SKILLS['gm_' + form], mp = S.mp;
   if (p.mp < mp) { if (isHuman(p)) fxText('MP不足', p.x, p.y, p.z + 20, { col: '#9fd8ff', size: 10, dur: 0.5 }); }
@@ -442,7 +442,7 @@ defSkill('gm_g1', { name: 'G-1 科罗纳', cls: 'gun', job: MC, lvReq: 16, mp: 4
   desc: '在身后放出浮空辅助机器人科罗纳，跟着你移动，每隔一段时间向敌人发射光属性魔法弹（命中使敌人硬直）。科罗纳在场时再按技能键会立刻补射一发（最快 0.3 秒一发）。持续 20 秒；在场时可以改装成 G-2 旋雷者 / G-3 捕食者，每次改装持续时间 +10 秒（不超过 20 秒）。本技能等级也提高旋雷者、捕食者的攻击力。',
   pow: lv => MECH_DMG.g1(lv) * 25, infoExtra: lv => [['持续', GS_BASE + ' 秒'], ['自动射击间隔', '0.8 秒'], ['G-2 / G-3 攻击力', '+' + pct(0.04 * lv)]], ai: { kind: 'proj', r: [0, 520], dy: 120, summon: 'mech_g1' },
   req: gsReq('g1'),
-  recast: { ok: p => { const f = gsForm(p); return f === 'g1' || (!!f && tfReady(p)); }, instant: p => gsForm(p) === 'g1' || hasGop(p), cd: 0.1, mp: 0,
+  recast: { ok: p => { const f = gsForm(p); return f === 'g1' || (!!f && tfReady(p)); }, instant: p => gsForm(p) === 'g1' || (hasGop(p) && p.st === 'act'), cd: 0.1, mp: 0,
     act: (lv, p) => gsForm(p) === 'g1' ? g1Rapid(p) : hasGop(p) ? gopTransform(p, 'g1') : (p.mp = Math.max(0, p.mp - SKILLS.gm_g1.mp), gsTfAct('g1')) },
   act: () => ({ name: 'gm_g1', clip: mclip('mCall'), dur: 0.5, noCounter: true,
     events: [evAt(0.2, e => { dismissSummons(e, GS_Q, 'tf'); const G = gsState(e); G.stacks = 0; G.g3on = false; gsSpawn(e, 'g1', GS_BASE); sfx.mech(1.2); })] }) });
@@ -478,7 +478,7 @@ defSkill('gm_g2', { name: '改装：G-2 旋雷者', cls: 'gun', job: MC, lvReq: 
   desc: '把在场的科罗纳 / 捕食者改装成 3 台环绕自己的旋雷者。旋雷者每 1.5 秒充满一次电，充满电时静电场每秒电击周围的敌人；充满后再按技能键，3 台一起向前发射电磁波。和 G-1 共用持续时间，改装冷却 5 秒；不受机械指令影响。本技能等级也提高科罗纳、捕食者的攻击力。',
   pow: lv => MECH_DMG.g2Wave(lv) * 3, infoExtra: lv => [['充电', G2_CHARGE + ' 秒'], ['静电场（每台每秒）', pct(MECH_DMG.g2Field(lv))], ['G-1 / G-3 攻击力', '+' + pct(0.04 * lv)]], ai: { kind: 'burst', r: [0, 420], dy: 40 },
   req: gsReq('g2'),
-  recast: { ok: p => gsForm(p) === 'g2' || (hasGop(p) && !!gsForm(p) && tfReady(p)), instant: () => true, cd: 0.2, mp: 0, act: (lv, p) => gsForm(p) === 'g2' ? g2Wave(p) : gopTransform(p, 'g2') },
+  recast: { ok: p => gsForm(p) === 'g2' || (hasGop(p) && !!gsForm(p) && tfReady(p)), instant: p => gsForm(p) === 'g2' || p.st === 'act', cd: 0.2, mp: 0, act: (lv, p) => gsForm(p) === 'g2' ? g2Wave(p) : gopTransform(p, 'g2') },
   act: () => gsTfAct('g2') });
 
 /* ---- G-3 捕食者 ×6：在身边待命；再按技能键缠到范围内（500 px）等级最高的敌人身上持续电击（每 0.5 秒），再按一次召回 ---- */
@@ -518,7 +518,7 @@ defSkill('gm_g3', { name: '改装：G-3 捕食者', cls: 'gun', job: MC, lvReq: 
   desc: '把在场的科罗纳 / 旋雷者改装成 6 台捕食者，在身边待命。再按技能键，捕食者分头缠到周围（500 px 内）等级最高的敌人身上持续电击（使敌人硬直）；目标倒下会自动找下一个。再按一次召回。和 G-1 共用持续时间，改装冷却 5 秒。本技能等级也提高科罗纳、旋雷者的攻击力。',
   pow: lv => MECH_DMG.g3(lv) * 6 * 2 * 10, infoExtra: lv => [['每台每 0.5 秒', pct(MECH_DMG.g3(lv))], ['缠绕范围', '500 px'], ['G-1 / G-2 攻击力', '+' + pct(0.04 * lv)]], ai: { kind: 'aoe', r: [0, 480], dy: 120 },
   req: gsReq('g3'),
-  recast: { ok: p => gsForm(p) === 'g3' || (hasGop(p) && !!gsForm(p) && tfReady(p)), instant: () => true, cd: 0.25, mp: 0, act: (lv, p) => gsForm(p) === 'g3' ? g3Toggle(p) : gopTransform(p, 'g3') },
+  recast: { ok: p => gsForm(p) === 'g3' || (hasGop(p) && !!gsForm(p) && tfReady(p)), instant: p => gsForm(p) === 'g3' || p.st === 'act', cd: 0.25, mp: 0, act: (lv, p) => gsForm(p) === 'g3' ? g3Toggle(p) : gopTransform(p, 'g3') },
   act: () => gsTfAct('g3') });
 
 /* ---- G-磁力弹：科罗纳射出磁力弹，命中后在地面标记处展开磁场，把敌人吸过去托起（3 秒，每 0.3 秒一段），最后放下打倒 ----

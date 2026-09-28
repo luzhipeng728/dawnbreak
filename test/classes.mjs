@@ -32,16 +32,23 @@ for (const item of items) {
   for (let i = 0; i < n; i++) {
     const id = await page.evaluate(i => game.skillBar[i], i);
     const air = await page.evaluate(id => !!SKILLS[id].airOnly, id);
+    await page.waitForFunction(() => __G.player.free && __G.player.z === 0, null, { timeout: 9000 }).catch(() => { });   // 觉醒演出最长 5~6 秒（枪炮师一觉 5.4 秒），等它放完再判断前置条件、按下一个（上一个技能可能会消耗资源）
     // 有施放前置条件的技能：受击时才能放的（逆转反击等）跳过；HP 条件的（死亡抗拒）先把 HP 压到一半以下
     const pre = await page.evaluate(id => { const S = SKILLS[id], p = __G.player; if (S.whenHit) return 'skip'; if (!S.req || S.req(p) === true) return 'ok';
       window.__lowHp = true; p.hp = p.hpMax * 0.3; return S.req(p) === true ? 'ok' : 'skip'; }, id);
     if (pre === 'skip') { cast.push('~' + id); await page.evaluate(() => { window.__lowHp = false; }); continue; }
-    await page.waitForFunction(() => __G.player.free && __G.player.z === 0, null, { timeout: 3000 }).catch(() => { });
     if (air) { await tap('KeyC'); await wait(160); }
     // 受击时才能放的技能（S.whenHit：替身草人、心灵反击……）：先让角色进入受击硬直
     await page.evaluate(id => { const S = SKILLS[id], p = __G.player; if (typeof S.whenHit === 'function' ? S.whenHit(p) : S.whenHit) { p.setState('hit'); p.stun = 0.8; } }, id);
     await tap(KEYS[i]);
-    const ok = await page.waitForFunction(id => (__G.player.act && __G.player.act.skill === id) || (SKILLS[id].instant && __G.player.cool[id] > 0), id, { timeout: 1200 }).then(() => true).catch(() => false);   // 无动作施放（S.instant）的技能看冷却
+    const castCheck = () => page.waitForFunction(id => (__G.player.act && __G.player.act.skill === id) || (SKILLS[id].instant && __G.player.cool[id] > 0), id, { timeout: 1200 }).then(() => true).catch(() => false);   // 无动作施放（S.instant）的技能看冷却
+    let ok = await castCheck();
+    if (!ok) {   // 按键那一下刚好被怪打中硬直会吞掉按键：等能动了再按一次
+      await page.waitForFunction(() => __G.player.free && __G.player.z === 0, null, { timeout: 3000 }).catch(() => { });
+      if (air) { await tap('KeyC'); await wait(160); }
+      await tap(KEYS[i]); ok = await castCheck();
+    }
+    if (!ok) console.log(tag, 'NOCAST', id, JSON.stringify(await page.evaluate(id => { const p = __G.player, S = SKILLS[id]; return { st: p.st, act: p.act && p.act.name, free: p.free, z: p.z, mp: p.mp, cool: p.cool[id], req: S.req ? S.req(p) : null, info: p.pmInfo, lv: skLv(p, id), bar: game.skillBar.indexOf(id) }; }, id)));
     cast.push(ok ? id : '✗' + id); if (!ok) fail++;
     await page.evaluate(() => { window.__lowHp = false; });
     const awk = await page.evaluate(id => !!SKILLS[id].awaken, id);

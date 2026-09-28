@@ -16,6 +16,7 @@ const ALL = 'sword,gun,mage,sword:blade,sword:berserker,sword:asura,sword:soulbe
 const arg = process.argv[2] || 'sword:soulbender', list = (arg === 'all' ? ALL : arg).split(','), N = +(process.argv[3] || 6);
 const SKILLS_AIR_DELAY = new Set(['silver', 'aircut']);
 let fail = 0;
+const SPEC = {}; for (const c of ['sword', 'gun', 'mage']) { try { SPEC[c] = JSON.parse(fs.readFileSync(`docs/skills/${c}.json`, 'utf8')); } catch (e) { /* 还没有规格 */ } }
 for (const item of list) {
   const [cls, job] = item.split(':'), tag = `${cls}-${job || 'base'}`;
   const dir = `${out}/${tag}`; fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
@@ -34,8 +35,11 @@ for (const item of list) {
   const rows = [];
   for (const { id, name } of ids) {
     const nErr0 = logs.filter(l => l.type === 'pageerror').length;
-    const setup = await page.evaluate(id => {
-      const p = game.player; p.x = 380; p.y = 100; p.z = 0; p.vz = 0; p.face = 1; p.setState('idle'); p.act = null; p.cool = {}; p.buffs = {}; p.chasers = [];
+    // 前置技能（规格 docs/skills/<职业>.json 的 pre，例：狂暴之力、无尽波动）：先放出来再拍
+    const SS = (SPEC[cls] || {}).skills || {}, pre = (SS[`${id}@${job}`] || SS[id] || {}).pre;
+    if (pre) { await page.evaluate(pre => { const p = game.player; p.buffs = {}; p.cool = {}; for (const k of pre) { p.setState('idle'); p.act = null; castSkill(p, k, false, null); } }, pre); await page.waitForTimeout(700); }
+    const setup = await page.evaluate(({ id, keep }) => {
+      const p = game.player; p.x = 380; p.y = 100; p.z = 0; p.vz = 0; p.face = 1; p.setState('idle'); p.act = null; p.cool = {}; if (!keep) p.buffs = {}; p.chasers = [];
       for (let i = 0; i < game.skillBar.length; i++) game.skillBar[i] = null; game.skillBar[0] = id; __dummy(); projs.length = 0; window.__hits = 0;
       if (typeof summonsOf === 'function') for (const s of summonsOf(p) || []) s.remove = true;
       const S = SKILLS[id];
@@ -47,7 +51,7 @@ for (const item of list) {
       const a0 = typeof S.act === 'function' ? (() => { try { return S.act(game.skillLv[id] || 1); } catch (e) { return {}; } })() : {};
       const noHit = !!(S.buff || S.summon || S.move || S.noHitCheck || a0.guard || S.debuffOnly || S.from || S.after || /guard|plemon|silver/.test(id));
       return { instant: !!S.instant, icon, buff: noHit };
-    }, id);
+    }, { id, keep: !!pre });
     if (setup.pre) { rows.push({ id, name, flags: ['-前置条件'], frames: [] }); continue; }
     if (SKILLS_AIR_DELAY.has(id)) await page.waitForTimeout(160);
     await page.keyboard.down('KeyA'); await page.waitForTimeout(40); await page.keyboard.up('KeyA');

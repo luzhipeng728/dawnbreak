@@ -8,11 +8,13 @@
 //   人物：技能动作总时长、段数（追加 / 再按产生的新动作）、自带霸体 / 无敌所占的时间比例（地下城里所有技能默认霸体，
 //   这里量的是技能自己写的霸体 = 决斗场 / 官方原版的霸体）、位移（前后 dx、纵深 dy、最高 z）、实际冷却、MP、召唤物 / 投射物 / 地面效果个数。
 // 输入方式（规格文件里每个技能可写 input / pre / hp / dir / presses / watch）：
-//   默认 tap：按一下；动作带蓄力（act.charge）时自动按住到满蓄；动作有追加窗口（act.follow）时自动再按，直到没有追加
+//   默认 tap：按一下；动作带蓄力（act.charge）时自动按住到满蓄；动作有追加窗口（act.follow）时在窗口后段自动再按，直到没有追加
 //   hold：按住 holdT 秒（默认到动作结束，最多 4 秒）   mash：动作期间每 0.1 秒连按一次
 //   pre：先放这些技能（例：狂暴之力、无尽波动）   hp：施放前把 HP 设成最大值的这个比例   dir：'f' / 'b' 施放全程按住前 / 后
-//   presses：[秒…] 在这些时刻再按一次技能键（再按 / 引爆）   watch：最多观察多少秒（默认 8；召唤阵持续更久时加大）
-//   at：木桩离人物多远（默认 70px；空中下砸类可以放近一点）   air：先起跳再放（airDelay 帧后按键，默认 8）
+//   presses：[秒…] 在这些时刻再按一次技能键（再按 / 引爆）   watch：最多观察多少秒（默认 8；召唤阵持续更久时加大）   minWatch：至少观察多少秒
+//   （动作结束后，木桩落地、投射物 / 召唤物 / game.after 定时器 / 地面效果都结束才停）
+//   at：木桩离人物多远（默认 70px；空中下砸类可以放近一点）   air：先起跳再放（airDelay 帧后按键，默认 8）   set：{ 字段: 值 } 施放前写到人物身上（结束后还原）
+//   随机数每次施放都从同一个种子开始（结果可复现，和技能顺序无关）
 // 输出：test/shots/audit/<职业>-<转职>.json（每个技能每种摆法的全部数据）+ 终端里一张表；--compare 时再打印不一致清单
 // 用法：node test/skillaudit.mjs sword,sword:berserker [--compare[=docs/skills/sword.json]] [--only id1,id2] [--weapon katana] [--setups light,air]
 //   --compare：和规格对比（规格默认 docs/skills/<职业>.json），有“没写理由”的不一致时退出码为 1（all.sh 用）
@@ -56,6 +58,8 @@ function pageInit() {
     }
     return r;
   };
+  // 固定随机数（每次施放从同一个种子开始），结果可复现
+  A.seed = n => { let a = n >>> 0; Math.random = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
   A.reset = () => {
     for (const k in input.virt) delete input.virt[k];
     input.buf.length = 0; input.dirHist.length = 0; input.down.clear();
@@ -80,13 +84,15 @@ function pageInit() {
   };
   // 施放一次并测量
   A.run = (id, setup, o) => {
-    const S = SKILLS[id]; A.reset();
+    const S = SKILLS[id]; A.seed(0x5eed); A.reset();
     for (let i = 0; i < game.skillBar.length; i++) game.skillBar[i] = null;
     game.skillBar[0] = id;
     for (const pid of o.pre || []) A.castPre(pid);
     for (const e of ents) if (e !== p && !e.summon) e.remove = true;
     A.step(1); projs.length = 0;
     Object.assign(p, { x: 300, y: 100, vx: 0, vy: 0, face: 1, cool: {}, invul: 0, superArmor: 0 }); p.mp = p.mpMax; p.hp = p.hpMax * (o.hp || 1);
+    const setK = o.set || {}, setOld = {}; for (const k in setK) { setOld[k] = p[k]; p[k] = setK[k]; }   // 规格的 set：施放前改人物字段（结束后还原）
+    const unset = () => { for (const k in setOld) { if (setOld[k] === undefined) delete p[k]; else p[k] = setOld[k]; } };
     const D = [];
     if (setup === 'light') D.push(A.dummy('goblin', 300 + (o.at || 70), 100, 'main'));
     else if (setup === 'heavy') D.push(A.dummy('tauBeast', 310 + (o.at || 70), 100, 'main'));
@@ -94,13 +100,13 @@ function pageInit() {
     else for (const dx of [-80, 70, 170, 300, 450]) D.push(A.dummy('goblin', 300 + dx, 100, String(dx)));
     if (S.airOnly || o.air) { p.vz = 420; p.z = 1; p.setState('jump'); A.step(o.airDelay ?? 8); }
     if (typeof S.whenHit === 'function' ? S.whenHit(p) : S.whenHit) { p.setState('hit'); p.stun = 0.8; p.hurtT = game.t; }
-    if (S.req) { const r = S.req(p); if (r !== true) return { skip: 'req:' + r }; }
+    if (S.req) { const r = S.req(p); if (r !== true) { unset(); return { skip: 'req:' + r }; } }
     A.hits = []; A.t = 0;
     const x0 = p.x, y0 = p.y, mp0 = p.mp, seenS = new Set(SUMMONS), seenP = new WeakSet(projs), seenG = new WeakSet(groundFx);
     const R = { actF: 0, saF: 0, invF: 0, acts: 0, zMax: 0, summons: 0, projs: 0, fields: 0, err: null };
     const dm = {}; for (const d of D) dm[d.__aud] = { zMax: 0, down: false, held: false, bounce: 0, downT: null, x0: d.x, nb: d.cmb.bounce || 0, bn: 0 };
     const dirKey = o.dir === 'f' ? 'right' : o.dir === 'b' ? 'left' : null;
-    const maxF = Math.round((o.watch || 8) * 60), presses = (o.presses || []).map(t => Math.round(t * 60));
+    const maxF = Math.round((o.watch || 8) * 60), minF = Math.round((o.minWatch || 0) * 60), presses = (o.presses || []).map(t => Math.round(t * 60));
     let lastAct = null, lastMine = -1, cdReal = null, mpUsed = null, endPos = null, followed = new WeakSet(), morph = null, instant = !!S.instant, f = 0;
     A.tap('s0'); if (dirKey) input.virt[dirKey] = 1;
     try {
@@ -114,7 +120,7 @@ function pageInit() {
           else if (mode === 'hold') { if (A.t < (o.holdT || 4) && (mine0 || f < 3)) input.virt.s0 = 1; else delete input.virt.s0; }
           else if (mode === 'mash') { if (mine0 && A.t < (o.mashT || 6) && f % 6 === 0) A.tap('s0'); else if (input.virt.s0 !== 2) delete input.virt.s0; }
           else if (mine0 && a0.charge && !a0.chargeDone) input.virt.s0 = 1;
-          else if (mine0 && a0.follow && a0.followWin && p.actT >= a0.followWin[0] && !followed.has(a0)) { followed.add(a0); A.tap('s0'); }
+          else if (mine0 && a0.follow && a0.followWin && p.actT >= a0.followWin[0] + 0.6 * ((a0.followWin[1] ?? a0.dur) - a0.followWin[0]) && !followed.has(a0)) { followed.add(a0); A.tap('s0'); }   // 追加：在窗口后段再按（正常节奏，不截断当前段的多段判定）
           else if (input.virt.s0 !== 2) delete input.virt.s0;
         }
         step(1 / 60);
@@ -141,11 +147,13 @@ function pageInit() {
           m.bn = d.bounceNext || 0;
         }
         // 结束：技能动作结束 1 秒后，木桩落地、没有自己的投射物、召唤物都走了（或到观察上限）
-        const busy = mine || (lastMine < 0 && f < 30) || D.some(d => d.st === 'air' || d.st === 'held' || d.z > 1) || projs.some(q => q && q.owner === p) || SUMMONS.some(s => s.owner === p && !s.gone && s.life < 60);
+        const busy = mine || (lastMine < 0 && f < 30) || f < minF || D.some(d => d.st === 'air' || d.st === 'held' || d.z > 1) || projs.some(q => q && q.owner === p) || SUMMONS.some(s => s.owner === p && !s.gone && s.life < 60)
+          || game.timers.length > 0 || groundFx.some(g => g && g.t < g.dur);   // 延迟伤害（game.after / 地面效果）还没结算完
         if (!busy && f - Math.max(lastMine, 0) > 60) break;
       }
     } catch (e) { R.err = String(e && e.message || e).slice(0, 120); }
     for (const k in input.virt) delete input.virt[k];
+    unset();
     if (!endPos) endPos = { dx: Math.round(p.x - x0), dy: Math.round(p.y - y0) };
     const res = { cast: R.actF > 0 || instant, instant, acts: R.acts, dur: +(R.actF / 60).toFixed(2), sa: R.actF ? +(R.saF / R.actF).toFixed(2) : 0, invul: R.actF ? +(R.invF / R.actF).toFixed(2) : 0,
       dx: endPos.dx, dy: endPos.dy, zMax: Math.round(R.zMax), cd: cdReal, mp: mpUsed, summons: R.summons, projs: R.projs, fields: R.fields, watchT: +(f / 60).toFixed(2), err: R.err, morph };
@@ -155,9 +163,9 @@ function pageInit() {
       byD[d.__aud] = { hits: H.length, hitT: H.slice(0, 80).map(h => h.t), src: H.reduce((s, h) => (s[h.src] = (s[h.src] || 0) + 1, s), {}),
         zMax: Math.round(m.zMax), launch: H.filter(h => h.launch).length, relaunch: H.filter(h => h.relaunch && h.vz >= 250).length, airHits: H.filter(h => h.air0).length,
         maxVz: H.reduce((v, h) => Math.max(v, h.st1 === 'air' ? h.vz : 0), 0), down: m.down, downT: m.downT, otg: H.filter(h => h.otg).length, bounce: m.bounce, grab: m.held,
-        push: Math.round((d.x - m.x0) * (d.x0 >= 300 ? 1 : -1)), flags: [...new Set(H.map(h => h.f).join(''))].join('') };
+        push: Math.round((d.x - m.x0) * (d.__x0 >= 300 ? 1 : -1)), flags: [...new Set(H.map(h => h.f).join(''))].join('') };
     }
-    if (setup === 'spread') res.spread = Object.fromEntries(Object.entries(byD).map(([k, v]) => [k, v.hits]));
+    if (setup === 'spread') { res.spread = Object.fromEntries(Object.entries(byD).map(([k, v]) => [k, v.hits])); res.pulled = Object.values(byD).filter(v => v.push <= -30).length; }
     else Object.assign(res, byD.main);
     return res;
   };
@@ -171,7 +179,7 @@ function pageInit() {
     return all.filter(id => SKILLS[id] && (SKILLS[id].act || SKILLS[id].instant) && !SKILLS[id].passive).map(id => {
       const S = SKILLS[id]; let a = {}; try { a = typeof S.act === 'function' ? S.act(game.skillLv[id], p) || {} : {}; } catch (e) { a = {}; }
       return { id, name: S.name, job: S.job || null, cd: S.cd, mp: S.mp, type: S.type || null, elem: S.elem || null, lvReq: S.lvReq, awaken: !!S.awaken,
-        st: { dur: a.dur ?? null, boxes: (a.hits || []).length, sa: a.superArmor ?? null, invul: a.invul ?? null, charge: !!a.charge, follow: !!a.follow, noSA: !!(S.noSA || a.noSA), grab: (a.hits || []).some(h => h.grab) } };
+        st: { dur: a.dur ?? null, boxes: (a.hits || []).length, sa: a.superArmor ?? null, invul: a.invul ?? null, charge: !!a.charge, follow: !!a.follow, noSA: !!(S.noSA || a.noSA), grab: (a.hits || []).some(h => h.grab), atkCancel: !!(a.chain && a.next && !a.basic) } };
     });
   };
 }
@@ -182,8 +190,8 @@ function pageInit() {
 //   down true/false（轻木桩倒地）  bounce true（强制弹地）  grab true/false（抓住轻木桩）
 //   sa / invul：'none'（<10%）| 'part'（10%–85%）| 'full'（≥85%）| 'any'   dx [最少, 最多]（向前位移 px，负数 = 后退）
 //   behind true/false（打到身后 80px 的木桩）  reach [最少, 最多]（打到的最远木桩：70 / 170 / 300 / 450）
-//   cd 秒（和技能定义的冷却比，±25% 或 ±1 秒以内算一致）  summon true（放出召唤物 / 阵）  acts [最少, 最多]（段数：追加 / 再按的动作数）
-//   dur [最少, 最多]（技能动作总时长，秒）  why: { 字段: '理由' }：有理由的不一致算“已说明”，不算失败
+//   pull true/false（一排木桩里有被拉近 ≥30px 的）  cd 秒（和技能定义的冷却比，±25% 或 ±1 秒以内算一致）  summon true（放出召唤物 / 阵）  acts [最少, 最多]（段数：追加 / 再按的动作数）
+//   dur [最少, 最多]（技能动作总时长，秒）  atkCancel true/false（后摇可以按普攻取消：技能动作带 chain / next）  why: { 字段: '理由' }：有理由的不一致算“已说明”，不算失败
 const inR = (v, r) => Array.isArray(r) ? v >= r[0] && v <= r[1] : v === r;
 const band = x => x >= 0.85 ? 'full' : x >= 0.1 ? 'part' : 'none';
 function compare(sp, st, R) {
@@ -204,7 +212,9 @@ function compare(sp, st, R) {
   chk('reach', inR(reach, sp.reach), reach);
   chk('cd', st.cd !== undefined && Math.abs(st.cd - sp.cd) <= Math.max(1, sp.cd * 0.25), st.cd);
   chk('summon', (L.summons > 0) === sp.summon, L.summons);
+  chk('pull', ((R.spread || {}).pulled > 0) === sp.pull, `被拉近的木桩 ${(R.spread || {}).pulled}`);
   chk('acts', inR(L.acts, sp.acts), L.acts);
+  chk('atkCancel', !!(st.st && st.st.atkCancel) === sp.atkCancel, !!(st.st && st.st.atkCancel));
   chk('dur', inR(L.dur, sp.dur), L.dur);
   return mm;
 }
@@ -226,7 +236,7 @@ for (const item of list) {
   const rows = [];
   for (const s of skills) {
     const sp = specS[`${s.id}@${job}`] || specS[s.id] || {};
-    const o = { pre: sp.pre, hp: sp.hp, input: sp.input, holdT: sp.holdT, mashT: sp.mashT, dir: sp.dir, presses: sp.presses, watch: sp.watch, air: sp.air, at: sp.at, airDelay: sp.airDelay };
+    const o = { pre: sp.pre, hp: sp.hp, input: sp.input, holdT: sp.holdT, mashT: sp.mashT, dir: sp.dir, presses: sp.presses, watch: sp.watch, minWatch: sp.minWatch, air: sp.air, at: sp.at, airDelay: sp.airDelay, set: sp.set };
     const R = { static: s };
     for (const su of SETUPS) R[su] = await page.evaluate(({ id, su, o }) => AUD.run(id, su, o), { id: s.id, su, o });
     res.skills[s.id] = R;

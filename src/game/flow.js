@@ -39,5 +39,8 @@ function boot() {
   if (PARAMS.has('resume') && save.load()) { save.apply(); return startGame(save.data.cls); }   // 从决斗场回来：直接接着玩上次的角色（不用再经过标题和选角）
   // 标题画面背后是暮色林地的风景
   game.room = { x0: 0, x1: 1600, theme: 'forest', seed: 3 }; buildRoomArt(game.room); cam.x = 200;
-  menus.open('title'); music.play('title');
+  const title = () => { menus.open('title'); music.play('title'); };
+  const lu = liveUpdate.take();   // 在线更新刷新回来：跳过标题和选角，回到刷新前的角色和位置（net/liveupdate.js）
+  if (lu) return liveUpdate.resume(lu).then(ok => { if (!ok) title(); });
+  title();
 }

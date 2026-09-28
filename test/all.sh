@@ -64,6 +64,7 @@ run serverapi node server/test/api.mjs
 run restore   node --disable-warning=ExperimentalWarning server/test/restore.mjs
 run arenasrv  node --disable-warning=ExperimentalWarning server/test/arena.mjs
 run netacct   node test/net_account.mjs
+run liveupd   node test/liveupdate.mjs
 # 社交组、联机组后续的测试加在这里
 run svcapi    node test/svc_api.mjs
 run svcplay   node test/svc_play.mjs

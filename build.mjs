@@ -3,7 +3,10 @@
 //   dist/dawnbreak.html                        离线单文件：全部美术以 data URI 内嵌，双击即可游玩
 // 用法：node build.mjs            （两个都出）
 //       node build.mjs --web      （只出网页版）  node build.mjs --offline（只出离线版）
+// 版本号 BUILD_ID = 网页版页面内容的哈希（内容不变就不变，两个版本共用）；网页版另写 dist/web/version.json { id, time, notes }，
+// 在线的页面轮询它发现新版本（net/liveupdate.js）；notes 用环境变量 NOTES，没给就取最近几条 feat / fix 提交的标题
 import fs from 'fs';
+import crypto from 'crypto';
 import path from 'path';
 import { execFileSync } from 'child_process';
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
@@ -40,14 +43,14 @@ function collectArt() {
   walk('');
   return { files, sprs };
 }
-function artModule(mode, files, sprs) {
+function artModule(mode, files, sprs, id) {
   const src = {}, bundle = {};
   for (const f of files) {
     const key = f.replace(/\.webp$/, '');
     src[key] = mode === 'offline' ? 'data:image/webp;base64,' + fs.readFileSync(path.join(ART, f)).toString('base64') : 'assets/' + f;
     bundle[key] = bundleOf(key);
   }
-  return `const ASSET_SRC = ${JSON.stringify(src)};\nconst ASSET_BUNDLE = ${JSON.stringify(bundle)};\nconst SPR_DATA = ${JSON.stringify(sprs)};\nconst BUILD_MODE = '${mode}';\n`;
+  return `const ASSET_SRC = ${JSON.stringify(src)};\nconst ASSET_BUNDLE = ${JSON.stringify(bundle)};\nconst SPR_DATA = ${JSON.stringify(sprs)};\nconst BUILD_MODE = '${mode}';\nconst BUILD_ID = '${id}';\n`;
 }
 function bundleJs(art) {
   const js = '"use strict";\n' + order.map(f => `// ==== ${f} ====\n` + fs.readFileSync(path.join(SRC, f), 'utf8') + (f === 'engine/core.js' ? '\n// ==== art (generated) ====\n' + art : '')).join('\n');
@@ -62,19 +65,29 @@ function syntaxCheck(js) {
 }
 const html = js => top + js.replace(/<\/script/gi, '<\\/script') + bottom;
 
+function patchNotes() {
+  if (process.env.NOTES !== undefined) return process.env.NOTES;
+  try {
+    const subj = execFileSync('git', ['log', '-20', '--no-merges', '--format=%s'], { cwd: ROOT, encoding: 'utf8' }).split('\n');
+    return subj.filter(s => /^(feat|fix)\b/.test(s)).slice(0, 3).map(s => s.replace(/^\w+(\([^)]*\))?!?:\s*/, '')).join('；');
+  } catch (e) { return ''; }
+}
+
 const { files, sprs } = collectArt();
+const BUILD_ID = crypto.createHash('sha256').update(html(bundleJs(artModule('web', files, sprs, '')))).digest('hex').slice(0, 12);
 let checked = false;
 if (want('web')) {
-  const js = bundleJs(artModule('web', files, sprs)); syntaxCheck(js); checked = true;
+  const js = bundleJs(artModule('web', files, sprs, BUILD_ID)); syntaxCheck(js); checked = true;
   const out = path.join(DIST, 'web');
   fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(path.join(out, 'assets'), { recursive: true });
   for (const f of files) { const d = path.join(out, 'assets', f); fs.mkdirSync(path.dirname(d), { recursive: true }); fs.copyFileSync(path.join(ART, f), d); }
   const page = html(js); fs.writeFileSync(path.join(out, 'index.html'), page);
+  fs.writeFileSync(path.join(out, 'version.json'), JSON.stringify({ id: BUILD_ID, time: new Date().toISOString(), notes: patchNotes() }));
   const artKB = files.reduce((s, f) => s + fs.statSync(path.join(ART, f)).size, 0) / 1024;
-  console.log(`dist/web/index.html: ${(page.length / 1024).toFixed(0)} KB + ${files.length} 个素材文件（${(artKB / 1024).toFixed(1)} MB，按需加载）`);
+  console.log(`dist/web/index.html: ${(page.length / 1024).toFixed(0)} KB + ${files.length} 个素材文件（${(artKB / 1024).toFixed(1)} MB，按需加载），版本 ${BUILD_ID}`);
 }
 if (want('offline')) {
-  const art = artModule('offline', files, sprs), js = bundleJs(art); if (!checked) syntaxCheck(js);
+  const art = artModule('offline', files, sprs, BUILD_ID), js = bundleJs(art); if (!checked) syntaxCheck(js);
   fs.mkdirSync(DIST, { recursive: true });
   const page = html(js); fs.writeFileSync(path.join(DIST, 'dawnbreak.html'), page);
   console.log(`dist/dawnbreak.html: ${(page.length / 1024).toFixed(0)} KB（离线单文件，其中美术 ${(art.length / 1024).toFixed(0)} KB），${order.length} 个模块`);

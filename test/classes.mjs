@@ -19,7 +19,7 @@ for (const item of items) {
     const p = __G.player; p.mpMax = p.mp = 99999;
     if (job) { game.job = job; const ids = CLASSES[p.cls].jobs[job].skills; for (const id of ids) game.skillLv[id] = 5; game.skillBar = ids.filter(id => !SKILLS[id].passive).concat(Array(14).fill(null)).slice(0, 14); }
     else game.skillBar = CLASSES[p.cls].skills.filter(id => !SKILLS[id].passive).concat(Array(14).fill(null)).slice(0, 14);
-    setInterval(() => { p.hp = p.hpMax; p.mp = p.mpMax; p.invul = 99; for (const k in p.cool) p.cool[k] = 0; if (__G.ents.filter(e => e.team === 'e' && !e.dead).length < 3) for (let i = 0; i < 4; i++) __G.spawnMonster('goblin', p.x + 150 + i * 60, 40 + i * 40); }, 400);
+    setInterval(() => { p.hp = window.__lowHp ? Math.min(p.hp, p.hpMax * 0.4) : p.hpMax; p.mp = p.mpMax; p.invul = 99; for (const k in p.cool) p.cool[k] = 0; if (__G.ents.filter(e => e.team === 'e' && !e.dead).length < 3) for (let i = 0; i < 4; i++) __G.spawnMonster('goblin', p.x + 150 + i * 60, 40 + i * 40); }, 400);
     return game.skillBar.filter(Boolean).length;
   }, job || null);
   await wait(500);
@@ -32,13 +32,18 @@ for (const item of items) {
   for (let i = 0; i < n; i++) {
     const id = await page.evaluate(i => game.skillBar[i], i);
     const air = await page.evaluate(id => !!SKILLS[id].airOnly, id);
+    // 有施放前置条件的技能：受击时才能放的（逆转反击等）跳过；HP 条件的（死亡抗拒）先把 HP 压到一半以下
+    const pre = await page.evaluate(id => { const S = SKILLS[id], p = __G.player; if (S.whenHit) return 'skip'; if (!S.req || S.req(p) === true) return 'ok';
+      window.__lowHp = true; p.hp = p.hpMax * 0.4; return S.req(p) === true ? 'ok' : 'skip'; }, id);
+    if (pre === 'skip') { cast.push('~' + id); await page.evaluate(() => { window.__lowHp = false; }); continue; }
     await page.waitForFunction(() => __G.player.free && __G.player.z === 0, null, { timeout: 3000 }).catch(() => { });
     if (air) { await tap('KeyC'); await wait(160); }
     // 受击时才能放的技能（S.whenHit：替身草人、心灵反击……）：先让角色进入受击硬直
     await page.evaluate(id => { const S = SKILLS[id], p = __G.player; if (typeof S.whenHit === 'function' ? S.whenHit(p) : S.whenHit) { p.setState('hit'); p.stun = 0.8; } }, id);
     await tap(KEYS[i]);
-    const ok = await page.waitForFunction(id => __G.player.act && __G.player.act.skill === id, id, { timeout: 1200 }).then(() => true).catch(() => false);
+    const ok = await page.waitForFunction(id => (__G.player.act && __G.player.act.skill === id) || (SKILLS[id].instant && __G.player.cool[id] > 0), id, { timeout: 1200 }).then(() => true).catch(() => false);   // 无动作施放（S.instant）的技能看冷却
     cast.push(ok ? id : '✗' + id); if (!ok) fail++;
+    await page.evaluate(() => { window.__lowHp = false; });
     const awk = await page.evaluate(id => !!SKILLS[id].awaken, id);
     await wait(awk ? 1300 : 350);
     await page.screenshot({ path: `${out}/${tag}-s${i}-${id}.png` });

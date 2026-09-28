@@ -21,7 +21,7 @@ export function kbPlayer(page, { out = 'test/shots/kb', log = console.log } = {}
     st: () => page.evaluate(() => {
       const p = game.player, D = game.dungeon;
       const R = { scene: game.scene, sid: world && world.S && world.S.id, menus: menus.stack.slice(), lvl: game.lvl, gold: game.gold,
-        p: p && { x: p.x, y: p.y, z: p.z, st: p.st, face: p.face, hp: p.hp, hpMax: p.hpMax, mp: p.mp, mpMax: p.mpMax, dodgeCd: p.dodgeCd || 0 } };
+        p: p && { x: p.x, y: p.y, z: p.z, st: p.st, face: p.face, hp: p.hp, hpMax: p.hpMax, mp: p.mp, mpMax: p.mpMax, canBack: canBackstep(p) } };
       if (D && game.scene === 'dungeon') {
         R.d = { state: D.state, open: D.doorsOpen, trans: !!D.transition, x1: game.room.x1, boss: D.room.type === 'boss', hurt: D.hurt, route: D.doorsOpen ? bot.route(D) : null };
         R.en = ents.filter(e => e.team === 'e' && !e.dead && !e.remove && !e.hidden).map(e => ({ x: e.x, y: e.y, w: e.w, boss: !!e.boss, kind: e.kind }));
@@ -123,11 +123,12 @@ export function kbPlayer(page, { out = 'test/shots/kb', log = console.log } = {}
         // 喝药
         if (p.hp < p.hpMax * potAt && s.pot && s.pot.cd <= 0 && s.pot.hp) await P.tap('Digit1');
         else if (p.mp < p.mpMax * 0.15 && s.pot && s.pot.cd <= 0 && s.pot.mp) await P.tap('Digit2');
-        // 1) 地面预警：往纵深方向离开，偶尔闪避
+        // 1) 地面预警：往纵深方向离开，偶尔后跳（官方没有闪避键）
         if (dodgeWarn && s.danger.length) {
           const g = s.danger[0], up = g.line ? (p.y < g.y ? p.y > 24 : p.y > 172) : g.y > 98;   // DEPTH=196：危险在下半边就往上躲；冲撞线往远离中线的方向让
           const v = up ? 'ArrowUp' : 'ArrowDown', h = p.x >= g.x ? 'ArrowRight' : 'ArrowLeft';
-          await P.hold([v, h]);   // 只走位躲开（不依赖闪避键：官方对齐后没有 Shift 闪避）
+          if (p.canBack && Math.random() < 0.3) { await P.hold(['ArrowDown']); await P.tap('KeyC', 40); }
+          else await P.hold([v, h]);
           await wait(60); continue;
         }
         // 2) 打怪

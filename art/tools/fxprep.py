@@ -28,7 +28,7 @@ def fit(im, m):
 # 战斗组新增的技能特效（原图在主仓库 art/src/combat/fx，生成见 combatgen.py）
 COMBAT_GLOW = {'ghost': 320, 'crossx': 256, 'swordrain': 256, 'bloodwave': 320, 'bloodhand': 320, 'bloodpillar': 384, 'lava': 320, 'dragonfang': 384,
                'chaser': 96, 'laser': 512, 'flame': 256, 'shell': 128, 'quantum': 256, 'darkorb': 192, 'eel': 128, 'petal': 256, 'thunderbolt': 512, 'elemmeteor': 256}
-COMBAT_SOLID = {'icewall': 192, 'jack': 96, 'jackbig': 256, 'snowman': 128}
+COMBAT_SOLID = {'icewall': 192, 'jack': 96, 'jackbig': 256, 'snowman': 128, 'rx78': 96}
 
 def main():
     """fxprep.py            处理 art/src/fx 下的特效原图
@@ -39,7 +39,9 @@ def main():
     if '--combat' in sys.argv:
         from combatgen import OUT
         glow, src, todo = COMBAT_GLOW, os.path.join(OUT, 'fx'), {**COMBAT_GLOW, **COMBAT_SOLID}
+    only = sys.argv[sys.argv.index('--only') + 1].split(',') if '--only' in sys.argv else None   # --only 名字1,名字2：只处理这几个
     for n, m in todo.items():
+        if only and n not in only: continue
         p = os.path.join(src, f'{n}.png')
         if not os.path.exists(p): print('missing', n); continue
         im = glow_to_rgba(Image.open(p)) if n in glow else remove_bg(Image.open(p))

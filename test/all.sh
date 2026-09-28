@@ -25,6 +25,7 @@ run polish    node test/polish.mjs
 run combat    node test/combat.mjs
 run skillsa   node test/skill_sa.mjs
 run summon    node test/summon.mjs
+run gunner    node test/gunner.mjs
 run avatar    node test/avatar.mjs
 run shop      node test/shop.mjs
 run shopecon  node test/shop_econ.mjs

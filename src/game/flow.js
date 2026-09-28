@@ -13,8 +13,8 @@ function startGameNow(cls) {
   return goTown().then(() => afterEnterWorld());
 }
 function afterEnterWorld() {
-  if (save.skillReset) { save.skillReset = false; toastMsg('版本更新：技能体系按官方重做，技能已初始化，SP 全部返还（按 K 重新加点）', '#8aff9a'); }
-  if (save.migrated) { save.migrated = false; toastMsg('版本更新：角色变强了！获得 150 SP、1000 G 与药剂补给，新增闪避（Shift）', '#8aff9a'); }
+  if (save.skillReset) { save.skillReset = false; toastMsg('版本更新：操作与技能按官方现版对齐——闪避改为 ↓+C 后跳（10 级可学后跳-强化）、受身改为蹲伏，技能栏 14 格；技能已初始化，SP 全部返还（按 K 重新加点）', '#8aff9a'); }
+  if (save.migrated) { save.migrated = false; toastMsg('版本更新：角色变强了！获得 150 SP、1000 G 与药剂补给', '#8aff9a'); }
   if (!save.data.seenHelp) { save.data.seenHelp = true; menus.open('help'); }
 }
 function enterDungeon(id, diff) {
@@ -30,7 +30,7 @@ function boot() {
   const tcls = PARAMS.get('cls') || 'sword';
   if (PARAMS.has('test')) {
     const kinds = PARAMS.has('mon') ? PARAMS.get('mon').split(',') : ['goblin', 'goblinThrower'];
-    return withLoading(['spr:' + tcls, 'bg:forest', ...monBundles(kinds)], () => { save.newGame(tcls); (save.data.flags ??= {}).awaken = true; /* 测试房间：觉醒视为已完成觉醒任务 */ game.player = makePlayer(tcls); cmdLabel(tcls); for (const id of CLASSES[tcls].skills) game.skillLv[id] = Math.max(game.skillLv[id] || 0, 1); game.skillBar = CLASSES[tcls].skills.concat([null, null]).slice(0, 12); startTestRoom(); });
+    return withLoading(['spr:' + tcls, 'bg:forest', ...monBundles(kinds)], () => { save.newGame(tcls); (save.data.flags ??= {}).awaken = true; /* 测试房间：觉醒视为已完成觉醒任务 */ game.player = makePlayer(tcls); cmdLabel(tcls); for (const id of CLASSES[tcls].skills) game.skillLv[id] = Math.max(game.skillLv[id] || 0, 1); game.skillBar = CLASSES[tcls].skills.filter(id => !SKILLS[id].passive).concat(Array(SKILL_SLOTS).fill(null)).slice(0, SKILL_SLOTS); startTestRoom(); });
   }
   const alias = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
   const devSave = () => { save.loadAll(); const i = PARAMS.has('cls') ? save.chars.findIndex(c => c.cls === tcls) : save.chars.length - 1; if (i >= 0) save.select(i); else save.newGame(tcls); save.apply(); };

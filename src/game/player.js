@@ -124,6 +124,8 @@ function playerControl(p, dt) {
     if (p.st === 'run') { p.doAct(p.acts.dash); return; }
     faceInput(p, dx); p.doAct(p.acts.atk1); return;
   }
+  // 按住 X 一直打：一轮连击打完、被打断起身后，只要还按着就接着从第一下开始（不用松开再按）；跑动中不自动出冲刺攻击
+  if (I.is('attack') && p.st !== 'run' && p.acts.atk1 && p.acts.atk1.hold !== false) { faceInput(p, dx); p.doAct(p.acts.atk1); return; }
   const running = I.runDir !== 0 && dx === I.runDir;
   if (dx || dy) {
     if (dx) p.face = dx;

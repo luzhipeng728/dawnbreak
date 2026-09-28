@@ -727,12 +727,12 @@
    - ⑧ 邪光波动阵 → 无双波、无双波 → 不动明王阵：`links`。
    - ⑨ 修罗邪光斩在冰刃、爆炎后摇中满蓄：`linkFrom`。
 
-   **还需要通用组新增 5 个钩子**（已在第 9.4 节列出，定稿前会发给他们）：
-   - a. `S.req(p)` → 能不能放，加上失败提示文字。用于：仅狂暴中、仅卡洛中、仅无尽波动中、需要至少 1 个波动印、HP ≤50% 等。
-   - b. `S.morph(p)` → 替代技能 id。用于：暗天波动眼期间的技能变形、卡洛状态的普攻。
-   - c. **受击前钩子** `CLASSES[cls].beforeHurt(p, a, h)` → `{ block, mul }`。用于：自动格挡、逆转反击（背击时开输入窗口）、狂气涌动（HP 下限 + 血盾）、心眼（充能式回避）、绝对感知（免疫失明）、鬼印珠的「鬼门关」格挡。
-   - d. **受击后钩子** `onHurt`。用于：挫折意志、幻鬼步「被击时可用」。
-   - e. 同指令冲突时按 `S.req` 跳过（冥炎剑和嗜魂之手）。
+   **通用组追加的 5 个钩子**（已和通用组谈定，接口见 9.4；字段不存在时维持原行为）：
+   - a. `S.req(p)` → true 或失败提示。用于：仅狂暴中、仅卡洛中、仅无尽波动中、至少 1 个波动印、HP ≤50%。
+   - b. `S.morph(p)` → 替代技能 id。用于：暗天波动眼期间的技能变形。普攻第 3 击 → 刺轮走「被动改写连段」。
+   - c. **受击前钩子** `beforeHurt`：自动格挡、狂气涌动、心眼、绝对感知、鬼印珠「鬼门关」。要改 combat.js，**待主线程批准**。
+   - d. **受击后钩子** `CLASSES[cls].onHurt` + `S.whenHit` + 指令形态 `['hit', id]`：挫折意志、逆转反击、幻鬼步「被击时可用」。
+   - e. 同指令冲突：只有满足前置条件的技能才占用指令（冥炎剑 / 嗜魂之手）。
 4. **各转职的被动与普攻改写**：
    - `CLASSES.sword.passives` 是所有转职共用的数组，我在剑士代码里按 `jobOf(p)` 过滤即可，不需要改共享代码。
    - 普攻改写依赖通用组的「被动改写连段」钩子：狂暴二刀流、凯贾、卡洛、鬼人化、波动剑气、里·鬼剑术。
@@ -801,8 +801,19 @@
 - **召唤物 key**（召唤框架）：`sb_saya_f` `sb_plemon_f` `sb_rasha_f` / `sb_rasha_on` `sb_blade_f` `sb_swamp_f` `sb_karo_burn` `kazan_f` `as_aura_f` `as_fudo_f` `as_vajra_cloud` `gb_phantom` `bz_bloodsword` `wm_flyswords`，统一加 tag `ghost` / `sword`。
 - **文件拆分**：`src/content/classes/sword_soul.js`、`sword_asura.js`、`sword_ghost.js`（新），ORDER 放在 `sword_berserker.js` 之后、`gunner.js` 之前，由主线程合并时处理。
 
-### 9.4 要提给通用组的钩子
-`S.req` / `S.morph` / `beforeHurt` / `onHurt` / 「同指令冲突按 req 跳过」。另外要请示：感电 / 诅咒 / 睡眠 / 定身 / 挑衅 状态由谁加（建议和魔法师组一起加在 bestiary.js 的 addStatus 里，负责人由主线程指定）。
+### 9.4 与通用组谈定的钩子（通用组第 1 阶段实现，提交后通知）
+| 钩子 | 语义 | 剑士用途 |
+|---|---|---|
+| `S.req(p)` | 返回 true = 可以放；返回字符串 = 失败提示。快捷栏、指令、FighterBrain.ready() 都会读 | 狂战士 5 个技能需要狂暴；冥炎剑需要卡洛；无双波、暗天波动眼需要无尽波动；鬼印珠、不动明王阵需要波动印；死亡抗拒需要 HP ≤50% |
+| `S.morph(p)` | 返回替代技能 id 或 null；castSkill 一开始就替换；替代技能没学的话用原技能的等级 | 暗天波动眼期间 地裂→光翼、冰刃→天照、爆炎→闪枪 |
+| `CLASSES[cls].onHurt(p, a, h, dmg)` | 通用组已在 makePlayer 接好（`p.hurtT` 记录受击时刻），不用改 combat.js | 挫折意志 |
+| `S.whenHit` | true 或函数 `p => …`：受击硬直 / 倒地中也能放（浮空时技能还要带 `air: true`）；被抓、冰冻、眩晕时不行 | 幻鬼步：二觉后站立被击；三觉后浮空、倒地。波动爆发：倒地被击 |
+| 指令 `['hit', id]` | 「(被击时)+Z」：受击中或受击后 1 秒内生效，优先级高于单按 Z | 逆转反击（背击判断写在 whenHit 里） |
+| 同指令冲突 | 先判断 skillUsable（学会、转职、skillAllowed、S.req、whenHit），满足的才占用指令，再按基础 CD 长的优先 | 冥炎剑不在卡洛状态时，→→+Z 落到嗜魂之手；阿修罗 →→+Z = 邪光斩 |
+| `skillAllowed(id, job)` | common.js，读 `S.only` / `S.excl` | 剑影不能学：连突刺、卡赞、武器精通（`excl: ['ghostblade']`）；光剑相关写 `only` |
+| `beforeHurt(p, a, h)` → `{ block, mul, noStun }` | **需要改 combat.js 的 applyHit，不归通用组，待主线程批准**（可以和魔法师组召唤框架的 hitGroup 两行一起提） | 自动格挡、狂气涌动（HP 下限 + 血盾）、心眼（充能回避）、绝对感知（免疫失明）、鬼印珠「鬼门关」 |
+
+**异常状态**（`src/content/monsters/bestiary.js` 的 addStatus，协作板归属表里没有这个文件）：感电 / 诅咒 / 睡眠 / 定身 / 挑衅，需要主线程指定负责人。剑士、魔法师、神枪手（弩药专家要感电）都要用。
 
 ---
 

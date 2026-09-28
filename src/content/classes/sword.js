@@ -94,6 +94,7 @@ defSkill('rip', { name: '裂波斩', cls: 'sword', lvReq: 10, mp: 30, cd: 8, typ
     grabAt: [40, 50],
     hold: (e, t) => { const k = clamp((e.actT - 0.12) / 0.2, 0, 1); t.x = e.x + e.face * 42; t.y = e.y + 0.5; t.z = e.z + 20 + k * 45; t.face = -e.face; },
     events: [slashAt(0.08, { a0: 1.2, a1: -1.6, r: 64, w: 18, off: [10, 50], heavy: true }),
+      evAt(0.2, e => { if (jobOf(e) === 'asura' && typeof asMarkAdd === 'function') asMarkAdd(e, 1); }),   // 阿修罗：裂波斩生成 1 个波动印
       ...[0.32, 0.46, 0.6].map((t, i) => evAt(t, e => { fxShock(e.x, e.y, 100 + i * 14, '#8fd8ff'); fxSpr('wave', e.x + e.face * 40, e.y, 0, { h: 90, dur: 0.25, ay: 1, alpha: 0.7, flip: e.face < 0 }); sfx.swing(false);
         blast(e, e.x + e.face * 30, e.y, 110, { dmg: skillDmg(0.73, 0.073, lv), airLift: 160, stun: 0.35, hs: 0.03, knock: 30 }, { zMax: 140 }); })),
       evAt(0.72, e => { cam.shake = Math.max(cam.shake, 5); sfx.boom(0.7); fxBurst(e.x + e.face * 40, e.y, e.z + 70, 180, '#8fd8ff');
@@ -121,7 +122,7 @@ function projWave(p, o) {   // 地面剑气：沿地面推进
 }
 defSkill('wave', { name: '地裂·波动剑', cls: 'sword', lvReq: 15, mp: 20, cd: 3.5, type: 'mag', icon: 'wave', col: '#5a60d8',
   desc: '以剑击地，放出沿地面推进的波动剑气，击退沿途敌人并使其倒地。', pow: lv => skillDmg(2.2, 0.22, lv), ai: { kind: 'proj', r: [0, 300], dy: 22 },
-  act: (lv) => ({ name: 'wave', clip: 'atk3', dur: 0.52, cancelFrom: 0.32,
+  act: (lv, p) => ({ name: 'wave', clip: 'atk3', dur: 0.52, cancelFrom: 0.32, ...(p && jobOf(p) === 'asura' ? { chain: [0.24, 0.52], next: 'atk1' } : {}),   // 阿修罗：可以用普攻取消后摇
     events: [slashAt(0.12, { a0: -2.6, a1: 1.2, r: 60, w: 18, off: [10, 56], heavy: true }), evAt(0.15, p => { projWave(p, { hit: { dmg: skillDmg(2.2, 0.22, lv), down: true, downLift: 180 } }); cam.shake = Math.max(cam.shake, 3); sfx.boom(0.5); })] }) });
 // 十字刃：交叉两斩 + 血十字；血十字出现时再按一次追加推击（击倒）。狂战士学了血气旺盛：改为耗 HP、十字变大并附出血
 defSkill('cross', { name: '十字刃', cls: 'sword', lvReq: 15, mp: 16, cd: 6, type: 'phys', col: '#c02a3a',

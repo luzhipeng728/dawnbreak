@@ -30,7 +30,9 @@ const SPR_ANIMS = {
     rk1: [['a1_1', 0], ['rk1', 0.04]], rk2: [['rk1', 0], ['rk2', 0.04]], rk3: [['a3_1', 0], ['rk3', 0.05]], rk4: [['rk3', 0], ['rk4', 0.07]],
     rush: [['rush1', 0]], iai: [['iai1', 0], ['iaiSpin', 0.4]], meteorAim: [['meteorAim', 0]], hakuu: [['hakuu', 0]],
     bzA1: [['dual3', 0], ['dual1', 0.05]], bzA2: [['dual1', 0], ['dual2', 0.05]], bzA3: [['dual2', 0], ['dual3', 0.06]], bzA4: [['dual3', 0], ['dual4', 0.07]],
-    dual1: [['dual1', 0]], dual2: [['dual2', 0]], whirl: [['whirl', 0]], thirst: [['thirst', 0]], twister: [['twister', 0]], enrage: [['enrage', 0], ['dual4', 0.12]] },
+    dual1: [['dual1', 0]], dual2: [['dual2', 0]], whirl: [['whirl', 0]], thirst: [['thirst', 0]], twister: [['twister', 0]], enrage: [['enrage', 0], ['dual4', 0.12]],
+    // 阿修罗
+    asBurst: [['asBurst', 0]], asOrb: [['asOrb1', 0], ['asOrb2', 0.2]], asPlant: [['asPlant', 0]], asEvil: [['rk1', 0], ['asEvil', 0.08]], asPull: [['asPull', 0]], asSeal: [['asSeal', 0]], asAura: [['asAura', 0]] },
   gun: { ...BASE_ANIMS,
     gshot: [['shoot1', 0], ['shoot2', 0.03], ['shoot1', 0.12]], gup: { fps: 14, frames: ['shootUp1', 'shootUp2'] }, gdown: [['jatk1', 0], ['jatk2', 0.03], ['jatk3', 0.14]],
     gaim: [['snipe', 0]], holster: [['reload', 0]], kick: [['kick1', 0], ['kick2', 0.08]], spinkick: { fps: 12, frames: ['sk1', 'sk2', 'kick3'] }, slide: [['slide1', 0], ['slide2', 0.06]],

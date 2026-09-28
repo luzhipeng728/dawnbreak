@@ -31,6 +31,15 @@ SHEETS = {
                   ('thirst', 'hunched forward clutching the chest with the free hand, katana dragging on the ground, gritting teeth, crimson aura rising'),
                   ('twister', 'katana raised straight up over the head spinning a crimson whirlwind above, feet planted wide'),
                   ('enrage', 'dual wielding with a katana in EACH hand: leaping in mid-air slashing both katanas wildly downward, berserk expression')],
+    # ---- 阿修罗：波动爆发推掌、鬼印珠、插剑放波动剑（冰刃 / 爆炎）、邪光斩、无双波吸引、不动明王阵结印、波动刻印 / 无尽波动 ----
+    'sword_asura': [('asBurst', 'the free hand thrust forward with the palm wide open as if releasing a powerful push, the katana held low behind in the other hand, feet planted wide, no visual effects'),
+                    ('asOrb1', 'holding a small round orb up beside the head in the free hand, about to throw it, the katana held low, no visual effects'),
+                    ('asOrb2', 'having just thrown something forward with the free hand, throwing arm fully extended forward, the katana held back, no visual effects'),
+                    ('asPlant', 'crouched low stabbing the katana point-down into the ground in front with both hands, head lowered, no visual effects'),
+                    ('asEvil', 'swinging the katana diagonally upward in a huge wide arc, body stretched and following through high, no visual effects'),
+                    ('asPull', 'the free hand stretched far forward with fingers clawed as if pulling something toward him, leaning back, the katana held low behind, no visual effects'),
+                    ('asSeal', 'kneeling on one knee, the free hand held up in front of the face in a one-handed prayer seal, the katana planted upright in the ground beside him, no visual effects'),
+                    ('asAura', 'standing tall and calm with the head slightly lowered, the free hand raised in front of the chest in a one-handed prayer seal, the katana held down at the side, no visual effects')],
     # ---- 剑影的幻鬼（独立伙伴精灵，参考图 art/src/phantom_ref.png = sword_art.py ghostref 的输出；切帧用 frames2.py phantom --src art/src/combat/sheets）----
     'phantom_a': [('pdash1', 'lunging forward in a very low fast dash, the glowing katana thrust straight ahead, smoke trailing behind'),
                   ('pdash2', 'finished a dashing slash: body far forward, the glowing katana swept back behind after cutting through'),
@@ -56,7 +65,10 @@ AVATAR_NOTES = {
     'sword_bz2': 'Frames 2, 3, 4, 5 and 9 show TWO katanas, one in each hand: replace BOTH of them with green sticks (two sticks). ',
 }
 
-FX = {}      # 名字: (描述, 尺寸, 发光?)；随各阶段补充
+T_, WD_, SQ_ = '1024x1536', '1536x1024', '1024x1024'
+FX = {   # 名字: (描述, 尺寸, 发光?)；随各阶段补充（发光类黑底，fxprep.py 转透明度）
+    'fudo': ('A single wrathful guardian deity (Acala, Fudo Myo-o) made entirely of translucent blue and violet flame energy: a muscular fierce figure standing with a straight sword held upright in the right hand and a coiled rope in the left, a large ring of blue flames behind the head, fierce glowing eyes, his lower body fading into rising blue flames, front view, tall composition', T_, True),
+}
 ICONS = [   # (技能 id, 图标描述)；16 个一张，表名 sword_icons_a..（第 1 阶段 17 个 + 第 2 批觉醒前后的技能）
     ('kazan', 'a fierce red ghost demon head with horns floating above a glowing red rune circle'), ('moon', 'a violet crescent moon shaped sword slash with a small rising slash'),
     ('wm_saber', 'a glowing golden lightsaber blade with a crackle of light'), ('wm_arcana', 'five different swords (katana, short sword, greatsword, club, lightsaber) fanned out in a circle'),
@@ -74,8 +86,24 @@ ICONS = [   # (技能 id, 图标描述)；16 个一张，表名 sword_icons_a..�
     ('wm_awaken3', 'a giant radiant sword of light splitting the heavens with five weapons merging into it'), ('bz_memory', 'a red blood drop with a glowing eye and faint memories of battle'),
     ('bz_snatch', 'a crimson hand grabbing and slamming a silhouette into the ground with a blood burst'), ('bz_surge', 'a crimson blood shield bubble with a red heartbeat line'),
     ('bz_crusher', 'a massive blood-red sword slamming down into the ground with a huge crimson explosion'), ('bz_incarnate', 'a demonic crimson armor shape forming from swirling blood'),
+    # 阿修罗（第 2 阶段）+ 狂战士 P1 两个
+    ('as_mark', 'five small glowing violet energy orbs circling around a closed eye symbol'), ('as_orb', 'a spinning violet energy orb with rune rings around it flying forward'),
+    ('as_sense', 'a black blindfold with a white X mark and faint violet ripples spreading around it'), ('as_evil', 'a huge violet crescent sword wave rising from the ground'),
+    ('as_evil_c', 'a charged violet crescent sword wave with speed lines and a bright core'), ('as_will', 'a cracked violet shield glowing with determination and an upward arrow'),
+    ('as_burst', 'a violet energy explosion bursting outward from a palm'), ('as_aura', 'a ring of dark violet killing-intent aura with flames around a silhouette'),
+    ('as_ice', 'a row of sharp light-blue ice spikes erupting from the ground in a line'), ('as_fire', 'a chain of orange fire explosions bursting along the ground'),
+    ('as_musou', 'a violet energy rift vortex pulling small silhouettes inward'), ('as_array', 'a glowing violet hexagram magic circle on the ground with rising waves'),
+    ('as_fudo', 'a wrathful blue flame guardian deity holding an upright sword above a glowing seal circle'), ('as_awaken', 'a giant eye opening in a dark violet sky with countless small eyes around it'),
+    ('bz_boom', 'a massive crimson blood explosion centered on a kneeling silhouette'), ('bz_fatal', 'two quick crimson slashes and one giant crossing blood-red slash'),
 ]
-CUTIN = {}   # 转职: ('sword', 描述)
+FXPREP = {'glow': {'fudo': 384}, 'solid': {}}   # fxprep.py --combat 的输出尺寸（最长边像素）
+CUTIN = {   # 转职: ('sword', 描述)
+    'asura': ('sword', 'eyes covered by a black cloth blindfold with a white X-shaped seal mark, calm and fierce, one open palm pushed toward the viewer releasing swirling blue-violet wave energy, katana held low, ripples of energy in the air'),
+}
+# 转职立绘（转职窗口）：以鬼剑士立绘为参考，输出 art/src/quests/job_<转职>.png，再用 job_art.py 去背缩放到 art/final/job/
+JOBART = {
+    'asura': 'the Asura advancement: a black cloth blindfold tied over both eyes with a white X-shaped seal mark on it, heavy dark steel plate armor with violet trims over a dark indigo coat, a torn dark half cape, calm expression, holding the katana low in one hand while the other open palm releases a swirling blue-violet wave energy aura with faint ripples',
+}
 
 # ---- 剑影的幻鬼：独立的伙伴角色（不换武器、不换时装），先出设定立绘，再按立绘出动作表 ----
 PHANTOM = ('a chibi ghost swordsman spirit in exactly the same cute chibi art style, proportions and thick outlines as this character, but a DIFFERENT character: '
@@ -105,14 +133,41 @@ def phantom_fix():
         print('scaled', fn, k)
     json.dump(meta, open(os.path.join(d, 'spr.json'), 'w'))
 
+# 职业配件（按头部锚点叠加的脸部配件，和时装眼镜同一套坐标）：阿修罗的 X 形眼罩
+JOB_ACC = {'asura_face': 'a single black cloth blindfold band as worn over the eyes, seen in strict side view facing right: a short slightly curved black cloth strip with a small white X-shaped seal mark on its front end, bold dark outline, clean cel shading, cute chibi RPG style'}
+def jobacc_jobs():
+    from combatgen import OUT
+    return [{'out': os.path.join(OUT, 'acc', f'{n}.png'), 'size': '1024x1024', 'prompt': f'{d}. Plain pure white background, a single isolated object centered, no shadow, no text.'} for n, d in JOB_ACC.items()]
+def jobacc_prep():
+    from PIL import Image
+    from prep import remove_bg
+    from combatgen import OUT
+    d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'final', 'avatar')
+    for n in JOB_ACC:
+        im = remove_bg(Image.open(os.path.join(OUT, 'acc', f'{n}.png'))); im = im.crop(im.getchannel('A').getbbox())
+        w = round(44 * 1.25); im = im.resize((w, max(1, round(im.height * w / im.width))), Image.LANCZOS); im.save(os.path.join(d, f'{n}.webp'), 'WEBP', quality=84, method=6); print(n, im.size)
+
+def jobart_jobs(only=''):
+    from combatgen import MAIN
+    ref = os.path.join(MAIN, 'src', 'quests', 'ref', 'sword.png')
+    return [{'out': os.path.join(MAIN, 'src', 'quests', f'job_{j}.png'), 'ref': ref, 'size': '1024x1536', 'model': 'gpt-image-2.5-sunburst',
+             'prompt': f'Using this exact chibi character (same face, same spiky silver hair, same proportions and the same cute art style with thick outlines), draw a full-body character illustration of him as {d}. Full body, three-quarter view facing right, dynamic confident pose. Plain pure white background, no text.'}
+            for j, d in JOBART.items() if j.startswith(only)]
+
 def main():
     sys.path.insert(0, os.path.dirname(__file__))
     import combatgen
+    from concurrent.futures import ThreadPoolExecutor
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
+    only = sys.argv[2] if len(sys.argv) > 2 else ''
     if cmd == 'phantomfix': return phantom_fix()
     if cmd == 'ghostref': L = ghost_jobs()
-    else: raise SystemExit('用法：sword_art.py ghostref | phantomfix（frames2.py phantom --src art/src/combat/sheets 之后跑）')
-    for j in L: print(combatgen.run(j), flush=True)
+    elif cmd == 'jobart': L = jobart_jobs(only)
+    elif cmd == 'jobacc': L = jobacc_jobs()
+    elif cmd == 'jobaccprep': return jobacc_prep()
+    else: raise SystemExit('用法：sword_art.py ghostref | jobart [转职] | phantomfix（frames2.py phantom --src art/src/combat/sheets 之后跑）')
+    with ThreadPoolExecutor(2) as ex:
+        for r in ex.map(combatgen.run, L): print(r, flush=True)
 
 if __name__ == '__main__':
     main()

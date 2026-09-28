@@ -8,6 +8,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'art', 'src', 'quests')
 OUT = os.path.join(ROOT, 'art', 'final', 'job')
 JOBS = ['blade', 'berserker', 'ranger', 'launcher', 'elemental', 'battlemage']
+try:   # 鬼剑士新转职（art/tools/sword_art.py 的 JOBART）
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from sword_art import JOBART as _SJ; JOBS += [j for j in _SJ if j not in JOBS]
+except ImportError: pass
 MAX_H = 900
 HOLES = {'berserker'}   # 披风破洞里有被包住的大块白底，需要额外清掉
 

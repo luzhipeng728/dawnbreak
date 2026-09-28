@@ -78,6 +78,28 @@ const R = await page.evaluate(() => {
   T.reset(); const hpB = p.hp; T.press('s5'); T.run(2); T.hold('s5'); T.run(130); T.release('s5'); T.run(40); out.thirstHp = Math.round((hpB - p.hp) / p.hpMax * 100); out.thirstBuff = !!p.buffs.bz_thirst;
   // 再按一次狂暴之力：解除，普攻回到单刀
   T.reset(); p.buffs.frenzy = { t: 9999, atk: 0.1 }; p.acts = swordActs(p); T.cast('frenzy'); T.run(40); out.frenzyOff = !p.buffs.frenzy; T.run(20); T.tap('attack'); T.run(2); out.singleClip = p.act && p.act.clip;
+  // ---- 阿修罗 ----
+  T.job('asura'); T.bar(['as_mark', 'as_orb', 'as_evil', 'as_burst', 'as_aura', 'as_ice', 'as_musou', 'as_fudo', 'as_awaken', 'wave', 'as_fire']);
+  T.reset(); out.orbNoMark = T.cast('as_orb') || null; T.run(20);
+  T.cast('as_mark'); T.run(30); out.mark1 = asMarks(p); T.run(430); out.mark2 = asMarks(p);
+  T.clear(); const m4 = T.mob(420, 100); p.cool = {}; out.orbCast = T.cast('as_orb'); T.run(20); out.markAfterOrb = asMarks(p); T.run(200); out.orbHit = m4.hp < 1e9; T.clear();
+  // 冰刃 → 满蓄邪光斩
+  p.cool = {}; T.cast('as_ice'); T.run(24); T.tap('s2'); T.run(2); out.evilLinked = p.act && p.act.skill; out.evilFull = !!(p.act && p.act.full); T.run(60);
+  // 波动爆发：倒地时也能用
+  T.reset(); p.buffs.as_mark = { t: 9999, n: 0, gen: 7 }; p.setState('down'); p.downTime = 2; T.tap('s3'); T.run(1); out.burstDown = p.act && p.act.skill; T.run(40);
+  // 无双波需要无尽波动；无尽波动耗 MP、伤害周围敌人
+  T.reset(); out.musouNoAura = T.cast('as_musou') || null; T.run(10);
+  T.clear(); const m5 = T.mob(360, 100); p.cool = {}; T.cast('as_aura'); T.run(30); const mp0 = p.mp; T.run(120); out.auraMp = Math.round(mp0 - p.mp); out.auraHit = m5.hp < 1e9;
+  out.musouAura = T.cast('as_musou'); T.run(120); T.clear();
+  // 不动明王阵：消耗全部波动印
+  p.cool = {}; p.buffs.as_mark = { t: 9999, n: 3, gen: 7 }; const m6 = T.mob(460, 100); out.fudo = T.cast('as_fudo'); T.run(2); out.markAfterFudo = asMarks(p); T.run(160); out.fudoHit = m6.hp < 1e9; T.clear();
+  // 暗天波动眼：需要无尽波动；领域中地裂·波动剑 → 光翼；再按一次 → 天穹之眼，领域结束
+  T.reset(); out.awkNoAura = T.cast('as_awaken') || null; p.cool = {};
+  p.buffs.as_aura = { t: 9999, atk: 0.05, lv: 1, tick: 0 }; game.skillLv.as_awaken = 1; if (typeof awakenUnlocked === 'function') save.data.flags = { ...(save.data.flags || {}), awaken: true };
+  T.cast('as_awaken'); T.run(150); out.domain = !!p.buffs.as_domain; T.run(10); T.cast('wave'); out.wing = p.act && p.act.skill; T.run(40);   // 觉醒有 0.9 秒定格
+  T.cast('as_awaken'); T.run(40); out.domainEnd = !p.buffs.as_domain;
+  // 指令 →→+Z：阿修罗是邪光斩（冷却更长的占用指令），不是嗜魂之手
+  T.reset(); p.cool = {}; T.tap('right'); T.run(2); T.tap('right'); T.run(2); T.tap('cmd'); T.run(1); out.ffZ = p.act && p.act.skill; T.run(60);
   return out;
 });
 report('三段刃 5 段', R.triple.length === 5, R.triple);
@@ -102,6 +124,15 @@ report('爆发之刃命中即爆、可取消', R.bladeBoomAt >= 0 && R.bladeBoom
 report('血气旺盛：十字刃出血', R.crossBleed, R.crossBleed);
 report('饥渴：蓄力耗血并获得 BUFF', R.thirstHp >= 25 && R.thirstBuff, [R.thirstHp, R.thirstBuff]);
 report('狂暴之力再按解除、普攻回单刀', R.frenzyOff && R.singleClip === undefined || (R.frenzyOff && !/^bzA/.test(R.singleClip || '')), [R.frenzyOff, R.singleClip]);
+report('阿修罗：没有波动印不能放鬼印珠', R.orbNoMark === null, R.orbNoMark);
+report('波动刻印：开启得 1 印，7 秒后 2 印', R.mark1 === 1 && R.mark2 === 2, [R.mark1, R.mark2]);
+report('鬼印珠消耗全部波动印并命中', R.orbCast === 'as_orb' && R.markAfterOrb === 0 && R.orbHit, [R.orbCast, R.markAfterOrb, R.orbHit]);
+report('冰刃 → 满蓄邪光斩', R.evilLinked === 'as_evil' && R.evilFull, [R.evilLinked, R.evilFull]);
+report('波动爆发：倒地时也能用', R.burstDown === 'as_burst', R.burstDown);
+report('无双波需要无尽波动；无尽波动耗 MP、伤害周围', R.musouNoAura === null && R.auraMp > 0 && R.auraHit && R.musouAura === 'as_musou', [R.musouNoAura, R.auraMp, R.auraHit, R.musouAura]);
+report('不动明王阵消耗全部波动印并命中', R.fudo === 'as_fudo' && R.markAfterFudo === 0 && R.fudoHit, [R.fudo, R.markAfterFudo, R.fudoHit]);
+report('暗天波动眼：需要无尽波动、领域中地裂变光翼、再按结束', R.awkNoAura === null && R.domain && R.wing === 'as_wing' && R.domainEnd, [R.awkNoAura, R.domain, R.wing, R.domainEnd]);
+report('阿修罗 →→+Z = 邪光斩', R.ffZ === 'as_evil', R.ffZ);
 const errs = logs.filter(l => l.type !== 'warning'); if (errs.length) fail++;
 console.log('LOGS', JSON.stringify(errs.slice(0, 6), null, 1));
 await browser.close();

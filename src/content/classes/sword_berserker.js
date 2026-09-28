@@ -44,7 +44,7 @@ defSkill('bloodwake', { name: '力量唤醒', cls: 'sword', job: 'berserker', lv
 const frenzyCost = lv => [40 + 12 * lv, 20 + 5 * lv];   // [施放, 每 10 秒]
 defSkill('frenzy', { name: '狂暴之力', cls: 'sword', job: 'berserker', lvReq: 15, mp: 30, cd: 10, type: 'indep', buff: true, col: '#c0102a',
   desc: '【开关 BUFF · 再按一次解除】以血换力：施放时和之后每 10 秒消耗一定 HP（HP 扣到 1 也不会自动解除）。普攻变为二刀流（一轮 4 刀、每刀 2 段，范围更大），普攻和转职技能攻击力、僵直提高，转职技能冷却减少 10%，击杀出血的敌人时恢复少量 HP。狂气斩、暴怒狂斩、嗜魂封魔斩、爆发之刃、崩山裂地斩只能在狂暴之力中施放。',
-  ai: { kind: 'buff' }, infoExtra: lv => [['攻击力', '+' + pct(0.1 + 0.01 * lv)], ['施放 / 每 10 秒消耗 HP', frenzyCost(lv).join(' / ')]],
+  ai: { kind: 'buff', core: true }, infoExtra: lv => [['攻击力', '+' + pct(0.1 + 0.01 * lv)], ['施放 / 每 10 秒消耗 HP', frenzyCost(lv).join(' / ')]],
   act: (lv) => ({ name: 'frenzy', clip: 'roar', dur: 0.5, noCounter: true, superArmor: true,
     onStart: e => {
       if (toggleBuff(e, 'frenzy', 9999, { atk: 0.1 + 0.01 * lv, stagger: 100, lv })) { const [c0] = frenzyCost(lv); e.hp = Math.max(1, e.hp - c0); e.buffs.frenzy.tick = 10;

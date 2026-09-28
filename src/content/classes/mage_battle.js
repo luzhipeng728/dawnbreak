@@ -10,6 +10,7 @@ const BM = 'battlemage';
 const CHASER_COL = '#8ac8ff', CHASER_LIFE = 30;
 const BM_BODY = ['mg_sky', 'mg_palm', 'mg_fang', 'bm_round', 'bm_double', 'bm_bomb', 'bm_smash', 'bm_flash', 'bm_raid', 'bm_dragon'];   // 体术技能（尼巫的战术的衔接目标）
 const chaserMax = p => 9;
+const BM_HAND = { x: 25, z: 128 };   // bmCall 帧里举起的那只手（帧像素量出来换成世界单位）：超级炫纹 / 星纹陨爆的球画在这里，不画进角色帧
 function addChaser(p, n = 1) {
   if (!hasSkill(p, 'bm_chaser')) return;
   p.chasers = (p.chasers || []).filter(c => game.t - c < CHASER_LIFE);
@@ -26,7 +27,8 @@ function chaserOrbit(p) {
 // 射出一个（或融合后的一个大）炫纹，追向目标；命中后给自己挂炫纹增益
 function fireChaser(p, t, o = {}) {
   const lv = Math.max(1, skLv(p, 'bm_chaser')), big = o.big || 1, img = fxTint('orb', CHASER_COL);
-  const pr = spawnProj({ owner: p, x: p.x, y: p.y, z: p.z + 80, vx: p.face * 200, vz: 160, face: p.face, life: 1.6, w: 10 * big, d: 12 * big, h: 14 * big, pierce: false,
+  const from = o.from || { x: p.x, z: p.z + 80 };
+  const pr = spawnProj({ owner: p, x: from.x, y: p.y, z: from.z, vx: p.face * 200, vz: 160, face: p.face, life: 1.6, w: 10 * big, d: 12 * big, h: 14 * big, pierce: false,
     hit: { dmg: (o.dmg || skillDmg(0.9, 0.09, lv)), stun: 0.3, knock: 40, airLift: 150, hs: 0.04, type: 'phys', col: CHASER_COL, noChaser: true, ...(o.hit || {}) },
     update(q, dt) { const tt = t && !t.dead && !t.remove ? t : nearestFoe(p, 800); if (tt) { const dx = tt.x - q.x, dy = tt.y - q.y, dz = tt.z + tt.hurtH() * 0.5 - q.z, l = Math.hypot(dx, dy * 2, dz) || 1, sp = 560;
       q.vx = damp(q.vx, dx / l * sp, 9, dt); q.vy = damp(q.vy, dy / l * sp, 9, dt); q.vz = damp(q.vz, dz / l * sp, 9, dt); } if (Math.random() < 0.6) addFx({ x: q.x, y: q.y + 0.3, z: q.z, dur: 0.2, draw(c) { const k = this.t / this.dur; drawSpr(c, img, sx(this.x), sy(this.y, this.z), 12 * big * (1 - k), 0, { alpha: 0.6 * (1 - k) }); } }); },
@@ -103,13 +105,13 @@ defSkill('bm_bomb', { name: '炫纹爆弹', cls: 'mage', job: BM, lvReq: 17, mp:
   act: (lv) => ({ name: 'bm_bomb', clip: 'bmSweep', dur: 0.55, cancelFrom: 0.4,
     hits: [HB(0.12, 0.2, [-10, 110, 36, 0, 120], skillDmg(1.2, 0.12, lv), { stun: 0.4, knock: 80, hs: 0.06, snd: 'slash',
       onHit: (a, t) => { const s = summon(a, 'bm_timebomb', { target: t }); if (s) s.dmg = skillDmg(3.2, 0.32, lv); } })],
-    events: [slashAt(0.11, { a0: -2.2, a1: 1.2, r: 78, w: 16, off: [10, 55], col: '#9ad0ff' }), evAt(0.13, e => { for (let i = 0; i < 6; i++) fxSpr('spark', e.x + e.face * rnd(30, 110), e.y + rnd(-20, 20), rnd(30, 90), { w: 20, dur: 0.3, col: CHASER_COL }); })] }) });
+    events: [slashAt(0.11, { a0: -1.3, a1: 1.1, r: 66, w: 14, off: [24, 55], col: '#9ad0ff' }), evAt(0.13, e => { for (let i = 0; i < 6; i++) fxSpr('spark', e.x + e.face * rnd(30, 110), e.y + rnd(-20, 20), rnd(30, 90), { w: 20, dur: 0.3, col: CHASER_COL }); })] }) });
 // 碎霸：一次大幅横扫（Y 轴也宽），把敌人小幅击飞；命中后可以接体术技能
 defSkill('bm_smash', { name: '碎霸', cls: 'mage', job: BM, lvReq: 18, mp: 40, cd: 8, type: 'phys', col: '#8a4ab0',
   desc: '大幅度横扫武器，范围很大（纵深也宽），把敌人小幅击飞。命中后可以取消后摇接体术技能。', pow: lv => skillDmg(4.6, 0.46, lv), ai: { kind: 'aoe', r: [0, 130], dy: 44 },
   act: (lv) => ({ name: 'bm_smash', clip: 'bmSweep', dur: 0.62, cancelFrom: 0.45, superArmor: [0.06, 0.3], links: BM_BODY, hitCancel: true,
     hits: [HB(0.14, 0.22, [-30, 135, 48, 0, 140], skillDmg(4.6, 0.46, lv), { launch: 300, knock: 140, hs: 0.1, big: 1.5, shake: 3, snd: 'blunt' })],
-    events: [slashAt(0.13, { a0: -2.4, a1: 1.4, r: 96, w: 22, off: [10, 55], col: '#d0a0ff', heavy: true })] }) });
+    events: [slashAt(0.13, { a0: -1.4, a1: 1.2, r: 80, w: 20, off: [28, 55], col: '#d0a0ff', heavy: true })] }) });
 // 超级炫纹：把 2～9 个炫纹融合成大球（不足 2 个自动补足），射向最后命中的敌人，爆炸并击倒；其他动作中也能放
 defSkill('bm_super', { name: '超级炫纹', cls: 'mage', job: BM, lvReq: 18, mp: 40, cd: 8, type: 'phys', col: '#6ab8ff', noForce: true,
   desc: '把 2～9 个炫纹融合成一个大球，射向最后被普攻或技能打中的敌人，命中后范围爆炸并击倒敌人。炫纹不足 2 个时自动补足；超过 2 个的每一个都会增加伤害。其他动作中也能施放。', pow: lv => skillDmg(3.0, 0.3, lv), ai: { kind: 'aoe', r: [0, 500], dy: 60 },
@@ -119,7 +121,8 @@ function superChaser(p, lv) {
   p.chasers = (p.chasers || []).filter(c => game.t - c < CHASER_LIFE);
   const n = clamp(p.chasers.length, 2, 9); p.chasers.splice(0, Math.min(p.chasers.length, 9));
   const t = chaserTarget(p) || nearestFoe(p, 800);
-  fireChaser(p, t, { big: 1.8 + n * 0.12, dmg: skillDmg(1.0, 0.1, lv), burst: 70 + n * 6, burstDmg: skillDmg(2.0, 0.2, lv) * (1 + (n - 2) * 0.15), noBuff: true });
+  const hand = { x: p.x + p.face * BM_HAND.x, z: p.z + BM_HAND.z };
+  fireChaser(p, t, { big: 1.8 + n * 0.12, dmg: skillDmg(1.0, 0.1, lv), burst: 70 + n * 6, burstDmg: skillDmg(2.0, 0.2, lv) * (1 + (n - 2) * 0.15), noBuff: true, from: hand });
   fxAura(p, CHASER_COL, 0.4);
 }
 // 流星闪影击：原地连刺 20 次（霸体），然后大范围横扫打飞；连刺时按 Z 直接出终结，按跳跃取消；期间自动射出炫纹
@@ -131,11 +134,11 @@ defSkill('bm_flash', { name: '流星闪影击', cls: 'mage', job: BM, lvReq: 19,
     onInput: (e, I) => { const a = e.act; if (e.actT < 0.9) { if (I.buffered('cmd')) { I.consume('cmd'); e.actT = Math.max(e.actT, 0.92); } else if (I.buffered('jump')) { I.consume('jump'); a.dur = e.actT; } } return true; },
     update: e => { const a = e.act; if (e.actT < 0.9 && Math.floor(e.actT / 0.06) !== a.k) { a.k = Math.floor(e.actT / 0.06); fxStreak({ x: e.x + e.face * 14, y: e.y + rnd(-5, 5), z: e.z + rnd(45, 70), face: e.face, len: rnd(70, 100), w: 7, col: '#ffe090', dur: 0.1 }); if (a.k % 2) sfx.swing(false); }
       if (e.actT < 0.9 && game.t - (a.chT || -9) > 0.35 && e.chasers && e.chasers.length) { const t = nearestFoe(e, 400, o => (o.x - e.x) * e.face > 0); if (t) { a.chT = game.t; e.chasers.shift(); fireChaser(e, t); } }
-      if (e.actT >= 0.92 && !a.fin) { a.fin = true; e.play('bmSweep', true); sfx.swing(true); fxSlashOn(e, { col: '#ffe090', a0: -2.4, a1: 1.4, r: 100, w: 22, off: [10, 55] }); } } }) });
+      if (e.actT >= 0.92 && !a.fin) { a.fin = true; e.play('bmSweep', true); sfx.swing(true); fxSlashOn(e, { col: '#ffe090', a0: -1.4, a1: 1.2, r: 84, w: 20, off: [28, 55] }); } } }) });
 // 炫纹强压：跳起把身上所有炫纹聚到武器前端，砸向前方地面爆炸；每消耗 1 个炫纹范围 +4%；没有炫纹时先生成 1 个
 defSkill('bm_press', { name: '炫纹强压', cls: 'mage', job: BM, lvReq: 19, mp: 45, cd: 17, type: 'phys', col: '#d0a030',
   desc: '跳起把身上所有炫纹聚到武器前端，砸向前方地面引发爆炸。每消耗 1 个炫纹范围 +4%，伤害也提高；身上没有炫纹时会先生成 1 个。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'aoe', r: [40, 220], dy: 50 },
-  act: (lv) => ({ name: 'bm_press', clip: 'bmDouble', dur: 0.8, superArmor: true, noCounter: true, cancelFrom: 0.66, move: [[0.05, 0.3, 120, 420]],
+  act: (lv) => ({ name: 'bm_press', clip: 'bmDouble', dur: 0.8, superArmor: true, noCounter: true, cancelFrom: 0.66, move: [[0.05, 0.22, 110, 300]],
     onStart: e => { e.chasers = (e.chasers || []).filter(c => game.t - c < CHASER_LIFE); e.act.n = Math.max(1, e.chasers.length); e.chasers.length = 0; },
     update: e => { const a = e.act; if (e.actT < 0.45 && Math.random() < 0.8) fxCharge(e, CHASER_COL); },
     events: [evAt(0.45, e => { e.vz = -900; }),
@@ -173,7 +176,10 @@ defSkill('bm_awaken', { name: '星纹陨爆', cls: 'mage', job: BM, lvReq: 21, m
   act: (lv) => ({ name: 'bm_awaken', clip: 'bmAwk', dur: 2.2, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '星纹陨爆', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.act.cx = e.x + e.face * 180; e.act.cy = e.y; e.drawOpts = { glow: 0.4 }; },
     update: e => { const a = e.act; if (e.actT < 0.95) return; if (!a.call) { a.call = true; e.play('bmCall', true); }
-      if (e.actT < 1.6) { const k = (e.actT - 0.95) / 0.65; addFx({ x: a.cx, y: a.cy, z: 0, dur: 0.02, k, draw(c) { const X = sx(this.x), Y = sy(this.y, 90 + this.k * 30); drawSpr(c, fxTint('orb', '#fff0a0'), X, Y, 60 + this.k * 170, 60 + this.k * 170, { rot: game.t * 3 }); drawSpr(c, 'chaser', X, Y, 40 + this.k * 120, 40 + this.k * 120, { rot: -game.t * 4 }); } }); if (Math.random() < 0.6) fxCharge(e, '#ffe070'); } },
+      // 0.95～1.35 秒：类星体在举起的手上方长大；1.35～1.6 秒：飞到前方引爆点
+      if (e.actT < 1.6) { const hx = e.x + e.face * BM_HAND.x, hz = e.z + BM_HAND.z + 20, g = clamp((e.actT - 0.95) / 0.4, 0, 1), m = clamp((e.actT - 1.35) / 0.25, 0, 1);
+        const x = hx + (a.cx - hx) * m, z = hz + (110 - hz) * m, sz = 30 + g * 110 + m * 90;
+        addFx({ x, y: a.cy, z: 0, dur: 0.02, zz: z, sz, draw(c) { const X = sx(this.x), Y = sy(this.y, this.zz); drawSpr(c, fxTint('orb', '#fff0a0'), X, Y, this.sz, this.sz, { rot: game.t * 3 }); drawSpr(c, 'chaser', X, Y, this.sz * 0.7, this.sz * 0.7, { rot: -game.t * 4 }); } }); if (Math.random() < 0.6) fxCharge(e, '#ffe070'); } },
     events: [evAt(1.6, e => { const a = e.act; cam.flash = 0.3; cam.flashCol = '#fff6d0'; cam.shake = 12; sfx.boom(1.4); fxBurst(a.cx, a.cy, 110, 460, '#ffe070'); fxShock(a.cx, a.cy, 460, '#ffd070'); fxShock(a.cx, a.cy, 300, CHASER_COL);
       blast(e, a.cx, a.cy, 300, { dmg: skillDmg(40, 10, lv), launch: 520, knock: 220, hs: 0.16, big: 2.2, sure: true, downHit: true, col: '#ffe070', noChaser: true }, { zMax: 260 }); e.invul = Math.max(e.invul, 1.0); })],
     onEnd: e => { e.drawOpts = {}; } }) });
@@ -189,7 +195,7 @@ const BM_ACTS = { ...MAGE_ACTS,
   atk2: { name: 'atk2', clip: 'sky', dur: 0.38, basic: true, speed: 'aspd', chain: [0.15, 0.38], next: 'atk3', move: [[0.03, 0.08, 70]],
     hits: [HB(0.1, 0.16, [0, 70, 26, 0, 120], 0.9, { stun: 0.4, launch: 300, knock: 20, hs: 0.05, snd: 'blunt', type: 'phys' })], events: [slashAt(0.09, { a0: 1.4, a1: -1.9, r: 52, w: 10, off: [10, 50] })] },
   atk3: { name: 'atk3', clip: 'bmSweep', dur: 0.48, basic: true, speed: 'aspd', move: [[0.04, 0.12, 100]],
-    hits: [HB(0.12, 0.2, [-10, 95, 34, 0, 120], 1.2, { stun: 0.45, knock: 220, heavy: true, hs: 0.07, snd: 'blunt', type: 'phys', last: true, shake: 1.5 })], events: [slashAt(0.11, { a0: -2.4, a1: 1.3, r: 70, w: 14, off: [10, 55], heavy: true })] },
+    hits: [HB(0.12, 0.2, [-10, 95, 34, 0, 120], 1.2, { stun: 0.45, knock: 220, heavy: true, hs: 0.07, snd: 'blunt', type: 'phys', last: true, shake: 1.5 })], events: [slashAt(0.11, { a0: -1.3, a1: 1.1, r: 62, w: 13, off: [24, 55], heavy: true })] },
 };
 // ---- 命中钩子：直接攻击命中生成炫纹（每个动作一次）、记下最后命中的目标；连击精通延长连击判定；炫纹爆弹缩短倒计时 ----
 CLASSES.mage.onHit = (p, t, h, dmg, act) => {

@@ -23,6 +23,15 @@ C.SHEETS = {
                    ('cower', 'scared: turned half away crouching down low with both hands covering the head, eyes squeezed shut'),
                    ('showtime', 'show time pose: standing on one foot with the staff raised high overhead, the free hand on the hip, winking happily'),
                    ('dispel', 'both arms spread wide to the sides, the staff held out in one hand, chest up, releasing magic all around')],
+    # 战斗法师（现版）：尼巫的战术第 3 下 / 碎霸的大横扫、闪击碎霸原地转、双重锤击、圆舞棍举起 / 摔到身后、超级炫纹 / 星纹陨爆的托球
+    'mage_bm2': [('bmSweep1', 'big horizontal sweep wind-up: body twisted far back, the staff held low behind the body with both hands, weight on the back foot'),
+                 ('bmSweep2', 'big horizontal sweep follow-through: the staff swung all the way across in front at waist height with both hands, body rotated forward, a wide arc'),
+                 ('bmSpin', 'spinning in place on one foot with the staff held out horizontally at arm length, hair and skirt swirling'),
+                 ('bmDouble1', 'airborne jumping smash: leaping high with both hands raising the staff straight overhead, knees tucked'),
+                 ('bmDouble2', 'landing overhead smash: crouched low with the staff slammed straight down into the ground in front with both hands'),
+                 ('bmThrow1', 'lifting the staff high overhead with both hands as if hoisting something heavy on its tip, leaning back'),
+                 ('bmThrow2', 'swinging the staff down over the shoulder behind her back with both hands, as if slamming something onto the ground behind her'),
+                 ('bmCall', 'one hand raised high above the head holding up a glowing orb of light, the staff held in the other hand, looking up confidently')],
 }
 # 魔道学者：骑扫把（占位棍 = 扫把，骑在身下）、旋转扫把、摔倒、熏黑
 C.SHEETS['mage_witch1'] = [
@@ -43,7 +52,7 @@ C.SHEETS['mage_witch2'] = [
     ('fling', 'both arms thrown forward with open hands as if flinging a big cloth forward, leaning forward, no staff, nothing in her hands'),
     ('hammer', 'crouching and swinging a small wooden mallet down in front of her as if building something on the ground, focused expression, no staff'),
     ('candy1', 'holding a giant swirly rainbow lollipop high above her head with both hands, about to smash it down, no staff'),
-    ('cheer', 'jumping happily with both fists raised in celebration, big grin, no staff')]
+    ('wtCheer', 'jumping happily with both fists raised in celebration, big grin, no staff')]
 NO_WPN_SHEETS = {'mage_witch2'}
 # 技能图标：16 个一张（combatgen 的图标画风），切图：mage_art.py iconcut
 ICONS = [

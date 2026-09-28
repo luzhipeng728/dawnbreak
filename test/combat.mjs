@@ -68,10 +68,11 @@ async function open(q) {
     T.reset(); p.cool = {}; castSkill(p, 'ghost'); T.run(25); T.key('s0'); T.run(1); T.release('s0'); out.skillLate = p.act && p.act.skill; T.run(40);
     const L0 = SKILLS.ghost.links; SKILLS.ghost.links = ['upslash']; T.reset(); p.cool = {}; castSkill(p, 'ghost'); T.run(2); T.key('s0'); T.run(1); T.release('s0'); out.skillLinked = p.act && p.act.skill; SKILLS.ghost.links = L0; T.run(40);
     T.reset(); castSkill(p, 'awaken'); game.timeStop = 0; for (let i = 0; i < 60; i++) { T.key('s1'); T.run(1); T.release('s1'); T.run(1); } out.awakenCancel = p.act && p.act.skill; T.run(200);
-    // 11) 蓄力：按住技能键蓄力（拔刀斩），松开或蓄满释放；倍率随蓄力提高
+    // 11) 蓄力：按住技能键蓄力（拔刀斩：官方只有巨剑 + 武器奥义能蓄力），松开或蓄满释放；倍率随蓄力提高
+    const W0 = inv.equip.weapon, A0 = game.skillLv.wm_arcana; inv.equip.weapon = { wtype: 'greatsword', slot: 'weapon' }; game.skillLv.wm_arcana = 5;
     T.reset(); p.cool = {}; T.key('s2'); T.run(2); T.run(52); const held = p.act && { name: p.act.name, t: +p.actT.toFixed(2), charging: p.act.charging, k: p.act.chargeK, mul: +p.act.dmgMul.toFixed(2) }; T.release('s2'); T.run(80);
     T.reset(); p.cool = {}; T.key('s2'); T.run(1); T.release('s2'); T.run(40); const tap = p.act && { k: p.act.chargeK, mul: +p.act.dmgMul.toFixed(2) };
-    out.charge = { held, tap }; T.run(60);
+    out.charge = { held, tap }; T.run(60); inv.equip.weapon = W0; game.skillLv.wm_arcana = A0;
     // 12) 攻速：aspd 1.5 → 普攻动作速度 ×1.5
     T.reset(); p.aspd = 1.5; p.doAct(p.acts.atk1); out.aspd = p.act.spd; let n = 0; while (p.act && n < 60) { T.run(1); n++; } out.atk1Frames = n; p.aspd = 1;
     // 13) 格挡：正面攻击吸收大部分伤害、不硬直

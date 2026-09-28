@@ -6,10 +6,11 @@
 //   5. 其他玩家：城镇里的 NetPeer 收到带 job 的 look → 外观层解析出转职外观
 //   6. 帧率：城镇 8 人（转职外观 + +16 武器 + 天空套）+ 地下城 4 个开着状态特效的鬼剑士打怪，要 55fps 以上
 //   shots：鬼泣 / 狂战士 各状态 × 默认 / 混搭时装 × 城镇 / 地下城，原始 1 倍大小 → test/shots/jobvisuals/sheet.png
+//   glow：强化光效阶梯 +7 / +10 / +12 / +13 / +14 / +15 / +16（修罗之戮、血之挽歌各一排）→ test/shots/jobvisuals/glow.png
 import { launch, URL_BASE } from './lib.mjs';
 import fs from 'fs';
 import { execFileSync } from 'child_process';
-const SHOTS = process.argv.includes('shots'), OLD = process.argv.includes('--oldglow') ? fs.readFileSync(process.argv[process.argv.indexOf('--oldglow') + 1], 'utf8') : null;
+const SHOTS = process.argv.includes('shots'), GLOW = process.argv.includes('glow'), OLD = process.argv.includes('--oldglow') ? fs.readFileSync(process.argv[process.argv.indexOf('--oldglow') + 1], 'utf8') : null;
 const out = 'test/shots/jobvisuals'; fs.mkdirSync(out, { recursive: true });
 let fail = 0; const ok = (c, msg, x = '') => { console.log((c ? '  ✓ ' : '  ✗ ') + msg, x); if (!c) fail++; };
 
@@ -140,33 +141,33 @@ await page.evaluate(async () => {
 const f7 = await fps(); await page.evaluate(() => { clearInterval(window.__jvIv); for (const k of ['left', 'right', 'attack']) delete input.virt[k]; });
 ok(f7.fps >= 55, `地下城 4 个鬼剑士开着状态特效打怪：${f7.fps} fps，最长一帧 ${f7.maxFrame} ms，渲染平均 ${f7.renderMs} ms / 最长 ${f7.renderMax} ms`);
 
-if (SHOTS) {
+if (SHOTS || GLOW) {
   console.log('7. 总览图');
-  const tiles = [];
+  const tiles = [], titles = {};
   // 一排角色：list[i] = { job, o（装备）, buffs, invul, mv（每秒移动）, act（动作帧）, fields, label }
-  const stage = async (row, list, scene) => {
-    const pos = await page.evaluate(async ({ list, scene }) => {
+  const stage = async (row, list, scene, gap = 180) => {
+    const pos = await page.evaluate(async ({ list, scene, gap }) => {
       if (scene === 'town' && game.scene !== 'town') { enterScene('hm_plaza'); await new Promise(r => setTimeout(r, 1200)); }
       __jv.clear(); while (menus.stack.length) menus.close(menus.stack[menus.stack.length - 1]);
-      const p = game.player; p.x = cam.x - 200; p.y = 100;   // 自己挪到画面外
-      const X0 = cam.x + 110, Y = scene === 'town' ? 150 : 110, G = list.map((o, i) => { const g = __jv.spawn(o.job, o.o, X0 + i * 180 - (o.mv ? 70 : 0), Y); g._x0 = g.x; Object.assign(g.buffs, o.buffs || {}); if (o.mv !== undefined) g._mv = o.mv; if (o.fields) summon(g, 'sb_plemon_f', { x: g.x + 30, y: g.y + 50, lv: 1 }); return g; });
+      const p = game.player; p.draw = p.drawShadow = () => {}; p.vx = p.vy = 0; game.paused = true; __jv.step(40); game.paused = false;   // 自己不画；先让镜头停稳再按镜头摆人
+      const X0 = cam.x + (gap < 180 ? 80 : 110), Y = scene === 'town' ? 150 : 110, G = list.map((o, i) => { const g = __jv.spawn(o.job, o.o, X0 + i * gap - (o.mv ? 70 : 0), Y); g._x0 = g.x; Object.assign(g.buffs, o.buffs || {}); if (o.mv !== undefined) g._mv = o.mv; if (o.fields) summon(g, 'sb_plemon_f', { x: g.x + 30, y: g.y + 50, lv: 1 }); return g; });
       for (const m of ents) if (m.team === 'e') m.x = cam.x + 2000;
       await new Promise(r => setTimeout(r, 1500));   // 时装分包、武器图
       game.paused = true; __jv.step(30);
       G.forEach((g, i) => { const o = list[i]; if (o.invul) g.invul = 5; if (o.act) { g.doAct({ name: 'shot', clip: o.act, dur: 9, noCounter: true }); g.animT = 0.1; } });
       __jv.step(2);
       return G.map((g, i) => ({ x: sx(list[i].mv ? g.x - 30 : g.x), y: sy(g.y, 0) }));
-    }, { list, scene });
+    }, { list, scene, gap });
     await page.evaluate(() => { for (const id of ['ui', 'dom']) document.getElementById(id).style.visibility = 'hidden'; });   // 只拍世界层（HUD / 窗口先藏起来）
     await page.waitForTimeout(250);
     const f = `${out}/stage${tiles.length}.png`; await page.screenshot({ path: f });
     await page.evaluate(() => { for (const id of ['ui', 'dom']) document.getElementById(id).style.visibility = ''; });
-    await page.evaluate(() => { game.paused = false; for (const e of ents) delete e._mv; });
-    list.forEach((o, i) => tiles.push({ f, label: o.label, row, box: [pos[i].x - 85, pos[i].y - 150, 170, 168].map(Math.round) }));
+    await page.evaluate(() => { game.paused = false; for (const e of ents) delete e._mv; delete game.player.draw; delete game.player.drawShadow; });
+    const w = Math.min(170, gap - 4); list.forEach((o, i) => tiles.push({ f, label: o.label, row, box: [pos[i].x - w / 2, pos[i].y - 150, w, 168].map(Math.round) }));
   };
   const SB = { wpn: 'ep_ss_shura', enh: 12 }, BZ = { wpn: 'ep_ls_elegy', enh: 12 }, MIX = ['av_academy', 'av_festival', null], MIX2 = ['av_sky2', 'av_summer', 'av_spring'];
   const K = { sb_kaiga: { t: 9999 } }, FR = { frenzy: { t: 9999 } }, FRR = { frenzy: { t: 9999 }, rampage: { t: 9999 } };
-  for (const [scene, url] of [['dungeon', null], ['town', null]]) {
+  if (SHOTS) for (const [scene, url] of [['dungeon', null], ['town', null]]) {
     const tag = scene === 'town' ? '城镇' : '地下城';
     await stage(scene === 'town' ? 0 : 3, [
       { job: 'soulbender', o: SB, label: `鬼泣 站立（${tag}）` }, { job: 'soulbender', o: SB, mv: 110, label: '鬼泣 走路' },
@@ -182,24 +183,26 @@ if (SHOTS) {
       { job: 'asura', o: { wpn: 'ep_katana', enh: 12, mix: MIX }, label: '阿修罗（眼罩，参照）' }], 'town');
     if (scene === 'dungeon') { await page.goto(`${URL_BASE}?town&mute&cls=sword&fresh`); await page.waitForFunction(() => window.__READY); await page.waitForTimeout(600); await page.evaluate(HELP); }
   }
-  // 强化光效：新（光在刀身后面）/ 旧（--oldglow）
-  const glowRow = async (row, tag) => stage(row, [
-    { job: null, o: { wpn: 'ep_ss_shura', enh: 12 }, label: `修罗之戮 +12 ${tag}` }, { job: null, o: { wpn: 'ep_ls_elegy', enh: 12 }, label: `血之挽歌 +12 ${tag}` },
-    { job: null, o: { wpn: 'ep_ss_shura', enh: 14 }, label: `修罗之戮 +14 ${tag}` }, { job: null, o: { wpn: 'ep_ls_elegy', enh: 16 }, label: `血之挽歌 +16 ${tag}` },
-    { job: null, o: { wpn: 'ep_ls_elegy', enh: 13, amp: 1 }, label: `血之挽歌 增幅 +13 ${tag}` }], 'town');
-  await glowRow(5, '（新）');
-  if (OLD) { await page.evaluate(src => { const f = (0, eval)('(' + src + ')'); window.__vwNew = window.vanityWeaponFx; window.vanityWeaponFx = (c, L, w, A, im, s, back) => { if (!back) f(c, L, w, A, im, s); }; }, OLD); await glowRow(6, '（旧）'); await page.evaluate(() => { window.vanityWeaponFx = window.__vwNew; }); }
-  fs.writeFileSync(`${out}/tiles.json`, JSON.stringify(tiles));
+  Object.assign(titles, { 0: '城镇 · 鬼泣（修罗之戮 +12）：鬼手鬼火 + 身后小鬼神；鬼影步 = 鬼影 + 残影 + 无敌半透明', 1: '城镇 · 狂战士（血之挽歌 +12）：红眼 + 鬼手血气；狂暴之力 = 全身血焰；暴走更猛',
+    2: '城镇 · 混搭时装（覆盖层叠在最上面）', 3: '地下城 · 鬼泣', 4: '地下城 · 狂战士' });
+  // 强化光效阶梯：同一把武器 +7 / +10 / +12 / +13 / +14 / +15 / +16 排一排（--oldglow：旧版对照）
+  if (GLOW) {
+    await page.goto(`${URL_BASE}?town&mute&cls=sword&fresh`); await page.waitForFunction(() => window.__READY); await page.waitForTimeout(600); await page.evaluate(HELP);
+    await page.evaluate(async () => { enterScene('hm_plaza'); await new Promise(r => setTimeout(r, 1500)); });
+    const LV = [7, 10, 12, 13, 14, 15, 16], R = (row, wpn, nm, amp, tag = '') => stage(row, LV.map(lv => ({ job: null, o: { wpn, enh: lv, amp }, label: `${nm} ${amp ? '增幅' : ''}+${lv}${tag}` })), 'town', 128);
+    await R(10, 'ep_ss_shura', '修罗之戮'); await R(11, 'ep_ls_elegy', '血之挽歌'); await R(12, 'ep_ls_elegy', '血之挽歌', 1);
+    Object.assign(titles, { 10: '强化光效 · 修罗之戮（短剑）：+10 起刀身描边，+12 光晕加倍，+13 变红 + 爆闪，+14 环绕光点，+15 变紫 + 双层光晕 + 脚下光环，+16 七彩 + 电弧', 11: '强化光效 · 血之挽歌（光剑）', 12: '增幅光效 · 血之挽歌' });
+    if (OLD) { await page.evaluate(src => { const f = (0, eval)('(' + src + ')'); window.__vwNew = window.vanityWeaponFx; window.__glNew = [GLOW_ENH, GLOW_AMP]; window.vanityWeaponFx = (c, L, w, A, im, s, back) => { if (!back) f(c, L, w, A, im, s); }; }, OLD); await R(13, 'ep_ss_shura', '修罗之戮', 0, '（旧）'); await page.evaluate(() => { window.vanityWeaponFx = window.__vwNew; }); titles[13] = '旧版（对照）'; }
+  }
+  fs.writeFileSync(`${out}/tiles.json`, JSON.stringify({ tiles, titles })); const name = GLOW && !SHOTS ? 'glow' : 'sheet';
   const py = `
 import json
 from PIL import Image, ImageDraw, ImageFont
 F = ImageFont.truetype('/System/Library/Fonts/STHeiti Medium.ttc', 13); T = ImageFont.truetype('/System/Library/Fonts/STHeiti Medium.ttc', 17)
-tiles = json.load(open('${out}/tiles.json')); rows = {}
+D = json.load(open('${out}/tiles.json')); tiles = D['tiles']; titles = {int(k): v for k, v in D['titles'].items()}; rows = {}
 for t in tiles:
     x, y, w, h = t['box']; im = Image.open(t['f']).convert('RGB').crop((x, y, x + w, y + h))
     cell = Image.new('RGB', (w, h + 18), (18, 16, 22)); cell.paste(im, (0, 18)); ImageDraw.Draw(cell).text((4, 1), t['label'], font=F, fill=(255, 226, 160)); rows.setdefault(t['row'], []).append(cell)
-titles = {0: '城镇 · 鬼泣（修罗之戮 +12）：鬼手鬼火 + 身后小鬼神；鬼影步 = 鬼影 + 残影 + 无敌半透明', 1: '城镇 · 狂战士（血之挽歌 +12）：红眼 + 鬼手血气；狂暴之力 = 全身血焰；暴走更猛',
-          2: '城镇 · 混搭时装（覆盖层叠在最上面）', 3: '地下城 · 鬼泣', 4: '地下城 · 狂战士', 5: '强化光效：光在刀身后面、外圈更细、火花减半且不压在刀身上（新）', 6: '强化光效（旧版，对照）'}
 W = max(sum(c.width + 4 for c in r) for r in rows.values()); out = []
 for r in sorted(rows):
     hd = Image.new('RGB', (W, 26), (40, 30, 24)); ImageDraw.Draw(hd).text((8, 3), titles.get(r, ''), font=T, fill=(255, 240, 200)); out.append(hd)
@@ -208,9 +211,9 @@ for r in sorted(rows):
     out.append(im)
 sheet = Image.new('RGB', (W, sum(o.height for o in out))); y = 0
 for o in out: sheet.paste(o, (0, y)); y += o.height
-sheet.save('${out}/sheet.png'); sheet.save('${out}/sheet.jpg', quality=88)
+sheet.save('${out}/${name}.png'); sheet.save('${out}/${name}.jpg', quality=88)
 `;
-  execFileSync('python3', ['-c', py]); console.log('  总览图', `${out}/sheet.png`);
+  execFileSync('python3', ['-c', py]); console.log('  总览图', `${out}/${name}.jpg`);
 }
 
 const errs = logs.filter(l => l.type === 'pageerror' || l.type === 'error');

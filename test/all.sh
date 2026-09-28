@@ -24,8 +24,8 @@ run world     node test/world.mjs
 run polish    node test/polish.mjs
 run combat    node test/combat.mjs
 run skillsa   node test/skill_sa.mjs
-run summon    node test/summon.mjs
 run gunner    node test/gunner.mjs
+run summon    node test/summon.mjs
 run avatar    node test/avatar.mjs
 run shop      node test/shop.mjs
 run shopecon  node test/shop_econ.mjs
@@ -59,4 +59,6 @@ run mpdrop    node test/mp_coop_drop.mjs
 run mpduel    node test/mp_duel.mjs
 run mpmore    node test/mp_coop_more.mjs
 run mprestart node test/mp_restart.mjs
+run findfriend node test/findfriend.mjs
+run partyhud  node test/mp_party_hud.mjs
 echo; cat $LOG/summary.txt

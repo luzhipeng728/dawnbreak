@@ -101,7 +101,8 @@ function recalcStats(p) {
   const str = base4.str + g('str'), int = base4.int + g('int'), vit = base4.vit + g('vit'), spr = base4.spr + g('spr');
   const gearVit = vit - base4.vit, gearSpr = spr - base4.spr;
   const w = inv.equip.weapon && itemActive(inv.equip.weapon) ? inv.equip.weapon : null, WT = (w && WTYPES[w.wtype]) || {};
-  const dmgType = C.dmgType || (p.cls === 'mage' ? 'mag' : 'phys');
+  const J = game.job && C.jobs && C.jobs[game.job];
+  const dmgType = (J && J.dmgType) || C.dmgType || (p.cls === 'mage' ? 'mag' : 'phys');   // 转职可以改伤害类型（机械师：神枪手里的魔法职业）
   const lvAtk = C.atk0 + C.atkPer * (L - 1), atkPct = 1 + g('atkPct');
   const atk = (lvAtk * (dmgType === 'phys' ? 1 : 0.55) + g('atk')) * (1 + str * 0.004) * atkPct * HB.atk;
   const matk = (lvAtk * (dmgType === 'mag' ? 1 : 0.55) + g('matk')) * (1 + int * 0.004) * atkPct * HB.atk;

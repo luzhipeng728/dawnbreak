@@ -71,8 +71,8 @@ export default {
   ws: {
     'party:invite'(c, msg, ctx) {
       const A = ctx.mods.party, me = c.user.id;
-      const to = typeof msg.to === 'number' ? ctx.findUser(msg.to) : ctx.findUser(str(msg.to, 32));
       const fail = text => c.send({ t: 'party:note', text });
+      let to; try { to = typeof msg.to === 'number' ? ctx.findUser(msg.to) : ctx.findPlayer(str(msg.to, 32)); } catch (e) { return fail(e.message); }   // 账号名或角色名
       if (!to) return fail('没有这个玩家');
       if (to.id === me) return fail('不能邀请自己');
       if (!ctx.isOnline(to.id)) return fail(`${to.name} 不在线`);

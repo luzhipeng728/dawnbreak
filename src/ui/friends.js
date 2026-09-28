@@ -79,7 +79,7 @@ Object.assign(menus, {
   w_pmenu(p) {
     if (!p) return null;
     const B = (label, fn, cls = '') => h('button', { class: 'btn ' + cls, onclick: () => { sfx.click(); this.close('pmenu'); fn(); } }, label);
-    const inParty = netParty.has(p.id), friend = netFriends.isFriend(p.id);
+    const inParty = netParty.has(p.id), friend = netFriends.isFriend(p.id), lead = inParty && netParty.isLeader();
     const body = h('div', { class: 'col pmenu' },
       p.char ? h('div', { class: 'small', style: 'text-align:center;color:#ffe8a8' }, netCharLine(p.char)) : null,
       h('div', { class: 'small dim', style: 'text-align:center' }, `账号 ${p.name}${friend ? ' · 好友' : ''}${inParty ? ' · 队友' : ''}`),
@@ -87,6 +87,8 @@ Object.assign(menus, {
       B('私聊', () => chat.whisper(p.name)),
       friend ? null : B('加为好友', () => netFriends.add(p.name)),
       inParty ? null : B('邀请组队', () => netPartyInvite(p.id, p.name)),
+      lead ? B('移交队长', () => net.send({ t: 'party:lead', id: p.id })) : null,
+      lead ? B('请离队伍', () => net.send({ t: 'party:kick', id: p.id }), 'red') : null,
       B('发起决斗', () => netDuelAsk(p)));
     return this.win(p.char ? p.char.name : p.name, body, { w: 12, drag: false });
   },

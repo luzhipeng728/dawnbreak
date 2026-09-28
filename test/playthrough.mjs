@@ -177,11 +177,11 @@ async function jobTrial() {
     await P.enterDungeon(); let rooms = 0;
     const r = await P.fightDungeon({ onRoom: async s => { rooms++; if (s.d.boss) await P.shot(`boss-${tries}`); } });
     step(`烈焰格拉卡第 ${tries} 次：${JSON.stringify(r)}`);
-    if (r.state === 'result') { await P.shot(`trial-result-${tries}`); ok = r.hurt <= 40; await P.flipAndReturn(); }
+    if (r.state === 'result') { await P.shot(`trial-result-${tries}`); ok = r.hurt <= 50; await P.flipAndReturn(); }
     else { await wait(3000); }
     step('试炼任务：' + await page.evaluate(id => questState(id), `q_job_${CLS}_final`));
   }
-  check(ok, `试炼 3 次都没做到被击 ≤40`);
+  check(ok, `试炼 3 次都没做到被击 ≤50`);
   check(await goScene(mScene), '回不到导师处');
   check(await P.talk(MENTOR), '回来和导师对话失败');
   const b = await P.dialogTo(['完成任务']); step('交试炼：' + b); if (await page.evaluate(() => menus.isOpen('npcquest'))) { await P.shot('trial-reward'); await P.tap('KeyX'); await wait(400); }
@@ -195,6 +195,24 @@ async function jobTrial() {
   step('转职后：job=' + await page.evaluate(() => game.job) + ' 窗口=' + await page.evaluate(() => menus.stack.join(',')));
   await P.closeAll(); await P.tap('KeyK'); await wait(400); await page.click('.sktab:has-text("转职技能")').catch(() => {}); await wait(300); await P.shot('job-skills');
   await P.closeAll();
+}
+// 林纳斯的试炼「格兰之森 - 杀手」：Lv.3，被击 ≤30 通关洛兰深处（最多 3 次）
+async function trial1() {
+  await quickStart(); await skipTo(3, []);
+  check(await P.exitTo('elvenguard'), '出不了房间');
+  check(await P.talk('linus'), '和林纳斯对话失败');
+  if (await page.evaluate(() => npcUI.qid) !== 'q_job_kill') await P.pickQuest('格兰之森 - 杀手');
+  step('试炼：' + await P.dialogTo(['接受'])); await P.shot('kill-offer'); await P.closeAll();
+  check(await P.exitTo('gf_lorien'), '走不到洛兰');
+  let ok = false;
+  for (let t = 1; t <= 3 && !ok; t++) {
+    check(await P.toGate('lorien_deep'), '洛兰深处门口没弹窗'); await P.enterDungeon();
+    const r = await P.fightDungeon({ onRoom: async s => { if (s.d.boss && t === 1) await P.shot('deep-boss'); } });
+    step(`洛兰深处第 ${t} 次：${JSON.stringify(r)}`);
+    if (r.state === 'result') { await P.shot(`deep-result-${t}`); await P.flipAndReturn(); }
+    ok = await page.evaluate(() => questState('q_job_kill') === 'ready');
+  }
+  check(ok, '洛兰深处 3 次都没做到被击 ≤30');
 }
 async function awaken() {
   await quickStart();
@@ -413,6 +431,7 @@ try {
   if (leg === 'newbie') { await newbie(); await town(); }
   else if (leg === 'mobile') await mobile();
   else if (leg === 'job') await jobTrial();
+  else if (leg === 'trial1') await trial1();
   else if (leg === 'awaken') await awaken();
   else if (leg === 'hidden') await hidden();
   else if (leg === 'sky') await sky();

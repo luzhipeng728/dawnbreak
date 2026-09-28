@@ -188,13 +188,13 @@ gbGhostSkill('gb_issen', { name: '幻鬼：一闪', lvReq: 16, mp: 20, cd: 6, co
 gbGhostSkill('gb_rend', { name: '幻鬼：连击', lvReq: 17, mp: 25, cd: 8, col: '#7ab8ff',
   desc: '幻鬼在身前现身，原地快速连斩 4 次，最后一击把敌人挑上空中。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'launch', r: [0, 110], dy: 24 },
   phantom: (lv, p) => gbPhantomDo(p, lv, { name: 'pRend', clip: 'pRend', dur: 0.62, noCounter: true,
-    hits: [HB(0.02, 0.4, [-10, 78, 32, 10, 120], skillDmg(0.7, 0.07, lv), { rep: 0.1, max: 4, stun: 0.4, knock: 10, hs: 0.04, col: GB_COL }),
+    hits: [HB(0.02, 0.36, [-10, 78, 32, 10, 120], skillDmg(0.93, 0.093, lv), { rep: 0.12, max: 3, stun: 0.4, knock: 10, hs: 0.04, col: GB_COL }),
       HB(0.44, 0.52, [-10, 82, 34, 0, 140], skillDmg(1.2, 0.12, lv), { launch: 460, knock: 40, hs: 0.08, col: GB_COL })],
-    events: [0.02, 0.12, 0.22, 0.32, 0.44].map((t, i) => evAt(t, s => { fxSlash({ x: s.x, y: s.y, z: s.z, face: s.face, col: GB_COL, a0: i % 2 ? 0.8 : -2.4, a1: i % 2 ? -2.4 : 0.8, r: 60, w: 14, off: [10, 56] }); sfx.swing(i === 4); })) }, { x: p.x + p.face * 70, y: p.y }) });
+    events: [0.02, 0.14, 0.26, 0.44].map((t, i) => evAt(t, s => { fxSlash({ x: s.x, y: s.y, z: s.z, face: s.face, col: GB_COL, a0: i % 2 ? 0.8 : -2.4, a1: i % 2 ? -2.4 : 0.8, r: 60, w: 14, off: [10, 56] }); sfx.swing(i === 3); })) }, { x: p.x + p.face * 70, y: p.y }) });
 gbGhostSkill('gb_kaiten', { name: '幻鬼：回天', lvReq: 19, mp: 45, cd: 20, col: '#5aa0f0',
   desc: '幻鬼边前进边旋转，大幅斩击 2 次，纵深范围很大。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'aoe', r: [0, 200], dy: 60 },
   phantom: (lv, p) => gbPhantomDo(p, lv, { name: 'pKaiten', clip: 'pSpin', dur: 0.9, noCounter: true, move: [[0, 0.8, 220]],
-    hits: [HB(0.05, 0.8, [-70, 90, 70, 0, 130], skillDmg(3.0, 0.3, lv), { rep: 0.38, max: 2, stun: 0.6, knock: 60, launch: 200, hs: 0.07, col: GB_COL })],
+    hits: [HB(0.05, 0.4, [-70, 90, 70, 0, 130], skillDmg(3.0, 0.3, lv), { stun: 0.7, knock: 30, hs: 0.07, col: GB_COL }), HB(0.43, 0.8, [-70, 90, 70, 0, 150], skillDmg(3.0, 0.3, lv), { launch: 300, knock: 80, hs: 0.08, col: GB_COL })],
     events: [0.05, 0.43].map(t => evAt(t, s => { fxSlash({ x: s.x, y: s.y, z: s.z, face: s.face, col: GB_COL, a0: -3.1, a1: 3.1, r: 96, w: 20, off: [0, 50], squash: 0.45, dur: 0.3 }); sfx.swing(true); })) }, { x: p.x + p.face * 40, y: p.y }) });
 
 /* ---- 共鸣技能：本体 + 幻鬼一起出手（同一目标只结算一次）；幻鬼已分离时在它自己的位置同步出招；重新获得一次幻鬼步 ---- */
@@ -312,7 +312,7 @@ defSkill('gb_mushiki', { name: '无式·极影剑', cls: 'sword', job: 'ghostbla
     const pact = { name: 'pMushiki', clip: 'pRend', dur: 1.0, noCounter: true, hits: [HB(0.02, 0.6, [-20, 96, 40, 0, 140], skillDmg(3.5, 0.35, lv) * (phantomOnly ? 0.84 : 1), { rep: 0.12, max: 5, stun: 0.5, knock: 10, hs: 0.04, col: GB_COL }),
       HB(0.7, 0.78, [-20, 110, 44, 0, 160], skillDmg(8, 0.8, lv) * (phantomOnly ? 0.84 : 1), { launch: 440, knock: 160, hs: 0.12, big: 1.8, col: '#dff0ff' })] };
     if (phantomOnly) { gbPhantomDo(p, lv, pact, { x: p.x + p.face * 50, y: p.y }); return; }
-    const G = hitGroup(0.1); pact.hitGroup = G; gbPhantomDo(p, lv, pact, { x: p.x + p.face * 50, y: p.y + 8 });
+    const G = hitGroup(0.11); pact.hitGroup = G; pact.hits = pact.hits.slice(1);   // 共鸣形态：5 连斩由本体结算（幻鬼的斩击只做表现），收尾两人合击只算一次 gbPhantomDo(p, lv, pact, { x: p.x + p.face * 50, y: p.y + 8 });
     p.doAct({ name: 'gb_mushiki', clip: 'rk1', dur: 1.1, superArmor: true, noCounter: true, hitGroup: G,
       hits: [HB(0.02, 0.6, [-20, 96, 40, 0, 140], skillDmg(3.5, 0.35, lv), { rep: 0.12, max: 5, stun: 0.5, knock: 10, hs: 0.04 }), HB(0.7, 0.78, [-20, 110, 44, 0, 160], skillDmg(8, 0.8, lv), { launch: 440, knock: 160, hs: 0.12, big: 1.8, col: '#dff0ff' })],
       events: [...[0.02, 0.14, 0.26, 0.38, 0.5].map((t, i) => evAt(t, e => { e.play(i % 2 ? 'rk2' : 'rk1', true); fxSlashOn(e, { col: GB_COL, a0: i % 2 ? 0.8 : -2.4, a1: i % 2 ? -2.4 : 0.8, r: 70, w: 18, off: [10, 56] }); sfx.swing(i === 4); })),
@@ -385,4 +385,6 @@ CLASSES.sword.passives.push(p => {
   setPassive(p, 'gb_katana', on && gbLv(p, 'gb_katana') > 0, { atk: 0.03 + 0.006 * gbLv(p, 'gb_katana') });
   const w = gbLv(p, 'gb_power'); setPassive(p, 'gb_power', on && w > 0, { aspd: 0.02 + 0.004 * w, mspd: 0.02 + 0.004 * w, crit: 0.01 + 0.003 * w, critDmg: 0.02 + 0.005 * w });
 });
+// 官方可用普攻取消后摇：三觉
+swordAtkCancel('gb_awaken3', 3.2);
 swordFinalize();

@@ -52,10 +52,10 @@ function rkSegs(w) {
 function rkStage(lv, p, n) {
   const w = swWt(p), segs = rkSegs(w), s = segs[n - 1], last = n === segs.length, light = w === 'lightsaber' || w === 'katana';
   const gsCharge = w === 'greatsword' && last && arcanaLv(p) >= 1;
-  const dmg = skillDmg(s.dmg, s.dmg * 0.1, lv) * (w === 'lightsaber' ? 0.9 : 1);
+  const dmg = skillDmg(s.dmg, s.dmg * 0.1, lv) * (w === 'lightsaber' ? 0.9 : 1), n2 = w === 'katana' || (w === 'lightsaber' && n <= 2) ? 2 : 1;   // 官方：太刀二刀流 4 动作共 8 hit，光剑共 6 hit
   const a = { name: 'rk' + n, clip: s.clip, dur: light ? 0.32 : w === 'greatsword' ? 0.5 : 0.4, basic: true, rk: true, speed: 'aspd', move: [[0.02, 0.1, s.o.pull ? 40 : 120]],
     follow: last ? null : () => rkStage(lv, p, n + 1), followWin: [0.1, 0.4], chain: last ? null : [0.12, 0.4], next: last ? null : n === 1 ? 'atk2' : 'atk3',
-    hits: [HB(0.06, 0.14, s.box, dmg, { hs: 0.06, ...s.o, pull: undefined })],
+    hits: [HB(0.06, n2 > 1 ? 0.18 : 0.14, s.box, dmg / n2, { hs: 0.06, ...s.o, pull: undefined, ...(n2 > 1 ? { rep: 0.06, max: 2 } : {}) })],
     events: [slashAt(0.05, { a0: s.slash[0], a1: s.slash[1], r: w === 'greatsword' ? 76 : 60, w: w === 'greatsword' ? 22 : 16, off: [10, 56], heavy: !!s.o.heavy, col: w === 'lightsaber' ? '#fff0a0' : undefined })] };
   if (s.o.pull) a.events.push(evAt(0.04, e => { fxSpr('vortex', e.x + e.face * 70, e.y, e.z + 50, { w: 120, dur: 0.35, alpha: 0.7, grow: [0.6, 1.1] }); for (const t of ents) if (hittable(e, t) && !t.boss && Math.abs(t.y - e.y) < 50 && (t.x - e.x) * e.face > 0 && Math.abs(t.x - e.x) < 180) t.x = lerp(t.x, e.x + e.face * 50, 0.6); }));
   if (gsCharge) { a.dur = 0.62; a.superArmor = true; a.charge = { at: 0.04, max: 0.8, min: 0, dmg: 4.2, clip: 'charge', update: e => { if (Math.random() < 0.5) fxCharge(e, '#cfe6ff'); } }; a.hits[0].t0 += 0.04; a.hits[0].t1 += 0.04; }
@@ -149,7 +149,7 @@ defSkill('wm_reverse', { name: '逆转反击', cls: 'sword', job: 'blade', lvReq
 defSkill('rise', { name: '破军升龙击', cls: 'sword', job: 'blade', lvReq: 18, mp: 45, cd: 10, type: 'phys', icon: 'rise', col: '#e0602a',
   desc: '霸体肩撞前冲把敌人推开，接着单手上斩把敌人打上高空。光剑肩撞多 2 段；太刀上斩多 1 段。', pow: lv => skillDmg(5.0, 0.5, lv), ai: { kind: 'launch', r: [0, 150], dy: 24 },
   act: (lv, p) => { const w = swWt(p);
-    return { name: 'rise', clip: 'rush', dur: 1.0, superArmor: true, noCounter: true, move: [[0, 0.24, 480]],
+    return { name: 'rise', clip: 'rush', dur: 1.0, superArmor: [0, 0.26], noCounter: true, move: [[0, 0.24, 480]],
       hits: [HB(0.02, 0.24, [-10, 60, 28, 10, 100], skillDmg(1.2, 0.12, lv) / (w === 'lightsaber' ? 3 : 1), { rep: w === 'lightsaber' ? 0.08 : 0, max: w === 'lightsaber' ? 3 : 0, knock: 90, stun: 0.5, hs: 0.05 })],
       update: e => {
         const a = e.act;
@@ -194,11 +194,12 @@ defSkill('dragon', { name: '猛龙断空斩', cls: 'sword', job: 'blade', lvReq:
         const l = Math.hypot(dx, dy * 1.3) || 1; a.vx = dx / l * 720; a.vy = dy / l * 420;
         fxAfterimage(e, '#8fb8ff'); sfx.swing(true); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 58, face: e.face, len: 170, w: 14, col: '#8fb8ff', dur: 0.2 });
       }
-      if (seg < 2) { const k = (e.actT % SEG) < 0.22; e.superArmor = Math.max(e.superArmor, k ? 0.02 : 0); e.vx = k ? a.vx : a.vx * 0.2; e.vy = k ? a.vy : a.vy * 0.2; }
+      if (seg < 2) { const k = (e.actT % SEG) < 0.22; e.superArmor = Math.max(e.superArmor, k ? 0.02 : 0); e.vx = k ? a.vx : a.vx * 0.2; e.vy = k ? a.vy : a.vy * 0.2;
+        for (const t of a.drag || []) if (!t.dead && !t.boss && t.weight <= 2 && t.st !== 'down' && t.st !== 'held') { t.x = e.x + e.face * 40; t.y = damp(t.y, e.y, 10, 1 / 60); } }
       else if (!a.fin) { a.fin = true; e.vx = e.face * 60; e.vy = 0; e.play('up', true); fxSlashOn(e, { col: '#8fb8ff', a0: 1.4, a1: -1.9, r: 70, w: 22, off: [10, 50] }); sfx.swing(true);
         instantHit(e, { box: [-10, 84, 32, 0, 130], dmg: skillDmg(2.6, 0.26, lv), launch: 560, knock: 60, hs: 0.1, shake: 4, big: 1.5 }); }
     },
-    hits: [HB(0, 0.6, [-20, 60, 30, 10, 100], skillDmg(2.2, 0.22, lv), { rep: 0.3, stun: 0.5, knock: 40, airLift: 200, hs: 0.04 })],
+    hits: [HB(0, 0.6, [-20, 60, 30, 10, 100], skillDmg(2.2, 0.22, lv), { rep: 0.3, stun: 0.5, knock: 40, airLift: 200, hs: 0.04, onHit: (a, t) => { const A = a.act; if (A && A.name === 'dragon') (A.drag = A.drag || new Set()).add(t); } })],
     onEnd: e => { e.vy = 0; } }) });
 
 /* ---- 破军斩龙击：肩撞前冲推开并眩晕周围敌人 → 转身回冲连刺 → 把敌人聚到一处上挑浮空 ---- */

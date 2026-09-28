@@ -25,6 +25,7 @@ run polish    node test/polish.mjs
 run combat    node test/combat.mjs
 run skillsa   node test/skill_sa.mjs
 run sword     node test/sword.mjs
+run auditsw   node test/skillaudit.mjs sword,sword:blade,sword:berserker,sword:asura,sword:soulbender,sword:ghostblade --compare   # 鬼剑士技能机制 vs 官方规格 docs/skills/sword.json
 run summon    node test/summon.mjs
 run gunner    node test/gunner.mjs
 run summoner  node test/summoner.mjs

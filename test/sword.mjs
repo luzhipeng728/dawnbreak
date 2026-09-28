@@ -1,7 +1,7 @@
 // 鬼剑士（男）官方对齐测试（docs/SKILLS_OFFICIAL_sword.md）：暂停游戏循环、逐帧推进，逐条验证
 // 基础：三段刃 5 段、空之连刃空中连斩、后跳中银光落刃、月光斩追加、十字刃追加 / 可被取消、嗜魂之手通用且不回血、卡赞（剑影不能学）
 // 剑魂：里·鬼剑术按武器段数、接回普攻、流心 X / Space / C 派生与落地回架势、三段刃 → 流心、拔刀斩打身后、逆转反击（被背击时 Z）、光剑冷却
-// 狂战士：狂暴之力开关 + 二刀流 + 扣血、狂暴前置、爆发之刃命中即爆可取消、血气旺盛出血、狂暴冷却、饥渴蓄力耗血。node test/sword.mjs
+// 狂战士：狂暴之力开关 + 二刀流 + 扣血、狂暴前置（没开时提示开启方法、自动放上快捷栏、图标高亮）、爆发之刃命中即爆可取消、血气旺盛出血、狂暴冷却、饥渴蓄力耗血。node test/sword.mjs
 import { launch, URL_BASE } from './lib.mjs';
 let fail = 0;
 const report = (name, ok, info) => { if (!ok) fail++; console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}  ${JSON.stringify(info)}`); };
@@ -66,7 +66,9 @@ const R = await page.evaluate(() => {
   // ---- 狂战士 ----
   T.job('berserker'); T.bar(['frenzy', 'bz_scratch', 'bloodblade', 'outrage', 'cross', 'bz_thirst', 'rampage']);
   T.reset(); out.scratchNoFrenzy = T.cast('bz_scratch') || null; T.run(30);
-  T.reset(); const hpA = p.hp; T.cast('frenzy'); T.run(40); out.frenzyOn = !!p.buffs.frenzy; out.frenzyCost = hpA - p.hp; T.run(20);
+  out.needMsg = SKILLS.bz_scratch.req(p);   // 狂暴之力没开：提示里带开启方法（快捷栏按键 / 指令）
+  { const B0 = game.skillBar.slice(); game.skillBar = Array(14).fill(null); game.skillBar[0] = 'upslash'; delete (save.data.flags ??= {}).bar_frenzy; swordGateBar(p); out.gateSlot = game.skillBar.indexOf('frenzy'); game.skillBar = B0; }
+  T.reset(); const hpA = p.hp; T.cast('frenzy'); T.run(40); out.frenzyOn = !!p.buffs.frenzy; out.frenzyHl = !!(p.buffs.frenzy && p.buffs.frenzy.hl); out.frenzyCost = hpA - p.hp; T.run(20);
   T.tap('attack'); T.run(2); out.dualClip = p.act && p.act.clip; T.run(40);
   out.scratchFrenzy = T.cast('bz_scratch'); T.run(40);
   T.cast('outrage'); out.outrageCd = +(p.cool.outrage || 0).toFixed(2); T.run(60);
@@ -238,6 +240,9 @@ report('格挡：物理吸收 > 魔法吸收', R.guardPhys < R.guardMag && Math.
 report('感电：光剑命中附带、再挨打追加感电伤害', R.shock && R.shockProc, [R.shock, R.shockProc]);
 report('狂气涌动：HP 停在 50%、生成血盾后吸收伤害', R.surgeBuff && R.surgeHp && R.surgeShield && R.surgeBlock, [R.surgeBuff, R.surgeHp, R.surgeShield, R.surgeBlock]);
 report('阿修罗：背击回避、邪光波动阵定身', R.backEvade && R.root, [R.backEvade, R.root]);
+report('狂暴之力没开：提示怎么开（按键）', /需要狂暴之力（.+开启）/.test(R.needMsg || ''), R.needMsg);
+report('狂战士：狂暴之力自动放上快捷栏前排', R.gateSlot >= 0 && R.gateSlot < 7, R.gateSlot);
+report('狂暴之力开启：BUFF 图标高亮', R.frenzyHl, R.frenzyHl);
 const errs = logs.filter(l => l.type !== 'warning'); if (errs.length) fail++;
 console.log('LOGS', JSON.stringify(errs.slice(0, 6), null, 1));
 await browser.close();

@@ -8,7 +8,7 @@
 //   人物：技能动作总时长、段数（追加 / 再按产生的新动作）、自带霸体 / 无敌所占的时间比例（地下城里所有技能默认霸体，
 //   这里量的是技能自己写的霸体 = 决斗场 / 官方原版的霸体）、位移（前后 dx、纵深 dy、最高 z）、实际冷却、MP、召唤物 / 投射物 / 地面效果个数。
 // 输入方式（规格文件里每个技能可写 input / pre / hp / dir / presses / watch）：
-//   默认 tap：按一下；动作带蓄力（act.charge）时自动按住到满蓄；动作有追加窗口（act.follow）时自动再按，直到没有追加
+//   默认 tap：按一下；动作带蓄力（act.charge）时自动按住到满蓄；动作有追加窗口（act.follow）时在窗口后段自动再按，直到没有追加
 //   hold：按住 holdT 秒（默认到动作结束，最多 4 秒）   mash：动作期间每 0.1 秒连按一次
 //   pre：先放这些技能（例：狂暴之力、无尽波动）   hp：施放前把 HP 设成最大值的这个比例   dir：'f' / 'b' 施放全程按住前 / 后
 //   presses：[秒…] 在这些时刻再按一次技能键（再按 / 引爆）   watch：最多观察多少秒（默认 8；召唤阵持续更久时加大）   minWatch：至少观察多少秒
@@ -120,7 +120,7 @@ function pageInit() {
           else if (mode === 'hold') { if (A.t < (o.holdT || 4) && (mine0 || f < 3)) input.virt.s0 = 1; else delete input.virt.s0; }
           else if (mode === 'mash') { if (mine0 && A.t < (o.mashT || 6) && f % 6 === 0) A.tap('s0'); else if (input.virt.s0 !== 2) delete input.virt.s0; }
           else if (mine0 && a0.charge && !a0.chargeDone) input.virt.s0 = 1;
-          else if (mine0 && a0.follow && a0.followWin && p.actT >= a0.followWin[0] && !followed.has(a0)) { followed.add(a0); A.tap('s0'); }
+          else if (mine0 && a0.follow && a0.followWin && p.actT >= a0.followWin[0] + 0.6 * ((a0.followWin[1] ?? a0.dur) - a0.followWin[0]) && !followed.has(a0)) { followed.add(a0); A.tap('s0'); }   // 追加：在窗口后段再按（正常节奏，不截断当前段的多段判定）
           else if (input.virt.s0 !== 2) delete input.virt.s0;
         }
         step(1 / 60);
@@ -163,9 +163,9 @@ function pageInit() {
       byD[d.__aud] = { hits: H.length, hitT: H.slice(0, 80).map(h => h.t), src: H.reduce((s, h) => (s[h.src] = (s[h.src] || 0) + 1, s), {}),
         zMax: Math.round(m.zMax), launch: H.filter(h => h.launch).length, relaunch: H.filter(h => h.relaunch && h.vz >= 250).length, airHits: H.filter(h => h.air0).length,
         maxVz: H.reduce((v, h) => Math.max(v, h.st1 === 'air' ? h.vz : 0), 0), down: m.down, downT: m.downT, otg: H.filter(h => h.otg).length, bounce: m.bounce, grab: m.held,
-        push: Math.round((d.x - m.x0) * (d.x0 >= 300 ? 1 : -1)), flags: [...new Set(H.map(h => h.f).join(''))].join('') };
+        push: Math.round((d.x - m.x0) * (d.__x0 >= 300 ? 1 : -1)), flags: [...new Set(H.map(h => h.f).join(''))].join('') };
     }
-    if (setup === 'spread') res.spread = Object.fromEntries(Object.entries(byD).map(([k, v]) => [k, v.hits]));
+    if (setup === 'spread') { res.spread = Object.fromEntries(Object.entries(byD).map(([k, v]) => [k, v.hits])); res.pulled = Object.values(byD).filter(v => v.push <= -30).length; }
     else Object.assign(res, byD.main);
     return res;
   };
@@ -179,7 +179,7 @@ function pageInit() {
     return all.filter(id => SKILLS[id] && (SKILLS[id].act || SKILLS[id].instant) && !SKILLS[id].passive).map(id => {
       const S = SKILLS[id]; let a = {}; try { a = typeof S.act === 'function' ? S.act(game.skillLv[id], p) || {} : {}; } catch (e) { a = {}; }
       return { id, name: S.name, job: S.job || null, cd: S.cd, mp: S.mp, type: S.type || null, elem: S.elem || null, lvReq: S.lvReq, awaken: !!S.awaken,
-        st: { dur: a.dur ?? null, boxes: (a.hits || []).length, sa: a.superArmor ?? null, invul: a.invul ?? null, charge: !!a.charge, follow: !!a.follow, noSA: !!(S.noSA || a.noSA), grab: (a.hits || []).some(h => h.grab) } };
+        st: { dur: a.dur ?? null, boxes: (a.hits || []).length, sa: a.superArmor ?? null, invul: a.invul ?? null, charge: !!a.charge, follow: !!a.follow, noSA: !!(S.noSA || a.noSA), grab: (a.hits || []).some(h => h.grab), atkCancel: !!(a.chain && a.next && !a.basic) } };
     });
   };
 }
@@ -190,8 +190,8 @@ function pageInit() {
 //   down true/false（轻木桩倒地）  bounce true（强制弹地）  grab true/false（抓住轻木桩）
 //   sa / invul：'none'（<10%）| 'part'（10%–85%）| 'full'（≥85%）| 'any'   dx [最少, 最多]（向前位移 px，负数 = 后退）
 //   behind true/false（打到身后 80px 的木桩）  reach [最少, 最多]（打到的最远木桩：70 / 170 / 300 / 450）
-//   cd 秒（和技能定义的冷却比，±25% 或 ±1 秒以内算一致）  summon true（放出召唤物 / 阵）  acts [最少, 最多]（段数：追加 / 再按的动作数）
-//   dur [最少, 最多]（技能动作总时长，秒）  why: { 字段: '理由' }：有理由的不一致算“已说明”，不算失败
+//   pull true/false（一排木桩里有被拉近 ≥30px 的）  cd 秒（和技能定义的冷却比，±25% 或 ±1 秒以内算一致）  summon true（放出召唤物 / 阵）  acts [最少, 最多]（段数：追加 / 再按的动作数）
+//   dur [最少, 最多]（技能动作总时长，秒）  atkCancel true/false（后摇可以按普攻取消：技能动作带 chain / next）  why: { 字段: '理由' }：有理由的不一致算“已说明”，不算失败
 const inR = (v, r) => Array.isArray(r) ? v >= r[0] && v <= r[1] : v === r;
 const band = x => x >= 0.85 ? 'full' : x >= 0.1 ? 'part' : 'none';
 function compare(sp, st, R) {
@@ -212,7 +212,9 @@ function compare(sp, st, R) {
   chk('reach', inR(reach, sp.reach), reach);
   chk('cd', st.cd !== undefined && Math.abs(st.cd - sp.cd) <= Math.max(1, sp.cd * 0.25), st.cd);
   chk('summon', (L.summons > 0) === sp.summon, L.summons);
+  chk('pull', ((R.spread || {}).pulled > 0) === sp.pull, `被拉近的木桩 ${(R.spread || {}).pulled}`);
   chk('acts', inR(L.acts, sp.acts), L.acts);
+  chk('atkCancel', !!(st.st && st.st.atkCancel) === sp.atkCancel, !!(st.st && st.st.atkCancel));
   chk('dur', inR(L.dur, sp.dur), L.dur);
   return mm;
 }

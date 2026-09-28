@@ -212,7 +212,7 @@ const ui = {
       uiText(`SP ${fmtNum(game.sp || 0)}`, HUD.dodge.x, 1072, { size: 16, align: 'center', color: (game.sp || 0) > 0 ? '#8aff9a' : '#c8c0b0', sw: 3 });
     }
     // BUFF 图标（剩余秒数）
-    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b || b.hide) continue; c.drawImage(buffIcon(k, b), bx, y0 - 84, 34, 34); c.strokeStyle = '#ffd23a'; c.lineWidth = 1.5; c.strokeRect(bx, y0 - 84, 34, 34); if (b.n > 1) uiText('×' + b.n, bx + 33, y0 - 53, { size: 13, align: 'right', color: '#fff6c0', sw: 3 }); if (b.t < 900) uiText(Math.ceil(b.t) + '', bx + 17, y0 - 38, { size: 14, align: 'center', sw: 3 }); bx += 40; } }
+    if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b || b.hide) continue; c.drawImage(buffIcon(k, b), bx, y0 - 84, 34, 34); c.strokeStyle = b.hl || '#ffd23a'; c.lineWidth = b.hl ? 2.5 + Math.sin(game.t * 6) : 1.5; c.strokeRect(bx, y0 - 84, 34, 34); if (b.n > 1) uiText('×' + b.n, bx + 33, y0 - 53, { size: 13, align: 'right', color: '#fff6c0', sw: 3 }); if (b.t < 900) uiText(Math.ceil(b.t) + '', bx + 17, y0 - 38, { size: 14, align: 'center', sw: 3 }); bx += 40; } }
   },
   drawCombo(c) {
     const n = game.combo;

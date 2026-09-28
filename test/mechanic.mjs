@@ -156,8 +156,8 @@ const R = await page.evaluate(() => {
   p.cool['gm_frisbee~'] = 0; T.cast('gm_frisbee'); out.frisbee.recalled = !fr.goal; T.sec(6); out.frisbee.gone = fr.gone;
   T.clear(); T.reset();
   // 23) G-X 主宰者：旋雷者 4 台 / 捕食者 7 台、改装无动作（再按分支）、Buff On!、冷却 -15%
-  game.skillLv.gm_gop = 1; T.cast('gm_g1'); T.run(30); T.run(40); T.cast('gm_g2'); T.run(2);
-  out.gop = { form: gsForm(p), n2: T.n('mech_g2'), noAct: !p.act, buffOn: !!p.buffs.gm_gop };
+  game.skillLv.gm_gop = 1; T.cast('gm_g1'); T.run(30); T.run(40); p.doAct(p.acts.atk1); T.run(2); const a0 = p.act; T.cast('gm_g2'); T.run(1);
+  out.gop = { form: gsForm(p), n2: T.n('mech_g2'), noAct: p.act === a0, buffOn: !!p.buffs.gm_gop };
   p.gsTfT = 0; p.cool['gm_g3~'] = 0; T.cast('gm_g3'); T.run(2); out.gop.n3 = T.n('mech_g3');
   T.cast('gm_viper'); out.gop.cd = +(p.cool.gm_viper || 0).toFixed(2); game.skillLv.gm_gop = 0;
   T.clear(); T.reset();

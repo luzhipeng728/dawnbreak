@@ -177,6 +177,8 @@ def crop_lineup(fname='_lineup.png', order=None):
     from prep import components
     order = order or LINEUP_ORDER
     im = Image.open(os.path.join(SRC, fname)).convert('RGBA'); arr = np.array(im)
+    if arr[..., 3].min() > 200:   # 不透明的白底：先去背
+        from prep import remove_bg; im = remove_bg(im); arr = np.array(im)
     lab, comps = components(arr[..., 3], min_cells=4)
     boxes = []
     for c, cells in comps:

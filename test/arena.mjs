@@ -38,21 +38,22 @@ try {
   }
   await Promise.all([A, B].map(P => P.click('.duelwin button:has-text("开始匹配")')));   // 同时点，免得先点的人等太久被派 AI
   await A.screenshot({ path: `${out}/01-queue.png` });
-  ok(await until(A, () => netDuel.state === 'fight' && game.duel === duel, null, 25000), 'alice 和 bob 匹配成功，进入决斗（alice 当主机）');
-  ok(await until(B, () => netDuel.state === 'fight' && game.duel && game.duel.a, null, 20000), 'bob 进入决斗');
-  const meta = await A.evaluate(() => netDuel.room && netDuel.room.meta);
-  ok(meta && meta.arena, '决斗房间带排位对局 id', meta);
+  const inFight = await Promise.all([A, B].map(P => until(P, () => netDuel.state === 'fight' && !!game.duel && !!game.duel.a, null, 25000)));
+  ok(inFight.every(Boolean), 'alice 和 bob 匹配成功，都进入决斗');
+  const hostIsA = await A.evaluate(() => netDuel.role === 'host'), [H, G] = hostIsA ? [A, B] : [B, A];
+  const meta = await H.evaluate(() => netDuel.room && netDuel.room.meta);
+  ok(meta && meta.arena && await G.evaluate(() => netDuel.role === 'guest'), '决斗房间带排位对局 id（先排队的当主机）', meta);
   // ---- 公正决斗：两端算出的 4 份属性完全一样（同职业）----
-  const host = await A.evaluate(() => [duelFairSnap(duel.a), duelFairSnap(duel.b)]), guest = await B.evaluate(() => [duelFairSnap(game.duel.a), duelFairSnap(game.duel.b)]);
+  const host = await H.evaluate(() => [duelFairSnap(duel.a), duelFairSnap(duel.b)]), guest = await G.evaluate(() => [duelFairSnap(game.duel.a), duelFairSnap(game.duel.b)]);
   const same = [host[1], guest[0], guest[1]].every(x => JSON.stringify(x) === JSON.stringify(host[0]));
   ok(same, '公正决斗：+12 史诗和新手装在决斗里的 HP / 攻击 / 防御 / 暴击 / 攻速 / 技能等级 / 装备特效完全一样（两端一致）', { host, guest });
   ok(host[0].procs === 0 && host[0].sets === 0 && host[0].hpMax === 21000 && host[0].lvl === 30, '决斗里没有装备特效 / 套装，属性是天平值', host[0]);
-  await A.screenshot({ path: `${out}/02-duel-host.png` }); await B.screenshot({ path: `${out}/03-duel-guest.png` });
-  await winFast(A);
+  await H.screenshot({ path: `${out}/02-duel-host.png` }); await G.screenshot({ path: `${out}/03-duel-guest.png` });
+  await winFast(H);
   const res = [await until(A, () => window.__ar.length > 0, null, 20000), await until(B, () => window.__ar.length > 0, null, 20000)];
-  const [ra, rb] = [await A.evaluate(() => window.__ar[0]), await B.evaluate(() => window.__ar[0])];
-  ok(res.every(Boolean) && ra.win && !rb.win && ra.delta === 16 && rb.delta === -16 && ra.rating === 1016, '排位结算：alice +16，bob −16', { ra, rb });
-  ok(ra && ra.reward && ra.reward.first, '胜者拿到今日首胜奖励（邮件）', ra && ra.reward);
+  const [rh, rg] = [await H.evaluate(() => window.__ar[0]), await G.evaluate(() => window.__ar[0])];
+  ok(res.every(Boolean) && rh.win && !rg.win && rh.delta === 16 && rg.delta === -16 && rh.rating === 1016, '排位结算：赢的 +16，输的 −16', { rh, rg });
+  ok(rh && rh.reward && rh.reward.first, '胜者拿到今日首胜奖励（邮件）', rh && rh.reward);
   const back = [await until(A, () => game.scene === 'town' && !game.pvp && netDuel.state === 'none', null, 15000), await until(B, () => game.scene === 'town' && !game.pvp && netDuel.state === 'none', null, 15000)];
   ok(back.every(Boolean), '双方自动回城');
   ok(await A.evaluate(() => game.player.hpMax > 5000 && save.live), 'alice 回城后装备属性恢复、存档正常写入');

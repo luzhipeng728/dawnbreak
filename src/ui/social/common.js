@@ -32,6 +32,7 @@ addStyle(`
 #sxbar{position:absolute;left:calc(var(--u) * 14px);top:calc(var(--u) * 168px);display:flex;flex-direction:column;gap:calc(var(--u) * 6px);z-index:1}
 #sxbar button{position:relative;width:calc(var(--u) * 118px);height:calc(var(--u) * 46px);padding:0 .5em;border:.08em solid #6a5436;border-radius:.3em;background:linear-gradient(#3a2e22,#1a130d);color:#f0dcb0;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.3em;box-shadow:inset 0 .06em 0 rgba(255,230,170,.25),0 .1em .25em rgba(0,0,0,.6);font-weight:900;font-size:.95em;letter-spacing:.04em}
 #sxbar button[hidden]{display:none}
+#sxbar.dg button:not(.mailb){display:none}#sxbar.dg{top:calc(var(--u) * 120px)}
 #sxbar button:hover{border-color:#e8c26a;color:#fff6d8;background:linear-gradient(#5a4428,#2a1d10)}
 #sxbar button.on{border-color:#ffd23a;background:linear-gradient(#6a4e26,#2e2010)}
 #sxbar button.hot{border-color:#ffd23a;color:#fff6c0;animation:sxhot 1.1s ease-in-out infinite alternate}
@@ -114,7 +115,7 @@ const sxbar = {
     this.el = h('div', { id: 'sxbar', hidden: '' });
     for (const [w, name] of SX_BAR) {
       const b = h('button', { title: name, onclick: e => { e.currentTarget.blur(); sfx.click(); menus.open(w); } });
-      if (w === 'mail') b.innerHTML = SX_ENV_SVG;
+      if (w === 'mail') { b.innerHTML = SX_ENV_SVG; b.classList.add('mailb'); }
       b.append(h('span', {}, name));
       if (w === 'auction' || w === 'guild') { b._kb = h('kbd', {}, ''); b.append(b._kb); }
       b._badge = h('span', { class: 'badge', hidden: '' }); b.append(b._badge);
@@ -124,8 +125,10 @@ const sxbar = {
   },
   tick() {
     if (!this.el) this.build();
-    const show = socialOn() && game.scene === 'town' && ui.panelOn() && !game.duel;
+    // 城镇：整条社交按钮；地下城里只在有新邮件 / 待领取附件时显示信封（点开会暂停游戏）
+    const dg = game.scene === 'dungeon', show = socialOn() && ui.panelOn() && !game.duel && (game.scene === 'town' || (dg && SX.unread + SX.pending > 0));
     if (this.el.hidden === show) this.el.hidden = !show;
+    if (this.el.classList.contains('dg') !== dg) this.el.classList.toggle('dg', dg);
     if (!show) return;
     const now = performance.now();
     if (now - SX.pollAt > 90000) { SX.pollAt = now; sxMailCounts(); }   // 兜底轮询（新邮件平时靠 WS 推送）

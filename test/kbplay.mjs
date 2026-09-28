@@ -164,7 +164,7 @@ export function kbPlayer(page, { out = 'test/shots/kb', log = console.log } = {}
           const dx = pos[0] - p.x, dy = pos[1] - p.y, side = d.route === 'left' || d.route === 'right';
           const h = side ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : Math.abs(dx) > 30 ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : null;
           const v = !side ? (Math.abs(dx) < 90 ? (d.route === 'up' ? 'ArrowUp' : 'ArrowDown') : null) : Math.abs(dy) > 8 ? (dy > 0 ? 'ArrowDown' : 'ArrowUp') : null;
-          if (Date.now() - stuck.t > 6000) { if (Math.abs(p.x - stuck.x) < 20) P.note(`过门卡住：房间 x1=${d.x1} 方向 ${d.route} 玩家 (${Math.round(p.x)},${Math.round(p.y)})`); stuck = { x: p.x, t: Date.now() }; }
+          if (Date.now() - stuck.t > 6000) { if (Math.abs(p.x - stuck.x) + Math.abs(p.y - (stuck.y ?? p.y)) < 20) P.note(`过门卡住：房间 x1=${d.x1} 方向 ${d.route} 玩家 (${Math.round(p.x)},${Math.round(p.y)})`); stuck = { x: p.x, y: p.y, t: Date.now() }; }
           await P.hold([h, v].filter(Boolean)); await wait(60); continue;
         }
         await P.release(); await wait(80);

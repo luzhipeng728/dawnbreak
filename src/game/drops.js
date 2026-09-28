@@ -158,7 +158,15 @@ function drawToastBanner(c, y = 380) {
   if (m.t >= m.end) { toastList.shift(); return; }
   const B = toastBar;
   if (!B.el) { B.el = h('div', { id: 'toastbar' }, h('span')); dom.appendChild(B.el); }
-  const sig = m.msg + m.col + y; if (B.sig !== sig) { B.sig = sig; const sp = B.el.firstChild; sp.textContent = m.msg; sp.style.color = m.col; B.el.style.top = `calc(var(--u) * ${y - 30}px)`; }
+  // 横幅所在的那一条如果被窗口占着（任务完成、技能窗口等），挪到屏幕最上方，不和窗口标题 / 内容叠在一起
+  const wins = menus.stack.join(), sig = m.msg + m.col + y + '|' + wins;
+  if (B.sig !== sig) {
+    B.sig = sig; const sp = B.el.firstChild; sp.textContent = m.msg; sp.style.color = m.col;
+    const k = dom.clientHeight / 1080, top = (y - 30) * k, bot = (y + 18) * k;
+    const hit = [...dom.children].some(e => e !== B.el && e.dataset && e.dataset.win && !e.hidden && e.offsetTop < bot && e.offsetTop + e.offsetHeight > top && e.offsetWidth < dom.clientWidth * 0.98);
+    const cover = menus.isOpen('result') || menus.isOpen('boxopen');   // 全屏的结算 / 开箱：放最上面
+    B.el.style.top = `calc(var(--u) * ${(hit || cover ? 70 : y) - 30}px)`;
+  }
   B.el.style.opacity = Math.min(1, m.t / 0.15, (m.end - m.t) / 0.35).toFixed(2); B.el.hidden = false; B.shown = true;
 }
 function toastBarFrame(end) { const B = toastBar; if (!end) { B.shown = false; return; } if (B.el && !B.shown && !B.el.hidden) B.el.hidden = true; }

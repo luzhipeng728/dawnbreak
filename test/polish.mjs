@@ -23,6 +23,9 @@ ok(t.queued.join() === '横幅一,横幅二', '横幅排队、同样的消息不
 ok(t.vis === '横幅一' && t.count === 1, '同一时间只显示一条横幅', String(t.vis));
 await wait(3200);
 ok(await ev(() => toastList.length <= 1), '横幅按顺序播完');
+const band = await ev(async () => { toastList.length = 0; menus.open('skills'); toastMsg('窗口开着时的横幅'); await new Promise(r => setTimeout(r, 200)); const b = document.getElementById('toastbar').getBoundingClientRect(), w = menus.wins.skills.getBoundingClientRect(); menus.close('skills'); return { b: b.top, w: w.top, overlap: b.bottom > w.top && b.top < w.bottom }; });
+ok(!band.overlap, '窗口占着横幅那一条时，横幅挪到最上方', JSON.stringify(band));
+await wait(3000);
 
 console.log('· 1280 宽同时打开 I / M / K');
 for (const k of ['KeyI', 'KeyM', 'KeyK']) { await page.keyboard.press(k); await wait(250); }

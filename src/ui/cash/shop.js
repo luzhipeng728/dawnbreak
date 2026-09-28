@@ -41,6 +41,12 @@ addStyle(`
 .ccard.wide{grid-column:1/-1;flex-direction:row;text-align:left;gap:.7em;min-height:5.4em;padding:.5em .7em;background:linear-gradient(120deg,#2a1440,#16101e 60%)}
 .cpity{width:100%;height:.5em;background:#2a2230;border-radius:.3em;overflow:hidden;margin-top:.2em}
 .cpity i{display:block;height:100%;background:linear-gradient(90deg,#b36bff,#ff55ff,#ffd23a)}
+.csky{display:grid;grid-template-columns:repeat(4,1fr);gap:.3em}
+.csky .cs{display:flex;flex-direction:column;align-items:center;gap:.05em;padding:.25em .1em;border:.1em solid #3a3040;border-radius:.25em;background:#0c0a10;font-size:.72em;line-height:1.25}
+.csky .cs img{width:2.6em;height:2.6em}
+.csky .cs.miss img{filter:grayscale(1) brightness(.45)}.csky .cs.miss b{color:#8a8070}
+.csky .cs.worn{border-color:#4ac85a;background:#0e1a10}.csky .cs.worn b{color:#6aff7a}
+.csky .cs.bag{border-color:#b89450;cursor:pointer}.csky .cs.bag b{color:#ffd23a}.csky .cs.bag:hover{border-color:#ffd23a}
 .cash-side{display:flex;flex-direction:column;gap:.35em;background:#0f0b13;border:.1em solid #3a3040;border-radius:.25em;padding:.5em;overflow:auto;min-height:0}
 .cash-pv{position:relative;height:10.5em;flex:none;border-radius:.25em;background:radial-gradient(ellipse at 50% 70%,#3a2c48,#120d16 70%);display:grid;place-items:center;overflow:hidden}
 .cash-pv canvas{max-height:100%;max-width:100%}
@@ -152,7 +158,7 @@ function cashPetPreview(id, aura, w = 220, hh = 150) {
 function cashTryOn(items) {
   const p = game.player; if (!p || typeof avatarCanvas !== 'function' || !SPR_DATA[p.cls]) return null;
   const eq = { ...inv.equip }; for (const it of items) eq[it.slot] = it;
-  const cv = avatarCanvas(p.cls, lookFromEquip(p.cls, eq), 200, 250, 1.6); cv.classList.add('try');
+  const cv = avatarCanvas(p.cls, lookFromEquip(p.cls, eq, (items.find(it => it.set) || {}).set), 200, 250, 1.6); cv.classList.add('try');
   return cv;
 }
 
@@ -297,7 +303,15 @@ function cashDetail(G, el) {
 function cashSkyDetail(set, el) {
   const items = AV_PIECE_SLOTS.map(s => makeItem(avKey(set, s)));
   const pv = cashTryOn(items);
-  const tip = itemTip(items[4], { cmp: false }); tip.style.width = '100%'; tip.style.fontSize = '.78em';
+  // 收集进度：8 个部位（穿着 / 背包 / 缺），点背包里的直接穿上
+  const ST = cashSkyState(set), worn = ST.filter(s => s.st === 'worn').length, inBag = ST.filter(s => s.st === 'bag').length, miss = ST.filter(s => s.st === 'miss');
+  const grid = h('div', { class: 'csky' }, ST.map(S => h('div', { class: 'cs ' + S.st, title: S.st === 'bag' ? '点击穿上' : S.st === 'miss' ? '还没有：用装扮合成器合成，或用部件兑换券兑换' : '已穿上',
+    onclick: () => { if (S.st !== 'bag') return; if (inv.wear(S.item)) { save.write(); itemsRefresh(); } } },
+    h('img', { src: cashIconOf(S.key, 64) }), h('span', {}, SLOT_NAME[S.slot]), h('b', {}, S.st === 'worn' ? '穿着' : S.st === 'bag' ? '背包' : '缺'))));
+  const bonus = h('div', { class: 'cash-note' }, h('div', {}, `套装效果（穿着 ${worn}/8）`), ...Object.entries(SETS[set].bonus).map(([n, B]) => h('div', { style: `color:${worn >= +n ? '#6aff7a' : '#8a8070'}` }, `${worn >= +n ? '✔' : '·'} ${n} 件：${B.desc}`)));
+  const acts = h('div', { class: 'row2' },
+    h('button', { class: 'btn buy grow' + (inBag ? '' : ' off'), onclick: () => { if (!inBag) return; const n = cashSkyWear(set); toastMsg(`穿上了「${CASH_SETS[set].name}」${n} 件`, '#ffd23a'); itemsRefresh(); } }, inBag ? `穿上这套（${inBag} 件）` : worn === 8 ? '已全部穿上' : '已有的都穿上了'),
+    h('button', { class: 'btn grow' + (miss.length ? '' : ' off'), onclick: () => { if (!miss.length) return; sfx.click(); menus.show('synth', { set }); } }, miss.length ? `合成缺的（${miss.length}）` : '已集齐'));
   // 8 件套光效叠在试穿小人上（动画画布，只在窗口开着时跑）
   const C = { sky8: set, parts: [], spawn: 0 }; let last = 0;
   // 按试穿小人的实际轮廓对齐光效（小人画好后量一次包围盒：中心 x、脚底 y、身高换算缩放）
@@ -306,9 +320,11 @@ function cashSkyDetail(set, el) {
   const glow = pv ? cashAnimCanvas(200, 250, (x, t) => { const dt = last ? Math.min(0.05, t - last) : 0; last = t; if (!box && (probe -= dt) <= 0) { probe = 0.3; measure(); } if (!box) return; cashGlowStep(C, dt); cashDrawGlowAt(x, C, box.cx, box.by, box.k); }) : null;
   if (glow) glow.classList.add('try', 'glow');
   return [h('div', { class: 'cash-pv' }, pv || h('img', { class: 'bigic', src: cashIconOf(avKey(set, 'av_top'), 128) }), glow, pv ? h('span', { class: 'cls' }, '试穿（8 件 · 套装光效）') : null),
-    h('div', { class: 't q2' }, `${CASH_SETS[set].name}（稀有装扮）`), h('div', { class: 'ds' }, CASH_SETS[set].desc), tip,
-    h('div', { class: 'cash-note' }, '获得方式：装扮合成器（2 件同部位高级装扮，20%）、黄金装扮合成器（30%）、梦想装扮合成器（任意 8 件，100% 指定部位）；天空套部件兑换券（魔盒大奖、破晓启示、兑换商店）。'),
-    h('button', { class: 'btn buy', onclick: () => { sfx.click(); menus.show('synth', { set }); } }, '去合成')];
+    h('div', { class: 't q2' }, `${CASH_SETS[set].name}（稀有装扮）`),
+    h('div', { class: 'st' }, `已收集 ${8 - miss.length}/8${miss.length ? ` · 缺：${miss.map(s => SLOT_NAME[s.slot]).join('、')}` : ' · 已集齐！'}`),
+    grid, acts, bonus,
+    h('div', { class: 'cash-note' }, '缺的部位怎么拿：装扮合成器（2 件同部位高级装扮，20%）、黄金合成器（30%）、梦想合成器（任意 8 件，必成且可指定部位）；或用天空套部件兑换券（魔盒大奖、破晓启示、兑换商店）直接换。'),
+    h('div', { class: 'ds' }, CASH_SETS[set].desc)];
 }
 function cashPreviewEl(G) {
   const D = ITEMS[G.key];

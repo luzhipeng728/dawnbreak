@@ -51,13 +51,26 @@ const AVATAR_ACC = {
 const AVATAR_ACC_SCALE = 0.8;   // 配件图比游戏里画的大 1.25 倍（art/tools/avatar_acc.py）
 /* 外观规则（写给玩家看的说明也用这一段）：
    1. 武器：换武器类型 / 史诗武器，手里的武器跟着变；没装备武器就空手。
-   2. 身体：同一套时装的「上衣 + 下装」都穿上，整个人换成这套时装（胸部、腰带、鞋的样子按这套画）；只穿一件不换。
-   3. 帽子 / 头部 / 脸部：单独叠加在头上；职业默认造型自带帽子（神枪手的报童帽、魔法师的巫师帽）时，帽子和发饰只在换上整套时装后显示。 */
+   2. 身体：按身体部位（上衣 / 下装 / 胸部 / 腰带 / 鞋）里件数最多的那一套画（同样多时比头部配件件数，再比上衣、下装）；混搭也会变
+   3. 帽子 / 头部 / 脸部：单独叠加在头上；职业默认造型自带帽子（神枪手的报童帽、魔法师的巫师帽）时，帽子和发饰只在身体换成时装后显示。 */
 const AVATAR_HAT_CLS = { gun: 1, mage: 1 };   // 默认造型自带帽子的职业
-function lookFromEquip(cls, eq) {
+const AV_BODY_SLOTS = ['av_top', 'av_bottom', 'av_chest', 'av_belt', 'av_shoes'];
+function lookBodySet(cls, eq, prefer) {
+  const P = prefer && AVATAR_SETS[prefer]; if (P && SPR_DATA[`${cls}@${P.id}`]) return P.id;   // 商城试穿：正在试的那套优先
+  const setOf = slot => { const it = eq[slot], S = it && it.set && AVATAR_SETS[it.set]; return S && SPR_DATA[`${cls}@${S.id}`] ? S.id : null; };
+  // 身体部位决定整体造型：件数多的优先，同样多时比头部配件件数，再比上衣 > 下装
+  const score = {};
+  for (const slot of AV_BODY_SLOTS) { const id = setOf(slot); if (!id) continue; const s = score[id] = score[id] || [0, 0, 0]; s[0]++; if (slot === 'av_top') s[2] += 2; if (slot === 'av_bottom') s[2] += 1; }
+  for (const slot of ['av_hat', 'av_hair', 'av_face']) { const id = setOf(slot); if (id && score[id]) score[id][1]++; }
+  const better = (a, b) => { for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i] > b[i]; return false; };
+  let best = null; for (const id in score) if (!best || better(score[id], score[best])) best = id;
+  if (best) return best;
+  // 没穿身体部位：默认造型自带帽子的职业戴了时装帽子 / 发饰 → 换成那套，帽子才显示得出来（只戴眼镜不换）
+  return AVATAR_HAT_CLS[cls] ? setOf('av_hat') || setOf('av_hair') : null;
+}
+function lookFromEquip(cls, eq, prefer) {
   eq = eq || {};
-  const top = eq.av_top, bot = eq.av_bottom, S = top && bot && top.set && top.set === bot.set && AVATAR_SETS[top.set];
-  const set = S && SPR_DATA[`${cls}@${S.id}`] ? S.id : null;
+  const set = lookBodySet(cls, eq, prefer);
   const acc = [];
   for (const slot of ['av_hat', 'av_hair', 'av_face']) {
     const it = eq[slot]; if (!it || !AVATAR_ACC[it.key]) continue;

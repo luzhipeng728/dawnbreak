@@ -98,6 +98,19 @@ function cashSynth(o) {
 // ---- 自动放入 / 一键合成 ----
 // 目标天空套的某个部位是否已经有了（背包或身上）
 const cashSkyOwned = (set, slot) => inv.items.some(it => it.key === avKey(set, slot)) || Object.values(inv.equip || {}).some(it => it && it.key === avKey(set, slot));
+// 天空套收集：8 个部位各自的状态（worn 穿着 / bag 在背包 / miss 还没有）
+function cashSkyState(set) {
+  return AV_PIECE_SLOTS.map(slot => {
+    const key = avKey(set, slot), e = inv.equip[slot], worn = e && e.key === key ? e : null, bag = worn ? null : inv.items.find(it => it.key === key) || null;
+    return { slot, key, st: worn ? 'worn' : bag ? 'bag' : 'miss', item: worn || bag };
+  });
+}
+// 一键穿上背包里这套天空的所有部件（换下来的时装回到背包）
+function cashSkyWear(set) {
+  let n = 0; for (const S of cashSkyState(set)) if (S.st === 'bag' && inv.wear(S.item)) n++;
+  if (n) save.write();
+  return n;
+}
 // 背包高级装扮按部位分组；每组里先用没选过属性的、再按 id（先拿到的先用）
 function cashSynthGroups() {
   const g = {}; for (const s of AV_PIECE_SLOTS) g[s] = [];

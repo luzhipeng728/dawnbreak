@@ -7,7 +7,7 @@ import { launch, URL_BASE } from './lib.mjs';
 import fs from 'fs';
 const SHOTS = process.argv.includes('shots');
 const out = 'test/shots/avatar'; fs.mkdirSync(out, { recursive: true });
-let fail = 0; const ok = (c, msg) => { console.log((c ? '  ✓ ' : '  ✗ ') + msg); if (!c) fail++; };
+let fail = 0; const ok = (c, msg, x = '') => { console.log((c ? '  ✓ ' : '  ✗ ') + msg, x); if (!c) fail++; };
 
 // ---- 页面里用的小工具：按外观画指定帧、统计绿色像素、取画面指纹 ----
 const HELPERS = () => {
@@ -185,19 +185,21 @@ for (const cls of ['sword', 'gun', 'mage']) {
   const hasSet = await page.evaluate(cls => !!SPR_DATA[`${cls}@festival`], cls);
   if (hasSet) {
     await page.evaluate(([EQ]) => (0, eval)(EQ)(['av_top_festival']), [`(${EQUIP})`]);
-    let L = await look(); ok(!L.set, '只穿上衣：身体不换');
+    await page.waitForFunction(() => __G.player.model.av.S2, null, { timeout: 10000 }).catch(() => {});
+    let L = await look(); ok(L.set === 'festival', '只穿一件上衣：身体也换成这套（混搭按件数最多的一套）');
     await page.evaluate(([EQ]) => (0, eval)(EQ)(['av_bottom_festival', 'av_hat_festival', 'av_face_festival', 'av_hair_festival']), [`(${EQUIP})`]);
-    await page.waitForFunction(() => __G.player.model.av.S2, null, { timeout: 10000 });
+    await page.waitForFunction(() => __G.player.model.av.S2 && __G.player.model.av.acc.every(a => IMG['avatar/' + a.img]), null, { timeout: 10000 });   // 时装帧和头部配件图都加载完再截
     L = await look(); ok(L.set === 'festival' && L.S2 && L.hash !== before.hash, `上衣 + 下装 → 换成庆典时装（配件 ${L.acc.length} 件）`);
     ok(L.green === 0, '穿时装后没有绿色残留', `（武器外观 ${L.wpn}，绿色像素 ${L.green}）`);
-    const worn = L.hash;
+    await page.waitForTimeout(1500); const worn = (await look()).hash;   // 等剩下的图（武器 / 握拳遮罩等）都加载完，外观稳定后再记下来
     await page.evaluate(() => { save.write(); });
     await page.goto(`${URL_BASE}?town&cls=${cls}&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 }); await page.evaluate(HELPERS);
-    await page.waitForFunction(() => __G.player && __G.player.model.av && (__G.player.model.av.sync(), __G.player.model.av.S2), null, { timeout: 10000 }).catch(() => {});
-    L = await look(); ok(L.set === 'festival' && L.hash === worn, '刷新后外观不变');
-    await page.evaluate(() => inv.unwear('av_top'));
-    L = await look(); ok(!L.set, '脱下上衣 → 身体换回原样');
-    ok(cls === 'sword' ? L.acc.length === 3 : L.acc.length === 1, cls === 'sword' ? '帽子 / 发饰 / 眼镜仍然戴着' : '默认造型自带帽子：脱下整套后只剩眼镜');
+    await page.waitForFunction(() => __G.player && __G.player.model.av && (__G.player.model.av.sync(), __G.player.model.av.S2 && __G.player.model.av.acc.every(a => IMG['avatar/' + a.img])), null, { timeout: 10000 }).catch(() => {});
+    L = await look(); ok(L.set === 'festival' && L.hash === worn, '刷新后外观不变', JSON.stringify({ set: L.set, S2: !!L.S2, same: L.hash === worn, acc: L.acc, wpn: L.wpn }));
+    await page.evaluate(() => { inv.unwear('av_top'); });
+    L = await look(); ok(L.set === 'festival', '脱下上衣：其余 4 件还是庆典 → 身体仍是庆典时装');
+    await page.evaluate(() => { for (const s of ['av_bottom', 'av_hat', 'av_hair']) inv.unwear(s); });
+    L = await look(); ok(!L.set && L.acc.length === 1, '只剩眼镜（眼镜没有身体帧）→ 身体换回原样，眼镜仍然戴着', JSON.stringify({ set: L.set, acc: L.acc }));
   }
   await page.evaluate(() => inv.unwear('weapon'));
   { const L = await look(); ok(L.wpn === null, '卸下武器 → 空手'); }

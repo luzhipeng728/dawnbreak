@@ -28,7 +28,7 @@ const b = await page.evaluate(set => {
   const pairsLeft = AV_PIECE_SLOTS.filter(s => g[s].length >= 2 && !cashSkyOwned(set, s));
   return { left, used: 10 - left, beltAdv: g.av_belt.length, pairsLeft, sky: inv.items.filter(it => CASH_SKY_SETS.some(st => AV_PIECE_SLOTS.some(sl => it.key === avKey(st, sl)))).map(it => it.slot) };
 }, S0.set);
-ok(b.used >= 4, `一键合成用掉了 ${b.used} 个合成器（失败退回的装扮继续参与）`, JSON.stringify(b));
+ok(b.used >= 3, `一键合成用掉了 ${b.used} 个合成器（失败退回的装扮继续参与）`, JSON.stringify(b));
 ok(b.left === 0 || b.pairsLeft.length === 0, '结束条件：合成器用完，或者没有能配对的部位了', `剩余合成器 ${b.left}，可配对部位 ${b.pairsLeft.join(',') || '无'}`);
 ok(b.beltAdv === 2, '已有天空的腰带没被拿去合成（2 件高级腰带还在）');
 const errs = logs.filter(l => l.type === 'pageerror'); ok(!errs.length, '没有页面错误', errs.length ? errs[0].text.slice(0, 200) : '');

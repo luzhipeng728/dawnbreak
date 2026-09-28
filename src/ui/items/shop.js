@@ -123,7 +123,7 @@ function shopBuyView(S, el) {
       if (row._dndJustDropped) return;
       sfx.click();
       if (ev.shiftKey) {   // Shift + 点击：输入数量
-        const max = D.kind === 'equip' ? Math.max(1, inv.free('equip')) : 999;
+        const max = D.kind === 'equip' ? Math.min(999, Math.max(1, inv.free('equip'))) : 999;
         qtyDialog(el, { title: `购买数量：${D.name}`, max: Math.max(1, Math.min(max, Math.floor(game.gold / pr) || 1)), init: sel[key] || 1, unit: pr, onOk: n => { sel[key] = n; el._render(); } });
         return;
       }

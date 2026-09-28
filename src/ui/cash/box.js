@@ -210,6 +210,7 @@ Object.assign(menus, {
       const left = h('div', { class: 'col' },
         h('div', { class: 'h' }, '① 合成器'), pick(synths, CSY.synth, v => { CSY.synth = v; CSY.ins = []; }),
         h('div', { class: 'h' }, '② 目标天空套'), pick(CASH_SKY_SETS.map(s => [s, CASH_SETS[s].name]), CSY.set, v => { CSY.set = v; }),
+        (() => { const miss = cashSkyState(CSY.set).filter(s => s.st === 'miss'); return h('div', { class: 'small', style: 'color:#c8b890' }, `已收集 ${8 - miss.length}/8`, miss.length ? h('span', { style: 'color:#ffd23a' }, ` · 缺：${miss.map(s => SLOT_NAME[s.slot]).join('、')}`) : h('span', { style: 'color:#6aff7a' }, ' · 已集齐')); })(),
         Y.any ? h('div', { class: 'h' }, '③ 指定部位') : null, Y.any ? pick(AV_PIECE_SLOTS.map(s => [s, SLOT_NAME[s]]), CSY.slot, v => { CSY.slot = v; }) : null,
         h('div', { class: 'h' }, `${Y.any ? '④' : '③'} 放入${Y.need} 件${Y.any ? '任意' : '同部位的'}高级装扮`), inBox,
         T ? h('div', { class: 'h' }, '成品属性') : null,

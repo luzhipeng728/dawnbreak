@@ -372,17 +372,31 @@ function uiKey(a) {
     const was = menus.isOpen(w); menus.open(w); if (was) sfx.click(); else sfx.open();
     return;
   }
-  const flip = (k, on, off) => { setPref(k, !uiPref(k)); toastMsg(uiPref(k) ? on : off, '#bfe8ff'); sfx.click(); };
-  if (a === 'uiMode') { setPref('hudMode', uiPref('hudMode') === 'full' ? 'lite' : 'full'); toastMsg(uiPref('hudMode') === 'full' ? '界面：完整显示' : '界面：简洁显示', '#bfe8ff'); sfx.click(); }
+  const flip = (k, on, off) => { setPref(k, !uiPref(k)); toastMsg(uiPref(k) ? on : off, '#bfe8ff', 'log'); sfx.click(); };   // 设置切换只记到系统消息，不用大横幅盖住画面
+  if (a === 'uiMode') { setPref('hudMode', uiPref('hudMode') === 'full' ? 'lite' : 'full'); toastMsg(uiPref('hudMode') === 'full' ? '界面：完整显示' : '界面：简洁显示', '#bfe8ff', 'log'); sfx.click(); }
   else if (a === 'dropNames') flip('dropNames', '显示掉落物名称', '隐藏掉落物名称');
   else if (a === 'hideRank') flip('hideRank', '隐藏实时评价', '显示实时评价');
   else if (a === 'tipDetail') flip('tipDetail', '说明：详细', '说明：简略');
 }
 // 兼容旧调用（触屏按钮等）：按键码触发界面动作
 function menuKey(code) { const a = actionsOf(code).find(x => UI_ACTIONS.has(x)) || { Escape: 'menu', KeyI: 'inv', KeyK: 'skills', KeyM: 'status' }[code]; if (a) uiKey(a); }
+// 修饰键（Ctrl / Shift / Alt / Cmd）绑定的界面动作：单独按下再松开才算，和别的键一起按（Mac 截图 Ctrl+Shift+Cmd+4、复制粘贴等）不触发
+const MOD_KEY = /^(Control|Shift|Alt|Meta)(Left|Right)$/;
+let modSolo = null;
 addEventListener('keydown', e => {
   if (e.repeat || isTyping() || menus.capturing) return;
+  if (MOD_KEY.test(e.code)) {
+    const combo = (e.metaKey && !e.code.startsWith('Meta')) || (e.ctrlKey && !e.code.startsWith('Control')) || (e.shiftKey && !e.code.startsWith('Shift')) || (e.altKey && !e.code.startsWith('Alt'));
+    modSolo = combo ? null : e.code; return;
+  }
+  modSolo = null;
   for (const a of actionsOf(e.code)) if (UI_ACTIONS.has(a)) { uiKey(a); break; }
 });
+addEventListener('keyup', e => {
+  if (e.code !== modSolo) return; modSolo = null;
+  if (isTyping() || menus.capturing) return;
+  for (const a of actionsOf(e.code)) if (UI_ACTIONS.has(a)) { uiKey(a); break; }
+});
+addEventListener('blur', () => { modSolo = null; });
 // 窗口里的右键不弹浏览器菜单（右键是游戏操作：锁定指令、清空快捷栏等）
 dom.addEventListener('contextmenu', ev => { if (!ev.target.closest('input, textarea')) ev.preventDefault(); });

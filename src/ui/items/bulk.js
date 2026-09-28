@@ -2,6 +2,7 @@
    一键出售 / 一键分解（物品栏底部的两个按钮，随时可用）
    按品级勾选（普通 / 高级 / 稀有 / 神器 / 传说 / 史诗）+ 保护选项（只处理比身上差的、保留套装、保留强化过的），
    预览列表里可以单独取消某一件；勾选设置会记住（本机界面偏好）
+   时装页的“一键出售”：按类别勾选（时装 / 武器装扮 / 宠物 / 宠物装备 / 光环 / 天空套），默认同一种留下最好的 1 件（身上穿着的也算）
    ===================================================================== */
 addStyle(`
 .bulk .rars{display:flex;gap:.35em;flex-wrap:wrap}
@@ -28,22 +29,42 @@ function bulkCandidates(mode, P = bulkPrefs()) {
     return true;
   });
 }
+const AV_CATS = [['cos', '时装'], ['weapon', '武器装扮'], ['pet', '宠物'], ['petgear', '宠物装备'], ['aura', '光环'], ['sky', '天空套']];
+const avCat = it => { const S = typeof CASH_SETS !== 'undefined' && CASH_SETS[it.avSet || it.set];
+  return it.slot === 'av_pet' ? 'pet' : /^av_pet[RBG]$/.test(it.slot) ? 'petgear' : it.slot === 'av_aura' ? 'aura' : it.slot === 'av_weapon' ? 'weapon' : S && S.tier === 'rare' ? 'sky' : 'cos'; };
+const AVB_DEF = { cats: ['cos', 'weapon', 'pet', 'petgear', 'aura'], keepOne: true, keepOrb: true };
+const avBulkPrefs = () => ({ ...AVB_DEF, ...(uiPref('avbulk') || {}) });
+const avScore = it => (it.rar || 0) * 1e4 + (it.orb ? 5000 : 0) + Object.values(it.st || {}).reduce((s, v) => s + (Math.abs(v) < 1 ? v * 100 : v), 0);
+function avBulkCandidates(P = avBulkPrefs()) {
+  const all = inv.items.filter(it => it.kind === 'equip' && isAvatar(it) && canSell(it)), keep = new Set();
+  if (P.keepOne) {
+    const by = {}; for (const it of all) (by[it.key] = by[it.key] || []).push(it);
+    for (const k in by) if (!Object.values(inv.equip).some(e => e && e.key === k)) keep.add(by[k].sort((a, b) => avScore(b) - avScore(a))[0]);
+  }
+  return all.filter(it => P.cats.includes(avCat(it)) && !keep.has(it) && !(P.keepOrb && it.orb));
+}
 Object.assign(menus, {
   w_bulk(mode = 'sell') {
-    const sell = mode === 'sell';
-    const el = itemWin('bulk', sell ? '一键出售' : '一键分解', el => {
-      const P = bulkPrefs(), save2 = p => { setPref('bulk', p); el._render(); };
-      const rars = h('div', { class: 'rars' }, RARITY.map((R, i) => {
-        const on = P.rar.includes(i);
-        return h('label', { class: 'rar' + (on ? ' on' : ''), style: `color:${R.col}`, onclick: e => { e.preventDefault(); sfx.click(); save2({ ...P, rar: on ? P.rar.filter(x => x !== i) : [...P.rar, i].sort() }); } }, itemCheckBox(on, () => {}), R.name);
-      }));
+    const av = mode === 'avsell', sell = mode === 'sell' || av;
+    const el = itemWin('bulk', av ? '一键出售时装' : sell ? '一键出售' : '一键分解', el => {
+      const P = av ? avBulkPrefs() : bulkPrefs(), save2 = p => { setPref(av ? 'avbulk' : 'bulk', p); el._render(); };
+      const rars = av
+        ? h('div', { class: 'rars' }, AV_CATS.map(([k, name]) => {
+          const on = P.cats.includes(k);
+          return h('label', { class: 'rar' + (on ? ' on' : ''), style: `color:${k === 'sky' ? '#ff9ae8' : '#e8d4a8'}`, onclick: e => { e.preventDefault(); sfx.click(); save2({ ...P, cats: on ? P.cats.filter(x => x !== k) : [...P.cats, k] }); } }, itemCheckBox(on, () => {}), name);
+        }))
+        : h('div', { class: 'rars' }, RARITY.map((R, i) => {
+          const on = P.rar.includes(i);
+          return h('label', { class: 'rar' + (on ? ' on' : ''), style: `color:${R.col}`, onclick: e => { e.preventDefault(); sfx.click(); save2({ ...P, rar: on ? P.rar.filter(x => x !== i) : [...P.rar, i].sort() }); } }, itemCheckBox(on, () => {}), R.name);
+        }));
       const opt = (k, txt) => h('label', { class: 'opt', onclick: e => { e.preventDefault(); sfx.click(); save2({ ...P, [k]: !P[k] }); } }, itemCheckBox(P[k], () => {}), txt);
-      const opts = h('div', { class: 'opts' }, opt('worse', '只处理比身上差的（▼ 和别的职业的 ×）'), opt('keepSet', '保留套装部件'), opt('keepEnh', '保留强化过的'));
-      const cand = bulkCandidates(mode, P), list = cand.filter(it => !bulkSkip.has(it.id));
+      const opts = av ? h('div', { class: 'opts' }, opt('keepOne', '同一种留 1 件（留最好的；身上穿着的也算）'), opt('keepOrb', '保留附魔过的'))
+        : h('div', { class: 'opts' }, opt('worse', '只处理比身上差的（▼ 和别的职业的 ×）'), opt('keepSet', '保留套装部件'), opt('keepEnh', '保留强化过的'));
+      const cand = av ? avBulkCandidates(P) : bulkCandidates(mode, P), list = cand.filter(it => !bulkSkip.has(it.id));
       const grid = h('div', { class: 'igrid', 'data-sk': 'bulk' });
       for (const it of cand) grid.append(itemSlot(it, { chk: !bulkSkip.has(it.id), dim: bulkSkip.has(it.id), cmp: true, onClick: () => { bulkSkip.has(it.id) ? bulkSkip.delete(it.id) : bulkSkip.add(it.id); sfx.click(); el._render(); } }));
       if (!cand.length) grid.append(h('div', { class: 'ihint', style: 'grid-column:1 / -1;padding:1em' }, '没有符合条件的装备'));
-      const high = list.filter(it => (it.rar || 0) >= 3).length;
+      const high = list.filter(it => (it.rar || 0) >= 3 || (av && avCat(it) === 'sky')).length;
       let sum;
       if (sell) {
         const gold = list.reduce((s, it) => s + sellPrice(it), 0);
@@ -62,12 +83,12 @@ Object.assign(menus, {
           bulkSkip.clear(); itemsRefresh();
         };
         if (high) itemDialog(el, { title: sell ? '确认出售' : '确认分解', danger: true, okText: sell ? '全部出售' : '全部分解', onOk: run,
-          msg: `其中有 <b style="color:#ff55ff">${high}</b> 件神器及以上品级的装备，${sell ? '出售' : '分解'}后${sell ? '只能在回购里找回最近 12 件' : '无法恢复'}。确定继续吗？` });
+          msg: `其中有 <b style="color:#ff55ff">${high}</b> 件${av ? '天空套 / 神器及以上品级的时装' : '神器及以上品级的装备'}，${sell ? '出售' : '分解'}后${sell ? '只能在回购里找回最近 12 件' : '无法恢复'}。确定继续吗？` });
         else run();
       } }, sell ? `出售 ${list.length} 件` : `分解 ${list.length} 件`);
       return [h('div', { class: 'bulk col', style: 'gap:.45em' },
-        h('div', { class: 'small', style: 'color:#e8c26a;font-weight:900' }, '选择品级'), rars,
-        opts, P.rar.some(r => r >= 3) ? h('div', { class: 'warn' }, '已勾选神器及以上品级，执行前会再确认一次') : null,
+        h('div', { class: 'small', style: 'color:#e8c26a;font-weight:900' }, av ? '选择类别' : '选择品级'), rars,
+        opts, (av ? P.cats.includes('sky') : P.rar.some(r => r >= 3)) ? h('div', { class: 'warn' }, av ? '已勾选天空套，执行前会再确认一次' : '已勾选神器及以上品级，执行前会再确认一次') : null,
         h('div', { class: 'small dim' }, `预览（点击格子可以单独取消 / 恢复）`), grid, sum,
         h('div', { class: 'row', style: 'justify-content:flex-end' }, go, h('button', { class: 'btn blue', onclick: () => { sfx.click(); bulkSkip.clear(); menus.close('bulk'); } }, '取消')))];
     }, { w: 34, at: 'left' });
@@ -81,7 +102,7 @@ Object.assign(menus, {
     const el = w0.call(this, arg);
     const add = () => { const bar = el.querySelector('.ibar'); if (!bar || bar.querySelector('.bulkbtn')) return;
       const b = (txt, mode) => h('button', { class: 'btn sm bulkbtn', onclick: () => { sfx.click(); bulkSkip.clear(); if (menus.isOpen('bulk')) menus.close('bulk'); menus.open('bulk', mode); } }, txt);
-      bar.append(b('一键出售', 'sell'), b('一键分解', 'dis')); };
+      if (IW.invTab === 'avatar') bar.append(b('一键出售', 'avsell')); else bar.append(b('一键出售', 'sell'), b('一键分解', 'dis')); };
     add(); const r0 = el._render; el._render = () => { r0(); add(); };
     return el;
   };

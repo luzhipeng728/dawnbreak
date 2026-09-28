@@ -81,6 +81,7 @@ class Ent {
   hurtH() { return this.st === 'down' ? 22 : this.st === 'air' ? this.h * 0.55 : this.h; }
   update(dt) {
     if (this.flash > 0) this.flash -= dt;
+    if (this.st === 'air') this.cmb.airT = (this.cmb.airT || 0) + dt;   // 本轮浮空时长（含打击停顿；JUGGLE：刷图 / 决斗防无限浮空）
     if (this.hitstop > 0) { this.hitstop -= dt; return; }
     this.stT += dt;
     if (this.invul > 0) this.invul -= dt;
@@ -92,8 +93,8 @@ class Ent {
     let spd = 1;
     if (this.st === 'act' && this.act) {
       const a = this.act; spd = a.spd;
-      if (a.invul && inWin(a.invul, a.actT)) this.invul = Math.max(this.invul, 0.02);
-      if (a.superArmor && a.superArmor !== true && inWin(a.superArmor, a.actT)) this.superArmor = Math.max(this.superArmor, 0.02);
+      if (a.invul && inWin(a.invul, this.actT)) this.invul = Math.max(this.invul, 0.02);
+      if (a.superArmor && a.superArmor !== true && inWin(a.superArmor, this.actT)) this.superArmor = Math.max(this.superArmor, 0.02);
       if (a.charge && !a.chargeDone && !a.charging && this.actT >= a.charge.at) { a.charging = true; a.chargeT = 0; this.actT = a.charge.at; if (a.charge.clip) this.play(a.charge.clip, true); }
       if (a.charging) {
         a.chargeT += dt;
@@ -150,8 +151,9 @@ class Ent {
     const imp = -this.vz;
     if (this.st === 'air') {
       // 落地反弹一次（重击砸地 bounceNext 会弹得更高）
-      if (!this.dead && ((!this.bounced && imp > 330) || this.bounceNext)) {
-        const forced = this.bounceNext || 0; this.bounced = true; this.bounceNext = 0; this.vz = forced ? Math.max(imp * forced, 260) : imp * 0.32; this.z = 0.01;
+      if (this.recoverLand && !this.dead) { this.recoverLand = false; this.vz = 0; this.bouncing = false; this.startGetup(true); return; }   // 决斗浮空保护：强制受身落地
+      if (!this.dead && ((!this.bounced && imp > JUGGLE.bounceImp) || this.bounceNext)) {
+        const forced = this.bounceNext || 0; this.bounced = true; this.bounceNext = 0; this.vz = forced ? Math.max(imp * forced, 260) : imp * JUGGLE.bounceK; this.z = 0.01;
         fxDust(this.x, this.y, 5, 14); sfx.thud(0.6); this.cmb.bounce = (this.cmb.bounce || 0) + 1; this.bouncing = true; this.play(this.clipOr('bounceUp', 'air'), true); return;
       }
       this.vz = 0; this.bouncing = false; this.setState('down'); this.downTime = this.dead ? 99 : downTimeOf(this); fxDust(this.x, this.y, 6, 18); sfx.thud(0.8);

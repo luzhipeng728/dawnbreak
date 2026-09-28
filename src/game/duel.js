@@ -50,9 +50,9 @@ function duelFairSnap(p) {
 const PVP_SKILL = { awaken: 0.5, grab: 0.8, summon: 0.8, burst: 0.85, aoe: 0.9 };
 // 职业（转职）整体修正：AI 循环赛（node test/pvp_balance.mjs 6 all 6）自动调出来的，1 = 不修正；数组 = [造成伤害, 受到伤害]（未转职技能太少，只加伤害追不上）
 const PVP_JOB = {
-  'sword:': [2.5, 0.65], 'sword:blade': 0.84, 'sword:berserker': 1.03, 'sword:asura': 0.5, 'sword:soulbender': 1.09, 'sword:ghostblade': 0.72,
-  'gun:': [2.5, 0.65], 'gun:ranger': 1, 'gun:launcher': 1.1, 'gun:spitfire': 0.62, 'gun:mechanic': 0.54, 'gun:paramedic': 1.67,
-  'mage:': 1.53, 'mage:elemental': 0.75, 'mage:battlemage': 0.81, 'mage:summoner': 0.54, 'mage:witch': 0.96, 'mage:enchantress': 0.87,
+  'sword:': [2.5, 0.55], 'sword:blade': 0.75, 'sword:berserker': 1.04, 'sword:asura': [0.45, 1.15], 'sword:soulbender': 0.99, 'sword:ghostblade': 0.72,
+  'gun:': [2.5, 0.65], 'gun:ranger': 1.16, 'gun:launcher': 1.15, 'gun:spitfire': 0.58, 'gun:mechanic': 0.58, 'gun:paramedic': 1.4,
+  'mage:': 1.58, 'mage:elemental': 0.83, 'mage:battlemage': 0.93, 'mage:summoner': 0.5, 'mage:witch': 1.09, 'mage:enchantress': 1.05,
 };
 for (const id in SKILLS) {
   const S = SKILLS[id]; if (!S || S.passive) continue;
@@ -140,6 +140,10 @@ const duel = {
       const J = jobOf(p) && CLASSES[p.cls].jobs[jobOf(p)];
       c.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif'; c.textAlign = right ? 'right' : 'left'; c.fillStyle = '#fff';
       c.fillText(`${p.name}${J ? ' · ' + J.name : ''}  ${Math.max(0, Math.round(p.hp))}`, right ? x + w : x, y + h + 24);
+      // 受身蹲伏：蹲伏中 / 冷却（双方都显示）
+      const rc = p.reboundCd || 0; c.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+      c.fillStyle = p.techHold ? '#8fd8ff' : rc > 0 ? 'rgba(255,255,255,.45)' : '#9fe8b0';
+      c.fillText(p.techHold ? '受身蹲伏中（无敌）' : rc > 0 ? `受身蹲伏 ${Math.ceil(rc)}s` : '受身蹲伏 就绪', right ? x + w : x, y + h + 37);
     };
     bar(A, 20, 380, false); bar(B, WW - 400, 380, true);
     c.textAlign = 'center'; c.font = '900 26px "Arial Black",sans-serif'; c.lineWidth = 4; c.strokeStyle = '#1a0806';

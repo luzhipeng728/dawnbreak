@@ -54,6 +54,9 @@
 | 快速回归 | `sh test/quick.sh`（约 4 分钟） |
 | 完整回归 | `sh test/all.sh`（约 70 分钟，后台跑，跑的时候别重新构建） |
 | 技能连拍体检 | `node test/skillshots.mjs <职业:转职,...>` 或 `all` |
+| 决斗场排位服务端自测 / 联机实测 | `node --disable-warning=ExperimentalWarning server/test/arena.mjs`（约 10 秒）/ `node test/arena.mjs`（2 个页面） |
+| 决斗平衡（18 职业 AI 循环赛，无渲染快进约 40 秒） | `node test/pvp_balance.mjs 8 all`；自动调 `PVP_JOB`：`node test/pvp_balance.mjs 6 all 4` |
+| 浮空 / 受身蹲伏定量测试 | `node test/juggle.mjs`（参数表 `JUGGLE`，docs/COMBAT_JUGGLE.md） |
 | 数据库备份 | `ssh cc 'sudo /opt/dawnbreak-server/backup.sh'`（每天 04:17 也会自动备份） |
 
 改完存档让玩家**刷新页面**，弹“存档冲突”时选**使用云端存档**。
@@ -75,3 +78,4 @@
 - **2026-09-28 区域**：以前每个区域都是手写（约 60~120 万 token / 个）→ 改成区域生产线（配置驱动），目标 15~30 万 token / 个。
   - 第一个区域（希洛克）连同整条流水线一起做，约 44 万 token；贵在：读老区域代码摸接口、写技能库 / 机制库 / 生成器 / 测试，以及两处踩坑（精灵名 `phantom` 和已有角色重名被覆盖；`summon_scale` 会偷偷改 `sky_art` 的全局表），还有按 +12 史诗重新调难度（第一版 90 秒通关）。
   - 下个区域跳过：读代码（看 REGION_PIPELINE.md 的参数表）、手写怪物 AI / 领主机制 / 测试 / 美术脚本，只写 spec + 看两张审图 + 调三个难度旋钮，预计 12~18 万 token。
+- **2026-09-28 决斗场排位 + 公正决斗 + 浮空重做**：平衡别靠手调——AI 循环赛直接调 `step()` 快进（153 对 × 8 场只要 40 秒），加个自动迭代调参，几轮就把 3%~87% 收到 46%~59%；浮空问题先写定量测试（滞空 / 再挑 / 连击上限）量出“以前”的数，再改模型。改完浮空、霸体窗口这类全局规则后，一定重跑循环赛。

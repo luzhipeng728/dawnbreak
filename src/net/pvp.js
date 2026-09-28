@@ -83,7 +83,7 @@ const netDuel = {
     this.send(m);
   },
   hostSnap() {
-    const f = p => [Math.round(p.x), Math.round(p.y), Math.round(p.z), p.face < 0 ? -1 : 1, Math.max(0, COOP_ST.indexOf(p.st)), p.clipName, +p.animT.toFixed(2), Math.round(p.hp), Math.round(p.mp), p.invul > 0 ? 1 : 0, hasSA(p) ? 1 : 0, p.burning ? 1 : 0, Math.round(p.cmb.airDmg), Math.round(p.cmb.downDmg), p.dead ? 1 : 0, Math.round(p.hpMax), Math.round(p.mpMax)];
+    const f = p => [Math.round(p.x), Math.round(p.y), Math.round(p.z), p.face < 0 ? -1 : 1, Math.max(0, COOP_ST.indexOf(p.st)), p.clipName, +p.animT.toFixed(2), Math.round(p.hp), Math.round(p.mp), p.invul > 0 ? 1 : 0, hasSA(p) ? 1 : 0, p.burning ? 1 : 0, Math.round(p.cmb.airDmg), Math.round(p.cmb.downDmg), p.dead ? 1 : 0, Math.round(p.hpMax), Math.round(p.mpMax), +(p.reboundCd || 0).toFixed(1), p.techHold ? 1 : 0];
     const cool = {}; for (const k in duel.b.cool) if (duel.b.cool[k] > 0.05) cool[k] = +duel.b.cool[k].toFixed(1);
     this.send({ k: 'ds', a: f(duel.a), b: f(duel.b), tm: +duel.timer.toFixed(1), st: duel.state, r: duel.round, w: duel.wins, msg: duel.msg, mt: +Math.max(0, duel.msgT).toFixed(2), md: duel.msgDur || 1, cool, ts: game.timeStop > 0 ? 1 : 0 });
   },
@@ -126,7 +126,8 @@ const netDuel = {
     const V = this.view; if (!V) return;
     const now = performance.now();
     for (const [p, r] of [[V.a, d.a], [V.b, d.b]]) {
-      const [x, y, z, f, st, clip, at, hp, mp, inv, sa, burn, ad, dd, dead, hpMax, mpMax] = r;
+      const [x, y, z, f, st, clip, at, hp, mp, inv, sa, burn, ad, dd, dead, hpMax, mpMax, rcd, th] = r;
+      p.reboundCd = rcd || 0; p.techHold = !!th; if (th && now - (p._crFx || 0) > 220) { p._crFx = now; fxAura(p, '#8fd8ff', 0.28); }   // 受身蹲伏：冷却 / 蹲伏提示
       p.netBuf.push({ t: now, x, y, z, f }); if (p.netBuf.length > 20) p.netBuf.splice(0, p.netBuf.length - 20);
       p.netSt = COOP_ST[st] || 'idle'; p.netClip = clip; p.netT = at; p.netT0 = now;
       p.hp = hp; p.mp = mp; p.hpMax = hpMax; p.mpMax = mpMax; p.invul = inv ? 0.05 : 0; p.superArmor = sa ? 0.05 : 0; p.burning = !!burn; p.cmb.airDmg = ad; p.cmb.downDmg = dd;

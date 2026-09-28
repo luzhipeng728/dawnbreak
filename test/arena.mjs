@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import { startServer, launchPlayers, ok, result, sleep, until, uiRegister, uiCreateChar, dumpErrors } from './net_lib.mjs';
 const out = 'test/shots/arena'; fs.mkdirSync(out, { recursive: true });
-const srv = await startServer({ arenaAiMs: 3000, arenaMinMs: 2000, arenaForfeitMs: 5000, arenaRematchMs: 60_000 });
+const srv = await startServer({ arenaAiMs: 4000, arenaMinMs: 2000, arenaForfeitMs: 5000, arenaRematchMs: 60_000 });
 const AR = srv.app.ctx.mods.arena;
 const { players, close } = await launchPlayers(2);
 const [A, B] = players.map(p => p.page);
@@ -35,8 +35,8 @@ try {
     await P.evaluate(() => menus.open('duel'));
     await until(P, () => !!document.querySelector('.arbadge'), null, 8000);
     ok(await P.evaluate(() => /决斗场内属性统一，装备与强化不影响胜负/.test(document.querySelector('.duelwin').textContent)), '窗口里有“属性统一”说明');
-    await P.click('.duelwin button:has-text("开始匹配")');
   }
+  await Promise.all([A, B].map(P => P.click('.duelwin button:has-text("开始匹配")')));   // 同时点，免得先点的人等太久被派 AI
   await A.screenshot({ path: `${out}/01-queue.png` });
   ok(await until(A, () => netDuel.state === 'fight' && game.duel === duel, null, 25000), 'alice 和 bob 匹配成功，进入决斗（alice 当主机）');
   ok(await until(B, () => netDuel.state === 'fight' && game.duel && game.duel.a, null, 20000), 'bob 进入决斗');
@@ -60,7 +60,7 @@ try {
   ok(await until(B, () => [...netTown.peers.values()].some(p => p.char && p.char.title === '段位·青铜'), null, 10000), 'bob 看到 alice 的名牌带段位（青铜）');
   // ---- 刚打过不再匹配 → AI 补位（本地打，积分减半）----
   await A.evaluate(() => arena.join()); await B.evaluate(() => arena.join());
-  ok(await until(B, () => arena.aiFight() && game.duel === duel, null, 15000), 'bob 没有再匹配到 alice，超时后匹配到 AI 对手并开打');
+  ok(await until(B, () => arena.aiFight() && game.duel === duel, null, 15000), 'bob 没有再匹配到 alice，超时后匹配到 AI 对手并开打', await B.evaluate(() => ({ q: arena.q, cur: arena.cur, scene: game.scene, live: save.live, nd: netDuel.state, duel: !!game.duel, why: arena.canQueue() })), srv.app.ctx.db.all('SELECT id, a, b, ai IS NOT NULL AS ai, result, winner, created FROM arena_match'));
   const ai = await B.evaluate(() => ({ name: duel.b.name, a: duelFairSnap(duel.a), b: duelFairSnap(duel.b), cls: duel.b.cls }));
   ok(/「AI」$/.test(ai.name) && ai.a.hpMax === 21000 && ai.b.lvl === 30 && ai.b.procs === 0, 'AI 对手：名字带「AI」，同样用公正属性', ai);
   await until(A, () => arena.aiFight(), null, 8000);
@@ -83,7 +83,7 @@ try {
   ok(AR.queue.has(aid), 'alice 进队列');
   await players[0].ctx.close(); await sleep(800);
   ok(!AR.queue.has(aid), '排队中断线：服务端移出队列');
-  await sleep(3500);
+  await sleep(4500);
   ok(!srv.app.ctx.db.get('SELECT id FROM arena_match WHERE a = ? AND done IS NULL', aid), '断线的人没有被派 AI 对局');
   const lb = await B.evaluate(() => net.api('GET', '/api/rank?board=arena'));
   ok(lb.list.length === 2 && lb.list[0].tier && lb.list.some(e => e.char), '排行榜有决斗场榜', lb.list);

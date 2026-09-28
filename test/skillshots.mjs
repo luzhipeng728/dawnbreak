@@ -26,8 +26,10 @@ for (const item of list) {
       for (let i = 0; i < 12; i++) game.skillBar[i] = null; game.skillBar[0] = id; __dummy(); projs.length = 0;
       if (SKILLS[id].airOnly) { p.vz = 420; p.z = 1; p.setState('jump'); }
       const S = SKILLS[id]; if (typeof S.whenHit === 'function' ? S.whenHit(p) : S.whenHit) { p.setState('hit'); p.stun = 0.8; }
-      return true;
+      if (S.req && S.req(p) !== true) return 'pre';   // 前置条件不满足（例：咒令要求召唤兽在场），和 classes.mjs 一样跳过
+      return S.instant ? 'instant' : true;
     }, id);
+    if (setup === 'pre') { res.push(`-${id}`); continue; }
     if (SKILLS_AIR_DELAY.has(id)) await page.waitForTimeout(160);
     await page.keyboard.down('KeyA'); await page.waitForTimeout(40); await page.keyboard.up('KeyA');
     await page.waitForFunction(id => game.player.act && game.player.act.skill === id, id, { timeout: 500 }).catch(() => { });
@@ -39,7 +41,7 @@ for (const item of list) {
     }
     await page.waitForTimeout(1800);
     const after = await page.evaluate(() => { const p = game.player; if (game.timeStop > 0) return 'timestop'; return p.st; });
-    const ok = got === id && ['idle', 'jump', 'walk', 'run', 'act'].includes(after);
+    const ok = (got === id || (setup === 'instant' && !got)) && ['idle', 'jump', 'walk', 'run', 'act'].includes(after);   // 无动作施放的技能不进入动作
     if (!ok) fail++;
     res.push(`${ok ? '' : '✗'}${id}${got === id ? '' : '(放出:' + got + ')'}${after === 'idle' || after === 'jump' ? '' : '[' + after + ']'}`);
   }

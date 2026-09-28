@@ -6,7 +6,7 @@ const report = (name, ok, info) => { if (!ok) fail++; console.log(`${ok ? 'PASS'
 const { browser, page, logs } = await launch({ width: 960, height: 540 });
 await page.goto(`${URL_BASE}?test&cls=mage&mobs=0&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
 // 先把召唤兽的美术分包加载好（正式环境由召唤师进城 / 进地下城时预加载）
-await page.evaluate(async () => { game.job = 'summoner'; const B = ['sandor', 'ador', 'naias', 'stalker', 'wisp', 'frit', 'aukuso', 'luise', 'merkle', 'glarelin', 'aqueris', 'flamehulk', 'echeverria', 'goblinCaptain', 'tauKing', 'casillas'];
+await page.evaluate(async () => { game.job = 'summoner'; const B = ['sandor', 'ador', 'naias', 'stalker', 'wisp', 'frit', 'aukuso', 'luise', 'merkle', 'glarelin', 'aqueris', 'flamehulk', 'echeverria', 'goblinCaptain', 'tauKing', 'casillas', 'hilun', 'lamos'];
   if (typeof loadBundles === 'function') await loadBundles(B.filter(b => !IMG[`spr/${b}/idle`]).map(b => 'spr:' + b)); });
 const R = await page.evaluate(() => {
   game.paused = true;
@@ -52,6 +52,13 @@ const R = await page.evaluate(() => {
   p.setState('idle'); p.act = null; p.cool = {}; const h2b = m2.hp; castSkill(p, 'sm_thousand', false, 's0'); run(2); out.thousand = { act: cas && cas.act && cas.act.name, pinv: p.invul > 0 }; run(110); out.thousand.dealt = h2b > m2.hp;
   m2.remove = true; const m4 = dummy(); if (cas) { m4.x = cas.x + cas.face * 90; m4.y = cas.y; } const h4 = m4.hp; p.setState('idle'); p.act = null; p.cool = {}; castSkill(p, 'sm_dismiss', false, 's0'); run(160);
   out.gokumei = { gone: summonsOf(p, 'sm_casillas').length === 0, dealt: h4 > m4.hp };
+  // P1：海伊伦（贴身、给本体加成）、支配之环（一键召齐）、二觉拉莫斯（出场 + 咒令逆月之蚀打出伤害）
+  for (const e of ents) if (e.team === 'e') e.remove = true; run(1); dismissSummons(p); run(2);
+  p.x = 400; p.y = 100; p.face = 1; const m5 = dummy(); m5.x = 620; m5.y = 100;
+  cast('sm_hilun'); run(30); out.p1 = { hilun: summonsOf(p, 'sm_hilun').length, hbuff: !!p.buffs.sm_hilunAura };
+  cast('sm_ring'); run(60); out.p1.ring = summonsOf(p).filter(s => s.kind === 'follower').length;
+  cast('sm_awaken2'); for (let i = 0; i < 150; i++) run(1); const lam = summonsOf(p, 'sm_lamos')[0]; out.p1.lamos = !!lam; out.p1.lamSprite = !!(lam && lam.model && lam.model.S);
+  const h5 = m5.hp; cast('sm_lamoseclipse'); run(150); out.p1.eclipse = h5 > m5.hp;
   return out;
 });
 const o = R;
@@ -68,6 +75,7 @@ report('召唤解除：全部消失', o.dismissed === 0, o.dismissed);
 report('一觉：卡西利亚斯出场、落地击倒身后的敌人、召唤过程本体无敌、放养会出手', o.awaken.cas && o.awaken.sprite && o.awaken.behind && o.awaken.inv && o.awaken.fights, o.awaken);
 report('千鬼杀：卡西利亚斯放专属招、本体无敌、打出伤害', o.thousand.act === 'casThousand' && o.thousand.pinv && o.thousand.dealt, o.thousand);
 report('狱冥天地：解除时剑阵落下打出伤害', o.gokumei.gone && o.gokumei.dealt, o.gokumei);
+report('P1：海伊伦 / 支配之环 / 拉莫斯 / 逆月之蚀', o.p1.hilun === 1 && o.p1.hbuff && o.p1.ring >= 14 && o.p1.lamos && o.p1.lamSprite && o.p1.eclipse, o.p1);
 const errs = logs.filter(l => /error|Error/.test(l)); report('无报错', errs.length === 0, errs.slice(0, 3));
 await browser.close();
 console.log(fail ? `${fail} 项失败` : '全部通过'); process.exit(fail ? 1 : 0);

@@ -71,6 +71,11 @@ const SPR_ANIMS = {
     bmThrow: [['fang2', 0], ['bmThrow1', 0.14], ['bmThrow2', 0.56]], bmCall: [['bmCall', 0]],
     smCmd: [['smPoint', 0]], smThrow: [['smThrow1', 0], ['smThrow2', 0.12]], smSac: [['smSac', 0]], smSummon: [['smCircle1', 0], ['smCircle2', 0.2]],
     smAwk: [['smCircle2', 0], ['smAwk1', 0.9], ['smAwk2', 1.3]],
+    // P1：元素师 / 战斗法师的二觉、三觉段
+    elCurtain: [['elCurtain', 0]], elQuake: [['mup', 0], ['elQuake', 0.2]], elCrystal: [['elCrystal', 0]], elGate: [['elGate', 0]], elSixth: [['elSixth1', 0], ['elSixth2', 2.75]], elBeam: [['elBeam', 0]], elCosmos: [['elCosmos', 0]],
+    bmFlashSmash: [['bmFlash', 0], ['bmSpin', 0.1], ['bmFlash', 0.2], ['bmSpin', 0.3], ['bmSweep1', 0.4], ['bmSweep2', 0.5]], bmDescent: [['bmLeapUp', 0], ['bmLeapDown', 0.42]],
+    bmDance: [['bmDance', 0]], bmApostle: [['bmApostle', 0], ['bmSweep2', 1.48]], bmLunge: [['bmApostle', 0], ['bmLunge', 0.48]], bmPose: [['bmPose', 0]],
+    bmGalaxy: [['bmPose', 0], ['bmSweep1', 0.98], ['bmSweep2', 1.06], ['bmFlash', 1.18], ['bmSweep2', 1.3], ['bmFlash', 1.42], ['bmLunge', 1.55], ['bmThrow2', 1.85], ['bmKick', 2.1], ['bmLeapDown', 2.22], ['bmSweep1', 2.6], ['bmSweep2', 2.74], ['bmPose', 3.25]],
     // 魔道学者（mage_witch.js）：骑扫把、失败演出、道具
     brIdle: [['brIdle', 0]], brDash: [['brDash', 0]], brFall: [['brFall', 0]], brAtk: [['brAtk1', 0]], brAtkB: [['brAtk2', 0]], brSpin: [['brSpin', 0]],
     faceplant: [['faceplant', 0]], sooty: [['sooty', 0]], potion: [['potion1', 0], ['potion2', 0.14]], potionHold: [['potion1', 0]],

@@ -204,9 +204,9 @@ defSkill('mg_whip', { name: '鞭挞', cls: 'mage', lvReq: 10, mp: 8, cd: 1, type
     act: (lv) => ({ name: 'mg_whipUp', clip: 'mup', dur: 0.42, cancelFrom: 0.3,
       hits: [HB(0.06, 0.13, [10, 230, 22, 0, 150], skillDmg(1.2, 0.12, lv), { launch: 330, knock: 20, stun: 0.4, hs: 0.05, snd: 'slash', type: 'mag', col: '#e0a0ff' })],
       events: [evAt(0.05, e => { sfx.swing(true); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#d890ff', a0: 1.2, a1: -1.3, r: 150, w: 10, off: [8, 40], squash: 0.8, dur: 0.22 }); whipBuffSummons(e, lv); })] }) },
-  act: (lv, p) => { const dom = whipDomin(p), L = dom ? 240 : 160;
+  act: (lv, p) => { const dom = whipDomin(p), L = dom ? 240 : 160, rv = p && jobOf(p) === 'summoner' && skLv(p, 'sm_reverse') > 0 ? 1.5 : 1;   // 逆月：蚀鞭
     return { name: 'mg_whip', clip: 'whip', dur: 0.4, cancelFrom: 0.24, links: dom ? ['mg_whip'] : undefined, linkFrom: 0.12,
-      hits: [HB(0.08, 0.14, [10, L, 16, 20, 90], skillDmg(1.2, 0.12, lv), { stun: 0.3, knock: 40, hs: 0.04, snd: 'slash', type: 'mag', col: '#e0a0ff' })],
+      hits: [HB(0.08, 0.14, [10, L, 16, 20, 90], skillDmg(1.2, 0.12, lv) * rv, { stun: 0.3, knock: 40, hs: 0.04, snd: 'slash', type: 'mag', col: rv > 1 ? '#a060e0' : '#e0a0ff', elem: rv > 1 ? 'dark' : undefined })],
       events: [evAt(0.07, e => { sfx.swing(false); fxStreak({ x: e.x + e.face * 16, y: e.y, z: e.z + 60, face: e.face, len: L - 10, w: dom ? 7 : 5, col: '#d890ff', dur: 0.18 }); whipBuffSummons(e, lv); })] }; } });
 function whipDomin(p) { return !!p && typeof jobOf === 'function' && jobOf(p) === 'summoner' && skLv(p, 'sm_domin') > 0; }
 function whipBuffSummons(e, lv) {

@@ -65,6 +65,25 @@ C.SHEETS['mage_sm1'] = [
     ('smCircle2', 'standing tall with the staff raised high overhead in one hand and the free hand spread out to the side, hair lifted upward'),
     ('smAwk1', 'slashing the staff diagonally down across in front of her with one hand as if tearing open the air, cold serious expression, hair swept'),
     ('smAwk2', 'standing proudly with the free arm stretched out to the side palm open, the staff planted upright on the ground beside her, a cold confident smile')]
+# P1（二觉 / 三觉）：元素师、战斗法师的新动作；光效、行星、星河、变身光都在运行时画
+C.SHEETS['mage_el2'] = [
+    ('elCurtain', 'both hands raised high holding the staff horizontally above her head, looking up, casting into the sky'),
+    ('elQuake', 'crouching and driving the staff tip down into the ground with both hands, hair lifted upward'),
+    ('elCrystal', 'kneeling on one knee with the staff planted upright beside her, the free palm pressed flat onto the ground'),
+    ('elGate', 'pointing the staff diagonally up and forward with one hand, the free hand on her chest, commanding'),
+    ('elSixth1', 'feet braced, both hands pushed forward together in front of her chest as if compressing a ball of energy, the staff held under one arm, straining'),
+    ('elSixth2', 'both arms flung wide open to the sides, chest up, head tilted back, releasing a huge blast, the staff in one hand'),
+    ('elBeam', 'leaning forward with the staff thrust straight forward horizontally in both hands like firing a cannon, feet braced wide'),
+    ('elCosmos', 'standing on tiptoe with both arms raised high above the head holding the staff, eyes closed, serene, hair floating')]
+C.SHEETS['mage_bm3'] = [
+    ('bmFlash', 'crouched low mid-spin with the staff held out horizontally at waist height in both hands, one leg swept out wide'),
+    ('bmLeapUp', 'leaping high with the staff raised overhead in both hands, body arched back, knees bent'),
+    ('bmLeapDown', 'landing a downward strike: the staff driven diagonally down in front with both hands, one knee bent low'),
+    ('bmDance', 'one arm raised high commanding, the staff held in the other hand pointing forward, hair and skirt billowing'),
+    ('bmApostle', 'crouching low with the staff pulled far back behind her with both hands, charging up a huge swing, fierce expression'),
+    ('bmLunge', 'a huge forward lunge thrusting the staff straight forward with both hands, back leg fully extended'),
+    ('bmKick', 'a flying side kick in mid-air, one leg extended forward, the staff held back in one hand'),
+    ('bmPose', 'standing tall with the staff planted upright beside her, the free hand clenched into a fist at chest height, calm fierce smile')]
 # 技能图标：16 个一张（combatgen 的图标画风），切图：mage_art.py iconcut
 ICONS = [
     ('mg_jackair', 'a flaming jack-o-lantern pumpkin shooting diagonally down from the sky with a small witch hat silhouette above'),
@@ -122,9 +141,48 @@ ICONS4 = [
     ('sm_thousand', 'a single long katana quick-draw slash leaving a huge crimson crescent sword trail and many small slash marks'),
     ('sm_hilun', 'a tiny glowing fairy spirit made of rainbow light with little wings, soft aura ring'),   # P1 预留：融合精灵海伊伦
     ('sm_ring', 'an ornate dark silver ring of domination with a violet gem and chains of summoning circles')]   # P1 预留：支配之环
-C.ICON_SHEETS = {'mg_icons_a': ICONS, 'mg_icons_b': ICONS2, 'mg_icons_c': ICONS3, 'mg_icons_d': ICONS4}
+ICONS5 = [
+    ('el_curtain', 'a rainbow curtain of light pouring down from a magic circle in the sky'),
+    ('el_quake', 'a glowing magic circle on cracked ground with a violet shockwave'),
+    ('el_arcana', 'a rainbow prism crystal radiating four element colors'),
+    ('el_rune', 'a glowing sacred rune circle with four lit element marks'),
+    ('el_crystal', 'a huge sacred crystal growing out of a magic circle'),
+    ('el_gate', 'a floating ornate magic gate raining small crystals'),
+    ('el_awaken2', 'a tiny white-hot singularity with fire, ice, lightning and darkness spiraling into it'),
+    ('el_source', 'a glowing source orb with four element streams flowing out endlessly'),
+    ('el_symphony', 'a thick beam made of intertwined white light and black darkness'),
+    ('el_awaken3', 'a burning red planet and a frozen blue planet colliding in space'),
+    ('bm_flashsmash', 'a spinning staff with a wide glowing blue sweep arc'),
+    ('bm_descent', 'a golden dragon-shaped spear plunging down from the sky'),
+    ('bm_potential', 'a golden fist and a violet magic orb merging into one'),
+    ('bm_cluster', 'a cluster of many small blue star orbs packed together'),
+    ('bm_apostledance', 'several golden spears dancing in a circle around a target'),
+    ('bm_awaken2', 'a colossal golden apostle spear sweeping in a huge arc')]
+ICONS6 = [
+    ('bm_avatar', 'a girl silhouette engulfed in a golden apostle aura with a spear'),
+    ('bm_ancient', 'an ancient golden sun crest with star orbs'),
+    ('bm_light', 'a dazzling golden thrust of light piercing forward'),
+    ('bm_primal', 'a girl silhouette glowing with a starry galaxy aura and ancient spear'),
+    ('bm_awaken3', 'a starry spear driven into the ground under a spiraling galaxy'),
+    ('sm_roar', 'a furious minotaur axe smashing the ground with shockwaves'),
+    ('sm_eclipse', 'a black eclipse moon with a violet corona ring'),
+    ('sm_blackmoon', 'a silver-haired witch with a crimson top hat surrounded by a black moon aura'),
+    ('sm_shadow', 'a dark eclipse zone on the ground exploding with violet bursts'),
+    ('sm_awaken2', 'a tall dark armored warrior woman with a crescent-moon crown and claws, eclipse behind'),
+    ('sm_lamoseclipse', 'a black eclipse moon crashing down with jagged jaws'),
+    ('sm_reverse', 'an inverted crescent moon dripping violet eclipse energy'),
+    ('sm_supreme', 'a radiant spirit queen crown firing many dense laser beams'),
+    ('sm_awaken3', 'a colossal dark dragon maw swallowing a full moon')]
+C.ICON_SHEETS = {'mg_icons_a': ICONS, 'mg_icons_b': ICONS2, 'mg_icons_c': ICONS3, 'mg_icons_d': ICONS4, 'mg_icons_e': ICONS5, 'mg_icons_f': ICONS6}
 # 觉醒插图（combatgen cutin / cutinprep）：只放本组要新出的
-C.CUTIN = {'summoner': ('mage', 'standing coldly in front of a giant purple dimensional rift torn open in the air, the staff raised in one hand, and behind her the huge shadowy silhouette of a white-haired samurai with a horned mask and a long katana stepping out, crescent moon')}
+C.CUTIN = {
+    'elemental2': ('mage', 'both hands pushing forward compressing a blazing singularity where fire, ice, lightning and darkness swirl together into one white-hot point, hair and cape blown back'),
+    'elemental3': ('mage', 'floating serenely with the staff raised while a burning red planet and a frozen blue planet collide behind her in outer space, stars and nebula'),
+    'battlemage2': ('mage', 'wrapped in a blazing golden apostle aura, swinging a giant ethereal golden spear with both hands, fierce determined expression'),
+    'battlemage3': ('mage', 'a flying kick driving a colossal starry spear downward, a swirling blue and gold galaxy behind her'),
+    'summoner2': ('mage', 'standing coldly under a black eclipse moon, and behind her a tall dark armored warrior woman with a crescent-moon crown and clawed gauntlets rising from the eclipse'),
+    'summoner3': ('mage', 'standing on a cratered moon surface with the staff raised, and behind her a colossal dark eclipse dragon opening its gigantic maw over the full moon, cold confident expression'),
+    'summoner': ('mage', 'standing coldly in front of a giant purple dimensional rift torn open in the air, the staff raised in one hand, and behind her the huge shadowy silhouette of a white-haired samurai with a horned mask and a long katana stepping out, crescent moon')}
 C.FX = {}
 
 def frames(argv):

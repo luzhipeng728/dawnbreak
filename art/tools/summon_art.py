@@ -102,8 +102,21 @@ A.M = {
                          ('upcut', 'a rising upward slash: the long katana swung up high, body stretched upward, no effects'),
                          ('guard', 'blocking with the long katana held horizontally in front of him with both hands'),
                          ('fade', 'kneeling on one knee, both hands leaning on the katana stabbed into the ground, head bowed')]}),
+    # P1：融合精灵海伊伦（贴身跟随、不攻击，只要待机 + 浮动）、二觉：逆月者拉莫斯
+    'hilun': dict(holes=False, h=52, hold=None, fly=True, cycle=SPIRIT_HOVER, sheets=('walk',),
+        desc='Hilun, a tiny fusion fairy spirit (NO human, the creature alone): a small glowing body of soft rainbow light the size of a cat, a cute round face with big sparkling violet eyes, '
+             'a flame-like rainbow tuft of hair, two translucent butterfly-like wings, tiny stubby arms, no legs, a wispy glowing tail.'),
+    'lamos': dict(h=172, hold=None, sheets=('walk', 'act'),
+        desc='Lamos the Reverse-Moon, an ancient dark warrior woman summoned from an eclipse: tall and strong, pale grey-violet skin, long flowing dark navy hair with violet streaks, '
+             'a black crescent-moon crown helm with a dark visor over the eyes and a glowing violet eye slit, modest full-coverage black and deep violet ancient plate armor with gold crescent ornaments, '
+             'a long tattered black cape, large black clawed gauntlets.',
+        atk='her clawed gauntlets', cast='raising both clawed hands', low='dashing forward low',
+        custom={'act': [('claw1', 'slashing forward with the right clawed gauntlet, body twisted, no effects'), ('claw2', 'slashing forward with the left clawed gauntlet, body twisted the other way, no effects'),
+                        ('dash', 'dashing forward very low, leaning far forward, both claws held back, no speed lines'), ('spin', 'spinning with both clawed arms outstretched, the cape swirling'),
+                        ('raise', 'both clawed hands raised high overhead, head tilted back, commanding'), ('rise1', 'crouching deeply about to leap straight upward'),
+                        ('rise2', 'flying straight up with arms at her sides and body stretched, the cape trailing below'), ('land', 'landing from above in a low crouch with one clawed hand on the ground')]}),
 }
-A.HOVER = {'naias': 26, 'wisp': 30, 'glarelin': 34, 'aqueris': 34}
+A.HOVER = {'hilun': 40, 'naias': 26, 'wisp': 30, 'glarelin': 34, 'aqueris': 34}
 
 if __name__ == '__main__':
     A.main()

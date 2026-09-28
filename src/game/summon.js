@@ -39,7 +39,7 @@ function summon(owner, key, o = {}) {
   const base = { sid: summonSeq++, skey: key, sdef: D, owner, kind: D.kind, lv: o.lv || 1, mul: o.mul || 1, life: o.life ?? D.life, lifeT: 0, tickT: 0, hits: 0, gone: false, target: o.target || null };
   let s;
   if (D.kind === 'follower') {
-    s = new Ent({ team: owner.team, name: D.name || key, model: D.model ? D.model(owner) : buildGoblin(), clips: D.clips || summonClips(),
+    s = new Ent({ team: owner.team, name: D.name || key, model: D.model ? D.model(owner) : buildGoblin(), clips: (typeof D.clips === 'function' ? D.clips() : D.clips) || summonClips(),
       x, y, face: owner.face, w: D.w || 12, d: D.d || 11, h: D.h || 70, weight: D.weight || 1, speed: D.speed ?? 170, shadowR: D.shadowR || 14, scale: D.scale || 1 });
     Object.assign(s, base, { summon: true, control: summonControl, aiCd: rnd(0.2, 0.5), think: 0, acd: (D.attacks || []).map(() => 0), buffs: {}, slot: summonsOf(owner).length });
     summonStats(s);
@@ -75,16 +75,17 @@ function summonStats(s) {
   def('dmgType', () => s.sdef.type || o.dmgType || 'mag');
 }
 // 召唤兽的精灵模型：和怪物同一套 spr.json 帧（art/final/spr/<id>/）；素材还没加载好时先画一个发光的小光球
-function summonSprite(id, o = {}, col) {
-  if (typeof SPR_DATA !== 'undefined' && SPR_DATA[id] && IMG[`spr/${id}/idle`]) return new SpriteModel(id, { ...SPR_FALLBACK, cast: 'cast1', roar: 'cast2', crouch: 'low1' }, SPR_ANIMS.monster, o);
+// anims：自定义帧名的召唤兽（卡西利亚斯等）传自己的动画表，片段用 summonClipsFor(同一张表)
+function summonSprite(id, o = {}, col, anims) {
+  if (typeof SPR_DATA !== 'undefined' && SPR_DATA[id] && IMG[`spr/${id}/idle`]) return new SpriteModel(id, { ...SPR_FALLBACK, cast: 'cast1', roar: 'cast2', crouch: 'low1' }, anims || SPR_ANIMS.monster, o);
   return orbModel(col || '#d8c0ff');
 }
 function orbModel(col) { const img = fxTint('orb', col); return { draw(c, pose, t) { drawSpr(c, img, 0, -40 + Math.sin(t * 4) * 3, 30, 30, {}); } }; }
 // 召唤兽的动作片段：怪物片段（BEAST_CLIPS）+ 逐帧动画表里有、骨骼片段里没有的（cast / slam / bite / atk1……）自动补一个
 let SUMMON_CLIPS = null;
-function summonClips() {
-  if (SUMMON_CLIPS) return SUMMON_CLIPS;
-  const C = SUMMON_CLIPS = { ...BEAST_CLIPS }, A = typeof SPR_ANIMS !== 'undefined' ? SPR_ANIMS.monster : {};
+function summonClips() { return SUMMON_CLIPS || (SUMMON_CLIPS = summonClipsFor(typeof SPR_ANIMS !== 'undefined' ? SPR_ANIMS.monster : {})); }
+function summonClipsFor(A) {
+  const C = { ...BEAST_CLIPS };
   for (const n in A) if (!C[n]) { const a = A[n]; C[n] = a.frames ? { dur: a.frames.length / a.fps, loop: true, keys: [k(0, POSE.idle)] } : { dur: a[a.length - 1][1] + 0.5, keys: [k(0, POSE.idle)] }; Object.defineProperty(C[n], '__name', { value: n }); }
   return C;
 }
@@ -178,7 +179,10 @@ function summonAI(s, dt) {
   // 走位：有目标就走到 pref 距离并对齐纵深；没有就跟在 owner 身后
   if (s.think <= 0) {
     s.think = rnd(0.2, 0.45);
-    if (t) { s.goalX = t.x - Math.sign(t.x - s.x || 1) * (D.pref ?? 50) + rnd(-10, 10); s.goalY = t.y + rnd(-6, 6); }
+    // 围着目标错开站位：按 slot 分到不同纵深（不超出最短招式的纵深判定）和前后距离，十几只同时在场时不叠成一坨
+    if (t) { const L = D.attacks && D.attacks.length ? D.attacks : null, dyMax = L ? Math.min(...L.map(A => A.dy)) * 0.7 : 10, lane = ((s.slot % 5) - 2) / 2;
+      const dist = Math.min((D.pref ?? 50) + (s.slot % 3) * 10, L ? Math.max((D.pref ?? 50), Math.min(...L.map(A => A.range[1])) * 0.8) : Infinity);
+      s.goalX = t.x - Math.sign(t.x - s.x || 1) * dist + rnd(-6, 6); s.goalY = clamp(t.y + lane * dyMax + rnd(-3, 3), 8, DEPTH - 8); }
     else { const back = M.follow ? 40 : 55 + (s.slot % 4) * 16; s.goalX = o.x - o.face * back; s.goalY = clamp(o.y + ((s.slot % 3) - 1) * 20, 8, DEPTH - 8); }
     if (R) s.goalX = clamp(s.goalX, R.x0 + 20, R.x1 - 20);
   }

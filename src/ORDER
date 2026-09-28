@@ -37,6 +37,7 @@ content/classes/gun_launcher.js
 content/classes/mage.js
 content/classes/mage_elemental.js
 content/classes/mage_battle.js
+content/classes/mage_summoner.js
 engine/touch.js
 game/drops.js
 game/progress.js

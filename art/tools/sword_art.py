@@ -40,6 +40,15 @@ SHEETS = {
                     ('asPull', 'the free hand stretched far forward with fingers clawed as if pulling something toward him, leaning back, the katana held low behind, no visual effects'),
                     ('asSeal', 'kneeling on one knee, the free hand held up in front of the face in a one-handed prayer seal, the katana planted upright in the ground beside him, no visual effects'),
                     ('asAura', 'standing tall and calm with the head slightly lowered, the free hand raised in front of the chest in a one-handed prayer seal, the katana held down at the side, no visual effects')],
+    # ---- 鬼泣：召唤鬼神（举手 / 按地）、鬼影鞭、死亡墓碑、卡洛托火、幽魂降临（空中）、黄泉摆渡（大横斩）----
+    'sword_soul': [('sbSummon', 'the left arm raised high with the palm open and fingers spread as if commanding a spirit, the katana held low in the right hand, no visual effects'),
+                   ('sbPlace', 'crouched on one knee pressing the left palm flat onto the ground, the katana held back in the right hand, no visual effects'),
+                   ('sbWhip1', 'the katana swung far back behind the body at shoulder height, body twisted as if winding up to crack a whip, no visual effects'),
+                   ('sbWhip2', 'the katana lashed forward and low with the arm fully extended forward, stepping in, no visual effects'),
+                   ('sbTomb', 'standing still with the head bowed and both arms spread wide and slightly down, the katana in the right hand pointing to the ground, solemn, no visual effects'),
+                   ('sbKaro', 'the left hand raised in front of the chest palm up as if holding a small floating flame, the katana held low, calm, no visual effects'),
+                   ('sbDescent', 'high in the air with the body tilted forward, the left arm thrust down toward the ground, the katana held back, no visual effects'),
+                   ('sbFerry', 'a huge horizontal two-handed swing of the katana slicing through the air in front, body twisted, wide stance, no visual effects')],
     # ---- 剑影的幻鬼（独立伙伴精灵，参考图 art/src/phantom_ref.png = sword_art.py ghostref 的输出；切帧用 frames2.py phantom --src art/src/combat/sheets）----
     'phantom_a': [('pdash1', 'lunging forward in a very low fast dash, the glowing katana thrust straight ahead, smoke trailing behind'),
                   ('pdash2', 'finished a dashing slash: body far forward, the glowing katana swept back behind after cutting through'),
@@ -67,7 +76,7 @@ AVATAR_NOTES = {
 
 T_, WD_, SQ_ = '1024x1536', '1536x1024', '1024x1024'
 FX = {   # 名字: (描述, 尺寸, 发光?)；随各阶段补充（发光类黑底，fxprep.py 转透明度）
-    'fudo': ('A single wrathful guardian deity (Acala, Fudo Myo-o) made entirely of translucent blue and violet flame energy: a muscular fierce figure standing with a straight sword held upright in the right hand and a coiled rope in the left, a large ring of blue flames behind the head, fierce glowing eyes, his lower body fading into rising blue flames, front view, tall composition', T_, True),
+    'sb_tomb': ('A single cute cartoon grey stone tombstone with a rounded top, a carved cross and a crack, a little moss at the base', SQ_, False),
 }
 ICONS = [   # (技能 id, 图标描述)；16 个一张，表名 sword_icons_a..（第 1 阶段 17 个 + 第 2 批觉醒前后的技能）
     ('kazan', 'a fierce red ghost demon head with horns floating above a glowing red rune circle'), ('moon', 'a violet crescent moon shaped sword slash with a small rising slash'),
@@ -95,14 +104,65 @@ ICONS = [   # (技能 id, 图标描述)；16 个一张，表名 sword_icons_a..�
     ('as_musou', 'a violet energy rift vortex pulling small silhouettes inward'), ('as_array', 'a glowing violet hexagram magic circle on the ground with rising waves'),
     ('as_fudo', 'a wrathful blue flame guardian deity holding an upright sword above a glowing seal circle'), ('as_awaken', 'a giant eye opening in a dark violet sky with countless small eyes around it'),
     ('bz_boom', 'a massive crimson blood explosion centered on a kneeling silhouette'), ('bz_fatal', 'two quick crimson slashes and one giant crossing blood-red slash'),
+    # 鬼泣（第 3 阶段）
+    ('sb_unseal', 'a glowing purple ghost arm breaking free from shattered chains'), ('sb_darkmoon', 'a dark violet crescent moon rising over black clouds'),
+    ('sb_plemon', 'a sickly green hooded skull ghost above a green rune circle'), ('sb_dark', 'a dark purple swirling orb with a small shield outline'),
+    ('sb_kaiga', 'a blue-violet ghost afterimage of a swordsman dashing with motion trails'), ('sb_purge', 'a ghost circle being wiped away by a white sweeping light'),
+    ('sb_fullmoon', 'a full violet moon split by an upward sword slash'), ('sb_release', 'several colorful ghost spirits bursting out of an open glowing hand'),
+    ('sb_devour', 'a sword wreathed in purple ghost flame swallowing a small spirit'), ('sb_saya', 'a serene icy ghost woman with an ice crown above a frozen circle'),
+    ('sb_whip', 'a purple ghostly sword lashing like a whip in a long curve'), ('sb_tomb', 'grey tombstones falling from a dark sky onto the ground'),
+    ('sb_rasha', 'a small magenta masked plague imp with claws above a purple circle'), ('sb_flash', 'a violet dash slash line with a ghost silhouette and a burst'),
+    ('sb_fury', 'a sword chopping down into a huge purple ghost-flame explosion'), ('sb_karo', 'a black and violet flaming skull wisp flying forward'),
+    # 鬼泣 2 个 + 狂战士 P1 4 个 + 剑影（第 4 阶段）
+    ('sb_karoblade', 'two black-violet flaming swords crossing in a fiery X'), ('sb_awaken', 'a giant dark purple maw with teeth bursting out of a swamp'),
+    ('bz_awaken2', 'a giant crimson blood demon silhouette charging forward'), ('bz_limit', 'a crimson blood shield cracking with red energy at its limit'),
+    ('bz_rampant', 'a huge ball of blood energy shattering into flying crimson shards'), ('bz_awaken3', 'a blood-armored demon warrior with a giant crimson sword'),
+    ('gb_ghostman', 'a swordsman silhouette merged with a translucent masked ghost'), ('gb_step', 'a blue afterimage streak of a swordsman dashing invisibly'),
+    ('gb_chain', 'three quick cyan sword slashes in a row'), ('gb_retrace', 'a swordsman swapping places with a ghost through a blue swirl'),
+    ('gb_katana', 'a katana with a cold blue gleam on the edge'), ('gb_issen', 'a masked ghost dashing forward leaving a long cyan slash line'),
+    ('gb_power', 'a ghostly blue fist with a masked ghost face behind it'), ('gb_fang', 'a piercing sword thrust pulling small silhouettes to its tip'),
+    ('gb_rend', 'a masked ghost slashing four times in a flurry'), ('gb_resonance', 'two overlapping souls, a swordsman and a masked ghost, resonating with blue rings'),
+    ('gb_chainex', 'a second glowing blue soul blade rising in crossing slashes'), ('gb_riko', 'a swordsman and a ghost crossing past each other in an X slash'),
+    ('gb_break', 'a heavy downward sword chop shattering the ground with blue soul energy'), ('gb_ghostslash', 'a swordsman and a ghost drawing katanas together in a wide crescent'),
+    ('gb_kaiten', 'a masked ghost spinning with a wide circular blade sweep'), ('gb_behead', 'an extremely long horizontal sword slash splitting the screen'),
+    ('gb_awaken', 'a swordsman and a masked ghost crossing four giant slashes in the dark night'), ('wm_swap', 'two different swords swapping places in a quick circular motion'),
 ]
-FXPREP = {'glow': {'fudo': 384}, 'solid': {}}   # fxprep.py --combat 的输出尺寸（最长边像素）
+FXPREP = {'glow': {'fudo': 384, 'sb_saya': 320, 'sb_plemon': 320, 'sb_rasha': 192, 'sb_blade': 320, 'sb_karo': 160, 'sb_kazan': 320, 'sb_brasha': 448}, 'solid': {'sb_tomb': 96}}   # fxprep.py --combat 的输出尺寸（最长边像素）
+# 鬼神 / 明王这类“角色型”特效：以召唤师生物的 Q 版画风为参考（art/src/summon/_refs_all.png），黑底发光，fxprep 转成透明加色
+GHOST_STYLE = ('The FIRST image shows cute chibi cartoon game creatures and the SECOND image shows a glowing spectral deity drawn in the same game: use them only as the style reference '
+               '(thick dark outlines, simplified chunky shapes, big head and small body, soft cel shading, translucent glowing spectral body on black). Draw ONE new, different character: ')
+GHOST_TAIL = ' Translucent glowing spectral look. On a pure solid black background, the character centered with empty black margin around it, nothing else, no text.'
+GHOSTS = {   # 名字: (描述, 尺寸)
+    'fudo': ('a chibi wrathful guardian deity (Fudo Myo-o / Acala) made of glowing blue and violet spectral flame, heroic chunky proportions with a big head (about 1 to 4 head-to-body), '
+             'a fierce but cartoonish scowling face with glowing eyes, holding a big straight sword upright in the right hand and a coiled golden rope in the left hand, '
+             'a large ring halo of blue flames behind his head, his lower body fading into rising blue flames, front view, imposing statue-like stance.', '1024x1536'),
+    # 鬼泣的鬼神（官方阵色：萨亚 冰阵、普戾蒙 绿阵、罗刹 紫阵、卡赞 红阵、布雷德 刀阵、卡洛 冥炎）
+    'sb_saya': ('Saya, the ice ghost: a graceful chibi female ice spirit with long flowing pale-blue hair made of frost, a small ice-crystal crown, closed serene eyes, '
+                'a flowing white and icy-blue kimono-like dress that fades into cold mist below the waist, tiny ice shards floating around her, palette of white, ice blue and cyan, '
+                'standing, three-quarter view facing right.', '1024x1536'),
+    'sb_plemon': ('Plemon, the erosion ghost: a chubby hunched chibi spirit in a tattered hooded cloak of sickly green, a round skull-like mask face with glowing yellow-green eyes, '
+                  'short stubby arms, dripping green corrosive ooze and bubbling green miasma around it, palette of sickly green, dark olive and acid yellow-green, floating, three-quarter view facing right.', '1024x1536'),
+    'sb_rasha': ('Rasha, the plague imp: a small chibi plague demon imp with a cracked purple mask, long thin clawed arms, a torn magenta cloak, glowing pink eyes, a wisp of poisonous purple and magenta miasma for a tail, '
+                 'palette of magenta, violet and dark purple, crouched ready to pounce, three-quarter view facing right.', '1024x1024'),
+    'sb_blade': ('Bleide, the blade ghost: a tall hooded chibi ghost of a swordsman with a pale steel-grey cloak and a white skull-like face with cold blue glowing eyes, '
+                 'surrounded by a ring of eight floating ghostly swords glowing with cold blue light, palette of steel grey, white and cold ice blue, floating, front view.', '1024x1536'),
+    'sb_karo': ('Karo, the underworld flame spirit: a small floating chibi skull-headed wisp made of black flames with deep violet and purple fire edges, big glowing violet eyes, a long flickering flame tail behind it, '
+                'flying to the RIGHT, side view.', '1024x1024'),
+    'sb_kazan': ('Kazan, the blade demon: a stocky chibi red oni ghost warrior with two horns, a glowing blood-red rune on the forehead, fierce glowing eyes, spiky dark-red hair, '
+                 'blood-red spectral flames rising from the shoulders, holding a broad curved blade, his lower body fading into red smoke, palette of blood red, crimson and dark maroon, three-quarter view facing right.', '1024x1536'),
+    'sb_brasha': ('Brasha, the forbidden seventh ghost: a huge monstrous maw bursting up out of a dark swamp, a gaping round mouth full of jagged teeth with a glowing violet throat, '
+                  'tiny glowing eyes above the mouth, dark purple shadowy body with dripping swamp muck and shadowy tendrils, chunky cartoon shapes, palette of dark purple, violet and black, front view, wide composition.', '1536x1024'),
+}
 CUTIN = {   # 转职: ('sword', 描述)
     'asura': ('sword', 'eyes covered by a black cloth blindfold with a white X-shaped seal mark, calm and fierce, one open palm pushed toward the viewer releasing swirling blue-violet wave energy, katana held low, ripples of energy in the air'),
+    'soulbender': ('sword', 'the unchained left arm glowing with eerie purple ghost energy raised toward the viewer, broken chains flying from the wrist, several small ghost spirits (an icy blue one, a sickly green one, a purple one) swirling around him, cold eerie smile'),
+    'ghostblade': ('sword', 'pale grey skin and a pale bluish glowing ghost left hand, cold focused eyes, katana drawn in a quick-draw pose, a translucent masked white-haired ghost swordsman with a glowing katana looming right behind him mirroring his pose, cold blue light'),
 }
 # 转职立绘（转职窗口）：以鬼剑士立绘为参考，输出 art/src/quests/job_<转职>.png，再用 job_art.py 去背缩放到 art/final/job/
 JOBART = {
     'asura': 'the Asura advancement: a black cloth blindfold tied over both eyes with a white X-shaped seal mark on it, heavy dark steel plate armor with violet trims over a dark indigo coat, a torn dark half cape, calm expression, holding the katana low in one hand while the other open palm releases a swirling blue-violet wave energy aura with faint ripples',
+    'soulbender': 'the Soul Bender advancement: the left arm freed from its chains and glowing with ghostly purple energy, broken chains dangling from the left wrist, a long dark violet and black coat with ghostly purple trims, a large translucent purple ghost silhouette looming behind him, holding the katana low in the right hand, calm eerie expression',
+    'ghostblade': 'the Ghostblade advancement: slightly pale grey skin and a pale bluish ghostly left hand, a sleek dark grey and black leather coat with cold blue trims, a katana held in a low quick-draw stance, and right behind him a translucent ghost swordsman with long white hair, a cracked white oni half-mask and a glowing cyan katana, standing back to back with him, cold calm expression',
 }
 
 # ---- 剑影的幻鬼：独立的伙伴角色（不换武器、不换时装），先出设定立绘，再按立绘出动作表 ----
@@ -147,6 +207,12 @@ def jobacc_prep():
         im = remove_bg(Image.open(os.path.join(OUT, 'acc', f'{n}.png'))); im = im.crop(im.getchannel('A').getbbox())
         w = round(44 * 1.25); im = im.resize((w, max(1, round(im.height * w / im.width))), Image.LANCZOS); im.save(os.path.join(d, f'{n}.webp'), 'WEBP', quality=84, method=6); print(n, im.size)
 
+def ghost_fx_jobs(only=''):
+    from combatgen import MAIN, OUT
+    refs = [os.path.join(MAIN, 'src', 'summon', '_refs_all.png')] + ([os.path.join(OUT, 'fx', 'fudo.png')] if only != 'fudo' else [])   # 不动明王定稿后作为第二张画风参考
+    return [{'out': os.path.join(OUT, 'fx', f'{n}.png'), 'refs': refs, 'size': sz, 'model': 'gpt-image-2.5-sunburst', 'prompt': GHOST_STYLE + d + GHOST_TAIL}
+            for n, (d, sz) in GHOSTS.items() if n.startswith(only) and n != 'fudo' or n == only]
+
 def jobart_jobs(only=''):
     from combatgen import MAIN
     ref = os.path.join(MAIN, 'src', 'quests', 'ref', 'sword.png')
@@ -164,6 +230,12 @@ def main():
     if cmd == 'ghostref': L = ghost_jobs()
     elif cmd == 'jobart': L = jobart_jobs(only)
     elif cmd == 'jobacc': L = jobacc_jobs()
+    elif cmd == 'ghostfx':   # 多张参考图：借用 avatar_gen 的生成函数
+        import avatar_gen as AG
+        base, key, _ = AG.gi.load_cfg(); L = ghost_fx_jobs(only)
+        with ThreadPoolExecutor(2) as ex:
+            for r in ex.map(lambda j: AG.run(j, base, key, False), L): print(r, flush=True)
+        return
     elif cmd == 'jobaccprep': return jobacc_prep()
     else: raise SystemExit('用法：sword_art.py ghostref | jobart [转职] | phantomfix（frames2.py phantom --src art/src/combat/sheets 之后跑）')
     with ThreadPoolExecutor(2) as ex:

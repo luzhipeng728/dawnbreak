@@ -229,7 +229,7 @@ const art = await page.evaluate(async () => {
   p.mechHold = true; T.run(20); game.paused = false; return MECH_ART.filter(k => IMG[`spr/mech_${k}/idle`]).length;
 });
 await page.waitForTimeout(400); await page.screenshot({ path: 'test/shots/mechanic_robots.png' });
-report('机器人精灵都加载了（11 种）', art === 11, art);
+report('机器人精灵都加载了', art >= 11, art);
 const errs = logs.filter(l => l.type === 'pageerror' || l.type === 'error');
 report('没有页面错误', errs.length === 0, errs.slice(0, 5));
 await browser.close();

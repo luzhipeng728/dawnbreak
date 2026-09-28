@@ -78,7 +78,33 @@ M = {
                 'shoulder missile pods flipped open, missiles leaving (no smoke)', 'bracing low with the chest core opened wide, about to fire a beam (no beam drawn)',
                 'leaning back from the recoil of the chest cannon', 'dropping to one knee, powering down', 'standing idle again, arm lowered']),
 }
-FLY_HOVER = {'g1': 0, 'g2': 0, 'g3': 0, 'gale': 0, 'sparrow': 0}   # 悬浮高度由代码控制（s.hz），帧本身按机身底部对齐
+# ---- 第 B 阶段（二觉 / 三觉）的机器人：另出一张全家福（以第一张全家福为参考）----
+MB = {
+    'hs12': dict(h=44, fly=True, name='HS-12 Plasma',
+        desc='a small round robot built around a glowing violet plasma core held inside a white armored cage shell, two stubby side fins, one cyan eye lens, no legs',
+        frames=['floating idle', 'charging, cage shell opening slightly, core brighter', 'charging, cage shell wide open, core brightest', 'flying forward tilted forward',
+                'flying forward, fins swept back', 'diving down steeply', 'swelling up, about to burst (no explosion drawn)', 'spinning in place', 'floating idle again']),
+    'frisbee': dict(h=30, name='G-4 Frisbee',
+        desc='a flat round saw-disc robot rolling on its edge like a wheel: a ring of gunmetal gear teeth around the rim, a white center hub with an orange stripe and a cyan eye lens',
+        frames=['standing on its edge, idle', 'rolling, rotated 30 degrees', 'rolling, rotated 60 degrees', 'rolling, rotated 90 degrees', 'rolling, rotated 120 degrees',
+                'tilted sideways while turning', 'bouncing slightly off the ground while rolling', 'spinning fast in place', 'standing on its edge again']),
+    'falcon': dict(h=40, fly=True, name='G-SP Falcon',
+        desc='a sleek bird-shaped attack drone, larger than the small raptor drones: white armor with gold trim, swept-back blade-like wings, a red visor eye, an orange beak, two gripping talons, no legs other than the talons',
+        frames=['hovering idle, wings half open', 'wings raised up', 'wings swept down', 'gliding with wings spread wide', 'diving forward with wings folded',
+                'clinging forward with talons clamped', 'wings spread wide charging energy (core glowing, no beam drawn)', 'beak opened wide firing forward (no beam drawn)', 'hovering idle again']),
+    'emgen': dict(h=40, name='Magnetic Field Generator',
+        desc='a short cylindrical white device standing on three small gunmetal legs, orange stripes, a cyan glowing coil antenna on top',
+        frames=['standing idle', 'top panels opening', 'top panels fully open, coil raised', 'coil spinning', 'coil spinning the other phase',
+                'pulsing, body squashed down', 'legs spread wide, bracing', 'panels folding closed', 'standing idle again']),
+    'bolt': dict(h=150, name='Volt MX',
+        desc='a sleek heroic humanoid combat mech (as tall as the big G-0 Battleroid but slimmer): white armor with soft pink and gold accents, a V-fin helmet with cyan eyes, a long rifle in the right hand, '
+             'a laser sword hilt on the hip, a cylinder launcher on the right shoulder, thruster packs on the back',
+        frames=['standing idle, heroic stance', 'landing from the sky, crouched with one knee down', 'shoulder cylinder launcher pointing forward (no projectile drawn)', 'aiming the long rifle forward',
+                'rifle recoiling after a shot (no muzzle flash drawn)', 'drawing the laser sword, blade drawn as a simple solid pink bar', 'slashing forward with the laser sword',
+                'charging forward low, thrusters firing (no flames drawn)', 'kneeling, powered down']),
+}
+M.update(MB)
+FLY_HOVER ={'g1': 0, 'g2': 0, 'g3': 0, 'gale': 0, 'sparrow': 0}   # 悬浮高度由代码控制（s.hz），帧本身按机身底部对齐
 
 def gen(out, prompt, size, refs=(), model='gpt-image-2.5-sunburst', force=False):
     """调用 gpt-image 技能脚本；429 退避 65 秒，其他错误短暂重试。同一时刻只跑一个（并发 1）。"""
@@ -128,18 +154,34 @@ NAMES = {
     'sparrow': ['idle', 'up', 'down', 'attack', 'bank', 'dive', 'climb', 'spin', 'idle2'],
     'factory': ['idle', 'open1', 'open2', 'peek', 'close', 'work', 'blink', 'brace', 'idle2'],
     'g0': ['idle', 'aim', 'gat1', 'gat2', 'missile', 'laser', 'recoil', 'kneel', 'idle2'],
+    'hs12': ['idle', 'charge1', 'charge2', 'fly1', 'fly2', 'dive', 'swell', 'spin', 'idle2'],
+    'frisbee': ['idle', 'spin1', 'spin2', 'spin3', 'spin4', 'tilt', 'bounce', 'fast', 'idle2'],
+    'falcon': ['idle', 'flapU', 'flapD', 'glide', 'dive', 'cling', 'charge', 'laser', 'idle2'],
+    'emgen': ['idle', 'open1', 'open2', 'spin1', 'spin2', 'pulse', 'brace', 'fold', 'idle2'],
+    'bolt': ['idle', 'land', 'mx2', 'rifle1', 'rifle2', 'blade1', 'blade2', 'charge', 'kneel'],
 }
+LINEUP2_ORDER = ['hs12', 'frisbee', 'falcon', 'emgen', 'bolt']
+def lineup2_prompt():
+    rel = {'hs12': 1.2, 'frisbee': 0.85, 'falcon': 1.1, 'emgen': 1.1, 'bolt': 4.2}
+    items = '; '.join(f'({i + 1}) {M[k]["name"]}: {M[k]["desc"]} (height about {rel[k]:.1f}x a small 36-unit robot)' for i, k in enumerate(LINEUP2_ORDER))
+    return (f'The FIRST image is an approved lineup of cute combat robots. Draw a NEW lineup sheet of {len(LINEUP2_ORDER)} more robots from the same family, in exactly the same art style, '
+            f'the same colors and the same level of detail. {STYLE}. Every robot in strict side view FACING RIGHT, all standing (or hovering) on one shared baseline in a single row from left to right, '
+            f'each clearly separated by wide white gaps, relative sizes as stated. In order from left to right: {items}. {PALETTE} Soft pink accents are allowed on Volt MX only. {NOFX} Plain pure white background.')
 LINEUP_ORDER = ['rx78', 'ez8', 'g1', 'g2', 'g3', 'viper', 'gale', 'sparrow', 'factory', 'g0']
 
-def crop_lineup():
+def review_copy(src, dst):
+    im = Image.open(os.path.join(SRC, src)).convert('RGBA'); bg = Image.new('RGBA', im.size, (255, 255, 255, 255)); bg.alpha_composite(im); bg.convert('RGB').save(os.path.join(SRC, dst))
+
+def crop_lineup(fname='_lineup.png', order=None):
     """全家福 → 每个机器人一张参考图（白底，加边距）：连通块按从左到右排序，小碎块并进最近的大块（主线程：用全家福的格子当参考，不再单独生成）。"""
     from prep import components
-    im = Image.open(os.path.join(SRC, '_lineup.png')).convert('RGBA'); arr = np.array(im)
+    order = order or LINEUP_ORDER
+    im = Image.open(os.path.join(SRC, fname)).convert('RGBA'); arr = np.array(im)
     lab, comps = components(arr[..., 3], min_cells=4)
     boxes = []
     for c, cells in comps:
         ys, xs = np.where(lab == c); boxes.append({'ids': [c], 'y0': ys.min(), 'y1': ys.max() + 1, 'x0': xs.min(), 'x1': xs.max() + 1, 'cells': cells})
-    boxes.sort(key=lambda b: -b['cells']); n = len(LINEUP_ORDER); big, small = boxes[:n], boxes[n:]
+    boxes.sort(key=lambda b: -b['cells']); n = len(order); big, small = boxes[:n], boxes[n:]
     for sm in small:
         cx, cy = (sm['x0'] + sm['x1']) / 2, (sm['y0'] + sm['y1']) / 2
         dist = lambda b: max(0, b['x0'] - cx, cx - b['x1']) + max(0, b['y0'] - cy, cy - b['y1'])
@@ -147,7 +189,7 @@ def crop_lineup():
         if dist(b) > 60: continue
         b['ids'].append(sm['ids'][0]); b['x0'] = min(b['x0'], sm['x0']); b['x1'] = max(b['x1'], sm['x1']); b['y0'] = min(b['y0'], sm['y0']); b['y1'] = max(b['y1'], sm['y1'])
     big.sort(key=lambda b: (b['x0'] + b['x1']) / 2)
-    for k, b in zip(LINEUP_ORDER, big):
+    for k, b in zip(order, big):
         sub = arr[b['y0']:b['y1'], b['x0']:b['x1']].copy(); sub[..., 3] = np.where(np.isin(lab[b['y0']:b['y1'], b['x0']:b['x1']], b['ids']), sub[..., 3], 0)
         fr = Image.fromarray(sub, 'RGBA'); m = max(fr.size) // 6 + 20
         bg = Image.new('RGBA', (fr.width + m * 2, fr.height + m * 2), (255, 255, 255, 255)); bg.alpha_composite(fr, (m, m))
@@ -259,9 +301,21 @@ ICONS = {
         ('gm_gext', 'three G-series robots (an orb drone, a disc drone, a bird drone) in a circle of transformation arrows with a stacking gold bar'),
         ('q_magic_tinder', 'a small magical flame ember glowing orange and violet inside a cracked crystal shell'),
     ],
+    # 第 B 阶段（二觉 / 三觉）：机器人造型以第二张全家福为准
+    'mech_c': [
+        ('gm_hs12', 'the round HS-12 robot with a glowing violet plasma core in a white cage shell flying at a target and exploding in violet light'),
+        ('gm_frisbee', 'the gear-toothed saw-disc robot G-4 spinning fast on the ground with sparks'),
+        ('gm_gop', 'a glowing pink holographic control ring around three G-series robots with the words-free symbol of a crown'),
+        ('gm_falcon', 'the sleek white-and-gold falcon drone swooping with swept blade wings and a red visor'),
+        ('gm_field', 'a small white field generator on three legs emitting a big dome of crackling blue electromagnetic rings'),
+        ('gm_bolt', 'the sleek white-and-pink combat mech Volt MX slashing with a glowing pink laser sword'),
+        ('gm_micro', 'a swarm of tiny glowing cyan micro-robots forming a circuit pattern'),
+        ('gm_hyper', 'a huge golden energy cannon firing a massive plasma blast with tiny robots forming a shield around it'),
+        ('gm_stardust', 'a giant glowing pink-and-cyan mechanical dome made of countless tiny robots raining laser beams'),
+    ],
 }
 def icon_prompt(items):
-    rows = max(1, len(items) // 4)
+    rows = -(-len(items) // 4)
     return (f'The FIRST image shows the robot designs; the SECOND image is an example of the icon style. Draw a sprite sheet of {len(items)} separate game icons arranged in a grid of 4 columns and {rows} rows '
             f'on a plain pure white background, evenly spaced with generous white gaps between icons, no icon touching another, {ICON_STYLE}. {ROBOT_NOTE}In reading order (left to right, top to bottom): '
             + '; '.join(f'({i + 1}) {t}' for i, (_, t) in enumerate(items)) + '. No text, no numbers, no labels.')
@@ -271,7 +325,7 @@ def icons_gen(only, force):
         im = Image.open(os.path.join(HERE, 'final', 'icon', 'g_rx78.webp')).convert('RGBA').resize((416, 416), Image.LANCZOS)
         bg = Image.new('RGBA', (512, 512), (255, 255, 255, 255)); bg.alpha_composite(im, (48, 48)); bg.convert('RGB').save(ex)
     for n, items in ICONS.items():
-        if n.startswith(only): print(gen(os.path.join(SRC, 'icons', f'{n}.png'), icon_prompt(items), '2048x2048' if len(items) > 8 else '2048x1152', [os.path.join(SRC, '_lineup_review.png'), ex], force=force), flush=True)
+        if n.startswith(only): print(gen(os.path.join(SRC, 'icons', f'{n}.png'), icon_prompt(items), '2048x2048' if len(items) > 8 else '2048x1152', [os.path.join(SRC, '_lineup2_review.png' if n == 'mech_c' else '_lineup_review.png'), ex], force=force), flush=True)
 def icons_cut(only):
     """同 icons.py：去背 → 连通块 → 按行列排序 → 104×104 WebP（art/final/icon/<id>.webp）"""
     from prep import remove_bg, components
@@ -304,6 +358,8 @@ JOB_PROMPT = (f'Full-body character art of {CHAR}, now as a Mechanic: small bras
               'the little white orb drone (G-1 Corona) from the second image floats next to her shoulder and the small grey tracked robot (RX-78) from the second image sits at her feet. '
               'Modest outfit. Same cute chibi art style with thick outlines. Plain pure white background, full body visible, no ground shadow, no text.')
 CUTIN = {
+    'mechanic2': ('pointing forward with the remote control, a sleek white-and-pink combat mech (Volt MX from the second image) crashing down from the sky behind her holding a long rifle and a glowing pink laser sword, confident smile, hair blown back'),
+    'mechanic3': ('both arms raised to the sky, countless tiny glowing robots forming a giant glowing pink-and-cyan mechanical dome above her, serene confident expression, hair floating'),
     'mechanic': ('pointing forward with a small dark-grey remote control raised in the other hand, a huge white battle mech (the big G-0 Battleroid from the second image, with its gatling gun arm, '
                  'shoulder missile pods and glowing red chest core) looming behind her, red lock-on reticles, confident grin, hair blown back'),
 }
@@ -318,7 +374,7 @@ def job_art(force):
     print(gen(os.path.join(SRC, 'job_mechanic.png'), JOB_PROMPT, '1024x1536', refs, force=force), flush=True)
     for j, d in CUTIN.items():
         print(gen(os.path.join(SRC, f'cutin_{j}.png'), f'Using {CHAR} from the FIRST image (same design, same colors, same cute art style), draw a dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Plain pure white background, no text.',
-                  '1536x1024', refs, force=force), flush=True)
+                  '1536x1024', refs if j == 'mechanic' else [refs[0], os.path.join(SRC, '_lineup2_review.png')], force=force), flush=True)
 def job_prep():
     p = os.path.join(SRC, 'job_mechanic.png')
     if os.path.exists(p): os.makedirs(os.path.join(HERE, 'final', 'job'), exist_ok=True); cutout(p, max_h=900).save(os.path.join(HERE, 'final', 'job', 'mechanic.webp'), 'WEBP', quality=84, method=6); print('job/mechanic')
@@ -345,6 +401,8 @@ def main():
         refs = [os.path.join(MAIN, 'src', 'summon', '_refs_all.png'), os.path.join(SRC, '_rx78_ref_big.png')]
         print(gen(os.path.join(SRC, '_lineup.png'), lineup_prompt(), '3840x2160', refs, force=a.force), flush=True)
     elif a.phase == 'crop': crop_lineup()
+    elif a.phase == 'lineup2': print(gen(os.path.join(SRC, '_lineup2.png'), lineup2_prompt(), '3840x2160', [os.path.join(SRC, '_lineup_review.png')], force=a.force), flush=True)
+    elif a.phase == 'crop2': (review_copy('_lineup2.png', '_lineup2_review.png'), crop_lineup('_lineup2.png', LINEUP2_ORDER))
     elif a.phase == 'pose': print(pose_sheet(a.force), flush=True)
     elif a.phase == 'icons': icons_gen(a.only, a.force)
     elif a.phase == 'iconcut': icons_cut(a.only)

@@ -54,7 +54,7 @@ const foeGrade = t => (t.boss ? 3 : t.elite ? 2 : 1) * 1e9 + t.hp;
 function foesNear(p, x, y, rx, ry = rx * 0.4) { const L = []; for (const t of ents) if (foe(p, t) && Math.abs(t.x - x) < rx && Math.abs(t.y - y) < ry) L.push(t); return L; }
 
 /* ---- 机器人外观：有美术（art/final/spr/mech_<名字>/，分包 spr:mech_<名字>）就画帧，没有就用矢量画的替身 ---- */
-const MECH_ART = ['rx78', 'ez8', 'g1', 'g2', 'g3', 'viper', 'gale', 'sparrow', 'factory', 'g0', 'buster'];
+const MECH_ART = ['rx78', 'ez8', 'g1', 'g2', 'g3', 'viper', 'gale', 'sparrow', 'factory', 'g0', 'buster', 'hs12', 'frisbee', 'falcon', 'emgen', 'bolt'];
 let mechArtReq = false;
 function mechArtLoad() {
   if (mechArtReq || typeof loadBundles !== 'function' || typeof ASSET_BUNDLE === 'undefined') return; mechArtReq = true;
@@ -166,6 +166,27 @@ const MECH_LOOK = {
     mP(c, '#232833', () => c.rect(-12, -34, 24, 18), 1.6);
     const k = (t * 1.5) % 1; c.fillStyle = `rgba(255,220,120,${0.3 + 0.5 * (1 - k)})`; c.fillRect(-10, -32, 20, 14);
     c.strokeStyle = OUTL; c.lineWidth = 2; c.beginPath(); c.moveTo(14, -54); c.lineTo(14, -66); c.stroke(); c.fillStyle = Math.floor(t * 4) % 2 ? '#ff5a3a' : '#5a1a14'; c.beginPath(); c.arc(14, -68, 3, 0, TAU); c.fill();
+  },
+  hs12(c, s, t) {
+    if (mechFrame(c, 'hs12', s.lifeT < 0.7 ? cyc(t, 8, ['charge1', 'charge2']) : s.lifeT > 2.8 ? 'swell' : cyc(t, 10, ['fly1', 'fly2']))) return;
+    c.translate(0, -16); mGlow(c, 0, 0, 26, '#c08aff', 0.7 + 0.3 * Math.sin(t * 14));
+    mP(c, '#e8ecf2', () => c.arc(0, 0, 14, 0, TAU)); mP(c, '#b070ff', () => c.arc(0, 0, 8, 0, TAU), 1.6); c.fillStyle = '#5ab8ff'; c.beginPath(); c.arc(6, -4, 2.5, 0, TAU); c.fill();
+  },
+  frisbee(c, s, t) {
+    if (mechFrame(c, 'frisbee', cyc(t, 20, ['spin1', 'spin2', 'spin3', 'spin4']))) return;
+    c.translate(0, -14); c.rotate(t * 20); mP(c, '#5a6378', () => { for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; c.lineTo(Math.cos(a) * 15, Math.sin(a) * 15); c.lineTo(Math.cos(a + 0.26) * 12, Math.sin(a + 0.26) * 12); } c.closePath(); }, 2);
+    mP(c, '#e8ecf2', () => c.arc(0, 0, 7, 0, TAU), 1.6); c.fillStyle = '#f2c230'; c.fillRect(-7, -1, 14, 2);
+  },
+  falcon(c, s, t) {
+    const b = Math.sin(t * 3) * 3; c.translate(0, b);
+    if (mechFrame(c, 'falcon', s.job ? cyc(t, 8, ['cling', 'dive']) : s.fireFx > game.t ? (s.form === 'g2' ? 'laser' : 'charge') : cyc(t, 9, ['flapU', 'idle', 'flapD', 'idle']))) return;
+    c.save(); c.scale(1.6, 1.6); MECH_LOOK.g3(c, { ...s, stuck: false, tgt: null }, t); c.restore();
+  },
+  emgen(c, s, t) { mP(c, '#5a6378', () => c.rect(-8, -30, 16, 26)); mP(c, '#5ab8ff', () => c.arc(0, -34, 6, 0, TAU), 1.6); },
+  bolt(c, s, t) {
+    const ph = s.phase || 'drop', f = ph === 'drop' ? 'land' : ph === 'mx2' ? 'mx2' : ph === 'rifle' ? (s.fireFx > game.t ? 'rifle2' : 'rifle1') : ph === 'blade' ? cyc(t, 6, ['blade1', 'blade2']) : ph === 'charge' ? 'charge' : 'idle';
+    if (mechFrame(c, 'bolt', f)) return;
+    c.save(); c.scale(0.95, 0.95); MECH_LOOK.g0(c, { ...s, phase: ph === 'rifle' ? 'gat' : ph === 'blade' ? 'laser' : 'idle', lifeT: 2, life: 9 }, t); c.restore();
   },
   g0(c, s, t) {
     const k = clamp(s.lifeT / 0.6, 0, 1), sc = 0.4 + 0.6 * easeOutBack(k), fin = s.life - s.lifeT;
@@ -910,7 +931,7 @@ defSummon('mech_emfield', { kind: 'field', r: 125, tick: 0.1, hits: 15, life: 1.
     c.globalAlpha = 0.5 * (1 - k * 0.6); c.fillStyle = 'rgba(120,200,255,.25)'; c.beginPath(); c.ellipse(X, Y, 125, 125 * GR, 0, 0, TAU); c.fill();
     c.strokeStyle = '#bfe8ff'; c.lineWidth = 2; for (let i = 0; i < 3; i++) { const r = 125 * ((game.t * 1.5 + i / 3) % 1); c.globalAlpha = 0.7 * (1 - r / 125); c.beginPath(); c.ellipse(X, Y, r, r * GR, 0, 0, TAU); c.stroke(); }
     c.globalAlpha = 0.9; c.beginPath(); for (let i = 0; i < 6; i++) { const a = rnd(0, TAU), r = rnd(30, 120); c.moveTo(X, Y - 30); c.lineTo(X + Math.cos(a) * r, Y + Math.sin(a) * r * GR); } c.stroke();
-    c.restore(); c.save(); c.translate(X, Y); if (!mechFrame(c, 'emgen', 'idle')) { mP(c, '#5a6378', () => c.rect(-8, -30, 16, 26)); mP(c, '#5ab8ff', () => c.arc(0, -34, 6, 0, TAU), 1.6); } c.restore(); } });
+    c.restore(); c.save(); c.translate(X, Y); if (!mechFrame(c, 'emgen', cyc(game.t, 8, ['spin1', 'spin2', 'pulse']))) MECH_LOOK.emgen(c, s, game.t); c.restore(); } });
 defSkill('gm_field', { name: '高压电磁场', cls: 'gun', job: MC, lvReq: 26, tier: 2, mp: 150, cd: 50, type: 'mag', elem: 'light', col: '#3a8ae8',
   desc: '向前射出磁场发生器，飞出 220 px 后展开高压电磁场，1.5 秒内连续电击范围内的敌人 15 次，并把周围的敌人往中心拉。',
   pow: lv => MECH_DMG.field(lv) * 15, infoExtra: () => [['多段', '15 次 / 1.5 秒'], ['飞行距离', '220 px']], ai: { kind: 'aoe', r: [100, 380], dy: 60 },

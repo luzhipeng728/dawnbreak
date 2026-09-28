@@ -62,10 +62,16 @@ class FighterBrain {
     if (p.st === 'down' || (p.st === 'air' && p.z < 24 && p.vz < 0)) {
       if (p.st === 'down' && bsupReady(p) && p.cmb.hits >= 5 && Math.random() < L.escape) { P.hold('down'); P.tap('jump'); return; }
       if (this.techRoll === null) this.techRoll = Math.random() < L.tech;
-      if (this.techRoll && p.reboundCd <= 0 && p.stT > L.react * 0.4) P.tap('jump');
+      if (this.techRoll && p.reboundCd <= 0 && p.stT > L.react * 0.4) { P.tap('jump'); this.crouchUntil = this.t + (Math.random() < 0.5 ? rnd(0.05, 0.3) : rnd(0.5, 1.3)); }   // 有时马上起，有时多蹲一会儿（骗压起身）
       return;
     }
     this.techRoll = null;
+    // ---- 受身蹲伏中：对手在身边出招就继续蹲（等招出完），否则蹲到想好的时间再起；蹲着往远离对手的方向挪 ----
+    if (p.st === 'getup' && p.techHold) {
+      const threat = o.st === 'act' && adx < 240;
+      if (this.t < (this.crouchUntil || 0) || threat) { P.hold('jump'); if (adx < 150) P.hold(dir > 0 ? 'left' : 'right'); }
+      return;
+    }
     // ---- 挨打中：连段太长就用后跳-强化脱身（↓+C，冷却 30 秒）----
     if (p.st === 'hit') { if (bsupReady(p) && p.cmb.hits >= 4 && Math.random() < L.escape * dt * 6) { P.hold('down'); P.tap('jump'); } return; }
     if (!p.free && p.st !== 'act') return;
@@ -132,10 +138,13 @@ class FighterBrain {
     }
     // ---- 对手硬直中：普攻连段 → 技能取消 ----
     if (oStun && melee && o.lastHitBy === p) {
-      if (p.st === 'act' && p.act.basic && Math.random() < L.combo * 0.6) { const id = this.pickSkill(['launch', 'grab', 'burst', 'aoe', 'poke'], adx, ady, inAir); if (id && this.cast(id, dir)) return; }
+      if (p.st === 'act' && p.act && p.act.basic && Math.random() < L.combo * 0.6) { const id = this.pickSkill(['launch', 'grab', 'burst', 'aoe', 'poke'], adx, ady, inAir); if (id && this.cast(id, dir)) return; }
       P.hold(dir > 0 ? 'right' : 'left'); P.tap('attack'); return;
     }
     // ---- 对手倒地：枪手低射追击，其他职业站位等起身 ----
+    // 压起身：对方蹲伏（无敌）就退开等它起来；对方快要自己起身时贴上去出招（受身蹲伏躲得掉）
+    if (o.st === 'getup' && o.techHold) { if (adx < 140) P.hold(dir > 0 ? 'left' : 'right'); return; }
+    if (o.st === 'down' && adx < 120 && ady < 18 && o.stT > (o.downTime || 0.7) - 0.22 && Math.random() < L.aggr) { P.hold(dir > 0 ? 'right' : 'left'); P.tap('attack'); this.meaty = (this.meaty || 0) + 1; return; }
     if (oDown) { if (p.cls === 'gun' && adx < 300 && ady < 16 && o.st === 'down' && Math.random() < 0.5) { P.hold(dir > 0 ? 'right' : 'left'); P.hold('down'); P.tap('attack'); } else this.move(o, dx, dy, adx, ady, dir); return; }
     // ---- 立回：在距离内按欲望出手 ----
     if (Math.random() > L.aggr) { this.move(o, dx, dy, adx, ady, dir); return; }

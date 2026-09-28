@@ -26,6 +26,7 @@ export default {
     const view = R => ({ id: R.id, kind: R.kind, host: R.host, members: R.members.map(id => { const c = ctx.client(id), u = c ? c.user : ctx.findUser(id); return { id, name: u ? u.name : '?', char: c ? c.char : null, online: !!c }; }), meta: R.meta });
     const api = {
       rooms, asks, grace,
+      closeHooks: [],   // 其他模块（决斗场排位 arena.js）：房间关闭时回调 (R, why)，关闭前 R.members 还是原样
       of: uid => rooms.get(byUser.get(uid)),
       partyBusy: P => [...rooms.values()].some(R => R.kind === 'dungeon' && R.pid === P.id),
       open(kind, host, members, meta, pid, resume) {
@@ -53,6 +54,7 @@ export default {
       close(R, why) {
         if (!rooms.has(R.id)) return;
         rooms.delete(R.id);
+        for (const f of api.closeHooks) { try { f(R, why); } catch (e) { ctx.log('room closeHook 出错', e.stack || e); } }
         for (const id of R.members) { if (byUser.get(id) === R.id) byUser.delete(id); ctx.sendTo(id, { t: 'room:closed', id: R.id, why }); const g = grace.get(id); if (g) { clearTimeout(g); grace.delete(id); } }
       },
       leave(uid, why) {

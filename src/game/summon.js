@@ -39,13 +39,14 @@ function summon(owner, key, o = {}) {
   const base = { sid: summonSeq++, skey: key, sdef: D, owner, kind: D.kind, lv: o.lv || 1, mul: o.mul || 1, life: o.life ?? D.life, lifeT: 0, tickT: 0, hits: 0, gone: false, target: o.target || null };
   let s;
   if (D.kind === 'follower') {
-    s = new Ent({ team: owner.team, name: D.name || key, model: D.model ? D.model(owner) : buildGoblin(), clips: D.clips || BEAST_CLIPS,
+    s = new Ent({ team: owner.team, name: D.name || key, model: D.model ? D.model(owner) : buildGoblin(), clips: D.clips || summonClips(),
       x, y, face: owner.face, w: D.w || 12, d: D.d || 11, h: D.h || 70, weight: D.weight || 1, speed: D.speed ?? 170, shadowR: D.shadowR || 14, scale: D.scale || 1 });
     Object.assign(s, base, { summon: true, control: summonControl, aiCd: rnd(0.2, 0.5), think: 0, acd: (D.attacks || []).map(() => 0), buffs: {}, slot: summonsOf(owner).length });
     summonStats(s);
     if (D.hp) { s.hp = s.hpMax = Math.max(1, Math.round(D.hp(owner))); s.def = owner.def; s.mdef = owner.mdef; }
     else s.invul = Infinity;
     if (D.bundle) summonLoadArt(s);
+    s.hasRun = !!(typeof SPR_DATA !== 'undefined' && D.bundle && SPR_DATA[D.bundle] && SPR_DATA[D.bundle].frames.run1);
     ents.push(s);
   } else {
     s = { ...base, x, y, z: 0, face: owner.face, host: D.kind === 'attach' ? (D.host === 'owner' ? owner : o.target) : null };
@@ -72,6 +73,20 @@ function summonStats(s) {
   def('atkElem', () => o.atkElem);
   def('lvl', () => o.lvl || game.lvl || 1);
   def('dmgType', () => s.sdef.type || o.dmgType || 'mag');
+}
+// 召唤兽的精灵模型：和怪物同一套 spr.json 帧（art/final/spr/<id>/）；素材还没加载好时先画一个发光的小光球
+function summonSprite(id, o = {}, col) {
+  if (typeof SPR_DATA !== 'undefined' && SPR_DATA[id] && IMG[`spr/${id}/idle`]) return new SpriteModel(id, { ...SPR_FALLBACK, cast: 'cast1', roar: 'cast2', crouch: 'low1' }, SPR_ANIMS.monster, o);
+  return orbModel(col || '#d8c0ff');
+}
+function orbModel(col) { const img = fxTint('orb', col); return { draw(c, pose, t) { drawSpr(c, img, 0, -40 + Math.sin(t * 4) * 3, 30, 30, {}); } }; }
+// 召唤兽的动作片段：怪物片段（BEAST_CLIPS）+ 逐帧动画表里有、骨骼片段里没有的（cast / slam / bite / atk1……）自动补一个
+let SUMMON_CLIPS = null;
+function summonClips() {
+  if (SUMMON_CLIPS) return SUMMON_CLIPS;
+  const C = SUMMON_CLIPS = { ...BEAST_CLIPS }, A = typeof SPR_ANIMS !== 'undefined' ? SPR_ANIMS.monster : {};
+  for (const n in A) if (!C[n]) { const a = A[n]; C[n] = a.frames ? { dur: a.frames.length / a.fps, loop: true, keys: [k(0, POSE.idle)] } : { dur: a[a.length - 1][1] + 0.5, keys: [k(0, POSE.idle)] }; Object.defineProperty(C[n], '__name', { value: n }); }
+  return C;
 }
 // 召唤物用怪物素材（spr 分包）时按需加载，加载好之后换模型
 function summonLoadArt(s) {
@@ -173,7 +188,7 @@ function summonAI(s, dt) {
   if (Math.abs(gx) > 6 || Math.abs(gy) > 4) {
     const l = Math.hypot(gx, gy * 1.3) || 1, sp = (far ? (D.runSpeed || D.speed * 1.9) : D.speed) * (1 + buffVal(s, 'mspd'));
     s.vx = gx / l * sp; s.vy = gy / l * sp * 0.8; s.face = s.vx >= 0 ? 1 : -1;
-    s.setState(far && s.clips.run ? 'run' : 'walk');
+    s.setState(far && s.hasRun ? 'run' : 'walk');
   } else {
     s.vx = s.vy = 0; s.setState('idle');
     s.face = t ? (t.x >= s.x ? 1 : -1) : o.face;

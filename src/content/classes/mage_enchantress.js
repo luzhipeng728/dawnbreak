@@ -90,6 +90,7 @@ function enSpikes(c, X, Y, w, h, k, seed = 0) {
 /* =====================================================================
    疯疯熊（follower）：动作表 spr/madbear —— walk（idle、walk1~8）/ act（scratch1·2、punch1·2、slam1·2、guard、hurt）/ more（leap、fall、roar、claw1·2、idle2、cheer、down）
    ===================================================================== */
+const EN_GUARD_R = 400;   // 疯熊守护的施放范围（官方 600px）：离主角最近、在这个范围内的敌人
 const EN_BEAR_CLIP_NAMES = ['bScratch1', 'bScratch2', 'bScratch', 'bPunch', 'bSlam', 'bLeap', 'bFall', 'bRoar', 'bClaw', 'bGuard', 'bCheer', 'bHurt'];
 const EN_BEAR_CLIPS = { ...BEAST_CLIPS };
 for (const n of EN_BEAR_CLIP_NAMES) { EN_BEAR_CLIPS[n] = { dur: 9, keys: [k(0, POSE.idle)] }; Object.defineProperty(EN_BEAR_CLIPS[n], '__name', { value: n }); }
@@ -154,7 +155,8 @@ defSummon('en_bear', { kind: 'follower', name: '疯疯熊', bundle: 'madbear', m
     const F = s.owner.buffs && s.owner.buffs.en_favor, lv = F ? F.lv || 1 : 1;
     if (F && F.bear) s.buffs.en_favor = { t: 0.5, dmg: 0.15 + 0.005 * lv }; else delete s.buffs.en_favor;
   } });
-const enBearOf = p => summonsOf(p, 'en_bear')[0] || null;
+// 活着的疯疯熊；被外部移除（remove）但还没走完召唤框架收尾的熊先收掉，免得熊技能落在一只看不见的熊身上
+const enBearOf = p => { for (const s of summonsOf(p, 'en_bear')) { if (s.remove || s.dead) dismissOne(s, 'gone'); else return s; } return null; };
 function enBearSpawn(p) {
   const s = summon(p, 'en_bear', { x: p.x + p.face * 58, y: p.y });
   if (s) { fxBurst(s.x, s.y, 50, 90, '#d8b0ff'); if (!enHasArt('madbear')) enLoadArt(); }
@@ -182,7 +184,7 @@ const EN_MOVES = {
   // 疯熊火箭拳：拳头连着傀儡线射出去，打中处爆出圆形冲击波，然后收回
   rocket: lv => ({ clip: 'bPunch', dur: 0.9, events: [evAt(0.12, e => enRocketFist(e, lv))] }),
   // 疯熊守护：扑向最近的敌人砸下
-  guard: lv => ({ clip: 'bLeap', dur: 0.95, noCounter: true, onStart: e => { const t = nearestFoe(e, 520); e.act.tx = t ? t.x - Math.sign(t.x - e.x || e.face) * 20 : e.x + e.face * 160; e.act.ty = t ? t.y : e.y; e.face = Math.sign(e.act.tx - e.x) || e.face; e.vz = 520; e.z = 1; sfx.jump(); },
+  guard: lv => ({ clip: 'bLeap', dur: 0.95, noCounter: true, onStart: e => { const t = nearestFoe(enOwner(e), EN_GUARD_R); e.act.tx = t ? t.x - Math.sign(t.x - e.x || e.face) * 20 : e.x + e.face * 160; e.act.ty = t ? t.y : e.y; e.face = Math.sign(e.act.tx - e.x) || e.face; e.vz = 520; e.z = 1; sfx.jump(); },
     update: (e, dt) => { const a = e.act; if (a.landed) return; e.vx = (a.tx - e.x) * 3.2; e.vy = (a.ty - e.y) * 3.2; if (e.actT > 0.3 && !a.falling) { a.falling = true; e.play('bFall', true); } },
     onLand: e => { const a = e.act; if (!a || a.landed) return; a.landed = true; e.vx = e.vy = 0; e.play('bSlam', true); e.actT = Math.max(e.actT, 0.62); sfx.boom(0.5); cam.shake = Math.max(cam.shake, 4); fxShock(e.x + e.face * 20, e.y, 110, '#c8a070'); fxDust(e.x, e.y, 8, 30, '#8a7a6a');
       blast(e, e.x + e.face * 20, e.y, 80, enH(skillDmg(3.6, 0.36, a.lv || 1), { launch: 380, knock: 80, hs: 0.08, snd: 'blunt', shake: 3 }), { zMax: 120 }); } }),
@@ -192,19 +194,22 @@ const EN_MOVES = {
     update: (e, dt) => { const a = e.act; if (e.actT < 0.55) { e.vx = e.vy = 0; return; } if (!a.drop) { a.drop = true; e.warp(a.tx, a.ty, 620); e.vz = -1500; e.play('bFall', true); warnMark && 0; } },
     onLand: e => { const a = e.act; if (!a || !a.drop || a.landed) return; a.landed = true; e.play('bSlam', true); e.actT = Math.max(e.actT, 1.2); enBearQuake(e, a.lv || 1); } }),
   // 变大吧！疯疯熊：变大后对前方狂抓 + 最后一捶；按 → 慢慢推进
-  big: lv => ({ clip: 'bClaw', dur: 3.0, superArmor: true, noCounter: true,
-    update: (e, dt) => { const O = enOwner(e), u = e.actT; e.scale = e.enStage ? 1.3 : u < 0.25 ? lerp(1, 2.1, u / 0.25) : u > 2.8 ? lerp(2.1, 1, (u - 2.8) / 0.2) : 2.1; if (e.enStage) e.scale = 1.3 * (u < 0.25 ? lerp(1, 1.7, u / 0.25) : u > 2.8 ? lerp(1.7, 1, (u - 2.8) / 0.2) : 1.7);
+  big: lv => ({ clip: 'bClaw', dur: 3.0, superArmor: true, noCounter: true, bigMadd: true,
+    onInput: (e, I) => { if (e.enStage) enBigMash(e, e.act, I); return false; },
+    update: (e, dt) => { const O = enOwner(e), u = e.actT; e.act.spd = Math.max(1, e.act.spd - dt * 0.9); e.scale = e.enStage ? 1.3 : u < 0.25 ? lerp(1, 2.1, u / 0.25) : u > 2.8 ? lerp(2.1, 1, (u - 2.8) / 0.2) : 2.1; if (e.enStage) e.scale = 1.3 * (u < 0.25 ? lerp(1, 1.7, u / 0.25) : u > 2.8 ? lerp(1.7, 1, (u - 2.8) / 0.2) : 1.7);
       e.vx = O.pad && O.pad.dx() === e.face && u < 2.5 ? e.face * 70 : 0; if (u > 2.45 && !e.act.sl) { e.act.sl = true; e.play('bSlam', true); } },
     onEnd: e => { e.scale = e.enStage ? 1.3 : 1; },
     hits: [HB(0.3, 2.45, [0, 150, 44, 0, 230], skillDmg(0.8, 0.08, lv), enH(0, { rep: 0.2, stun: 0.45, knock: 25, hs: 0.02 })), HB(2.6, 2.7, [0, 170, 50, 0, 250], skillDmg(5, 0.5, lv), enH(0, { launch: 420, knock: 220, hs: 0.12, shake: 7, big: 2, snd: 'blunt' }))].map((h, i) => ({ ...h, dmg: i ? skillDmg(5, 0.5, lv) : skillDmg(0.8, 0.08, lv) })),
     events: [evAt(0.02, e => { sfx.boom(0.4); fxBurst(e.x, e.y, 80, 160, '#d8b0ff'); }), evAt(2.58, e => { sfx.boom(0.9); cam.shake = Math.max(cam.shake, 7); fxShock(e.x + e.face * 90, e.y, 160, '#c8a070'); })] }),
-  // 哇咔咔！：把周围的敌人吸过来，瞬间变大咆哮
+  // 哇咔咔！：把周围的敌人吸过来，瞬间变大咆哮（官方：咆哮多段 10 次，最后一下把敌人震飞）
   roar: lv => ({ clip: 'bRoar', dur: 1.8, superArmor: true, noCounter: true,
-    update: e => { const u = e.actT, b = e.enStage ? 1.3 : 1; e.scale = b * (u < 0.55 ? 1 : u < 0.7 ? lerp(1, 2, (u - 0.55) / 0.15) : u > 1.55 ? lerp(2, 1, Math.min(1, (u - 1.55) / 0.2)) : 2); },
+    update: e => { const u = e.actT, b = e.enStage ? 1.3 : 1; e.scale = b * (u < 0.55 ? 1 : u < 0.7 ? lerp(1, 2, (u - 0.55) / 0.15) : u > 1.55 ? lerp(2, 1, Math.min(1, (u - 1.55) / 0.2)) : 2);
+      if (u > 0.7 && u < 1.5 && (e.act.rw = (e.act.rw || 0) - 1) <= 0) { e.act.rw = 5; fxShock(e.x, e.y, 150 + Math.random() * 90, u < 1.1 ? '#ffd0a0' : EN_CURSE); } },
     onEnd: e => { e.scale = e.enStage ? 1.3 : 1; },
+    hits: [HB(0.7, 1.52, [-170, 230, 70, 0, 220], 0, enH(0, { rep: 0.09, max: 9, stun: 0.5, knock: 12, radial: true, hs: 0.02, snd: 'blunt' })), HB(1.55, 1.62, [-170, 230, 70, 0, 220], 0, enH(0, { launch: 320, knock: 140, radial: true, hs: 0.08, shake: 5, snd: 'blunt' }))]
+      .map((h, i) => ({ ...h, dmg: i ? skillDmg(2.1, 0.21, lv) : skillDmg(0.6, 0.06, lv) })),
     events: [evAt(0.15, e => { for (const t of ents) if (foe(e, t) && !t.boss && t.invul <= 0 && Math.abs(t.x - e.x) < 400 && Math.abs(t.y - e.y) < 120 && t.weight <= 3) { t.x = lerp(t.x, e.x + e.face * 60, 0.75); t.y = lerp(t.y, e.y, 0.6); fxDust(t.x, t.y, 3, 10); } fxShock(e.x, e.y, 400, EN_CURSE); }),
-      ...[0.7, 1.0, 1.3].map((t0, i) => evAt(t0, e => { sfx.boom(0.6); cam.shake = Math.max(cam.shake, 5); fxShock(e.x, e.y, 200, '#ffd0a0');
-        blast(e, e.x + e.face * 40, e.y, 190, enH(skillDmg(2.5, 0.25, lv), { stun: 0.8, knock: 120, launch: i === 2 ? 320 : 0, hs: 0.06, snd: 'blunt' }), { zMax: 200 }); }))] }),
+      evAt(0.7, e => { sfx.boom(0.8); cam.shake = Math.max(cam.shake, 6); }), evAt(1.55, e => { sfx.boom(1); cam.shake = Math.max(cam.shake, 8); fxShock(e.x, e.y, 240, '#ffd0a0'); })] }),
   // 咆哮吧！疯疯熊：巨熊向前喷诅咒吐息，24 段；地面留下 5 秒的诅咒地带
   breath: lv => ({ clip: 'bRoar', dur: 2.8, superArmor: true, noCounter: true,
     update: e => { const u = e.actT, b = e.enStage ? 1.3 : 1; e.scale = b * (u < 0.3 ? lerp(1, 2.4, u / 0.3) : u > 2.6 ? lerp(2.4, 1, (u - 2.6) / 0.2) : 2.4);
@@ -260,11 +265,13 @@ function enDollBoom(s) {
 defSummon('en_doll', { kind: 'follower', name: '僵尸人偶', bundle: 'zombiedoll', model: () => enDollModel(), clips: EN_DOLL_CLIPS, w: 9, d: 9, h: 46, scale: 1, speed: 290, shadowR: 10,
   life: 4, max: 10, over: 'oldest', keepRoom: false, col: EN_CURSE, type: 'indep', elem: 'dark',
   ai(s, dt) {
-    if (s.swell !== undefined) { s.vx = s.vy = 0; s.swell -= dt; if (Math.random() < 0.6) fxCharge(s, EN_CURSE); if (s.swell <= 0) { enDollBoom(s); dismissOne(s, 'cmd'); } return; }
     let t = s.target && !s.target.dead && !s.target.remove ? s.target : null;
     if (!t) t = s.target = nearestFoe(s, 600);
     const gx = t ? t.x : s.x + s.face * 200, gy = t ? t.y : s.y, dx = gx - s.x, dy = gy - s.y, l = Math.hypot(dx, dy * 1.4) || 1;
-    if (t && l < 24) { s.swell = 0.3; s.setState('act'); s.play('dSwell', true); return; }
+    if (t && l < 16 + (t.w || 10) + s.w) {   // 贴到敌人身上鼓起来再自爆（动作期间框架不调 ai，所以用动作事件引爆）
+      s.vx = s.vy = 0; s.doAct({ name: 'dSwell', clip: 'dSwell', dur: 0.34, noCounter: true,
+        update: d => { d.vx = d.vy = 0; if (!t.dead && !t.remove) { d.x = t.x - Math.sign(t.x - d.x || -d.face) * (t.w || 10) * 0.6; d.y = t.y + 1; } if (Math.random() < 0.6) fxCharge(d, EN_CURSE); },
+        events: [evAt(0.3, d => { enDollBoom(d); dismissOne(d, 'cmd'); })] }); return; }
     s.vx = dx / l * s.sdef.speed; s.vy = dy / l * s.sdef.speed * 0.8; if (Math.abs(dx) > 4) s.face = Math.sign(dx); s.setState('run'); s.play('dRun');
   },
   onEnd(s, why) { if (why === 'life') enDollBoom(s); } });
@@ -308,7 +315,7 @@ defSummon('en_hut', { kind: 'field', life: 20, max: 1, r: 110, tick: 1.0, keepRo
   onSpawn(s) { s.wig = 0; s.wigT = 3.5; s.stab = 0; s.open = 0; },
   update(s, dt) {
     s.wig = Math.max(0, s.wig - dt); s.stab = Math.max(0, s.stab - dt); s.open = Math.max(0, s.open - dt);
-    if (s.lifeT > 1 && s.lifeT < s.life - 1 && (s.wigT -= dt) <= 0) { s.wigT = 3.5; s.wig = 0.7; const p = game.player; if (p && p.enHut === s) { const v = Math.max(0, Math.min(p.hp - 1, Math.round(p.hpMax * 0.05))); if (v) { p.hp -= v; addNumber(v, p.x, p.y, p.z + 60, { player: true }); } } }
+    if (s.lifeT > 1 && s.lifeT < s.life - 1 && (s.wigT -= dt) <= 0) { s.wigT = 3.5; s.wig = 0.7; const p = game.player; if (p && p.enHut === s && !(p.buffs && p.buffs.en_favored)) { const v = Math.max(0, Math.min(p.hp - 1, Math.round(p.hpMax * 0.05))); if (v) { p.hp -= v; addNumber(v, p.x, p.y, p.z + 60, { player: true }); } } }
     const p = game.player;   // 进屋：本机玩家跳起来落到小屋上（队友那边同一座小屋由技能重放生成）
     if (p && !p.dead && !p.enHut && !p.enStage && s.lifeT > 0.9 && s.lifeT < s.life - 1 && p.z > 12 && p.vz < 0 && Math.abs(p.x - s.x) < 46 && Math.abs(p.y - s.y) < 26) enHutEnter(p, s);
   },
@@ -359,8 +366,12 @@ defSummon('en_cursezone', { kind: 'field', life: 5, max: 1, r: 180, tick: 0.5, k
     if (Math.random() < 0.3) addFx({ x: s.x + rnd(-150, 150), y: s.y + rnd(-60, 60), z: 0, vz: 30, dur: 0.8, update(dt) { this.z += this.vz * dt; }, draw(cc) { const q = this.t / this.dur; drawSpr(cc, fxTint('darkorb', EN_CURSE), sx(this.x), sy(this.y, this.z), 26 * (1 - q * 0.5), 0, { alpha: 0.6 * (1 - q) }); } }); } });
 // 苦痛庭院：以自身为中心约 500px 的荆棘庭院，8 段伤害 + 束缚 3 秒
 defSummon('en_garden', { kind: 'field', life: 3.4, max: 1, r: 250, tick: 0.4, hits: 8, keepRoom: false,
-  onTick(s, foes) { if (s.owner.ghost) return; const first = s.hits === 0; for (const t of foes) { if (first) addStatus(t, 'bind', 3, { src: s.owner }); summonHit(s, t, enH(skillDmg(1.4, 0.14, s.lv), { stun: 0.35, knock: 0, hs: 0.03, col: EN_ROSE })); }
-    if (s.hits === 7) { sfx.boom(0.7); fxShock(s.x, s.y, 250, EN_ROSE); } },
+  // 前 7 段荆棘多段（出血），第 8 段蔷薇爆炸（官方：荆棘多段 + 蔷薇爆炸 + 出血 3 秒 + 束缚 3 秒）
+  onTick(s, foes) { if (s.owner.ghost) return; const first = s.hits === 0, fin = s.hits === 7;
+    for (const t of foes) { if (first) addStatus(t, 'bind', 3, { src: s.owner });
+      if (fin) { summonHit(s, t, enH(skillDmg(5.6, 0.56, s.lv), { stun: 0.6, knock: 60, radial: true, hs: 0.08, big: 1.4, col: EN_ROSE, snd: 'blunt' })); fxBurst(t.x, t.y, 30, 70, EN_ROSE); }
+      else if (summonHit(s, t, enH(skillDmg(0.8, 0.08, s.lv), { stun: 0.35, knock: 0, hs: 0.03, col: EN_ROSE }))) addStatus(t, 'bleed', 3, { dps: atkOf(s.owner, 'indep') * 0.03, src: s.owner }); }
+    if (fin) { sfx.boom(0.9); cam.shake = Math.max(cam.shake, 6); fxShock(s.x, s.y, 250, EN_ROSE); for (let i = 0; i < 10; i++) { const an = i * TAU / 10; fxSpr('petal', s.x + Math.cos(an) * 170, s.y + Math.sin(an) * 70, 20, { w: 50, dur: 0.6, col: EN_ROSE }); } } },
   draw(c, s) { const u = s.lifeT, a = u < 0.25 ? u / 0.25 : Math.min(1, (s.life - u) / 0.4), X = sx(s.x), Y = sy(s.y, 0);
     c.save(); c.globalAlpha = a * 0.45; c.fillStyle = '#2a0a20'; c.beginPath(); c.ellipse(X, Y, 250, 250 * GR, 0, 0, TAU); c.fill(); c.globalAlpha = a;
     for (let i = 0; i < 16; i++) { const an = i * TAU / 16, r = 150 + (i % 3) * 40, x = X + Math.cos(an) * r, y = Y + Math.sin(an) * r * GR; enSpikes(c, x, y, 26, 34, Math.min(1, u * 4) * (0.7 + 0.3 * Math.sin(game.t * 8 + i)), i); if (i % 2) enRose(c, x + 6, y - 6, 4, a); }
@@ -408,7 +419,7 @@ function enBloomHit(a, t) {
 }
 
 /* =====================================================================
-   主动技能（P0：官方 Lv≤48 → 本作 Lv≤21，含一觉）
+   主动技能（官方 Lv≤48 → 本作 Lv≤21，含一觉）
    ===================================================================== */
 const enCmdTxt = s => s;
 defSkill('en_rosevine', { name: '玫瑰藤蔓', cls: 'mage', job: EN, lvReq: 10, mp: 25, cd: 5, type: 'indep', elem: 'dark', col: '#8a2040', cast: true,
@@ -454,10 +465,23 @@ defSkill('en_hotfeet', { name: '火热的爱意', cls: 'mage', job: EN, lvReq: 1
   desc: '点燃诅咒人偶的脚（2 次，每 12 秒补充 1 次）：900px 内的队友 12 秒内攻击速度、移动速度和施放速度提高——但站着不动的话脚底会被火烧。同时在前方连续燃起 3 次暗火灼烧敌人。',
   infoExtra: lv => { const b = enHotBuff(lv); return [['攻速 / 移速', '+' + pct(b.aspd)], ['施放速度', '+' + pct(b.cspd)], ['暗火', `3 × ${pct(skillDmg(0.7, 0.07, lv))}`]]; }, pow: lv => skillDmg(0.7, 0.07, lv) * 3, ai: { kind: 'buff' },
   act: (lv) => ({ name: 'en_hotfeet', clip: 'enCmd', dur: 0.5, noCounter: true,
-    events: [evAt(0.14, e => { sfx.flame ? sfx.flame() : sfx.buff(); enBuffParty(e, 900, 'en_hotfeet', () => enHotBuff(lv));
-      const x = e.x + e.face * 95, y = e.y;   // 3 段暗火在身前同一处连烧（前两段硬直，最后一段轻轻炸起）
-      for (let i = 0; i < 3; i++) game.after(i * 0.16, () => { if (e.dead) return; fxSpr('flame', x, y, 10, { w: 70 + i * 12, h: 90 + i * 14, dur: 0.45, col: '#c070ff', ay: 1 }); fxDust(x, y, 3, 10, '#6a3a5a');
-        blast(e, x, y, 64, enH(skillDmg(0.7, 0.07, lv), i < 2 ? { stun: 0.35, knock: 10, hs: 0.04, snd: 'fire', col: '#d090ff' } : { launch: 150, knock: 40, hs: 0.04, snd: 'fire', col: '#d090ff' }), { zMax: 90 }); }); })] }) });
+    events: [evAt(0.14, e => enHotNow(e, lv))] }) });
+// 火热的爱意：在身前点燃一个诅咒人偶的脚——队友加速；人偶的热量传给附近的敌人（3 段暗火，前两段硬直，最后一段轻轻炸起）
+function enHotNow(e, lv) {
+  sfx.flame ? sfx.flame() : sfx.buff(); enBuffParty(e, 900, 'en_hotfeet', () => enHotBuff(lv));
+  const x = e.x + e.face * 95, y = e.y; enDollFx(x, y, { dur: 0.75, burn: true, face: e.face, drop: !!e.enStage });
+  for (let i = 0; i < 3; i++) game.after(0.1 + i * 0.16, () => { if (e.dead) return; fxSpr('flame', x, y, 10, { w: 70 + i * 12, h: 90 + i * 14, dur: 0.45, col: '#c070ff', ay: 1 }); fxDust(x, y, 3, 10, '#6a3a5a');
+    blast(e, x, y, 64, enH(skillDmg(0.7, 0.07, lv), i < 2 ? { stun: 0.35, knock: 10, hs: 0.04, snd: 'fire', col: '#d090ff' } : { launch: 150, knock: 40, hs: 0.04, snd: 'fire', col: '#d090ff' }), { zMax: 90 }); });
+}
+// 诅咒人偶的一次性表现（烫脚点火 / 人偶剧场里从画面上方掉下来）：drop = 从天而降，burn = 脚底着火
+function enDollFx(x, y, o = {}) {
+  addFx({ x, y: y + 0.4, z: 0, dur: o.dur || 0.6, face: o.face || 1, draw(c) {
+    const u = this.t, d = this.dur, fall = o.drop ? Math.max(0, 1 - u / 0.25) : 0, z = 380 * fall * fall, a = u > d - 0.15 ? (d - u) / 0.15 : 1, X = sx(this.x), Y = sy(this.y, z);
+    c.save(); c.globalAlpha = clamp(a, 0, 1);
+    if (!enFrame(c, 'zombiedoll', fall > 0 ? 'fall' : 'idle', X, Y, 0.75, { flip: this.face < 0 })) { c.translate(X, Y); c.scale(this.face * 0.8, 0.8); EN_DOLL_FB.draw(c, { __c: 'idle' }, u); }
+    c.restore();
+    if (o.burn && !fall) { c.save(); c.globalAlpha = 0.9 * clamp(a, 0, 1); drawSpr(c, fxTint('flame', '#ff8a3a'), X, Y + 2, 34, 40, { ay: 1 }); c.restore(); } } });
+}
 defSkill('en_rosewhip', { name: '蔷薇藤鞭', cls: 'mage', job: EN, lvReq: 17, mp: 45, cd: 10, type: 'indep', elem: 'dark', col: '#a0203a',
   desc: '挥出荆棘长鞭先向前砸下，再往回一拽，把敌人拉到身前（施放中霸体）。', pow: lv => skillDmg(1.8, 0.18, lv) * 2, ai: { kind: 'poke', r: [40, 280], dy: 24 },
   act: (lv) => ({ name: 'en_rosewhip', clip: 'whip', dur: 0.8, superArmor: true, cancelFrom: 0.62,
@@ -476,10 +500,11 @@ defSkill('en_forbidden', { name: '禁忌诅咒', cls: 'mage', job: EN, lvReq: 18
   desc: '【队伍 BUFF】以坏坏兔为媒介扩散诅咒（抱着兔子向前一步，再高高抛起）：300 秒内 900px 内的队友攻击力大幅提高，自己的技能攻击力提高（单刷时自己也获得队友那份攻击力）。\n副作用：剩下 20 秒起，每 5 秒扣 5% HP（自己和偏爱对象不扣）。',
   infoExtra: lv => [['队友攻击力', '+' + pct(0.06 + 0.008 * lv)], ['自己技能攻击力', '+' + pct(0.05 + 0.006 * lv)]], ai: { kind: 'buff' },
   act: (lv) => ({ name: 'en_forbidden', clip: 'enForb', dur: 1.1, noCounter: true,
-    events: [evAt(0.55, e => { sfx.buff(); fxBurst(e.x, e.y, e.z + 110, 140, EN_CURSE); fxShock(e.x, e.y, 200, EN_CURSE); enBuffParty(e, 900, 'en_forbidden', (t, self) => enForbBuff(lv, self)); })] }) });
+    events: [evAt(0.55, e => enForbNow(e, lv))] }) });
+function enForbNow(e, lv) { sfx.buff(); fxBurst(e.x, e.y, e.z + 110, 140, EN_CURSE); fxShock(e.x, e.y, 200, EN_CURSE); enBuffParty(e, 900, 'en_forbidden', (t, self) => enForbBuff(lv, self)); }
 defSkill('en_guard', { name: '疯熊守护', cls: 'mage', job: EN, lvReq: 18, mp: 40, cd: 10, type: 'indep', elem: 'dark', col: '#6a4a2a', bear: true, cmdNote: undefined,
   desc: '【疯疯熊】疯疯熊扑向最近的敌人砸下，把敌人挑起。你被击中、倒地或被控制时也能施放。', pow: lv => skillDmg(3.6, 0.36, lv), ai: { kind: 'aoe', r: [0, 500], dy: 120 },
-  whenHit: () => false, hitStates: ['hit', 'down', 'air', 'held'],   // whenHit 返回 false = 不限制：平时和受击 / 倒地时都能放
+  whenHit: () => false, hitStates: ['hit', 'down', 'air', 'held'], req: p => !!nearestFoe(p, EN_GUARD_R) || '范围内没有敌人',   // whenHit 返回 false = 不限制：平时和受击 / 倒地时都能放
   instant: (lv, p, extra) => { const def = EN_MOVES.guard(lv); def.lv = lv;
     if (p.enStage) { if (!p.free && p.st !== 'act') { p.interrupt(); p.stun = 0; } p.doAct({ ...def, name: 'en_guard' }, extra); return; }
     enBearDo(p, def); if (p.free || (p.st === 'act' && p.act && p.act.basic)) p.doAct({ name: 'en_guard', clip: 'enCmd', dur: 0.28, noCounter: true }, extra); } });
@@ -509,7 +534,8 @@ function enMadCall(e, lv) {
   for (let i = 0; i < 5; i++) { const s = summon(e, 'en_doll', { x: e.x + e.face * (24 + i * 6), y: clamp(e.y + (i - 2) * 16, 6, DEPTH - 6), lv, target: foes.length ? foes[i % foes.length] : null }); if (s) { s.face = e.face; fxDust(s.x, s.y, 2, 8, '#6a7a5a'); } }
 }
 defSkill('en_rosejail', { name: '蔷薇囚狱', cls: 'mage', job: EN, lvReq: 19, mp: 70, cd: 18, type: 'indep', elem: 'dark', col: '#c02a50', cast: true,
-  desc: '在前方展开一片荆棘地：里面的敌人被定身约 4.5 秒，脚下不断开出蔷薇造成多段伤害，结束时爆炸把敌人击倒。施放后可以自由行动。', pow: lv => skillDmg(0.25, 0.025, lv) * 15 + skillDmg(2.4, 0.24, lv), ai: { kind: 'aoe', r: [60, 320], dy: 60 },
+  desc: '在前方展开一片荆棘地：里面的敌人被定身约 4.5 秒，脚下不断开出蔷薇造成多段伤害，结束时爆炸把敌人击倒。施放后可以自由行动；再按一次技能键立即引爆。',
+  recast: { ok: p => summonsOf(p, 'en_jail').length > 0, instant: true, cd: 0.3, mp: 0, act: (lv, p) => { for (const s of summonsOf(p, 'en_jail')) s.life = Math.min(s.life, s.lifeT + 0.02); } }, pow: lv => skillDmg(0.25, 0.025, lv) * 15 + skillDmg(2.4, 0.24, lv), ai: { kind: 'aoe', r: [60, 320], dy: 60 },
   act: (lv) => ({ name: 'en_rosejail', clip: 'enCmd', dur: 0.45, noCounter: true, events: [evAt(0.15, e => { sfx.magic(); const at = aimAhead(e, 180, 320, 80); summon(e, 'en_jail', { x: at.t ? at.x : e.x + e.face * 180, y: at.t ? at.y : e.y, lv }); })] }) });
 defSkill('en_firstaid', { name: '爱之急救', cls: 'mage', job: EN, lvReq: 19, mp: 80, cd: 40, type: 'indep', col: '#ff9ac0', cast: true, noForce: true,
   desc: '给坏坏兔缠上绷带：立即解除 800px 内队友的异常状态，并在脚下展开 800px 的绷带魔法阵，约 8 秒内持续回复阵里的队友。',
@@ -519,12 +545,27 @@ function enAidNow(e, lv) { sfx.buff(); summon(e, 'en_aid', { x: e.x, y: e.y, lv 
 defSkill('en_hut', { name: '林中小屋', cls: 'mage', job: EN, lvReq: 20, mp: 60, cd: 50, type: 'indep', elem: 'dark', col: '#4a2a4a', cast: true, noForce: true,
   desc: '在前方长出一座荆棘小屋（20 秒，每张地下城最多 2 次）：队友跳起来落到小屋上就能躲进去，屋里无敌，但小屋每次蠕动会扣 5% HP；按跳跃键出来。靠近小屋的敌人会被荆棘刺中击退。',
   pow: lv => skillDmg(0.35, 0.035, lv) * 18, req: p => (p._enHutN || 0) < 2 || '这张图已经用了 2 次', ai: { kind: 'buff' },
-  act: (lv) => ({ name: 'en_hut', clip: 'enCmd', dur: 0.5, noCounter: true, events: [evAt(0.2, e => { e._enHutN = (e._enHutN || 0) + 1; sfx.magic(); fxDust(e.x + e.face * 110, e.y, 8, 30, '#5a3a3a'); summon(e, 'en_hut', { x: e.x + e.face * 110, y: e.y, lv }); })] }) });
+  act: (lv) => ({ name: 'en_hut', clip: 'enCmd', dur: 0.5, noCounter: true, events: [evAt(0.2, e => enHutNow(e, lv))] }) });
+function enHutNow(e, lv) {
+  e._enHutN = (e._enHutN || 0) + 1; const x = e.x + e.face * 110, y = e.y;
+  const go = () => { sfx.magic(); fxDust(x, y, 8, 30, '#5a3a3a'); summon(e, 'en_hut', { x, y, lv }); };
+  if (e.enStage) { enDollFx(x, y, { dur: 0.3, drop: true, face: e.face }); game.after(0.26, () => { if (!e.dead) go(); }); } else go();
+}
 defSkill('en_bigbear', { name: '变大吧！疯疯熊', cls: 'mage', job: EN, lvReq: 20, mp: 120, cd: 45, type: 'indep', elem: 'dark', col: '#b07040', bear: true,
-  desc: '【疯疯熊】疯疯熊瞬间变大，对前方狂抓一通再狠狠捶下。期间你无敌约 3 秒，并且可以不做动作直接施放细心缝补和爱之急救；按住 → 疯疯熊会慢慢推进。',
+  desc: '【疯疯熊】疯疯熊瞬间变大，对前方狂抓一通再狠狠捶下。期间你无敌约 3 秒，并且可以不做动作直接施放细心缝补和爱之急救；按住 → 疯疯熊会慢慢推进；连按技能键或 X 抓得更快；按跳跃键中断。',
   pow: lv => skillDmg(0.8, 0.08, lv) * 11 + skillDmg(5, 0.5, lv), ai: { kind: 'burst', r: [0, 200], dy: 50 },
   act: (lv, p) => p && p.enStage ? { ...EN_MOVES.big(lv), name: 'en_bigbear' } : { name: 'en_bigbear', clip: 'enCmd', dur: 3.0, invul: true, noCounter: true,
-    onStart: e => enBearDo(e, EN_MOVES.big(lv)), onInput: (e, I) => { enQuickCast(e, I, ['en_mend', 'en_firstaid']); return true; } } });
+    onStart: e => { const s = enBearDo(e, EN_MOVES.big(lv)); e.act.bear = s; e.act.bAct = s && s.act; },
+    update: e => { const a = e.act, s = a.bear; if (e.actT > 0.2 && (!s || s.act !== a.bAct)) e.endAct(); },
+    onInput: (e, I) => { const a = e.act, s = a.bear; if (s && s.act === a.bAct && enBigMash(e, s.act, I)) { if (s.act) s.endAct(); e.endAct(); return true; } enQuickCast(e, I, ['en_mend', 'en_firstaid']); return true; } } });
+// 变大吧！疯疯熊：连按技能键 / X 让狂抓变快（多段次数不变、提前打完）；按跳跃键中断。返回 true = 中断
+function enBigMash(p, a, I) {
+  if (!a || !a.bigMadd) return false;
+  if (I.buffered('jump')) { I.consume('jump'); if (p.enStage) p.endAct(); return true; }
+  const slot = barOf(p).indexOf('en_bigbear');
+  if (I.buffered('attack') || (slot >= 0 && I.buffered('s' + slot))) { I.consume('attack'); if (slot >= 0) I.consume('s' + slot); if (a.actT < 2.4) a.spd = Math.min(2.2, a.spd + 0.3); }
+  return false;
+}
 // 不做动作直接施放（变大吧！期间的缝补 / 急救）：扣 MP、进冷却，效果直接生效（再用 partySend 通知其他客户端上的队友）
 function enQuickCast(p, I, ids) {
   const bar = barOf(p);
@@ -550,7 +591,7 @@ const EN_STAGE_ACTS = {
   back: { ...BACKSTEP, clip: 'bLeap' },
 };
 const EN_IMMUNE_ALL = { burn: 1, poison: 1, bleed: 1, freeze: 1, stun: 1, slow: 1, blind: 1, shock: 1, curse: 1, sleep: 1, root: 1, bind: 1, confuse: 1, taunt: 1 };
-const enStageBuff = (lv, k) => ({ t: 1.5, atk: (0.08 + 0.01 * lv) * k, aspd: 0.1 * k, mspd: 0.1 * k, cspd: 0.1 * k, col: '#ff5a9a', name: '人偶剧场' });
+const enStageBuff = (lv, k, self) => ({ t: 1.5, atk: (0.08 + 0.01 * lv) * k, aspd: 0.1 * k, mspd: 0.1 * k, cspd: 0.1 * k, ...(self ? {} : { taken: -(0.3 + 0.03 * lv) }), col: '#ff5a9a', name: '人偶剧场' });
 function enStageStart(e, lv, o) {
   if (e.enStage) { const St = e.enStage; St.dur = Math.max(St.dur, St.t) + (o.add || 0); St.k = Math.max(St.k, o.k || 1); St.fin = Math.max(St.fin, o.fin || 1); St.lv = Math.max(St.lv, lv); return; }
   e.enStage = { t: 0, dur: o.dur, lv, k: o.k || 1, fin: o.fin || 1, tick: 0 };
@@ -567,8 +608,15 @@ function enStageTick(e, dt) {
   if (e.dead || ents.indexOf(e) < 0) { enStageEnd(e, false); return; }
   if (e._enBearLoad && enHasArt('madbear')) { e._enBearLoad = false; e.model = enBearModel(true); }
   e.buffs.en_stage = { t: St.dur - St.t, taken: -(0.3 + 0.03 * St.lv), col: '#ff5a9a', name: '人偶剧场（变身）' };
-  if ((St.tick -= dt) <= 0) { St.tick = 1; enBuffParty(e, 900, 'en_stageP', () => enStageBuff(St.lv, St.k)); }
+  if ((St.tick -= dt) <= 0) { St.tick = 1; enBuffParty(e, 900, 'en_stageP', (t, self) => enStageBuff(St.lv, St.k, self)); }
+  if (e.act && e.act.skill === 'en_awaken2') St.dur = Math.max(St.dur, St.t + 0.5);   // 人偶之森期间剧场不会结束，放完再谢幕
   if (St.t >= St.dur) enStageEnd(e, true);
+}
+// 再按觉醒键提前谢幕：开场 1.5 秒后；三觉（a3）只在三觉的剧场里生效。AI 只在快结束时才用（避免决斗里一开就收）
+function enCanFinale(p, a3) {
+  const St = p && p.enStage; if (!St || St.t < 1.5 || (a3 && !(St.a3 !== undefined && St.t - St.a3 > 1.5))) return false;
+  if (p.act && p.act.skill && SKILLS[p.act.skill] && SKILLS[p.act.skill].awaken) return false;
+  return isHuman(p) || St.t > St.dur - 3;
 }
 function enStageEnd(e, finale) {
   const St = e.enStage; if (!St) return; e.enStage = null;
@@ -604,24 +652,63 @@ function enCurtain(e, dur, rip) {
     c.restore(); } });
 }
 defSkill('en_awaken', { name: '开幕！人偶剧场', cls: 'mage', job: EN, tier: 1, lvReq: 21, maxLv: 3, mp: 250, cd: 160, pvp: 0.45, type: 'indep', elem: 'dark', awaken: true, col: '#c0306a',
-  desc: '【觉醒】疯疯熊拉上帷幕，暗黑少女从上方现身，用傀儡线操纵疯疯熊（约 3 秒的开场期间无敌）。36 秒内你改为操控疯疯熊：普攻和熊系技能都由熊出招，900px 内的队友攻击力、攻速、移速、施放速度提高，自己受到的伤害降低并免疫异常状态。开场时自动施放一次疯狂召唤。结束时巨熊撕破幕布，对全屏敌人造成巨大伤害。',
-  pow: lv => skillDmg(24, 6, lv), infoExtra: lv => [['持续', '36 秒'], ['受到伤害', '-' + pct(0.3 + 0.03 * lv)], ['队友攻击力', '+' + pct(0.08 + 0.01 * lv)]], ai: { kind: 'awaken', r: [0, 400], dy: 120 },
+  desc: '【觉醒】疯疯熊拉上帷幕，暗黑少女从上方现身，用傀儡线操纵疯疯熊（约 3 秒的开场期间无敌）。36 秒内你改为操控疯疯熊：普攻和熊系技能都由熊出招，900px 内的队友攻击力、攻速、移速、施放速度提高，自己受到的伤害降低并免疫异常状态。开场时自动施放一次疯狂召唤。变身期间小魔女的技能照样能用：BUFF / 回复 / 诅咒人偶类技能不做动作直接生效（诅咒人偶从画面上方掉下来），人偶戏法由人偶自己钉；女法的基础技能只能用替身草人。时间到或再按一次技能键时谢幕：巨熊撕破幕布，对全屏敌人造成巨大伤害。',
+  pow: lv => skillDmg(24, 6, lv), infoExtra: lv => [['持续', '36 秒（再按技能键提前谢幕）'], ['受到伤害', '-' + pct(0.3 + 0.03 * lv)], ['队友攻击力', '+' + pct(0.08 + 0.01 * lv)]], ai: { kind: 'awaken', r: [0, 400], dy: 120 },
+  recast: { ok: p => enCanFinale(p, false), instant: true, cd: 0.5, mp: 0, act: (lv, p) => enStageEnd(p, true) },
   act: (lv) => ({ name: 'en_awaken', clip: 'enBanzai', dur: 2.4, invul: true, superArmor: true, noCounter: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '开幕！人偶剧场', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); enCurtain(e, 2.3, false); },
     events: [evAt(1.2, e => { sfx.boom(0.5); fxBurst(e.x, e.y, 100, 220, EN_ROSE); }), evAt(2.3, e => { enStageStart(e, lv, { dur: 36 }); if (lvOf(e, 'en_madcall') || !isHuman(e)) enMadCall(e, Math.max(1, lvOf(e, 'en_madcall'))); })] }) });
 
 /* =====================================================================
-   P1：一觉之后（官方 Lv60～100 → 本作 Lv23～30），含二觉、三觉
+   一觉之后的技能（官方 Lv60～100 → 本作 Lv23～30），含二觉、三觉
    ===================================================================== */
 defSkill('en_puppettrick', { name: '人偶戏法', cls: 'mage', job: EN, tier: 1, lvReq: 23, mp: 110, cd: 30, type: 'indep', elem: 'dark', col: '#8a6a3a', cast: true,
-  desc: '把 700px 内的敌人变成哥布林 / 牛头兽人偶（约 2.5 秒内不能行动），用法杖往人偶身上钉钉子，最后一钉把敌人打飞。施放中霸体。', pow: lv => skillDmg(1.2, 0.12, lv) * 4 + skillDmg(3, 0.3, lv), ai: { kind: 'burst', r: [0, 340], dy: 120 },
-  act: (lv) => ({ name: 'en_puppettrick', clip: 'enNail', dur: 2.6, superArmor: true, noCounter: true,
-    events: [evAt(0.2, e => { sfx.magic(); fxShock(e.x, e.y, 350, '#c8a070'); e.act.tg = ents.filter(t => foe(e, t) && t.invul <= 0 && Math.abs(t.x - e.x) < 350 && Math.abs(t.y - e.y) < 140);
-        for (const t of e.act.tg) { addStatus(t, 'root', 2.5, { src: e }); summon(e, 'en_trick', { target: t, life: 2.4 }); } }),
-      ...[0.7, 1.05, 1.4, 1.75].map(t0 => evAt(t0, e => { sfx.hit('stab', false); for (const t of e.act.tg || []) if (!t.dead) applyHit(e, t, enH(skillDmg(1.2, 0.12, lv), { stun: 0.3, knock: 0, hs: 0.04, snd: 'stab', col: '#e0c090' }), { proj: true }); })),
-      evAt(2.2, e => { sfx.boom(0.8); cam.shake = Math.max(cam.shake, 6); for (const t of e.act.tg || []) { if (t.dead) continue; if (t.status) delete t.status.root; applyHit(e, t, enH(skillDmg(3, 0.3, lv), { launch: 380, knock: 260, hs: 0.1, big: 1.6, snd: 'blunt' }), { proj: true, src: { x: e.x, y: t.y, z: 0, face: Math.sign(t.x - e.x) || e.face } }); } })] }) });
+  desc: '身前出现一个诅咒人偶，把 700px 内的敌人变成哥布林 / 牛头兽人偶并定住。往诅咒人偶身上钉钉子，每一钉都同时钉进所有敌人人偶（约 4.5 秒钉 6 下，连按 X 钉得更快），最后一钉把敌人打飞。施放中霸体；人偶剧场中由人偶自己钉，不影响操控疯疯熊。',
+  pow: lv => skillDmg(0.8, 0.08, lv) * EN_HEX_N + skillDmg(3, 0.3, lv), ai: { kind: 'burst', r: [0, 340], dy: 120 },
+  act: (lv) => ({ name: 'en_puppettrick', clip: 'enNail', dur: 8, superArmor: true, noCounter: true,
+    onStart: e => { e.act.hex = enHexDoll(e, lv); },
+    update: e => { const a = e.act, H = a.hex; if (!H || H.gone) { e.endAct(); return; } if (H.done && (a.endAt ??= e.actT + 0.35) <= e.actT) e.endAct(); },
+    onInput: (e, I) => { if (I.buffered('attack')) { I.consume('attack'); enHexMash(e.act.hex); } return false; } }) });
+// 诅咒人偶（人偶戏法）：身前的巫毒人偶，钉子钉进它 = 钉进所有被变成人偶的敌人；没人连按时每 0.55 秒自动钉一下
+const EN_HEX_N = 6;
+function enHexDoll(e, lv) {
+  sfx.magic(); fxShock(e.x, e.y, 350, '#c8a070'); fxBurst(e.x + e.face * 40, e.y + 14, 30, 80, EN_CURSE);
+  return summon(e, 'en_hexdoll', { x: e.x + e.face * 40, y: e.y + 14, lv });   // 比疯疯熊靠前一点（纵深），不被熊挡住
+}
+function enHexMash(H) { if (H && !H.gone && !H.done && H.lifeT - H.lastNail >= 0.12) H.next = Math.min(H.next, 0.02); }
+defSummon('en_hexdoll', { kind: 'field', life: 9, max: 1, r: 0, tick: 99, keepRoom: false,
+  onSpawn(s) { const o = s.owner; s.face = o.face; s.nails = 0; s.next = 0.75; s.lastNail = 0; s.done = false; s.tricks = [];
+    s.tg = o.ghost ? [] : ents.filter(t => foe(o, t) && t.invul <= 0 && !t.dead && Math.abs(t.x - o.x) < 350 && Math.abs(t.y - o.y) < 140);
+    for (const t of s.tg) { addStatus(t, 'root', 6, { src: o }); const k = summon(o, 'en_trick', { target: t, life: 6 }); if (k) s.tricks.push(k); } },
+  update(s, dt) { if (s.done) return; if ((s.next -= dt) <= 0) enHexNail(s); },
+  onEnd(s) { for (const t of s.tg) if (t.status && t.status.root) delete t.status.root; for (const k of s.tricks) dismissOne(k, 'cmd'); },
+  drawUpright(c, s) { enDrawHex(c, s); } });
+function enHexNail(s) {
+  const o = s.owner, fin = s.nails >= EN_HEX_N; s.nails++; s.lastNail = s.lifeT; s.next = fin ? 9 : s.nails === EN_HEX_N ? 0.6 : 0.55;
+  if (o.act && o.act.hex === s) o.play('enNail', true);
+  fxBurst(s.x, s.y, 34, fin ? 110 : 40, fin ? '#ffd0a0' : '#e0c090');
+  const alive = s.tg.filter(t => !t.dead && !t.remove);
+  if (!fin) { sfx.hit('stab', false); for (const t of alive) { fxSpr(IMG['fx/enNeedle'] ? 'enNeedle' : 'spark', t.x, t.y, t.z + (t.h || 80) * 0.6, { w: 26, dur: 0.3, add: !IMG['fx/enNeedle'] });
+      applyHit(o, t, enH(skillDmg(0.8, 0.08, s.lv), { stun: 0.4, knock: 0, hs: 0.04, snd: 'stab', col: '#e0c090' }), { proj: true, src: { x: s.x, y: t.y, z: 0, face: Math.sign(t.x - s.x) || s.face } }); }
+    return; }
+  // 最后一钉：人偶弹开，敌人变回原样被打飞
+  s.done = true; s.life = s.lifeT + 0.5; sfx.boom(0.8); cam.shake = Math.max(cam.shake, 6);
+  for (const t of s.tg) if (t.status && t.status.root) delete t.status.root; for (const k of s.tricks) dismissOne(k, 'cmd'); s.tricks = [];
+  for (const t of alive) applyHit(o, t, enH(skillDmg(3, 0.3, s.lv), { launch: 380, knock: 260, hs: 0.1, big: 1.6, snd: 'blunt' }), { proj: true, src: { x: s.x, y: t.y, z: 0, face: Math.sign(t.x - s.x) || s.face } });
+}
+function enDrawHex(c, s) {
+  const X = sx(s.x), Y = sy(s.y, 0), u = s.lifeT, a = Math.min(1, u / 0.2, s.done ? (s.life - u) / 0.5 : 1), pop = u < 0.25 ? easeOutBack(u / 0.25) : 1, sh = s.lifeT - s.lastNail < 0.12 ? Math.sin(u * 90) * 2 : 0;
+  c.save(); c.globalAlpha = a * 0.5; c.translate(X, Y); c.scale(1, GR); c.rotate(game.t * 0.8); drawSpr(c, fxTint('rune', EN_CURSE), 0, 0, 90, 90); c.restore();
+  c.save(); c.globalAlpha = a; c.translate(X + sh, Y); c.scale(pop, pop);
+  if (!enFrame(c, 'zombiedoll', 'idle', 0, 0, 1.4, { flip: s.face < 0 })) { c.scale(s.face * 1.4, 1.4); EN_DOLL_FB.draw(c, { __c: 'idle' }, 0); c.scale(s.face / 1.4, 1 / 1.4); }
+  c.scale(1.2, 1.2);   // 钉子位置按放大后的人偶算
+  // 钉子：银色长钉按顺序钉满全身
+  for (let i = 0; i < Math.min(s.nails, EN_HEX_N); i++) { const px = [-8, 7, -3, 9, -10, 2][i] * s.face, py = [-54, -46, -34, -26, -18, -62][i], an = [-0.6, 0.5, -0.3, 0.7, -0.8, 0.1][i] * s.face;
+    c.save(); c.translate(px, py); c.rotate(an); c.fillStyle = '#d8dce8'; c.strokeStyle = '#4a4a5a'; c.lineWidth = 1; c.fillRect(-1.2, -16, 2.4, 16); c.strokeRect(-1.2, -16, 2.4, 16); c.beginPath(); c.arc(0, -16, 3, 0, TAU); c.fill(); c.stroke(); c.restore(); }
+  c.restore();
+}
 // 人偶戏法：敌人暂时变成布偶（换成暗淡的哥布林 / 牛头兵模型），结束换回来
-defSummon('en_trick', { kind: 'attach', host: 'target', life: 2.4, max: 30, keepRoom: false,
+defSummon('en_trick', { kind: 'attach', host: 'target', life: 6, max: 30, keepRoom: false,
   onSpawn(s) { const h = s.host, kind = h.weight > 1.5 ? 'tau' : 'goblin'; s.m0 = h.model; if (SPR_DATA[kind] && IMG[`spr/${kind}/idle`]) h.model = new SpriteModel(kind, { ...SPR_FALLBACK, _: 'idle' }, SPR_ANIMS.monster, { sat: 0.35, bright: 1.15 }); fxBurst(h.x, h.y, h.z + 40, 90, '#e0c090'); },
   onEnd(s) { const h = s.host; if (h && s.m0) h.model = s.m0; if (h && !h.dead) fxBurst(h.x, h.y, h.z + 40, 80, '#e0c090'); },
   draw(c, s) { const h = s.host; c.save(); c.strokeStyle = 'rgba(240,232,215,.7)'; c.lineWidth = 1; c.beginPath(); c.moveTo(sx(h.x - 6), sy(h.y, h.z + (h.h || 80))); c.lineTo(sx(h.x - 6), sy(h.y, h.z + (h.h || 80) + 140)); c.moveTo(sx(h.x + 8), sy(h.y, h.z + (h.h || 80) * 0.8)); c.lineTo(sx(h.x + 8), sy(h.y, h.z + (h.h || 80) + 140)); c.stroke(); c.restore(); } });
@@ -641,44 +728,80 @@ defSkill('en_possession', { name: '永恒的占据', cls: 'mage', job: EN, tier:
   act: (lv) => ({ name: 'en_possession', clip: 'enBanzai', dur: 0.9, noCounter: true, events: [evAt(0.45, e => { sfx.buff(); fxAura(e, '#f0e8d0', 1);
     if (typeof coop !== 'undefined' && coop.mates) for (const g of coop.mates.values()) if (g.dead) { enSend('revive', { uid: g.uid }, e); fxText('复活', g.x, g.y, g.z + 60, { col: '#f0e8d0' }); } })] }) });
 defSkill('en_wakaka', { name: '哇咔咔！', cls: 'mage', job: EN, tier: 1, lvReq: 25, mp: 120, cd: 40, type: 'indep', elem: 'dark', col: '#c07030', bear: true,
-  desc: '【疯疯熊】疯疯熊把周围 400px 的敌人吸过来，瞬间变大咆哮三声（你捂住耳朵）。', pow: lv => skillDmg(2.5, 0.25, lv) * 3, ai: { kind: 'burst', r: [0, 380], dy: 120 },
+  desc: '【疯疯熊】疯疯熊把周围 400px 的敌人吸过来，瞬间变大连续咆哮（10 段，最后一声把敌人震飞；你捂住耳朵）。', pow: lv => skillDmg(0.6, 0.06, lv) * 9 + skillDmg(2.1, 0.21, lv), ai: { kind: 'burst', r: [0, 380], dy: 120 },
   act: (lv, p) => p && p.enStage ? { ...EN_MOVES.roar(lv), name: 'en_wakaka' } : { name: 'en_wakaka', clip: 'enEars', dur: 1.2, noCounter: true, onStart: e => enBearDo(e, EN_MOVES.roar(lv)) } });
 defSkill('en_garden', { name: '苦痛庭院', cls: 'mage', job: EN, tier: 2, lvReq: 26, mp: 150, cd: 40, type: 'indep', elem: 'dark', col: '#6a1a3a', cast: true,
-  desc: '以自身为中心展开约 500px 的荆棘庭院：8 段伤害，并把里面的敌人束缚 3 秒。', pow: lv => skillDmg(1.4, 0.14, lv) * 8, ai: { kind: 'aoe', r: [0, 240], dy: 110 },
+  desc: '以自身为中心展开约 500px 的荆棘庭院：荆棘连刺 7 段（出血），最后庭院里的蔷薇一齐爆炸；里面的敌人被束缚 3 秒。', pow: lv => skillDmg(0.8, 0.08, lv) * 7 + skillDmg(5.6, 0.56, lv), ai: { kind: 'aoe', r: [0, 240], dy: 110 },
   act: (lv) => ({ name: 'en_garden', clip: 'enBanzai', dur: 0.8, noCounter: true, events: [evAt(0.3, e => { sfx.magic(); fxShock(e.x, e.y, 250, EN_ROSE); summon(e, 'en_garden', { x: e.x, y: e.y, lv }); })] }) });
 defSkill('en_roarbear', { name: '咆哮吧！疯疯熊', cls: 'mage', job: EN, tier: 2, lvReq: 26, mp: 160, cd: 45, type: 'indep', elem: 'dark', col: '#7a3a8a', bear: true,
   desc: '【疯疯熊】疯疯熊变成巨熊，向前喷出诅咒吐息（24 段），地面留下 5 秒的紫色诅咒地带：敌人被诅咒，走进来的队友（含自己）禁忌诅咒和偏爱的持续时间 +45 秒。', pow: lv => skillDmg(0.55, 0.055, lv) * 24, ai: { kind: 'burst', r: [0, 380], dy: 60 },
   act: (lv, p) => enBearSkill(p, 'en_roarbear', lv, EN_MOVES.breath) });
 defSkill('en_lovecage', { name: '挚爱囚笼', cls: 'mage', job: EN, tier: 3, lvReq: 29, mp: 200, cd: 60, type: 'indep', elem: 'dark', col: '#a01a4a', cast: true,
-  desc: '用荆棘编成一座巨大的鸟笼，把前方的敌人关起来“展览”（定身 5 秒，持续伤害）；结束时笼子收缩，把敌人聚到中心并造成巨大伤害。', pow: lv => skillDmg(0.9, 0.09, lv) * 10 + skillDmg(12, 1.2, lv), ai: { kind: 'burst', r: [60, 360], dy: 80 },
+  desc: '用荆棘编成一座巨大的鸟笼，把前方的敌人关起来“展览”（定身 5 秒，持续伤害）；结束时笼子收缩，把敌人聚到中心并造成巨大伤害。再按一次技能键让笼子立即收缩。',
+  recast: { ok: p => summonsOf(p, 'en_cage').some(s => s.life - s.lifeT > 0.5), instant: true, cd: 0.3, mp: 0, act: (lv, p) => { for (const s of summonsOf(p, 'en_cage')) s.life = Math.min(s.life, s.lifeT + 0.5); } }, pow: lv => skillDmg(0.9, 0.09, lv) * 10 + skillDmg(12, 1.2, lv), ai: { kind: 'burst', r: [60, 360], dy: 80 },
   act: (lv) => ({ name: 'en_lovecage', clip: 'enCmd', dur: 0.8, noCounter: true, events: [evAt(0.25, e => { sfx.magic(); const at = aimAhead(e, 200, 360, 90); summon(e, 'en_cage', { x: at.t ? at.x : e.x + e.face * 200, y: at.t ? at.y : e.y, lv }); })] }) });
 // 二觉：欢迎光临人偶之森 —— 当前空间变成人偶之森，超巨型疯疯熊扫激光、再挥两次手臂（共 7 段，7 秒，期间无敌）
 defSkill('en_awaken2', { name: '欢迎光临人偶之森', cls: 'mage', job: EN, tier: 2, lvReq: 27, maxLv: 3, mp: 400, cd: 180, pvp: 0.4, type: 'indep', elem: 'dark', awaken: true, col: '#5a2a6a',
-  desc: '【二觉】把当前空间变成人偶之森：超巨型疯疯熊从森林深处现身，对全屏扫出激光，再挥两次巨臂，共 7 段伤害。持续 7 秒，期间你无敌。', pow: lv => skillDmg(9, 2.2, lv) * 7, ai: { kind: 'awaken', r: [0, 500], dy: 150 },
-  act: (lv) => ({ name: 'en_awaken2', clip: 'enHug', dur: 7, invul: true, superArmor: true, noCounter: true,
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '欢迎光临人偶之森', who: enCutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); enForest(e, 7); },
-    events: [1.4, 2.1, 2.8, 3.5, 4.2].map((t0, i) => evAt(t0, e => { sfx.zap && sfx.zap(); cam.shake = Math.max(cam.shake, 5); fxBeam(cam.x, e.y + (i - 2) * 30, 60, WW, 1, { col: EN_CURSE, w: 70, dur: 0.5 }); enHitAll(e, skillDmg(9, 2.2, lv), { stun: 0.6, knock: 30, hs: 0.05, col: EN_CURSE }); }))
+  desc: '【二觉】把当前空间变成人偶之森：超巨型疯疯熊从森林深处升起，张嘴喷出的诅咒光束来回扫过全屏（5 段），再抡起巨臂砸两次（2 段），共 7 段。持续 7 秒，期间你无敌。在人偶剧场中施放时剧场会一直持续到放完，画面变成巨熊撑破舞台。', pow: lv => skillDmg(9, 2.2, lv) * 7, ai: { kind: 'awaken', r: [0, 500], dy: 150 },
+  act: (lv, p) => ({ name: 'en_awaken2', clip: p && p.enStage ? 'bRoar' : 'enHug', dur: 7, invul: true, superArmor: true, noCounter: true,
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '欢迎光临人偶之森', who: enCutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); if (e.enStage) enCurtain(e, 1.4, true); enForest(e, 7); },
+    events: [1.4, 2.1, 2.8, 3.5, 4.2].map((t0, i) => evAt(t0, e => { sfx.zap && sfx.zap(); cam.shake = Math.max(cam.shake, 5); enHitAll(e, skillDmg(9, 2.2, lv), { stun: 0.6, knock: 30, hs: 0.05, col: EN_CURSE }); }))
       .concat([5.3, 6.3].map((t0, i) => evAt(t0, e => { sfx.boom(1); cam.shake = Math.max(cam.shake, 10); fxShock(cam.x + WW / 2, e.y, 500, '#c8a070'); enHitAll(e, skillDmg(9, 2.2, lv), { launch: i ? 520 : 300, knock: 160, hs: 0.1, big: 2, snd: 'blunt' }); }))) }) });
 function enHitAll(e, dmg, o) { for (const t of ents) if (foe(e, t) && t.invul <= 0 && !t.dead) applyHit(e, t, enH(dmg, { sure: true, downHit: true, ...o }), { proj: true, src: { x: t.x - e.face * 20, y: t.y, z: 0, face: e.face } }); }
 const enCutinWho = (e, n) => IMG['cutin/' + EN + n] ? { cls: EN + n, model: e.model, x: e.x } : cutinWho(e);
-// 人偶之森：暗紫色的森林剪影盖住场景，巨型疯疯熊在后面（只是表现，全部屏幕空间绘制）
+// 屏幕空间画一只巨型疯疯熊（脚底在 X, Y，sc = 放大倍数）；返回嘴的位置（光束从这里喷出）
+function enGiantBear(c, frame, X, Y, sc, a) {
+  const D = typeof SPR_DATA !== 'undefined' && SPR_DATA.madbear, F = D && (D.frames[frame] || D.frames.idle), im = F && IMG['spr/madbear/' + (D.frames[frame] ? frame : 'idle')];
+  c.save(); c.globalAlpha *= a;
+  if (F && im) { c.translate(X, Y); c.scale(sc / D.res, sc / D.res); c.drawImage(im, -F.ax, -F.ay); }
+  else { c.translate(X, Y); c.scale(sc, sc); EN_BEAR_FB.draw(c, { __c: frame === 'roar' ? 'bRoar' : /slam/.test(frame) ? 'bSlam' : 'idle' }, game.t); }
+  c.restore();
+  return { x: X + 7 * sc, y: Y - 58 * sc };
+}
+// 人偶之森（二觉）：森林盖住场景 → 巨熊从下方升起 → 张嘴喷光束来回扫全屏（1.2~4.6 秒）→ 抡臂砸两次（5.3 / 6.3 秒）。时间和技能动作同步（都在 timeStop 之后才走）
 function enForest(e, dur) {
   addFx({ x: cam.x, y: -50, z: 0, dur, draw(c) {
-    const k = this.t / this.dur, a = k < 0.12 ? k / 0.12 : k > 0.9 ? (1 - k) / 0.1 : 1; c.save(); c.globalAlpha = 0.82 * a;
+    const t = this.t, k = t / this.dur, a = k < 0.12 ? k / 0.12 : k > 0.9 ? (1 - k) / 0.1 : 1; c.save(); c.globalAlpha = 0.82 * a;
     if (IMG['fx/enForest']) drawSpr(c, 'enForest', WW / 2, WH / 2, WW, WH, { add: false });
     else { c.fillStyle = '#1a0a24'; c.fillRect(0, 0, WW, WH); c.fillStyle = '#2a1238'; for (let i = 0; i < 9; i++) { const x = i * 120 - 20, h = 260 + (i % 3) * 60; c.fillRect(x, WH - h, 26, h); c.beginPath(); c.arc(x + 13, WH - h, 60, 0, TAU); c.fill(); } }
-    c.globalAlpha = a; const bs = 3.4 + Math.sin(this.t * 1.5) * 0.05, im = IMG['spr/madbear/roar'] ? 'roar' : 'idle', F = SPR_DATA.madbear && SPR_DATA.madbear.frames[im];
-    if (F && IMG['spr/madbear/' + im]) { c.save(); c.translate(WW / 2, WH - 30); c.scale(bs / SPR_DATA.madbear.res, bs / SPR_DATA.madbear.res); c.globalAlpha = 0.9 * a; c.drawImage(IMG['spr/madbear/' + im], -F.ax, -F.ay); c.restore(); }
-    else { c.save(); c.translate(WW / 2, WH - 30); c.scale(bs, bs); EN_BEAR_FB.draw(c, { __c: 'bRoar' }, this.t); c.restore(); }
-    c.restore(); } });
+    c.restore();
+    const rise = t < 0.4 ? 1 : t < 1.2 ? 1 - easeOut((t - 0.4) / 0.8) : 0, bx = WW / 2, by = WH - 30 + rise * WH * 0.75, bs = 3.4 + Math.sin(t * 1.5) * 0.05;
+    const fr = t < 1.15 ? 'idle' : t < 4.6 ? 'roar' : t < 5.2 ? 'slam1' : t < 5.75 ? 'slam2' : t < 6.2 ? 'slam1' : 'slam2';
+    const M = enGiantBear(c, fr, bx, by, bs, 0.95 * a), gy = sy(e.y, 0);
+    // 诅咒光束：嘴 → 地面，来回扫过全屏（每 0.7 秒扫一趟，扫到哪里炸到哪里）
+    if (t > 1.2 && t < 4.6) { const q = (t - 1.05) / 0.7, tri = q % 2 < 1 ? q % 1 : 1 - q % 1, gx = WW * (0.04 + 0.92 * tri), fl = 0.85 + 0.15 * Math.sin(t * 40);
+      c.save(); c.globalCompositeOperation = 'lighter'; c.lineCap = 'round';
+      for (const [w, col, al] of [[46, EN_CURSE, 0.35], [24, '#d890ff', 0.6], [9, '#fff0ff', 0.9]]) { c.globalAlpha = al * a * fl; c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(M.x, M.y); c.lineTo(gx, gy); c.stroke(); }
+      c.globalAlpha = 0.7 * a; c.fillStyle = '#e0a0ff'; c.beginPath(); c.ellipse(gx, gy, 60 * fl, 18 * fl, 0, 0, TAU); c.fill(); c.beginPath(); c.arc(M.x, M.y, 22 * fl, 0, TAU); c.fill(); c.restore();
+      if (Math.random() < 0.5) fxBurst(cam.x + gx, e.y + rnd(-30, 30), 10, 50, EN_CURSE); }
+    // 巨臂横扫：两道巨大的爪痕
+    for (const t0 of [5.3, 6.3]) if (t > t0 - 0.05 && t < t0 + 0.4) { const q = clamp((t - t0 + 0.05) / 0.45, 0, 1); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = (1 - q) * a; c.strokeStyle = '#ffe0c0'; c.lineCap = 'round';
+      for (let i = 0; i < 3; i++) { c.lineWidth = 16 - i * 3; c.beginPath(); c.arc(bx, by - 120, 360 + i * 38, Math.PI * (1.05 + 0.1 * i), Math.PI * (1.05 + 0.1 * i) + Math.PI * 0.9 * easeOut(q)); c.stroke(); } c.restore(); }
+  } });
 }
 defSkill('en_awaken3', { name: '终幕！人偶剧场', cls: 'mage', job: EN, tier: 3, lvReq: 30, maxLv: 3, mp: 500, cd: 270, pvp: 0.35, type: 'indep', elem: 'dark', awaken: true, col: '#8a0a3a',
-  desc: '【三觉】“Prepare... The Final Puppet Show...!”\n长篇舞台：没有在人偶剧场中时施放，进入加强版的人偶剧场（50 秒，全队加成和谢幕伤害更高）。\n短篇舞台：在一觉的人偶剧场中施放，剧场延长 20 秒并立即加强，同时对全屏敌人造成伤害。',
+  desc: '【三觉】“Prepare... The Final Puppet Show...!”\n长篇舞台：没有在人偶剧场中时施放，进入加强版的人偶剧场（41 秒，全队加成和谢幕伤害更高）。\n短篇舞台：在一觉的人偶剧场中施放（不用再拉幕），剧场延长 20 秒并加强，舞台燃起暗火烧遍全屏（5 段 + 火焰终结），最后巨熊一爪撕开舞台。\n再按一次技能键：立即谢幕。',
   pow: lv => skillDmg(40, 10, lv), ai: { kind: 'awaken', r: [0, 500], dy: 150 },
-  act: (lv, p) => ({ name: 'en_awaken3', clip: p && p.enStage ? 'bRoar' : 'enBanzai', dur: 2.6, invul: true, superArmor: true, noCounter: true,
-    onStart: e => { game.cutin = { t: 0, dur: 1.1, name: '终幕！人偶剧场', who: enCutinWho(e, 3) }; game.timeStop = 1.0; sfx.awaken(); e.act.short = !!e.enStage; enCurtain(e, 2.4, false); },
-    events: [evAt(2.4, e => { if (e.act.short) { enStageStart(e, lv, { add: 20, k: 1.5, fin: 1.6 }); sfx.boom(1); cam.shake = Math.max(cam.shake, 10); enHitAll(e, skillDmg(20, 5, lv), { launch: 460, knock: 160, hs: 0.1, big: 2, col: EN_ROSE }); }
-      else { enStageStart(e, lv, { dur: 50, k: 1.5, fin: 1.7 }); if (lvOf(e, 'en_madcall') || !isHuman(e)) enMadCall(e, Math.max(1, lvOf(e, 'en_madcall'))); } })] }) });
+  recast: { ok: p => enCanFinale(p, true), instant: true, cd: 0.5, mp: 0, act: (lv, p) => enStageEnd(p, true) },
+  act: (lv, p) => { const short = !!(p && p.enStage), T = short ? 1.2 : 2.4;
+    return { name: 'en_awaken3', clip: short ? 'bRoar' : 'enBanzai', dur: T + 0.2, invul: true, superArmor: true, noCounter: true,
+      onStart: e => { game.cutin = { t: 0, dur: 1.1, name: '终幕！人偶剧场', who: enCutinWho(e, 3) }; game.timeStop = 1.0; sfx.awaken(); e.act.short = short; if (!short) enCurtain(e, 2.4, false); },
+      events: [evAt(T, e => { if (e.act.short) { enStageStart(e, lv, { add: 20, k: 1.5, fin: 1.6 }); enShortShow(e, skillDmg(20, 5, lv)); }
+        else { enStageStart(e, lv, { dur: 41, k: 1.5, fin: 1.7 }); if (lvOf(e, 'en_madcall') || !isHuman(e)) enMadCall(e, Math.max(1, lvOf(e, 'en_madcall'))); }
+        if (e.enStage) e.enStage.a3 = e.enStage.t; })] }; } });
+// 三觉短篇舞台：暗火从舞台两边烧遍全屏（5 段）→ 火焰终结 → 巨熊一爪撕开舞台（伤害合计 = total）
+function enShortShow(e, total) {
+  const burn = (i, fin) => { if (!ents.includes(e)) return; sfx.boom(fin ? 1 : 0.4); cam.shake = Math.max(cam.shake, fin ? 9 : 3);
+    for (let x = cam.x + 40; x < cam.x + WW; x += fin ? 90 : 150) fxSpr('flame', x + rnd(-30, 30), clamp(e.y + rnd(-60, 60), 4, DEPTH - 4), 0, { w: fin ? 90 : 60, h: fin ? 150 : 90, dur: 0.5, col: '#c060ff', ay: 1 });
+    enHitAll(e, total * (fin ? 0.2 : 0.08), fin ? { launch: 300, knock: 60, hs: 0.08, col: '#d090ff', snd: 'fire' } : { stun: 0.4, knock: 10, hs: 0.03, col: '#d090ff', snd: 'fire' }); };
+  for (let i = 0; i < 5; i++) game.after(i * 0.18, () => burn(i, false));
+  game.after(1.0, () => burn(5, true));
+  addFx({ x: cam.x, y: DEPTH + 300, z: 0, dur: 1.1, draw(c) { const t = this.t, a = t < 0.2 ? t / 0.2 : t > 0.85 ? (1.1 - t) / 0.25 : 1, up = t < 0.35 ? 1 - easeOut(t / 0.35) : 0;
+    enGiantBear(c, t < 0.5 ? 'slam1' : 'slam2', WW * 0.5, WH - 20 + up * WH * 0.6, 3.1, 0.9 * clamp(a, 0, 1));
+    if (t > 0.5 && t < 0.95) { const q = (t - 0.5) / 0.45; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - q; c.strokeStyle = '#ffe0c0'; c.lineCap = 'round'; for (let i = 0; i < 4; i++) { c.lineWidth = 14 - i * 2; c.beginPath(); c.moveTo(WW * (0.2 + i * 0.18), 30); c.lineTo(WW * (0.1 + i * 0.18) + q * 40, WH - 30); c.stroke(); } c.restore(); } } });
+  game.after(1.45, () => { if (!ents.includes(e)) return; sfx.boom(1.2); cam.shake = Math.max(cam.shake, 12); cam.flash = 0.15; cam.flashCol = '#ffd0e8';
+    enHitAll(e, total * 0.4, { launch: 460, knock: 160, hs: 0.1, big: 2, col: EN_ROSE, snd: 'blunt' }); });
+}
 
 /* =====================================================================
    转职登记、指令、被动刷新、每帧逻辑
@@ -692,9 +815,17 @@ CLASSES.mage.cmds.push(['fd', 'en_rosevine'], ['dd', 'en_mend', 'buff'], ['dd', 
   ['ud', 'en_forbidden', 'buff'], ['uu', 'en_guard'], ['udu', 'en_thornspike'], ['uff', 'en_bearfall'], ['udd', 'en_madcall'], ['bff', 'en_rosejail'], ['uu', 'en_firstaid', 'buff'], ['dbd', 'en_hut'],
   ['ddf', 'en_bigbear'], ['uudd', 'en_awaken'], ['dbf', 'en_puppettrick'], ['uud', 'en_lovesting'], ['bu', 'en_possession', 'buff'], ['bdb', 'en_wakaka'], ['ddu', 'en_garden'], ['fbf', 'en_roarbear'],
   ['udf', 'en_lovecage'], ['uddu', 'en_awaken2'], ['duud', 'en_awaken3']);
-// 人偶剧场中：只有熊系技能、BUFF / 回复和觉醒能用（女法的基础技能由暗黑少女本人施放，变身时不能用）
-for (const id of CLASSES.mage.skills) { const S = SKILLS[id]; if (!S || S.passive) continue; const r0 = S.req; S.req = p => p && p.enStage ? '人偶剧场中不能使用' : r0 ? r0(p) : true; }
-for (const id of ['en_rosevine', 'en_thornspike', 'en_rosejail', 'en_hut', 'en_rosewhip', 'en_puppettrick', 'en_lovesting', 'en_garden', 'en_lovecage']) { const S = SKILLS[id], r0 = S.req; S.req = p => p && p.enStage ? '人偶剧场中不能使用' : r0 ? r0(p) : true; }
+// 人偶剧场中（官方：操控疯疯熊时能用小魔女的技能、BUFF 和替身草人）：女法的其他基础技能不能用
+for (const id of CLASSES.mage.skills) { const S = SKILLS[id]; if (!S || S.passive || id === 'mg_phase') continue; const r0 = S.req; S.req = p => p && p.enStage ? '人偶剧场中不能使用' : r0 ? r0(p) : true; }
+// 小魔女的非熊技能在人偶剧场中：BUFF / 回复 / 诅咒人偶类不做动作直接生效（诅咒人偶从画面上方掉到熊旁边）、人偶戏法由人偶自己钉（不锁住熊）；
+// 其余技能由熊做一个对应的动作施放
+const EN_STAGE_QUICK = { en_forbidden: (e, lv) => { enDollFx(e.x + e.face * 40, e.y, { dur: 0.5, drop: true, face: e.face }); enForbNow(e, lv); }, en_hotfeet: enHotNow,
+  en_madcall: (e, lv) => { enDollFx(e.x + e.face * 40, e.y, { dur: 0.5, drop: true, face: e.face }); enMadCall(e, lv); }, en_hut: enHutNow, en_mend: enMendNow, en_firstaid: enAidNow, en_favor: enFavorCast, en_puppettrick: enHexDoll };
+const EN_STAGE_CLIP = { mdown: 'bSlam', whip: 'bClaw', enHug: 'bRoar', enBanzai: 'bCheer', enCmd: 'bCheer', enNail: 'bSlam', summon: 'bCheer', enSew: 'bCheer', enBandage: 'bCheer', enForb: 'bCheer' };
+for (const id of CLASSES.mage.jobs.enchantress.skills) { const S = SKILLS[id]; if (!S || S.passive || S.bear || S.awaken || S.instant || !S.act) continue; const a0 = S.act;
+  S.act = (lv, p) => { if (!p || !p.enStage) return a0(lv, p); const q = EN_STAGE_QUICK[id];
+    if (q) return { name: id, clip: 'bCheer', dur: 0.16, noCounter: true, onStart: e => q(e, lv) };
+    const A = a0(lv, p); return { ...A, clip: EN_STAGE_CLIP[A.clip] || 'bCheer' }; }; }
 // 熊系技能要先学人偶操纵者
 for (const id of CLASSES.mage.jobs.enchantress.skills) { const S = SKILLS[id]; if (S && S.bear) { const r0 = S.req; S.req = p => !p || hasSkill(p, 'en_puppeteer') || !isHuman(p) ? (r0 ? r0(p) : true) : '需要学会人偶操纵者'; } }
 // 被动刷新（每 0.25 秒）
@@ -725,7 +856,7 @@ CLASSES.mage.passives.push(p => {
 function enLocalTick(p, dt) {
   const B = p.buffs;
   const F = B.en_forbidden; if (F && !F.self && !B.en_favored && F.t <= 20 && !p.dead) { F.dr = (F.dr ?? 5) - dt; if (F.dr <= 0) { F.dr = 5; const v = Math.max(0, Math.min(p.hp - 1, Math.round(p.hpMax * 0.05))); if (v) { p.hp -= v; addNumber(v, p.x, p.y, p.z + 40, { player: true }); fxText('诅咒反噬', p.x, p.y, p.z + 60, { col: EN_CURSE, size: 10 }); } } }
-  const H = B.en_hotfeet; if (H) { const still = p.z <= 0.5 && Math.abs(p.vx) < 1 && Math.abs(p.vy) < 1 && p.st !== 'act'; H.still = still ? (H.still || 0) + dt : 0;
+  const H = B.en_hotfeet; if (H && !B.en_favored) { const still = p.z <= 0.5 && Math.abs(p.vx) < 1 && Math.abs(p.vy) < 1 && p.st !== 'act'; H.still = still ? (H.still || 0) + dt : 0;
     if (H.still > 0.8) { H.bt = (H.bt || 0) - dt; if (H.bt <= 0) { H.bt = 0.5; const v = Math.max(0, Math.min(p.hp - 1, Math.round(p.hpMax * 0.01))); if (v) { p.hp -= v; addNumber(v, p.x, p.y, p.z + 10, { player: true }); } fxSpr('flame', p.x, p.y, 0, { w: 40, h: 46, dur: 0.4, col: '#ff8a3a', ay: 1 }); } } }
   // 少女的爱：900px 内有小魔女（队友影子也算；影子的技能等级按人物等级估算）
   if (!enOn(p) || !lvOf(p, 'en_girllove')) { let best = 0; for (const e of ents) if (e !== p && e.fighter && !e.dead && e.team === p.team && enOn(e) && Math.abs(e.x - p.x) <= 900) { const lv = e.ghost ? clamp((e.lvl || 1) - 20, 0, 10) : skLv(e, 'en_girllove'); if (lv > best) best = lv; }
@@ -733,7 +864,7 @@ function enLocalTick(p, dt) {
 }
 let enScanT = 0;
 function enTick(dt) {
-  for (const e of ents) if (e.fighter && !e.dead && enOn(e) && !e.remove && !summonsOf(e, 'en_bear').length) enBearSpawn(e);
+  for (const e of ents) if (e.fighter && !e.dead && enOn(e) && !e.remove && !enBearOf(e)) enBearSpawn(e);
   for (const e of ents) if (e.enStage) enStageTick(e, dt);
   const p = game.player; if (p && !p.dead && p.buffs) enLocalTick(p, dt);
   if ((enScanT -= dt) <= 0) { enScanT = 0.5; for (const t of ents) if (t.buffs && t.buffs.en_bloom && !(t.buffs.en_bloom.until > game.t)) delete t.buffs.en_bloom; }

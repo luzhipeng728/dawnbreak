@@ -1,7 +1,8 @@
 // 小魔女（魔法师转职 enchantress）：暂停游戏循环、手动逐帧推进验证。node test/enchantress.mjs
 // 疯疯熊自动出现 / 站在身前 / 打不到；每个主动技能都能放出来且不报错、攻击技能打得到人；
 // 单刷模式 vs 组队模式（用假的 coop 队友影子）：攻击力 +40%、冷却 −20%、偏爱对象（熊 / 队友）、禁忌诅咒给队友的加成与副作用、队友重放时 BUFF 落在本机玩家身上；
-// 一觉人偶剧场（变身操控熊、谢幕全屏伤害、复原）、二觉、三觉（短篇舞台叠加）、林中小屋（跳进去无敌、跳出来）、疯熊守护受击中可放、不祥的微笑
+// 一觉人偶剧场（变身操控熊、谢幕全屏伤害、复原、剧场中 BUFF 不做动作、再按谢幕）、二觉（剧场中施放剧场不结束）、三觉（短篇舞台叠加）、林中小屋（跳进去无敌、跳出来）、
+// 疯熊守护受击中可放、不祥的微笑、人偶戏法连按 X、蔷薇囚狱再按引爆、变大吧跳跃中断
 import { launch, URL_BASE } from './lib.mjs';
 import fs from 'fs';
 let fail = 0;
@@ -100,6 +101,19 @@ const R = await page.evaluate(() => {
   out.guardHit = { ok: castSkill(p, 'en_guard', false, null), stillHit: p.st === 'hit' };
   clearMobs(); fresh(); castSkill(p, 'en_rosewhip', false, null); run(60); out.sinister = +(p.cool.en_rosewhip || 0).toFixed(2);
   const f0 = { ...save.data.flags }; save.data.flags.awaken2 = false; fresh(); out.tierLock = !castSkill(p, 'en_roarbear', false, null) || !(p.act && p.act.skill === 'en_roarbear'); Object.assign(save.data.flags, f0);
+  // ---- 8. 官方行为：剧场中小魔女技能可用（BUFF 不做动作）、再按觉醒键谢幕、人偶之森期间剧场不结束、人偶戏法连按 X 更快、囚狱再按引爆、变大吧跳跃中断 ----
+  const B = {}; clearMobs(); fresh(); dismissSummons(p); run(5); const m8 = mob(420, 100);
+  castSkill(p, 'en_awaken', false, null); run(60 * 3.4);
+  fresh(); delete p.buffs.en_forbidden; castSkill(p, 'en_forbidden', false, null); B.forbQuick = !!p.buffs.en_forbidden && !!p.act && p.act.dur < 0.3; run(20);
+  fresh(); B.jailInStage = castSkill(p, 'en_rosejail', false, null) && !!(p.act && p.act.skill === 'en_rosejail'); run(40);
+  fresh(); run(60); const hp8 = m8.hp; castSkill(p, 'en_awaken', false, null); run(60); B.recastFinale = !p.enStage && hp8 - m8.hp > 0;
+  fresh(); castSkill(p, 'en_awaken', false, null); run(60 * 3.4); castSkill(p, 'en_awaken2', false, null); if (p.enStage) p.enStage.t = p.enStage.dur - 0.2; run(60 * 2);
+  B.forestKeeps = !!p.enStage; run(60 * 7); B.forestThenEnd = !p.enStage; if (p.enStage) enStageEnd(p, false);
+  const trick = mash => { fresh(); castSkill(p, 'en_puppettrick', false, null); let n = 0; while (p.act && p.act.skill === 'en_puppettrick' && n < 60 * 9) { if (mash) { press('attack', 4); n += 4; } else { run(4); n += 4; } } return +(n / 60).toFixed(2); };
+  B.trickT = trick(false); B.trickMashT = trick(true);
+  fresh(); castSkill(p, 'en_rosejail', false, null); run(30); castSkill(p, 'en_rosejail', false, null); run(6); B.jailBoom = !summonsOf(p, 'en_jail').length;
+  fresh(); castSkill(p, 'en_bigbear', false, null); run(30); press('jump', 3); const bb = summonsOf(p, 'en_bear')[0]; B.bigCancel = !(p.act && p.act.skill === 'en_bigbear') && !(bb && bb.act && bb.act.bigMadd); run(30);
+  out.behav = B;
   out.reg = { job: !!CLASSES.mage.jobs.enchantress, armor: masteryOf('mage', 'enchantress'), quest: !!QUESTS.q_job_ench_house, anims: !!SPR_ANIMS.mage.enCmd, noShowtime: !skillAllowed('mg_showtime', 'enchantress') };
   } catch (e) { out.err = e.message + ' ' + (e.stack || '').split('\n').slice(0, 3).join(' | '); }
   return out;
@@ -129,6 +143,13 @@ ok(R.hut.entered && R.hut.invul && R.hut.left && R.hut.limit, '林中小屋：�
 ok(R.guardHit.ok && R.guardHit.stillHit, '疯熊守护：受击中也能放（主角不脱离受击）', R.guardHit);
 ok(R.sinister <= 1, '不祥的微笑：藤鞭落空冷却 1 秒', R.sinister);
 ok(R.tierLock, '二觉段技能要先完成二次觉醒任务', R.tierLock);
+const Bh = R.behav;
+ok(Bh.forbQuick && Bh.jailInStage, '一觉剧场中：小魔女技能能用，BUFF 不做动作直接生效', Bh);
+ok(Bh.recastFinale, '一觉：再按觉醒键提前谢幕（全屏伤害）', Bh);
+ok(Bh.forestKeeps && Bh.forestThenEnd, '二觉：人偶之森期间剧场不结束，放完再谢幕', Bh);
+ok(Bh.trickT >= 3.8 && Bh.trickMashT < Bh.trickT - 1, '人偶戏法：约 4.5 秒钉完，连按 X 钉得更快', { t: Bh.trickT, mash: Bh.trickMashT });
+ok(Bh.jailBoom, '蔷薇囚狱：再按技能键立即引爆', Bh.jailBoom);
+ok(Bh.bigCancel, '变大吧！疯疯熊：按跳跃键中断', Bh.bigCancel);
 ok(R.reg.job && R.reg.armor === 'plate' && R.reg.quest && R.reg.anims && R.reg.noShowtime, '转职登记：职业窗口、板甲、转职剧情任务、动作表、魔法秀学不了', R.reg);
 // 截图：疯疯熊站在小魔女身前（游戏比例）
 await page.evaluate(() => { game.paused = false; clearAllSummons('test'); for (const e of ents) if (e.team === 'e') e.remove = true; const p = game.player; p.x = 380; p.y = 110; p.face = 1; p.setState('idle'); });

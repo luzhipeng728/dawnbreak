@@ -16,7 +16,8 @@ run() { g=$1; name=$2; shift 2
 g1() { for t in flow ui items compare bulk gear guide quickquest polish mobile; do run 1 $t node test/$t.mjs; done; run 1 gearsim node test/gear_sim.mjs 20; }
 g2() { for t in combat summon avatar shop acct bag skyguide sword gunner mage enchantress summoner paramedic witch spitfire mechanic; do run 2 $t node test/$t.mjs; done
   run 2 skillsa node test/skill_sa.mjs; run 2 shopecon node test/shop_econ.mjs; run 2 shopsynth node test/shop_synth.mjs
-  run 2 classes node test/classes.mjs sword,gun,mage; }
+  run 2 classes node test/classes.mjs sword,gun,mage
+  run 2 region node test/region.mjs siroco data,skills,mechs,scenes,quest; }   # 区域流水线的快速部分（怪物逐个 / 机器人通关在 all.sh）
 g3() { run 3 serverapi node server/test/api.mjs; run 3 restore node --disable-warning=ExperimentalWarning server/test/restore.mjs
   run 3 netacct node test/net_account.mjs; run 3 svcapi node test/svc_api.mjs; run 3 svcplay node test/svc_play.mjs
   run 3 mptown node test/mp_town.mjs; run 3 mpcoop node test/mp_coop.mjs 2; run 3 mpmore node test/mp_coop_more.mjs

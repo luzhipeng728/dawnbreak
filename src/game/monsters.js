@@ -41,6 +41,7 @@ function spawnMonster(kind, x, y, o = {}) {
   m.control = monsterAI;
   // 出场：闪烁落地
   m.invul = 0.4; m.z = o.drop ? 160 : 0; m.vz = o.drop ? -50 : 0; if (o.drop) m.setState('jump');
+  if (D.onSpawn) D.onSpawn(m, o);   // 区域流水线（game/mon_skills.js）：换 AI、挂特性 / 领主机制
   ents.push(m);
   return m;
 }

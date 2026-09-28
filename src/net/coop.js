@@ -265,7 +265,10 @@ const coop = {
     if (r.g) {
       const h = { grabBoss: !!r.bw, grabMaxW: clamp(+r.mw || 2.2, 0.5, 9) };
       if (m.heldBy === g) return;
-      if (m.heldBy || !canGrab(g, m, h)) { this.send({ k: 'gbx', id: m.nid }, uid); return; }
+      if (m.heldBy || !canGrab(g, m, h)) {
+        const S = this.stats; S.grabRej = S.grabRej || []; if (S.grabRej.length < 20) S.grabRej.push({ id: m.nid, st: m.st, held: !!m.heldBy, prot: +(m.grabProt || 0).toFixed(2), noGrab: !!m.noGrab, boss: !!m.boss, w: m.weight });
+        this.send({ k: 'gbx', id: m.nid }, uid); return;
+      }
       if (g.grabbed && g.grabbed !== m) dropGrab(g);
       startGrab(g, m, h); this.stats.grabs = (this.stats.grabs || 0) + 1;
     } else if (m.heldBy === g) releaseHeld(m);
@@ -586,7 +589,7 @@ function coopSafe(fn) {
   game.timeStop = s.ts; game.cutin = s.cut; game.slowmo = s.sm; cam.shake = Math.max(s.sh, Math.min(cam.shake, 3)); cam.flash = s.fl;
 }
 // 按插值缓冲取位置（renderT = 现在 − 插值延迟）
-function coopInterp(e, dt, k = 18) {
+function coopInterp(e, dt, k = 18, keepZ = false) {
   const B = e.netBuf; if (!B || !B.length) return;
   const rt = performance.now() - COOP_INTERP;
   while (B.length > 2 && B[1].t <= rt) B.shift();
@@ -594,6 +597,7 @@ function coopInterp(e, dt, k = 18) {
   let tx, ty, tz;
   if (N && rt > A.t) { const u = clamp((rt - A.t) / Math.max(1, N.t - A.t), 0, 1.5); tx = lerp(A.x, N.x, u); ty = lerp(A.y, N.y, u); tz = Math.max(0, lerp(A.z, N.z, Math.min(1, u))); }
   else { tx = A.x; ty = A.y; tz = A.z; }
+  if (keepZ) tz = 0;   // 预测刚结束：快照里的高度是主机那边晚一拍的同一次浮空，不跟
   if (Math.abs(tx - e.x) > 260 || Math.abs(ty - e.y) > 120) { e.x = tx; e.y = ty; e.z = tz; }
   else { e.x = damp(e.x, tx, k, dt); e.y = damp(e.y, ty, k, dt); e.z = damp(e.z, tz, k, dt); }
   const L = B[B.length - 1]; if (!e.act) e.face = L.f;
@@ -620,7 +624,7 @@ function coopPuppetUpdate(dt) {
     const P = game.player; if (this.tgt) game.player = this.tgt;
     try { Ent.prototype.update.call(this, dt); } catch (e) { console.error('傀儡预测出错', e); this.pred = 0; } finally { game.player = P; }
     const now = performance.now();
-    if ((now > this.pred && this.z <= 0 && (this.free || this.st === 'act')) || now > this.predMax) { this.pred = 0; this.settle = now + 450; this.vx = this.vy = this.vz = 0; }
+    if ((now > this.pred && this.z <= 0 && (this.free || this.st === 'act')) || now > this.predMax) { this.pred = 0; this.settle = now + 3000; this.settleEnd = 0; this.vx = this.vy = this.vz = 0; }
     return;
   }
   let spd = 1;
@@ -633,11 +637,16 @@ function coopPuppetUpdate(dt) {
     try { spd = coopActStep(this, dt); } catch (e) { console.error('傀儡动作出错', e); this.act = null; } finally { game.player = P; }
     this.animT += dt * spd;
   }
-  const settling = this.settle > performance.now();
-  coopInterp(this, dt, settling ? 7 : 16);
-  // 状态：本地出招中 / 刚被我打中（先显示本地的受击反应）时不覆盖，其余跟着主机；
-  // 预测刚结束的一小段时间里，快照里“还在浮空 / 倒地”的是主机那边晚一拍的同一次受击，不再重播一遍
-  const echo = settling && (this.netSt === 'air' || this.netSt === 'down' || this.netSt === 'getup' || this.netSt === 'hit');
+  // 预测刚结束：快照里“还在浮空 / 倒地”的是主机那边晚一拍的同一次受击（主机卡顿时会晚得更多），不再重播一遍。
+  // 等到主机那边也恢复行动（最新快照不再是受击状态），再多等插值缓冲的时间，才完全跟回快照；最多 3 秒
+  const now = performance.now(), reacting = this.netSt === 'air' || this.netSt === 'down' || this.netSt === 'getup' || this.netSt === 'hit';
+  if (this.settle) {
+    if (!reacting && !this.settleEnd) this.settleEnd = now + COOP_INTERP + 150;
+    if ((this.settleEnd && now > this.settleEnd) || now > this.settle) { this.settle = 0; this.settleEnd = 0; }
+  }
+  const settling = !!this.settle;
+  coopInterp(this, dt, settling ? 7 : 16, settling);
+  const echo = settling && reacting;
   if (!this.act && !(this.lockSt > performance.now()) && !echo) { const s = this.netSt || 'idle'; if (this.st !== s) this.setState(s); }
   else if (!this.act && this.st === 'act') this.setState(this.netSt || 'idle');
   this.animate(dt);

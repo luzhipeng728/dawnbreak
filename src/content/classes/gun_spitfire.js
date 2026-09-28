@@ -84,7 +84,7 @@ function sfPreControl(p, I, dt) {
 }
 // 空中 Space（CLASSES.gun.airControl，trySkill 没有放出技能时才会走到）：急降
 function sfAirControl(p, I) {
-  if (!I.hit('cmdB') || p.z < 8 || standbyOn(p) || nitroLeft(p) < 1) return false;
+  if (!I.hit('cmdB') || p.z < 8 || standbyOn(p) || nitroLeft(p) < 1 || (p.act && !(p.act.basic || p.act.sfNitro)) || (p.act && p.act.name === 'sfDive')) return false;
   I.consume('cmdB'); useNitro(p, 1); const dx = I.dx(); if (dx) p.face = dx;
   p.doAct(SF_DIVE); p.vx = dx * 320; return true;
 }
@@ -173,6 +173,7 @@ function sfAct(A, o = {}) {
   const s0 = A.onStart;
   A.onStart = e => {
     const a = e.act; a.air = e.z > 2;
+    if (a.air && a.clip === 'sfThrow') { a.clip = 'sfAirThrow'; e.play('sfAirThrow', true); }
     if (a.air && !o.noNitro) useNitro(e, 1);
     if (a.air && !o.keepGrav) { if (a.lowGrav === undefined) a.lowGrav = standbyOn(e) ? 0 : 0.12; e.vz = standbyOn(e) ? 0 : Math.max(0, e.vz) * 0.2; if (o.recoil && !standbyOn(e)) e.vx = -e.face * o.recoil; }
     const S = SKILLS[a.skill];
@@ -595,7 +596,7 @@ defSkill('gs_final', { name: '终解·制空霸权', cls: 'gun', job: SF, lvReq:
       const a = e.act; a.x0 = e.x; a.D = skillDmg(90, 20, lv); a.z0 = e.z; sfWings(e, 4.0); },
     update: (e, dt) => { const a = e.act, t = e.actT;
       if (t < 0.6) { e.vz = (240 - e.z) * 6; if (Math.random() < 0.5) nitroFx(e, 'up'); }
-      else if (t < 2.3) { e.vz = (240 - e.z) * 4; e.vx = 0; }
+      else if (t < 2.3) { e.vz = (240 - e.z) * 4; e.vx = 0; e.play('sfBomb'); }
       else if (t < 3.4) { e.play('sfDashAtk'); e.vz = -240 / 1.1 - 40; e.vx = e.face * 330; }
       else { e.vx *= 0.8; } },
     events: [...Array.from({ length: 7 }, (_, i) => evAt(0.75 + i * 0.2, e => { const a = e.act, x = e.x + e.face * (120 + i * 60 + rnd(-20, 20)), y = clamp(e.y + rnd(-60, 60), 8, DEPTH - 8);
@@ -666,19 +667,19 @@ function sfElemBoost(p, el, v) {
    转职登记
    ===================================================================== */
 CLASSES.gun.jobs.spitfire = { art: 'job/spitfire', name: '弹药专家', role: '远程 · 空中轰炸（固伤）', armor: 'leather',
-  awaken: 'gs_emp', awakenName: '战争女神', awaken2: 'gs_dday', awaken2Name: '芙蕾雅', awaken3: 'gs_final', awaken3Name: '重霄·弹药专家',
+  awaken: 'gs_emp', awakenName: '战争女神', awaken2: 'gs_dday', awakenName2: '芙蕾雅', awaken3: 'gs_final', awakenName3: '重霄·弹药专家',
   desc: '背着单兵推进器在空中作战的弹药专家。超负荷装填切换火 / 冰 / 光属性，三种特殊子弹改变射击方式，手雷、地雷与 C4 从空中倾泻而下。',
   skills: ['gs_nitro', 'gs_overcharge', 'gs_elem', 'gs_booster', 'gs_firearm', 'gs_gmastery', 'gs_m18', 'gs_cross', 'gs_g35', 'gs_pierce', 'gs_burst', 'gs_g18',
     'gs_buster', 'gs_c4', 'gs_napalm', 'gs_lockon', 'gs_arsenal', 'gs_emp', 'gs_g61', 'gs_chelli', 'gs_airmaster', 'gs_openfire', 'gs_photon', 'gs_dday', 'gs_02x', 'gs_standby', 'gs_final'],
-  // 人物动作片段（通用组在 content/sprites.js 里合进 SPR_ANIMS.gun）：新帧用 sf 前缀；新帧还没进来时先借现有的帧
+  // 人物动作片段（通用组在 content/sprites.js 里合进 SPR_ANIMS.gun）：新帧用 sf 前缀（art/tools/spitfire_art.py 的 gun_spitfire1 / gun_spitfire2 两张表）
   anims: {
-    sfUp: [['jump2', 0]], sfDash: [['jatk4', 0]], sfDive: [['jump4', 0]], sfReload: [['reload', 0], ['twirl', 0.2]], sfPlant: [['tech', 0]], sfAimDown: [['stomp2', 0]],
-    sfCross: [['dual', 0], ['shoot2', 0.08], ['dual', 0.18]], sfThrow: [['throw1', 0], ['throw2', 0.2]], sfAim: [['snipe', 0], ['shoot2', 0.14]], sfAirThrow: [['throw1', 0], ['throw2', 0.12]],
-    sfEmp: [['throw1', 0], ['throw2', 0.55]], sfFlare: [['throw1', 0], ['throw2', 0.5]], sfHover: [['jump3', 0]], sfSoar: [['jump2', 0]], sfDashAtk: [['jatk4', 0]], sfLand: [['tech', 0]],
+    sfUp: [['sfUp', 0]], sfDash: [['sfDash', 0]], sfDive: [['sfDive', 0]], sfReload: [['reload', 0], ['twirl', 0.2]], sfPlant: [['sfPlant', 0]], sfAimDown: [['sfAimDown', 0]],
+    sfCross: [['sfCross', 0]], sfThrow: [['throw1', 0], ['throw2', 0.2]], sfAim: [['snipe', 0], ['shoot2', 0.14]], sfAirThrow: [['sfAirThrow1', 0], ['sfAirThrow2', 0.12]],
+    sfEmp: [['sfEmp1', 0], ['sfEmp2', 0.55]], sfFlare: [['sfFlare', 0]], sfHover: [['sfHover', 0]], sfBomb: [['sfBomb', 0]], sfSoar: [['sfSoar', 0]], sfDashAtk: [['sfDashAtk', 0]], sfLand: [['sfLand', 0]],
   },
   // 转职任务线（官方经典：凯丽 → 卡坤「多重弹匣」→ 暗黑雷鸣废墟 → 红 / 白小晶块 → 凯丽；小晶块按本作经济改成各 10 个，见 docs/SKILLS_OFFICIAL_gun.md 第 7.4 节）
   quests: [
-    ['q_job_spitfire_1', { type: 'job', cls: 'gun', job: false, name: '弹药专家 - 多重弹匣', npc: 'kiri', to: 'kakun', lvl: 15, pre: 'q_job_gun_final', cond: () => !!save.data && save.data.jobPick === SF,
+    ['q_job_spitfire_1', { type: 'job', cls: 'gun', job: false, name: '弹药专家 - 多重弹匣', npc: 'kiri', to: 'kakun', lvl: 15, pre: 'q_job_gun_final',
       desc: '凯丽说，暗精灵商人卡坤那里有一种叫「多重弹匣」的新式弹药。去赫顿玛尔找卡坤打听打听。',
       talk: { offer: ['喜欢在天上飞来飞去、把炸弹撒满整个战场？那弹药专家最适合你啦~', '先去找卡坤吧，那个暗精灵在做一种叫「多重弹匣」的东西。我也想要一个！'],
         done: ['……凯丽让你来的？', '多重弹匣可不是谁都用得了的。一次装填好几种弹药，要是控制不好，先炸飞的就是你自己。'] },

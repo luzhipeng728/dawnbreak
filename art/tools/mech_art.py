@@ -40,7 +40,7 @@ M = {
         frames=['standing idle', 'standing idle with the antenna bulb lit up bright red and the timer screen glowing red', 'crouching down ready to hop',
                 'hopping up into the air with legs tucked', 'at the top of a hop, curled up', 'landing squashed flat', 'shaking and trembling nervously',
                 'swelling up a little, about to burst (no explosion drawn)', 'standing idle again, looking to the right']),
-    'g1': dict(h=34, fly=True, name='G-1 Corona',
+    'g1': dict(h=40, fly=True, name='G-1 Corona',
         desc='a floating round white orb drone about the size of a head, a short gunmetal cannon barrel sticking out in front, two small swept-back fins at the back, one big glowing yellow-white core lens in the middle, no legs',
         frames=['floating idle', 'floating, bobbing slightly up', 'floating, bobbing slightly down', 'turning its cannon slightly up',
                 'recoiling backward right after firing its cannon (no muzzle flash drawn)', 'recovering forward after firing', 'tilting forward as if flying forward fast',
@@ -184,6 +184,22 @@ def cut(k):
     json.dump(meta, open(os.path.join(out, 'spr.json'), 'w'), indent=1)
     tot = sum(os.path.getsize(os.path.join(out, x)) for x in os.listdir(out) if x.endswith('.webp'))
     print(f'  -> mech_{k}: {len(meta["frames"])} frames, {tot // 1024} KB')
+    if k == 'rx78': derive_buster(out, meta)
+
+def derive_buster(src_dir, meta):
+    """空投支援的银色破坏者 = RX-78 换色（灰色车身提亮成银白、红灯换成粉红），不另外生图。"""
+    import colorsys
+    out = os.path.join(HERE, 'final', 'spr', 'mech_buster'); os.makedirs(out, exist_ok=True)
+    for fn in meta['frames']:
+        a = np.array(Image.open(os.path.join(src_dir, f'{fn}.webp')).convert('RGBA')).astype(np.float32) / 255
+        r, g, b = a[..., 0], a[..., 1], a[..., 2]; mx = a[..., :3].max(-1); mn = a[..., :3].min(-1); sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0)
+        grey = (sat < 0.18) & (mx > 0.25)
+        a[..., :3] = np.where(grey[..., None], np.clip(a[..., :3] * 1.18 + np.array([0.02, 0.03, 0.06]), 0, 1), a[..., :3])
+        red = (sat > 0.45) & (r > g * 1.6) & (r > b * 1.6)
+        pink = np.stack([np.clip(r * 1.0 + 0.1, 0, 1), np.clip(r * 0.45, 0, 1), np.clip(r * 0.75, 0, 1)], -1)
+        a[..., :3] = np.where(red[..., None], pink, a[..., :3])
+        Image.fromarray((a * 255).astype(np.uint8), 'RGBA').save(os.path.join(out, f'{fn}.webp'), 'WEBP', quality=80, method=6)
+    json.dump(meta, open(os.path.join(out, 'spr.json'), 'w'), indent=1); print('  -> mech_buster（RX-78 换色）')
 
 def strip(k):
     """游戏内比例连拍：神枪手站姿 + 机器人全部 9 帧（summon_strip.py 同一套），输出 art/src/mech/_mech_<id>_strip.png"""
@@ -191,15 +207,152 @@ def strip(k):
     SS.OUT = SRC
     SS.strip('mech_' + k, 'town', vs=('gun',), seq=NAMES[k])
 
+# ---- 人物新动作（机械师）：一张 3×3 表（第 1 格参考站姿 + 8 帧），走外观流水线：
+#   pose（原表，手里是左轮）→ avatar_gen wpn（换成占位棍）→ avatar_gen set ×6（时装）→ avatar_frames（切帧 + 武器轨迹）→ avatar_hatcheck
+POSE_NAME = 'gun_mech'
+REMOTE = 'a small dark-grey handheld remote control with a red button and a short antenna'
+POSE_FRAMES = [
+    ('mSet1', 'crouching down on one knee, one hand reaching down toward the ground in front as if setting something down, the other hand resting on the knee'),
+    ('mSet2', 'kneeling on one knee, one hand pressed flat on the ground in front, looking down at it with a confident smile'),
+    ('mRemote1', f'standing, holding {REMOTE} at chest height in one hand, thumb on the button, the other arm relaxed'),
+    ('mRemote2', f'pressing the button of {REMOTE} firmly, the remote raised to face height, a playful grin'),
+    ('mCall', 'one arm raised straight up high with an open palm signalling to the sky, the other hand on the hip'),
+    ('mPoint', 'one arm extended straight forward with the index finger pointing ahead like giving a command, leaning slightly forward'),
+    ('mAwk1', f'dramatic command pose: {REMOTE} held high above the head in one hand, the other arm sweeping forward, hair and scarf flowing'),
+    ('mAwk2', f'wide heroic stance, one arm thrust forward with an open hand while the other holds {REMOTE} up beside the face, eyes sharp and determined'),
+]
+NOGUN = ' IMPORTANT: in ALL 9 frames (including the first standing frame) her hands hold NO gun and NO revolver: the revolver is not visible anywhere; only the small remote control appears where a frame mentions it.'
+POSE_NOTE = f'The small remote control ({REMOTE}) is NOT the revolver: keep it exactly as it is in the hand that holds it. '
+
+def pose_sheet(force=False):
+    import sheets2
+    ref = os.path.join(MAIN, 'src', 'gun_ref.png')
+    out = os.path.join(MAIN, 'src', 'combat', 'sheets', f'{POSE_NAME}.png')
+    return gen(out, sheets2.prompt([d for _, d in POSE_FRAMES], None) + NOGUN, '2048x2048', [ref], force=force)
+
+# ---- 技能图标（和 combatgen.py 的图标表同一画风；以全家福和现有的 RX-78 图标为参考，机器人造型和精灵一致）----
+ICON_STYLE = ('cute cartoon mobile RPG icon style, bold clean outlines, bright saturated colors, soft shading, glossy and polished; '
+              'every icon is a rounded square tile with its own colored background and a thick dark border')
+ROBOT_NOTE = 'Any robot drawn in an icon must look exactly like the matching robot in the FIRST image (white and light-grey armor, orange-yellow stripes, cyan lights). '
+ICONS = {
+    'mech_a': [
+        ('gm_ez8', 'the round white EZ-8 bomb robot on stubby legs with a red digital timer screen and a lit red antenna bulb, orange warning glow behind it'),
+        ('gm_robotics', 'a small white robot being upgraded by a wrench and a spinning gear, a glowing blue upward arrow'),
+        ('gm_detonate', 'a hand pressing the red button of a dark-grey remote control with a short antenna, a big orange explosion behind'),
+        ('gm_backup', 'the small grey tracked RX-78 robot with a red siren light bursting forward out of a red warning triangle'),
+        ('gm_g1', 'the floating white orb drone G-1 Corona with a yellow core lens firing a glowing yellow light bullet'),
+        ('gm_g2', 'three white spinning-top disc drones with blue tesla coils circling in a ring with crackling blue electricity'),
+        ('gm_viper', 'the white tripod turret robot with a cyan visor firing its twin-barrel gun, bullet streaks'),
+        ('gm_convert', 'a gear with an electric bolt turning into a glowing golden light orb'),
+        ('gm_camo', 'a girl silhouette fading into a transparent cyan hexagon camouflage pattern'),
+        ('gm_hold', 'a dark-grey remote control showing a big pause symbol, a small robot stopping with raised hands'),
+        ('gm_g3', 'several small white bird-like drones with orange beaks and grabbing claws swooping down'),
+        ('gm_gale', 'the white flying bomber mech with twin rotor pods launching red missiles'),
+        ('gm_magnet', 'a purple magnetic energy bullet shaped like a horseshoe magnet pulling small shadowy enemies into a glowing field'),
+        ('gm_drop', 'a dark bomber plane in the sky dropping many small silver tracked robots'),
+        ('gm_factory', 'the boxy white factory robot with an open hatch and tiny white interceptor drones flying out'),
+        ('gm_g0', 'the big white battle mech with a gatling gun arm, shoulder missile pods and a glowing red chest core, a red lock-on reticle'),
+    ],
+    'mech_b': [
+        ('gm_hitech', 'a glowing blue circuit chip with a golden gear and sparkles'),
+        ('gm_solar', 'tiny white drones linked edge to edge into a glowing solar panel firing a bright beam'),
+        ('gm_gext', 'three G-series robots (an orb drone, a disc drone, a bird drone) in a circle of transformation arrows with a stacking gold bar'),
+        ('q_magic_tinder', 'a small magical flame ember glowing orange and violet inside a cracked crystal shell'),
+    ],
+}
+def icon_prompt(items):
+    rows = max(1, len(items) // 4)
+    return (f'The FIRST image shows the robot designs; the SECOND image is an example of the icon style. Draw a sprite sheet of {len(items)} separate game icons arranged in a grid of 4 columns and {rows} rows '
+            f'on a plain pure white background, evenly spaced with generous white gaps between icons, no icon touching another, {ICON_STYLE}. {ROBOT_NOTE}In reading order (left to right, top to bottom): '
+            + '; '.join(f'({i + 1}) {t}' for i, (_, t) in enumerate(items)) + '. No text, no numbers, no labels.')
+def icons_gen(only, force):
+    ex = os.path.join(SRC, '_icon_example.png')
+    if not os.path.exists(ex):
+        im = Image.open(os.path.join(HERE, 'final', 'icon', 'g_rx78.webp')).convert('RGBA').resize((416, 416), Image.LANCZOS)
+        bg = Image.new('RGBA', (512, 512), (255, 255, 255, 255)); bg.alpha_composite(im, (48, 48)); bg.convert('RGB').save(ex)
+    for n, items in ICONS.items():
+        if n.startswith(only): print(gen(os.path.join(SRC, 'icons', f'{n}.png'), icon_prompt(items), '2048x2048' if len(items) > 8 else '2048x1152', [os.path.join(SRC, '_lineup_review.png'), ex], force=force), flush=True)
+def icons_cut(only):
+    """同 icons.py：去背 → 连通块 → 按行列排序 → 104×104 WebP（art/final/icon/<id>.webp）"""
+    from prep import remove_bg, components
+    out = os.path.join(HERE, 'final', 'icon')
+    for n, items in ICONS.items():
+        p = os.path.join(SRC, 'icons', f'{n}.png')
+        if not n.startswith(only) or not os.path.exists(p): continue
+        arr = np.array(remove_bg(Image.open(p))); lab, comps = components(arr[..., 3], min_cells=200)
+        boxes = []
+        for c, cells in comps:
+            ys, xs = np.where(lab == c); boxes.append((ys.min(), ys.max() + 1, xs.min(), xs.max() + 1, c))
+        boxes = sorted([b for b in boxes if (b[1] - b[0]) > 80 and (b[3] - b[2]) > 80], key=lambda b: (b[0] + b[1]) / 2)
+        rows, cur = [], []
+        for b in boxes:
+            if cur and (b[0] + b[1]) / 2 - (cur[-1][0] + cur[-1][1]) / 2 > (b[1] - b[0]) * 0.5: rows.append(cur); cur = []
+            cur.append(b)
+        if cur: rows.append(cur)
+        order = [b for r in rows for b in sorted(r, key=lambda b: b[2])]
+        print(n, 'found', len(order), 'expected', len(items))
+        for b, (name, _) in zip(order, items):
+            y0, y1, x0, x1, c = b
+            crop = arr[y0:y1, x0:x1].copy(); crop[..., 3] = np.where(lab[y0:y1, x0:x1] == c, crop[..., 3], 0)
+            ic = Image.fromarray(crop, 'RGBA'); s = max(ic.size); sq = Image.new('RGBA', (s, s), (0, 0, 0, 0)); sq.paste(ic, ((s - ic.width) // 2, (s - ic.height) // 2))
+            sq.resize((104, 104), Image.LANCZOS).save(os.path.join(out, f'{name}.webp'), 'WEBP', quality=84, method=6)
+
+# ---- 转职立绘 job/mechanic（615×900 同款）与觉醒插图 cutin/mechanic（720×480，一觉 G-0）----
+CHAR = 'this exact chibi girl gunner (same face, same brown ponytail, same brown newsboy cap, same brown jacket, blue scarf, shorts and boots)'
+JOB_PROMPT = (f'Full-body character art of {CHAR}, now as a Mechanic: small brass goggles on the cap, a tool belt with a wrench, a mechanical fingerless gauntlet on one hand. '
+              'She stands in a relaxed confident 3/4 pose facing right, holding a small dark-grey remote control with a red button up in one hand and the silver revolver in the other; '
+              'the little white orb drone (G-1 Corona) from the second image floats next to her shoulder and the small grey tracked robot (RX-78) from the second image sits at her feet. '
+              'Modest outfit. Same cute chibi art style with thick outlines. Plain pure white background, full body visible, no ground shadow, no text.')
+CUTIN = {
+    'mechanic': ('pointing forward with a small dark-grey remote control raised in the other hand, a huge white battle mech (the big G-0 Battleroid from the second image, with its gatling gun arm, '
+                 'shoulder missile pods and glowing red chest core) looming behind her, red lock-on reticles, confident grin, hair blown back'),
+}
+def cutout(p, max_h=None, size=None):
+    from prep import remove_bg
+    im = remove_bg(Image.open(p)); bb = im.getbbox(); im = im.crop(bb) if bb and max_h else im
+    if max_h and im.height > max_h: im = im.resize((round(im.width * max_h / im.height), max_h), Image.LANCZOS)
+    if size: im = im.resize(size, Image.LANCZOS)
+    return im
+def job_art(force):
+    refs = [os.path.join(MAIN, 'src', 'gun_ref.png'), os.path.join(SRC, '_lineup_review.png')]
+    print(gen(os.path.join(SRC, 'job_mechanic.png'), JOB_PROMPT, '1024x1536', refs, force=force), flush=True)
+    for j, d in CUTIN.items():
+        print(gen(os.path.join(SRC, f'cutin_{j}.png'), f'Using {CHAR} from the FIRST image (same design, same colors, same cute art style), draw a dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Plain pure white background, no text.',
+                  '1536x1024', refs, force=force), flush=True)
+def job_prep():
+    p = os.path.join(SRC, 'job_mechanic.png')
+    if os.path.exists(p): os.makedirs(os.path.join(HERE, 'final', 'job'), exist_ok=True); cutout(p, max_h=900).save(os.path.join(HERE, 'final', 'job', 'mechanic.webp'), 'WEBP', quality=84, method=6); print('job/mechanic')
+    for j in CUTIN:
+        p = os.path.join(SRC, f'cutin_{j}.png')
+        if os.path.exists(p): cutout(p, size=(720, 480)).save(os.path.join(HERE, 'final', 'cutin', f'{j}.webp'), 'WEBP', quality=82, method=6); print('cutin/' + j)
+
+def avatar_step(args):
+    """外观流水线的一步：把本表的帧名 / 道具说明临时登记进 avatar_gen / frames2（不改它们的文件），再调用它们的 main。"""
+    import avatar_gen as AG, frames2 as F2
+    AG.NOTES[POSE_NAME] = POSE_NOTE
+    AG.NO_WPN.add(POSE_NAME)   # 这张表人物手里没有枪（左轮收起来了）：不做占位棍，时装版直接用原表换衣服
+    F2.NAMES.setdefault('gun', {})['mech'] = [n for n, _ in POSE_FRAMES]
+    if args[0] == 'frames':
+        import avatar_frames as AF
+        sys.argv = ['avatar_frames.py'] + args[1:]; AF.main()
+    else:
+        sys.argv = ['avatar_gen.py'] + args; AG.main()
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == 'avatar': return avatar_step(sys.argv[2:])   # mech_art.py avatar wpn --only gun_mech | avatar set --only festival/gun_mech | avatar frames gun_mech [--set festival]
     ap = argparse.ArgumentParser(); ap.add_argument('phase'); ap.add_argument('--only', default=''); ap.add_argument('--force', action='store_true'); a = ap.parse_args()
     if a.phase == 'lineup':
         refs = [os.path.join(MAIN, 'src', 'summon', '_refs_all.png'), os.path.join(SRC, '_rx78_ref_big.png')]
         print(gen(os.path.join(SRC, '_lineup.png'), lineup_prompt(), '3840x2160', refs, force=a.force), flush=True)
     elif a.phase == 'crop': crop_lineup()
+    elif a.phase == 'pose': print(pose_sheet(a.force), flush=True)
+    elif a.phase == 'icons': icons_gen(a.only, a.force)
+    elif a.phase == 'iconcut': icons_cut(a.only)
+    elif a.phase == 'job': job_art(a.force)
+    elif a.phase == 'jobprep': job_prep()
     elif a.phase == 'sheets':
         for k in M:
-            if k.startswith(a.only): print(gen(os.path.join(SRC, 'sheets', f'{k}.png'), sheet_prompt(k), '2048x2048', [os.path.join(SRC, f'{k}_ref.png')], force=a.force), flush=True)
+            if any(k.startswith(o) for o in a.only.split(',')): print(gen(os.path.join(SRC, 'sheets', f'{k}.png'), sheet_prompt(k), '2048x2048', [os.path.join(SRC, f'{k}_ref.png')], force=a.force), flush=True)
     elif a.phase == 'cut':
         for k in M:
             if k.startswith(a.only): cut(k)

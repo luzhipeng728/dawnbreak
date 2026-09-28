@@ -804,8 +804,6 @@ Object.assign(MECH_DMG, {
   hyperBomb: lv => skillDmg(1.0, 0.1, lv), hyperBoom: lv => skillDmg(3.5, 0.35, lv),
   sdLaser: () => 2.2, sdDome: () => 5.2,
 });
-// 二觉 / 三觉插图：有 cutin/mechanic2、cutin/mechanic3 时用，没有就用一觉的
-const mechCutin = (e, n) => IMG['cutin/mechanic' + n] ? { cls: 'mechanic' + n, model: e.model, x: e.x } : cutinWho(e);
 // 锁定标记（准星，跟着目标）
 function lockFx(t, dur, col = '#ff4a3a') {
   addFx({ ent: t, y: t.y + 0.4, dur, draw(c) { const T = this.ent; if (T.dead || T.remove) { this.t = this.dur; return; } const k = Math.min(1, this.t / 0.3), X = sx(T.x), Y = sy(T.y, T.z + T.hurtH() * 0.55), r = 30 - 12 * easeOut(k);
@@ -953,7 +951,7 @@ defSkill('gm_bolt', { name: '终结者：博尔特 MX', cls: 'gun', job: MC, lvR
   desc: '【二觉】召唤天界最新型的战斗机甲博尔特 MX 从天而降，自动锁定落点附近的敌人：先从肩上射出回旋炮连续打击后爆炸，再一边移动一边用步枪射击 4 发，随后拔出激光剑连斩 3 次，最后冲向一个敌人自爆。施放时无敌。',
   pow: lv => MECH_DMG.boltMx2(lv) * 5 + MECH_DMG.boltMx2Boom(lv) + MECH_DMG.boltRifle(lv) * 3 + MECH_DMG.boltRifle4(lv) + MECH_DMG.boltBlade(lv) * 3 + MECH_DMG.boltFin(lv), ai: { kind: 'awaken', r: [0, 400], dy: 120 },
   act: (lv) => ({ name: 'gm_bolt', clip: mclip('mAwk'), dur: 0.6, superArmor: true, invul: true, noCounter: true,
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '终结者：博尔特 MX', who: mechCutin(e, 2) }; game.timeStop = 0.9; sfx.awaken(); },
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '终结者：博尔特 MX', who: cutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); },
     events: [evAt(0.1, e => { const s = summon(e, 'mech_bolt', { lv, x: e.x + e.face * 60, y: e.y }); if (s) { s.face = e.face; for (const t of boltTargets(s).slice(0, 5)) lockFx(t, 3.2); } })] }) });
 
 /* ---- 三觉被动：微型制导 ---- */
@@ -1012,7 +1010,7 @@ defSkill('gm_stardust', { name: 'G-X 星尘天穹', cls: 'gun', job: MC, lvReq: 
   pow: lv => MECH_DMG.sdLaser(lv) * 8 + MECH_DMG.sdDome(lv) * 7, ai: { kind: 'awaken', r: [0, 500], dy: 140 },
   req: p => !gsUnits(p).length ? '需要 G 系列在场' : (p.cool.gm_g0 || 0) > 0 ? 'G-0 战争领主冷却中' : true,
   act: (lv) => ({ name: 'gm_stardust', clip: mclip('mAwk'), dur: 1.0, superArmor: true, invul: true, noCounter: true,
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: 'G-X 星尘天穹', who: mechCutin(e, 3) }; game.timeStop = 0.9; sfx.awaken(); },
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: 'G-X 星尘天穹', who: cutinWho(e, 3) }; game.timeStop = 0.9; sfx.awaken(); },
     events: [evAt(0.1, e => { dismissSummons(e, GS_Q, 'tf'); gsState(e).stacks = 0; e.cool.gm_g1 = 0; e.cool.gm_g0 = Math.max(e.cool.gm_g0 || 0, SKILLS.gm_g0.cd * (e.cdMul || 1));
       summon(e, 'mech_stardust', { lv, x: e.x + e.face * 260, y: e.y }); })] }) });
 // G-X 主宰者：除觉醒外所有技能冷却 -15%（castSkill 之后按比例缩短）
@@ -1058,8 +1056,8 @@ CLASSES.gun.jobs.mechanic = { art: 'job/mechanic', name: '机械师', role: '远
   desc: '来自天界的机械工学天才。放出 RX-78、EZ-8、G 系列、毒蛇炮、狂风等机器人替自己作战，靠遥控器改装、引爆、指挥它们。魔法伤害职业，机器人的伤害按魔攻实时结算。',
   skills: ['gm_hitech', 'gm_ez8', 'gm_robotics', 'gm_detonate', 'gm_backup', 'gm_g1', 'gm_g2', 'gm_viper', 'gm_convert', 'gm_camo', 'gm_hold', 'gm_g3', 'gm_gale', 'gm_magnet', 'gm_drop',
     'gm_factory', 'gm_solar', 'gm_gext', 'gm_g0', 'gm_hs12', 'gm_frisbee', 'gm_gop', 'gm_falcon', 'gm_field', 'gm_bolt', 'gm_micro', 'gm_hyper', 'gm_stardust'],
-  // 新人物动作（外观流水线出帧之前先指向现有帧；sprites.js 读 J.anims 合进 SPR_ANIMS.gun）
-  anims: { mSet: [['tech', 0]], mRemote: [['quantum', 0]], mPoint: [['snipe', 0]], mCall: [['twirl', 0]], mAwk: [['quantum', 0]] },
+  // 新人物动作（外观流水线：art/tools/mech_art.py pose / avatar；sprites.js 读 J.anims 合进 SPR_ANIMS.gun）
+  anims: { mSet: [['mSet1', 0], ['mSet2', 0.14]], mRemote: [['mRemote1', 0], ['mRemote2', 0.08]], mCall: [['mCall', 0]], mPoint: [['mPoint', 0]], mAwk: [['mAwk1', 0], ['mAwk2', 0.45]] },
   trial: 'q_jl_mechanic_3',
   // 转职任务线（quests/job.js 统一 defineQuest；用 getter 是因为 QR 在任务文件里才定义）
   get quests() {

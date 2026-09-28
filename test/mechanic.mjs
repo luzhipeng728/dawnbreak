@@ -221,6 +221,15 @@ report('二觉 博尔特 MX：步枪 4 发、激光剑 3 次、自爆', o.bolt.s
 report('微型制导 / 超时空光耀加农炮', o.micro >= 0.2 && o.hyper.dmg, { micro: o.micro, hyper: o.hyper });
 report('三觉 星尘天穹：要 G 系列、G-0 冷却中不能用、用后 G-0 冷却 / G-1 重置', typeof o.sd.noG === 'string' && typeof o.sd.g0cd === 'string' && o.sd.g0 > 100 && o.sd.g1 === 0 && o.sd.gs === 0 && o.sd.dmg, o.sd);
 report('转职任务线：3 步，接在职业试炼之后，60 白色小晶块 + 2 火种', o.quest.q1 && o.quest.q3 && o.quest.pre === 'q_job_gun_final' && o.quest.items === 'c_white:60,q_magic_tinder:2', o.quest);
+// 机器人精灵在游戏里的样子（一张截图，看比例和悬浮高度）：test/shots/mechanic_robots.png
+const art = await page.evaluate(async () => {
+  const p = game.player; T.clear(); T.reset(); p.x = 260; mechArtLoad(); if (typeof loadBundles === 'function') await loadBundles(MECH_ART.map(k => 'spr:mech_' + k));
+  T.mob(900, 60); T.cast('gm_g1'); T.run(40); mechRx78(p, 5, { x: 340, y: 130 }); summon(p, 'mech_ez8', { lv: 5, x: 400, y: 70, life: 99 }); T.cast('gm_viper'); T.run(30);
+  summon(p, 'mech_gale', { lv: 5, x: 380, y: 100 }); const f = summon(p, 'mech_factory', { lv: 5, x: 540, y: 60 }); if (f) f.life = 99; summon(p, 'mech_sparrow', { lv: 5, x: 600, y: 120 });
+  p.mechHold = true; T.run(20); game.paused = false; return MECH_ART.filter(k => IMG[`spr/mech_${k}/idle`]).length;
+});
+await page.waitForTimeout(400); await page.screenshot({ path: 'test/shots/mechanic_robots.png' });
+report('机器人精灵都加载了（11 种）', art === 11, art);
 const errs = logs.filter(l => l.type === 'pageerror' || l.type === 'error');
 report('没有页面错误', errs.length === 0, errs.slice(0, 5));
 await browser.close();

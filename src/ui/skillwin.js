@@ -10,7 +10,7 @@ const SK_ELEM = { fire: '火', ice: '冰', light: '光', dark: '暗' };
 // 当前职业（+ 转职）能看到的技能：{ base: [...], job: [...] }
 function skillPages(cls = game.player && game.player.cls, job = game.job) {
   const C = CLASSES[cls] || {}, ok = id => !!SKILLS[id];
-  const base = (C.skills || []).filter(id => ok(id) && !SKILLS[id].job);
+  const base = (C.skills || []).filter(id => ok(id) && !SKILLS[id].job && (typeof skillAllowed !== 'function' || skillAllowed(id, job)));
   let jobs = [];
   if (job) {
     const J = C.jobs && C.jobs[job];
@@ -28,6 +28,7 @@ function skillUpBlock(id) {
   const S = SKILLS[id], lv = game.skillLv[id] || 0;
   if (!S) return '未知技能';
   if (S.job && S.job !== game.job) return '需要转职';
+  if (typeof skillAllowed === 'function' && !skillAllowed(id, game.job)) return '该转职无法学习';
   if (lv >= (S.maxLv || 1)) return '已满级';
   const need = skLvReq(S, lv + 1); if (game.lvl < need) return `需要等级 ${need}`;
   if (S.awaken && typeof awakenUnlocked === 'function' && !awakenUnlocked()) return '需要完成觉醒任务';
@@ -149,8 +150,8 @@ Object.assign(menus, {
         upWhy && upWhy !== '已满级' ? h('div', { class: 'small', style: 'color:#ff9a8a' }, upWhy) : null].filter(Boolean));
     }
     // 技能栏预览（可以拖进来、点键位设置、右键清空）
-    const bar = h('div', { class: 'skbar' }, game.skillBar.map((id, i) => {
-      const cell = h('div', { class: 'bs' + (id && id === sel ? ' on' : ''), 'data-slot': i }, id && SKILLS[id] ? h('img', { src: skillIcon(id, 48).toDataURL(), draggable: 'false' }) : null, h('span', { class: 'k' }, keyName('s' + i)));
+    const bar = h('div', { class: 'skbar' }, [0, 1, 2, 3, 4, 5, 12, 6, 7, 8, 9, 10, 11, 13].map(i => {   // 两排各 7 格：第 7 格是 s12 / s13
+      const id = game.skillBar[i] || null, cell = h('div', { class: 'bs' + (id && id === sel ? ' on' : ''), 'data-slot': i }, id && SKILLS[id] ? h('img', { src: skillIcon(id, 48).toDataURL(), draggable: 'false' }) : null, h('span', { class: 'k' }, keyName('s' + i)));
       if (typeof dnd !== 'undefined') {
         dnd.target(cell, { accept: p => p.type === 'skill' && SKILLS[p.id] && !SKILLS[p.id].passive, drop: p => { skillBarPut(i, p.id, p.from === 'bar' ? p.slot : undefined); rf(); } });
         if (id) dnd.source(cell, () => ({ type: 'skill', id, from: 'bar', slot: i, onVoid: () => { skillBarClear(i); rf(); } }));
@@ -206,7 +207,7 @@ addStyle(`
 .kv{display:flex;justify-content:space-between;gap:.6em;font-size:.88em}.kv b{color:#ffe8a8;text-align:right}
 .sksec{border-top:.08em solid #3a3040;padding-top:.3em;display:flex;flex-direction:column;gap:.15em}
 .skempty{flex:1;padding:2em 1em;text-align:center;line-height:1.7}
-.skbar{display:grid;grid-template-columns:repeat(6,3.1em);grid-auto-rows:3.1em;gap:.3em;justify-content:center;padding:.4em;border:.1em solid #3a3040;border-radius:.25em;background:#0e0b12}
+.skbar{display:grid;grid-template-columns:repeat(7,3.1em);grid-auto-rows:3.1em;gap:.3em;justify-content:center;padding:.4em;border:.1em solid #3a3040;border-radius:.25em;background:#0e0b12}
 .skbar .bs{position:relative;border:.1em solid #5a4a36;border-radius:.2em;background:#16121a;cursor:pointer;overflow:hidden;touch-action:none}
 .skbar .bs img{width:100%;height:100%;display:block}.skbar .bs.on{border-color:#ffd23a}
 .skbar .bs .k{position:absolute;left:.15em;top:0;font-size:.65em;font-weight:900;color:#fff;text-shadow:0 0 .2em #000,0 0 .2em #000}

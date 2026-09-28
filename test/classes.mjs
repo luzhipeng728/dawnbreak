@@ -5,7 +5,7 @@ import { launch, URL_BASE } from './lib.mjs';
 import fs from 'fs';
 const out = 'test/shots/classes'; fs.mkdirSync(out, { recursive: true });
 const items = (process.argv[2] || 'gun,mage').split(',');
-const KEYS = ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY'];
+const KEYS = ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'AltLeft', 'KeyV'];   // 14 格技能栏的默认键
 let fail = 0;
 for (const item of items) {
   const [cls, job] = item.split(':'), tag = job ? `${cls}-${job}` : cls;
@@ -17,8 +17,8 @@ for (const item of items) {
   const info = () => page.evaluate(() => ({ hp: Math.round(__G.player.hp), mp: Math.round(__G.player.mp), st: __G.player.st, act: __G.player.act && __G.player.act.name, combo: game.maxCombo, mobs: __G.ents.filter(e => e.team === 'e' && !e.dead).length, fps: Math.round(fps) }));
   const n = await page.evaluate(job => {
     const p = __G.player; p.mpMax = p.mp = 99999;
-    if (job) { game.job = job; const ids = CLASSES[p.cls].jobs[job].skills; for (const id of ids) game.skillLv[id] = 5; game.skillBar = ids.filter(id => !SKILLS[id].passive).concat(Array(12).fill(null)).slice(0, 12); }
-    else game.skillBar = CLASSES[p.cls].skills.filter(id => !SKILLS[id].passive).concat(Array(12).fill(null)).slice(0, 12);
+    if (job) { game.job = job; const ids = CLASSES[p.cls].jobs[job].skills; for (const id of ids) game.skillLv[id] = 5; game.skillBar = ids.filter(id => !SKILLS[id].passive).concat(Array(14).fill(null)).slice(0, 14); }
+    else game.skillBar = CLASSES[p.cls].skills.filter(id => !SKILLS[id].passive).concat(Array(14).fill(null)).slice(0, 14);
     setInterval(() => { p.hp = p.hpMax; p.mp = p.mpMax; p.invul = 99; for (const k in p.cool) p.cool[k] = 0; if (__G.ents.filter(e => e.team === 'e' && !e.dead).length < 3) for (let i = 0; i < 4; i++) __G.spawnMonster('goblin', p.x + 150 + i * 60, 40 + i * 40); }, 400);
     return game.skillBar.filter(Boolean).length;
   }, job || null);

@@ -1,6 +1,6 @@
 /* =====================================================================
    32. 触屏操作（手机 / 平板自动启用，?touch 强制启用）
-   左半屏：浮动摇杆（推到底 = 跑步；方向变化会记入指令输入）；右侧：攻击 X / 跳跃 C / 指令 Z / Buff 指令 / 闪避 / 6 个技能（可翻页）；
+   左半屏：浮动摇杆（推到底 = 跑步；方向变化会记入指令输入）；右侧：攻击 X / 跳跃 C / 指令 Z / 指令 2（Space）/ 后跳（↓+C）/ 7 个技能（翻页切换两排）；
    左上：药水 / 翻页 / 物品栏 / 技能 / 任务 / 菜单。设置 → 手机按钮 可以调大小、透明度、左右互换（uiPref touchSize / touchAlpha / touchSwap）
    打开任何窗口时隐藏虚拟按键，避免和窗口抢触摸（窗口用 ✕ 关闭）
    ===================================================================== */
@@ -36,12 +36,17 @@ const touch = {
       return b;
     };
     const key = (a) => [() => { input.virt[a] = 2; }, () => { delete input.virt[a]; }];
-    // 右下角：X 为圆心，C / Z / 闪避在内圈，6 个技能在外圈（角度 / 半径 / 大小，单位 vh，相对屏幕右下角）
+    // 右下角：X 为圆心，C / Z / 后跳在内圈，7 个技能在外圈（角度 / 半径 / 大小，单位 vh，相对屏幕右下角）
     const put = (b, ang, r, size) => { this.placed.push({ b, ang, r, size }); el.appendChild(b); return b; };
-    put(btn('X', 'atk', ...key('attack')), 0, 0, 16); put(btn('C', 'jump', ...key('jump')), 196, 16.5, 10.5); put(btn('Z', 'cmd', ...key('cmd')), 104, 16.5, 10.5); put(btn('闪', 'dodge', ...key('dodge')), 150, 17, 10.5);
-    // Buff 指令键（等同键盘 Space：同时算指令键和 Buff 指令键）
-    put(btn('Buff', 'cmdb', () => { input.virt.cmd = 2; input.virt.cmdB = 2; }, () => { delete input.virt.cmd; delete input.virt.cmdB; }), 64, 17, 8);
-    [212, 186, 160, 134, 108, 82].forEach((ang, i) => { const b = put(btn('', 'sk', () => { input.virt['s' + (i + this.page * 6)] = 2; }, () => { delete input.virt['s' + i]; delete input.virt['s' + (i + 6)]; }), ang, 29, 9); this.skillEls.push(b); });
+    put(btn('X', 'atk', ...key('attack')), 0, 0, 16); put(btn('C', 'jump', ...key('jump')), 196, 16.5, 10.5); put(btn('Z', 'cmd', ...key('cmd')), 104, 16.5, 10.5);
+    // 后跳（等同 ↓+C：技能中 / 受击中要学后跳-强化）
+    put(btn('后跳', 'dodge', () => { input.virt.down = input.virt.down || 1; input.virt.jump = 2; this.bsDown = true; }, () => { delete input.virt.jump; if (this.bsDown && !this.dirs.down) delete input.virt.down; this.bsDown = false; }), 150, 17, 10.5);
+    // 指令键 2（等同键盘 Space：方向 + Space 放 Buff 类技能）
+    put(btn('Space', 'cmdb', ...key('cmdB')), 64, 17, 8);
+    // 技能按钮：第 1 页 = 第 1 排（s0..s5 + s12），第 2 页 = 第 2 排（s6..s11 + s13）
+    const slotOf = i => i < 6 ? i + this.page * 6 : 12 + this.page;
+    [212, 186, 160, 134, 108, 82, 56].forEach((ang, i) => { const b = put(btn('', 'sk', () => { b._slot = slotOf(i); input.virt['s' + b._slot] = 2; }, () => { if (b._slot !== undefined) delete input.virt['s' + b._slot]; }), ang, 29, 9); this.skillEls.push(b); });
+    this.slotOf = slotOf;
     const misc = h('div', { class: 'tmisc' },
       btn('HP', 'pot hp', ...key('i0')), btn('MP', 'pot mp', ...key('i1')),
       btn('⇅', '', () => { this.page ^= 1; this.barSig = ''; }), btn('包', '', () => uiKey('inv')), btn('技', '', () => uiKey('skills')), btn('任', '', () => uiKey('quests')), btn('≡', '', () => uiKey('menu')));
@@ -84,7 +89,7 @@ const touch = {
     const sig = this.page + ':' + game.skillBar.join(',');
     if (sig !== this.barSig) {
       this.barSig = sig;
-      this.skillEls.forEach((b, i) => { const id = game.skillBar[i + this.page * 6]; b.style.backgroundImage = id && SKILLS[id] ? `url(${skillIcon(id, 64).toDataURL()})` : 'none'; b.classList.toggle('empty', !id); });
+      this.skillEls.forEach((b, i) => { const id = game.skillBar[this.slotOf(i)]; b.style.backgroundImage = id && SKILLS[id] ? `url(${skillIcon(id, 64).toDataURL()})` : 'none'; b.classList.toggle('empty', !id); });
     }
   },
 };

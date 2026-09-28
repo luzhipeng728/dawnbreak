@@ -1,11 +1,11 @@
 /* =====================================================================
-   21. HUD（UI 层，逻辑 1920×1080）：底部面板（HP/MP 球、经验条、消耗品栏 1~6、两排技能栏、疲劳条、金币、闪避）、
+   21. HUD（UI 层，逻辑 1920×1080）：底部面板（HP/MP 球、经验条、消耗品栏 1~6、两排技能栏各 7 格、疲劳条、金币、后跳-强化冷却）、
    Buff 图标、左下系统消息、右上连击数、目标血条 / 领主多管血条、觉醒插图、任务追踪（任务组 drawQuestTracker）
    - 技能栏 / 消耗品栏支持拖入（dnd.canvas）、拖出清空、右键清空；悬停显示提示框
    - hudSkillSlotAt(x, y) / hudQuickSlotAt(x, y)：UW×UH 逻辑坐标 → 格子下标或 -1（布局可能会变，别写死坐标）
    - uiPref('hudMode')：'full' 完整 / 'lite' 简洁（Tab 切换）
    ===================================================================== */
-const SKILL_KEYS = ['A', 'S', 'D', 'F', 'G', 'H', 'Q', 'W', 'E', 'R', 'T', 'Y'];   // 旧常量（默认键位），显示请用 keyName('s' + i)
+const SKILL_KEYS = ['A', 'S', 'D', 'F', 'G', 'H', 'Q', 'W', 'E', 'R', 'T', 'Y', 'Alt', 'V'];   // 旧常量（默认键位），显示请用 keyName('s' + i)
 const iconCache = {};
 function skillIcon(id, size = 64) {
   const key = id + size; if (iconCache[key]) return iconCache[key];
@@ -65,15 +65,15 @@ const HUD = {
   y0: 940, x0: 452, x1: 1468,                      // 面板上沿 / 左右边
   hp: { x: 372, y: 994, r: 78 }, mp: { x: 1548, y: 994, r: 78 },
   quick: { x: 478, y: 962, s: 52, gap: 58 },       // 消耗品栏 1~6：一排
-  skill: { x: 1076, y: 962, s: 52, gap: 60, row: 58 },   // 技能栏 2×6
-  dodge: { x: 912, y: 1018, r: 30 },
+  skill: { x: 1040, y: 962, s: 52, gap: 60, row: 58 },   // 技能栏 2×7：第 1 排 s0..s5 + s12（Alt），第 2 排 s6..s11 + s13
+  dodge: { x: 912, y: 1018, r: 30 },                    // 后跳-强化的冷却（原来的闪避位置；字段名保留，别的模块可能在读）
 };
 // 右上角小地图有 4 行时比较高：连击数和地下城里的任务追踪栏跟着往下挪，不和小地图重叠（小地图见 dungeon.drawUI：y0=70，格子 34）
 const hudComboDy = () => { const L = game.dungeon && game.dungeon.layout; return L ? Math.max(0, 70 + L.rows * 34 + 22 - 186) : 0; };
 const hudQuickRect = i => ({ x: HUD.quick.x + i * HUD.quick.gap, y: HUD.quick.y, s: HUD.quick.s });
-const hudSkillRect = i => ({ x: HUD.skill.x + (i % 6) * HUD.skill.gap, y: HUD.skill.y + Math.floor(i / 6) * HUD.skill.row, s: HUD.skill.s });
+const hudSkillRect = i => { const col = i < 12 ? i % 6 : 6, row = i < 12 ? Math.floor(i / 6) : i - 12; return { x: HUD.skill.x + col * HUD.skill.gap, y: HUD.skill.y + row * HUD.skill.row, s: HUD.skill.s }; };
 const hudInRect = (R, x, y, pad = 3) => x >= R.x - pad && x <= R.x + R.s + pad && y >= R.y - pad && y <= R.y + R.s + pad;
-function hudSkillSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < 12; i++) if (hudInRect(hudSkillRect(i), x, y)) return i; return -1; }
+function hudSkillSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < SKILL_SLOTS; i++) if (hudInRect(hudSkillRect(i), x, y)) return i; return -1; }
 function hudQuickSlotAt(x, y) { if (!ui.panelOn()) return -1; for (let i = 0; i < 6; i++) if (hudInRect(hudQuickRect(i), x, y)) return i; return -1; }
 /* ---- 技能栏 / 消耗品栏的写入（窗口和 HUD 共用） ---- */
 function skillBarPut(i, id, from) {
@@ -172,8 +172,8 @@ const ui = {
       if (typeof drawQuickItem === 'function') drawQuickItem(c, i, R.x, R.y, R.s);
       uiText(keyName('i' + i), R.x + 2, R.y + 14, { size: 13, color: '#fff', sw: 3 });
     }
-    // 技能栏 2×6
-    for (let i = 0; i < 12; i++) {
+    // 技能栏 2×7
+    for (let i = 0; i < SKILL_SLOTS; i++) {
       const R = hudSkillRect(i), x = R.x, y = R.y, s = R.s, id = game.skillBar[i];
       this.slotBox(c, x, y, s, hot.kind === 'skill' && hot.i === i);
       if (id && SKILLS[id]) {
@@ -185,18 +185,22 @@ const ui = {
           c.save(); c.beginPath(); c.rect(x, y, s, s); c.clip(); c.fillStyle = 'rgba(0,0,0,.62)'; c.beginPath(); c.moveTo(cx, cy); c.arc(cx, cy, s, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(cd / cdMax, 0, 1)); c.closePath(); c.fill(); c.restore();
           uiText(cd >= 1 ? Math.ceil(cd) + '' : cd.toFixed(1), cx, cy + 8, { size: 20, align: 'center', color: '#fff', sw: 4 });
         } else if (p.mp < (S.mp || 0)) { c.fillStyle = 'rgba(40,60,200,.45)'; c.fillRect(x, y, s, s); }
+        if (S.charges) { const q = p.charges && p.charges[id], n = q ? q.n : S.charges; uiText('×' + n, x + s - 3, y + s - 4, { size: 14, align: 'right', color: n > 0 ? '#ffe070' : '#ff8a7a', sw: 3 }); }   // 装填次数（G-14 手雷等）
+        if (S.recast && lv > 0 && S.recast.ok(p)) { c.strokeStyle = '#6aff6a'; c.lineWidth = 3; c.strokeRect(x + 1.5, y + 1.5, s - 3, s - 3); }   // 召唤物在场，可以再按
         if (typeof cmdLocked === 'function' && cmdLocked(id)) { c.fillStyle = '#a02020'; c.fillRect(x + s - 14, y, 14, 14); uiText('锁', x + s - 7, y + 12, { size: 11, align: 'center', color: '#fff', sw: 0 }); }
         const m = this.slotMsg[i]; if (m && m.t > 0) { m.t -= 1 / 60; c.fillStyle = `rgba(200,30,30,${m.t})`; c.fillRect(x, y, s, s); if (m.msg) uiText(m.msg, x + s / 2, y - 6, { size: 15, align: 'center', color: '#ffb0a0', sw: 3 }); }
       }
       uiText(keyName('s' + i), x + 2, y + 14, { size: 13, color: '#fff', sw: 3 });
     }
-    // 闪避（冷却转圈）
-    { const { x, y, r } = HUD.dodge, cd = Math.max(0, p.dodgeCd || 0) / (typeof DODGE_CD !== 'undefined' ? DODGE_CD : 5), br = Math.max(0, p.breakCd || 0);
+    // 后跳-强化（↓+C：技能中强制后跳 / 受击中脱身，共用冷却）：学会后才亮，冷却转圈
+    { const { x, y, r } = HUD.dodge, has = (game.skillLv.c_bsup || 0) > 0, cd = Math.max(0, p.bsCd || 0), cdMax = cd > 30 ? 40 : 30;
+      c.globalAlpha = has ? 1 : 0.35;
       c.fillStyle = '#0c0908'; c.beginPath(); c.arc(x, y, r + 3, 0, TAU); c.fill();
       const g2 = c.createRadialGradient(x - 8, y - 10, 2, x, y, r); g2.addColorStop(0, '#9fe8ff'); g2.addColorStop(1, '#1a6aa8'); c.fillStyle = g2; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
-      if (cd > 0) { c.fillStyle = 'rgba(0,0,0,.6)'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(cd, 0, 1)); c.closePath(); c.fill(); }
-      c.strokeStyle = br > 0 ? '#6a5436' : '#ffe070'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r + 1, 0, TAU); c.stroke();
-      uiText('闪避', x, y + 7, { size: 18, align: 'center', color: '#fff', sw: 4 }); uiText(keyName('dodge'), x, y - r - 6, { size: 13, align: 'center', color: '#d8d0c0', sw: 3 }); }
+      if (cd > 0) { c.fillStyle = 'rgba(0,0,0,.6)'; c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(cd / cdMax, 0, 1)); c.closePath(); c.fill(); }
+      c.strokeStyle = has && cd <= 0 ? '#ffe070' : '#6a5436'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, r + 1, 0, TAU); c.stroke();
+      uiText(cd > 0 ? Math.ceil(cd) + '' : '后跳', x, y + 7, { size: 18, align: 'center', color: '#fff', sw: 4 }); uiText(`↓+${keyName('jump')}`, x, y - r - 6, { size: 13, align: 'center', color: '#d8d0c0', sw: 3 });
+      c.globalAlpha = 1; }
     if (!lite) {
       // 疲劳条 + 金币 / 复活币 / SP
       const F = save.data.fatigue, fx = HUD.quick.x, fy = 1030, fw = HUD.quick.gap * 5 + HUD.quick.s;

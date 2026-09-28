@@ -190,7 +190,7 @@ await page.reload(); await page.waitForFunction(() => window.__READY, null, { ti
 check(await ev(() => game.job) === 'blade', '刷新后转职仍在');
 
 step('8. 觉醒任务 → awakenUnlocked()');
-await ev(() => { game.lvl = 18; questAccept('q_awaken_sword_1'); for (let i = 0; i < 3; i++) bus.emit('dungeonClear', { id: 'dark_thunder', diff: 0, rank: 'B', time: 200, hurt: 10 }); questComplete('q_awaken_sword_1'); questAccept('q_awaken_sword_2'); });
+await ev(() => { game.lvl = 21; questAccept('q_awaken_sword_1'); for (let i = 0; i < 3; i++) bus.emit('dungeonClear', { id: 'dark_thunder', diff: 0, rank: 'B', time: 200, hurt: 10 }); questComplete('q_awaken_sword_1'); questAccept('q_awaken_sword_2'); });
 check(await ev(() => !awakenUnlocked()), '觉醒任务完成前 awakenUnlocked() = false');
 await ev(() => bus.emit('dungeonClear', { id: 'blazing_graca', diff: 0, rank: 'S', time: 150, hurt: 5 }));
 check(await ev(() => goalVal(QUESTS.q_awaken_sword_2, questRec('q_awaken_sword_2'), 0)) === 0, '觉醒 2：普通难度不算');

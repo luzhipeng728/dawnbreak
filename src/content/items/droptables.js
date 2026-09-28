@@ -45,6 +45,13 @@ addBoss('golem_tower', [['ep_stone_platani', 0.03], ['ep_head_skull', 0.008]]);
 addBoss('dark_corridor', [['ep_rv_sunset', 0.01], ['ep_st_willy', 0.01], ['ep_pl_breaker', 0.01], ['ep_neck_hunter', 0.008], ['ep_brace_wave', 0.008]]);
 addBoss('lord_palace', [['ep_top_hes', 0.01], ['ep_bottom_hes', 0.01], ['ep_ss_kanya', 0.008], ['ep_cb_soulmate', 0.008], ['ep_bg_red', 0.008], ['ep_ring_fire', 0.008]]);
 addBoss('floating_castle', [['ep_gs_evildragon', 0.01], ['ep_hc_breaker', 0.01], ['ep_shoes_pisco', 0.01], ['ep_belt_storm', 0.01], ['ep_head_jeno', 0.008], ['ep_top_hes', 0.008], ['ep_bottom_hes', 0.008]]);
+/* ---- 经典官方史诗武器（epics3.js）：按等级段放进领主表；魔剑-阿波菲斯在天帷巨兽最后两张图 ---- */
+addBoss('frozen_woods', [['ep_bg_headless', 0.01]]);
+addBoss('golem_tower', [['ep_ls_breaker', 0.01], ['ep_br_hunter', 0.01]]);
+addBoss('dark_thunder', [['ep_ss_gsd', 0.008], ['ep_ap_flash', 0.008]]);
+addBoss('dark_corridor', [['ep_cb_ghost', 0.01], ['ep_rf_howl', 0.01], ['ep_sp_icedragon', 0.01]]);
+addBoss('lord_palace', [['ep_gs_conqueror', 0.008], ['ep_hc_meteor', 0.008], ['ep_rd_thunder', 0.008]]);
+addBoss('floating_castle', [['ep_rv_enazma', 0.01], ['ep_st_witchgold', 0.01], ['ep_kt_meteor', 0.01]]);
 /* ---- 天帷巨兽（地下城内容组，Lv24~30）：Lv25~27 的单件史诗 + 天帷巨兽名品（传说，每件只在一个领主身上）；区域没加载时这些表不会被用到 ---- */
 defineDropTable('temple_outskirts', { boss: [...SKY24, ['lg_fan_robe', 0.02], ['ep_head_jeno', 0.01], ['ep_kt_andra', 0.008], ['ep_st_sage', 0.008]], mats: [['crystal', 0.1, 8], ['c_white', 0.03, 2], ['m_soul', 0.001, 1]] });   // GBL教大主教：梵风衣
 defineDropTable('treant_jungle', { boss: [...SKY24, ['lg_light_dance', 0.02], ['ep_ls_millennium', 0.008], ['ep_rv_bone', 0.008], ['ep_sup_paris', 0.008]], mats: [['crystal', 0.1, 8], ['m_leather', 0.03, 2], ['m_elem2', 0.006, 1]] });   // 罗丁：光之舞手镯
@@ -52,6 +59,11 @@ defineDropTable('purgatory', { boss: [...SEGHART, ['ep_ss_fate', 0.01], ['ep_cb_
 defineDropTable('polar_day', { boss: [...SEGHART, ['lg_holy_pendant', 0.02], ['ep_rd_meow', 0.008], ['ep_br_lucky', 0.008], ['ep_head_jeno', 0.008]], mats: [['crystal', 0.11, 9], ['m_elem2', 0.01, 1]] });   // 多尼尔（EX）：圣灵战士项坠
 defineDropTable('second_spine', { boss: [['lg_sage_ring', 0.02], ['ep_kt_andra', 0.008], ['ep_ls_millennium', 0.008], ['ep_rv_bone', 0.008], ['ep_st_sage', 0.008], ['ep_ss_fate', 0.008], ['ep_cb_kirin', 0.008], ['ep_br_lucky', 0.008]], mats: [['crystal', 0.12, 10], ['m_diamond', 0.008, 1], ['c_blue', 0.03, 2]] });   // 长脚罗特斯：贤者之戒
 defineDropTable('forbidden_land', { boss: [['lg_karo_eye', 0.025], ['ep_hc_aqua', 0.01], ['ep_sup_paris', 0.01], ['ep_head_jeno', 0.01], ['ep_ls_millennium', 0.01]], mats: [['crystal', 0.12, 10], ['c_white', 0.03, 2], ['m_soul', 0.002, 1]] });   // 审判者马塞尔：卡罗蛇眼
+// 经典官方史诗武器（epics3.js）的天帷巨兽段
+addBoss('temple_outskirts', [['ep_pl_magical', 0.008]]);
+addBoss('treant_jungle', [['ep_bg_lotus', 0.008]]);
+addBoss('second_spine', [['ep_gs_apophis', 0.008]]);
+addBoss('forbidden_land', [['ep_gs_apophis', 0.01]]);
 /* ---- 深渊派对的领主掉落表（专属史诗由 content/abyss.js 按几率另外掷；这里只放普通的套装部件） ---- */
 defineDropTable('abyss_gf', { boss: [...ADV18.map(([k, p]) => [k, p * 1.5]), ...ELF16, ...THRONE], mats: [['crystal', 0.1, 8], ['m_elem', 0.02, 1], ['m_elem2', 0.006, 1]] });
 defineDropTable('abyss_sky', { boss: [...SKY24.map(([k, p]) => [k, p * 1.5]), ...SEGHART.map(([k, p]) => [k, p * 1.5])], mats: [['crystal', 0.12, 10], ['m_elem2', 0.01, 1], ['m_diamond', 0.008, 1]] });

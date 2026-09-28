@@ -35,6 +35,7 @@ run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs
 run avatar    node test/avatar.mjs
+run weapons   node test/weapons.mjs   # 武器外观：史诗 / 品级外观齐全、握点、品级选择、联机外观
 run hatcheck  python3 art/tools/avatar_hatcheck.py   # 神枪手 / 魔法师原装帧不能把帽子画丢
 run shop      node test/shop.mjs
 run shopecon  node test/shop_econ.mjs

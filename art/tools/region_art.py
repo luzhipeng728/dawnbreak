@@ -39,6 +39,10 @@ CYCLES = {   # 没有两条腿的角色：自定义走 / 跑循环（spec 里 cy
                       'walking on four legs, legs passing under the body again', 'walking on four legs, body highest again'],
              'run': ['galloping, front legs reaching forward, back legs pushing off behind', 'galloping, all four legs gathered under the body', 'galloping, body stretched fully in mid-air',
                      'galloping, front legs landing', 'galloping, front legs reaching forward again', 'galloping, legs gathered under the body again', 'galloping, stretched in mid-air again', 'galloping, front legs landing again']},
+    'roll': {'walk': ['rolling forward slowly, wheels or treads turning', 'rolling forward, body bouncing slightly up', 'rolling forward, wheels or treads turning again', 'rolling forward, body settling down',
+                      'rolling forward slowly, exhaust puffing', 'rolling forward, body bouncing slightly up again', 'rolling forward, wheels or treads turning', 'rolling forward, body settling down again'],
+             'run': ['speeding forward fast, leaning forward', 'speeding forward fast, front lifted slightly', 'speeding forward fast, bouncing over a bump', 'speeding forward fast, landing',
+                     'speeding forward fast, leaning forward again', 'speeding forward fast, front lifted again', 'speeding forward fast, bouncing again', 'speeding forward fast, landing again']},
     'crawl': {'walk': ['crawling on many legs, front legs reaching forward', 'crawling, body lowest, legs spread wide', 'crawling, middle legs passing under the body', 'crawling, body slightly raised',
                        'crawling, back legs pushing, front legs reaching forward again', 'crawling, body lowest again', 'crawling, legs passing under the body again', 'crawling, body raised again'],
               'run': ['scuttling fast, front legs stretched far forward', 'scuttling fast, legs bunched under the body', 'scuttling fast, body lunging forward low', 'scuttling fast, front legs landing',
@@ -93,7 +97,7 @@ def st_refs(spec, only):
     L = []
     for n, d in A.M.items():
         if not n.startswith(only): continue
-        pose = QUAD_POSE if d.get('cycle') is CYCLES['trot'] else QUAD_POSE.replace('all four legs', 'all of its legs') if d.get('cycle') is CYCLES['crawl'] else jobs.POSE
+        pose = QUAD_POSE if d.get('cycle') is CYCLES['trot'] else QUAD_POSE.replace('all four legs', 'all of its legs') if d.get('cycle') is CYCLES['crawl'] else 'Strict side view profile facing RIGHT, the whole vehicle clearly visible.' if d.get('cycle') is CYCLES['roll'] else jobs.POSE
         L.append((os.path.join(A.SRC, f'{n}_ref.png'), f'Full-body character design image for a 2D side-scrolling beat-em-up game. {pose} {d["desc"]}{NOFX} {jobs.REF_TAIL}', '1024x1536', 'gpt-image-2.5-sunburst', ()))
     run_jobs(L)
 

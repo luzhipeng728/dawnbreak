@@ -222,8 +222,8 @@
    "art": [
     "snToy",
     {
-     "hue": 120,
-     "sat": 1.1
+     "hue": -140,
+     "sat": 1
     }
    ],
    "skills": [
@@ -1050,9 +1050,13 @@
    "art": [
     "deSpider",
     {
-     "hue": -110,
+     "hue": -80,
      "sat": 1.1,
-     "bright": 1.1
+     "bright": 1.15,
+     "only": [
+      230,
+      330
+     ]
     }
    ],
    "skills": [
@@ -1278,8 +1282,8 @@
    "art": [
     "golem",
     {
-     "hue": 40,
-     "sat": 1.3,
+     "hue": -70,
+     "sat": 1.25,
      "bright": 1.1
     }
    ],
@@ -1386,7 +1390,7 @@
    "art": [
     "wyvern",
     {
-     "hue": 90,
+     "hue": 40,
      "sat": 0.8,
      "bright": 1.15
     }
@@ -1432,8 +1436,8 @@
    "art": [
     "wyvern",
     {
-     "hue": 110,
-     "sat": 1.1,
+     "hue": 60,
+     "sat": 1,
      "bright": 0.95
     }
    ],
@@ -3771,6 +3775,8 @@
    "snTiger": {
     "h": 72,
     "hold": null,
+    "holes": false,
+    "outline": "#2a4a7a",
     "cycle": "trot",
     "desc": "An ice tiger monster of the snow mountain: a lean four-legged white tiger with pale blue stripes, frosty fur tips, long ice-blue fangs, glowing light blue eyes and small ice shards along its back.",
     "atk": "its icy fangs",
@@ -3780,6 +3786,8 @@
    "snYeti": {
     "h": 110,
     "hold": null,
+    "holes": false,
+    "outline": "#2a4a7a",
     "desc": "A snow ape (yeti) monster of the white ruins: a big hunched ape with shaggy white fur, a pale blue-grey face with a heavy brow, long powerful arms with huge hands, a few icicles hanging from its fur, big flat feet.",
     "atk": "its huge hands",
     "cast": "beating its chest with both fists",
@@ -3788,6 +3796,8 @@
    "snRose": {
     "h": 124,
     "boss": true,
+    "holes": false,
+    "outline": "#2a4a7a",
     "hold": "holding a slender ice crystal scepter",
     "desc": "Rose the Snow Queen, a boss of the Ice Palace: an elegant cold beautiful woman made from snow given a human body, pale blue skin, long flowing white hair with ice crystal ornaments, an ice crown, a long modest high-collared gown of layered pale blue and white frost fabric with long sleeves, holding a slender ice crystal scepter.",
     "atk": "the ice crystal scepter",
@@ -3807,7 +3817,7 @@
     "h": 140,
     "boss": true,
     "cycle": "trot",
-    "desc": "Skasa the Ice Dragon, the great dragon of the eternal snow mountain: a huge four-legged dragon with glittering pale blue ice-crystal scales, a white frost mane, long curved icy horns, big folded frosty wings, glowing light blue eyes, sharp icicle spikes along the back and a long tail ending in an ice blade.",
+    "desc": "Skasa the Ice Dragon, the ancient fierce adult dragon of the eternal snow mountain: a huge heavily built four-legged dragon with a long powerful neck, a large angular head with a menacing scowl, long sharp swept-back horns, bared sharp fangs, cold glowing pale blue eyes, thick armored glacier-blue scales, jagged ice-crystal spines running along the back and tail, big tattered frosty wings folded, massive clawed feet. Menacing and powerful, an adult dragon, not a baby, not cute.",
     "atk": "its huge icy jaws biting",
     "cast": "rearing its head up and spreading its wings",
     "low": "lowering its head and lunging forward"

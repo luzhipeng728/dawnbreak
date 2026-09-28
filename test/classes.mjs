@@ -5,7 +5,7 @@ import { launch, URL_BASE } from './lib.mjs';
 import fs from 'fs';
 const out = 'test/shots/classes'; fs.mkdirSync(out, { recursive: true });
 const items = (process.argv[2] || 'gun,mage').split(',');
-const KEYS = ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'AltLeft', 'KeyV'];   // 14 格技能栏的默认键
+const KEYS = ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'ShiftLeft', 'KeyV'];   // 14 格技能栏的默认键（第 7 格 = 左 Shift）
 let fail = 0;
 for (const item of items) {
   const [cls, job] = item.split(':'), tag = job ? `${cls}-${job}` : cls;

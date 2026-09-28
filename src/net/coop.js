@@ -210,6 +210,7 @@ const coop = {
     let ctl = m.control;
     const wrapped = function (e, dt) { const P = game.player, tg = C.pickTarget(e); if (tg) game.player = tg; try { if (ctl) ctl(e, dt); } finally { game.player = P; } };
     Object.defineProperty(m, 'control', { configurable: true, enumerable: true, get() { return ctl ? wrapped : null; }, set(f) { ctl = f; } });
+    Object.defineProperty(m, 'aiInner', { configurable: true, get() { return ctl; } });
     m.update = function (dt) { const P = game.player, tg = this.tgt && !this.tgt.dead ? this.tgt : null; if (tg) game.player = tg; try { (upd || Ent.prototype.update).call(this, dt); } finally { game.player = P; } };
     m.doAct = function (def, extra) { Ent.prototype.doAct.call(this, def, extra); this.actSeq = (this.actSeq || 0) + 1; C.monAct(this, def); };
     this.spawnQ.push(this.spawnRow(m));
@@ -236,7 +237,9 @@ const coop = {
     if (!m.nid || this.state !== 'play') return;
     const D = m.def_, i = D && D.attacks ? D.attacks.findIndex(A => A.clip === def.clip && A.act.dur === def.dur) : -1;
     const tg = m.tgt && m.tgt.uid ? m.tgt.uid : this.me();
-    this.send({ k: 'ma', id: m.nid, i, c: def.clip || def.name, nm: def.name, du: +Math.min(999, def.dur || 1).toFixed(2), sa: def.superArmor === true ? 1 : 0, f: m.face, tg, sq: m.actSeq, x: Math.round(m.x), y: Math.round(m.y) });
+    // 自带 AI 的怪（龙之雕像等）的招式不在招式表里：告诉队员是哪个 AI 函数，队员那边用同一个函数现场出招（事件、投射物都一样）
+    const f = i < 0 ? m.aiInner : null, ai = f && f !== monsterAI && f.name && typeof globalThis[f.name] === 'function' ? f.name : undefined;
+    this.send({ k: 'ma', id: m.nid, i, ai, c: def.clip || def.name, nm: def.name, du: +Math.min(999, def.dur || 1).toFixed(2), sa: def.superArmor === true ? 1 : 0, f: m.face, tg, sq: m.actSeq, x: Math.round(m.x), y: Math.round(m.y) });
   },
   // 队员打中了怪（队员客户端算好的伤害和受击反应）→ 主机扣血、做受击反应
   remoteHit(uid, r) {
@@ -338,6 +341,13 @@ const coop = {
     this.stats.monActs++; if (d.tg === this.me()) this.stats.monActsMe = (this.stats.monActsMe || 0) + 1; m.face = d.f; m.tgt = d.tg === this.me() ? game.player : (this.mates.get(d.tg) || game.player);
     if (d.c === 'idle' && d.nm === 'statue' && typeof skyMakeStatue === 'function') {   // 石像：用同一套表现（灰色石像，本地按最近的人苏醒）
       const live = m.model; skyMakeStatue(m); m.statueLive = live; m.replaySq = d.sq; return;
+    }
+    if (d.i < 0 && d.ai && typeof globalThis[d.ai] === 'function' && /AI$/.test(d.ai)) {   // 自带 AI：让同一个 AI 函数在傀儡身上立刻出一招
+      const P = game.player; game.player = m.tgt;
+      const was = m.act, aiCd = m.aiCd;
+      try { if (m.act) { m.act = null; } m.setState('idle'); m.aiCd = 0; globalThis[d.ai](m, 1 / 60); } catch (e) { console.error('傀儡自带 AI 出招出错', e); } finally { game.player = P; }
+      m.vx = m.vy = 0; if (aiCd !== undefined && m.act === was) m.aiCd = aiCd;
+      if (m.act && m.act !== was) { m.replaySq = d.sq; m.lockSt = 0; return; }
     }
     const A = d.i >= 0 && m.def_ && m.def_.attacks ? m.def_.attacks[d.i] : null;
     const def = A ? { name: A.clip, clip: A.clip, ...A.act, hits: A.act.hits && A.act.hits.map(h => ({ ...h })) } : { name: d.c, clip: d.c, dur: d.du, superArmor: !!d.sa, noCounter: true };

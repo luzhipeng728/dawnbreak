@@ -22,7 +22,7 @@ const R = await page.evaluate(() => {
   // 转职：送扫把、切换普攻表
   game.job = 'witch'; const nInv = inv.items.length; bus.emit('jobChange', { job: 'witch' }); if (typeof onJobChange === 'function') onJobChange(p, 'witch');
   const broom = inv.items.find(it => it && it.wtype === 'broom'); out.gift = { got: !!broom, name: broom && broom.name, added: inv.items.length - nInv };
-  for (const id of J.skills) game.skillLv[id] = SKILLS[id].maxLv >= 10 ? 10 : SKILLS[id].maxLv;
+  for (const id in SKILLS) if (SKILLS[id].job === 'witch') game.skillLv[id] = SKILLS[id].maxLv >= 10 ? 10 : SKILLS[id].maxLv;
   const P1PASSIVE = ['wt_helper', 'wt_pink', 'wt_stone']; for (const id of P1PASSIVE) game.skillLv[id] = 0;   // 这三个会改变别的技能的行为，后面单独测
   Object.assign(p, { matk: 1000, atk: 1000, indep: 1000, crit: 0, mcrit: 0, dmgUp: 0, hitRate: 1, buffs: {} });
   p.mp = p.mpMax = 99999;
@@ -103,7 +103,7 @@ const R = await page.evaluate(() => {
   return out;
 });
 const o = R, S = o.skills;
-report('转职登记：31 个技能都有定义、有觉醒、有专属试炼', o.job.ok && o.job.n === 31 && !o.job.missing.length && o.job.awaken === 'wt_awaken' && o.job.trial, o.job);
+report('转职登记：第 1 阶段 21 个技能都有定义、有觉醒、有专属试炼', o.job.ok && o.job.n === 21 && !o.job.missing.length && o.job.awaken === 'wt_awaken' && o.job.trial, o.job);
 report('指令：主动技能都有指令', o.job.cmds >= 20, o.job.cmds);
 report('转职任务：魔道学概论 / 魔道学者的试炼', o.job.quests, o.job.quests);
 report('转职送扫把', o.gift.got, o.gift);

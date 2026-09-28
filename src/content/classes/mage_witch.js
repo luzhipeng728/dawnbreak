@@ -319,7 +319,7 @@ defSkill('wt_lava', { name: '熔岩药瓶', cls: 'mage', job: WT, lvReq: 18, mp:
   act: (lv, p) => airOr(p, { name: 'wt_lava', clip: 'potion', dur: 0.5, cancelFrom: 0.36, charge: bitterCharge(p), events: [evAt(0.12, e => wtLava(e, lv))] }, { charge: undefined }) });
 function wtLava(e, lv) {
   const forced = bitterOn(e), r = rollCraft(e, 'jack', { force: forced ? 'fail' : null }), total = wtLv(lv, 1.0, 0.1) * 6;
-  if (r === 'fail') { const x = e.x + e.face * 28; fxBurst(x, e.y, e.z + 40, 170, '#ffb060'); fxSpr('explosion', x, e.y, e.z, { w: 150, dur: 0.5, ay: 0.8 }); sfx.boom(0.7); cam.shake = Math.max(cam.shake, 4);
+  if (r === 'fail') { const x = e.x + e.face * 46; fxBurst(x, e.y + 1, e.z + 40, 110, '#ffb060'); fxSpr('explosion', x, e.y + 1, e.z, { w: 96, dur: 0.35, ay: 0.8 }); sfx.boom(0.7); cam.shake = Math.max(cam.shake, 4);
     blast(e, x, e.y, 100, { dmg: total * 0.6 * (forced ? 1.5 : 1), launch: 380, knock: 160, hs: 0.1, big: 1.6, elem: 'fire', type: 'indep', downHit: true, sure: true }, { zMax: 160 + e.z });
     witchOops(e, 'soot', 0.8); if (e.act && !e.act.airOnly) e.act.dur = Math.max(e.act.dur, e.actT + 0.7); return; }
   const at = aimAhead(e, 170, 320); sfx.swing(false);
@@ -690,8 +690,9 @@ defSkill('wt_awaken3', { name: '糖果大作战：精怪乐园', cls: 'mage', jo
    ===================================================================== */
 CLASSES.mage.jobs.witch = { art: 'job/witch', name: '魔道学者', role: '中距离 · 机械 / 使魔', armor: 'leather', awaken: 'wt_awaken', awakenName: '魔术师', trial: 'q_job_witch_2',
   desc: '好奇心旺盛、迷恋科学的魔法师。骑扫把从空中袭击，扔药瓶、放酸雨、搭乘自己发明的魔道机械作战；技能有失败 / 成功 / 大成功，失败了会被熏黑、摔个狗吃屎。伤害是独立攻击。',
+  // 觉醒段之后的技能（超级苍蝇拍、光电兔、贤者之石、魔道学助手、雪人刨冰、超级棒棒糖、二觉、粉红糖果、捣蛋杰克、三觉）已经写好，等它们的机械 / 助手美术画完再加进来（第 2 阶段）
   skills: ['wt_broom', 'wt_affinity', 'wt_book', 'wt_shululu', 'wt_missile', 'wt_cloak', 'wt_powder', 'wt_lucky', 'wt_swatter', 'wt_lava', 'wt_acid', 'wt_swatlock', 'wt_spin', 'wt_tesla', 'wt_bitter', 'wt_furnace',
-    'wt_antigrav', 'wt_detonate', 'wt_drill', 'wt_premonition', 'wt_awaken', 'wt_superswat', 'wt_rabbit', 'wt_stone', 'wt_helper', 'wt_shaved', 'wt_lollipop', 'wt_awaken2', 'wt_pink', 'wt_trickjack', 'wt_awaken3'] };
+    'wt_antigrav', 'wt_detonate', 'wt_drill', 'wt_premonition', 'wt_awaken'] };
 CLASSES.mage.cmds.push(['uu', 'wt_shululu'], ['fdf', 'wt_missile'], ['fd', 'wt_cloak'], ['ud', 'wt_powder', 'buff'], ['dd', 'wt_book', 'buff'], ['bdf', 'wt_swatter'], ['udu', 'wt_lava'], ['udd', 'wt_acid'], ['holdd', 'wt_spin'],
   ['bff', 'wt_tesla'], ['uff', 'wt_furnace'], ['dfd', 'wt_antigrav'], ['fuf', 'wt_drill'], ['uudd', 'wt_awaken'], ['bfb', 'wt_superswat'], ['dbf', 'wt_rabbit'], ['fdb', 'wt_shaved'], ['ffd', 'wt_lollipop'], ['dduu', 'wt_awaken2'],
   ['bdb', 'wt_trickjack'], ['uuddf', 'wt_awaken3']);

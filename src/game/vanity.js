@@ -3,7 +3,7 @@
    - 武器光效：武器 it.enh ≥ 5 → look.glow = { lv, amp }（带 it.dim 的是增幅，走另一套颜色）；lookFromEquip 里算，
      所以自己、城镇里的其他玩家（net/town.js 发的 look）、组队影子（net/coop.js）、决斗对手、选角立绘、状态窗口都一样。
      外观层（models/avatar.js）画武器时调这里：
-       vanityWeaponFx  在武器的同一个变换里画：着色光晕（缓存画布）+ 本体提亮 + 火花（按时间算位置，不存状态）+ 待机爆闪 + 电弧
+       vanityWeaponFx  在武器的同一个变换里画两次：武器图之前 = 着色光晕（缓存画布）+ 爆闪的光 + 电弧（都在刀身后面）；之后 = 刀身外沿的火花 + 尖端星芒
        vanityTrail     挥砍拖尾：记下最近几帧的握点 / 角度，按角度插值画成扇形带（只在大幅挥动时出现）
        vanityGround    +15 起脚下的光环
    - 光效阶梯：GLOW_ENH / GLOW_AMP 一行一个等级，改数值就能调（见表头注释）。
@@ -92,34 +92,54 @@ function vanityWings() {
   return (vanityWings.cv = cv);
 }
 
-/* ---- 2. 武器上的光效（外观层 AvatarLayer.weapon 在画完武器图、恢复变换之前调用；坐标 = 武器图像素） ---- */
-function vanityWeaponFx(c, L, w, A, im, s) {
+/* ---- 2. 武器上的光效（外观层 AvatarLayer.weapon 在武器的变换里调用两次；坐标 = 武器图像素） ----
+   back = true：画武器图之前 —— 外圈描边（正常混合，亮背景也看得见）+ 叠加光晕 + 爆闪的光 + 电弧，都在刀身后面，刀身本身不被盖住；
+   back = false：画武器图之后 —— 只有沿刀身两侧外沿飘的火花和尖端星芒（不压在刀身中线上）。
+   光晕半径 r 按 G.r × VANITY_HALO_K（细一点：+12~+16 也看得清武器轮廓），火花数 × VANITY_SPARK_K。 */
+const VANITY_HALO_K = 0.7, VANITY_SPARK_K = 0.5;
+function vanityWeaponFx(c, L, w, A, im, s, back) {
   const G = L.glow; if (!G || !im) return;
   const t = performance.now() / 1000 + (L.seed ??= Math.random() * 9), A0 = c.globalAlpha;
   const z = ((L.m.S && L.m.S.res) || 1) / s, pole = A.kind === 'pole';   // z：1 个游戏像素 = 多少武器图像素（光效大小跟着角色走，不受画布缩放影响）
   const ox = pole ? -A.tx : -A.gx, oy = pole ? -A.ty : -A.gy;
   const x0 = pole && w.bk !== undefined ? Math.max(0, A.tx - (w.len + w.bk + 6) / s) : 0;   // 长杆被身体挡住的那截（和武器图同样裁掉）
-  const pu = 0.7 + 0.3 * Math.sin(t * G.pulse * TAU), r = Math.max(2, Math.min(48, Math.round(G.r * z / 2) * 2));
+  const pu = 0.7 + 0.3 * Math.sin(t * G.pulse * TAU), r = Math.max(2, Math.min(48, Math.round(G.r * VANITY_HALO_K * z / 2) * 2));
   const blit = (img, pad, a) => {
     if (a <= 0.01) return; c.globalAlpha = A0 * Math.min(1, a);
     if (x0 > 0) { const q = x0 + pad; c.drawImage(img, q, 0, img.width - q, img.height, ox + x0, oy - pad, img.width - q, img.height); }
     else c.drawImage(img, ox - pad, oy - pad);
   };
-  c.save(); c.globalCompositeOperation = 'lighter';
-  if (Array.isArray(G.col)) {   // 多色：两种颜色交叉渐变
-    const n = G.col.length, ph = (t * 0.5) % n, i = Math.floor(ph), f = ph - i, H1 = vanityHalo(im, G.col[i], r), H2 = vanityHalo(im, G.col[(i + 1) % n], r);
-    c.globalCompositeOperation = 'source-over'; blit((f < 0.5 ? H1 : H2).ring, H1.p, G.a * 0.5 * pu); c.globalCompositeOperation = 'lighter';
-    blit(H1.cv, H1.p, G.a * pu * (1 - f)); blit(H2.cv, H2.p, G.a * pu * f);
-  } else { const H = vanityHalo(im, G.col, r); c.globalCompositeOperation = 'source-over'; blit(H.ring, H.p, G.a * 0.5 * pu); c.globalCompositeOperation = 'lighter'; blit(H.cv, H.p, G.a * pu); }   // 先正常混合画外圈（亮的城镇背景上也看得见），再叠加发光
-  const B = vanityHalo(im, G.amp ? G.col2 : vanityCol(G, t), r); blit(B.sil, 0, G.a * 0.32 * pu);   // 本体提亮（增幅用异次元紫）
   const gx = A.gx + ox, gy = A.gy + oy, tx = A.tx + ox, ty = A.ty + oy, dx = tx - gx, dy = ty - gy, dl = Math.hypot(dx, dy) || 1, nx = -dy / dl, ny = dx / dl, u0 = pole ? 0.45 : 0.2;
-  // 火花：每颗有固定寿命，位置由（编号, 第几轮）哈希出来；强化是十字星，增幅是菱形碎片
+  c.save();
+  if (back) {
+    if (Array.isArray(G.col)) {   // 多色：两种颜色交叉渐变
+      const n = G.col.length, ph = (t * 0.5) % n, i = Math.floor(ph), f = ph - i, H1 = vanityHalo(im, G.col[i], r), H2 = vanityHalo(im, G.col[(i + 1) % n], r);
+      blit((f < 0.5 ? H1 : H2).ring, H1.p, G.a * 0.55 * pu); c.globalCompositeOperation = 'lighter';
+      blit(H1.cv, H1.p, G.a * pu * (1 - f)); blit(H2.cv, H2.p, G.a * pu * f);
+    } else { const H = vanityHalo(im, G.col, r); blit(H.ring, H.p, G.a * 0.55 * pu); c.globalCompositeOperation = 'lighter'; blit(H.cv, H.p, G.a * pu); }   // 先正常混合画外圈（亮的城镇背景上也看得见），再叠加发光
+    // 待机爆闪的光：整把武器外面亮一下（刀身挡在前面）
+    if (G.flare) { const ft = t % G.flare, D = 0.5; if (ft < D) { const H = vanityHalo(im, vanityCol(G, t), r + 2); blit(H.cv, H.p, (1 - ft / D) * 0.8); } }
+    // 电弧：沿刃身两道闪电，每秒换 14 次形状；在刀身后面，只从两侧露出来
+    if (G.arcs) {
+      const sd = Math.floor(t * 14);
+      for (let k = 0; k < 2; k++) {
+        if (vanityHash(sd * 1.3 + k * 9.1) < 0.3) continue;
+        c.beginPath();
+        for (let i = 0; i <= 6; i++) { const u = u0 + (1 - u0) * i / 6, jj = (vanityHash(sd + k * 11 + i * 3.7) - 0.5) * 16 * z * (i && i < 6 ? 1 : 0.3), px = gx + dx * u + nx * jj, py = gy + dy * u + ny * jj; if (i) c.lineTo(px, py); else c.moveTo(px, py); }
+        c.globalAlpha = A0 * 0.5; c.strokeStyle = G.amp ? G.col2 : vanityCol(G, t); c.lineWidth = 3 * z; c.stroke();
+        c.globalAlpha = A0 * 0.95; c.strokeStyle = '#ffffff'; c.lineWidth = 1.1 * z; c.stroke();
+      }
+    }
+    c.restore(); return;
+  }
+  c.globalCompositeOperation = 'lighter';
+  // 火花：每颗有固定寿命，位置由（编号, 第几轮）哈希出来；从刀身外沿往外飘（不压在刀身上）；强化是十字星，增幅是菱形碎片
   if (G.spark) {
-    const life = 0.6, n = Math.min(24, Math.round(G.spark * life)), rb = G.col2 === 'rainbow', big = G.lv >= 13 ? 2.3 : 1.7;
+    const life = 0.6, n = Math.min(14, Math.round(G.spark * life * VANITY_SPARK_K)), rb = G.col2 === 'rainbow', big = G.lv >= 13 ? 2.1 : 1.6, half = Math.max(2, A.h * 0.2);
     if (!rb) c.fillStyle = G.col2 || G.col;
     for (let j = 0; j < n; j++) {
       const ph = t / life + j / n, cy = Math.floor(ph), u = ph - cy, h1 = vanityHash(j * 7.13 + cy * 1.77), h2 = vanityHash(j * 3.1 + cy * 5.3);
-      const along = u0 + (1 - u0) * h1, off = (1.5 + u * (6 + h2 * 9)) * z * (h2 < 0.5 ? -1 : 1);
+      const along = u0 + (1 - u0) * h1, off = (half + (1.5 + u * (5 + h2 * 7)) * z) * (h2 < 0.5 ? -1 : 1);
       const px = gx + dx * along + nx * off, py = gy + dy * along + ny * off, sz = big * (1 - u * 0.4) * z;
       c.globalAlpha = A0 * Math.sin(u * Math.PI) * (0.6 + 0.4 * G.a);
       if (rb) c.fillStyle = `hsl(${(t * 140 + j * 47) % 360 | 0},100%,72%)`;
@@ -127,24 +147,12 @@ function vanityWeaponFx(c, L, w, A, im, s) {
       else { c.fillRect(px - sz * 1.8, py - sz * 0.3, sz * 3.6, sz * 0.6); c.fillRect(px - sz * 0.3, py - sz * 1.8, sz * 0.6, sz * 3.6); }
     }
   }
-  // 待机爆闪：每隔 flare 秒，尖端炸开一颗星芒，整把武器闪一下
+  // 待机爆闪：每隔 flare 秒，尖端炸开一颗星芒
   if (G.flare) {
     const ft = t % G.flare, D = 0.5;
     if (ft < D) {
-      const k = ft / D, col = vanityCol(G, t), img = vanityFxImg('spark', col), R = (10 + 30 * Math.sin(k * Math.PI / 2)) * z;
+      const k = ft / D, col = vanityCol(G, t), img = vanityFxImg('spark', col), R = (10 + 26 * Math.sin(k * Math.PI / 2)) * z;
       c.globalAlpha = A0 * (1 - k); if (img) c.drawImage(img, tx - R, ty - R, R * 2, R * 2); else c.drawImage(vanityDot(col), tx - R, ty - R, R * 2, R * 2);
-      const H = vanityHalo(im, col, r); blit(H.cv, H.p, (1 - k) * 0.8);
-    }
-  }
-  // 电弧：沿刃身两道闪电，每秒换 14 次形状
-  if (G.arcs) {
-    const sd = Math.floor(t * 14);
-    for (let k = 0; k < 2; k++) {
-      if (vanityHash(sd * 1.3 + k * 9.1) < 0.3) continue;
-      c.beginPath();
-      for (let i = 0; i <= 6; i++) { const u = u0 + (1 - u0) * i / 6, jj = (vanityHash(sd + k * 11 + i * 3.7) - 0.5) * 12 * z * (i && i < 6 ? 1 : 0.3), px = gx + dx * u + nx * jj, py = gy + dy * u + ny * jj; if (i) c.lineTo(px, py); else c.moveTo(px, py); }
-      c.globalAlpha = A0 * 0.5; c.strokeStyle = G.amp ? G.col2 : vanityCol(G, t); c.lineWidth = 3 * z; c.stroke();
-      c.globalAlpha = A0 * 0.95; c.strokeStyle = '#ffffff'; c.lineWidth = 1.1 * z; c.stroke();
     }
   }
   c.restore();

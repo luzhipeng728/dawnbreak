@@ -372,21 +372,7 @@ SWORD_HOOKS.onHit.push((p, t, h, dmg, act) => {
   if ((act.basic && !act.next && !act.chain) || act.skill === 'upslash') { if (p._asWaveT === game.t) return; p._asWaveT = game.t;
     projWave(p, { speed: 460, life: 0.4, h: 70, col: AS_COL, hit: { dmg: skillDmg(0.6, 0.06, skLv(p, 'as_mark')), knock: 80, stun: 0.3, type: 'indep', asWave: true } }); }
 });
-// X 形眼罩：阿修罗玩家的脸部配件（外观层按头部锚点叠加，和时装眼镜同一套坐标；戴着阿修罗眼罩时不再画时装眼镜）。
-// lookFromEquip 是 content/avatar/looks.js 里的函数声明（整段脚本开始时就已提升），这里包一层；AVATAR_ACC 在调用时才读取。
-const AS_EYES = { img: 'asura_face', face: 1, pos: { sword: [9, 25, 0, 0.66], 'sword@': [9, 25, 0, 0.66] } };
-if (typeof lookFromEquip === 'function') {
-  const lf0 = lookFromEquip;
-  lookFromEquip = function (cls, eq, prefer) {
-    const L = lf0(cls, eq, prefer);
-    if (cls === 'sword' && !prefer && typeof game !== 'undefined' && game.job === 'asura' && typeof inv !== 'undefined' && eq === inv.equip && typeof AVATAR_ACC !== 'undefined') {   // 只给当前玩家自己（选角列表里的其他角色不受影响）
-      AVATAR_ACC.job_asura_eyes ??= AS_EYES;
-      L.acc = (L.acc || []).filter(k => !(AVATAR_ACC[k] && AVATAR_ACC[k].face)).concat('job_asura_eyes');
-    }
-    return L;
-  };
-}
-bus.on('jobChange', () => { const m = game.player && game.player.model, av = m && m.av; if (av) av.own = null; });   // 转职后外观层重新取一次（戴上眼罩）
+// X 形眼罩：转职外观（content/avatar/job_looks.js 的 asura.acc），其他玩家也看得到
 // 官方可用普攻取消后摇：地裂·波动剑（阿修罗）、冰刃 / 极炎、二觉、无为法、三觉
 for (const [id, t, j] of [['wave', 0.25, 'asura'], ['as_ice', 0.3], ['as_fire2', 0.35], ['as_awaken2', 2.3], ['as_mui', 1.2], ['as_awaken3', 2.5]]) swordAtkCancel(id, t, j);
 swordFinalize();

@@ -9,7 +9,7 @@
    用法：每个职业精灵模型（SpriteModel）第一次画的时候自动挂一个外观层 m.av：
      - 是玩家的模型 → 跟随 inv.equip（换装后下一帧就变）
      - 其他（路人、决斗对手、选角预览）→ 职业默认外观；想指定就 avatarSetLook(model, look)
-   外观 look = { wpn: 武器图 key | null, set: 套装 id | null, acc: [配件物品 key] }（见 content/avatar/looks.js）
+   外观 look = { wpn: 武器图 key | null, set: 套装 id | null, acc: [配件物品 key], job: 转职 | null }（见 content/avatar/looks.js；转职外观见 models/job_fx.js）
    性能：每帧只多 1 次 drawImage + 变换（身前武器再多 1 次握拳小图）；换装 / 首次用到某帧时才分配对象。
    ===================================================================== */
 const AVATAR_CLS = { sword: 1, gun: 1, mage: 1 };
@@ -26,8 +26,8 @@ class AvatarLayer {
     if (own) {
       const e = inv.equip, s = this.sig;
       const gs = e.weapon ? (e.weapon.enh || 0) * (e.weapon.dim ? -1 : 1) : 0;   // 强化 / 增幅等级变了也要重算（武器光效）
-      if (this.own && s[0] === e && this.gs === gs && AVATAR_SIG_SLOTS.every((k, i) => s[i + 1] === e[k])) return;
-      this.sig = [e, ...AVATAR_SIG_SLOTS.map(k => e[k])]; this.gs = gs;
+      if (this.own && s[0] === e && this.gs === gs && this.gj === game.job && AVATAR_SIG_SLOTS.every((k, i) => s[i + 1] === e[k])) return;
+      this.sig = [e, ...AVATAR_SIG_SLOTS.map(k => e[k])]; this.gs = gs; this.gj = game.job;   // 转职了也重算（转职外观）
       this.own = true; this.apply(lookFromEquip(this.cls, e)); return;
     }
     if (this.own === false && this.look) return;
@@ -52,7 +52,7 @@ class AvatarLayer {
       const need = [...new Set([P.up, P.low, P.feet].filter(Boolean))].filter(id => !IMG[`spr/${this.cls}@${id}/idle`]).map(id => `spr:${this.cls}@${id}`);
       if (need.length) { const mk = this.mixKey; loadBundles(need).then(() => { if (this.mixKey === mk) { this.alt = {}; this.hands = {}; } }); }
     }
-    this.acc = (look.acc || []).map(k => AVATAR_ACC[k]).filter(Boolean);
+    this.acc = (look.acc || []).map(k => AVATAR_ACC[k]).filter(Boolean); this.jobId = undefined;   // 转职外观下一帧重新确定（models/job_fx.js）
     for (const a of this.acc) if (!IMG['avatar/' + a.img]) loadArtKey('avatar/' + a.img);
   }
   // 钩子：换帧来源（时装）
@@ -66,6 +66,7 @@ class AvatarLayer {
   }
   // 钩子：帧之前（身后的武器、后脑的发饰）
   under(c, m, f, F) {
+    jlUnder(c, this, m, f, F);   // 转职外观：身后的鬼影 / 残影 / 血焰 / 小鬼神；无敌半透明（models/job_fx.js）
     const w = F.wpn, w2 = F.wpn2;
     if (w2 && !w2.front && this.dual()) this.weapon(c, w2, F);
     if (w && !w.front) this.weapon(c, w, F);
@@ -79,19 +80,24 @@ class AvatarLayer {
     if (w2 && w2.front && this.dual()) { this.weapon(c, w2, F); if (w2.hand && this.wim) this.hand(c, m, f, F, w2, 1); }
     if (F.head && this.acc.length) this.accessories(c, F, false, f);
     if (this.glow && this.glow.trail) vanityTrail(c, this, F, f);
+    jlOver(c, this, m, f, F);   // 转职外观：鬼手 / 红眼 / 身前的火舌和鬼火
   }
   dual() { return !!this.A && this.A.dual !== 0; }   // 双枪帧的副手：长枪 / 手炮 / 手弩不画（副手空着）
   weapon(c, w, F) {
     const A = this.A, im = this.wim; if (!A || !im) return;
     const s = A.size / (A.tx - A.gx), fy = Math.cos(w.ang) < -0.05 ? -s : s;   // 朝左时上下翻转，武器的“上面”保持朝上
     c.save(); c.translate(w.gx - F.ax, w.gy - F.ay); c.rotate(w.ang);
-    if (A.kind === 'pole') {   // 长杆：杖头对准棍子的尖端；只画到占位棍在握点另一侧露出的长度（被身体挡住 / 画师本来就没画出来的那截不画）
-      c.translate(w.len, 0); c.scale(s, fy);
+    const pole = A.kind === 'pole';
+    if (pole) c.translate(w.len, 0);   // 长杆：杖头对准棍子的尖端
+    c.scale(s, fy);
+    if (this.glow) vanityWeaponFx(c, this, w, A, im, s, true);   // 光晕 / 电弧画在武器图之前：光在刀身外面，刀身本身看得清
+    if (this.jw) jlWeapon(c, this, A, im, s);                    // 转职状态把武器染色（狂暴之力的血色双刀）
+    if (pole) {   // 只画到占位棍在握点另一侧露出的长度（被身体挡住 / 画师本来就没画出来的那截不画）
       const x0 = w.bk === undefined ? 0 : Math.max(0, A.tx - (w.len + w.bk + 6) / s);
       if (x0 > 0) c.drawImage(im, x0, 0, A.w - x0, A.h, x0 - A.tx, -A.ty, A.w - x0, A.h); else c.drawImage(im, -A.tx, -A.ty);
     }
-    else { c.scale(s, fy); c.drawImage(im, -A.gx, -A.gy); }
-    if (this.glow) vanityWeaponFx(c, this, w, A, im, s);
+    else c.drawImage(im, -A.gx, -A.gy);
+    if (this.glow) vanityWeaponFx(c, this, w, A, im, s, false);  // 火花 / 爆闪：在刀身外侧
     c.restore();
   }
   // 握拳那块像素（按轮廓从当前帧图里剪出来，第一次用到时生成并缓存）盖在武器上

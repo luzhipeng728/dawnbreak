@@ -25,6 +25,7 @@ run polish    node test/polish.mjs
 run combat    node test/combat.mjs
 run skillsa   node test/skill_sa.mjs
 run sword     node test/sword.mjs
+run auditsw   node test/skillaudit.mjs sword,sword:blade,sword:berserker,sword:asura,sword:soulbender,sword:ghostblade --compare   # 鬼剑士技能机制 vs 官方规格 docs/skills/sword.json
 run summon    node test/summon.mjs
 run gunner    node test/gunner.mjs
 run summoner  node test/summoner.mjs
@@ -34,6 +35,7 @@ run witch     node test/witch.mjs
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs
+run audit_gun node test/skillaudit.mjs gun,gun:ranger,gun:launcher,gun:mechanic,gun:spitfire,gun:paramedic --compare   # 神枪手技能对官方规格 docs/skills/gun.json
 run avatar    node test/avatar.mjs
 run weapons   node test/weapons.mjs   # 武器外观：史诗 / 品级外观齐全、握点、品级选择、联机外观
 run hatcheck  python3 art/tools/avatar_hatcheck.py   # 神枪手 / 魔法师原装帧不能把帽子画丢
@@ -44,7 +46,9 @@ run vanity    node test/vanity.mjs   # 强化 / 增幅武器光效、时装城�
 run acct      node test/acct.mjs
 run bag       node test/bag.mjs
 run skyguide  node test/skyguide.mjs
+run epicfx    node test/epicfx.mjs
 run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,sword:asura,sword:soulbender,sword:ghostblade,gun:ranger,gun:launcher,gun:mechanic,gun:spitfire,gun:paramedic,mage:elemental,mage:battlemage,mage:summoner,mage:witch,mage:enchantress
+run audit_mage node test/skillaudit.mjs mage,mage:elemental,mage:battlemage,mage:summoner,mage:witch,mage:enchantress --compare   # 魔法师技能对官方规格 docs/skills/mage.json
 [ "$1" = quick ] && exit 0
 run bestiary  node test/bestiary.mjs
 run sky       node test/sky.mjs
@@ -61,6 +65,7 @@ run serverapi node server/test/api.mjs
 run restore   node --disable-warning=ExperimentalWarning server/test/restore.mjs
 run arenasrv  node --disable-warning=ExperimentalWarning server/test/arena.mjs
 run netacct   node test/net_account.mjs
+run liveupd   node test/liveupdate.mjs
 # 社交组、联机组后续的测试加在这里
 run svcapi    node test/svc_api.mjs
 run svcplay   node test/svc_play.mjs

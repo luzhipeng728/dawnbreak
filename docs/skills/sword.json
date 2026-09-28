@@ -1,0 +1,1712 @@
+{
+ "_meta": {
+  "about": "鬼剑士（男）逐技能官方规格，给 test/skillaudit.mjs --compare 用。数值按本作尺度（像素距离与官方大致 1:1；等级按 SKILLS_OFFICIAL_common.md 第 7 节压缩；冷却写官方现版值，本作有意不同的写在 why.cd）",
+  "version": "国服 2026-04「千海天」/ DFO 2025–2026 现版；满级角色（被动全学满、主动技能满级），默认武器太刀",
+  "sources": [
+   "wiki.dfo.world 各技能页（英文，有冷却 / 多段数 / 霸体说明）",
+   "namu.wiki 각 직업 스킬",
+   "dnf.qq.com 官方公告（见 SKILLS_OFFICIAL_sword.md Sources）"
+  ],
+  "fields": {
+   "hits": "[最少, 最多]：轻木桩（身前 70px）被打中的总次数（所有来源：动作 / 投射物 / 召唤物）",
+   "launch": "true/false：轻木桩被打到 ≥40px 高",
+   "relaunch": "true/false：悬空木桩被追加浮空（命中后上升速度 ≥250）",
+   "down": "true/false：轻木桩倒地过",
+   "bounce": "true/false：强制弹地",
+   "grab": "true/false：抓住轻木桩",
+   "sa / invul": "技能自己写的霸体 / 无敌占动作时长的比例：'none' <10%，'part' 10–85%，'full' ≥85%，'any' 不查（地下城里所有技能另有默认霸体，这里查的是决斗场 / 官方原版的）",
+   "dx": "[最少, 最多]：向前位移 px（负数 = 后退）",
+   "pull": "true/false：一排木桩里有被拉近 ≥30px 的",
+   "behind": "true/false：打到身后 80px 的木桩",
+   "reach": "[最少, 最多]：打到的最远木桩（70 / 170 / 300 / 450）",
+   "cd": "官方冷却（秒），和技能定义比 ±25% 或 ±1s",
+   "summon": "true/false：放出召唤物 / 阵",
+   "acts": "[最少, 最多]：段数（追加 / 再按产生的动作数）",
+   "dur": "[最少, 最多]：技能动作总时长（秒）",
+   "atkCancel": "true/false：后摇可以按普攻取消（官方 Basic Attack Cancelable）",
+   "why": "{ 字段: 理由 }：本作有意不同的地方，算“已说明”",
+   "official / src / en / conf": "官方行为一句话 / 来源 / 英文名 / 置信度（高 = 技能页写明，中 = 推断或单一弱来源）",
+   "输入": "pre（先放的技能）、input（tap / hold / mash）、holdT、mashT、hp（施放前 HP 比例）、dir（'f'/'b' 全程按住）、presses（再按时刻）、watch（观察秒数）、at（木桩距离）、air / airDelay（先起跳）",
+   "key": "“<id>@<转职>” = 基础技能在该转职下的强化版，只在该转职的表里比对",
+   "剑魂命中数": "默认武器太刀：武器奥义 10 级的刺伤每 3 秒引爆一次，剑魂技能的命中数里多算 1 段"
+  }
+ },
+ "skills": {
+  "upslash": {
+   "official": "从下往上挑斩，敌人浮空；起手短暂霸体；可取消普攻；CD 2s",
+   "src": "https://wiki.dfo.world/view/Upward_Slash",
+   "en": "Upward Slash",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "launch": true,
+   "relaunch": true,
+   "sa": "part",
+   "dx": [
+    0,
+    80
+   ],
+   "behind": false,
+   "cd": 2,
+   "atkCancel": true
+  },
+  "ghost": {
+   "official": "鬼神附剑向前大范围重斩，把敌人击飞倒地；出手快后摇长；范围不受武器影响；CD 6s",
+   "src": "https://wiki.dfo.world/view/Ghost_Slash",
+   "en": "Ghost Slash",
+   "conf": "中",
+   "hits": [
+    1,
+    1
+   ],
+   "launch": false,
+   "down": true,
+   "behind": false,
+   "cd": 6
+  },
+  "guard": {
+   "official": "按住举剑格挡前方攻击（物理 40→80%、魔法 15→60%），被打会小幅后退；抓取无法格挡；CD 2s",
+   "src": "https://wiki.dfo.world/view/Guard",
+   "en": "Guard",
+   "conf": "高",
+   "input": "hold",
+   "holdT": 1.2,
+   "hits": [
+    0,
+    0
+   ],
+   "dx": [
+    -10,
+    10
+   ],
+   "cd": 2
+  },
+  "silver": {
+   "official": "跳跃 / 后跳中向下急刺，越高越痛；够高时落地冲击波击倒；CD 4s",
+   "src": "https://wiki.dfo.world/view/Ashe_Fork",
+   "en": "Ashe Fork",
+   "conf": "高",
+   "air": true,
+   "airDelay": 16,
+   "at": 40,
+   "hits": [
+    1,
+    2
+   ],
+   "down": true,
+   "cd": 4
+  },
+  "kazan": {
+   "official": "召唤刀魂卡赞跟随施放者，250px 内队友力量 / 智力提升 120s；再放一次收回重召；鬼泣转为被动、剑影不能学；CD 6s",
+   "src": "https://wiki.dfo.world/view/Khazan",
+   "en": "Khazan",
+   "conf": "高",
+   "summon": true,
+   "cd": 6,
+   "why": {
+    "summon": "单机里卡赞跟随施放者，效果等同自身 BUFF（SKILLS_OFFICIAL_sword.md 10.2）"
+   }
+  },
+  "slam": {
+   "official": "向前低跳后砸地，多段，最后一击倒地；跳到一半开霸体，落地短暂无敌；按住跳更远；CD 4s",
+   "src": "https://wiki.dfo.world/view/Mountainous_Wheel",
+   "en": "Mountainous Wheel",
+   "conf": "高",
+   "hits": [
+    2,
+    4
+   ],
+   "launch": false,
+   "down": true,
+   "sa": "part",
+   "invul": "part",
+   "dx": [
+    60,
+    260
+   ],
+   "cd": 4
+  },
+  "rip": {
+   "official": "抓取判定上斩（能抓霸体 / 格挡中的敌人）+ 下斩，再放出裂波 3 段把周围敌人击飞；CD 8s",
+   "src": "https://wiki.dfo.world/view/Wave_Wheel_Slasher",
+   "en": "Wave Wheel Slasher",
+   "conf": "高",
+   "hits": [
+    4,
+    7
+   ],
+   "grab": true,
+   "launch": true,
+   "cd": 8
+  },
+  "triple": {
+   "official": "滑步斩，每按一次向前斩一刀（现版最多 5 次），每段可转向；打满或停下才进 CD；CD 6s",
+   "src": "https://wiki.dfo.world/view/Drive_Slash",
+   "en": "Drive Slash",
+   "conf": "中",
+   "hits": [
+    4,
+    7
+   ],
+   "acts": [
+    5,
+    5
+   ],
+   "dx": [
+    150,
+    600
+   ],
+   "cd": 6
+  },
+  "wave": {
+   "official": "沿地面发出波动剑，击退并击倒；等级越高波越大；CD 3s",
+   "src": "https://wiki.dfo.world/view/Force_Wave:_Neutral",
+   "en": "Force Wave: Neutral",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "launch": false,
+   "down": true,
+   "behind": false,
+   "reach": [
+    170,
+    450
+   ],
+   "cd": 3
+  },
+  "cross": {
+   "official": "交叉两斩 + 召唤血十字（投射物）；血十字出现时再按一次追加推击（可击倒）；可被其他技能取消；CD 3s",
+   "src": "https://wiki.dfo.world/view/Gore_Cross",
+   "en": "Gore Cross",
+   "conf": "中",
+   "hits": [
+    3,
+    5
+   ],
+   "acts": [
+    2,
+    2
+   ],
+   "down": true,
+   "cd": 3
+  },
+  "moon": {
+   "official": "左手月形斩（带对空浮空），再按一次追加单手上斩；方向键控制前进距离；CD 4s",
+   "src": "https://wiki.dfo.world/view/Moonlight_Slash",
+   "en": "Moonlight Slash",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "acts": [
+    2,
+    2
+   ],
+   "launch": true,
+   "relaunch": true,
+   "dx": [
+    10,
+    160
+   ],
+   "cd": 4
+  },
+  "soulhand": {
+   "official": "伸手抓住远处敌人拉到身前，吸取后放出冲击（也打到身后的敌人）；抓不动的敌人改为喷血；CD 6s",
+   "src": "https://wiki.dfo.world/view/Bloodlust",
+   "en": "Bloodlust",
+   "conf": "高",
+   "hits": [
+    3,
+    8
+   ],
+   "grab": true,
+   "cd": 6
+  },
+  "rikiken@blade": {
+   "official": "第二套普攻（快捷键），按武器变化：太刀二刀流 4 个动作共 8 hit；可和普攻交替；CD 0",
+   "src": "https://wiki.dfo.world/view/Secret_Sword_Art",
+   "en": "Secret Sword Art",
+   "conf": "高",
+   "hits": [
+    8,
+    9
+   ],
+   "acts": [
+    4,
+    4
+   ],
+   "cd": 0
+  },
+  "backslash@blade": {
+   "official": "后跳途中空中一斩，能打到倒地的敌人（地板连招起手）；CD 2s",
+   "src": "https://wiki.dfo.world/view/Backstep_Cutter",
+   "en": "Backstep Cutter",
+   "conf": "中",
+   "hits": [
+    1,
+    3
+   ],
+   "dx": [
+    -220,
+    -20
+   ]
+  },
+  "flow": {
+   "official": "流心架势（读条 0.5s）；架势中 X 刺 / C 跃 / Z 升 / Space 狂；再按解除；CD 1s",
+   "src": "https://wiki.dfo.world/view/Flowing_Stance",
+   "en": "Flowing Stance",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 1
+  },
+  "flow_stab": {
+   "official": "流心：刺 —— 向前强力突刺，方向键调距离；太刀 / 光剑 4 段；算跑攻可接连突刺 / 三段刃",
+   "src": "https://wiki.dfo.world/view/Flowing_Stance_-_Clash",
+   "en": "Flowing Stance - Clash",
+   "conf": "高",
+   "hits": [
+    2,
+    4
+   ],
+   "launch": false,
+   "dx": [
+    100,
+    320
+   ],
+   "cd": 5,
+   "why": {
+    "cd": "国服 8s（SKILLS_OFFICIAL_sword.md）与 DFO 5s 不一致，保留国服值"
+   }
+  },
+  "flow_leap": {
+   "official": "流心：跃 —— 低而快地向前跃出，腾空时按键强斩；不追加则落地回架势",
+   "src": "https://wiki.dfo.world/view/Flowing_Stance_-_Swift",
+   "en": "Flowing Stance - Swift",
+   "conf": "中",
+   "hits": [
+    1,
+    3
+   ],
+   "dx": [
+    80,
+    320
+   ],
+   "cd": 7
+  },
+  "flow_rise": {
+   "official": "流心：升 —— 高跳上挑浮空；光剑 / 太刀 3 段",
+   "src": "https://wiki.dfo.world/view/Flowing_Stance_-_Rise",
+   "en": "Flowing Stance - Rise",
+   "conf": "高",
+   "hits": [
+    3,
+    5
+   ],
+   "launch": true,
+   "relaunch": true,
+   "dx": [
+    0,
+    80
+   ],
+   "cd": 9
+  },
+  "flow_frenzy": {
+   "official": "流心：狂 —— 蓄气 0.3s，永久强化刺 / 跃 / 升的伤害和暴击",
+   "src": "https://wiki.dfo.world/view/Flowing_Stance_-_Force",
+   "en": "Flowing Stance - Force",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 5
+  },
+  "wm_autoguard": {
+   "official": "自动格挡 BUFF 120s：被击时几率自动格挡，成功后霸体 2s 并上挑反击；CD 30s",
+   "src": "https://wiki.dfo.world/view/Auto_Guard",
+   "en": "Auto Guard",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 30
+  },
+  "wm_edge": {
+   "official": "破极兵刃：永久 BUFF，基础 / 技能攻击、物理暴击提升；CD 5s",
+   "src": "https://wiki.dfo.world/view/Overdrive",
+   "en": "Overdrive",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 5
+  },
+  "wm_reverse": {
+   "official": "逆转反击：被背击时按 Z，用上挑把背后的敌人打飞；空中也能用；CD 15s",
+   "src": "https://wiki.dfo.world/view/Flip_Side_Counter",
+   "en": "Flip Side Counter",
+   "conf": "高",
+   "cd": 15
+  },
+  "rise": {
+   "official": "破军升龙击：肩撞前冲推开敌人（冲撞中霸体）→ 单手上斩浮空；光剑肩撞 +2 段、太刀上斩 +1 段；CD 10s",
+   "src": "https://wiki.dfo.world/view/Charge_Crash",
+   "en": "Charge Crash",
+   "conf": "高",
+   "hits": [
+    2,
+    5
+   ],
+   "launch": true,
+   "relaunch": true,
+   "sa": "part",
+   "dx": [
+    120,
+    480
+   ],
+   "cd": 10
+  },
+  "iai": {
+   "official": "拔刀斩：约 0.5s 拔刀预备，以自身为中心大范围斩；太刀 / 光剑学满武器奥义可再按追加一斩；CD 15s",
+   "src": "https://wiki.dfo.world/view/Draw_Sword_(Weapon_Master)",
+   "en": "Draw Sword (Weapon Master)",
+   "conf": "中",
+   "hits": [
+    1,
+    3
+   ],
+   "launch": false,
+   "behind": true,
+   "dx": [
+    -20,
+    40
+   ],
+   "cd": 15
+  },
+  "dragon": {
+   "official": "猛龙断空斩：高速突进斩（现版最多 2 段、可改向）→ 单手上斩浮空；突进中霸体、改向时没有；CD 20s",
+   "src": "https://wiki.dfo.world/view/Raging_Dragon_Slash",
+   "en": "Raging Dragon Slash",
+   "conf": "高",
+   "hits": [
+    3,
+    5
+   ],
+   "launch": true,
+   "sa": "part",
+   "dx": [
+    200,
+    520
+   ],
+   "cd": 20
+  },
+  "wm_dragonrush": {
+   "official": "破军斩龙击：肩撞前冲（眩晕）→ 转身回冲连刺 → 聚到一处上挑浮空；CD 25s",
+   "src": "https://wiki.dfo.world/view/Charge_Burst",
+   "en": "Charge Burst",
+   "conf": "高",
+   "hits": [
+    4,
+    10
+   ],
+   "launch": true,
+   "pull": true,
+   "cd": 25
+  },
+  "phantom": {
+   "official": "幻影剑舞：原地连斩（太刀 / 光剑 20–24 次）每斩飞出剑气，连打加速；最后一击向前放巨大剑气；全程霸体；CD 45s",
+   "src": "https://wiki.dfo.world/view/Illusion_Sword_Dance",
+   "en": "Illusion Sword Dance",
+   "conf": "高",
+   "input": "mash",
+   "hits": [
+    12,
+    55
+   ],
+   "launch": false,
+   "sa": "full",
+   "dx": [
+    -20,
+    40
+   ],
+   "cd": 45
+  },
+  "awaken@blade": {
+   "official": "一觉 极·鬼剑术（暴风式）：抛出 24 把剑成阵强控 → 拔剑乱舞（连打加速）→ 上斩收尾；约 5s；施放中无敌",
+   "src": "https://wiki.dfo.world/view/Ultimate_Slay:_Tempest",
+   "en": "Ultimate Slay: Tempest",
+   "conf": "高",
+   "input": "mash",
+   "hits": [
+    12,
+    60
+   ],
+   "invul": "full",
+   "cd": 145,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   }
+  },
+  "wm_meteor": {
+   "official": "极·神剑术（流星落）：带冲击波高跳 → 移动准星 → 投下约 38 把流星剑 → 下砸；施放中无敌；CD 35s",
+   "src": "https://wiki.dfo.world/view/Omnislay:_Shooting_Star",
+   "en": "Omnislay: Shooting Star",
+   "conf": "高",
+   "hits": [
+    15,
+    60
+   ],
+   "invul": "part",
+   "cd": 35
+  },
+  "wm_kuubatto": {
+   "official": "破空拔刀斩：按住蓄力；大范围拔刀斩 + 向前射出圆形剑气（约 850px，击倒）；CD 50s",
+   "src": "https://wiki.dfo.world/view/Lightning_Draw_Sword",
+   "en": "Lightning Draw Sword",
+   "conf": "中",
+   "hits": [
+    1,
+    4
+   ],
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 50,
+   "note": "被拔刀斩中的敌人不再吃剑气（前一版按国服描述实现），所以身前的敌人只算 1 段"
+  },
+  "wm_hakuu": {
+   "official": "极·神剑术（破空斩）：预备架势感知前方敌人（按住可延后）→ 瞬斩被标记的敌人 → 爆炸；出手瞬间无敌；CD 35s",
+   "src": "https://wiki.dfo.world/view/Omnislay:_Mind%27s_Sword",
+   "en": "Omnislay: Mind's Sword",
+   "conf": "高",
+   "hits": [
+    2,
+    6
+   ],
+   "invul": "part",
+   "cd": 35,
+   "why": {
+    "invul": "国服描述“预备架势无敌”，韩服社区说只有出手瞬间无敌；来源冲突，保留全程无敌"
+   }
+  },
+  "wm_shunzan": {
+   "official": "极·神剑术（瞬斩）：拔出飞剑冲斩前方，被斩中的敌人再吃 5 段剑气；施放中无敌；CD 50s",
+   "src": "https://wiki.dfo.world/view/Ultimate_Blade_Dance_-_Lightning",
+   "en": "Ultimate Blade Dance - Lightning",
+   "conf": "高",
+   "hits": [
+    6,
+    7
+   ],
+   "invul": "full",
+   "dx": [
+    150,
+    500
+   ],
+   "cd": 50
+  },
+  "wm_awaken2": {
+   "official": "二觉 万剑归宗：念力飞剑 30s，普攻 / 指定技能附带穿云刺 → 再按或到时间 → 御剑术抓目标乱斩 → 万剑诀爆炸",
+   "src": "https://wiki.dfo.world/view/Telekinetic_Swords",
+   "en": "Telekinetic Swords",
+   "conf": "中",
+   "summon": true,
+   "cd": 180,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   }
+  },
+  "wm_mukei": {
+   "official": "极·神剑术（无形斩）：强力拔刀射出无形剑，在区域内连斩（约 13 段）后爆炸；离开区域会被追斩；CD 60s",
+   "src": "https://wiki.dfo.world/view/Ultimate_Blade_Dance_-_Ethereal_Slash",
+   "en": "Ultimate Blade Dance - Ethereal Slash",
+   "conf": "中",
+   "hits": [
+    10,
+    20
+   ],
+   "cd": 60
+  },
+  "wm_awaken3": {
+   "official": "三觉 万剑极诣·开天斩：钝器砸地 → 巨剑重斩 → 跃起短剑 / 太刀剑气 → 光剑终结；无敌",
+   "src": "https://wiki.dfo.world/view/Pentastrike",
+   "en": "Pentastrike",
+   "conf": "中",
+   "hits": [
+    5,
+    20
+   ],
+   "invul": "full",
+   "cd": 290,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   }
+  },
+  "frenzy": {
+   "official": "狂暴之力：开关 BUFF，以血换力；普攻变二刀流；5 个技能的前置；CD 10s",
+   "src": "https://wiki.dfo.world/view/Frenzy",
+   "en": "Frenzy",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 10
+  },
+  "bz_defy": {
+   "official": "死亡抗拒：HP 很低时可用，约 2.5s 内回复 HP，提高双防和硬直；CD 10s",
+   "src": "https://wiki.dfo.world/view/Diehard",
+   "en": "Diehard",
+   "conf": "高",
+   "hp": 0.3,
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 10
+  },
+  "bz_scratch@berserker": {
+   "official": "狂气斩（仅狂暴中）：双剑向前斩，再按追加 1 击；按 → 滑行、← 反向；CD 6s",
+   "src": "https://wiki.dfo.world/view/Blood_Scratch",
+   "en": "Blood Scratch",
+   "conf": "高",
+   "pre": [
+    "frenzy"
+   ],
+   "hits": [
+    2,
+    4
+   ],
+   "acts": [
+    2,
+    2
+   ],
+   "dx": [
+    20,
+    250
+   ],
+   "cd": 6
+  },
+  "rampage": {
+   "official": "暴走：永久 BUFF，攻击 / 攻速 / 移速 / 硬直提高，双防 −10%；CD 5s",
+   "src": "https://wiki.dfo.world/view/Derange",
+   "en": "Derange",
+   "conf": "中",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 5
+  },
+  "outrage": {
+   "official": "怒气爆发：脚下圆阵，冲击波 + 血柱共 10 段把周围敌人高高浮空；霸体；不需要狂暴；CD 16s",
+   "src": "https://wiki.dfo.world/view/Raging_Fury",
+   "en": "Raging Fury",
+   "conf": "高",
+   "hits": [
+    10,
+    11
+   ],
+   "launch": true,
+   "relaunch": true,
+   "behind": true,
+   "sa": "full",
+   "dx": [
+    -10,
+    10
+   ],
+   "cd": 16
+  },
+  "bz_whirl": {
+   "official": "狂热回旋：挥剑把左右两侧的敌人扫到身前 → 原地回旋上斩击飞；CD 10s",
+   "src": "https://wiki.dfo.world/view/Cruel_Engagement",
+   "en": "Cruel Engagement",
+   "conf": "高",
+   "hits": [
+    2,
+    3
+   ],
+   "launch": true,
+   "behind": true,
+   "pull": true,
+   "dx": [
+    -10,
+    10
+   ],
+   "cd": 10
+  },
+  "bz_thirst": {
+   "official": "饥渴：按住蓄力（每次扣 HP）→ 松手放出 500px 的出血冲击波 → 普攻和转职技能攻击力提高（无限）；CD 10s",
+   "src": "https://wiki.dfo.world/view/Thirst",
+   "en": "Thirst",
+   "conf": "中",
+   "hits": [
+    1,
+    1
+   ],
+   "behind": true,
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 10
+  },
+  "bz_enrage@berserker": {
+   "official": "暴怒狂斩（仅狂暴中）：下劈浮空 → 双刀乱砍 4 次留下剑痕 → 剑痕一起撕裂；霸体；CD 20s",
+   "src": "https://wiki.dfo.world/view/Enrage",
+   "en": "Enrage",
+   "conf": "高",
+   "pre": [
+    "frenzy"
+   ],
+   "hits": [
+    6,
+    10
+   ],
+   "launch": true,
+   "sa": "full",
+   "cd": 20
+  },
+  "bz_twister@berserker": {
+   "official": "嗜魂封魔斩（仅狂暴中）：旋风把前方敌人吸到身前（无视霸体）→ 血剑强力上斩击飞；CD 30s",
+   "src": "https://wiki.dfo.world/view/Bloody_Twister",
+   "en": "Bloody Twister",
+   "conf": "中",
+   "pre": [
+    "frenzy"
+   ],
+   "hits": [
+    2,
+    12
+   ],
+   "launch": true,
+   "pull": true,
+   "cd": 30
+  },
+  "bloodblade@berserker": {
+   "official": "爆发之刃（仅狂暴中）：喷血凝剑突刺，命中立即爆炸把敌人推开；命中后可取消接其他技能；按 ← 原地刺；霸体；CD 20s",
+   "src": "https://wiki.dfo.world/view/Blood_Sword",
+   "en": "Blood Sword",
+   "conf": "高",
+   "pre": [
+    "frenzy"
+   ],
+   "hits": [
+    2,
+    2
+   ],
+   "launch": false,
+   "dx": [
+    10,
+    260
+   ],
+   "cd": 20
+  },
+  "quake@berserker": {
+   "official": "崩山裂地斩（仅狂暴中）：召唤血剑时无敌 → 起跳（方向键调距离）→ 砸地冲击波把敌人竖直浮空 → 碎块 6 段追打；CD 40s",
+   "src": "https://wiki.dfo.world/view/Outrage_Break",
+   "en": "Outrage Break",
+   "conf": "高",
+   "pre": [
+    "frenzy"
+   ],
+   "hits": [
+    6,
+    8
+   ],
+   "launch": true,
+   "relaunch": true,
+   "invul": "part",
+   "sa": "full",
+   "dx": [
+    20,
+    300
+   ],
+   "cd": 40
+  },
+  "bz_awaken": {
+   "official": "一觉 魔狱血刹：背后召唤完整形态的血剑（攻速移速提高）→ 再按一次或到时间 → 血剑劈下，血气爆炸强控 25 段",
+   "src": "https://wiki.dfo.world/view/Extreme_Overkill",
+   "en": "Extreme Overkill",
+   "conf": "高",
+   "presses": [
+    2.5
+   ],
+   "watch": 8,
+   "hits": [
+    20,
+    30
+   ],
+   "summon": true,
+   "cd": 145,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   }
+  },
+  "bz_surge": {
+   "official": "狂气涌动：几乎任何状态瞬发；10s 内 HP 不会被打到 50% 以下，触发时 3s 血盾；CD 固定 45s",
+   "src": "https://wiki.dfo.world/view/Poignant_Madness",
+   "en": "Poignant Madness",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 45
+  },
+  "bz_snatch": {
+   "official": "狂怒暴掠：抓住前方敌人 → 跳起摔地 → 血爆；按 → 突进去抓；霸体，抓到后无敌；CD 30s",
+   "src": "https://wiki.dfo.world/view/Blood_Snatch",
+   "en": "Blood Snatch",
+   "conf": "高",
+   "hits": [
+    2,
+    3
+   ],
+   "grab": true,
+   "sa": "full",
+   "cd": 30
+  },
+  "bz_crusher": {
+   "official": "强悍碾压：割掌喷血化成血剑 → 高举砸地，巨大血爆 5 段；耗当前 HP 1%；CD 50s",
+   "src": "https://wiki.dfo.world/view/Brutal_Crusher",
+   "en": "Brutal Crusher",
+   "conf": "高",
+   "hits": [
+    5,
+    5
+   ],
+   "cd": 50
+  },
+  "bz_boom": {
+   "official": "浴血之怒：以自身为中心大范围血爆；站桩霸体；耗当前 HP；CD 40s",
+   "src": "https://wiki.dfo.world/view/Blood_Boom",
+   "en": "Blood Boom",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "behind": true,
+   "sa": "full",
+   "dx": [
+    -10,
+    10
+   ],
+   "cd": 40
+  },
+  "bz_fatal": {
+   "official": "致命血陨：吸血成剑 → 快速两斩 → 强力交叉斩；按 → 前进更远；霸体；CD 50s",
+   "src": "https://wiki.dfo.world/view/Fatal_Blood",
+   "en": "Fatal Blood",
+   "conf": "高",
+   "hits": [
+    3,
+    3
+   ],
+   "sa": "full",
+   "dx": [
+    0,
+    200
+   ],
+   "cd": 50
+  },
+  "bz_awaken2": {
+   "official": "二觉 血魔·弑天：化身巨大血魔向前猛冲 → 终点巨型血爆；按反方向键缩短距离；无敌",
+   "src": "https://wiki.dfo.world/view/Blood_Riven",
+   "en": "Blood Riven",
+   "conf": "高",
+   "hits": [
+    3,
+    10
+   ],
+   "invul": "full",
+   "dx": [
+    250,
+    700
+   ],
+   "cd": 180,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   }
+  },
+  "bz_rampant": {
+   "official": "疯魔血魂斩：生成巨大血气团 → 砸碎 → 碎块向前散射 5 段；X 轴范围极大；CD 60s",
+   "src": "https://wiki.dfo.world/view/Rampant_Madness",
+   "en": "Rampant Madness",
+   "conf": "高",
+   "hits": [
+    6,
+    6
+   ],
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 60
+  },
+  "bz_awaken3": {
+   "official": "三觉 血魔极道：灭世：化身血魔追踪最强敌人连斩 4–5 次 → 插剑再拔出，血气喷发；约 6s；无敌",
+   "src": "https://wiki.dfo.world/view/Blood_Majin_Strike:_Destruction",
+   "en": "Blood Majin Strike: Destruction",
+   "conf": "高",
+   "hits": [
+    6,
+    12
+   ],
+   "invul": "full",
+   "cd": 290,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   },
+   "atkCancel": true
+  },
+  "soulhand@berserker": {
+   "official": "嗜魂之手（狂战士）：学血气旺盛后附出血；饥渴满蓄吸取 +3；三觉被动改四向喷发",
+   "src": "https://wiki.dfo.world/view/Bloodlust",
+   "en": "Bloodlust",
+   "conf": "高",
+   "hits": [
+    3,
+    12
+   ],
+   "grab": true,
+   "cd": 6
+  },
+  "cross@berserker": {
+   "official": "十字刃（狂战士）：血气旺盛后耗 HP、十字变大并出血；可取消接普攻；三觉被动血气界限后改为交叉斩直接射出血十字（没有再按追加）",
+   "src": "https://wiki.dfo.world/view/Gore_Cross",
+   "en": "Gore Cross",
+   "conf": "高",
+   "hits": [
+    3,
+    4
+   ],
+   "acts": [
+    1,
+    1
+   ],
+   "down": true,
+   "cd": 3,
+   "atkCancel": true
+  },
+  "slam@berserker": {
+   "official": "崩山击（狂战士）：血气旺盛后多一道血冲击波并出血",
+   "src": "https://wiki.dfo.world/view/Mountainous_Wheel",
+   "en": "Mountainous Wheel",
+   "conf": "高",
+   "hits": [
+    3,
+    6
+   ],
+   "down": true,
+   "dx": [
+    60,
+    260
+   ],
+   "cd": 4
+  },
+  "sb_plemon": {
+   "official": "侵蚀之普戾蒙：身前 350px 的阵约 30s，阵内敌人受到伤害增加（离开后保留 30s）；重放回收旧阵",
+   "src": "https://wiki.dfo.world/view/Hazy-Eyed_Bremen",
+   "en": "Hazy-Eyed Bremen",
+   "conf": "高",
+   "summon": true,
+   "hits": [
+    0,
+    0
+   ]
+  },
+  "sb_kaiga": {
+   "official": "残影之凯贾：自身 BUFF，普攻变 4 连暗属性魔法攻击 + 冲刺（冲刺开始后短暂无敌）",
+   "src": "https://wiki.dfo.world/view/Afterimage_of_Keiga",
+   "en": "Afterimage of Keiga",
+   "conf": "中",
+   "hits": [
+    0,
+    0
+   ]
+  },
+  "sb_purge": {
+   "official": "泯灭仪式：清除自己的普戾蒙 / 萨亚 / 罗刹；CD 1s",
+   "src": "https://wiki.dfo.world/view/Extinction_Ritual",
+   "en": "Extinction Ritual",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 1
+  },
+  "sb_saya": {
+   "official": "冰霜之萨亚：身前 350px 阵 5s，每 0.5s 一击共 10 段，冰冻 50%；CD 15s",
+   "src": "https://wiki.dfo.world/view/Ice_Saya",
+   "en": "Ice Saya",
+   "conf": "高",
+   "summon": true,
+   "hits": [
+    10,
+    10
+   ],
+   "cd": 15
+  },
+  "sb_whip": {
+   "official": "鬼影鞭：像甩鞭一样挥剑两段，第二段把远处敌人拉到身前；可用普攻取消；CD 8s",
+   "src": "https://wiki.dfo.world/view/Phantom_Sword_Slash",
+   "en": "Phantom Sword Slash",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "reach": [
+    170,
+    300
+   ],
+   "pull": true,
+   "cd": 8,
+   "atkCancel": true
+  },
+  "sb_tomb": {
+   "official": "死亡墓碑：以自身为中心 180px 天降墓碑（每秒 9 块，1s），附诅咒；霸体不能移动，按跳跃中断；CD 18s",
+   "src": "https://wiki.dfo.world/view/Tombstone",
+   "en": "Tombstone",
+   "conf": "高",
+   "hits": [
+    1,
+    9
+   ],
+   "behind": true,
+   "sa": "full",
+   "dx": [
+    -5,
+    5
+   ],
+   "cd": 18,
+   "note": "墓碑在 180px 内随机落下，单个敌人吃到的块数随机（审计固定随机种子）"
+  },
+  "sb_rasha": {
+   "official": "瘟疫之罗刹：350px 瘟疫区 5s，罗刹分身附着到踩进来的敌人身上 10s（腐蚀 DoT、减速、失明 / 诅咒）；CD 20s",
+   "src": "https://wiki.dfo.world/view/Plague_Rhasa",
+   "en": "Plague Rhasa",
+   "conf": "高",
+   "summon": true,
+   "cd": 20
+  },
+  "sb_flash": {
+   "official": "鬼影闪：向前冲刺 370px 斩击，敌人先被定住，再暗属性爆发并强制倒地；引爆冥炎；二觉被动前只能在凯贾冲刺中用；CD 20s",
+   "src": "https://wiki.dfo.world/view/Phantasmal_Slayer_(Soul_Bender)",
+   "en": "Phantasmal Slayer (Soul Bender)",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "launch": false,
+   "down": true,
+   "invul": "part",
+   "dx": [
+    300,
+    420
+   ],
+   "cd": 20
+  },
+  "sb_fury": {
+   "official": "鬼影剑：狂怒：剑中注入鬼神之力向前下劈引发爆炸，单段高伤害；可用普攻取消；CD 20s",
+   "src": "https://wiki.dfo.world/view/Ghost_Slash:_Overdrive",
+   "en": "Ghost Slash: Overdrive",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "behind": false,
+   "cd": 20,
+   "atkCancel": true
+  },
+  "sb_karo": {
+   "official": "冥炎之卡洛：变身 BUFF，普攻改为发射卡洛分身火球（空中 / 后跳中也能发），命中附冥炎 5 跳",
+   "src": "https://wiki.dfo.world/view/Kalla_of_Dark_Flame",
+   "en": "Kalla of Dark Flame",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ]
+  },
+  "sb_karoblade@soulbender": {
+   "official": "冥炎剑（仅卡洛中）：双持冥炎剑向前突进多段斩，伤害逐段递增，方向键调距离，附冥炎；CD 45s",
+   "src": "https://wiki.dfo.world/view/Dark_Flame_Sword_(Soul_Bender)",
+   "en": "Dark Flame Sword (Soul Bender)",
+   "conf": "高",
+   "pre": [
+    "sb_karo"
+   ],
+   "hits": [
+    4,
+    8
+   ],
+   "dx": [
+    60,
+    400
+   ],
+   "cd": 45,
+   "atkCancel": true
+  },
+  "sb_awaken": {
+   "official": "一觉 第7鬼神：怖拉修：沼泽扩大 → 巨口鬼神破土而出（冲击波）→ 合嘴吞噬；场上每只鬼神 +20%",
+   "src": "https://wiki.dfo.world/view/Ghost_7:_Furious_Blache",
+   "en": "Ghost 7: Furious Blache",
+   "conf": "高",
+   "hits": [
+    2,
+    3
+   ],
+   "invul": "full",
+   "cd": 140,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   }
+  },
+  "sb_purgatory": {
+   "official": "鬼斩：炼狱：斩裂地面，冥界之刃升起定身 2s → 爆炸；可用普攻取消；CD 30s",
+   "src": "https://wiki.dfo.world/view/Ghost_Slash:_Abyss",
+   "en": "Ghost Slash: Abyss",
+   "conf": "高",
+   "hits": [
+    2,
+    3
+   ],
+   "cd": 30,
+   "atkCancel": true
+  },
+  "sb_swamp": {
+   "official": "冥祭之沼：3 块封印墓碑把 380px 内的敌人往中心吸 5s → 到时间或再按一次自爆；前后方向键移 100px；CD 40s",
+   "src": "https://wiki.dfo.world/view/Tombstone_Swamp",
+   "en": "Tombstone Swamp",
+   "conf": "中",
+   "summon": true,
+   "hits": [
+    1,
+    1
+   ],
+   "pull": true,
+   "cd": 40
+  },
+  "sb_blade": {
+   "official": "幽魂之布雷德：350px 刀魂阵 8s，多段斩（僵直很高）→ 强力终结斩；再按提前终结；CD 40s",
+   "src": "https://wiki.dfo.world/view/Blade_Phantom",
+   "en": "Blade Phantom",
+   "conf": "高",
+   "summon": true,
+   "hits": [
+    8,
+    30
+   ],
+   "cd": 40,
+   "atkCancel": true
+  },
+  "sb_descent": {
+   "official": "幽魂降临：式：跃到空中让布雷德附身，射出灵剑斩向地面并爆炸；→ 前跳 / ↓ 后跳；空中可用；CD 45s",
+   "src": "https://wiki.dfo.world/view/Blade_Phantom_Possession:_Technique",
+   "en": "Blade Phantom Possession: Technique",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "cd": 45,
+   "atkCancel": true
+  },
+  "sb_awaken2": {
+   "official": "二觉 王者号令：吉格降临：魑魅魍魉攻击并吸向中心 → 吉格定身攻击 → 撕开地狱裂缝，斩杀低血敌人",
+   "src": "https://wiki.dfo.world/view/Descent_of_Sieg",
+   "en": "Descent of Sieg",
+   "conf": "高",
+   "summon": true,
+   "hits": [
+    4,
+    30
+   ],
+   "invul": "full",
+   "cd": 180,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   }
+  },
+  "sb_ferry": {
+   "official": "鬼神剑·黄泉摆渡：挥卡隆之剑划开冥界裂缝，亡灵涌出前再毁掉裂缝，含 5 段吸魂；CD 60s",
+   "src": "https://wiki.dfo.world/view/Ravenous_Crevasse",
+   "en": "Ravenous Crevasse",
+   "conf": "高",
+   "hits": [
+    6,
+    15
+   ],
+   "cd": 60,
+   "atkCancel": true
+  },
+  "sb_awaken3": {
+   "official": "三觉 黄泉之门：万鬼度灵：门升起（8 段）→ 斩开结界 → 冥界亡灵倾泻（15 段，全屏）",
+   "src": "https://wiki.dfo.world/view/Descent_of_the_Nine:_Ghost_Gate",
+   "en": "Descent of the Nine: Ghost Gate",
+   "conf": "高",
+   "hits": [
+    20,
+    30
+   ],
+   "invul": "full",
+   "reach": [
+    450,
+    450
+   ],
+   "behind": true,
+   "cd": 290,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   },
+   "atkCancel": true
+  },
+  "ghost@soulbender": {
+   "official": "鬼斩（鬼泣）：噬灵鬼斩 —— 按住蓄力 0.15s（满蓄霸体并前冲），追加输入放出最后召唤的鬼神冲波",
+   "src": "https://wiki.dfo.world/view/Ghost_Slash",
+   "en": "Ghost Slash",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "acts": [
+    2,
+    2
+   ],
+   "down": true,
+   "dx": [
+    30,
+    260
+   ],
+   "cd": 6
+  },
+  "moon@soulbender": {
+   "official": "月光斩（鬼泣）：可用普攻取消；满月斩再追加一记双手上挑（共 3 击）",
+   "src": "https://wiki.dfo.world/view/Moonlight_Slash",
+   "en": "Moonlight Slash",
+   "conf": "高",
+   "hits": [
+    3,
+    3
+   ],
+   "acts": [
+    3,
+    3
+   ],
+   "launch": true,
+   "cd": 4,
+   "atkCancel": true
+  },
+  "as_mark": {
+   "official": "波动刻印：开关 BUFF，生成波动印（普攻 / 上挑附带波动）",
+   "src": "https://wiki.dfo.world/view/Wave_Manifestation_Brand",
+   "en": "Wave Manifestation Brand",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ]
+  },
+  "as_orb@asura": {
+   "official": "鬼印珠：消耗波动印，向前发出旋转多段的鬼印珠（约 4s），碰到障碍爆炸；CD 6s",
+   "src": "https://wiki.dfo.world/view/Ghost_Orb",
+   "en": "Ghost Orb",
+   "conf": "高",
+   "pre": [
+    "as_mark"
+   ],
+   "hits": [
+    3,
+    15
+   ],
+   "reach": [
+    170,
+    450
+   ],
+   "cd": 6
+  },
+  "as_evil": {
+   "official": "邪光斩：向前发出巨大的多段剑波（修罗邪光斩后可蓄力）；CD 10s",
+   "src": "https://wiki.dfo.world/view/Spirit_Crescent",
+   "en": "Spirit Crescent",
+   "conf": "高",
+   "hits": [
+    2,
+    6
+   ],
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 10
+  },
+  "as_burst": {
+   "official": "波动爆发：以自身为中心的瞬间爆发，把周围敌人击飞；霸体；CD 7.5s",
+   "src": "https://wiki.dfo.world/view/Wave_Radiation",
+   "en": "Wave Radiation",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "launch": true,
+   "behind": true,
+   "sa": "full",
+   "cd": 7.5
+  },
+  "as_aura": {
+   "official": "无尽波动（杀意波动）：开关光环，每 0.5s 伤害周围敌人并挑衅",
+   "src": "https://wiki.dfo.world/view/Murderous_Wave",
+   "en": "Murderous Wave",
+   "conf": "中",
+   "behind": true
+  },
+  "as_ice": {
+   "official": "冰刃·波动剑：沿地面向前射出一串冰柱，多段；可用普攻取消；CD 7s",
+   "src": "https://wiki.dfo.world/view/Ice_Wave_Sword",
+   "en": "Ice Wave Sword",
+   "conf": "高",
+   "hits": [
+    3,
+    15
+   ],
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 7,
+   "atkCancel": true
+  },
+  "as_fire": {
+   "official": "爆炎·波动剑：向前连锁爆炸，多段；CD 15s",
+   "src": "https://wiki.dfo.world/view/Fire_Wave_Sword",
+   "en": "Fire Wave Sword",
+   "conf": "中",
+   "hits": [
+    2,
+    8
+   ],
+   "cd": 15
+  },
+  "as_musou@asura": {
+   "official": "无双波（仅无尽波动中）：前方破裂波把敌人吸过来，追加输入终结爆炸；CD 20s",
+   "src": "https://wiki.dfo.world/view/Deadly_Enticer",
+   "en": "Deadly Enticer",
+   "conf": "高",
+   "pre": [
+    "as_aura"
+   ],
+   "hits": [
+    1,
+    12
+   ],
+   "cd": 20,
+   "note": "命中数含无尽波动光环每 0.5 秒的伤害",
+   "why": {
+    "cd": "DFO 20s；国服资料 12s，保留国服值"
+   }
+  },
+  "as_array": {
+   "official": "邪光波动阵：冲击波 + 波动阵，多段 7 次（决斗场 5 次），持续 2s；CD 20s",
+   "src": "https://wiki.dfo.world/view/Ground_Quaker",
+   "en": "Ground Quaker",
+   "conf": "高",
+   "hits": [
+    5,
+    8
+   ],
+   "cd": 20
+  },
+  "as_fudo@asura": {
+   "official": "不动明王阵：消耗波动印，明王阵定住敌人 + 火球环绕 → 终结爆炸；霸体；CD 45s",
+   "src": "https://wiki.dfo.world/view/Agni_Pentacle",
+   "en": "Agni Pentacle",
+   "conf": "高",
+   "pre": [
+    "as_mark"
+   ],
+   "hits": [
+    5,
+    15
+   ],
+   "sa": "full",
+   "cd": 45
+  },
+  "as_awaken@asura": {
+   "official": "一觉 暗天波动眼：40s 领域，技能变形；再按或到时间 → 天穹之眼爆炸",
+   "src": "https://wiki.dfo.world/view/Wave_Eye",
+   "en": "Wave Eye",
+   "conf": "高",
+   "pre": [
+    "as_aura"
+   ],
+   "cd": 140,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   }
+  },
+  "as_ice2": {
+   "official": "极冰·裂波剑：冰柱沿地面远距离推进，多段；CD 30s",
+   "src": "https://wiki.dfo.world/view/Glacial_Wave_Sword",
+   "en": "Glacial Wave Sword",
+   "conf": "中",
+   "hits": [
+    5,
+    15
+   ],
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 30
+  },
+  "as_fire2": {
+   "official": "极炎·裂波剑：前方火焰区 8 段（2s）→ 火焰爆炸 4 段；可用普攻取消；CD 35s",
+   "src": "https://wiki.dfo.world/view/Magma_Wave_Sword",
+   "en": "Magma Wave Sword",
+   "conf": "高",
+   "hits": [
+    10,
+    12
+   ],
+   "cd": 35,
+   "atkCancel": true
+  },
+  "as_indra": {
+   "official": "天雷·波动剑：把敌人困进雷球持续伤害 → 爆炸；再按提前引爆；CD 40s",
+   "src": "https://wiki.dfo.world/view/Wave_Sword:_Indra_Net",
+   "en": "Wave Sword: Indra Net",
+   "conf": "高",
+   "hits": [
+    5,
+    15
+   ],
+   "cd": 40
+  },
+  "as_vajra@asura": {
+   "official": "天雷·降魔杵：雷云 50s 每秒落一根小杵（最多 15）→ 再按一次连落 8 根 + 巨杵；CD 45s",
+   "src": "https://wiki.dfo.world/view/Heavenly_Vajra",
+   "en": "Heavenly Vajra",
+   "conf": "高",
+   "pre": [
+    "as_aura"
+   ],
+   "summon": true,
+   "cd": 45
+  },
+  "as_awaken2": {
+   "official": "二觉 雷神降世：裁决：入场击倒 → 阵上持续感电伤害并吸引 → 裁决雷击",
+   "src": "https://wiki.dfo.world/view/Thunder_God",
+   "en": "Thunder God",
+   "conf": "高",
+   "summon": true,
+   "cd": 180,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7",
+    "summon": "雷神阵做在技能动作里（定时伤害 + 吸引），不走召唤框架；效果等价"
+   },
+   "atkCancel": true,
+   "down": true,
+   "pull": true
+  },
+  "as_mui": {
+   "official": "波动慧眼：无为法：沿无形波动生成阵，5 段 + 终结爆炸；按 → 瞬移到阵的另一侧；CD 60s",
+   "src": "https://wiki.dfo.world/view/Wave_Exchange:_Blast",
+   "en": "Wave Exchange: Blast",
+   "conf": "高",
+   "hits": [
+    5,
+    7
+   ],
+   "cd": 60,
+   "atkCancel": true
+  },
+  "as_awaken3": {
+   "official": "三觉 波动神诀：万空：冲击波造剑 → 雷电 6 段 → 波动爆炸 → 雷电爆炸",
+   "src": "https://wiki.dfo.world/view/Wave_Weaver:_Heaven%27s_Thunder",
+   "en": "Wave Weaver: Heaven's Thunder",
+   "conf": "高",
+   "hits": [
+    6,
+    12
+   ],
+   "cd": 290,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   },
+   "atkCancel": true
+  },
+  "gb_step": {
+   "official": "鬼步：进入准备姿势（霸体，最长 3s）→ 瞬移斩穿前方，路径上的敌人吃 3 段；可换剑术技能收尾；CD 6s",
+   "src": "https://wiki.dfo.world/view/Ghost_Step",
+   "en": "Ghost Step",
+   "conf": "高",
+   "hits": [
+    3,
+    3
+   ],
+   "dx": [
+    250,
+    450
+   ],
+   "cd": 6
+  },
+  "gb_chain": {
+   "official": "鬼连击（剑术）：快速向前 3 连斩；学了鬼连击：极再追加 3 段交叉上斩（满级角色共 6 段）；CD 5s",
+   "src": "https://wiki.dfo.world/view/Phantom_Slash",
+   "en": "Phantom Slash",
+   "conf": "高",
+   "hits": [
+    3,
+    6
+   ],
+   "cd": 5
+  },
+  "gb_retrace@ghostblade": {
+   "official": "幻鬼步：瞬移到幻鬼所在位置，移动中无敌",
+   "src": "https://wiki.dfo.world/view/Ghost_Retracer",
+   "en": "Ghost Retracer",
+   "conf": "高",
+   "pre": [
+    "gb_issen"
+   ],
+   "hits": [
+    0,
+    0
+   ],
+   "invul": "full"
+  },
+  "gb_issen": {
+   "official": "幻鬼：一闪：幻鬼向前突进约 450px 斩击路径；CD 6s",
+   "src": "https://wiki.dfo.world/view/Ghost:_Single_Strike",
+   "en": "Ghost: Single Strike",
+   "conf": "高",
+   "summon": true,
+   "hits": [
+    1,
+    1
+   ],
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 6
+  },
+  "gb_fang": {
+   "official": "鬼连牙（剑术）：强力突刺；CD 8s",
+   "src": "https://wiki.dfo.world/view/Spectral_Thrust",
+   "en": "Spectral Thrust",
+   "conf": "高",
+   "hits": [
+    1,
+    2
+   ],
+   "cd": 8
+  },
+  "gb_rend": {
+   "official": "幻鬼：连击：幻鬼在原地快速 4 连斩，最后挑空；CD 8s",
+   "src": "https://wiki.dfo.world/view/Ghost:_Quad-slash",
+   "en": "Ghost: Quad-slash",
+   "conf": "高",
+   "summon": true,
+   "hits": [
+    4,
+    4
+   ],
+   "launch": true,
+   "cd": 8
+  },
+  "gb_resonance": {
+   "official": "双魂共鸣：BUFF；CD 5s",
+   "src": "https://wiki.dfo.world/view/Phantasmal_Binity",
+   "en": "Phantasmal Binity",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 5
+  },
+  "gb_riko": {
+   "official": "共鸣：离魂一闪：幻鬼突进约 400px，与本体交叉斩并交换位置；CD 12s",
+   "src": "https://wiki.dfo.world/view/Dyad:_Soul_Cross",
+   "en": "Dyad: Soul Cross",
+   "conf": "高",
+   "hits": [
+    1,
+    2
+   ],
+   "dx": [
+    250,
+    520
+   ],
+   "cd": 12
+  },
+  "gb_break": {
+   "official": "魂破斩（剑术）：大力下劈；CD 12s",
+   "src": "https://wiki.dfo.world/view/Soul_Strike",
+   "en": "Soul Strike",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "cd": 12
+  },
+  "gb_ghostslash": {
+   "official": "共鸣：鬼灵斩：本体与幻鬼同时拔刀大范围斩（同一目标只算一次）；霸体；CD 15s",
+   "src": "https://wiki.dfo.world/view/Dyad:_Half_Moon_Slash",
+   "en": "Dyad: Half Moon Slash",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "sa": "full",
+   "cd": 15
+  },
+  "gb_kaiten": {
+   "official": "幻鬼：回天：幻鬼边旋转边前进斩 + 终结斩；CD 20s",
+   "src": "https://wiki.dfo.world/view/Ghost:_Circle_Cut",
+   "en": "Ghost: Circle Cut",
+   "conf": "高",
+   "summon": true,
+   "hits": [
+    2,
+    4
+   ],
+   "cd": 20
+  },
+  "gb_behead": {
+   "official": "冥灵断魂斩（剑术）：推开周围敌人 → 超大范围一斩；CD 45s",
+   "src": "https://wiki.dfo.world/view/Spectral_Eradication",
+   "en": "Spectral Eradication",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "cd": 45
+  },
+  "gb_awaken": {
+   "official": "一觉 冥夜鬼天杀：幻鬼现身，两人双刀交叉斩（×4）；无敌",
+   "src": "https://wiki.dfo.world/view/Phantom_Cross",
+   "en": "Phantom Cross",
+   "conf": "高",
+   "hits": [
+    4,
+    4
+   ],
+   "invul": "full",
+   "cd": 145,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   }
+  },
+  "gb_naraku": {
+   "official": "幻鬼：奈落：幻鬼瞬移到最强敌人上方下劈；CD 20s",
+   "src": "https://wiki.dfo.world/view/Ghost:_Targeted_Hit",
+   "en": "Ghost: Targeted Hit",
+   "conf": "高",
+   "summon": true,
+   "hits": [
+    1,
+    1
+   ],
+   "cd": 20
+  },
+  "gb_abyss": {
+   "official": "共鸣：聚渊：幻鬼突进斩 + 符咒定身 → 投刀拉回 → 合击；部分无敌；CD 50s",
+   "src": "https://wiki.dfo.world/view/Dyad:_Abyssal_Punishment",
+   "en": "Dyad: Abyssal Punishment",
+   "conf": "高",
+   "hits": [
+    3,
+    6
+   ],
+   "invul": "part",
+   "cd": 50
+  },
+  "gb_shinpu": {
+   "official": "幻鬼：大回天：幻鬼旋转前进多段斩，把命中的敌人聚到一处；CD 40s",
+   "src": "https://wiki.dfo.world/view/Ghost:_Phantom_Wind",
+   "en": "Ghost: Phantom Wind",
+   "conf": "高",
+   "summon": true,
+   "hits": [
+    4,
+    12
+   ],
+   "cd": 40
+  },
+  "gb_dance": {
+   "official": "裂魂乱舞（剑术）：3 斩 + 回旋斩 + 终结斩；按住 ← 原地施放；CD 45s",
+   "src": "https://wiki.dfo.world/view/Fiend_Dance",
+   "en": "Fiend Dance",
+   "conf": "高",
+   "hits": [
+    5,
+    8
+   ],
+   "cd": 45
+  },
+  "gb_awaken2": {
+   "official": "二觉 鬼隐·夜奈落：本体与幻鬼消失（画面变暗）→ 幻鬼出现在最强敌人上方：下劈 + 两次横斩 + 交叉终结",
+   "src": "https://wiki.dfo.world/view/Phantasmal_Slayer_(Ghostblade)",
+   "en": "Phantasmal Slayer (Ghostblade)",
+   "conf": "高",
+   "hits": [
+    4,
+    4
+   ],
+   "cd": 180,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   }
+  },
+  "gb_mushiki": {
+   "official": "无式·极影剑：多段 5 + 终结斩（三种形态按施放时机变化）；CD 60s",
+   "src": "https://wiki.dfo.world/view/Free_Style:_New_Ghost_Sword",
+   "en": "Free Style: New Ghost Sword",
+   "conf": "高",
+   "hits": [
+    6,
+    6
+   ],
+   "cd": 60
+  },
+  "gb_awaken3": {
+   "official": "三觉 灭魂极影剑·止煞：本体与幻鬼高速交错：碰撞 + 连斩 7 + 横斩 + 合击；霸体",
+   "src": "https://wiki.dfo.world/view/Spectral_Genocide",
+   "en": "Spectral Genocide",
+   "conf": "高",
+   "hits": [
+    10,
+    20
+   ],
+   "cd": 290,
+   "why": {
+    "cd": "觉醒冷却按本作统一表（一觉 135、二觉 170、三觉 135 且与一觉共享），见 SKILLS_OFFICIAL_sword.md 10.7"
+   },
+   "atkCancel": true
+  }
+ }
+}

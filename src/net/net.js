@@ -114,14 +114,8 @@ const net = {
 // 切回前台：后台期间的“没回音”不算，重新开始计时并立刻测一次延迟
 document.addEventListener('visibilitychange', () => { if (document.hidden) return; net.visibleSince = performance.now(); net.lastPong = performance.now(); net.rtt = 0; if (net.connected) net.ping(); });
 const netOn = () => !!(net.user && net.token);
-// 当前页面脚本的指纹：队友 / 决斗对手的页面版本不一样时提示刷新（不同版本的怪物 / 技能数据会对不上）
-let NET_BUILD = '';
-function netBuild() {
-  if (NET_BUILD) return NET_BUILD;
-  const sc = [...document.scripts].reduce((a, s) => s.text.length > a.length ? s.text : a, '');
-  let h1 = 0x811c9dc5; for (let i = 0; i < sc.length; i += 7) { h1 ^= sc.charCodeAt(i); h1 = Math.imul(h1, 16777619); }
-  return (NET_BUILD = (h1 >>> 0).toString(36) + sc.length.toString(36));
-}
+// 当前页面的版本号（build.mjs 按内容算的 BUILD_ID）：队友 / 决斗对手的页面版本不一样时提示刷新（不同版本的怪物 / 技能数据会对不上）
+const netBuild = () => BUILD_ID;
 // 联机用的确认框：每种提示独立窗口（不会被别的 menus.ask 顶掉，关闭按钮 = 取消）
 function netAsk(id, o) {
   if (typeof menus === 'undefined') return;

@@ -157,9 +157,12 @@ function drawDropPillar(c, d, X, Y) {
   c.globalAlpha = 0.7 * pulse; c.drawImage(T.beam, X - w * 0.18, Y - H * 1.05, w * 0.36, H * 1.05);
   // 落地瞬间：一道粗光冲天 + 地面爆闪
   if (lt >= 0 && lt < 0.5) { const k = lt / 0.5; c.globalAlpha = 1 - k; c.drawImage(T.beam, X - w * (1.6 + k), Y - H0 * 1.3, w * (3.2 + 2 * k), H0 * 1.3); c.drawImage(T.ring, X - 90 * (0.5 + k), Y - 40 * (0.5 + k), 180 * (0.5 + k), 80 * (0.5 + k)); }
+  if (r >= 5 && lt >= 0 && lt < 0.7) { const k = lt / 0.7, rr = 60 + 200 * k, g = c.createRadialGradient(X, Y - 30, 0, X, Y - 30, rr); g.addColorStop(0, 'rgba(255,248,210,0.9)'); g.addColorStop(0.35, 'rgba(255,200,60,0.45)'); g.addColorStop(1, 'rgba(255,170,30,0)'); c.globalAlpha = 1 - k; c.fillStyle = g; c.fillRect(X - rr, Y - 30 - rr, rr * 2, rr * 2); }
   // 地面光环（深渊史诗外加一圈紫色）
   c.globalAlpha = 0.85; c.drawImage(T.ring, X - 40, Y - 12, 80, 24);
   if (d.abyss) { const A = pillarTex('abyss'), s = 1 + 0.15 * Math.sin(d.t * 2.4); c.globalAlpha = 0.7; c.drawImage(A.ring, X - 56 * s, Y - 16 * s, 112 * s, 32 * s); }
+  // 史诗物品本体：每 1.4 秒闪一下十字星芒
+  if (r >= 5) { const ph = (d.t % 1.4) / 0.35; if (ph < 1) { const a = Math.sin(ph * Math.PI), L = 26 * a, cy = Y - 10; c.globalAlpha = a; c.fillStyle = '#fffbe6'; c.beginPath(); c.moveTo(X, cy - L); c.lineTo(X + 2, cy); c.lineTo(X, cy + L); c.lineTo(X - 2, cy); c.closePath(); c.fill(); c.beginPath(); c.moveTo(X - L, cy); c.lineTo(X, cy - 2); c.lineTo(X + L, cy); c.lineTo(X, cy + 2); c.closePath(); c.fill(); } }
   // 上升的光点
   c.fillStyle = T.hi;
   for (let i = 0; i < 9; i++) {
@@ -168,13 +171,51 @@ function drawDropPillar(c, d, X, Y) {
   }
   c.restore();
 }
+// 自定义史诗掉落音效：玩家自己选的本地音频，只存在这台电脑的浏览器里（localStorage），不上传服务器
+const EPIC_SND_KEY = 'dawnbreak_epic_snd', EPIC_SND_MAX = 800 * 1024;
+const epicSnd = {
+  buf: null, src: null,
+  url() { try { return localStorage.getItem(EPIC_SND_KEY); } catch (e) { return null; } },
+  name() { try { return localStorage.getItem(EPIC_SND_KEY + '_name'); } catch (e) { return null; } },
+  // 有自定义音效返回 true（解码是异步的，第一次调用后几十毫秒就绪）
+  load() {
+    const u = this.url(); if (u !== this.src) { this.src = u; this.buf = null; if (u && sfx.ctx) { const b = Uint8Array.from(atob(u.slice(u.indexOf(',') + 1)), ch => ch.charCodeAt(0)).buffer; sfx.ctx.decodeAudioData(b).then(x => { if (this.src === u) this.buf = x; }, () => {}); } }
+    return !!u;
+  },
+  play() { if (!this.buf) return false; const s = sfx.ctx.createBufferSource(); s.buffer = this.buf; s.connect(sfx.bus); s.start(); return true; },
+  pick(done) {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'audio/*';
+    inp.onchange = () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      if (f.size > EPIC_SND_MAX) { toastMsg('音频文件太大（最多 800 KB），请剪成几秒的短音效', '#ff8a6a'); return; }
+      const rd = new FileReader();
+      rd.onload = () => { try { localStorage.setItem(EPIC_SND_KEY, rd.result); localStorage.setItem(EPIC_SND_KEY + '_name', f.name); } catch (e) { toastMsg('浏览器存储空间不够，换个更小的文件', '#ff8a6a'); return; } sfx.init(); this.load(); toastMsg('史诗掉落音效已换成：' + f.name, '#ffd98a'); done && done(); };
+      rd.readAsDataURL(f);
+    };
+    inp.click();
+  },
+  clear() { try { localStorage.removeItem(EPIC_SND_KEY); localStorage.removeItem(EPIC_SND_KEY + '_name'); } catch (e) { /* */ } this.load(); },
+  preview() { sfx.init(); if (this.load()) { setTimeout(() => this.play() || toastMsg('音频解码失败，换个 mp3 / ogg / wav 试试', '#ff8a6a'), 120); return; } gearSfx.epicRise(); setTimeout(() => { gearSfx.lastEpic = 0; gearSfx.epicDrop(); }, 450); },
+};
 /* ---------------- 音效：史诗落地（低沉的“咚”+ 上行的钟声 + 高频余韵）、传说落地 ---------------- */
 const gearSfx = {
+  // 史诗出现（刚从怪身上蹦出来）：一道上冲的“嗖——”+ 细碎的闪光声，给落地那一下蓄势
+  epicRise() {
+    if (!sfx.ok || epicSnd.load()) return; const R = sfx.rev();
+    sfx.noise('bandpass', 700, 7000, 0.42, 0.16, 2.2, 0, R);
+    [0, 5, 9, 14].forEach((s, i) => sfx.tone('sine', 1568 * Math.pow(2, s / 12), 0, 0.22, 0.03, { delay: 0.05 + i * 0.06, dest: R }));
+  },
+  // 史诗落地：低沉的“咚”+ 光柱冲天的气流 + 金属钟“叮——”（非整数倍泛音）+ 上行的闪光琶音 + 混响长尾
   epicDrop() {
-    if (!sfx.ok) return;
-    sfx.tone('sine', 130, 55, 0.7, 0.28, { attack: 0.005 }); sfx.noise('lowpass', 900, 120, 0.5, 0.18, 0.7);
-    [0, 7, 12, 16, 19, 24].forEach((s, i) => { sfx.tone('sine', 523 * Math.pow(2, s / 12), 0, 0.9, 0.08, { delay: 0.12 + i * 0.07 }); sfx.tone('triangle', 1046 * Math.pow(2, s / 12), 0, 0.5, 0.025, { delay: 0.12 + i * 0.07 }); });
-    sfx.noise('highpass', 6000, 9000, 1.2, 0.05, 0.5, 0.3);
+    if (!sfx.ok) return; const now = sfx.ctx.currentTime; if (now - (this.lastEpic || 0) < 0.3) return; this.lastEpic = now;   // 一次爆好几件只响一次
+    if (epicSnd.load() && epicSnd.play()) return;
+    const R = sfx.rev();
+    sfx.tone('sine', 140, 48, 0.75, 0.32, { attack: 0.004 }); sfx.noise('lowpass', 1100, 110, 0.55, 0.2, 0.7);
+    sfx.noise('highpass', 2500, 9000, 0.5, 0.07, 0.6, 0.02, R);
+    const bell = (f, at, v, dur) => [[1, 1], [2.76, 0.45], [5.40, 0.22], [8.93, 0.1]].forEach(([k, a]) => sfx.tone('sine', f * k, 0, dur / Math.sqrt(k), v * a, { delay: at, dest: R, attack: 0.002 }));
+    bell(1318.5, 0.06, 0.1, 2.2); bell(659.3, 0.06, 0.07, 2.6);
+    [0, 4, 7, 12, 16, 19, 24].forEach((s, i) => { const f = 1046.5 * Math.pow(2, s / 12); sfx.tone('sine', f, 0, 0.9, 0.055, { delay: 0.16 + i * 0.055, dest: R }); sfx.tone('triangle', f * 2, 0, 0.35, 0.018, { delay: 0.16 + i * 0.055, dest: R }); });
+    [3136, 3951, 4699, 3520, 5274].forEach((f, i) => sfx.tone('sine', f, 0, 0.5, 0.02, { delay: 0.6 + i * 0.13 + Math.random() * 0.04, dest: R }));
   },
   legendDrop() { if (!sfx.ok) return; [0, 5, 9].forEach((s, i) => sfx.tone('sine', 659 * Math.pow(2, s / 12), 0, 0.5, 0.07, { delay: i * 0.06 })); },
   abyssOpen() { if (!sfx.ok) return; sfx.tone('sawtooth', 70, 40, 1.2, 0.12); sfx.noise('lowpass', 400, 80, 1.2, 0.2, 0.8); [0, 3, 6].forEach((s, i) => sfx.tone('sine', 220 * Math.pow(2, s / 12), 0, 0.8, 0.06, { delay: 0.2 + i * 0.15 })); },

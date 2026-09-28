@@ -341,7 +341,7 @@ await tap('text=创建并开始'); await mp.waitForFunction(() => game.scene ===
 await mev(() => menus.closeAll());
 const tst = () => mev(() => ({ stack: menus.stack.slice(), touchHidden: touch.el.classList.contains('hidden') }));
 await okOn(mp, '手机：城镇里显示虚拟按键', () => !touch.el.classList.contains('hidden'), null, tst);
-await tap('#touch .tmisc .tbtn:has-text("技")');
+await tap('#touch .tcol:has-text("技能")');
 await okOn(mp, '手机：技能按钮打开技能窗口，虚拟按键让开', () => menus.isOpen('skills') && touch.el.classList.contains('hidden'), null, tst);
 const wb = await mp.locator('[data-win="skills"]').boundingBox();
 ok(wb.x >= 0 && wb.y >= 0 && wb.x + wb.width <= 845 && wb.y + wb.height <= 391, '手机：技能窗口在屏幕内', JSON.stringify(wb));
@@ -352,7 +352,7 @@ await mp.mouse.move(hb.x + 10, hb.y + 5); await mp.mouse.down(); await mp.mouse.
 ok(true, '手机：窗口标题栏可拖动（不报错）');
 await tap('[data-win="skills"] .hd .x');
 await okOn(mp, '手机：✕ 关闭窗口后虚拟按键恢复', () => !menus.isOpen('skills') && !touch.el.classList.contains('hidden'), null, tst);
-await tap('#touch .tmisc .tbtn:has-text("≡")');
+await tap('#touch .tcol:has-text("菜单")');
 await okOn(mp, '手机：≡ 打开系统菜单', () => menus.isOpen('system'), null, tst);
 await tap('.sysmenu button:has-text("游戏设置")'); await tap('[data-win="settings"] .sktab[data-tab="touch"]'); await mshot('m04-settings-touch');
 await mev(() => { setPref('touchSize', 1.2); setPref('touchSwap', true); touch.applyPrefs(); menus.closeAll(); }); await mwait(200);

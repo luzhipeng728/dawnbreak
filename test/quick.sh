@@ -16,7 +16,7 @@ run() { g=$1; name=$2; shift 2
 # 6 组并行（用户允许多开并发，约 2 分钟）；每组内部串行，每组同一时间只开 1 个浏览器；联机测试对时序敏感，全部放在第 6 组串行跑
 g1() { for t in flow ui mobile polish; do run 1 $t node test/$t.mjs; done; }
 g2() { for t in items compare bulk gear guide quickquest; do run 2 $t node test/$t.mjs; done; run 2 gearsim node test/gear_sim.mjs 20; }
-g3() { for t in combat summon avatar shop acct bag skyguide; do run 3 $t node test/$t.mjs; done
+g3() { for t in combat summon avatar shop acct bag skyguide epicfx; do run 3 $t node test/$t.mjs; done
   run 3 skillsa node test/skill_sa.mjs; run 3 shopecon node test/shop_econ.mjs; run 3 shopsynth node test/shop_synth.mjs; run 3 vanity node test/vanity.mjs; run 3 juggle node test/juggle.mjs; }
 g4() { for t in sword gunner mage enchantress summoner; do run 4 $t node test/$t.mjs; done
   run 4 region node test/region.mjs siroco data,skills,mechs,scenes,quest,abyss; }   # 区域流水线的快速部分（怪物逐个 / 机器人通关在 all.sh）

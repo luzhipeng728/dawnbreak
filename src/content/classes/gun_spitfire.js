@@ -551,12 +551,12 @@ function sfJet(s, face, i, D) {
 defSkill('gs_02x', { name: '单兵推进器-02X', cls: 'gun', job: SF, lvReq: 29, tier: 3, passive: true, sp: 30, col: '#5ac8ff',
   desc: '【被动 · 三觉】换装推进器-02X：每跳空中动作次数 +1，普攻和转职技能攻击力提高。M18 阔剑地雷改为投掷圆盘，感应范围变成一整圈（推开距离缩短）；G-18C 冰冻手雷爆炸处留下冰雾 3 秒，在冰雾里累计待满 3 秒的敌人被特殊冰冻 2 秒。',
   infoExtra: lv => [['每跳空中动作', '+1'], ['普攻 / 转职技能攻击力', '+' + pct(0.2 + 0.02 * (lv - 1))]] });
-defSkill('gs_standby', { name: '空袭战略', cls: 'gun', job: SF, lvReq: 29, tier: 3, mp: 150, cd: 60, type: 'indep', col: '#d8b83a', air: true, cmdNote: '↑↓→→+Z（再按：提前引爆过载部件）',
-  desc: '装上推进器-02X 的机体部件，飞到轰炸高度悬停 6 秒：期间推进器次数不减、空中技能没有后坐、空中射击发数 +12，每种手雷至少留 1 颗；G-14 / G-35L / G-18C 变成强化手雷（共 6 次：G-14 碰地大爆炸、G-35L 留下磁场、G-18C 留下寒气）。再按技能键或时间到了，丢下过载的机体部件引发大爆炸。',
-  pow: lv => skillDmg(18, 1.8, lv), infoExtra: () => [['悬停', '6 秒'], ['强化手雷', '6 次']], ai: { kind: 'buff' },
+defSkill('gs_standby', { name: '空袭战略', cls: 'gun', job: SF, lvReq: 29, tier: 3, mp: 150, cd: 30, type: 'indep', col: '#d8b83a', air: true, cmdNote: '↑↓→→+Z（再按：提前引爆过载部件）',
+  desc: '装上推进器-02X 的机体部件，飞到轰炸高度悬停 2 秒：期间推进器次数不减、空中技能没有后坐、空中射击发数 +12，每种手雷至少留 1 颗；G-14 / G-35L / G-18C 变成强化手雷（共 3 次：G-14 碰地大爆炸、G-35L 留下磁场、G-18C 留下寒气）。再按技能键或时间到了，丢下过载的机体部件引发大爆炸。',
+  pow: lv => skillDmg(9, 0.9, lv), infoExtra: () => [['悬停', '2 秒'], ['强化手雷', '3 次']], ai: { kind: 'buff' },
   recast: { ok: p => standbyOn(p), cd: 0.3, act: () => ({ name: 'gs_standbyd', clip: 'gbuff', dur: 0.2, noCounter: true, onStart: e => sfStandbyEnd(e) }) },
   act: lv => sfAct({ name: 'gs_standby', clip: 'sfHover', dur: 0.5, superArmor: true, noCounter: true,
-    onStart: e => { e.buffs.gs_standby = { t: 6, lv, throws: 6, dmg: skillDmg(18, 1.8, lv) }; e.act.lowGrav = 0; sfx.buff(); fxAura(e, '#ffd23a', 1.2); nitroFx(e, 'up'); } }, { noNitro: true, keepGrav: true }) });
+    onStart: e => { e.buffs.gs_standby = { t: 2, lv, throws: 3, dmg: skillDmg(9, 0.9, lv) }; e.act.lowGrav = 0; sfx.buff(); fxAura(e, '#ffd23a', 1.2); nitroFx(e, 'up'); } }, { noNitro: true, keepGrav: true }) });
 const SF_HOVER_Z = 150;
 function sfTickStandby(p, dt) {
   const b = p.buffs && p.buffs.gs_standby;
@@ -588,7 +588,7 @@ function sfReinforced(e, id, lv) {
 defSummon('gs_magf', { kind: 'field', life: 2, r: 90, tick: 0.2, zMax: 120, max: 3, keepRoom: false, type: 'indep', elem: 'light',
   onTick(s, L) { for (const t of L) summonHit(s, t, { dmg: skillDmg(0.3, 0.03, s.lv), type: 'indep', elem: 'light', stun: 0.15, hs: 0.01, downHit: true, col: '#fff38a' }); },
   draw(c, s) { const X = sx(s.x), Y = sy(s.y, 0); c.save(); c.translate(X, Y); c.scale(1, GR); c.rotate(game.t * 3); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.55; drawSpr(c, fxTint('rune', '#fff38a'), 0, 0, 190, 190, {}); c.restore(); } });
-defSkill('gs_final', { name: '终解·制空霸权', cls: 'gun', job: SF, lvReq: 30, tier: 3, maxLv: 3, mp: 400, cd: 290, pvp: 0.45, type: 'indep', awaken: true, col: '#ffd23a', airIf: sfCanAir,
+defSkill('gs_final', { name: '终解·制空霸权', cls: 'gun', job: SF, lvReq: 30, tier: 3, maxLv: 3, mp: 400, cd: 270, pvp: 0.45, type: 'indep', awaken: true, col: '#ffd23a', airIf: sfCanAir,
   desc: '【三次觉醒】装上推进器-02X 和飞翼急速升空，先对前方大范围轰炸，再装上附加部件全武装俯冲突进，边下降边进行最后的轰炸，落地引发大爆炸。全程无敌。空中施放要有推进器次数；空袭战略中施放时，过载部件立刻坠落引爆。',
   pow: lv => skillDmg(90, 20, lv), ai: { kind: 'awaken', r: [0, 520], dy: 100 },
   act: lv => sfAct({ name: 'gs_final', clip: 'sfSoar', dur: 4.0, superArmor: true, noCounter: true, invul: [0, 4.2], lowGrav: 0,

@@ -24,6 +24,12 @@ Object.assign(menus, {
     let page;
     if (tab === 'sound') page = h('div', { class: 'col' },
       slider('音乐音量', 'music', 0, 1, 0.05, pct, applyVolumes), slider('音效音量', 'sfx', 0, 1, 0.05, pct, () => { applyVolumes(); sfx.click(); }),
+      h('div', { class: 'setrow', 'data-epicsnd': 1 }, h('span', {}, '史诗掉落音效', h('span', { class: 'small dim' }, epicSnd.name() ? `  自定义：${epicSnd.name()}` : '  内置')),
+        h('div', { class: 'row' },
+          h('button', { class: 'btn', onclick: () => epicSnd.preview() }, '试听'),
+          h('button', { class: 'btn', onclick: () => epicSnd.pick(rf) }, '用本地文件'),
+          epicSnd.name() ? h('button', { class: 'btn', onclick: () => { epicSnd.clear(); sfx.click(); rf(); } }, '恢复内置') : null)),
+      h('div', { class: 'small dim' }, '可以换成你电脑里的任意音频（几秒的短音效，800 KB 以内）；只保存在本机浏览器，不会上传'),
       sfx.muted ? h('div', { class: 'small dim' }, '当前以 ?mute 参数启动，声音已静音') : null);
     else if (tab === 'video') page = h('div', { class: 'col' },
       toggle('伤害数字', 'dmgNum', '打中敌人时弹出的数字'),
@@ -46,7 +52,10 @@ Object.assign(menus, {
       slider('按钮大小', 'touchSize', 0.7, 1.4, 0.05, pct, () => touch.applyPrefs && touch.applyPrefs()),
       slider('按钮不透明度', 'touchAlpha', 0.3, 1, 0.05, pct, () => touch.applyPrefs && touch.applyPrefs()),
       toggle('左右互换', 'touchSwap', '摇杆放右边、按键放左边（左撇子）'),
-      h('button', { class: 'btn', style: 'align-self:flex-start', onclick: () => { setPref('touchSize', 1); setPref('touchAlpha', 1); setPref('touchSwap', false); if (touch.applyPrefs) touch.applyPrefs(); sfx.click(); rf(); } }, '恢复默认布局'));
+      toggle('固定摇杆', 'touchStickFixed', '关闭时摇杆跟着手指走（按左半屏任意位置）'),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn', 'data-act': 'touch-edit', onclick: () => { if (!touch.on) return; this.closeAll(); touch.edit(true); sfx.click(); } }, '拖动调整按钮位置'),
+        h('button', { class: 'btn', onclick: () => { for (const [k, v] of [['touchSize', 1], ['touchAlpha', 1], ['touchSwap', false], ['touchStickFixed', false], ['touchPos', {}]]) setPref(k, v); if (touch.applyPrefs) touch.applyPrefs(); sfx.click(); rf(); } }, '恢复默认布局')));
     const body = h('div', { class: 'col setwin' }, tabs, h('div', { class: 'setpage' }, page));
     return this.win('游戏设置', body, { w: tab === 'keys' ? 50 : 34 });
   },

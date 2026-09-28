@@ -43,10 +43,10 @@ defSkill('upslash', { name: '上挑', cls: 'sword', lvReq: 1, mp: 10, cd: 2, typ
   act: (lv) => ({ name: 'up', clip: 'up', dur: 0.46, cancelFrom: 0.26, superArmor: [0, 0.1], move: [[0.02, 0.1, 100]],
     hits: [HB(0.1, 0.18, [0, 74, 30, 0, 125], skillDmg(1.8, 0.18, lv), { launch: 520 + lv * 6, knock: 40, hs: 0.08, shake: 2, big: 1.2 })],
     events: [slashAt(0.09, { a0: 1.4, a1: -1.9, r: 62, w: 20, off: [10, 50], heavy: true })] }) });
-defSkill('ghost', { name: '鬼斩', cls: 'sword', lvReq: 1, mp: 18, cd: 5, type: 'mag', elem: 'dark', col: '#6a3ab0',
-  desc: '左臂的鬼神之力附在剑上，斩出带暗属性的鬼气斩击，击退前方的敌人。', pow: lv => skillDmg(2.6, 0.26, lv), ai: { kind: 'poke', r: [0, 95], dy: 26 },
+defSkill('ghost', { name: '鬼斩', cls: 'sword', lvReq: 1, mp: 18, cd: 6, type: 'mag', elem: 'dark', col: '#6a3ab0',
+  desc: '左臂的鬼神之力附在剑上，斩出带暗属性的鬼气斩击，把前方的敌人击飞倒地。', pow: lv => skillDmg(2.6, 0.26, lv), ai: { kind: 'poke', r: [0, 95], dy: 26 },
   act: (lv) => ({ name: 'ghost', clip: 'ghost', dur: 0.56, cancelFrom: 0.36, move: [[0.1, 0.18, 160]],
-    hits: [HB(0.14, 0.22, [0, 100, 32, 0, 120], skillDmg(2.6, 0.26, lv), { stun: 0.55, knock: 190, airLift: 220, hs: 0.09, shake: 3, heavy: true, big: 1.4 })],
+    hits: [HB(0.14, 0.22, [0, 100, 32, 0, 120], skillDmg(2.6, 0.26, lv), { stun: 0.55, knock: 240, down: true, downLift: 260, airLift: 220, hs: 0.09, shake: 3, heavy: true, big: 1.4 })],
     events: [evAt(0.02, e => fxSpr('ghost', e.x - e.face * 4, e.y, e.z + 60, { w: 60, dur: 0.3, follow: e, ox: -4, oz: 58, alpha: 0.6, grow: [0.6, 1] })),
       evAt(0.13, e => { sfx.swing(true); sfx.iai(); fxSpr('ghost', e.x + e.face * 55, e.y, e.z + 60, { w: 140, dur: 0.38, flip: e.face < 0, grow: [0.7, 1.15] }); })] }) });
 const guardPhys = lv => Math.min(0.8, 0.4 + 0.04 * (lv - 1)), guardMag = lv => Math.min(0.6, 0.15 + 0.05 * (lv - 1));   // 官方：物理 40→80%，魔法 15→60%
@@ -55,7 +55,7 @@ defSkill('guard', { name: '格挡', cls: 'sword', lvReq: 5, mp: 5, cd: 2, type: 
   infoExtra: lv => [['物理伤害吸收', pct(guardPhys(lv))], ['魔法伤害吸收', pct(guardMag(lv))]], ai: { kind: 'guard' },
   act: (lv) => ({ name: 'guard', clip: 'guard', dur: 3, noCounter: true, guard: guardPhys(lv), guardMag: guardMag(lv), cancelFrom: 0.2,
     update: e => { e.vx = 0; if (e.actT > 0.25 && !e.pad.is(e.act.key || 'attack')) e.endAct(); } }) });
-defSkill('silver', { name: '银光落刃', cls: 'sword', lvReq: 5, mp: 12, cd: 3, type: 'phys', air: true, airOnly: true, col: '#9ab8d8',
+defSkill('silver', { name: '银光落刃', cls: 'sword', lvReq: 5, mp: 12, cd: 4, type: 'phys', air: true, airOnly: true, col: '#9ab8d8',
   desc: '跳跃中或后跳中使用：持剑向下急刺。跳得越高伤害越高，足够高时落地产生冲击波把敌人击倒。', pow: lv => skillDmg(2.4, 0.24, lv), cmdNote: '跳跃中 / 后跳中 Z', ai: { kind: 'air' },
   act: (lv) => ({ name: 'silver', clip: 'silver', dur: 2, noCounter: true, superArmor: true,
     onStart: e => { e.act.z0 = e.z; e.vz = -1050; e.vx = e.face * 90; sfx.swing(true); },
@@ -108,7 +108,9 @@ function tripleStage(lv, n) {
   const last = n === TRIPLE_N;
   return { name: 'triple' + n, clip: last ? 'up' : ['dash', 'atk2', 'atk3', 'atk1'][(n - 1) % 4], dur: 0.34, cancelFrom: 0.22, move: [[0, 0.18, last ? 300 : 520]], noCounter: true,
     follow: n < TRIPLE_N ? () => tripleStage(lv, n + 1) : null, followWin: [0.1, 0.34],
-    hits: [HB(0.02, 0.2, [-10, 60, 28, last ? -10 : 10, last ? 130 : 105], skillDmg(1.3, 0.14, lv) * (last ? 1.4 : 1), { stun: 0.45, knock: last ? 120 : 120, hs: 0.06, shake: last ? 3 : 1.5, launch: last ? 420 : 0 })],
+    onStart: n === 1 ? e => { e._tri = new Set(); } : undefined,
+    update: e => { if (e._tri) for (const t of e._tri) if (!t.dead && !t.boss && t.weight <= 2 && (t.st === 'hit' || t.st === 'idle') && (t.x - e.x) * e.face < 36 && Math.abs(t.y - e.y) < 30) t.x = e.x + e.face * 36; },
+    hits: [HB(0.02, 0.2, [-10, 60, 28, last ? -10 : 10, last ? 130 : 105], skillDmg(1.3, 0.14, lv) * (last ? 1.4 : 1), { stun: 0.45, knock: last ? 120 : 120, hs: 0.06, shake: last ? 3 : 1.5, launch: last ? 420 : 0, onHit: (a, t) => { if (a._tri) a._tri.add(t); } })],
     events: [evAt(0.01, e => { fxAfterimage(e); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 58, face: e.face, len: 110, w: 12, col: '#7ff0e0' }); sfx.swing(last); })] };
 }
 function projWave(p, o) {   // 地面剑气：沿地面推进
@@ -120,12 +122,12 @@ function projWave(p, o) {   // 地面剑气：沿地面推进
       for (let i = 2; i >= 0; i--) drawSpr(c, img, X - i * 16 * pr.face, Y + 6, 0, (o.h || 100) - i * 18, { ay: 1, flip: pr.face < 0, alpha: a * (1 - i * 0.3) });
     } });
 }
-defSkill('wave', { name: '地裂·波动剑', cls: 'sword', lvReq: 15, mp: 20, cd: 3.5, type: 'mag', icon: 'wave', col: '#5a60d8',
+defSkill('wave', { name: '地裂·波动剑', cls: 'sword', lvReq: 15, mp: 20, cd: 3, type: 'mag', icon: 'wave', col: '#5a60d8',
   desc: '以剑击地，放出沿地面推进的波动剑气，击退沿途敌人并使其倒地。', pow: lv => skillDmg(2.2, 0.22, lv), ai: { kind: 'proj', r: [0, 300], dy: 22 },
   act: (lv, p) => ({ name: 'wave', clip: 'atk3', dur: 0.52, cancelFrom: 0.32, ...(p && jobOf(p) === 'asura' ? { chain: [0.24, 0.52], next: 'atk1' } : {}),   // 阿修罗：可以用普攻取消后摇
     events: [slashAt(0.12, { a0: -2.6, a1: 1.2, r: 60, w: 18, off: [10, 56], heavy: true }), evAt(0.15, p => { projWave(p, { hit: { dmg: skillDmg(2.2, 0.22, lv), down: true, downLift: 180 } }); cam.shake = Math.max(cam.shake, 3); sfx.boom(0.5); })] }) });
 // 十字刃：交叉两斩 + 血十字；血十字出现时再按一次追加推击（击倒）。狂战士学了血气旺盛：改为耗 HP、十字变大并附出血
-defSkill('cross', { name: '十字刃', cls: 'sword', lvReq: 15, mp: 16, cd: 6, type: 'phys', col: '#c02a3a',
+defSkill('cross', { name: '十字刃', cls: 'sword', lvReq: 15, mp: 16, cd: 3, type: 'phys', col: '#c02a3a',
   desc: '交叉斩出两剑，并召唤血十字攻击前方。血十字出现时再按一次技能键，追加一击把敌人推开击倒。可以被其他技能取消。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'poke', r: [0, 80], dy: 22 },
   infoExtra: (lv, p) => p && hasSkill(p, 'bz_vigor') ? [['血气旺盛', '耗 HP、十字变大、附带出血']] : [],
   act: (lv, p) => crossStage(lv, p, 1) });
@@ -142,7 +144,7 @@ function crossStage(lv, p, n) {
         blast(e, x, e.y, 55 * big, { dmg: skillDmg(1.0, 0.1, lv) * big, stun: 0.5, knock: 90, hs: 0.07, col: '#ff6a6a' }, vig ? { zMax: 120, status: 'bleed', sdur: 7, dps: 0.05 } : { zMax: 120 }); })] };
 }
 // 刀魂之卡赞（通用 BUFF）：召唤鬼神卡赞，力量、智力提升 120 秒；鬼泣转职后改为被动，剑影不能学
-defSkill('kazan', { name: '刀魂之卡赞', cls: 'sword', lvReq: 5, mp: 30, cd: 5, type: 'phys', buff: true, col: '#c0302a', excl: ['ghostblade'],
+defSkill('kazan', { name: '刀魂之卡赞', cls: 'sword', lvReq: 5, mp: 30, cd: 6, type: 'phys', buff: true, col: '#c0302a', excl: ['ghostblade'],
   desc: '【BUFF】召唤鬼神卡赞，120 秒内力量、智力提升（攻击力提升）。再次施放会重新召唤。', ai: { kind: 'buff' },
   infoExtra: lv => [['攻击力', '+' + pct(kazanAtk(lv))], ['持续时间', '120 秒']],
   act: (lv) => ({ name: 'kazan', clip: 'focus', dur: 0.5, noCounter: true,
@@ -212,6 +214,41 @@ SWORD_HOOKS.beforeHurt.push((p, a, h, opt) => {
   return { mul: (1 - A.guardMag) / Math.max(0.05, 1 - A.guard) };
 });
 // 鬼剑士所有攻击技能 id（非被动、非 BUFF、非觉醒）：“可以被其他技能取消”的技能用它当 links
+// 官方“可用普攻取消”的技能（DFO 技能页的 Basic Attack Cancelable Skill）：动作的 t 秒之后按 X 直接接普攻（空中不接）；job = 只在这个转职生效
+function swordAtkCancel(id, t, job) {
+  const S = SKILLS[id], a0 = S.act;
+  S.act = (lv, p) => { const a = a0(lv, p); if (a && !a.chain && (!job || (p && jobOf(p) === job))) { a.chain = [t, Math.max(t, a.dur)]; a.next = q => q.z > 2 ? null : 'atk1'; } return a; };
+}
+swordAtkCancel('upslash', 0.2);
+/* ---- 前置 BUFF（狂暴之力、无尽波动、冥炎之卡洛……）没开时：技能按不出来要告诉玩家怎么开（用玩家当前绑定的按键名）---- */
+const SWORD_ARROW = { f: '→', b: '←', u: '↑', d: '↓' };
+function swordHowTo(p, id) {   // 例：“快捷栏 A 或 ↓↑+Space”
+  const out = [], bar = p ? barOf(p) : [], i = bar.indexOf(id);
+  if (i >= 0) out.push('快捷栏 ' + keyName('s' + i));
+  for (const [seq, sid, k2] of CLASSES.sword.cmds) if (sid === id) { const ar = CMD_SEQ_TXT[seq] || [...seq].map(c => SWORD_ARROW[c]).join(''); out.push(`${ar}${ar ? '+' : ''}${keyName(CMD_KEY_OF[k2 || 'cmd'])}`); break; }
+  return out.join(' 或 ') || '先在技能窗口学习';
+}
+// S.req 的失败提示；真人玩家按到被挡住的技能时，头顶再冒一次提示（2.5 秒内不重复）。tail = 自定义括号里的说明
+function swordNeed(p, id, what, tail) {
+  const S = SKILLS[id], msg = `需要${what}（${tail || `${swordHowTo(p, id)} 开启${S && S.name !== what ? S.name : ''}`}）`;
+  if (p && isHuman(p) && game.t - (p._needT ?? -9) > 2.5) { p._needT = game.t; fxText(msg, p.x, p.y, p.z + (p.h || 100) + 16, { col: '#ffcf6a', size: 12, dur: 1.8 }); }
+  return msg;
+}
+// 前置 BUFF 自动放上快捷栏（前排优先；每个存档每个技能只放一次，玩家自己拿掉后不再放回）。转职 / 进场景时检查
+const SWORD_GATE_BAR = { berserker: ['frenzy'], asura: ['as_aura'] };
+function swordGateBar(p = game.player) {
+  if (!p || p.cls !== 'sword' || !isHuman(p) || !save.data || !game.skillBar) return;
+  const F = (save.data.flags ??= {}), B = game.skillBar;
+  for (const id of SWORD_GATE_BAR[jobOf(p)] || []) {
+    if (!hasSkill(p, id) || F['bar_' + id]) continue;
+    if (B.includes(id)) { F['bar_' + id] = true; continue; }
+    const half = Math.ceil(B.length / 2); let k = B.findIndex((v, i) => !v && i < half); if (k < 0) k = B.findIndex(v => !v);
+    if (k < 0) continue;
+    B[k] = id; F['bar_' + id] = true; if (save.write) save.write();
+    toastMsg(`${SKILLS[id].name} 已放到快捷栏 ${keyName('s' + k)}（也可以用 ${swordHowTo(null, id)}）`, '#ffcf6a', 'log');
+  }
+}
+bus.on('jobChange', () => swordGateBar()); bus.on('sceneEnter', () => swordGateBar());
 function swordAttackIds() { return Object.keys(SKILLS).filter(id => { const S = SKILLS[id]; return S.cls === 'sword' && S.act && !S.passive && !S.buff && !S.awaken; }); }
 // 普攻动作表按转职 / BUFF 挑选（狂战士狂暴之力 = 二刀流等）：各转职文件往 SWORD_ACT_PICK 里登记 p => 动作表 | null
 const SWORD_ACT_PICK = [];

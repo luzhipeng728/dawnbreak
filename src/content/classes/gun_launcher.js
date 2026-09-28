@@ -37,15 +37,15 @@ defSkill('gl_draw', { name: '重火器拔击', cls: 'gun', job: 'launcher', lvRe
 defSkill('gl_hwmaster', { name: '重火器精通', cls: 'gun', job: 'launcher', lvReq: 16, sp: 15, mp: 0, cd: 0, type: 'indep', passive: true, col: '#7a6a4a',
   desc: '【被动】重火器技能的 MP 消耗减少；连续使用重火器技能时叠加攻击力（每层 +5%，最多 4 层，2.5 秒内没有再用就消失）。',
   infoExtra: lv => [['MP 消耗', '-' + pct(Math.min(0.3, 0.03 * lv))], ['叠层', '+5% × 4 层']] });
-defSkill('gl_cannon', { name: '加农炮', cls: 'gun', job: 'launcher', lvReq: 16, mp: 40, cd: 7, type: 'indep', col: '#5a4a3a',
-  desc: '扛起手炮向前发射一颗能量球，穿透路上的敌人并把它们击退。按住技能键蓄气（最长 0.8 秒，蓄满自动发射）提高威力；发射前按住 ↑↓ 调整方向。施放中霸体，不能被其他技能取消。', pow: lv => skillDmg(5.0, 0.5, lv), ai: { kind: 'proj', r: [40, 450], dy: 20 },
+defSkill('gl_cannon', { name: '加农炮', cls: 'gun', job: 'launcher', lvReq: 16, mp: 40, cd: 5, type: 'indep', col: '#5a4a3a',
+  desc: '扛起手炮向前发射一颗能量球，穿透路上的敌人并把它们击退。按住技能键蓄气（最长 0.8 秒，蓄满自动发射）提高威力；发射前按住 ↑↓ 调整方向。施放中霸体，不能被其他技能取消。', pow: lv => skillDmg(3.6, 0.36, lv), ai: { kind: 'proj', r: [40, 450], dy: 20 },
   act: (lv, p) => ({ name: 'gl_cannon', clip: 'cannon', dur: 0.75, superArmor: true, noCounter: true,
     charge: { at: 0.12, max: 0.8, min: 0, dmg: 0.8, update: e => { if (Math.random() < 0.4) fxCharge(e, '#ffb060'); } },
     events: [evAt(0.2, e => { sfx.cannon(); cam.shake = Math.max(cam.shake, 4); e.play('cannonFire', true); e.vx = -e.face * 120 * (skLv(e, 'gl_armor') ? 0.75 : 1);
       const k = e.act.chargeK || 0, dy = e.pad ? e.pad.dy() : 0, armored = skLv(e, 'gl_armor') > 0;
-      if (armored) { cannonShell(e, { dmg: skillDmg(2.0, 0.2, lv), boom: skillDmg(4.0, 0.4, lv) * (1 + k * 0.8), big: 0.7 + k * 0.4, r: 80 + k * 40, speed: 900, life: 0.9 }); return; }   // 重武装改造：接触即炸、飞得更远
+      if (armored) { cannonShell(e, { dmg: skillDmg(1.4, 0.14, lv), boom: skillDmg(2.9, 0.29, lv) * (1 + k * 0.8), big: 0.7 + k * 0.4, r: 80 + k * 40, speed: 900, life: 0.9 }); return; }   // 重武装改造：接触即炸、飞得更远
       shootProj(e, { img: IMG['fx/cannonball'] ? 'cannonball' : 'quantum', col: IMG['fx/cannonball'] ? null : '#ffb060', w: 54 + k * 30, speed: 620, life: 0.7, z: 62, dx: 50, bw: 22 + k * 10, bh: 40 + k * 16, pierce: true, vy: dy * 160, trail: '#ffd090',
-        hit: { dmg: skillDmg(5.0, 0.5, lv) * (1 + k * 0.8), stun: 0.5, knock: 220, airLift: 180, hs: 0.08, big: 1.3, snd: 'fire', col: '#ffd090', type: 'indep' } }); })] }) });
+        hit: { dmg: skillDmg(3.6, 0.36, lv) * (1 + k * 0.8), stun: 0.5, knock: 220, airLift: 180, hs: 0.08, big: 1.3, snd: 'fire', col: '#ffd090', type: 'indep' } }); })] }) });
 defSkill('gl_antitank', { name: '反坦克炮', cls: 'gun', job: 'launcher', lvReq: 16, mp: 40, cd: 6, type: 'indep', elem: 'fire', col: '#8a3a1a',
   desc: '发射一发火属性反坦克炮弹，命中后在敌人身后连爆 3 次，把敌人炸向自己一侧，并让敌人出血。无视格挡。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'proj', r: [40, 420], dy: 16 },
   act: (lv, p) => { const pan = p && skLv(p, 'gl_pandora') > 0; return { name: 'gl_antitank', clip: 'cannon', dur: 0.55, superArmor: [0.05, 0.3],
@@ -74,22 +74,24 @@ defSkill('gl_flame', { name: '聚焦喷火器', cls: 'gun', job: 'launcher', lvR
         instantHit(e, { box: [30, 270, 20, 0, 70], dmg: skillDmg(0.24, 0.024, lv), stun: 0.3, knock: 20, airLift: 90, hs: 0.012, snd: 'fire', downHit: true, elem: 'fire', col: '#ffb060', type: 'indep',
           onHit: (a2, t) => { if (Math.random() < 0.15) addStatus(t, 'burn', 2, { dps: a2.atk * 0.07, src: a2 }); } }); } },
     onEnd: e => { e.vx = 0; e.vy = 0; } }) });
-defSkill('gl_miracle', { name: '潜能爆发', cls: 'gun', job: 'launcher', lvReq: 18, mp: 60, cd: 10, type: 'indep', buff: true, col: '#ffa03a',
+defSkill('gl_miracle', { name: '潜能爆发', cls: 'gun', job: 'launcher', lvReq: 18, mp: 60, cd: 5, type: 'indep', buff: true, col: '#ffa03a',
   desc: '【BUFF】120 秒内重火器技能的攻击力提高。', infoExtra: lv => [['重火器攻击力', '+' + pct(0.03 + 0.022 * lv)], ['持续', '120 秒']], ai: { kind: 'buff' },
   act: (lv) => ({ name: 'gl_miracle', clip: 'gbuff', dur: 0.45, noCounter: true, onStart: e => { e.buffs.gl_miracle = { t: 120, hw: 0.03 + 0.022 * lv }; sfx.buff(); fxAura(e, '#ffc070'); } }) });
 defSkill('gl_fm31', { name: 'FM-31 榴弹发射器', cls: 'gun', job: 'launcher', lvReq: 19, mp: 55, cd: 15, type: 'indep', col: '#6a6a3a',
-  desc: '高速射出 8 发榴弹，弹道不规则，落地或碰到敌人就爆炸。', pow: lv => skillDmg(9.6, 0.96, lv), ai: { kind: 'proj', r: [80, 380], dy: 50 },
-  act: (lv) => ({ name: 'gl_fm31', clip: 'cannon', dur: 1.05, superArmor: true, noCounter: true,
-    events: Array.from({ length: 8 }, (_, i) => evAt(0.1 + i * 0.1, e => { sfx.cannon(0.45); e.play('cannonFire', true);
-      const tx = e.x + e.face * rnd(110, 380), ty = clamp(e.y + rnd(-40, 40), 8, DEPTH - 8);
-      lobProj(e, tx, ty, rnd(0.4, 0.6), { img: 'grenade', h: 14, vz: rnd(160, 260), onLand: pr => { meteorImpact(pr, 0.4); lblast(e, pr.x, pr.y, 60, { dmg: skillDmg(1.2, 0.12, lv), launch: 300, knock: 60, hs: 0.05, snd: 'fire' }); } }); })) }) });
+  desc: '高速连射 4 发榴弹，弹道略不规则，碰到敌人或落地就爆炸。', pow: lv => skillDmg(9.6, 0.96, lv), ai: { kind: 'proj', r: [80, 380], dy: 50 },
+  act: (lv) => ({ name: 'gl_fm31', clip: 'cannon', dur: 0.85, superArmor: true, noCounter: true,
+    events: Array.from({ length: 4 }, (_, i) => evAt(0.1 + i * 0.14, e => { sfx.cannon(0.55); e.play('cannonFire', true);
+      const at = aimAhead(e, rnd(160, 340), 420), tx = at.x + e.face * rnd(-20, 50), ty = clamp(at.y + rnd(-30, 30), 8, DEPTH - 8);
+      const boom = pr => { if (pr.boomed) return; pr.boomed = true; meteorImpact(pr, 0.45); lblast(e, pr.x, pr.y, 65, { dmg: skillDmg(2.4, 0.24, lv), stun: 0.4, knock: 90, airLift: 150, hs: 0.05, snd: 'fire' }); };   // 官方：爆炸击退，不浮空
+      lobProj(e, tx, ty, rnd(0.3, 0.42), { img: 'grenade', h: 14, vz: rnd(120, 200), onLand: boom,
+        update: pr => { if (pr.boomed) return; for (const t of ents) if (foe(e, t) && !t.dead && Math.abs(t.x - pr.x) < t.w + 8 && Math.abs(t.y - pr.y) < 18 && pr.z < t.z + t.hurtH()) { boom(pr); pr.t = pr.life; break; } } }); })) }) });
 defSkill('gl_fm92', { name: 'FM-92 mk2 榴弹', cls: 'gun', job: 'launcher', lvReq: 19, mp: 60, cd: 20, type: 'indep', elem: 'fire', col: '#8a5a2a',
   desc: '向斜上方发射一颗榴弹，在空中分裂成 10 个爆弹落下爆炸，把敌人炸上天（火属性）。按住技能键可以推迟分裂（最长 0.6 秒），落点更远。', pow: lv => skillDmg(10, 1.0, lv), ai: { kind: 'aoe', r: [100, 360], dy: 60 },
   act: (lv) => ({ name: 'gl_fm92', clip: 'lancerUp', dur: 0.7, superArmor: true, noCounter: true,
     events: [evAt(0.15, e => { sfx.cannon(0.9); cam.shake = Math.max(cam.shake, 3); const a = e.act, key = a.key || 'cmd', x0 = e.x + e.face * 30, y0 = e.y, face = e.face;
       const shell = spawnProj({ owner: e, x: x0, y: y0, z: e.z + 90, vx: face * 420, vz: 520, grav: 900, face, life: 0.6, w: 10, d: 10, h: 10, pierce: true, hit: null,
         update(pr) { if (pr.t > 0.1 && !(e.pad && e.pad.is(key))) pr.t = pr.life; if (Math.random() < 0.6) addFx({ x: pr.x, y: pr.y + 0.3, z: pr.z, dur: 0.2, draw(c) { c.fillStyle = `rgba(255,180,90,${1 - this.t / this.dur})`; c.fillRect(sx(this.x) - 3, sy(this.y, this.z) - 3, 6, 6); } }); },
-        onEnd(pr) { sfx.boom(0.4); for (let i = 0; i < 10; i++) { const tx = pr.x + face * rnd(-20, 160), ty = clamp(y0 + rnd(-60, 60), 8, DEPTH - 8);
+        onEnd(pr) { sfx.boom(0.4); for (let i = 0; i < 10; i++) { const tx = pr.x + face * (-20 + i * 18 + rnd(-6, 6)), ty = clamp(y0 + ((i % 3) - 1) * 32 + rnd(-10, 10), 8, DEPTH - 8);   // 10 个子弹在前方铺开一片
           lobProj(e, tx, ty, rnd(0.35, 0.6), { img: 'grenade', h: 10, z0: Math.max(10, pr.z - 60), vz: 60, onLand: q => { meteorImpact(q, 0.3); lblast(e, q.x, q.y, 50, { dmg: skillDmg(1.0, 0.1, lv), launch: 360, knock: 40, hs: 0.04, snd: 'fire', elem: 'fire' }); } }); } },
         draw(c, pr) { drawSpr(c, 'shell', sx(pr.x), sy(pr.y, pr.z), 30, 12, { rot: Math.atan2(-pr.vz, pr.vx) }); } });
       return shell; })] }) });
@@ -117,7 +119,7 @@ defSkill('gl_x1', { name: 'X-1 压缩量子炮', cls: 'gun', job: 'launcher', lv
 /* ---- 一次觉醒：重炮掌控者（官方 48~70 级 → 本作 21~25 级）---- */
 defSkill('gl_overheat', { name: '超温重火器', cls: 'gun', job: 'launcher', tier: 1, lvReq: 21, sp: 20, mp: 0, cd: 0, type: 'indep', passive: true, col: '#e05a2a',
   desc: '【一觉被动】让重火器超负荷运转：重火器技能的攻击力提高。', infoExtra: lv => [['重火器攻击力', '+' + pct(0.16 + 0.02 * lv)]] });
-defSkill('gl_awaken', { name: '远古粒子炮', cls: 'gun', job: 'launcher', tier: 1, lvReq: 21, maxLv: 3, mp: 150, cd: 60, pvp: 0.45, type: 'indep', awaken: true, col: '#e0a02a',
+defSkill('gl_awaken', { name: '远古粒子炮', cls: 'gun', job: 'launcher', tier: 1, lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'indep', awaken: true, col: '#e0a02a',
   desc: '【觉醒】架起远古巨炮，蓄能后向前方发射贯穿整个画面的粒子光束（4 秒，16 段），同时不停射出小束激光；主炮期间前方生成屏障，把敌人挡在炮口前。', pow: lv => skillDmg(24, 7, lv), ai: { kind: 'awaken', r: [0, 760], dy: 50 },
   act: (lv) => ({ name: 'gl_awaken', clip: 'lAwk', dur: 5.3, superArmor: true, noCounter: true, invul: [0, 1.2],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '远古粒子炮', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); },
@@ -139,13 +141,13 @@ defSkill('gl_plasma', { name: '等离子放射器', cls: 'gun', job: 'launcher',
         instantHit(e, { box: [40, 260, 30, 20, 100], dmg: skillDmg(0.8, 0.08, lv), stun: 0.5, knock: 0, hs: 0.01, elem: 'light', col: '#e0c8ff', type: 'indep',
           onHit: (a2, t) => { if (!t.boss && !hasSA(t)) { t.x = damp(t.x, ex, 6, 0.1); t.y = damp(t.y, e.y, 6, 0.1); } } }); } },
     onEnd: e => { e.vx = 0; e.vy = 0; } }) });
-defSkill('gl_fm92sw', { name: 'FM-92 mk2 SW 榴弹', cls: 'gun', job: 'launcher', tier: 1, lvReq: 25, mp: 90, cd: 35, type: 'indep', elem: 'fire', col: '#c05a2a', pre: { gl_fm92: 1 },
-  desc: '锁定最近的敌人发射榴弹，在它头顶分离成 4 个刺状爆弹，落地爆炸并留下一片火焰地带（3 秒）。需要 FM-92 mk2 榴弹 Lv1。', pow: lv => skillDmg(18, 1.8, lv), cmdNote: '→←↑→+Z（本作指令）', ai: { kind: 'aoe', r: [80, 420], dy: 80 },
+defSkill('gl_fm92sw', { name: 'FM-92 mk2 SW 榴弹', cls: 'gun', job: 'launcher', tier: 1, lvReq: 25, mp: 90, cd: 50, type: 'indep', elem: 'fire', col: '#c05a2a', pre: { gl_fm92: 1 },
+  desc: '锁定最近的敌人发射榴弹，在它头顶分离成 4 个刺状爆弹，落地爆炸并留下一片火焰地带（3 秒）。需要 FM-92 mk2 榴弹 Lv1。', pow: lv => skillDmg(26, 2.6, lv), cmdNote: '→←↑→+Z（本作指令）', ai: { kind: 'aoe', r: [80, 420], dy: 80 },
   act: (lv) => ({ name: 'gl_fm92sw', clip: 'lancerUp', dur: 0.8, superArmor: true, noCounter: true,
     events: [evAt(0.18, e => { sfx.cannon(1); const at = aimAhead(e, 260, 460, 120);
       for (let i = 0; i < 4; i++) { const tx = at.x + (i - 1.5) * 38, ty = clamp(at.y + rnd(-24, 24), 8, DEPTH - 8);
-        game.after(0.35 + i * 0.06, () => { if (e.dead) return; lobProj(e, tx, ty, 0.35, { img: 'grenade', h: 14, z0: 160, vz: 20, onLand: q => { meteorImpact(q, 0.5); lblast(e, q.x, q.y, 70, { dmg: skillDmg(2.4, 0.24, lv), launch: 380, knock: 60, hs: 0.06, snd: 'fire', elem: 'fire' });
-          groundPillar(e, q.x, q.y, { life: 3, bw: 40, bd: 26, bh: 50, img: 'flame', drawH: 60, ring: false, hit: { dmg: skillDmg(0.3, 0.03, lv), rep: 0.3, stun: 0.2, knock: 0, hs: 0.01, elem: 'fire', downHit: true, snd: 'fire', type: 'indep', onHit: (a, t) => { if (Math.random() < 0.3) addStatus(t, 'burn', 2, { dps: a.atk * 0.06, src: a }); } } }); } }); }); } })] }) });
+        game.after(0.35 + i * 0.06, () => { if (e.dead) return; lobProj(e, tx, ty, 0.35, { img: 'grenade', h: 14, z0: 160, vz: 20, onLand: q => { meteorImpact(q, 0.5); lblast(e, q.x, q.y, 70, { dmg: skillDmg(3.4, 0.34, lv), launch: 380, knock: 60, hs: 0.06, snd: 'fire', elem: 'fire' });
+          groundPillar(e, q.x, q.y, { life: 3, bw: 40, bd: 26, bh: 50, img: 'flame', drawH: 60, ring: false, hit: { dmg: skillDmg(0.43, 0.043, lv), rep: 0.3, stun: 0.2, knock: 0, hs: 0.01, elem: 'fire', downHit: true, snd: 'fire', type: 'indep', onHit: (a, t) => { if (Math.random() < 0.3) addStatus(t, 'burn', 2, { dps: a.atk * 0.06, src: a }); } } }); } }); }); } })] }) });
 /* ---- 二次觉醒：风暴骑兵（官方 75~85 级 → 本作 26~27 级）---- */
 defSkill('gl_armor', { name: '重武装改造', cls: 'gun', job: 'launcher', tier: 2, lvReq: 26, sp: 30, mp: 0, cd: 0, type: 'indep', passive: true, col: '#7a7a8a',
   desc: '【二觉被动】后坐力减少，普通攻击和技能攻击力提高；加农炮改成接触即炸、飞得更远的炮弹。', infoExtra: lv => [['攻击力', '+' + pct(0.025 * lv)], ['后坐力', '-25%']] });
@@ -156,8 +158,9 @@ defSkill('gl_fsc7', { name: 'FSC-7 集束炸弹', cls: 'gun', job: 'launcher', t
       shootProj(e, { img: 'shell', w: 50, h: 20, speed: 760, life: 0.7, z: 62, dx: 46, bw: 14, bh: 26, pierce: false, trail: '#ffc070',
         hit: { dmg: skillDmg(2.0, 0.2, lv), stun: 0.5, knock: 20, hs: 0.06, snd: 'blunt', type: 'indep' }, onHitT: (pr, t) => { host = t; },
         onEnd: pr => { const P = { x: host ? host.x : pr.x, y: host ? host.y : pr.y };
-          for (let k = 0; k < 6; k++) game.after(0.3 + k * 0.16, () => { if (e.dead) return; if (host && !host.dead) { P.x = host.x; P.y = host.y; }
-            for (let j = 0; j < 3; j++) { const x = P.x + rnd(-90, 90), y = clamp(P.y + rnd(-40, 40), 8, DEPTH - 8); meteorImpact({ x, y }, 0.35); lblast(e, x, y, 55, { dmg: skillDmg(0.95, 0.095, lv), launch: 260, knock: 50, hs: 0.03, snd: 'fire' }, { zMax: 140 }); } }); } }); })] }) });
+          for (let k = 0; k < 10; k++) game.after(0.3 + k * 0.1, () => { if (e.dead) return; if (host && !host.dead) { P.x = host.x; P.y = host.y; }   // 官方：附着在目标身上连锁爆炸 10 段，小炸弹向四方扩散
+            const a = k * 2.4, rr = 14 + k * 9, x = P.x + Math.cos(a) * rr, y = clamp(P.y + Math.sin(a) * rr * 0.45, 8, DEPTH - 8); meteorImpact({ x, y }, 0.35);
+            lblast(e, P.x, P.y, 60 + k * 6, { dmg: skillDmg(1.8, 0.18, lv), launch: k === 9 ? 260 : 0, airLift: 130, stun: 0.35, knock: k === 9 ? 80 : 10, hs: 0.03, snd: 'fire' }, { zMax: 140 }); }); } }); })] }) });
 defSkill('gl_pt15', { name: 'PT-15 原始型压缩炮', cls: 'gun', job: 'launcher', tier: 2, lvReq: 26, mp: 100, cd: 40, type: 'indep', col: '#5a8aa0',
   desc: '发射压缩空气炮，吸附沿途的敌人，飞一段距离后爆炸。按住 ↑ 同时向前后两边发射；按住 ↓ 向脚下发射，把周围的敌人聚过来再引爆。全程霸体。', pow: lv => skillDmg(22, 2.2, lv), ai: { kind: 'aoe', r: [0, 380], dy: 60 },
   act: (lv, p) => { const dy = p && p.pad ? p.pad.dy() : 0, mode = dy < 0 ? 'both' : dy > 0 ? 'down' : 'fwd';
@@ -170,7 +173,7 @@ defSkill('gl_pt15', { name: 'PT-15 原始型压缩炮', cls: 'gun', job: 'launch
             draw(c, q) { drawSpr(c, fxTint('quantum', '#dff4ff'), sx(q.x), sy(q.y, q.z + 30), 90, 0, { alpha: 0.7, rot: q.t * 8 }); } }); return pr; };
         if (mode === 'down') vortex(e.x + e.face * 30, e.face, true);
         else { vortex(e.x + e.face * 50, e.face, false); if (mode === 'both') vortex(e.x - e.face * 50, -e.face, false); } })] }; } });
-defSkill('gl_awaken2', { name: '火力全开', cls: 'gun', job: 'launcher', tier: 2, lvReq: 27, maxLv: 3, mp: 200, cd: 90, pvp: 0.45, type: 'indep', awaken: true, col: '#f0a02a',
+defSkill('gl_awaken2', { name: '火力全开', cls: 'gun', job: 'launcher', tier: 2, lvReq: 27, maxLv: 3, mp: 200, cd: 170, pvp: 0.45, type: 'indep', awaken: true, col: '#f0a02a',
   desc: '【二次觉醒】召唤并穿上强袭装甲：冲击波把周围的敌人向前推开，然后倾泻主激光、辅助激光、格林机枪、榴弹和火箭炮。全程无敌。', pow: lv => skillDmg(32, 9, lv), ai: { kind: 'awaken', r: [0, 600], dy: 90 },
   act: (lv) => ({ name: 'gl_awaken2', clip: 'armorOn', dur: 4.0, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '火力全开', who: cutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); },
@@ -194,7 +197,7 @@ defSkill('gl_uht03', { name: 'UHT-03 爆炎喷火器', cls: 'gun', job: 'launche
       if (n !== a.n && e.actT > 0.15 && e.actT < a.dur - 0.1) { a.n = n; if (n % 2 === 0) sfx.flame(); flameJet(e, { range: 300, speed: 700, visual: true, z: 55 }); flameJet(e, { range: 260, speed: 600, visual: true, z: 30 });
         instantHit(e, { box: [30, 320, 34, 0, 100], dmg: skillDmg(0.5, 0.05, lv), stun: 0.3, knock: 30, airLift: 100, hs: 0.01, snd: 'fire', downHit: true, elem: 'fire', col: '#ffb060', type: 'indep', onHit: (a2, t) => { if (Math.random() < 0.3) addStatus(t, 'burn', 3, { dps: a2.atk * 0.08, src: a2 }); } }); } },
     onEnd: e => { e.vx = 0; e.vy = 0; } }) });
-defSkill('gl_awaken3', { name: '制胜·最终兵器', cls: 'gun', job: 'launcher', tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 120, pvp: 0.45, type: 'indep', awaken: true, col: '#ffd03a',
+defSkill('gl_awaken3', { name: '制胜·最终兵器', cls: 'gun', job: 'launcher', tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 270, pvp: 0.45, type: 'indep', awaken: true, col: '#ffd03a',
   desc: '【三次觉醒】进入决战形态：先放出一轮导弹扰乱，再对整片区域机动打击、自由开火，最后双手机枪切换成激光，放出无法躲避的巨大光束。全程无敌。', pow: lv => skillDmg(46, 13, lv), ai: { kind: 'awaken', r: [0, 700], dy: 110 },
   act: (lv) => ({ name: 'gl_awaken3', clip: 'finalWeapon', dur: 4.6, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.2, name: '制胜·最终兵器', who: cutinWho(e, 3) }; game.timeStop = 1.0; sfx.awaken(); },

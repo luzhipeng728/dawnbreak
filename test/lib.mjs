@@ -11,7 +11,7 @@ function loadPlaywright() {
   }
   throw new Error('找不到 playwright，请先 npm i -D playwright');
 }
-export const { chromium } = loadPlaywright();
+export const { chromium, devices } = loadPlaywright();
 
 // 默认打开本地离线单文件；WEB=1 时起一个本地 HTTP 服务测网页版（dist/web，素材按需加载，和线上一样同源）；GAME_URL 可指向线上地址
 import http from 'http';

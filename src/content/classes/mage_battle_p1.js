@@ -2,6 +2,7 @@
    战斗法师 P1（一觉之后）：闪击碎霸、煌龙天临、战灵潜能、炫纹簇、使徒之舞、二觉“一骑当千碎霸”、使徒化身、
    太古之力、炫纹之源：太古神光、太古化身、三觉“太古星河·殒灭”（docs/SKILLS_OFFICIAL_mage.md 3.3，等级按 1.1 压缩）
    变身不出整套帧：用现有帧 + 运行时画的光环（决定见文档第 8 节）；矛、星河、星团都在运行时画
+   二觉：光环里凝出巨矛（举在身后长大）→ 巨矛横扫；三觉：5 连斩 → 矛刺上星河 → 掷矛插进前方地面 → 飞踢过去把矛踩进地里 → 拔矛横扫 → 星河爆炸
    ===================================================================== */
 // 跟着人物的光环（变身 / 觉醒）：id 给了就在 BUFF 消失时结束
 function bmAuraFx(e, col, dur, id) {
@@ -17,6 +18,30 @@ function bmSpearFx(x, y, dur, col, fall) {
     c.fillStyle = '#c89a3a'; c.fillRect(X - 3, Y - 170, 6, 132); c.fillRect(X - 14, Y - 44, 28, 5);
     c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5 * a; drawSpr(c, fxTint('orb', col), X, Y - 70, 44, 180, {}); c.restore(); } });
 }
+// 画一支矛：(X, Y) 屏幕坐标为握点，th = 朝向（弧度，0 = 人物前方，逆时针为正），L = 全长
+function bmDrawSpear(c, X, Y, face, th, L, col, alpha = 1) {
+  c.save(); c.translate(X, Y); c.scale(face, 1); c.rotate(-th); c.globalAlpha = alpha;
+  c.fillStyle = '#c89a3a'; c.fillRect(-L * 0.12, -L * 0.018, L * 0.92, L * 0.036); c.fillRect(L * 0.72, -L * 0.07, L * 0.03, L * 0.14);
+  c.fillStyle = '#fff4d0'; c.beginPath(); c.moveTo(L * 0.75, -L * 0.055); c.lineTo(L, 0); c.lineTo(L * 0.75, L * 0.055); c.fill();
+  c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.55 * alpha; drawSpr(c, fxTint('orb', col), L * 0.45, 0, L * 1.25, L * 0.22, {}); c.restore();
+}
+// 巨矛（二觉）：跟着人物，grow 秒内在身后举起长大，sw 秒时横扫到身前，之后淡出
+function bmBigSpearFx(e, dur, grow, sw, col) {
+  addFx({ ent: e, x: e.x, y: e.y + 0.6, z: 0, dur, update() { const p = this.ent; this.x = p.x; this.y = p.y + 0.6; if (p.dead || ents.indexOf(p) < 0) this.t = this.dur; },
+    draw(c) { const p = this.ent, t = this.t, L = 380 * clamp(t / grow, 0.05, 1), s = clamp((t - sw) / 0.18, 0, 1), th = 2.5 - s * s * 2.85, a = t > sw + 0.3 ? clamp(1 - (t - sw - 0.3) / (this.dur - sw - 0.3), 0, 1) : 1;
+      bmDrawSpear(c, sx(p.x + p.face * 12), sy(p.y, p.z + 86), p.face, th, L, col, a); } });
+}
+// 掷出去的矛：from（世界坐标 x, z）飞到 (x, y) 插进地面（fly 秒），插着 stay 秒
+function bmThrowSpearFx(e, from, x, y, fly, stay, col) {
+  const face = e.face, th0 = Math.atan2(from.z, Math.abs(x - from.x) || 1);
+  addFx({ x, y: y + 0.5, z: 0, dur: fly + stay, draw(c) { const k = Math.min(1, this.t / fly), px = from.x + (x - from.x) * k, pz = from.z * (1 - k), a = this.t > fly + stay - 0.15 ? (fly + stay - this.t) / 0.15 : 1;
+    bmDrawSpear(c, sx(px - face * 190 * Math.cos(th0)), sy(this.y, pz + 190 * Math.sin(th0)), face, -th0, 220, col, a); } });
+}
+// 光柱（矛刺上星河）：从 (x0, z0) 连到 (x1, z1)
+function bmLinkFx(x0, z0, x1, z1, y, dur, col) {
+  addFx({ x: (x0 + x1) / 2, y: y + 0.5, z: 0, dur, draw(c) { const a = 1 - this.t / this.dur; c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = col; c.lineCap = 'round';
+    for (const [w, al] of [[26, 0.35], [10, 0.8], [4, 1]]) { c.globalAlpha = al * a; c.lineWidth = w; c.beginPath(); c.moveTo(sx(x0), sy(this.y, z0)); c.lineTo(sx(x1), sy(this.y, z1)); c.stroke(); } c.restore(); } });
+}
 // 太古星河：前方上空旋转的星河
 function bmGalaxyFx(x, y, dur) {
   addFx({ x, y: y + 1, z: 0, dur, draw(c) { const k = this.t / this.dur, g = Math.min(1, this.t / 0.3), a = k > 0.85 ? (1 - k) / 0.15 : 1, X = sx(this.x), Y = sy(this.y, 180);
@@ -27,20 +52,21 @@ function bmGalaxyFx(x, y, dur) {
 BM_BODY.push('bm_flashsmash', 'bm_descent');
 // ---- 一觉段 ----
 defSkill('bm_flashsmash', { name: '闪击碎霸', cls: 'mage', job: BM, tier: 1, lvReq: 23, mp: 60, cd: 30, type: 'phys', col: '#8ac8ff',
-  desc: '原地快速转一圈（让周围的敌人硬直），再一次大幅横扫。全程霸体。', pow: lv => skillDmg(12, 1.2, lv), ai: { kind: 'aoe', r: [0, 160], dy: 40 },
-  act: (lv) => ({ name: 'bm_flashsmash', clip: 'bmFlashSmash', dur: 0.85, superArmor: true, noCounter: true, cancelFrom: 0.7,
+  desc: '原地快速转一圈（让周围的敌人硬直），再一次大幅横扫。全程霸体；命中后可以取消后摇接体术技能。', pow: lv => skillDmg(12, 1.2, lv), ai: { kind: 'aoe', r: [0, 160], dy: 40 },
+  act: (lv) => ({ name: 'bm_flashsmash', clip: 'bmFlashSmash', dur: 0.85, superArmor: true, noCounter: true, cancelFrom: 0.7, links: BM_BODY, hitCancel: true,
     hits: [HB(0.08, 0.3, [-90, 90, 30, 0, 110], skillDmg(3, 0.3, lv), { stun: 0.6, knock: 10, hs: 0.04, snd: 'blunt', type: 'phys', rep: 0.1, max: 2 }),
       HB(0.5, 0.58, [-20, 190, 40, 0, 130], skillDmg(9, 0.9, lv), { stun: 0.5, knock: 240, heavy: true, hs: 0.1, big: 1.4, snd: 'blunt', type: 'phys', shake: 3 })],
     events: [evAt(0.08, e => { sfx.swing(false); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: CHASER_COL, a0: -3.1, a1: 3.1, r: 90, w: 16, off: [0, 50], squash: 0.45, dur: 0.24 }); }),
       evAt(0.48, e => { sfx.swing(true); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#dfe8ff', a0: -1.4, a1: 1.2, r: 150, w: 22, off: [20, 55], dur: 0.24 }); })] }) });
 defSkill('bm_descent', { name: '煌龙天临', cls: 'mage', job: BM, tier: 1, lvReq: 25, mp: 80, cd: 50, type: 'phys', col: '#ffd070',
-  desc: '用龙之炫纹凝成煌龙之矛，跳起来向前下劈：1 段大伤害 + 冲击波，矛插在地上一会儿再消散。施放时按住 → 边前进边劈。', pow: lv => skillDmg(16, 1.6, lv), ai: { kind: 'burst', r: [40, 260], dy: 40 },
-  act: (lv, p) => { const adv = !!(p && p.pad && p.pad.dx() * p.face > 0);
-    return { name: 'bm_descent', clip: 'bmDescent', dur: 1.0, superArmor: true, noCounter: true, cancelFrom: 0.85, move: [[0.08, 0.4, adv ? 420 : 140, 520]],
+  desc: '用龙之炫纹凝成煌龙之矛，跳起来向前下劈：1 段大伤害 + 冲击波，矛插在地上一会儿再消散。跳起时按住 → 边前进边劈。', pow: lv => skillDmg(16, 1.6, lv), ai: { kind: 'burst', r: [40, 260], dy: 40 },
+  act: (lv) => ({ name: 'bm_descent', clip: 'bmDescent', dur: 1.0, superArmor: true, noCounter: true, cancelFrom: 0.85, move: [[0.08, 0.4, 140, 520]],
+      onStart: e => bmGatherFx(e, 7, 0.4, { x: 20, z: 130 }, null, '#ffd070'),
+      update: e => { if (e.actT >= 0.08 && e.actT < 0.4 && e.pad && e.pad.dx() * e.face > 0) e.vx *= 3; },   // 跳起过程中按住 → 边前进边劈
       events: [evAt(0.1, e => sfx.charge()), evAt(0.4, e => { e.vz = -1100; }),
         evAt(0.5, e => { const x = e.x + e.face * 50; sfx.boom(1.0); cam.shake = Math.max(cam.shake, 7); fxShock(x, e.y, 200, '#ffd070'); bmSpearFx(x, e.y, 1.2, '#ffd070');
           blast(e, x, e.y, 70, { dmg: skillDmg(11, 1.1, lv), launch: 360, knock: 80, hs: 0.12, big: 1.5, type: 'phys', col: '#ffe070', downHit: true }, { zMax: 150 });
-          mgAfter(e, 0.06, () => blast(e, x, e.y, 170, { dmg: skillDmg(5, 0.5, lv), launch: 200, knock: 160, hs: 0.06, type: 'phys', col: '#ffd070', downHit: true, noChaser: true }, { zMax: 80 })); })] }; } });
+          mgAfter(e, 0.06, () => blast(e, x, e.y, 170, { dmg: skillDmg(5, 0.5, lv), launch: 200, knock: 160, hs: 0.06, type: 'phys', col: '#ffd070', downHit: true, noChaser: true }, { zMax: 80 })); })] }) });
 // ---- 二觉段 ----
 defSkill('bm_potential', { name: '战灵潜能', cls: 'mage', job: BM, tier: 2, lvReq: 26, passive: true, type: 'phys', col: '#ffd23a',
   desc: '【被动·二觉】物理 / 魔法两边的力量融为一体：技能攻击力和暴击率提高。', infoExtra: lv => [['技能攻击力', '+' + pct(0.12 + 0.02 * lv)], ['暴击率', '+' + pct(0.05)]] });
@@ -58,20 +84,20 @@ defSkill('bm_cluster', { name: '炫纹簇', cls: 'mage', job: BM, tier: 2, lvReq
   act: (lv) => ({ name: 'bm_cluster', clip: 'bmCall', dur: 0.45, cancelFrom: 0.3, noCounter: true,
     events: [evAt(0.15, e => { const at = aimAhead(e, 150, 260), s = summon(e, 'bm_cluster', { x: at.x, y: at.y, lv }); if (s) s.dmg = skillDmg(2, 0.2, lv); sfx.magic(); })] }) });
 defSkill('bm_apostledance', { name: '使徒之舞', cls: 'mage', job: BM, tier: 2, lvReq: 26, mp: 100, cd: 40, type: 'phys', col: '#ffd070',
-  desc: '召唤使徒之矛在前方乱舞，最后把范围内的敌人拉到你身前并束缚住。', pow: lv => skillDmg(18, 1.8, lv), ai: { kind: 'aoe', r: [0, 320], dy: 90 },
+  desc: '召唤使徒之矛在前方乱舞，被矛打中的敌人进入超级束缚，最后被拉到你身前（聚怪）。', pow: lv => skillDmg(18, 1.8, lv), ai: { kind: 'aoe', r: [0, 320], dy: 90 },
   act: (lv) => ({ name: 'bm_apostledance', clip: 'bmDance', dur: 1.4, superArmor: true, noCounter: true, cancelFrom: 1.15,
     onStart: e => { e.act.cx = e.x + e.face * 180; e.act.cy = e.y; },
     events: [...Array.from({ length: 8 }, (_, i) => evAt(0.2 + i * 0.1, e => { const a = e.act, x = a.cx + rnd(-110, 110), y = clamp(a.cy + rnd(-40, 40), 8, DEPTH - 8); bmSpearFx(x, y, 0.45, '#ffd070', true); sfx.swing(i % 2 === 0);
-        mgAfter(e, 0.12, () => blast(e, x, y, 70, { dmg: skillDmg(1.6, 0.16, lv), stun: 0.6, knock: 0, hs: 0.04, type: 'phys', col: '#ffe070' }, { zMax: 200 })); })),
+        mgAfter(e, 0.12, () => blast(e, x, y, 70, { dmg: skillDmg(1.6, 0.16, lv), stun: 0.6, knock: 0, hs: 0.04, type: 'phys', col: '#ffe070', onHit: (a, t) => { const A = a.act; if (A && A.name === 'bm_apostledance') (A.hitSet || (A.hitSet = new Set())).add(t); } }, { zMax: 200 })); })),
       evAt(1.05, e => { const a = e.act, x = e.x + e.face * 70; sfx.boom(0.8);
-        for (const t of ents) if (foe(e, t) && !t.dead && t.invul <= 0 && inGround(t, a.cx, a.cy, 200)) { if (!t.boss) { t.x = x + rnd(-10, 10); t.y = clamp(e.y + rnd(-10, 10), 8, DEPTH - 8); } addStatus(t, 'bind', 2.5, { src: e }); }
+        for (const t of ents) if (foe(e, t) && !t.dead && t.invul <= 0 && ((a.hitSet && a.hitSet.has(t)) || inGround(t, a.cx, a.cy, 200))) { if (!t.boss && !t.fixed) { fxStreak({ x: t.x, y: t.y, z: t.z + 40, face: Math.sign(x - t.x) || -e.face, len: Math.abs(x - t.x), w: 6, col: '#ffe070', dur: 0.2 }); t.x = x + rnd(-10, 10); t.y = clamp(e.y + rnd(-10, 10), 8, DEPTH - 8); } addStatus(t, 'bind', 2.5, { src: e }); }   // 被矛打中的（和范围里的）敌人超级束缚并拉到身前
         fxShock(x, e.y, 120, '#ffd070'); blast(e, x, e.y, 90, { dmg: skillDmg(5, 0.5, lv), stun: 0.8, knock: 0, hs: 0.08, type: 'phys', col: '#ffe070', downHit: true }, { zMax: 200 }); })] }) });
 defSkill('bm_awaken2', { name: '一骑当千碎霸', cls: 'mage', job: BM, tier: 2, lvReq: 27, maxLv: 3, mp: 200, cd: 170, pvp: 0.45, type: 'phys', awaken: true, col: '#ffd23a',
-  desc: '【二次觉醒】瞬间使徒化，凝出一把巨大的使徒之矛，蓄力后大幅横扫前方，冲击波随后席卷。全程无敌。', pow: lv => skillDmg(34, 9, lv), ai: { kind: 'awaken', r: [0, 420], dy: 100 },
+  desc: '【二次觉醒】瞬间使徒化，在身后凝出一把巨大的使徒之矛，蓄力后抡起巨矛大幅横扫前方，冲击波随后席卷。全程无敌。', pow: lv => skillDmg(34, 9, lv), ai: { kind: 'awaken', r: [0, 420], dy: 100 },
   act: (lv) => ({ name: 'bm_awaken2', clip: 'bmApostle', dur: 2.3, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '一骑当千碎霸', who: cutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); bmAuraFx(e, '#ffd23a', 2.3); },
     update: e => { if (e.actT > 0.95 && e.actT < 1.5 && Math.random() < 0.6) fxCharge(e, '#ffd23a'); },
-    events: [evAt(0.95, e => sfx.charge()),
+    events: [evAt(0.95, e => { sfx.charge(); bmBigSpearFx(e, 1.25, 0.45, 0.55, '#ffd23a'); }),
       evAt(1.5, e => { sfx.swing(true); cam.shake = 10; fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#ffd23a', a0: -1.8, a1: 1.4, r: 300, w: 40, off: [20, 70], dur: 0.35 });
         instantHit(e, { box: [-40, 480, 120, 0, 260], dmg: skillDmg(24, 6, lv), launch: 460, knock: 260, hs: 0.16, big: 2.2, sure: true, downHit: true, type: 'phys', col: '#ffe070', noChaser: true }); }),
       evAt(1.75, e => { const x = e.x + e.face * 260; cam.flash = 0.2; cam.flashCol = '#fff0c0'; fxShock(x, e.y, 380, '#ffd070'); fxBurst(x, e.y, 60, 360, '#ffe070');
@@ -84,33 +110,42 @@ function bmFormAct(id, lv, dur, fx, col) {
     if (!toggleBuff(e, id, dur, { lv, ...fx })) return; delete e.buffs[id === 'bm_avatar' ? 'bm_primal' : 'bm_avatar']; sfx.awaken(); cam.shake = Math.max(cam.shake, 5); fxShock(e.x, e.y, 180, col); bmAuraFx(e, col, dur, id); } };
 }
 defSkill('bm_avatar', { name: '使徒化身', cls: 'mage', job: BM, tier: 2, lvReq: 27, mp: 100, cd: 170, type: 'phys', buff: true, col: '#ffd23a', ai: { kind: 'buff' },
-  desc: '【变身】40 秒内常驻霸体、几乎不受异常状态影响，攻击速度、移动速度和技能攻击力提高，斗神意志至少保持 3 段；受到致死伤害时留 1 点 HP 并解除变身。再按一次解除。',
+  desc: '【变身】40 秒内常驻霸体、几乎不受异常状态影响、不能被抓取，攻击速度、移动速度和技能攻击力提高，斗神意志至少保持 3 段；受到致死伤害时留 1 点 HP 并解除变身。再按一次解除。',
   infoExtra: lv => [['攻速 / 移速', '+' + pct(0.1 + 0.01 * lv)], ['技能攻击力', '+' + pct(0.05 + 0.01 * lv)]],
   act: (lv) => bmFormAct('bm_avatar', lv, 40, { aspd: 0.1 + 0.01 * lv, mspd: 0.1 + 0.01 * lv, dmg: 0.05 + 0.01 * lv }, '#ffd23a') });
 // ---- 三觉段 ----
 defSkill('bm_ancient', { name: '太古之力', cls: 'mage', job: BM, tier: 3, lvReq: 29, passive: true, type: 'phys', col: '#ffe070',
-  desc: '【被动·三觉】炫纹的命中增益变成常驻；技能攻击力提高。', infoExtra: lv => [['技能攻击力', '+' + pct(0.08 + 0.02 * lv)]] });
+  desc: '【被动·三觉】炫纹的命中增益变成常驻；超级炫纹自动锁定最强的敌人；碎霸会消耗 1 个炫纹挥出更大的魔法轨迹。技能攻击力提高。', infoExtra: lv => [['技能攻击力', '+' + pct(0.08 + 0.02 * lv)]] });
 defSkill('bm_light', { name: '炫纹之源：太古神光', cls: 'mage', job: BM, tier: 3, lvReq: 29, mp: 150, cd: 50, type: 'phys', col: '#fff0a0',
   desc: '化身普希娅，吸收身边最多 10 个炫纹（不够也能放），向前一记大范围突刺。每吸收一个炫纹伤害 +5%。', pow: lv => skillDmg(30, 3, lv), ai: { kind: 'burst', r: [0, 420], dy: 60 },
   act: (lv) => ({ name: 'bm_light', clip: 'bmLunge', dur: 1.2, superArmor: true, noCounter: true, invul: [0, 0.9],
-    onStart: e => { const L = e.chasers || [], n = Math.min(10, L.length); L.splice(0, n); e.act.n = n; if (n) chaserOrbit(e); bmAuraFx(e, '#fff0a0', 1.2); fxText(`炫纹 ×${n}`, e.x, e.y, e.z + 40, { col: '#fff0a0', size: 11, dur: 0.6 }); },
+    onStart: e => { const L = e.chasers || [], n = Math.min(10, L.length); L.splice(0, n); e.act.n = n; if (n) { chaserOrbit(e); bmGatherFx(e, n, 0.5, { x: 30, z: 90 }); } bmAuraFx(e, '#fff0a0', 1.2); fxText(`炫纹 ×${n}`, e.x, e.y, e.z + 40, { col: '#fff0a0', size: 11, dur: 0.6 }); },
     update: e => { if (e.actT < 0.5 && Math.random() < 0.7) fxCharge(e, '#fff0a0'); },
     events: [evAt(0.5, e => { sfx.iai(); cam.shake = Math.max(cam.shake, 8); fxBeam(e.x + e.face * 30, e.y, e.z + 70, 440, e.face, { w: 60, col: '#fff0a0', dur: 0.35 }); fxStreak({ x: e.x, y: e.y, z: e.z + 70, face: e.face, len: 460, w: 16, col: '#ffffff', dur: 0.3 });
       instantHit(e, { box: [0, 460, 60, 0, 160], dmg: skillDmg(30, 3, lv) * (1 + 0.05 * e.act.n), launch: 300, knock: 200, hs: 0.14, big: 1.8, type: 'phys', col: '#fff6c0', downHit: true }); })] }) });
 defSkill('bm_primal', { name: '太古化身', cls: 'mage', job: BM, tier: 3, lvReq: 30, mp: 150, cd: 180, type: 'phys', buff: true, col: '#8ac8ff', ai: { kind: 'buff' },
-  desc: '【变身】和使徒化身同类，80 秒，数值更高（两种变身不能同时存在）。再按一次解除。', infoExtra: lv => [['攻速 / 移速', '+' + pct(0.15 + 0.01 * lv)], ['技能攻击力', '+' + pct(0.1 + 0.015 * lv)]],
+  desc: '【变身】和使徒化身同类，80 秒，数值更高（两种变身不能同时存在）。炫纹命中敌人时缩短本技能的冷却。再按一次解除。', infoExtra: lv => [['攻速 / 移速', '+' + pct(0.15 + 0.01 * lv)], ['技能攻击力', '+' + pct(0.1 + 0.015 * lv)]],
   act: (lv) => bmFormAct('bm_primal', lv, 80, { aspd: 0.15 + 0.01 * lv, mspd: 0.15 + 0.01 * lv, dmg: 0.1 + 0.015 * lv }, '#8ac8ff') });
 defSkill('bm_awaken3', { name: '太古星河·殒灭', cls: 'mage', job: BM, tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 270, pvp: 0.45, type: 'phys', awaken: true, col: '#8ac8ff',
-  desc: '【三次觉醒】5 连斩 → 把矛刺上星河 → 掷矛 → 飞踢把矛踩进地里 → 拔矛横扫 → 星河爆炸。全程无敌。', pow: lv => skillDmg(46, 12, lv), ai: { kind: 'awaken', r: [0, 420], dy: 100 },
+  desc: '【三次觉醒】5 连斩 → 把矛刺上前方的星河 → 掷矛插进前方地面 → 飞踢过去把矛踩进地里 → 拔矛横扫 → 星河爆炸。全程无敌。', pow: lv => skillDmg(46, 12, lv), ai: { kind: 'awaken', r: [0, 420], dy: 100 },
   act: (lv) => ({ name: 'bm_awaken3', clip: 'bmGalaxy', dur: 4.0, superArmor: true, noCounter: true, invul: true,
+    update: e => { const a = e.act; if (a.kx !== undefined && e.actT < 2.3) { const k = clamp((e.actT - 2.08) / 0.16, 0, 1); e.x = a.kx0 + (a.kx - a.kx0) * (1 - (1 - k) * (1 - k)); e.vx = 0; } },
+    onLand: e => { e.vz = 0; },
     onStart: e => { game.cutin = { t: 0, dur: 1.2, name: '太古星河·殒灭', who: cutinWho(e, 3) }; game.timeStop = 1.0; sfx.awaken(); bmAuraFx(e, '#8ac8ff', 4.0); const R = game.room, x = e.x + e.face * 170; e.act.cx = R ? clamp(x, R.x0 + 60, R.x1 - 60) : x; e.act.cy = e.y; },
     events: [...[1.0, 1.12, 1.24, 1.36, 1.48].map((t, i) => evAt(t, e => { sfx.swing(i === 4); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: i % 2 ? '#ffe070' : CHASER_COL, a0: i % 2 ? 1.2 : -1.4, a1: i % 2 ? -1.4 : 1.2, r: 120, w: 18, off: [20, 60], dur: 0.18 });
         blast(e, e.x + e.face * 90, e.y, 110, { dmg: skillDmg(2.4, 0.6, lv), stun: 0.6, knock: 10, hs: 0.04, type: 'phys', col: '#dfe8ff', sure: true, noChaser: true }, { zMax: 220 }); })),
-      evAt(1.6, e => { sfx.charge(); bmGalaxyFx(e.act.cx, e.act.cy, 2.2); fxBeam(e.x + e.face * 20, e.y, e.z + 90, 200, e.face, { w: 24, col: '#ffe070', dur: 0.3 }); }),
-      evAt(1.9, e => { sfx.swing(true); bmSpearFx(e.act.cx, e.act.cy, 1.0, '#8ac8ff', true); }),
-      evAt(2.25, e => { const a = e.act; sfx.boom(1.0); cam.shake = 9; fxShock(a.cx, a.cy, 260, '#8ac8ff'); blast(e, a.cx, a.cy, 160, { dmg: skillDmg(8, 2, lv), launch: 260, knock: 40, hs: 0.1, type: 'phys', col: '#8ac8ff', sure: true, downHit: true, noChaser: true }, { zMax: 240 }); }),
+      // 矛刺上星河（前上方）
+      evAt(1.6, e => { sfx.charge(); bmGalaxyFx(e.act.cx, e.act.cy, 2.2); bmLinkFx(e.x + e.face * 30, e.z + 110, e.act.cx, 180, e.y, 0.3, '#ffe070'); }),
+      // 掷矛：矛从手里飞出去插进前方地面
+      evAt(1.88, e => { sfx.swing(true); bmThrowSpearFx(e, { x: e.x + e.face * 20, z: e.z + 110 }, e.act.cx, e.act.cy, 0.14, 0.58, '#8ac8ff'); }),
+      // 飞踢：跳到矛旁边，一脚把矛踩进地里
+      evAt(2.08, e => { const a = e.act, R = game.room; a.kx0 = e.x; a.kx = R ? clamp(a.cx - e.face * 45, R.x0 + e.w, R.x1 - e.w) : a.cx - e.face * 45; if ((a.kx - a.kx0) * e.face < 0) a.kx = a.kx0; e.vz = 300; fxAfterimage(e, '#8ac8ff'); }),
+      evAt(2.18, e => { e.vz = -900; }),
+      evAt(2.25, e => { const a = e.act; sfx.boom(1.0); cam.shake = 9; fxShock(a.cx, a.cy, 260, '#8ac8ff'); fxBurst(a.cx, a.cy, 20, 160, '#dfe8ff'); blast(e, a.cx, a.cy, 160, { dmg: skillDmg(8, 2, lv), launch: 260, knock: 40, hs: 0.1, type: 'phys', col: '#8ac8ff', sure: true, downHit: true, noChaser: true }, { zMax: 240 }); }),
+      // 拔矛横扫
+      evAt(2.6, e => { sfx.charge(); bmBigSpearFx(e, 0.6, 0.06, 0.12, '#8ac8ff'); }),
       evAt(2.75, e => { sfx.swing(true); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#ffe070', a0: -1.8, a1: 1.4, r: 260, w: 34, off: [20, 60], dur: 0.3 });
-        instantHit(e, { box: [-40, 420, 110, 0, 240], dmg: skillDmg(8, 2, lv), launch: 300, knock: 120, hs: 0.1, sure: true, downHit: true, type: 'phys', col: '#ffe070', noChaser: true }); }),
+        instantHit(e, { box: [-130, 420, 110, 0, 240], dmg: skillDmg(8, 2, lv), launch: 300, knock: 120, hs: 0.1, sure: true, downHit: true, type: 'phys', col: '#ffe070', noChaser: true }); }),   // 巨矛从身后抡到身前
       evAt(3.3, e => { const a = e.act; cam.flash = 0.35; cam.flashCol = '#e0f0ff'; cam.shake = 15; sfx.boom(1.5); fxShock(a.cx, a.cy, 520, '#8ac8ff'); fxShock(a.cx, a.cy, 400, '#ffe070'); fxBurst(a.cx, a.cy, 120, 500, '#dfe8ff');
         blast(e, a.cx, a.cy, 330, { dmg: skillDmg(26, 7, lv), launch: 520, knock: 220, hs: 0.16, big: 2.2, type: 'phys', col: '#ffffff', sure: true, downHit: true, noChaser: true }, { zMax: 320 }); e.invul = Math.max(e.invul, 0.8); })] }) });
 // ---- 登记 ----
@@ -121,6 +156,7 @@ CLASSES.mage.passives.push(p => {
   const po = skLv(p, 'bm_potential'); setPassive(p, 'bm_potential', po > 0, { dmg: 0.12 + 0.02 * po, crit: 0.05 });
   const an = skLv(p, 'bm_ancient'); setPassive(p, 'bm_ancient', an > 0, { dmg: 0.08 + 0.02 * an }); if (an > 0 && hasSkill(p, 'bm_chaser')) chaserBuff(p);
   const F = bmForm(p);
+  if (F && !p.noGrab) { p.noGrab = true; p._bmNoGrab = true; } else if (!F && p._bmNoGrab) { p.noGrab = false; p._bmNoGrab = false; }   // 变身中不能被抓
   if (F) { p.superArmor = Math.max(p.superArmor || 0, 0.3); if (!p.statusImmune || p.statusImmune === BM_FORM_IMMUNE) p.statusImmune = BM_FORM_IMMUNE; if (skLv(p, 'bm_will') > 0 && (p._will || 0) < 3) p._will = 3;
     if (p.hp <= 1) { delete p.buffs.bm_avatar; delete p.buffs.bm_primal; fxText('解除变身', p.x, p.y, p.z + 40, { col: '#ffd23a', size: 11 }); } }
   else if (p.statusImmune === BM_FORM_IMMUNE) p.statusImmune = null;

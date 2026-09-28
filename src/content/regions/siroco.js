@@ -130,6 +130,14 @@ defineRegion({
           { key: 'ep_si_bracelet', slot: 'bracelet', name: '希洛克的残香手镯', look: 'a black and silver bangle wrapped with wisps of violet shadow and tiny mask charms' },
           { key: 'ep_si_ring', slot: 'ring', name: '希洛克的残香戒指', look: 'a silver ring with a violet eye-shaped gem that seems to look around' },
         ] },
+      // 深渊专属（abyss: true → 只在本区域的深渊派对掉落 / 宇宙灵魂兑换）：官方 Lv100 特殊装备套「军神的隐秘遗产」（本作没有耳环栏位，做成辅助装备 + 魔法石两件套）
+      { id: 'set_armygod', name: '军神的隐秘遗产', lvl: 30, abyss: true, desc: '沉在魔界深渊里的军神遗物。据说它的主人一生从未败过。',
+        bonus: { 2: { st: { dmgUp: 0.12, cdr: 0.06, elemAll: 12 }, desc: '【军神】伤害增加 12%，技能冷却 -6%，所有属性强化 +12；攻击时 5% 几率插下军神的战旗（周围 180% 伤害）',
+          proc: { chance: 0.05, cd: 2, act: 'strike', mul: 1.8, aoe: 120, vis: 'holy', name: '军神的战旗' } } },
+        pieces: [
+          { key: 'ep_si_armygod_gem', slot: 'support', name: '军神的庇护宝石', look: 'an old bronze military medal shaped like a shield with a glowing amber gem in the middle and a torn red ribbon' },
+          { key: 'ep_si_armygod_heart', slot: 'stone', name: '军神的心之所念', look: 'a heart-shaped dark red magic stone wrapped in a thin gold wire with a tiny war banner engraved inside, soft golden glow' },
+        ] },
     ],
     quest: [{ key: 'q_si_memory', look: 'a glowing lilac crystal shard with a faint face reflected inside' }],
   },
@@ -149,6 +157,26 @@ defineRegion({
       bgm: 'abyss', bossBgm: 'boss', preBoss: { kind: 'jailer', say: '狱卒守着希洛克的幻界……' },
       gate: { x: 2620, col: '200,150,255' }, desc: '【攻坚】希洛克的幻界。她会隐入黑暗（击破记忆碎片逼她现身）、操纵卢克西（先打倒卢克西，希洛克会破招）、分出暗影，还会用“凝视”——看到提示就背对她。',
       drops: { boss: [['ep_si_neck', 0.04], ['ep_si_bracelet', 0.04], ['ep_si_ring', 0.04], ['ep_si_gate', 0.02], ['ep_si_nex', 0.02], ['lg_karo_eye', 0.02]], mats: [['crystal', 0.14, 12], ['m_soul', 0.004, 1], ['m_diamond', 0.012, 1]] } },
+  },
+
+  /* ---- 深渊派对（content/abyss.js 展开，字段见 docs/REGION_PIPELINE.md §2.1）：资格任务 → 隐藏门 → 封印之门 → waves 几波派对 → 深渊领主（lords 随机，lord.mechs / cycle 加领主机制）
+          cost 每次消耗的邀请函；pity 保底次数；seal 封印之门血量倍率；items 里标了 abyss 的套装 / 史诗是本区域的深渊专属 ---- */
+  abyss: {
+    abyss_siroco: { name: '魔界深渊', lvl: [30, 31], lordLvl: 33, cost: 2, pity: 8, seal: 4, themeFrom: 'siroPain', theme: 'abyssSiroco', tint: 'rgba(90,10,110,0.34)',
+      mobs: [['phantomBlade', 2], ['phantomStalker', 2], ['voidCaster', 1.5], ['hellHound', 2], ['burstShade', 1], ['gazer', 1]], elite: 'jailer',
+      lords: ['nex', 'assassin', 'gatekeeper'], gate: { scene: 'siroco_field', x: 2880 }, clearExp: 19000,
+      waves: [
+        { n: 6, mobs: [['phantomBlade', 1], ['phantomStalker', 1], ['burstShade', 1]], elite: 1, say: '幻影从碎镜子里涌出来了！' },
+        { n: 5, mobs: [['voidCaster', 1], ['soulBinder', 1], ['gazer', 1]], elites: ['soulBinder'], say: '咏唱者躲在后排——先打它们！' },
+        { n: 7, mobs: [['hellHound', 2], ['burstShade', 1], ['phantomBlade', 1]], elites: ['jailer', 'jailer'], say: '魔界狱卒闯进了派对！' },
+      ],
+      lord: { hp: 1.3, atk: 1.1, mechs: [{ use: 'enrage', t: 210 }], cycle: [
+        { every: [20, 26], mech: { use: 'hazard', kind: 'debris', every: 3.5, n: 3, dur: 10, col: '#b070ff' } },
+        { every: [30, 36], at: 0.6, mech: { use: 'safezone', windup: 3.2, n: 2, r: 72, frac: 0.4, say: '深渊的凝视——站进光圈！' } }] },
+      desc: '【深渊派对】希洛克消散之后，魔界深处裂开了一道深渊。每次消耗 2 张深渊派对邀请函。深渊领主是幻界的三个首领之一（每次随机），降临后会引发落石，血量过半时用「深渊的凝视」逼你站进光圈。魔界专属史诗「军神的隐秘遗产」只在这里出现。',
+      quest: { name: '魔界的深渊', lvl: 30, clear: 'siroco_coffin', pre: ['q_abyss_gf'], gold: 10000, desc: '希洛克的幻界崩塌后，魔界深处也裂开了深渊。讨伐一次潜行者希洛克（无形棺柩），歌兰蒂斯就会告诉你魔界深渊的入口。',
+        offer: ['……魔界那边传来了很重的深渊气息。', '希洛克的幻界崩塌以后，她留下的首领们都被深渊吞了进去。', '先去无形棺柩讨伐一次希洛克。回来我告诉你入口——那里的深渊，要 2 张邀请函才打得开。'],
+        done: ['你真的从希洛克的幻界回来了……', '魔界地图的最右边，深渊之门已经为你打开。听说那里沉睡着「军神」的遗物。'] } },
   },
 
   /* ---- NPC / 场景（区域地图的门按 dungeons[*].gate 自动摆）---- */

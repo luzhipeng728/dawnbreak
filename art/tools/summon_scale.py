@@ -26,8 +26,9 @@ def check(name, apply, tol):
     d = os.path.join(HERE, 'final', 'spr', name); meta = json.load(open(os.path.join(d, 'spr.json'))); fr = meta['frames']
     base = [n for n in SHEETS['walk'] if n in fr]; BM = {n: mask(os.path.join(d, n + '.webp')) for n in base}
     out = []
+    import summon_art; C = summon_art.A.M.get(name, {})   # 自定义帧名的召唤兽（卡西利亚斯）：帧名和直立帧按 summon_art 里的定义
     for sh in ('act', 'more'):
-        names = [n for n in SHEETS[sh] if n in fr]
+        names = [n for n in ([x for x, _ in C['custom'][sh]] if sh in C.get('custom', {}) else SHEETS[sh]) if n in fr]
         if not names: continue
         e1 = []
         for n in names:
@@ -37,7 +38,7 @@ def check(name, apply, tol):
                 if best is None or iou > best[1]: best = (s, iou)
             if best[1] >= 0.6: e1.append(best[0])
         r1 = statistics.median(e1) if len(e1) >= 2 else None
-        hs = [fr[n]['h'] / fr['idle']['h'] for n in UPRIGHT[sh] if n in fr]
+        hs = [fr[n]['h'] / fr['idle']['h'] for n in C.get('upright', UPRIGHT)[sh] if n in fr]
         r2 = statistics.median(hs) if hs else None
         agree = r1 is not None and r2 is not None and abs(r1 - 1) > tol and abs(r2 - 1) > tol and (r1 - 1) * (r2 - 1) > 0
         k = 1 / ((r1 * r2) ** 0.5) if agree else 1

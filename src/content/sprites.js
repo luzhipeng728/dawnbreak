@@ -69,6 +69,8 @@ const SPR_ANIMS = {
     raid: [['bmLeap2', 0]], bmLeap: [['bmLeap1', 0]], bmAwk: [['bmAwk', 0]],
     bmSweep: [['bmSweep1', 0], ['bmSweep2', 0.11]], bmSpin: { fps: 14, frames: ['bmSpin', 'bmSweep2'] }, bmDouble: [['bmSweep1', 0], ['bmDouble2', 0.1], ['bmDouble1', 0.3], ['bmDouble2', 0.62]],
     bmThrow: [['fang2', 0], ['bmThrow1', 0.14], ['bmThrow2', 0.56]], bmCall: [['bmCall', 0]],
+    smCmd: [['smPoint', 0]], smThrow: [['smThrow1', 0], ['smThrow2', 0.12]], smSac: [['smSac', 0]], smSummon: [['smCircle1', 0], ['smCircle2', 0.2]],
+    smAwk: [['smCircle2', 0], ['smAwk1', 0.9], ['smAwk2', 1.3]],
     // 魔道学者（mage_witch.js）：骑扫把、失败演出、道具
     brIdle: [['brIdle', 0]], brDash: [['brDash', 0]], brFall: [['brFall', 0]], brAtk: [['brAtk1', 0]], brAtkB: [['brAtk2', 0]], brSpin: [['brSpin', 0]],
     faceplant: [['faceplant', 0]], sooty: [['sooty', 0]], potion: [['potion1', 0], ['potion2', 0.14]], potionHold: [['potion1', 0]],

@@ -39,6 +39,7 @@ content/classes/gun_paramedic.js
 content/classes/mage.js
 content/classes/mage_elemental.js
 content/classes/mage_battle.js
+content/classes/mage_summoner.js
 content/classes/mage_witch.js
 content/classes/mage_enchantress.js
 engine/touch.js

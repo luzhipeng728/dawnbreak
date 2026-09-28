@@ -425,7 +425,7 @@ const enCmdTxt = s => s;
 defSkill('en_rosevine', { name: '玫瑰藤蔓', cls: 'mage', job: EN, lvReq: 10, mp: 25, cd: 5, type: 'indep', elem: 'dark', col: '#8a2040', cast: true,
   desc: '荆棘藤贴着地面向前爬出 450px，留在地上 2.5 秒：碰到的敌人每 0.3 秒受到一次伤害（轻微击退 + 出血）。可以预先铺在敌人要走的路上。', pow: lv => skillDmg(0.3, 0.03, lv) * 6, ai: { kind: 'proj', r: [0, 420], dy: 20 },
   act: (lv) => ({ name: 'en_rosevine', clip: 'mdown', dur: 0.45, cancelFrom: 0.3, events: [evAt(0.14, e => { sfx.swing(false); fxDust(e.x + e.face * 30, e.y, 4, 10, '#5a3a3a'); summon(e, 'en_vine', { x: e.x + e.face * 26, y: e.y, lv }); })] }) });
-defSkill('en_mend', { name: '细心缝补', cls: 'mage', job: EN, lvReq: 15, mp: 60, cd: 8, type: 'indep', col: '#e07aa0', cast: true, noForce: true,
+defSkill('en_mend', { noHitCheck: true, name: '细心缝补', cls: 'mage', job: EN, lvReq: 15, mp: 60, cd: 8, type: 'indep', col: '#e07aa0', cast: true, noForce: true,
   desc: '给坏坏兔的破洞缝上几针：900px 内的队友（包括自己）立即回复 HP 并解除异常状态，之后每 0.5 秒再回复 3 次。施放中霸体，按跳跃键可以取消。',
   infoExtra: lv => [['立即回复', pct(0.06 + 0.004 * lv) + ' HP'], ['之后 3 次', pct(0.02 + 0.002 * lv) + ' HP']], ai: { kind: 'buff' },
   act: (lv) => ({ name: 'en_mend', clip: 'enSew', dur: 0.9, superArmor: true, noCounter: true,
@@ -537,7 +537,7 @@ defSkill('en_rosejail', { name: '蔷薇囚狱', cls: 'mage', job: EN, lvReq: 19,
   desc: '在前方展开一片荆棘地：里面的敌人被定身约 4.5 秒，脚下不断开出蔷薇造成多段伤害，结束时爆炸把敌人击倒。施放后可以自由行动；再按一次技能键立即引爆。',
   recast: { ok: p => summonsOf(p, 'en_jail').length > 0, instant: true, cd: 0.3, mp: 0, act: (lv, p) => { for (const s of summonsOf(p, 'en_jail')) s.life = Math.min(s.life, s.lifeT + 0.02); } }, pow: lv => skillDmg(0.25, 0.025, lv) * 15 + skillDmg(2.4, 0.24, lv), ai: { kind: 'aoe', r: [60, 320], dy: 60 },
   act: (lv) => ({ name: 'en_rosejail', clip: 'enCmd', dur: 0.45, noCounter: true, events: [evAt(0.15, e => { sfx.magic(); const at = aimAhead(e, 180, 320, 80); summon(e, 'en_jail', { x: at.t ? at.x : e.x + e.face * 180, y: at.t ? at.y : e.y, lv }); })] }) });
-defSkill('en_firstaid', { name: '爱之急救', cls: 'mage', job: EN, lvReq: 19, mp: 80, cd: 40, type: 'indep', col: '#ff9ac0', cast: true, noForce: true,
+defSkill('en_firstaid', { noHitCheck: true, name: '爱之急救', cls: 'mage', job: EN, lvReq: 19, mp: 80, cd: 40, type: 'indep', col: '#ff9ac0', cast: true, noForce: true,
   desc: '给坏坏兔缠上绷带：立即解除 800px 内队友的异常状态，并在脚下展开 800px 的绷带魔法阵，约 8 秒内持续回复阵里的队友。',
   infoExtra: lv => [['每 0.5 秒回复', pct(0.012 + 0.001 * lv) + ' HP'], ['持续', '8 秒']], ai: { kind: 'buff' },
   act: (lv) => ({ name: 'en_firstaid', clip: 'enBandage', dur: 0.8, noCounter: true, events: [evAt(0.35, e => enAidNow(e, lv))] }) });

@@ -156,7 +156,7 @@ defSkill('bloodblade', { name: '爆发之刃', cls: 'sword', job: 'berserker', l
       evAt(0.45, e => { if (!e.act.boom) { e.act.boom = true; bloodBoom(e, lv, e.x + e.face * 30); } })] }) });
 function bloodBoom(e, lv, x) {
   cam.shake = Math.max(cam.shake, 6); sfx.boom(0.9); fxSpr('bloodwave', x, e.y, 0, { h: 150, dur: 0.4, ay: 1, flip: e.face < 0, grow: [0.5, 1.1] }); fxBurst(x, e.y, 60, 200, '#ff2a3a');
-  blast(e, x, e.y, 110, { dmg: skillDmg(4.2, 0.42, lv), launch: 440, knock: 160, hs: 0.1, big: 1.6, col: '#ff5a5a', radial: true }, { zMax: 160, ...bzBleedArea(e) });
+  blast(e, x, e.y, 110, { dmg: skillDmg(4.2, 0.42, lv), down: true, downLift: 240, knock: 240, hs: 0.1, big: 1.6, col: '#ff5a5a', radial: true }, { zMax: 160, ...bzBleedArea(e) });
 }
 
 /* ---- 崩山裂地斩（仅狂暴中）：召唤血剑时无敌 → 起跳霸体（←→ 调整距离）→ 砸地大范围冲击波把敌人竖直震上天 → 碎块 / 岩浆 6 段喷发。砸地后短暂无敌 ---- */
@@ -190,7 +190,7 @@ SWORD_HOOKS.onHurt.push(p => {
 });
 
 /* ---- 一觉：魔狱血刹（现版的“背后召唤血剑 → 再按一次劈下”改动放在 P1；这里仍是一次性演出）---- */
-defSkill('bz_awaken', { name: '魔狱血刹', cls: 'sword', job: 'berserker', lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'indep', awaken: true, col: '#8a0010',
+defSkill('bz_awaken', { name: '魔狱血刹', cls: 'sword', job: 'berserker', lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'indep', awaken: true, noHitCheck: true, col: '#8a0010',
   desc: '【觉醒】召唤吸满血气的魔剑，劈向大地引发血气爆炸，血气柱贯穿整个画面。施放中无敌。', pow: lv => skillDmg(24, 6, lv), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
   act: (lv) => ({ name: 'bz_awaken', clip: 'bzAwk', dur: 2.6, superArmor: true, noCounter: true, invul: [0, 2.0],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '魔狱血刹', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); },

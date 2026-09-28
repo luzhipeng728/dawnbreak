@@ -106,7 +106,7 @@ defSkill('flow_stab', { name: '流心：刺', cls: 'sword', job: 'blade', lvReq:
         HB(0.24, 0.3, [0, 70, 28, 20, 100], skillDmg(1.2, 0.12, lv) * flowMul(p) * (club ? 1.3 : 1), { knock: 220, stun: 0.5, hs: 0.08, heavy: true, shake: 2, onHit: club ? (a, t) => addStatus(t, 'stun', 3, { src: a }) : undefined })],
       events: [evAt(0.01, e => { fxAfterimage(e, '#8fd8ff'); fxStreak({ x: e.x - e.face * 30, y: e.y, z: e.z + 60, face: e.face, len: 190, w: 14, col: '#8fd8ff', dur: 0.24 }); sfx.iai(); })] };
   } });
-defSkill('flow_leap', { name: '流心：跃', cls: 'sword', job: 'blade', lvReq: 17, mp: 20, cd: 4, type: 'phys', col: '#3a70c0', cmdNote: '流心中 C（腾空时按 X）',
+defSkill('flow_leap', { name: '流心：跃', cls: 'sword', job: 'blade', lvReq: 17, mp: 20, cd: 7, type: 'phys', col: '#3a70c0', cmdNote: '流心中 C（腾空时按 X）',
   desc: '流心架势中按 C：低而快地向前跃出（可以用 ↑↓ 调整纵深），腾空时按 X 打出强力下斩，落地冲击使敌人倒地。不追加操作时落地回到流心架势。', pow: lv => skillDmg(3.0, 0.3, lv), ai: { kind: 'gap', r: [80, 240], dy: 40 },
   act: (lv, p) => ({ name: 'flow_leap', clip: 'leap', dur: 1.4, noCounter: true, superArmor: true,
     onStart: e => { e.vz = 380; e.z = Math.max(e.z, 1); e.vx = e.face * 340; sfx.jump(); fxDust(e.x, e.y, 5, 12); },
@@ -118,7 +118,7 @@ defSkill('flow_leap', { name: '流心：跃', cls: 'sword', job: 'blade', lvReq:
       e.act.dur = e.actT + 0.32; e.play('leapLand', true); cam.shake = Math.max(cam.shake, 6); sfx.boom(0.8);
       fxShock(e.x + e.face * 20, e.y, 140, '#8fd8ff'); fxDust(e.x, e.y, 10, 30);
       blast(e, e.x + e.face * 20, e.y, 100, { dmg: skillDmg(2.2, 0.22, lv) * flowMul(p), down: true, knock: 160, hs: 0.09, downHit: true, big: 1.4 }); } }) });
-defSkill('flow_rise', { name: '流心：升', cls: 'sword', job: 'blade', lvReq: 18, mp: 20, cd: 4, type: 'phys', col: '#5ac0f0', cmdNote: '流心中 Z',
+defSkill('flow_rise', { name: '流心：升', cls: 'sword', job: 'blade', lvReq: 18, mp: 20, cd: 9, type: 'phys', col: '#5ac0f0', cmdNote: '流心中 Z',
   desc: '流心架势中按 Z：高高跃起连续上斩，把敌人卷上高空。光剑 / 太刀多段；其他武器对浮空、霸体的敌人伤害提高。', pow: lv => skillDmg(3.2, 0.32, lv), ai: { kind: 'launch', r: [0, 70], dy: 22 },
   act: (lv, p) => { const w = swWt(p), multi = w === 'katana' || w === 'lightsaber';
     return { name: 'flow_rise', clip: 'up', dur: 0.62, noCounter: true, superArmor: [0, 0.3], move: [[0.04, 0.3, 50, w === 'greatsword' ? 240 : 300]], lowGrav: 0.6,
@@ -227,7 +227,7 @@ defSkill('phantom', { name: '幻影剑舞', cls: 'sword', job: 'blade', lvReq: 2
         if (e.actT < a.end && a.tk >= step) { a.tk = 0; a.k = (a.k || 0) + 1; e.hitsDone.clear(); fxSlashOn(e, { col: '#b0c0ff', a0: rnd(-3, 0), a1: rnd(0, 3), r: rnd(50, 72), w: 10, off: [16, rnd(35, 70)], squash: rnd(0.4, 0.9), dur: 0.1, silent: a.k % 2 === 1 });
           if (a.k % 3 === 0) projWave(e, { speed: 480, life: 0.25, h: 50, hit: { dmg: skillDmg(0.15, 0.015, lv), knock: 20, stun: 0.25 } }); }
         if (e.actT >= a.end && !a.fin) { a.fin = true; e.play('atk3', true); sfx.iai(); cam.shake = Math.max(cam.shake, 5);
-          projWave(e, { speed: 520, life: 0.6, hit: { dmg: skillDmg(3.0, 0.3, lv), launch: 460, knock: 200, hs: 0.1, big: 1.6, rep: 0 } }); }
+          projWave(e, { speed: 520, life: 0.6, hit: { dmg: skillDmg(3.0, 0.3, lv), down: true, downLift: 240, knock: 260, hs: 0.1, big: 1.6, rep: 0 } }); }   // 收尾巨大剑气把敌人吹倒（不浮空）
       },
       hits: [HB(0, 2.4, [-20, 88, 34, 0, 120], skillDmg(0.3, 0.03, lv) * (fast ? 0.6 : 1), { rep: step, stun: 0.3, knock: 10, airLift: 140, hs: 0.02, snd: 'slash' })],
       onEnd: e => { e.vy = 0; } }; } });

@@ -36,7 +36,7 @@ for (const item of list) {
   for (const { id, name } of ids) {
     const nErr0 = logs.filter(l => l.type === 'pageerror').length;
     // 前置技能（规格 docs/skills/<职业>.json 的 pre，例：狂暴之力、无尽波动）：先放出来再拍
-    const pre = ((SPEC[cls] || {}).skills || {})[id] && SPEC[cls].skills[id].pre;
+    const SS = (SPEC[cls] || {}).skills || {}, pre = (SS[`${id}@${job}`] || SS[id] || {}).pre;
     if (pre) { await page.evaluate(pre => { const p = game.player; p.buffs = {}; p.cool = {}; for (const k of pre) { p.setState('idle'); p.act = null; castSkill(p, k, false, null); } }, pre); await page.waitForTimeout(700); }
     const setup = await page.evaluate(({ id, keep }) => {
       const p = game.player; p.x = 380; p.y = 100; p.z = 0; p.vz = 0; p.face = 1; p.setState('idle'); p.act = null; p.cool = {}; if (!keep) p.buffs = {}; p.chasers = [];

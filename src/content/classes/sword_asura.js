@@ -301,9 +301,12 @@ defSkill('as_awaken2', { name: '雷神降世：裁决', cls: 'sword', job: 'asur
       addFx({ x: a.cx, y: a.cy - 60, z: 0, dur: 3.0, a, draw(c) { const t = this.t; if (t < 0.9) return; const k = Math.min(1, (t - 0.9) * 3) * Math.min(1, (3 - t) * 4);
         drawSpr(c, fxTint('hexagram', AS_LIGHT), sx(this.a.cx), sy(this.a.cy, 0), 360, 120, { ground: true, rot: t, alpha: 0.6 * k });
         drawSpr(c, asImg('as_raijin', 'ghost', AS_LIGHT), sx(this.a.cx), sy(this.a.cy - 40, 0), 0, 320 * k, { ay: 1, alpha: 0.9 * k }); } }); },
-    events: [evAt(0.95, e => { const a = e.act; for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 300) addStatus(t, 'root', 2.2, { src: e }); sfx.charge(); }),
+    events: [evAt(0.95, e => { const a = e.act; cam.shake = Math.max(cam.shake, 8); sfx.boom(1); fxShock(a.cx, a.cy, 300, AS_LIGHT);   // 雷神降临：把阵里的敌人吸向中心并震倒（官方入场击倒），随后定住
+        for (const t of ents) if (hittable(e, t) && !t.boss && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 300) { t.x = lerp(t.x, a.cx, 0.6); t.y = lerp(t.y, a.cy, 0.6); }
+        blast(e, a.cx, a.cy, 300, { dmg: skillDmg(1.5, 0.4, lv), down: true, downLift: 200, knock: 0, hs: 0.06, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 320 });
+        for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 300) addStatus(t, 'root', 2.2, { src: e }); sfx.charge(); }),
       ...[1.1, 1.3, 1.5, 1.7].map(t => evAt(t, e => { const a = e.act; fxSpr('lightning', a.cx + rnd(-200, 200), a.cy + rnd(-30, 30), 0, { h: 260, dur: 0.2, ay: 1 }); sfx.hit('crit', false);
-        blast(e, a.cx, a.cy, 280, { dmg: skillDmg(2.5, 0.7, lv), stun: 0.4, knock: 0, hs: 0.02, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 320 }); })),
+        blast(e, a.cx, a.cy, 280, { dmg: skillDmg(2.5, 0.7, lv), stun: 0.4, knock: 0, hs: 0.02, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 320 }); })),
       evAt(2.2, e => { const a = e.act; cam.flash = 0.4; cam.flashCol = '#fffbe0'; cam.shake = 16; sfx.boom(1.6); fxShock(a.cx, a.cy, 380, AS_LIGHT); fxBurst(a.cx, a.cy, 60, 380, AS_LIGHT);
         for (let i = 0; i < 8; i++) fxSpr('thunderbolt', a.cx + rnd(-260, 260), a.cy + rnd(-40, 40), 0, { h: 300, dur: 0.4, ay: 1 });
         blast(e, a.cx, a.cy, 320, { dmg: skillDmg(24, 7, lv), launch: 560, knock: 200, hs: 0.22, big: 2.4, critBonus: 0.2, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 360, status: 'shock', sdur: 3 }); })] }) });

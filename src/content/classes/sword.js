@@ -43,8 +43,8 @@ defSkill('upslash', { name: '上挑', cls: 'sword', lvReq: 1, mp: 10, cd: 2, typ
   act: (lv) => ({ name: 'up', clip: 'up', dur: 0.46, cancelFrom: 0.26, superArmor: [0, 0.1], move: [[0.02, 0.1, 100]],
     hits: [HB(0.1, 0.18, [0, 74, 30, 0, 125], skillDmg(1.8, 0.18, lv), { launch: 520 + lv * 6, knock: 40, hs: 0.08, shake: 2, big: 1.2 })],
     events: [slashAt(0.09, { a0: 1.4, a1: -1.9, r: 62, w: 20, off: [10, 50], heavy: true })] }) });
-defSkill('ghost', { name: '鬼斩', cls: 'sword', lvReq: 1, mp: 18, cd: 5, type: 'mag', elem: 'dark', col: '#6a3ab0',
-  desc: '左臂的鬼神之力附在剑上，斩出带暗属性的鬼气斩击，击退前方的敌人。', pow: lv => skillDmg(2.6, 0.26, lv), ai: { kind: 'poke', r: [0, 95], dy: 26 },
+defSkill('ghost', { name: '鬼斩', cls: 'sword', lvReq: 1, mp: 18, cd: 6, type: 'mag', elem: 'dark', col: '#6a3ab0',
+  desc: '左臂的鬼神之力附在剑上，斩出带暗属性的鬼气斩击，把前方的敌人击飞倒地。', pow: lv => skillDmg(2.6, 0.26, lv), ai: { kind: 'poke', r: [0, 95], dy: 26 },
   act: (lv) => ({ name: 'ghost', clip: 'ghost', dur: 0.56, cancelFrom: 0.36, move: [[0.1, 0.18, 160]],
     hits: [HB(0.14, 0.22, [0, 100, 32, 0, 120], skillDmg(2.6, 0.26, lv), { stun: 0.55, knock: 240, down: true, downLift: 260, airLift: 220, hs: 0.09, shake: 3, heavy: true, big: 1.4 })],
     events: [evAt(0.02, e => fxSpr('ghost', e.x - e.face * 4, e.y, e.z + 60, { w: 60, dur: 0.3, follow: e, ox: -4, oz: 58, alpha: 0.6, grow: [0.6, 1] })),
@@ -55,7 +55,7 @@ defSkill('guard', { name: '格挡', cls: 'sword', lvReq: 5, mp: 5, cd: 2, type: 
   infoExtra: lv => [['物理伤害吸收', pct(guardPhys(lv))], ['魔法伤害吸收', pct(guardMag(lv))]], ai: { kind: 'guard' },
   act: (lv) => ({ name: 'guard', clip: 'guard', dur: 3, noCounter: true, guard: guardPhys(lv), guardMag: guardMag(lv), cancelFrom: 0.2,
     update: e => { e.vx = 0; if (e.actT > 0.25 && !e.pad.is(e.act.key || 'attack')) e.endAct(); } }) });
-defSkill('silver', { name: '银光落刃', cls: 'sword', lvReq: 5, mp: 12, cd: 3, type: 'phys', air: true, airOnly: true, col: '#9ab8d8',
+defSkill('silver', { name: '银光落刃', cls: 'sword', lvReq: 5, mp: 12, cd: 4, type: 'phys', air: true, airOnly: true, col: '#9ab8d8',
   desc: '跳跃中或后跳中使用：持剑向下急刺。跳得越高伤害越高，足够高时落地产生冲击波把敌人击倒。', pow: lv => skillDmg(2.4, 0.24, lv), cmdNote: '跳跃中 / 后跳中 Z', ai: { kind: 'air' },
   act: (lv) => ({ name: 'silver', clip: 'silver', dur: 2, noCounter: true, superArmor: true,
     onStart: e => { e.act.z0 = e.z; e.vz = -1050; e.vx = e.face * 90; sfx.swing(true); },
@@ -122,7 +122,7 @@ function projWave(p, o) {   // 地面剑气：沿地面推进
       for (let i = 2; i >= 0; i--) drawSpr(c, img, X - i * 16 * pr.face, Y + 6, 0, (o.h || 100) - i * 18, { ay: 1, flip: pr.face < 0, alpha: a * (1 - i * 0.3) });
     } });
 }
-defSkill('wave', { name: '地裂·波动剑', cls: 'sword', lvReq: 15, mp: 20, cd: 3.5, type: 'mag', icon: 'wave', col: '#5a60d8',
+defSkill('wave', { name: '地裂·波动剑', cls: 'sword', lvReq: 15, mp: 20, cd: 3, type: 'mag', icon: 'wave', col: '#5a60d8',
   desc: '以剑击地，放出沿地面推进的波动剑气，击退沿途敌人并使其倒地。', pow: lv => skillDmg(2.2, 0.22, lv), ai: { kind: 'proj', r: [0, 300], dy: 22 },
   act: (lv, p) => ({ name: 'wave', clip: 'atk3', dur: 0.52, cancelFrom: 0.32, ...(p && jobOf(p) === 'asura' ? { chain: [0.24, 0.52], next: 'atk1' } : {}),   // 阿修罗：可以用普攻取消后摇
     events: [slashAt(0.12, { a0: -2.6, a1: 1.2, r: 60, w: 18, off: [10, 56], heavy: true }), evAt(0.15, p => { projWave(p, { hit: { dmg: skillDmg(2.2, 0.22, lv), down: true, downLift: 180 } }); cam.shake = Math.max(cam.shake, 3); sfx.boom(0.5); })] }) });
@@ -144,7 +144,7 @@ function crossStage(lv, p, n) {
         blast(e, x, e.y, 55 * big, { dmg: skillDmg(1.0, 0.1, lv) * big, stun: 0.5, knock: 90, hs: 0.07, col: '#ff6a6a' }, vig ? { zMax: 120, status: 'bleed', sdur: 7, dps: 0.05 } : { zMax: 120 }); })] };
 }
 // 刀魂之卡赞（通用 BUFF）：召唤鬼神卡赞，力量、智力提升 120 秒；鬼泣转职后改为被动，剑影不能学
-defSkill('kazan', { name: '刀魂之卡赞', cls: 'sword', lvReq: 5, mp: 30, cd: 5, type: 'phys', buff: true, col: '#c0302a', excl: ['ghostblade'],
+defSkill('kazan', { name: '刀魂之卡赞', cls: 'sword', lvReq: 5, mp: 30, cd: 6, type: 'phys', buff: true, col: '#c0302a', excl: ['ghostblade'],
   desc: '【BUFF】召唤鬼神卡赞，120 秒内力量、智力提升（攻击力提升）。再次施放会重新召唤。', ai: { kind: 'buff' },
   infoExtra: lv => [['攻击力', '+' + pct(kazanAtk(lv))], ['持续时间', '120 秒']],
   act: (lv) => ({ name: 'kazan', clip: 'focus', dur: 0.5, noCounter: true,

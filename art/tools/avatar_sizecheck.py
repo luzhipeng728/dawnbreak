@@ -103,7 +103,38 @@ def check(sid, cls, tol):
                               'sb': fs[2] if fs else None, 'ss': fs[3] if fs else None, 'bbox': [int(r['bw']), int(r['bh']), int(r['sw']), int(r['sh'])]})
     return out
 
+def cross(tol, sets):
+    """和其他套比：同一帧在各套时装里（都摘了帽子 / 披风）的身体包围盒应该差不多。
+    先除以这一套的系统比值（所有帧的中位数），再和这一帧在各套里的中位数比；超过 tol 的才是这一格画大 / 画小 / 姿势不同。
+    （和原装比会被原装的巫师帽、报童帽、长围巾带偏：同一帧六套时装一起偏，说明是原装轮廓不同，不是时装画错）"""
+    out = []
+    for cls in ('sword', 'gun', 'mage'):
+        keys = [s_ for s_ in sets if os.path.isdir(os.path.join(HERE, 'final', 'spr', f'{cls}@{s_}'))]
+        if len(keys) < 3: continue
+        frames = sorted(json.load(open(os.path.join(HERE, 'final', 'spr', cls, 'spr.json')))['frames'])
+        box = {k: {f: bbox(load(os.path.join(HERE, 'final', 'spr', f'{cls}@{k}'), f)) for f in frames} for k in keys}
+        base = {f: bbox(load(os.path.join(HERE, 'final', 'spr', cls), f)) for f in frames}
+        sysw = {k: statistics.median(box[k][f][0] / base[f][0] for f in frames) for k in keys}
+        sysh = {k: statistics.median(box[k][f][1] / base[f][1] for f in frames) for k in keys}
+        for f in frames:
+            nw = {k: box[k][f][0] / base[f][0] / sysw[k] for k in keys}; nh = {k: box[k][f][1] / base[f][1] / sysh[k] for k in keys}
+            mw, mh = statistics.median(nw.values()), statistics.median(nh.values())
+            for k in keys:
+                dw, dh = nw[k] / mw - 1, nh[k] / mh - 1
+                if abs(dw) > tol or abs(dh) > tol:
+                    out.append({'set': k, 'cls': cls, 'frame': f, 'dw': round(dw, 3), 'dh': round(dh, 3), 'kind': '比例' if dw * dh > 0 and abs(dw - dh) < 0.06 else '姿势 / 轮廓'})
+    return out
+
 def main():
+    if '--cross' in sys.argv:
+        skip = {sys.argv[sys.argv.index(o) + 1] for o in ('--json', '--tol') if o in sys.argv}
+        args = [a for a in sys.argv[1:] if not a.startswith('--') and a not in skip]; tol = 0.08
+        if '--tol' in sys.argv: tol = float(sys.argv[sys.argv.index('--tol') + 1])
+        r = cross(tol, args or SETS)
+        for x in r: print(f"{x['cls']}@{x['set']} {x['frame']}: 宽 {x['dw']:+.0%} 高 {x['dh']:+.0%} {x['kind']}")
+        print(f'共 {len(r)} 帧和其他套时装的同一帧相比偏差超过 {tol:.0%}')
+        if '--json' in sys.argv: json.dump(r, open(sys.argv[sys.argv.index('--json') + 1], 'w'), ensure_ascii=False, indent=1)
+        return
     args = sys.argv[1:]; tol = 0.08; jout = None; write = '--write' in args
     if write: args.remove('--write')
     if '--tol' in args: i = args.index('--tol'); tol = float(args[i + 1]); del args[i:i + 2]

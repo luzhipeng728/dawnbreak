@@ -111,6 +111,41 @@ def body_box(arr):
     if not len(xs): return None
     return xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
 
+def recell(sid, name, cells, base, key):
+    """时装表单格重画：拿占位表（原装姿势 + 绿棍）的这一格 + 时装参考图，重画这一格穿时装的样子，贴回 sets/<套装>/<表>.png。
+    不按包围盒缩放（占位表的魔法师戴着巫师帽，包围盒不可比）：生成时图就是按格子等比放大的，缩回格子大小后按脚底对齐。"""
+    import numpy as np
+    from PIL import Image
+    cls = name.split('_')[0]; outfit = SETS[sid][cls]
+    sp = os.path.join(OUT, 'sets', sid, f'{name}.png'); ph = os.path.join(OUT, 'sheets', f'{name}.png'); ref = os.path.join(OUT, 'refs', f'{cls}@{sid}.png')
+    sh = Image.open(sp).convert('RGB'); P = Image.open(ph).convert('RGB'); W, H = sh.size
+    bk = os.path.join(OUT, 'sets', sid, '_pre'); os.makedirs(bk, exist_ok=True); n = 1
+    while os.path.exists(os.path.join(bk, f'{name}_{n}.png')): n += 1
+    sh.save(os.path.join(bk, f'{name}_{n}.png'))
+    tmp = os.path.join(OUT, 'touch'); os.makedirs(tmp, exist_ok=True)
+    prompt = ('The FIRST image is one frame of a 2D game sprite of a chibi character holding a flat pure green stick. The SECOND image shows the same character in a new outfit. '
+              'Redraw the FIRST image exactly: the same pose, the same position and size of the character in the frame, the same flat pure green (#00FF00) stick held in exactly the same way '
+              f'(flat pure green, no outline), but dress the character in the outfit of the second image: {outfit} '
+              'Keep the face, the hair and the art style. No hat, no glasses, no hair ornament. Plain pure white background, no text.')
+    def one(i):
+        bx = cell_box(i, W, H); cell = P.crop(bx); cw, ch = cell.size
+        src = os.path.join(tmp, f'{sid}_{name}_c{i}.png'); out = os.path.join(tmp, f'{sid}_{name}_c{i}_re.png')
+        cell.resize((1024, 1024), Image.LANCZOS).save(src)
+        r = run({'out': out, 'refs': [src, ref], 'prompt': prompt, 'size': '1024x1024'}, base, key, True)
+        if not r.startswith('ok'): return r
+        fix = Image.open(out).convert('RGB').resize((cw, ch), Image.LANCZOS)
+        a0, a1 = body_box(np.array(cell)), body_box(np.array(fix))
+        dx, dy = round((a0[0] + a0[2]) / 2 - (a1[0] + a1[2]) / 2), a0[3] - a1[3]   # 脚底对齐、水平居中
+        canvas = Image.new('RGB', (cw, ch), (255, 255, 255)); canvas.paste(fix, (dx, dy))
+        return (i, bx, canvas, f'ok {sid}/{name} 第 {i} 格 偏移 {dx},{dy}')
+    res = []
+    with ThreadPoolExecutor(2) as ex:
+        for r in ex.map(one, cells): res.append(r)
+    for r in res:
+        if isinstance(r, str): print(r); continue
+        i, bx, canvas, msg = r; sh.paste(canvas, bx[:2]); print(msg)
+    sh.save(sp)
+
 def touch(sheet_png, cells, prompt, base, key, src_png=None):
     """src_png：从另一张表（通常是战斗组的原表）取这一格来改，结果贴回 sheet_png（改图把武器弄丢了的格子用）"""
     """sheet_png 就地修改（原图备份成 *_pre<n>.png）"""
@@ -461,6 +496,8 @@ def main():
     ap.add_argument('--sheet', default=''); ap.add_argument('--cells', default=''); ap.add_argument('--prompt', default=''); ap.add_argument('--from', dest='src', default='')
     a = ap.parse_args()
     base, key, _ = gi.load_cfg()
+    if a.cmd == 'recell':   # avatar_gen.py recell --only summer/mage_react2 --cells 8
+        sid, name = a.only.split('/'); return recell(sid, name, [int(x) for x in a.cells.split(',')], base, key)
     if a.cmd == 'touch':   # avatar_gen.py touch --sheet art/src/avatar/sheets/sword_walk.png --cells 0,3,7 [--prompt ring|文字]
         p = RING if a.prompt in ('', 'ring') else CELL.get(a.prompt, a.prompt)
         return touch(a.sheet, [int(x) for x in a.cells.split(',')], p, base, key, a.src or None)

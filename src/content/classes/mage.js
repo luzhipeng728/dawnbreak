@@ -41,6 +41,13 @@ function magicOrb(e, o = {}) {
     onEnd(pr) { if (o.burst) areaHit(e, pr.x, pr.y, o.burst, Math.max(0, pr.z - 30), { dmg: (o.dmg || 1.4) * (o.burstMul ?? 0.5), knock: 60, airLift: 120, hs: 0.03, col, type: 'mag', elem: o.elem }); fxBurst(pr.x, pr.y, pr.z + 6, 60 * sz / 34, col); },
     draw(c, pr) { drawSpr(c, img, sx(pr.x), sy(pr.y, pr.z + 6), sz, sz, { rot: pr.t * 8 }); } });
 }
+/* ---- 地面法阵（召唤阵 / 驱散等）：和 fxSpr 同样的参数，但平躺在地面上转（drawSpr ground） ---- */
+function fxSigil(name, x, y, z, o = {}) {
+  const img = o.col ? fxTint(name, o.col) : IMG['fx/' + name], g = o.grow || [1, 1];
+  return addFx({ x, y: y - 1, z, dur: o.dur || 0.4, draw(c) { const k = this.t / this.dur, s = lerp(g[0], g[1], easeOut(k)), w = (o.w || 100) * s;
+    const a = (o.alpha ?? 1) * (k < 0.08 ? k / 0.08 : k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1);
+    drawSpr(c, img, sx(this.x), sy(y, this.z), w, w * GR, { ground: true, rot: (o.rot || 0) + (o.spin ?? 1.2) * this.t, alpha: a, add: o.add !== false }); } });
+}
 /* ---- 蓄气：PvE 只放大范围、决斗场才加伤害（官方 2017 年以后的规则）；学了移动施法（元素师）可以边蓄边走；
    魔法秀 / 魔法记忆（BUFF 字段 chargeCut）缩短蓄气时间；basic = 四个基础元素技能（魔法记忆额外缩短） ---- */
 const chargeCut = (p, basic) => clamp(buffVal(p, 'chargeCut') + (basic ? buffVal(p, 'chargeCutB') : 0), 0, 0.95);
@@ -151,11 +158,11 @@ defSkill('mg_hodor', { name: '契约召唤：赫德尔', cls: 'mage', lvReq: 5, 
   desc: '召唤与你签订契约的机甲哥布林赫德尔协同作战，在场 200 秒。它会用棍棒击打、投掷石块和炸弹，偶尔使出带霸体的强力重击（可能眩晕敌人）。地下城里敌人打不到它。伤害按你的魔法攻击力计算。',
   pow: lv => skillDmg(0.55, 0.055, lv), infoExtra: lv => [['在场时间', '200 秒'], ['伤害倍率', pct(lvMul(lv, 0.1))]], ai: { kind: 'buff', summon: 'hodor' },
   act: (lv) => ({ name: 'mg_hodor', clip: 'summon', dur: 0.55, cancelFrom: 0.4, noCounter: true,
-    events: [evAt(0.25, e => { sfx.magic(); const s = summon(e, 'hodor', { lv, mul: lvMul(lv, 0.1) }); if (s) { fxBurst(s.x, s.y, 30, 120, '#d8c0ff'); fxSpr('hexagram', s.x, s.y, 0, { w: 110, dur: 0.6, ay: 0.5, grow: [0.4, 1] }); } })] }) });
+    events: [evAt(0.25, e => { sfx.magic(); const s = summon(e, 'hodor', { lv, mul: lvMul(lv, 0.1) }); if (s) { fxBurst(s.x, s.y, 30, 120, '#d8c0ff'); fxSigil('hexagram', s.x, s.y, 0, { w: 110, dur: 0.6, ay: 0.5, grow: [0.4, 1] }); } })] }) });
 // 别过来!：把诅咒人偶贴到敌人身上定住它，自己背身抱头蹲下（人偶爆炸前无敌）；抓不住的敌人（霸体 / 领主）直接爆炸
 function keepawayBlast(e, x, y, z, lv) {
   sfx.boom(0.6); cam.shake = Math.max(cam.shake, 3); fxBurst(x, y, z + 30, 130, '#c79aff'); fxShock(x, y, 90, '#c79aff');
-  blast(e, x, y, 55, { dmg: skillDmg(2.4, 0.24, lv), launch: 320, knock: 140, hs: 0.1, big: 1.4, col: '#e0b0ff', elem: 'dark', type: 'mag', sure: true }, { zMax: 150 });
+  blast(e, x, y, 55, { dmg: skillDmg(2.4, 0.24, lv), launch: 260, knock: 140, hs: 0.1, big: 1.4, col: '#e0b0ff', elem: 'dark', type: 'mag', sure: true }, { zMax: 150 });
 }
 defSkill('mg_keepaway', { name: '别过来！', cls: 'mage', lvReq: 5, mp: 20, cd: 6, type: 'mag', elem: 'dark', col: '#6a3a8a', excl: NO_BM,
   desc: '往面前的敌人身上贴一个诅咒人偶把它定住，然后引爆。施放后背身抱头蹲下，人偶爆炸之前无敌。对霸体或无法抓取的敌人会直接爆炸。判定很窄。', pow: lv => skillDmg(2.4, 0.24, lv), ai: { kind: 'grab', r: [0, 60], dy: 16 },
@@ -164,7 +171,7 @@ defSkill('mg_keepaway', { name: '别过来！', cls: 'mage', lvReq: 5, mp: 20, c
     onGrab: (e, t) => { e.act.gx = t.x; e.act.gy = t.y; fxText('！', t.x, t.y, t.z + 20, { col: '#c79aff', size: 16 }); },
     hold: (e, t) => { const a = e.act; t.x = a.gx ?? t.x; t.y = a.gy ?? t.y; t.z = 0; },
     events: [evAt(0.1, e => { if (!e.grabbed) { const x = e.x + e.face * 46; keepawayBlast(e, x, e.y, 0, lv); e.act.dur = 0.45; } else sfx.magic(); }),
-      evAt(0.85, e => { const t = e.grabbed; if (!t) return; keepawayBlast(e, t.x, t.y, t.z, lv); throwGrab(e, { dmg: 0.1, launch: 300, knock: 140, hs: 0.04, type: 'mag', elem: 'dark' }); })],
+      evAt(0.85, e => { const t = e.grabbed; if (!t) return; keepawayBlast(e, t.x, t.y, t.z, lv); throwGrab(e, { dmg: 0.1, down: true, downLift: 200, knock: 140, hs: 0.04, type: 'mag', elem: 'dark' }); })],
     update: e => { const t = e.grabbed; if (t && Math.random() < 0.5) fxSpr('rune', t.x, t.y, t.z + 50, { w: 22, dur: 0.1, col: '#c79aff' }); } }) });
 // 冰霜雪人：雪人头贴地弹跳前进，每弹一次就转向最近的敌人；按 ↑ 高抛、按 ↓ 贴地；满蓄时变成冰爆（100% 减速、几率冰冻）
 defSkill('mg_snowman', { name: '冰霜雪人', cls: 'mage', lvReq: 10, mp: 14, cd: 1, type: 'mag', elem: 'ice', col: '#6ac0e8', cast: true, excl: NO_BM, pre: ['mg_jack'],
@@ -230,9 +237,9 @@ defSkill('mg_phase', { name: '替身草人', cls: 'mage', lvReq: 10, mp: 20, cd:
 // 落花掌：突进一掌把敌人击飞，被击飞的敌人撞到其他敌人也造成伤害；可蓄气 0.3 秒，满蓄时霸体，把敌人撞到墙上会反弹并追加伤害
 defSkill('mg_palm', { name: '落花掌', cls: 'mage', lvReq: 15, mp: 20, cd: 3, type: 'phys', col: '#e07ab0',
   desc: '向前突进一掌把敌人击飞，被击飞的敌人撞到其他敌人也会造成伤害。可蓄气（最长 0.3 秒）：蓄满时带霸体，敌人撞到墙壁会反弹并受到追加伤害。', pow: lv => skillDmg(2.4, 0.24, lv), ai: { kind: 'poke', r: [0, 70], dy: 20 },
-  act: (lv, p) => ({ name: 'mg_palm', clip: 'palm', dur: 0.5, cancelFrom: 0.32, move: [[0.02, 0.1, 260]], charge: mCharge(p, 0.3, '#ffa0d0', { at: 0.02, clip: 'charge' }),
+  act: (lv, p) => ({ name: 'mg_palm', clip: 'palm', dur: 0.5, cancelFrom: 0.32, move: [[0.05, 0.13, 420]], charge: mCharge(p, 0.3, '#ffa0d0', { at: 0.02, clip: 'charge' }),
     update: e => { const a = e.act; if (a.chargeDone && (a.chargeK || 0) > 0.95 && !a._sa) { a._sa = true; a.superArmor = [a.charge.at, 0.4]; } },
-    hits: [HB(0.1, 0.16, [0, 70, 26, 20, 110], skillDmg(2.4, 0.24, lv), { down: true, downLift: 150, knock: 520, hs: 0.1, snd: 'blunt', shake: 3, big: 1.4, chaser: 'fire',
+    hits: [HB(0.05, 0.16, [-24, 70, 26, 20, 110], skillDmg(2.4, 0.24, lv), { down: true, downLift: 150, knock: 520, hs: 0.1, snd: 'blunt', shake: 3, big: 1.4, chaser: 'fire',
       onHit: (a, t) => { fxSpr('petal', t.x, t.y, t.z + 50, { w: 120, dur: 0.5, flip: a.face < 0, grow: [0.5, 1.2] });
         const pr = spawnProj({ owner: a, x: t.x, y: t.y, z: t.z, face: a.face, life: 0.5, w: 20, d: 16, h: 60, pierce: true,
           hit: { dmg: skillDmg(1.2, 0.12, lv), knock: 260, down: true, downLift: 120, hs: 0.06, snd: 'blunt', type: 'phys' }, update(q) { q.x = t.x; q.y = t.y; q.z = t.z; }, draw() { } });
@@ -249,7 +256,7 @@ function palmWall(a, t, lv) {
 defSkill('mg_dispel', { name: '驱散魔法', cls: 'mage', lvReq: 15, mp: 40, cd: 20, type: 'mag', col: '#5a6ad8', cast: true,
   desc: '以自身为中心展开驱散法阵（300px）：驱散范围内敌人身上的增益，并让它们减速 5 秒；每驱散一个增益，自己的攻击力提高（20 秒）。', infoExtra: lv => [['每个增益', '攻击力 +' + pct(0.02 + 0.002 * lv)]], ai: { kind: 'aoe', r: [0, 260], dy: 120 },
   act: (lv) => ({ name: 'mg_dispel', clip: 'dispel', dur: 0.9, cancelFrom: 0.7, noCounter: true,
-    events: [evAt(0.45, e => { sfx.buff(); fxShock(e.x, e.y, 300, '#8a9aff'); fxSpr('hexagram', e.x, e.y, 0, { w: 300, dur: 0.7, ay: 0.5, grow: [0.3, 1], col: '#8a9aff' });
+    events: [evAt(0.45, e => { sfx.buff(); fxShock(e.x, e.y, 300, '#8a9aff'); fxSigil('hexagram', e.x, e.y, 0, { w: 300, dur: 0.7, ay: 0.5, grow: [0.3, 1], col: '#8a9aff' });
       let n = 0; for (const t of ents) if (foe(e, t) && inGround(t, e.x, e.y, 300)) {
         if (t.buffs) for (const k in t.buffs) { delete t.buffs[k]; n++; }
         if (t.enraged && t.speed && t.def_ && t.def_.speed) { t.speed = t.def_.speed; }

@@ -154,7 +154,7 @@ defSkill('bm_raid', { name: '强袭流星打', cls: 'mage', job: BM, lvReq: 19, 
     onStart: e => { e.act.x0 = e.x; },
     update: e => { const a = e.act; if (a.charging || !a.chargeDone) return; if (!a.go) { a.go = e.actT; e.play('raid', true); sfx.iai(); fxAfterimage(e, '#ffb060'); }
       const k = e.actT - a.go; if (k < 0.3) { e.vx = e.face * (700 + (a.chargeK || 0) * 350); if (Math.random() < 0.7) fxStreak({ x: e.x - e.face * 30, y: e.y, z: e.z + 55, face: e.face, len: 120, w: 16, col: '#ffb060', dur: 0.15 }); }
-      else if (!a.back) { a.back = true; e.invul = Math.max(e.invul, 0.6); e.vx = (a.x0 - e.x) / 0.4; e.vz = 380; e.z = Math.max(e.z, 1); e.play('bmLeap', true); } },
+      else if (!a.back) { a.back = true; e.invul = Math.max(e.invul, 0.6); e.vx = (a.x0 - e.x) / (760 / GRAV); e.vz = 380; e.z = Math.max(e.z, 1); e.play('bmLeap', true); } },
     hits: [HB(0.1, 0.5, [-20, 76, 32, 0, 110], skillDmg(7.0, 0.7, lv), { launch: 520, knock: 120, hs: 0.1, big: 1.6, shake: 4 })],
     onLand: e => { if (e.act.back) { e.vx = 0; e.endAct(); } } }) });
 // 煌龙偃月：召唤巨型金色偃月刀向前连续突刺，强制把敌人推到刀尖（霸体、不可抓取的也推得动，固定型除外）；刺到敌人时刀尖周围生成 7 颗龙之炫纹依次爆炸，最后一次大爆炸

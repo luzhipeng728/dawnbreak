@@ -64,7 +64,7 @@ const R = await page.evaluate(() => {
   // 重火器拔击：起手判定
   T.reset(); const d = T.mob(350, 100); const dh = d.hp; castSkill(p, 'gl_fm31'); T.run(4); out.draw = dh - d.hp > 0; T.clear();
   // 蓄电激光炮：按住攻击键充电，伤害更高、有后坐
-  const laser = charge => { T.reset(); const t = T.mob(600, 100); t.def = 0; const h0 = t.hp, x0 = p.x; p.crit = 0; if (charge) T.hold('attack'); castSkill(p, 'gl_laser'); T.run(charge ? 30 : 12); T.release('attack'); T.run(40); const r = { dmg: h0 - t.hp, moved: Math.round(x0 - p.x) }; T.clear(); return r; };
+  const laser = charge => { T.reset(); const t = T.mob(600, 100); t.def = 0; const h0 = t.hp, x0 = p.x; p.crit = 0; p.mcrit = 0; delete p.buffs.gl_hwstack; if (charge) T.hold('attack'); castSkill(p, 'gl_laser'); T.run(charge ? 30 : 12); T.release('attack'); T.run(40); const r = { dmg: h0 - t.hp, moved: Math.round(x0 - p.x) }; T.clear(); return r; };
   out.laser = { plain: laser(false), charged: laser(true) };
   // FM-92：空中分裂成 10 个爆弹
   T.reset(); const pr0 = projs.length; castSkill(p, 'gl_fm92'); T.run(24); out.fm92 = projs.length - pr0; T.run(120); projs.length = 0;   // 分裂后 0.35~0.6 秒内落地，要在落地前数

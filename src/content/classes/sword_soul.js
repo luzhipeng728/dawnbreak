@@ -86,7 +86,7 @@ defSkill('sb_devour', { name: '噬灵鬼斩', cls: 'sword', job: 'soulbender', l
 
 /* ---- 残影之凯贾：自身 BUFF。暴击伤害、移速、回避提高；普攻变成 4 连暗属性魔法攻击 + 冲刺斩（冲刺开始时短暂无敌，可以接鬼影闪）---- */
 defSkill('sb_kaiga', { name: '残影之凯贾', cls: 'sword', job: 'soulbender', lvReq: 16, mp: 30, cd: 5, type: 'mag', buff: true, col: '#8a8aff',
-  desc: '【BUFF · 持续时间无限】鬼神凯贾附身：暴击伤害、移动速度提高；普攻变为 4 连暗属性魔法攻击，第 4 下是带短暂无敌的冲刺斩（冲刺中可以接鬼影闪）。',
+  desc: '【BUFF · 持续时间无限】鬼神凯贾附身：暴击伤害、移动速度提高，身后跟着凯贾的鬼影；开始冲刺（跑动）时 1 秒无敌、身体变得半透明（每 3 秒最多一次）；普攻变为 4 连暗属性魔法攻击，第 4 下是带短暂无敌的冲刺斩（冲刺中可以接鬼影闪）。',
   ai: { kind: 'buff', core: true }, infoExtra: lv => [['暴击伤害 / 移速', '+' + pct(0.05)]],
   act: (lv) => ({ name: 'sb_kaiga', clip: 'sbSummon', dur: 0.45, noCounter: true, onStart: e => { e.buffs.sb_kaiga = { t: 9999, critDmg: 0.05, mspd: 0.05, lv }; sfx.buff(); fxAura(e, '#8a8aff', 1); fxAfterimage(e, '#8a8aff'); } }) });
 const sbHit = (t0, t1, box, dmg, o) => HB(t0, t1, box, dmg, { type: 'mag', elem: 'dark', hs: 0.05, ...o });
@@ -122,6 +122,12 @@ function sbKaroActs(kaiga) {
 }
 const SWORD_ACTS_KARO = sbKaroActs(false), SWORD_ACTS_KARO_K = sbKaroActs(true);
 SWORD_ACT_PICK.push(p => !sbJob(p) ? null : p.buffs.sb_karo ? (p.buffs.sb_kaiga ? SWORD_ACTS_KARO_K : SWORD_ACTS_KARO) : p.buffs.sb_kaiga ? SWORD_ACTS_KAIGA : null);
+// 残影之凯贾（官方「前冲的一定时间内进入无敌状态」，无敌 1 秒）：凯贾附身时开始跑动 → 1 秒无敌（每 3 秒最多一次）。
+// 外观（身后鬼影、残影、无敌半透明）在转职外观里（content/avatar/job_looks.js 的 soulbender）
+CLASSES.sword.passives.push(p => {
+  if (!sbJob(p) || !p.buffs.sb_kaiga || p.st !== 'run' || p.stT > 0.3 || game.t < (p._kgInvT || 0)) return;
+  p._kgInvT = game.t + 3; p.invul = Math.max(p.invul, 1 - p.stT); fxAfterimage(p, '#8a8aff');
+});
 
 /* ---- 泯灭仪式：清除自己放出的普戾蒙、萨亚、罗刹 ---- */
 defSkill('sb_purge', { name: '泯灭仪式', cls: 'sword', job: 'soulbender', lvReq: 16, maxLv: 1, mp: 5, cd: 1, type: 'mag', buff: true, col: '#6a5a9a',

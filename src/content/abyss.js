@@ -149,12 +149,12 @@ const ABYSS_LEGACY = [
       quest: { id: 'q_abyss_sky', name: '天空的深渊', lvl: 22, clear: 'lord_palace', pre: ['q_abyss_gf'], gold: 5000, desc: '天空之城的尽头也出现了深渊裂缝。通关城主宫殿，证明你能对付那里的深渊领主。',
         offer: ['天空之城的尽头，也裂开了一道深渊。', '那里的恶魔比格兰之森的强得多，身上也带着更好的装备——传说中的史诗套装。', '去通关城主宫殿吧，回来我就把天空之城深渊的路指给你。'],
         done: ['你果然做到了。天空之城最右边，深渊之门已经打开。', '记住：宇宙灵魂攒够了，就来我这里换你想要的装备。'] } } } },
-  // 天帷巨兽（地下城内容组的区域，Lv24~30）：满级后最该刷的两张的深渊版；区域没加载时自动跳过。深渊专属：精炼的异界魔石（Lv30 首饰）
+  // 天帷巨兽（地下城内容组的区域，Lv24~30）：Lv30 前后最该刷的两张的深渊版；区域没加载时自动跳过。深渊专属：精炼的异界魔石（Lv30 首饰）
   { id: 'behemoth', pool: ['set_otherstone'], abyss: {
     abyss_spine: { name: '第二脊椎深渊', from: 'second_spine', theme: 'abyssSpine', lvl: [29, 30], rooms: 5, lords: ['lotus', 'yakshaKing', 'donnierEX', 'rodin'], lordLvl: 31, gate: { scene: 'behemoth_spine', x: 2500 }, clearExp: 17000, pity: 7,
       lord: { mechs: [{ use: 'groggy', max: 100, dur: 6 }, { use: 'enrage', t: 240 }], cycle: [{ every: [20, 26], mech: { use: 'hazard', kind: 'fire', every: 3, n: 2, dur: 9, col: '#c86aff' } },
         { every: [30, 36], at: 0.6, mech: { use: 'safezone', windup: 3.2, frac: 0.4, say: '深渊之力——站进光圈！' } }] },
-      desc: '【深渊派对】天帷巨兽的第二脊椎深处，深渊的气息浓得化不开。需要消耗 1 张深渊派对邀请函。满级之后追求史诗套装的地方。',
+      desc: '【深渊派对】天帷巨兽的第二脊椎深处，深渊的气息浓得化不开。需要消耗 1 张深渊派对邀请函。Lv30 之后追求史诗套装的地方。',
       quest: { id: 'q_abyss_spine', name: '巨兽体内的深渊', lvl: 29, clear: 'second_spine', pre: ['q_abyss_gf'], gold: 6000,
         offer: ['天帷巨兽的身体里……也有深渊的裂缝。', '去通关第二脊椎，回来我告诉你入口。'], done: ['入口就在第二脊椎附近。小心，那里的深渊领主比天空之城的更强。'] } },
     abyss_forbidden: { name: '天帷禁地深渊', from: 'forbidden_land', theme: 'abyssForbidden', lvl: [30, 30], rooms: 5, lords: ['marcel', 'lotus', 'gblArchbishop'], lordLvl: 32, gate: { scene: 'behemoth_spine', x: 2900 }, clearExp: 18000, pity: 7,

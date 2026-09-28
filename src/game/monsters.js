@@ -29,11 +29,19 @@ function throwRock(e) {
     draw(c, pr) { drawSpr(c, 'rock', sx(pr.x), sy(pr.y, pr.z), 18, 18, { add: false, rot: pr.spin }); } });
 }
 const MON_ATK_MUL = 0.72;   // 2026-09-27 降低难度
+// 怪物等级倍率（刷怪时乘在 MON 的基础值上）。Lv30 以内是原来的直线；Lv31~60（满级 60）换一段斜率：
+// 防御几乎不再涨（伤害公式的防御常数固定 1200，按原斜率 Lv60 怪减伤会到 83%），HP / 攻击按玩家 Lv30→60 的成长配平，
+// 目标是 Lv60 稀有装打 Lv60 怪的击杀用时 / 受伤和 Lv20~30 段相近（scratch 推算 + test/levelcap.mjs 核对，数值见 docs/GEAR.md「等级段」）
+const MON_LV_HI = { hp: 0.05, atk: 0.12, def: 0 };
+function monLvScale(lv) {
+  const a = Math.min(lv, 30) - 1, b = Math.max(0, lv - 30), H = MON_LV_HI;
+  return { hp: 1 + a * 0.15 + b * H.hp, atk: 1 + a * 0.1 + b * H.atk, def: 1 + a * 0.08 + b * H.def, exp: 1 + (lv - 1) * 0.4 };
+}
 function spawnMonster(kind, x, y, o = {}) {
-  const D = MON[kind], lv = (o.lvl || D.lvl) + (D.coward ? 8 : 0), mul = o.mul || 1;
+  const D = MON[kind], lv = (o.lvl || D.lvl) + (D.coward ? 8 : 0), mul = o.mul || 1, K = monLvScale(lv);
   const m = new Ent({ team: 'e', kind, name: D.name, model: D.model(), clips: D.clips, x, y, w: D.w, d: D.d, h: D.h, weight: D.weight,
-    hp: Math.round(D.hp * mul * (1 + (lv - 1) * 0.15)), atk: Math.round(D.atk * (1 + (lv - 1) * 0.1) * (o.atkMul || 1) * MON_ATK_MUL), def: D.def * (1 + (lv - 1) * 0.08), lvl: lv,
-    speed: D.speed, shadowR: D.shadowR, exp: Math.round(D.exp * (1 + (lv - 1) * 0.4) * (o.expMul || 1)), gold: D.gold, def_: D, face: -1, crit: 0.03,
+    hp: Math.round(D.hp * mul * K.hp), atk: Math.round(D.atk * K.atk * (o.atkMul || 1) * MON_ATK_MUL), def: D.def * K.def, lvl: lv,
+    speed: D.speed, shadowR: D.shadowR, exp: Math.round(D.exp * K.exp * (o.expMul || 1)), gold: D.gold, def_: D, face: -1, crit: 0.03,
     aiCd: rnd(0.6, 1.4), think: 0, boss: !!o.boss, elite: !!o.elite, scale: o.scale || D.scale || 1, bars: D.bars, onDamaged: D.onDamaged,
     acd: D.attacks.map(A => A.cd[0] >= 5 ? rnd(A.cd[0] * 0.4, A.cd[0]) : 0) });
   if (o.elite) { m.hp = m.hpMax = Math.round(m.hp * 3); m.atk *= 1.3; m.name = '精英 ' + m.name; m.scale *= 1.12; }

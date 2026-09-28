@@ -20,7 +20,7 @@ function skillPages(cls = game.player && game.player.cls, job = game.job) {
 }
 const skMin = id => { const C = game.player && CLASSES[game.player.cls], J = C && C.jobs && game.job && C.jobs[game.job]; return C && ((C.start || []).includes(id) || (J && J.auto && J.auto.includes(id))) ? 1 : 0; };
 const skCost = (S, lv) => { try { if (typeof S.spCost === 'function') return Math.max(0, Math.round(S.spCost(lv))); } catch (e) { /* 回退 */ } return skillCost(S, lv); };
-const skLvReq = (S, lv) => (S.lvReq || 1) + (lv > 1 && S.lvStep ? (lv - 1) * S.lvStep : 0);   // 学到第 lv 级需要的角色等级
+const skLvReq = (S, lv) => skillLvReq(S, lv);   // 学到第 lv 级需要的角色等级（规则在 game/progress.js：Lv30 以后普通主动技能上限继续涨）
 const skCmd = id => { if (typeof cmdTextOf === 'function') return cmdTextOf(id) || ''; const C = game.player && CLASSES[game.player.cls], c = C && (C.cmds || []).find(x => x[1] === id); if (!c) return ''; const k = keyName({ attack: 'attack', buff: 'cmdB', jump: 'jump' }[c[2]] || 'cmd'); return c[0] === '' ? k : cmdText(c[0]) + '+' + k; };
 const cmdLocked = id => !!(save.data && save.data.opts && save.data.opts.cmdLock && save.data.opts.cmdLock[id]);
 // 为什么不能升级（返回 null 表示可以）
@@ -29,7 +29,7 @@ function skillUpBlock(id) {
   if (!S) return '未知技能';
   if (S.job && S.job !== game.job) return '需要转职';
   if (typeof skillAllowed === 'function' && !skillAllowed(id, game.job)) return '该转职无法学习';
-  if (lv >= (S.maxLv || 1)) return '已满级';
+  if (lv >= skillMaxLv(S)) return '已满级';
   const need = skLvReq(S, lv + 1); if (game.lvl < need) return `需要等级 ${need}`;
   if (typeof tierOf === 'function' ? !tierUnlocked(tierOf(S)) : (S.awaken && typeof awakenUnlocked === 'function' && !awakenUnlocked())) return `需要完成${(typeof TIER_NAME !== 'undefined' && TIER_NAME[tierOf(S)]) || '觉醒'}任务`;
   for (const pid in S.pre || {}) if ((game.skillLv[pid] || 0) < S.pre[pid]) return `需要 ${SKILLS[pid] ? SKILLS[pid].name : pid} Lv.${S.pre[pid]}`;
@@ -73,7 +73,7 @@ function skillInfo(id, lv) {
 }
 function skillTipHtml(id) {
   const S = SKILLS[id]; if (!S) return '';
-  const lv = game.skillLv[id] || 0, max = S.maxLv || 1, cmd = skCmd(id), detail = uiPref('tipDetail');
+  const lv = game.skillLv[id] || 0, max = skillMaxLv(S), cmd = skCmd(id), detail = uiPref('tipDetail');
   const kind = S.awaken ? '觉醒技能' : S.passive ? '被动技能' : '主动技能';
   let s = `<div class="nm" style="color:#ffe070">${S.name}</div><div class="dim small">${kind}${S.type ? ' · ' + (SK_TYPE[S.type] || S.type) : ''}${S.elem ? ' · ' + (SK_ELEM[S.elem] || S.elem) + '属性' : ''} · Lv.${lv}/${max}</div><hr>`;
   if (!S.passive) s += `MP ${S.mp ?? 0} · 冷却 ${S.cd ?? 0} 秒<br>`;
@@ -124,7 +124,7 @@ Object.assign(menus, {
       const lock = S.job && S.job !== game.job || game.lvl < (S.lvReq || 1);
       return h('div', { class: 'ski2' + (id === sel ? ' sel' : '') + (lock ? ' lock' : ''), onclick: () => { if (this.skSel !== id) { this.skSel = id; sfx.click(); rf(); } } },
         icon(id),
-        h('div', { class: 'd' }, h('b', {}, S.name), h('div', { class: 'small' }, `Lv.${lv}/${S.maxLv || 1}`, lv < (S.maxLv || 1) ? h('span', { class: 'dim' }, ` · 需 Lv.${skLvReq(S, lv + 1)}`) : null)),
+        h('div', { class: 'd' }, h('b', {}, S.name), h('div', { class: 'small' }, `Lv.${lv}/${skillMaxLv(S)}`, lv < skillMaxLv(S) ? h('span', { class: 'dim' }, ` · 需 Lv.${skLvReq(S, lv + 1)}`) : null)),
         h('div', { class: 'pm' },
           h('button', { class: 'btn pmb' + (upWhy ? ' off' : ''), title: upWhy || `升级（SP ${skCost(S, lv)}）`, onclick: ev => { ev.stopPropagation(); this.skSel = id; if (skillUp(id)) rf(); } }, '+'),
           h('button', { class: 'btn pmb' + (dnWhy ? ' off' : ''), title: dnWhy || '降级（返还 SP）', onclick: ev => { ev.stopPropagation(); this.skSel = id; if (skillDown(id)) rf(); } }, '−')));
@@ -133,16 +133,16 @@ Object.assign(menus, {
     const detail = h('div', { class: 'skdetail' });
     if (sel) {
       const S = SKILLS[sel], lv = game.skillLv[sel] || 0, upWhy = skillUpBlock(sel), cmd = skCmd(sel);
-      const cur = skillInfo(sel, lv), nxt = lv < (S.maxLv || 1) ? skillInfo(sel, lv + 1) : [];
+      const cur = skillInfo(sel, lv), nxt = lv < skillMaxLv(S) ? skillInfo(sel, lv + 1) : [];
       const kv = (arr, col) => arr.map(([k, v]) => h('div', { class: 'kv' }, h('span', {}, k), h('b', { style: col ? `color:${col}` : '' }, String(v))));
       detail.append(...[
-        h('div', { class: 'row' }, icon(sel, 64), h('div', { class: 'col', style: 'gap:.1em' }, h('b', { class: 'sknm' }, S.name), h('span', { class: 'small dim' }, `${S.awaken ? '觉醒技能' : S.passive ? '被动技能' : '主动技能'}${S.type ? ' · ' + (SK_TYPE[S.type] || S.type) : ''} · Lv.${lv}/${S.maxLv || 1}`))),
+        h('div', { class: 'row' }, icon(sel, 64), h('div', { class: 'col', style: 'gap:.1em' }, h('b', { class: 'sknm' }, S.name), h('span', { class: 'small dim' }, `${S.awaken ? '觉醒技能' : S.passive ? '被动技能' : '主动技能'}${S.type ? ' · ' + (SK_TYPE[S.type] || S.type) : ''} · Lv.${lv}/${skillMaxLv(S)}`))),
         h('div', { class: 'small', style: 'line-height:1.5' }, S.desc || ''),
         !S.passive ? h('div', { class: 'kv' }, h('span', {}, 'MP / 冷却'), h('b', {}, `${S.mp ?? 0} / ${S.cd ?? 0} 秒`)) : null,
         cmd ? h('div', { class: 'kv' }, h('span', {}, '指令'), h('b', { class: 'gold' }, cmd, cmdLocked(sel) ? h('span', { style: 'color:#ff8a8a' }, '（已锁定）') : null)) : null,
         Object.keys(S.pre || {}).length ? h('div', { class: 'kv' }, h('span', {}, '前置技能'), h('b', {}, Object.entries(S.pre).map(([p, l]) => `${SKILLS[p] ? SKILLS[p].name : p} Lv.${l}`).join('、'))) : null,
         cur.length ? h('div', { class: 'sksec' }, h('div', { class: 'small dim' }, `当前 Lv.${lv}`), kv(cur)) : null,
-        lv < (S.maxLv || 1) ? h('div', { class: 'sksec' }, h('div', { class: 'small dim' }, `下一级 Lv.${lv + 1} · 需要等级 ${skLvReq(S, lv + 1)} · SP ${skCost(S, lv)}`), kv(nxt, '#8aff9a')) : h('div', { class: 'small gold' }, '已达到最高等级'),
+        lv < skillMaxLv(S) ? h('div', { class: 'sksec' }, h('div', { class: 'small dim' }, `下一级 Lv.${lv + 1} · 需要等级 ${skLvReq(S, lv + 1)} · SP ${skCost(S, lv)}`), kv(nxt, '#8aff9a')) : h('div', { class: 'small gold' }, '已达到最高等级'),
         h('div', { class: 'row', style: 'margin-top:auto' },
           h('button', { class: 'btn' + (upWhy ? ' off' : ''), onclick: () => { if (skillUp(sel)) rf(); } }, lv ? '升级' : '学习'),
           h('button', { class: 'btn' + (skillDownBlock(sel) ? ' off' : ''), onclick: () => { if (skillDown(sel)) rf(); } }, '降级'),

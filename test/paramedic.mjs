@@ -40,7 +40,7 @@ const onlySolo = process.argv[2] === 'solo';
     delete game.skillLv.g_gatling; T.run(30);
     // 2) 变身：测试场里穿战斗服（模型换成 pmsuit 帧集、没有外观层 = 不显示时装），普攻换成 [SCQC]
     T.reset(); T.run(20);
-    out.suit = { on: !!p._pmSuit, key: p.model && p.model.key, av: p.model && p.model.av === null, acts: p.acts === PM_ACTS, sys: ['pm_suit', 'pm_sync', 'pm_info'].every(id => game.skillLv[id] > 0) };
+    out.suit = { on: !!p._pmSuit, key: p.model && p.model.key, av: !!p.model && (p.model.av === null || (!p.model.av.S2 && !p.model.av.parts && !p.model.av.acc.length)), acts: p.acts === PM_ACTS, sys: ['pm_suit', 'pm_sync', 'pm_info'].every(id => game.skillLv[id] > 0) };
     // 3) [SCQC] 普攻：按住 X 连出 4 段（横斩 → 上撩 → 回旋踢 → 贴身射击），命中收集信息（每段 +5%）
     T.clear(); T.reset(); const m = T.mob(350, 100); const hp0 = m.hp; p.pmInfo = 0; T.press('attack'); const names = [];
     for (let i = 0; i < 160; i++) { T.run(1); if (p.act && p.act.basic && names[names.length - 1] !== p.act.name) names.push(p.act.name); if (names.length >= 4 && !p.act) break; }
@@ -81,7 +81,7 @@ const onlySolo = process.argv[2] === 'solo';
     return out;
   });
   report('基础技能只能学 5 个（后撩踢 / 浮空弹 / 钉刺射 / 刺踢 / 上旋踢），其他转职不受影响；学不了的放不出来', R.base.allowed.join() === 'g_flash,g_knee,g_launch,g_spin,g_stomp' && R.base.ranger === R.base.total && R.base.gatlingCast === null && R.base.jobList >= 19, R.base);
-  report('强袭战斗服：测试场里自动变身（pmsuit 帧集、不挂外观层 = 不显示时装），系统被动自动学会', R.suit.on && R.suit.key === 'pmsuit' && R.suit.av && R.suit.acts && R.suit.sys, R.suit);
+  report('强袭战斗服：测试场里自动变身（pmsuit 帧集、不显示时装，只有转职外观），系统被动自动学会', R.suit.on && R.suit.key === 'pmsuit' && R.suit.av && R.suit.acts && R.suit.sys, R.suit);
   report('[SCQC] 普攻：按住 X 连出 4 段、独立攻击、命中每段 +5% 信息、每跳 2 次跳攻', R.combo.names.join() === 'atk1,atk2,atk3,atk4' && R.combo.hit && R.combo.info >= 20 && R.combo.type === 'indep' && R.combo.airMax === 2, R.combo);
   report('技能命中收集信息（护盾冲击 25%），上限 3 层', R.skillInfo >= 25 && R.skillInfo < 40 && R.cap.info === 300 && R.cap.stacks === 3, { skill: R.skillInfo, cap: R.cap });
   report('无动作施放：技能中放 BUFF 不打断（直接调用 / 按技能栏键都一样）、空中也能放；装甲强化提高最大 HP', R.instant.same && R.instant.okArms && R.instant.okArmor && R.instant.arms && R.instant.armsT >= 299 && R.instant.armor && R.instant.hpUp && R.instant.air && R.instant.key.act === 'pm_ray' && R.instant.key.arms, R.instant);

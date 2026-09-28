@@ -20,6 +20,7 @@ run gearsim   node test/gear_sim.mjs 20
 run quests    node test/quests.mjs
 run guide     node test/guide.mjs
 run quickquest node test/quickquest.mjs
+run levelcap  node test/levelcap.mjs
 run world     node test/world.mjs
 run polish    node test/polish.mjs
 run combat    node test/combat.mjs
@@ -43,6 +44,7 @@ run shop      node test/shop.mjs
 run shopecon  node test/shop_econ.mjs
 run shopsynth node test/shop_synth.mjs
 run vanity    node test/vanity.mjs   # 强化 / 增幅武器光效、时装城镇移速、天空套特效、城镇 8 人帧率
+run jobvisuals node test/jobvisuals.mjs   # 转职外观（鬼手 / 红眼 / 凯贾鬼影 / 狂暴血焰）、无敌半透明、光效在刀身后面、帧率
 run acct      node test/acct.mjs
 run bag       node test/bag.mjs
 run skyguide  node test/skyguide.mjs

@@ -39,12 +39,7 @@ defSkill('bloodwake', { name: '力量唤醒', cls: 'sword', job: 'berserker', lv
   desc: '【被动】技能攻击力、攻击速度、移动速度提高；HP 低于 70% / 60% / 50% 时分三档额外提高攻击速度和移动速度。',
   infoExtra: lv => [['技能攻击力', '+' + pct(0.03 + 0.006 * lv)], ['攻速 / 移速', `+${pct(0.03)}，低血每档再 +${pct(0.04)}`]] });
 
-// 狂暴之力开启期间身上一层淡淡的红色气焰（一个常驻特效，关掉 / 换房间清掉后由被动刷新时补上）
-function bzFrenzyFx(e) {
-  if (e._fzFx && fxList.includes(e._fzFx)) return;
-  e._fzFx = addFx({ x: e.x, y: e.y + 1, z: 0, dur: 1e9, add: true, update() { this.x = e.x; this.y = e.y + 1; if (!bzFrenzy(e) || e.dead) this.t = this.dur; },
-    draw(c) { drawSpr(c, fxTint('aura', '#ff2a3a'), sx(e.x), sy(e.y, e.z) + 4, 0, 118 + 6 * Math.sin(game.t * 5), { ay: 1, alpha: 0.22 + 0.08 * Math.sin(game.t * 7) }); } });
-}
+// 狂暴之力 / 暴走的全身血焰、血色双刀、红眼、鬼手滴血：转职外观（content/avatar/job_looks.js 的 berserker，渲染 models/job_fx.js）
 /* ---- 狂暴之力：开关 BUFF（再按一次解除）。施放时和之后每 10 秒扣固定 HP（扣到 1 也不会自动关）；
    普攻变二刀流；普攻与转职技能攻击力、命中、僵直提高；转职技能冷却 −10%；击杀出血的敌人回少量 HP ---- */
 const frenzyCost = lv => [40 + 12 * lv, 20 + 5 * lv];   // [施放, 每 10 秒]
@@ -54,7 +49,7 @@ defSkill('frenzy', { name: '狂暴之力', cls: 'sword', job: 'berserker', lvReq
   act: (lv) => ({ name: 'frenzy', clip: 'roar', dur: 0.5, noCounter: true, superArmor: true,
     onStart: e => {
       if (toggleBuff(e, 'frenzy', 9999, { atk: 0.1 + 0.01 * lv, stagger: 100, lv, hl: '#ff3040' })) { const [c0] = frenzyCost(lv); e.hp = Math.max(1, e.hp - c0); e.buffs.frenzy.tick = 10;
-        sfx.buff(); sfx.boom(0.5); fxAura(e, '#ff2a3a', 1.2); fxBurst(e.x, e.y, e.z + 60, 160, '#ff3040'); bzFrenzyFx(e); fxText('狂暴之力 开启', e.x, e.y, e.z + 20, { col: '#ff6a6a', size: 13 });
+        sfx.buff(); sfx.boom(0.5); fxAura(e, '#ff2a3a', 1.2); fxBurst(e.x, e.y, e.z + 60, 160, '#ff3040'); fxText('狂暴之力 开启', e.x, e.y, e.z + 20, { col: '#ff6a6a', size: 13 });
         const F = isHuman(e) && save.data && (save.data.flags ??= {}); if (F && !F.tip_frenzy) { F.tip_frenzy = true; toastMsg(`狂暴之力开启：普攻变二刀流，狂气斩 / 暴怒狂斩 / 嗜魂封魔斩 / 爆发之刃 / 崩山裂地斩可以用了；开启期间每 10 秒消耗 HP。再按一次（${swordHowTo(e, 'frenzy')}）关闭。`, '#ff8a8a', 'log'); } }
       else fxText('狂暴之力 关闭', e.x, e.y, e.z + 20, { col: '#cccccc', size: 12 });
       if (!(e.st === 'act' && e.act && e.act.basic)) e.acts = swordActs(e);
@@ -210,7 +205,6 @@ CLASSES.sword.cmds.push(['du', 'frenzy', 'buff'], ['uu', 'bz_defy', 'buff'], ['u
   ['fbuf', 'bz_snatch'], ['fdf', 'bz_crusher'], ['fbf', 'bz_boom'], ['dff', 'bz_fatal'], ['duff', 'bz_awaken2'], ['udff', 'bz_rampant'], ['bufd', 'bz_awaken3']);
 
 // 被动：狂暴之力每 10 秒扣 HP、刀光变红；力量唤醒按 HP 分档
-CLASSES.sword.passives.push(p => { if (jobOf(p) === 'berserker' && bzFrenzy(p)) bzFrenzyFx(p); });
 CLASSES.sword.passives.push(p => {
   const F = p.buffs.frenzy;
   if (F && jobOf(p) === 'berserker') { F.tick = (F.tick ?? 10) - 0.25; if (F.tick <= 0) { F.tick = 10; const c = frenzyCost(F.lv || 1)[1]; p.hp = Math.max(1, p.hp - c); } p.slashCol = '#ff5a5a'; }
@@ -223,7 +217,7 @@ SWORD_HOOKS.onHit.push((p, t, h, dmg, act) => {
   const A = act || p.act;
   if (jobOf(p) === 'berserker' && bzVig(p) && A && !t.dead) {
     const S = A.skill && SKILLS[A.skill];
-    if ((A.basic && bzFrenzy(p)) || (S && (S.job === 'berserker' || A.skill === 'slam' || A.skill === 'cross'))) addStatus(t, 'bleed', 7, { dps: p.atk * 0.05, src: p });
+    if ((A.basic && bzFrenzy(p)) || (S && (S.job === 'berserker' || A.skill === 'slam' || A.skill === 'cross'))) { addStatus(t, 'bleed', 7, { dps: p.atk * 0.05, src: p }); if (typeof jobFxBlood === 'function') jobFxBlood(t, p.face); }   // 出血命中溅血（视觉）
   }
   if (jobOf(p) === 'berserker' && bzFrenzy(p) && t.hp <= 0 && t.status && t.status.bleed) { const hl = Math.round(p.hpMax * 0.01); p.hp = Math.min(p.hpMax, p.hp + hl); addNumber(hl, p.x, p.y, p.z, { heal: true }); }
   if (A && A.basic && !A.rk && wtypeOf(p) === 'club' && Math.random() < 0.08 && !t.dead) addStatus(t, 'stun', 0.8, { src: p });

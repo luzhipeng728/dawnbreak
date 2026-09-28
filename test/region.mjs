@@ -273,7 +273,7 @@ if (parts.includes('monsters')) {
 /* ---------------- 5. 场景 ---------------- */
 if (parts.includes('scenes') || parts.includes('quest')) await open('town&mute&cls=sword');
 if (parts.includes('scenes')) {
-  await page.evaluate(() => { game.lvl = 30; });
+  await page.evaluate(L => { game.lvl = L; }, R.lvl);   // 区域等级（满级 60 后希洛克是 Lv60）
   const sceneNow = () => page.evaluate(() => world && world.S && world.S.id);
   for (const sid of R.scenes) {
     await page.evaluate(sid => enterScene(sid), sid); await wait(900);
@@ -293,18 +293,18 @@ if (parts.includes('scenes')) {
   await page.evaluate(E => enterScene(E.scene), R.entry); await wait(700);
   await page.evaluate(E => useExit(world.S.exits.find(x => x.to === E.to)), R.entry); await wait(900);
   check((await sceneNow()) === R.entry.to, `入口 ${R.entry.scene} → ${R.entry.to} 走不通`);
-  await page.evaluate(lv => { game.lvl = lv; }, R.entry.minLv - 1); await page.evaluate(E => enterScene(E.scene), R.entry); await wait(700);
+  await page.evaluate(L => { game.lvl = L - 1; }, R.entry.minLv); await page.evaluate(E => enterScene(E.scene), R.entry); await wait(700);
   await page.evaluate(E => useExit(world.S.exits.find(x => x.to === E.to)), R.entry); await wait(700);
   check((await sceneNow()) === R.entry.scene, `入口的等级限制 Lv.${R.entry.minLv} 没拦住`);
   }
-  await page.evaluate(() => { game.lvl = 30; });
+  await page.evaluate(L => { game.lvl = L; }, R.lvl);
   console.log('场景：完成');
 }
 
 /* ---------------- 6. 主线任务链 ---------------- */
 if (parts.includes('quest')) {
   const res = await page.evaluate(async ({ id, R }) => {
-    game.lvl = 30; const d = save.data; d.questDone ??= {}; const sp = REGIONS[id].spec; d.questDone[sp.story.pre] = Date.now();
+    game.lvl = R.lvl; const d = save.data; d.questDone ??= {}; const sp = REGIONS[id].spec; d.questDone[sp.story.pre] = Date.now();
     const rows = [];
     for (const q of R.quests) {
       const Q = QUESTS[q], s0 = questState(q); questAccept(q); const s1 = questState(q);
@@ -312,7 +312,7 @@ if (parts.includes('quest')) {
         if (g.type === 'reach') enterScene(g.scene);
         else if (g.type === 'talk') bus.emit('npcTalk', { id: g.npc });
         else if (g.type === 'clear') bus.emit('dungeonClear', { id: g.dungeon, diff: g.diff || 0, rank: 'S', time: 100, hurt: 0, maxCombo: 10 });
-        else if (g.type === 'kill') bus.emit('kill', { kind: g.kind, boss: !!g.boss, elite: false, dungeon: g.dungeon, lvl: 30, x: 0, y: 0 });
+        else if (g.type === 'kill') bus.emit('kill', { kind: g.kind, boss: !!g.boss, elite: false, dungeon: g.dungeon, lvl: R.lvl, x: 0, y: 0 });
         else if (g.type === 'collect') questProgress(q, i, g.n);
       });
       await new Promise(r => setTimeout(r, 900));
@@ -378,7 +378,7 @@ if (parts.includes('abyss')) {
   for (const aid of AB) {
     // 进图：扣 cost 张邀请函
     const e0 = await page.evaluate(aid => {
-      const A = ABYSS[aid], Q = QUESTS[A.quest]; save.data.questDone[A.quest] = Date.now(); game.lvl = 30; testLoadout(30); recalcStats(game.player);
+      const A = ABYSS[aid], Q = QUESTS[A.quest]; save.data.questDone[A.quest] = Date.now(); const L = DUNGEONS[aid].lvl[0]; game.lvl = L; testLoadout(L); recalcStats(game.player);
       inv.items = inv.items.filter(x => x.kind !== 'equip'); inv.take('abyss_ticket', inv.count('abyss_ticket')); inv.add(makeItem('abyss_ticket', A.cost + 1)); save.data.fatigue = 999;
       abyssData().pity[aid] = A.pity - 1;
       const ok = enterDungeon(aid, 0);
@@ -432,7 +432,7 @@ if (parts.includes('abyss')) {
     check(pity.state === 'play', `${aid}: 打倒深渊领主不结算，地下城照常往下打（${pity.state}）`);
     // 两轮打完：原地弹出深渊宝藏（三张紫卡，免费翻一张），门打开
     await page.evaluate(() => { for (const e of [...ents]) if (e.team === 'e' && !e.dead && e !== game.dungeon.abyssRun.block) { e.hp = 0; killEnt(e, game.player, {}); } });
-    await page.waitForFunction(() => !!document.querySelector('#abytreasure .card'), null, { timeout: 10000 }).catch(() => {});
+    await page.waitForFunction(() => { const dg = game.dungeon; return !!document.querySelector('#abytreasure .card') && dg.abyssRun.phase === 'done' && dg.doorsOpen; }, null, { timeout: 30000 }).catch(() => {});   // 并行负载下清房 / 开门会晚几帧
     await wait(500);
     const c0 = await page.evaluate(() => ({ n: document.querySelectorAll('#abytreasure .card').length, phase: game.dungeon.abyssRun.phase, doors: game.dungeon.doorsOpen, items: inv.items.reduce((s, x) => s + (x.n || 1), 0), gold: game.gold }));
     check(c0.n === 3 && c0.phase === 'done' && c0.doors, `${aid}: 两轮打完弹出三张「深渊宝藏」（${c0.n}），门打开了`);
@@ -453,7 +453,7 @@ if (parts.includes('abyss')) {
   console.log(`深渊：${AB.join(', ')}（${errs.length ? errs.length + ' 个数据问题' : '数据通过'}）`);
 }
 
-/* ---------------- 7. 机器人通关（Lv30 全身 +12 史诗）---------------- */
+/* ---------------- 7. 机器人通关（区域等级 全身 +12 史诗）---------------- */
 if (parts.includes('bot')) {
   const CLS = ['sword', 'gun', 'mage'];
   const plan = process.env.BOT ? process.env.BOT.split(',').map(s => s.split(':')) : R.dungeons.map((d, i) => [d, CLS[i % 3]]);

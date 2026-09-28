@@ -81,7 +81,7 @@ defineRegion({
         { at: 0.25, enter: { say: '启动保护模式！', col: '#8ad8ff', mechs: [{ use: 'invuln', until: 'adds', kind: 'bmRobot', n: 4, hide: false }] },
           skills: [{ use: 'rain', kind: 'bolt', n: 5, r: 44, windup: 1.0, dmg: 1.0, status: 'shock', col: '#fff38a', cd: [8, 10] }] },
       ] },
-    bugKing: { name: '虫王戮蛊', lvl: 51, size: [46, 22, 130], weight: 8, speed: 75, elem: 'dark', art: 'wcBugKing', scale: 2.2, pref: 170,   // 远古最难的最终领主：画面约 240 高、300 长 hook: 'bugKing', traits: { sa: 'cast' },
+    bugKing: { name: '虫王戮蛊', lvl: 51, size: [46, 22, 130], weight: 8, speed: 75, elem: 'dark', art: 'wcBugKing', scale: 2.2, pref: 170, hook: 'bugKing', traits: { sa: 'cast' },   // 远古最难的最终领主：画面约 240 高、300 长
       mechs: [{ use: 'groggy', max: 110, dur: 5 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'bite', reach: 190, width: 44, dmg: 1.2, cd: [2, 3], w: 2 },

@@ -46,6 +46,10 @@ NOTES = {'gun_skillA': 'The grenade and the huge gatling gun are NOT the revolve
          'gun_sk1': 'The heavy gatling gun is NOT the revolver: keep it exactly as it is. ',
          'mage_sk1': 'The jack-o-lantern pumpkin bomb is NOT the staff: keep it exactly as it is. '}
 
+try:   # 鬼剑士新表的双持说明（art/tools/sword_art.py）
+    from sword_art import AVATAR_NOTES as _SWN; NOTES.update(_SWN)
+except ImportError: pass
+
 def wpn_prompt(cls, name=''):
     w = WEAPON_WORD[cls]
     grip = {

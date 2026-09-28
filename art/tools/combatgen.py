@@ -122,6 +122,12 @@ SHEETS = {
                     ('chaser', 'flicking the fingers of the free hand forward launching small glowing orbs, staff held back'),
                     ('bmAwk', 'fierce battle stance with the staff spun behind the back, glowing golden aura')],
 }
+# 鬼剑士五个转职的新表 / 特效 / 图标 / 插图（art/tools/sword_art.py）
+try:
+    import sword_art as _SWA
+    SHEETS.update(_SWA.SHEETS)
+    HOLD.update(_SWA.HOLD)
+except ImportError: _SWA = None
 NO_HOLD = {'gun_launcher'}   # 枪炮师拿的是重武器，不强调左轮
 
 def sheet_jobs():
@@ -171,6 +177,7 @@ ICON_LIST = [   # (技能 id, 图标描述)；16 个一张表，依次为 cskill
     ('bm_dragon', 'a golden dragon emerging from a staff tip with a crescent moon'), ('bm_awaken', 'a fierce warrior goddess silhouette with a golden dragon aura'),
 ]
 ICON_SHEETS = {f'cskills_{c}': ICON_LIST[i * 16:(i + 1) * 16] for i, c in enumerate('abcd')}
+if _SWA: ICON_SHEETS.update({f'sword_icons_{c}': _SWA.ICONS[i * 16:(i + 1) * 16] for i, c in enumerate('abcdefgh') if _SWA.ICONS[i * 16:(i + 1) * 16]})
 def icon_prompt(items):
     return (f'A sprite sheet of {len(items)} separate game icons arranged in a grid of 4 columns and {len(items) // 4} rows on a plain pure white background, '
             f'evenly spaced with generous white gaps between icons, no icon touching another, {ICON_STYLE}. In reading order (left to right, top to bottom): '
@@ -214,6 +221,7 @@ CUTIN = {
     'elemental': ('mage', 'arms raised summoning meteors of fire, ice, lightning and darkness from a huge glowing magic circle'),
     'battlemage': ('mage', 'fierce battle stance swinging the staff, a golden dragon aura and small glowing orbs circling her'),
 }
+if _SWA: FX.update(_SWA.FX); CUTIN.update(_SWA.CUTIN)
 def cutin_jobs():
     return [{'out': os.path.join(OUT, 'cutin', f'{j}.png'), 'ref': os.path.join(SRC, f'{c}_ref.png'), 'size': '1536x1024', 'model': 'gpt-image-2.5-sunburst',
              'prompt': f'Using this exact chibi character (same design, same colors, same cute art style), draw a dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Plain pure white background, no text.'}

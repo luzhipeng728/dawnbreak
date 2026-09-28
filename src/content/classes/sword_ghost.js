@@ -343,7 +343,7 @@ defSkill('gb_awaken3', { name: '灭魂极影剑·止煞', cls: 'sword', job: 'gh
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '灭魂极影剑·止煞', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.cool.gb_awaken = Math.max(e.cool.gb_awaken || 0, e.cool.gb_awaken3 || 0);
       const a = e.act; a.cx = e.x + e.face * 180; a.cy = e.y;
       addFx({ x: a.cx, y: -10, z: 0, dur: 4.0, draw(c) { const k = this.t, al = Math.min(1, (k - 0.9) * 3) * Math.min(1, (4 - k) * 3); if (al <= 0) return; c.save(); c.globalAlpha = 0.68 * al; c.fillStyle = '#030818'; c.fillRect(0, 0, WW, WH); c.restore();
-        drawSpr(c, fxTint('rune', '#4a8aff'), sx(a.cx), sy(a.cy, 0), 460, 160, { rot: k * 0.6, alpha: 0.5 * al }); } });
+        drawSpr(c, fxTint('rune', '#4a8aff'), sx(a.cx), sy(a.cy, 0), 460, 160, { ground: true, rot: k * 0.6, alpha: 0.5 * al }); } });
       gbPhantomDo(e, lv, { name: 'pAwk3', clip: 'pSpin', dur: 2.9 }, { x: a.cx + e.face * 120, y: a.cy, face: -e.face, linger: 0.2 }); },
     events: [...Array.from({ length: 12 }, (_, i) => evAt(1.0 + i * 0.16, e => { const a = e.act, s = gbPhantom(e), side = i % 2 ? 1 : -1;
         e.x = a.cx + side * rnd(60, 140); e.y = clamp(a.cy + rnd(-30, 30), 6, DEPTH - 6); e.face = -side; e.play(i % 2 ? 'rk2' : 'rk1', true); fxAfterimage(e, GB_COL);

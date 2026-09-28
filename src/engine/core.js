@@ -29,7 +29,7 @@ const fmtNum = n => Math.round(n).toLocaleString('en-US');
 const KEYMAP_DEFAULT = {
   left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
   attack: ['KeyX'], jump: ['KeyC'], cmd: ['KeyZ'], cmdB: ['Space'],
-  s0: ['KeyA'], s1: ['KeyS'], s2: ['KeyD'], s3: ['KeyF'], s4: ['KeyG'], s5: ['KeyH'], s12: ['AltLeft'],
+  s0: ['KeyA'], s1: ['KeyS'], s2: ['KeyD'], s3: ['KeyF'], s4: ['KeyG'], s5: ['KeyH'], s12: ['ShiftLeft'],   /* 第 7 格：左 Shift（Mac 的 Option 键当技能键不好用；删闪避后 Shift 空出来了） */
   s6: ['KeyQ'], s7: ['KeyW'], s8: ['KeyE'], s9: ['KeyR'], s10: ['KeyT'], s11: ['KeyY'], s13: ['KeyV'],
   i0: ['Digit1'], i1: ['Digit2'], i2: ['Digit3'], i3: ['Digit4'], i4: ['Digit5'], i5: ['Digit6'],
   inv: ['KeyI'], status: ['KeyM'], skills: ['KeyK'], quests: ['KeyL', 'F1'], map: ['KeyN'], settings: ['KeyO'], pvp: ['KeyP'],

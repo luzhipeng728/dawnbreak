@@ -275,7 +275,7 @@ defSkill('wm_meteor', { name: '极·神剑术（流星落）', cls: 'sword', job
   act: (lv) => ({ name: 'wm_meteor', clip: 'meteorAim', dur: 2.4, superArmor: true, noCounter: true, invul: [0, 1.6],
     onStart: e => { const a = e.act, t = nearestFoe(e, 500); a.rx = t ? t.x : e.x + e.face * 180; a.ry = t ? t.y : e.y; e.vz = 760; e.z = Math.max(e.z, 1); sfx.jump(); fxShock(e.x, e.y, 130, '#9fd0ff');
       blast(e, e.x, e.y, 100, { dmg: skillDmg(1.2, 0.12, lv), launch: 300, knock: 60, hs: 0.05 }, { zMax: 80 });
-      addFx({ x: a.rx, y: a.ry, z: 0, dur: 1.7, a, update() { this.x = this.a.rx; this.y = this.a.ry - 0.5; }, draw(c) { drawSpr(c, fxTint('rune', '#9fd0ff'), sx(this.a.rx), sy(this.a.ry, 0), 150, 56, { rot: game.t * 2, alpha: 0.7 }); } }); },
+      addFx({ x: a.rx, y: a.ry, z: 0, dur: 1.7, a, update() { this.x = this.a.rx; this.y = this.a.ry - 0.5; }, draw(c) { drawSpr(c, fxTint('rune', '#9fd0ff'), sx(this.a.rx), sy(this.a.ry, 0), 150, 56, { ground: true, rot: game.t * 2, alpha: 0.7 }); } }); },
     onInput: (e, I, dt) => { const a = e.act, d = dt || 1 / 60; if (e.actT < 1.5) { a.rx += I.dx() * 320 * d; a.ry = clamp(a.ry + I.dy() * 160 * d, 8, DEPTH - 8); } return false; },
     update: (e, dt) => { const a = e.act;
       if (e.actT > 0.35 && e.actT < 1.5) { e.vz = 0; e.vx = 0; }

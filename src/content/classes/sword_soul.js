@@ -31,7 +31,7 @@ function sbFieldSkill(id, key, o) {
 }
 // 地面的阵纹（每帧一次 drawImage + 旋转）与站立的鬼神形象（按 y 排序）。
 // 可读性：阵会在玩家身边停很久，常驻部分保持低透明度（不挡怪物的红色预警）；鬼神形象只在放出时和结算（有敌人被命中）时亮起
-const sbRing = (col, img = 'hexagram') => (c, s) => { const k = s.lifeT, al = Math.min(1, k * 4) * Math.min(1, (s.life - k) * 3), hi = k < 0.5 ? 0.6 : 0.3; drawSpr(c, fxTint(img, col), sx(s.x), sy(s.y, 0), s.r * 2.2, s.r * 0.8, { rot: k * 0.5, alpha: hi * al }); };
+const sbRing = (col, img = 'hexagram') => (c, s) => { const k = s.lifeT, al = Math.min(1, k * 4) * Math.min(1, (s.life - k) * 3), hi = k < 0.5 ? 0.6 : 0.3; drawSpr(c, fxTint(img, col), sx(s.x), sy(s.y, 0), s.r * 2.2, s.r * 0.8, { ground: true, rot: k * 0.5, alpha: hi * al }); };
 const sbFigure = (img, h, col, steady = 0.3) => (c, s) => {
   const k = s.lifeT, end = Math.min(1, (s.life - k) * 3), flash = s.flashT ? Math.max(0, 1 - (game.t - s.flashT) / 0.3) : 0;
   const al = (k < 0.25 ? k / 0.25 * 0.9 : k < 0.9 ? 0.9 - (0.9 - steady) * (k - 0.25) / 0.65 : steady) + flash * 0.4;
@@ -268,7 +268,7 @@ defSummon('sb_swamp_f', { kind: 'field', tags: ['ghost', 'field'], max: 1, over:
   onTick: (s, L) => { for (const t of L) summonHit(s, t, { dmg: skillDmg(0.4, 0.04, s.lv), stun: 0.3, knock: 0, hs: 0, col: '#9a6aff' }); },
   onEnd: (s, why) => { if (why === 'owner' || why === 'room') return; cam.shake = Math.max(cam.shake, 10); sfx.boom(1.3); for (let i = 0; i < 3; i++) { const a = i * TAU / 3; fxSpr('explosion', s.x + Math.cos(a) * 70, s.y + Math.sin(a) * 24, 30, { w: 150, dur: 0.45, col: '#9a5aff' }); }
     summonArea(s, s.x, s.y, 170, { dmg: skillDmg(10, 1, s.lv), launch: 460, knock: 120, hs: 0.14, big: 1.8, downHit: true, col: '#b08aff' }, { zMax: 260 }); },
-  draw: (c, s) => drawSpr(c, fxTint('darkorb', '#3a1a5a'), sx(s.x), sy(s.y, 0), 330, 110, { alpha: 0.5, add: false, rot: s.lifeT * 0.3 }),
+  draw: (c, s) => drawSpr(c, fxTint('darkorb', '#3a1a5a'), sx(s.x), sy(s.y, 0), 330, 110, { alpha: 0.5, add: false, ground: true, rot: s.lifeT * 0.3 }),
   drawUpright: (c, s) => { for (let i = 0; i < 3; i++) { const a = i * TAU / 3 + 0.5; drawSpr(c, sbImg('sb_tomb', 'rock', '#8a8a9a'), sx(s.x + Math.cos(a) * 80), sy(s.y + Math.sin(a) * 26, 0), 0, 60 * Math.min(1, s.lifeT * 4), { ay: 1, add: false }); } } });
 defSkill('sb_swamp', { name: '冥祭之沼', cls: 'sword', job: 'soulbender', lvReq: 25, mp: 80, cd: 40, type: 'mag', elem: 'dark', col: '#6a3a9a',
   desc: '身边升起 3 块封印墓碑，强行打开冥界之门，把周围的敌人往中心吸 5 秒（持续伤害）；到时间或再按一次技能键，墓碑一起自爆。按前 / 后方向键把位置向前 / 向后移动。', pow: lv => skillDmg(16, 1.6, lv), ai: { kind: 'aoe', r: [0, 200], dy: 60, summon: 'sb_swamp_f' },
@@ -306,7 +306,7 @@ defSkill('sb_awaken2', { name: '王者号令：吉格降临', cls: 'sword', job:
   act: (lv) => ({ name: 'sb_awaken2', clip: 'sbSummon', dur: 3.2, superArmor: true, noCounter: true, invul: [0, 3.2],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '王者号令：吉格降临', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); const a = e.act; a.cx = e.x + e.face * 200; a.cy = e.y;
       addFx({ x: a.cx, y: a.cy - 60, z: 0, dur: 3.2, a, draw(c) { const t = this.t; if (t < 0.9) return; const A = this.a, k = Math.min(1, (t - 0.9) * 3);
-        drawSpr(c, fxTint('hexagram', '#7a2ab0'), sx(A.cx), sy(A.cy, 0), 400, 140, { rot: t, alpha: 0.6 * k });
+        drawSpr(c, fxTint('hexagram', '#7a2ab0'), sx(A.cx), sy(A.cy, 0), 400, 140, { ground: true, rot: t, alpha: 0.6 * k });
         if (t > 1.5) { const q = Math.min(1, (t - 1.5) * 3), sink = t > 2.6 ? (t - 2.6) * 300 : 0; drawSpr(c, sbImg('sb_jig', 'ghost', '#9a4aff'), sx(A.cx), sy(A.cy, 0) + 10 + sink, 0, 300 * q, { ay: 1, alpha: Math.min(1, (3.2 - t) * 3) }); } } }); },
     update: (e, dt) => { const a = e.act; if (e.actT > 0.95 && e.actT < 2.6) for (const t of ents) if (hittable(e, t) && !t.boss && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 320) { t.x = damp(t.x, a.cx, 1.5, dt); t.y = damp(t.y, a.cy, 1.5, dt); } },
     events: [...[1.0, 1.2, 1.4].map(t => evAt(t, e => { const a = e.act; for (let i = 0; i < 4; i++) fxSpr('ghost', a.cx + rnd(-220, 220), a.cy + rnd(-40, 40), rnd(40, 120), { w: 70, dur: 0.4, col: '#9a4aff' }); sfx.swing(false);

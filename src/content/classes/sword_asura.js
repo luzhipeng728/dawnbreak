@@ -136,7 +136,7 @@ defSkill('as_array', { name: '邪光波动阵', cls: 'sword', job: 'asura', lvRe
   act: (lv) => ({ name: 'as_array', clip: 'a3slam', dur: 0.7, noCounter: true, superArmor: [0, 0.5], links: ['as_musou'], linkFrom: 0.3,
     onStart: e => asWill(e),
     events: [evAt(0.28, e => { const cx = e.x + e.face * 70, cy = e.y; cam.shake = Math.max(cam.shake, 5); sfx.boom(0.8); fxShock(cx, cy, 160, AS_COL);
-      addFx({ x: cx, y: cy - 30, z: 0, dur: 2, draw(c) { const k = this.t / this.dur, al = k < 0.1 ? k / 0.1 : k > 0.85 ? (1 - k) / 0.15 : 1; drawSpr(c, fxTint('hexagram', AS_COL), sx(cx), sy(cy, 0), 240, 90, { rot: this.t * 0.8, alpha: 0.75 * al }); } });
+      addFx({ x: cx, y: cy - 30, z: 0, dur: 2, draw(c) { const k = this.t / this.dur, al = k < 0.1 ? k / 0.1 : k > 0.85 ? (1 - k) / 0.15 : 1; drawSpr(c, fxTint('hexagram', AS_COL), sx(cx), sy(cy, 0), 240, 90, { ground: true, rot: this.t * 0.8, alpha: 0.75 * al }); } });
       for (let i = 0; i < 7; i++) game.after(i * 0.28, () => { if (e.dead) return; fxSpr('wave', cx + rnd(-60, 60), cy + rnd(-16, 16), 0, { h: 90, dur: 0.3, ay: 1, col: AS_COL, alpha: 0.8 });
         blast(e, cx, cy, 130, { dmg: skillDmg(0.93, 0.093, lv), stun: 0.6, knock: 0, hs: 0.03, downHit: true, type: 'indep', col: AS_COL, onHit: (a, t) => asRoot(t, a, 0.5) }, { zMax: 140 }); }); })] }) });
 const asRoot = (t, a, dur) => addStatus(t, 'root', dur, { src: a });   // 定身（对领主自动变为减速）
@@ -148,7 +148,7 @@ defSkill('as_fudo', { name: '不动明王阵', cls: 'sword', job: 'asura', lvReq
     onStart: e => { const a = e.act; a.n = asMarkTake(e); a.m = 1 + 0.08 * Math.max(0, a.n - 1); a.cx = e.x + e.face * 160; a.cy = e.y; asWill(e); sfx.charge(); cam.shake = Math.max(cam.shake, 4);
       fxShock(a.cx, a.cy, 200, AS_COL2);
       a.fx = addFx({ x: a.cx, y: a.cy - 40, z: 0, dur: 2.4, a, draw(c) { const A = this.a, k = this.t, al = k < 0.25 ? k / 0.25 : A.boomed ? Math.max(0, 1 - (k - A.boomT) * 3) : 1;
-        drawSpr(c, fxTint('rune', AS_COL2), sx(A.cx), sy(A.cy, 0), 260, 96, { rot: k * 0.6, alpha: 0.7 * al });
+        drawSpr(c, fxTint('rune', AS_COL2), sx(A.cx), sy(A.cy, 0), 260, 96, { ground: true, rot: k * 0.6, alpha: 0.7 * al });
         drawSpr(c, 'fudo', sx(A.cx), sy(A.cy - 30, 0), 0, 230 * Math.min(1, k * 2), { ay: 1, alpha: 0.85 * al, add: true });
         if (!A.boomed) for (let i = 0; i < 6; i++) { const ang = k * 3 + i * TAU / 6; drawSpr(c, fxTint('fireball', '#7ab0ff'), sx(A.cx + Math.cos(ang) * 120), sy(A.cy + Math.sin(ang) * 40, 40), 36, 0, { alpha: al }); } } });
     },
@@ -176,7 +176,7 @@ defSkill('as_awaken', { name: '暗天波动眼', cls: 'sword', job: 'asura', lvR
 function asDomainFx(p) {   // 黑暗领域：地面暗紫色光圈 + 飘动的波动（每帧只有 drawImage）
   if (p._asDom && fxList.includes(p._asDom)) return;
   p._asDom = addFx({ x: p.x, y: p.y - 60, z: 0, dur: 1e9, p, update() { const P = this.p; this.x = P.x; this.y = P.y - 60; if (P.dead || P.remove || !asDomain(P)) this.t = this.dur; },
-    draw(c) { const P = this.p, T = game.t; drawSpr(c, fxTint('hexagram', '#5a3aa8'), sx(P.x), sy(P.y, 0), 420, 150, { rot: T * 0.3, alpha: 0.35, add: false }); drawSpr(c, fxTint('rune', AS_COL), sx(P.x), sy(P.y, 0), 300, 110, { rot: -T * 0.5, alpha: 0.35 }); } });
+    draw(c) { const P = this.p, T = game.t; drawSpr(c, fxTint('hexagram', '#5a3aa8'), sx(P.x), sy(P.y, 0), 420, 150, { ground: true, rot: T * 0.3, alpha: 0.35, add: false }); drawSpr(c, fxTint('rune', AS_COL), sx(P.x), sy(P.y, 0), 300, 110, { rot: -T * 0.5, alpha: 0.35 }); } });
 }
 function asSkyEyes(e) {   // 天穹之眼：全屏爆炸（再按一次 / 时间到）
   const B = e.buffs.as_domain; if (!B) return; const lv = B.lv || 1; delete e.buffs.as_domain;
@@ -284,7 +284,7 @@ defSkill('as_mui', { name: '波动慧眼：无为法', cls: 'sword', job: 'asura
   desc: '沿着敌人看不见的波纹移动，在前方画出法阵（无敌），法阵随即引爆（5 段 + 终结）。按 → 时移动到法阵的另一侧。', pow: lv => skillDmg(22, 2.2, lv), ai: { kind: 'aoe', r: [40, 280], dy: 60 },
   act: (lv) => ({ name: 'as_mui', clip: 'asSeal', dur: 1.6, noCounter: true, invul: true,
     onStart: e => { const a = e.act; a.cx = e.x + e.face * 150; a.cy = e.y; a.cross = e.pad.dx() * e.face > 0; sfx.charge(); fxAfterimage(e, '#e8e0ff');
-      addFx({ x: a.cx, y: a.cy - 40, z: 0, dur: 1.5, draw(c) { const k = Math.min(1, this.t * 2); drawSpr(c, fxTint('hexagram', '#e8e0ff'), sx(a.cx), sy(a.cy, 0), 280 * k, 100 * k, { rot: this.t * 1.5, alpha: 0.8 }); } }); },
+      addFx({ x: a.cx, y: a.cy - 40, z: 0, dur: 1.5, draw(c) { const k = Math.min(1, this.t * 2); drawSpr(c, fxTint('hexagram', '#e8e0ff'), sx(a.cx), sy(a.cy, 0), 280 * k, 100 * k, { ground: true, rot: this.t * 1.5, alpha: 0.8 }); } }); },
     events: [evAt(0.3, e => { const a = e.act; if (a.cross) { e.x = a.cx + e.face * 150; e.face = -e.face; fxAfterimage(e, '#e8e0ff'); } }),
       ...[0.5, 0.62, 0.74, 0.86, 0.98].map(t => evAt(t, e => { const a = e.act; fxSpr('lightning', a.cx + rnd(-100, 100), a.cy + rnd(-20, 20), 0, { h: 200, dur: 0.2, ay: 1 }); sfx.hit('crit', false);
         blast(e, a.cx, a.cy, 150, { dmg: skillDmg(2.2, 0.22, lv), stun: 0.5, knock: 0, hs: 0.03, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 240, status: 'shock', sdur: 3 }); })),
@@ -297,7 +297,7 @@ defSkill('as_awaken2', { name: '雷神降世：裁决', cls: 'sword', job: 'asur
   act: (lv) => ({ name: 'as_awaken2', clip: 'asSeal', dur: 3.0, superArmor: true, noCounter: true, invul: [0, 3.0],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '雷神降世：裁决', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); const a = e.act; a.cx = e.x + e.face * 150; a.cy = e.y;
       addFx({ x: a.cx, y: a.cy - 60, z: 0, dur: 3.0, a, draw(c) { const t = this.t; if (t < 0.9) return; const k = Math.min(1, (t - 0.9) * 3) * Math.min(1, (3 - t) * 4);
-        drawSpr(c, fxTint('hexagram', AS_LIGHT), sx(this.a.cx), sy(this.a.cy, 0), 360, 120, { rot: t, alpha: 0.6 * k });
+        drawSpr(c, fxTint('hexagram', AS_LIGHT), sx(this.a.cx), sy(this.a.cy, 0), 360, 120, { ground: true, rot: t, alpha: 0.6 * k });
         drawSpr(c, asImg('as_raijin', 'ghost', AS_LIGHT), sx(this.a.cx), sy(this.a.cy - 40, 0), 0, 320 * k, { ay: 1, alpha: 0.9 * k }); } }); },
     events: [evAt(0.95, e => { const a = e.act; for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 300) addStatus(t, 'root', 2.2, { src: e }); sfx.charge(); }),
       ...[1.1, 1.3, 1.5, 1.7].map(t => evAt(t, e => { const a = e.act; fxSpr('lightning', a.cx + rnd(-200, 200), a.cy + rnd(-30, 30), 0, { h: 260, dur: 0.2, ay: 1 }); sfx.hit('crit', false);

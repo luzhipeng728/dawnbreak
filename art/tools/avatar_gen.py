@@ -307,6 +307,156 @@ for _sk, _per in WEAPON_SKINS.items():
     for _cls, _items in _per.items():
         WEAPON_SHEETS[f'k_{_sk}_{_cls}'] = [(f'{_sk}_{t}', f'w_{t}', d) for t, d in _items]
 
+# ---- 武器重做（用户：巨剑更夸张、史诗各有各的样子、一眼认出武器类型）：粗大醒目的剪影，同类型的史诗放在同一张表里互相拉开差别 ----
+#   x_<类型>_<职业>：史诗重画（覆盖前面表里的同名武器）+ 新增的官方史诗（epics3.js）；t_<类型>_<职业>：普通武器的稀有 / 神器 / 传说外观 <类型>_r2/r3/r4
+BOLD = {   # 每种武器类型的剪影要求（写进每一行）
+    'shortsword': 'a SHORT SWORD (clearly shorter and stubbier than a longsword) with a broad, distinctively shaped blade and a big ornate crossguard',
+    'katana': 'a KATANA: a long, gently curved, single-edged blade that is clearly thick (not a thin line), a LARGE distinctive tsuba guard, a long two-handed hilt with cord wrapping',
+    'club': 'a MACE / CLUB with a HUGE heavy head on the right end (the head is about as tall as one third of the whole length) and a sturdy handle',
+    'greatsword': 'a GIGANTIC two-handed GREATSWORD: an extremely broad, thick, heavy slab of a blade (the blade is about one third as wide as it is long, far wider than a normal sword), '
+                  'a massive crossguard wider than the blade, a long two-handed grip and a heavy pommel',
+    'lightsaber': 'a LIGHTSABER: a chunky ornate metal hilt about one quarter of the total length on the left, and a THICK solid energy blade with a distinctive shape and color; '
+                  'the energy blade is painted as a flat bright colored shape with a lighter core and a dark outline (NOT a thin line, NO glow around it)',
+    'revolver': 'a chunky oversized REVOLVER with a big round cylinder, a thick barrel and a grip hanging down at the left end',
+    'autopistol': 'a chunky oversized semi-automatic PISTOL with a thick slide, a distinctive body shape and a grip hanging down at the left end',
+    'rifle': 'a long RIFLE with a distinctive chunky body, a stock on the left and a long thick barrel pointing right',
+    'handcannon': 'a huge stubby HAND CANNON with a very wide distinctive muzzle, a fat barrel and a pistol grip hanging down at the left end',
+    'bowgun': 'a HAND CROSSBOW in side view: big distinctive bow limbs at the right end, a loaded bolt pointing right and a pistol-grip stock on the left',
+    'spear': 'a long SPEAR: a long shaft and a BIG, wide, distinctive spearhead on the right end',
+    'pole': 'a long fighting STAFF (bo staff) with big distinctive ornamented caps on both ends',
+    'rod': 'a short magic WAND with a BIG distinctive ornament on the right tip (the ornament is about as tall as one third of the wand length)',
+    'staff': 'a long mage STAFF with a HUGE distinctive head ornament on the right end',
+    'broom': 'a witch BROOM: a long handle on the left and a BIG bushy distinctive brush head on the right end',
+}
+BOLD_EPICS = {   # 类型 → [(key, 设计)]；key 不在 art/final/icon 里有图标的（新史诗）用类型图标当参考
+    'greatsword': [
+        ('ep_gs_apophis', 'THE SHOWPIECE, the biggest and most menacing sword of all: Apophis the cursed demon sword. A huge broad obsidian-black blade with a hooked, forked tip and big saw-tooth spikes along the back edge, '
+                          'deep crimson vein lines running along the blade, a large crimson demon eye set where the blade meets the guard, a bat-wing shaped black-and-dark-gold crossguard, a long dark red grip and a clawed pommel'),
+        ('ep_gs_evildragon', 'a jagged purple-black blade shaped like a dragon wing with bone spikes along both edges; the crossguard is a black dragon skull with one red gem eye'),
+        ('ep_gs_conqueror', 'Wing of the Conqueror: a bronze-gold blade shaped like a giant folded feathered wing (feather-shaped serrations along the top edge), a crimson-and-gold eagle-head crossguard, a red wrapped grip'),
+        ('ep_greatsword', 'Rage of the Mad Dragon: a blood-red blade with big jagged teeth along both edges, the crossguard is a roaring dark-gold dragon head with a red gem'),
+        ('ep_gs_earth', 'a slab blade of mossy olive-green stone with carved yellow rune lines and chipped rocky edges, a bronze block-shaped hilt'),
+        ('ep_gs_guardian', 'a broad silver-blue shield-like blade with a gold rim, a pair of large white angel wings forming the crossguard, a blue gem')],
+    'katana': [
+        ('ep_katana', 'Moonlight: a silver-white blade with a row of small crescent moons engraved along it, a big gold round tsuba shaped like a full moon, a navy wrapped hilt with a hanging crescent-moon charm'),
+        ('ep_katana2', 'a dark crimson blade, a big gold CROSS-shaped guard with a red gem in the middle, a black-and-red hilt with a gold cross pommel'),
+        ('ep_kt_slaughter', 'a blood-red blade with a black saw-toothed back edge, a black square tsuba with red rivets, a dark red hilt and a long red tassel'),
+        ('ep_kt_andra', 'a pale ice-blue blade, a big white five-petal flower-shaped tsuba, a silver-and-white hilt with a light blue ribbon'),
+        ('ep_kt_ninedragon', 'a deep jade-green blade with a gold dragon coiling along its back edge, a gold dragon-head tsuba, a jade-green wrapped hilt with a gold dragon-claw pommel'),
+        ('ep_kt_meteor', 'Meteor Katana: a deep indigo night-sky blade sprinkled with small gold star specks and a bright orange-red cutting edge, a big gold five-pointed-star tsuba, an orange wrapped hilt with a comet-shaped gold pommel')],
+    'lightsaber': [
+        ('ep_lightsaber', 'a gold ornate hilt with red gems and a thick red-orange energy blade with a zigzag lightning-shaped edge'),
+        ('ep_ls_sun', 'a gold sun-disc hilt with rays, and a very wide golden-orange energy blade shaped like a long flame (wavy edges, pointed tip)'),
+        ('ep_ls_millennium', 'a white-and-gold hilt with a small halo ring, and a thick cream-white energy blade that widens toward a rounded tip like a long petal'),
+        ('ep_ls_elegy', 'a black thorny hilt with a red rose, and a thick blood-red energy blade with a curved scythe-like hooked tip'),
+        ('ep_ls_breaker', 'Focused Light Sword: a chunky silver-and-violet mechanical hilt with a lens-like crystal emitter, and a thick violet-blue energy blade made of three parallel prongs converging into one sharp point')],
+    'shortsword': [
+        ('ep_shortsword', 'Eleanor the Shadowless: a wide translucent ice-blue crystal blade shaped like a long diamond, a big gold winged crossguard with a round blue gem'),
+        ('ep_ss_kanya', 'a zigzag lightning-bolt shaped electric-yellow blade with dark blue edges, a dark blue-and-gold guard with a blue gem'),
+        ('ep_ss_fate', 'a pale gold blade with dark crack lines like a shattered blade held together by gold bands, a gold cross guard with a big white round gem, a brown grip'),
+        ('ep_ss_shura', 'a wide black blade with a jagged crimson edge and a purple demon eye engraved on it, a black-and-silver spiked guard with a purple gem'),
+        ('ep_ss_gsd', 'Ultimate Wave Blade: a broad wavy blade (rippling S-wave edges like a kris) in deep teal-blue with bright cyan wave engravings, a round gold guard shaped like concentric ripples, a white wrapped grip')],
+    'club': [
+        ('ep_club', 'Hell Evil Eye: a dark purple spiked round head holding a big orange demon eye, a black-and-gold handle'),
+        ('ep_cb_devour', 'a head shaped like a fanged purple demon mouth biting down, a black-and-gold handle'),
+        ('ep_cb_soulmate', 'a big block-shaped white-and-gold war hammer head with a small cute yellow thunder sprite sitting on top, a gold handle'),
+        ('ep_cb_kirin', 'a head sculpted as a large blue-and-gold qilin (kirin) head with antlers and a flowing mane, a gold handle'),
+        ('ep_cb_heart', 'a black spiked club head with a big bright red heart-shaped crystal in the middle, a black-and-red handle'),
+        ('ep_cb_ghost', 'Oni Soul-Devourer: a head shaped like a big bone-white oni demon skull with two horns and red eyes, a dark iron handle wrapped with red cord')],
+    'revolver': [
+        ('ep_revolver', 'Desert Eagle Dusk: a big golden revolver with engraved patterns, a long hexagonal barrel and a red gem on the dark red grip'),
+        ('ep_rv_sunset', 'an orange-and-gold revolver with a sunset-gradient barrel, a knight-helmet emblem, a brown wooden grip with a star'),
+        ('ep_rv_bone', 'a white bone revolver with rib-like ridges along the barrel, icy blue crystals and a skull-shaped grip end'),
+        ('ep_rv_python', 'a heavy gold revolver with a gold python coiled around the long barrel, the snake head at the muzzle, green gems'),
+        ('ep_rv_enazma', 'Twin-Blade Revolver: a dark steel revolver with two curved silver blades mounted above and below the barrel (a gunblade), purple trim, a black grip')],
+    'autopistol': [
+        ('ep_autopistol', 'Firefly Light: a sleek silver-and-gold pistol with a row of small firefly-shaped warm yellow lights along the slide'),
+        ('ep_ap_viper', 'a black-and-dark-green pistol with a snake-scale pattern and an open-mouthed viper head at the muzzle'),
+        ('ep_ap_heckler', 'a red-and-orange pistol with flame-shaped fins and gold trim and a wide flared muzzle'),
+        ('ep_ap_flash', 'God of Guns - Flash: a futuristic white-and-sky-blue pistol with angular wing-like fins, blue light strips along a long slide and a gold emblem')],
+    'rifle': [
+        ('ep_rifle', 'Piercing Eye: a long ornate sniper rifle with a big gold scope shaped like an eye, dark wood and gold trim'),
+        ('ep_rf_death', 'a long black sniper rifle with a big scope, a white skull emblem on the stock and a black spiked muzzle brake'),
+        ('ep_rf_zombie', 'a long icy-blue rifle covered with frost crystal spikes, a silver body'),
+        ('ep_rf_howl', 'a heavy bronze-and-teal rifle with a big round drum magazine and a fat gold barrel ending in a howling wolf-head muzzle')],
+    'handcannon': [
+        ('ep_handcannon', 'Sun Devourer: a black-and-gold hand cannon engraved with flame patterns, the muzzle shaped as a gaping beast mouth around a gold sun emblem'),
+        ('ep_hc_breaker', 'a stubby orange-and-gold hand cannon with a big striped drill-shaped muzzle'),
+        ('ep_hc_aqua', 'a blue-and-gold hand cannon shaped like a big water vase (amphora) lying sideways, the vase mouth is the muzzle'),
+        ('ep_hc_wing', 'a white-and-gold hand cannon with two large white angel wings on its sides'),
+        ('ep_hc_meteor', 'Twin Meteor Bomb: a huge dark-red hand cannon with TWO fat stacked barrels, each muzzle rimmed with orange meteor rock, and a round bomb-shaped drum')],
+    'bowgun': [
+        ('ep_bowgun', 'Silver Moon Wing: a white-and-gold crossbow whose bow limbs are large white feathered angel wings, a blue gem, a loaded silver bolt'),
+        ('ep_bg_red', 'a red-and-gold crossbow with big gold dragon-shaped limbs and a red dragon head at the front'),
+        ('ep_bg_satan', 'a purple-and-black crossbow whose limbs are big bat-like demon wings, a loaded purple bolt'),
+        ('ep_bg_lotus', 'Lotus of Ice and Fire: a crossbow whose bow limbs form a big lotus flower, the upper petals icy blue and the lower petals fire red, a white-and-gold stock'),
+        ('ep_bg_headless', 'Headless Soul: a dark iron gothic crossbow with a carved jack-o-lantern pumpkin at the front and black tattered-cape shaped limbs with orange trim')],
+    'spear': [
+        ('ep_spear', 'Dragonkin Spear: a big red-gold dragon-head spearhead and a dark red shaft with gold dragon-scale bands'),
+        ('ep_sp_evil', 'a big wide silver leaf-shaped spearhead, a cluster of gold bells and red tassels hanging below the head, a dark shaft'),
+        ('ep_sp_lava', 'a big black-and-orange spearhead shaped like a cracked volcanic lava shard, a dark shaft with orange lava veins'),
+        ('ep_sp_icedragon', 'Ice Dragon Spear: a white-silver shaft, a big crescent-shaped ice-blue blade like a dragon fin at the head and an ice dragon head at the socket')],
+    'pole': [
+        ('ep_pole', 'Sky Dome Pole: a white-gold staff with big cloud-shaped ornaments on both ends'),
+        ('ep_pl_grian', 'a thick red-lacquered fighting staff with big silver steel caps on both ends and red cord wrapping'),
+        ('ep_pl_breaker', 'a dark staff with big curved silver blades on both ends and blue gems'),
+        ('ep_pl_phantom', 'a spectral cyan translucent staff with a ghostly swirl pattern and a big skull ornament at the right end'),
+        ('ep_pl_magical', 'Magical Girl Staff of Shining Love: a pastel pink-and-white staff with a big gold heart-shaped ornament with small white angel wings and a pink gem at the right end, ribbons')],
+    'rod': [
+        ('ep_rod', 'Sage Astra: a short golden wand with a BIG gold star with small leaves and a red gem on the tip'),
+        ('ep_rd_cheshire', 'a short purple wand topped with a big grinning purple-striped cat head'),
+        ('ep_rd_meow', 'a short pastel pink wand topped with a big pink cat paw with little white wings'),
+        ('ep_rd_thunder', 'Codex of Thunder: a short wand topped with a big open blue-and-gold spellbook with a yellow lightning-bolt emblem on its cover')],
+    'staff': [
+        ('ep_staff', 'Starry Sea Staff: a navy staff with gold rings and a big dark-blue galaxy orb with stars circled by a gold ring at the right end'),
+        ('ep_st_willy', 'a golden staff wrapped with scrolls and prayer beads, a big gold prayer-wheel shaped head'),
+        ('ep_st_sage', 'a gold staff with a big blue orb held in large gold prongs and a white tassel'),
+        ('ep_st_moon', 'a silver-blue staff topped with a big silver crescent moon cradling a blue orb'),
+        ('ep_st_witchgold', 'Witch\'s Golden Staff: a twisted golden staff topped with a big gold witch-hat shaped ornament and a hanging amber gem')],
+    'broom': [
+        ('ep_broom', 'Night Witch Broom: a dark purple broom with a curved handle ending in a gold crescent-moon charm, and a big purple feather-like brush'),
+        ('ep_br_scribble', 'a giant paintbrush broom with a big rainbow-colored brush head and a gold handle with gems'),
+        ('ep_br_lucky', 'a straw broom decorated with big four-leaf clovers and a gold horseshoe lucky charm, a gold handle'),
+        ('ep_br_hunter', 'Hunter\'s Ghost-Mask Broom: a dark wood broom with a big white oni ghost mask fixed at the base of a black-and-red bristle brush')],
+}
+TIER_DESC = {   # 普通武器的品级外观：同一种武器一张表，剪影一级比一级大、一级比一级华丽（主线程审图：不能只换颜色）
+    2: 'RARE grade (row 1): the basic shape with ONE added feature only: an extra decorative trim band and a small purple amethyst gem; polished steel / dark hardwood with purple accents; about the same size as the basic weapon',
+    3: 'ARTIFACT grade (row 2): a clearly BIGGER guard / head / body than row 1, with side ornaments sticking out on both sides (fins, curls or small spikes); engraved silver with rose-pink enamel and a large pink crystal',
+    4: 'LEGENDARY grade (row 3): the LARGEST and longest of the three, with a pair of golden wings or a halo-like crest on the guard / head / body; gold and bright orange with a big amber gem and flowing gold filigree',
+}
+WCLS = {t: c for c, ts in {'sword': ['shortsword', 'katana', 'club', 'greatsword', 'lightsaber'], 'gun': ['revolver', 'autopistol', 'rifle', 'handcannon', 'bowgun'],
+                           'mage': ['spear', 'pole', 'rod', 'staff', 'broom']}.items() for t in ts}
+ICON_ROOT = ICON_DIRS[0]
+for _t, _its in BOLD_EPICS.items():
+    _per = 3 if _t in ('greatsword', 'club') else 6   # 巨剑很宽、钝器头很大（6 把一张时上下粘在一起切不开）：一张表 3 把
+    for _i in range(0, len(_its), _per):
+        WEAPON_SHEETS[f'x_{_t}{_i // _per or ""}_{WCLS[_t]}'] = [(k, k if os.path.exists(os.path.join(ICON_ROOT, f'item_{k}.webp')) else f'w_{_t}', f'{BOLD[_t]}. Design: {d}') for k, d in _its[_i:_i + _per]]
+# 魔剑-阿波菲斯（镇馆之宝）单独一张表重画：剪影要和别的巨剑（尤其邪龙魔剑）完全不同；切图时覆盖 x_greatsword 表里那把
+WEAPON_SHEETS['x_apophis_sword'] = [('ep_gs_apophis', 'w_greatsword', f"{BOLD['greatsword']}. Design: Apophis the cursed demon sword, THE SHOWPIECE, its silhouette must be unlike any other sword: "
+    'a colossal broad blade of black and deep crimson whose outer half curves up into a huge hooked crescent-moon shaped tip (like a giant sickle hook at the end); '
+    'in the CENTER of the blade a large open demonic eye (red iris, slit pupil) framed by a jaw of white fangs; bright red rune lines painted along the blade; '
+    'a dark gold crossguard shaped like curled demon horns; a long crimson-wrapped two-handed grip and a clawed pommel. Mostly smooth blade edges (no rows of spikes), so it never looks like a spiky dragon blade')]
+for _t in BOLD:
+    WEAPON_SHEETS[f't_{_t}_{WCLS[_t]}'] = [(f'{_t}_r{r}', f'w_{_t}', f'{BOLD[_t]}. {TIER_DESC[r]}') for r in (2, 3, 4)]
+
+def bold_prompt(name, items):
+    tier = name.startswith('t_')
+    def like(i, ik):
+        if tier: return f'the same kind of weapon and basic shape as icon {i} of the second image, restyled as described'
+        if ik.startswith('w_'): return f'a brand-new design; only the weapon type follows icon {i} of the second image'
+        return f'keep the theme, colors and motifs of icon {i} of the second image, but make the silhouette much bolder and bigger'
+    rows = '; '.join(f'row {i + 1}: {d} ({like(i + 1, ik)})' for i, (_, ik, d) in enumerate(items))
+    return ('2D game weapon sprite sheet for a cute chibi action RPG in the style of Dungeon Fighter Online. Draw exactly ' + str(len(items)) + ' weapons stacked in one column, one weapon per row, '
+            'each weapon lying perfectly HORIZONTAL in strict side view (flat profile, not diagonal, not in perspective), with the handle / grip / stock at the LEFT and the blade tip / muzzle / head pointing to the RIGHT. '
+            'These weapons are shown very small in the game, so every weapon needs a BOLD, CHUNKY, OVERSIZED, instantly recognizable silhouette: big simple shapes, strong color blocks, no thin fiddly details'
+            + ('. The three rows are the same weapon at three rarity grades (one family), but their SILHOUETTES must differ clearly, not only their colors: row 1 is the basic shape plus a trim and a small gem, '
+               'row 2 has a clearly bigger head / guard with side ornaments, row 3 is the largest and longest with wings or a halo-like crest' if tier else ', and every row must look clearly different from the others') + '. '
+            f'{rows}. '
+            'Match the art style of the chibi character in the first image exactly: bold dark outlines, clean cel shading, bright saturated colors, the same line thickness. '
+            'Each weapon is centered in its row, uses most of the image width, with wide white gaps between rows; no hands, no characters, no text, no labels, no shadows. '
+            'No effects at all: no glow halo, no sparks, no flames, no lightning, no smoke, no particles, no motion lines around the weapons (effects are added by the game). '
+            'Do not use pure neon green or pure magenta anywhere. Plain pure white background.')
+
 def weapon_ref(name, items):
     """把对应的物品图标拼成一张参考条（设计照图标来）"""
     from PIL import Image
@@ -489,10 +639,10 @@ def jobs_acc(only):
 def jobs_weapons(only):
     L = []
     for name, items in WEAPON_SHEETS.items():
-        if not name.startswith(only): continue
+        if not any(name.startswith(p) for p in only.split(',')): continue   # --only 可以写多个前缀，逗号隔开
         cls = {'sword': 'sword', 'gun': 'gun', 'mage': 'mage', 'heavy': 'sword'}[name.split('_')[-1]]
         L.append({'out': os.path.join(OUT, 'weapons', f'{name}.png'), 'refs': [os.path.join(SRC, f'{cls}_ref.png'), weapon_ref(name, items)],
-                  'prompt': weapon_prompt(items, name.startswith('k_')), 'size': '2048x2048'})
+                  'prompt': bold_prompt(name, items) if name[:2] in ('x_', 't_') else weapon_prompt(items, name.startswith('k_')), 'size': '2048x2048' if len(items) > 1 else '2048x1024'})
     return L
 
 # 单格重做占位棍（从原表取格子）：武器类型 → 提示词

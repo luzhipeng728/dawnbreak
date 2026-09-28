@@ -7,12 +7,13 @@ addStyle(`
 .sxrank .rlist{height:22em}
 .sxrank .mine{font-size:.88em;color:#ffe8a8;background:rgba(255,210,60,.08);border:.08em solid #6a5436;border-radius:.25em;padding:.3em .6em}
 `);
-const SX_BOARDS = [['lvl', '等级'], ['score', '装备评分'], ['ach', '成就点'], ['duel', '决斗胜场'], ['clear', '通关时间'], ['epic', '史诗收集'], ['guild', '公会']];
+const SX_BOARDS = [['lvl', '等级'], ['score', '装备评分'], ['ach', '成就点'], ['arena', '决斗场'], ['duel', '决斗胜场'], ['clear', '通关时间'], ['epic', '史诗收集'], ['guild', '公会']];
 const SXR = { board: 'lvl', scope: 'all', dungeon: '', diff: 0 };
 const sxrDungeons = () => typeof DUNGEONS === 'undefined' ? [] : Object.values(DUNGEONS).filter(d => d && d.id && d.lvl).sort((a, b) => a.lvl[0] - b.lvl[0] || (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0));
 function sxrValue(board, e) {
   if (board === 'lvl') return `Lv.${e.lvl}`;
   if (board === 'score') return fmtNum(e.score);
+  if (board === 'arena') return `${e.tier} ${e.rating}（${e.win} 胜 ${e.lose} 负）`;
   if (board === 'duel') return `${e.win} 胜 ${e.lose} 负${e.draw ? ` ${e.draw} 平` : ''}`;
   if (board === 'clear') return sxFmtTime(e.time);
   if (board === 'ach') return `${fmtNum(e.ach)} 点`;
@@ -51,7 +52,7 @@ Object.assign(menus, {
           h('td', { class: 'small dim' }, e.user)));
         const table = h('div', { class: 'sxscroll rlist', 'data-sk': 'rl' }, d.list.length ? h('table', { class: 'sxtbl' },
           h('thead', {}, h('tr', {}, ['名次', '角色', '职业', SXR.board === 'lvl' ? '' : '等级', vh, '账号'].map(t => h('th', {}, t)))), h('tbody', {}, rows))
-          : h('div', { class: 'sxload' }, SXR.board === 'clear' ? '还没有人通关过这个难度' : SXR.board === 'duel' ? '还没有人打过好友决斗' : '榜上还没有人'));
+          : h('div', { class: 'sxload' }, SXR.board === 'clear' ? '还没有人通关过这个难度' : SXR.board === 'arena' ? '还没有人打过排位赛' : SXR.board === 'duel' ? '还没有人打过好友决斗' : '榜上还没有人'));
         const me = d.me.length ? d.me.map(e => `${e.char}：第 ${e.rank} 名（${sxrValue(SXR.board, e)}）`).join('　') : '你的角色还没有上榜';
         return [tabs, top, table, h('div', { class: 'mine' }, `我的名次（共 ${d.total} 人）：${me}`)];
       },

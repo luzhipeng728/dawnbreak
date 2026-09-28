@@ -40,7 +40,11 @@ const out = await page.evaluate(async ({ cloud, JOBS, BONUS, NEW }) => {
     const aw = actives.filter(id => SKILLS[id].awaken).sort((a, b) => (SKILLS[a].lvReq || 0) - (SKILLS[b].lvReq || 0));
     const N = game.skillBar.length, bar = game.skillBar.map(id => !fresh && id && actives.includes(id) && !SKILLS[id].awaken ? id : null);
     const keep = bar.slice(0, N - aw.length).filter(Boolean);
-    const rank = id => (SKILLS[id].job ? 1000 : 0) + (SKILLS[id].lvReq || 0);
+    for (const g of gate) if (!keep.includes(g)) { const k = bar.findIndex((id, i) => i < N - aw.length && id && !gate.has(id)); if (k >= 0 && !bar.slice(0, N - aw.length).includes(null)) { keep.splice(keep.indexOf(bar[k]), 1); bar[k] = null; } }
+    // 其他技能的前置 BUFF（狂暴之力、流心等：技能 req 依赖它）优先上栏，否则一栏技能都放不出来
+    const gate = new Set(); for (const id of actives) { const S = SKILLS[id]; if (!S.req) continue; for (const g of actives) if (SKILLS[g].buff && S.req.toString().includes("'" + g + "'")) gate.add(g); }
+    if (actives.includes('frenzy')) gate.add('frenzy');
+    const rank = id => (gate.has(id) ? 5000 : 0) + (SKILLS[id].job ? 1000 : 0) + (SKILLS[id].lvReq || 0);
     const rest = actives.filter(id => !SKILLS[id].awaken && !keep.includes(id)).sort((a, b) => rank(b) - rank(a));
     const front = bar.slice(0, N - aw.length); for (let k = 0; k < front.length && rest.length; k++) if (!front[k]) front[k] = rest.shift();
     game.skillBar = front.concat(aw);

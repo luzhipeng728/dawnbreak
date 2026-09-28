@@ -44,7 +44,7 @@ async function open(q) {
     // 6) 浮空：挑空后连续空中受击，重力逐次加重、浮空力衰减
     T.clear(); const j = T.mob('goblin', 360, 100, { set: { hp: 1e9, hpMax: 1e9, def: 0 } });
     applyHit(p, j, { dmg: 0.1, launch: 500, sure: true }, { proj: true }); const v1 = j.vz, g0 = airGravity(j);
-    for (let i = 0; i < 8; i++) applyHit(p, j, { dmg: 0.1, launch: 500, sure: true }, { proj: true });
+    for (let i = 0; i < 8; i++) { j.vz = -50; applyHit(p, j, { dmg: 0.1, launch: 500, sure: true }, { proj: true }); }   // 下落中再挑（上升中再挑不会减速，见 docs/COMBAT_JUGGLE.md）
     out.juggle = { firstLaunchVz: Math.round(v1), ninthLaunchVz: Math.round(j.vz), gravity1: +g0.toFixed(3), gravity9: +airGravity(j).toFixed(3), airHits: j.cmb.air };
     // 7) 落地 → 倒地；非追击攻击打不到倒地目标；追击攻击可以，4 次后强制起身（带无敌）
     for (let i = 0; i < 200 && j.st !== 'down'; i++) T.run(1); out.downState = j.st;

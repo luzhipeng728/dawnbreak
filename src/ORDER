@@ -69,6 +69,7 @@ content/items/gear.js
 content/items/misc.js
 content/items/epics.js
 content/items/epics2.js
+content/items/epics3.js
 content/items/cards.js
 content/items/shops.js
 content/items/droptables.js
@@ -153,6 +154,8 @@ net/party_sync.js
 # 社交与经济服务（拍卖行 / 邮件 / 排行榜 / 全服公告 / 签到 / 管理员后台；依赖 net/net.js、物品窗口、npc.js，窗口在 ui/social/*）
 net/social.js
 net/social_guild.js
+# 决斗场排位赛（匹配 / 段位 / AI 补位；服务端 server/modules/arena.js）：依赖 net/pvp.js、net/town.js 的名牌
+net/arena.js
 # 成就（定义 / 规则；单机也能用，社交类成就要登录）
 content/achievements.js
 game/achieve.js

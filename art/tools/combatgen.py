@@ -122,7 +122,30 @@ SHEETS = {
                     ('chaser', 'flicking the fingers of the free hand forward launching small glowing orbs, staff held back'),
                     ('bmAwk', 'fierce battle stance with the staff spun behind the back, glowing golden aura')],
 }
-NO_HOLD = {'gun_launcher'}   # 枪炮师拿的是重武器，不强调左轮
+# ---- 官方对齐第 2 阶段：漫游枪手（女）枪刃 / 锁链动作、枪炮师（女）新重火器与二觉三觉装甲（枪刃按武器轨迹画成特效，所以这里只画左轮）----
+SHEETS['gun_ranger2'] = [
+    ('rainbow', 'flipping forward in mid-air in a front somersault, body upside down with the legs tucked, one arm stretched straight down pointing the revolver at the ground below and firing'),
+    ('airBlade', 'diving diagonally downward through the air head-first, body stretched forward, the revolver held forward and low in a sweeping downward slash'),
+    ('rushBlade', 'springing up from a low crouch into a rising upward slash: one knee lifted, the revolver swung up high in a big arc above the head'),
+    ('chainSnatch', 'flinging forward as if throwing a chain: the arm holding the revolver thrust far forward, the other hand pulled back at the hip, strong wide stance'),
+    ('carnival1', 'a wide horizontal slash: body twisted sideways, the revolver swept across in front at chest height, coat and scarf flaring'),
+    ('carnival2', 'a rising finishing strike: hopping slightly off the ground, the revolver thrust straight up overhead, the other arm down, triumphant'),
+    ('bloodDance', 'spinning in place with both arms spread wide outward, the revolver held out to the side, hair and scarf whirling around'),
+    # garden 这一格已在占位表上单独重画（avatar_gen.py touch --keep，第 8 格，改成单膝跪地的收尾姿势；锁链是运行时特效，不画进人物帧）
+    ('garden', 'finishing pose: kneeling on one knee, both arms spread wide open to the sides, the revolver held out in one hand, head raised, elegant and dramatic, empty-handed except the revolver'),
+]
+NOFX = ' The weapon is drawn plain: NO muzzle flash, NO beam, NO projectile, NO smoke, NO sparks, NO debris (all effects are added later in game).'
+SHEETS['gun_launcher2'] = [(n, d + NOFX) for n, d in [
+    ('lancerUp', 'kneeling on one knee with a long tube grenade launcher resting on the shoulder, aimed steeply upward at about 60 degrees'),
+    ('plasma', 'holding a bulky sci-fi plasma emitter with glowing purple coils in both hands at the hip, aiming forward, leaning back as if bracing against recoil'),
+    ('ptFwd', 'holding a big boxy compressed-air cannon with both hands at waist level, aiming forward, feet braced wide'),
+    ('ptDown', 'pointing a big boxy compressed-air cannon straight down at the ground just in front with both hands, knees bent'),
+    ('armor1', 'still wearing her brown cap, clad in a bulky red-and-gold powered assault armor suit over her outfit (face and cap visible), standing with both armored arms spread, powering up'),
+    ('armor2', 'still wearing her brown cap, in the same bulky red-and-gold powered assault armor suit, both armored arm cannons and the shoulder rocket pods aimed forward'),
+    ('final1', 'dual-wielding two heavy machine guns at the hips, aiming forward, legs braced wide'),
+    ('final2', 'holding both heavy guns joined together as one big golden laser cannon, aiming it forward with both hands, hair blown back'),
+]]
+NO_HOLD = {'gun_launcher', 'gun_launcher2'}   # 枪炮师拿的是重武器，不强调左轮
 
 def sheet_jobs():
     L = []
@@ -172,12 +195,35 @@ ICON_LIST = [   # (技能 id, 图标描述)；16 个一张表，依次为 cskill
 ]
 # 官方对齐（神枪手第 1 阶段）：新增的女枪基础技能 + 通用技能（docs/SKILLS_OFFICIAL_gun.md）
 ICON_LIST += [
-    ('g_rx78', 'a small cute grey tracked robot with a round dome head and a blinking red light, a tiny fire spark at its back, rolling forward'),
+    # 表里第 1 格的机器人造型和精灵 fx/rx78 不一致，已按精灵重出：icons.py --single g_rx78 art/src/combat/icons/g_rx78_single.png（gpt_image edit，参考 fx/rx78.png + 本表）
+    ('_old_g_rx78', 'a small cute grey tracked robot with a round dome head and a blinking red light, a tiny fire spark at its back, rolling forward'),
     ('g_dust', 'a revolver firing rapid bullets down at the ground kicking up a big cloud of tan dust'),
     ('g_aerial', 'a revolver firing diagonally downward from high in the sky with small clouds and multiple bullet streaks'),
     ('c_bsup', 'a nimble boot leaping backward with a cyan afterimage and a curved arrow pointing back'),
 ]
 ICON_SHEETS = {f'cskills_{c}': ICON_LIST[i * 16:(i + 1) * 16] for i, c in enumerate('abcde')}
+# 官方对齐第 2 阶段：漫游枪手（女）/ 枪炮师（女）新技能图标（12 个一张表，单独成表，不影响上面几张表的切分）
+GUN2_ICONS = [
+    ('g_blade', 'a silver revolver with a crimson blade mounted under the barrel, glinting'), ('g_guard', 'two crossed revolvers blocking incoming bullets with a blue shield flash'),
+    ('g_stylish', 'a revolver twirling around a finger with pink swirl trails and sparkles'), ('g_quickdraw', 'a revolver being drawn fast from a leather holster with speed lines'),
+    ('g_revenge', 'a revolver firing backward over the shoulder with a red flash, a dodging silhouette'), ('g_chain', 'a spinning crimson gunblade on a chain whirling in a vertical circle'),
+    ('g_backshot', 'a revolver pointing backward with a curved arrow and a muzzle flash'), ('g_sonic', 'a low flying kick boot dashing forward with orange speed streaks'),
+    ('g_hidecut', 'a hidden crimson blade slash with dripping blood drops'), ('g_bloodspike', 'a crimson gunblade thrusting diagonally upward with a blood-red trail'),
+    ('g_suppress', 'a revolver firing a dense spray of bullets forward with many muzzle flashes'), ('g_bladeup', 'a serrated crimson gunblade with a glowing upgrade arrow'),
+    ('g_deathchain', 'crimson chains with blades pinning shadowy targets to the ground'), ('g_chaincut', 'a huge sweeping crimson chain-blade arc pulling enemies in'),
+    ('g_awaken2', 'a storm of crimson blades scattering around a red rose'), ('g_chainwill', 'glowing crimson chains forming a heart-shaped knot'),
+    ('g_ruin', 'a whirlwind of crimson blade slashes with shattered chain links'), ('g_awaken3', 'a blooming crimson rose garden woven from glowing chains'),
+    ('gl_hwlore', 'an old tome with a golden cannon emblem on the cover'), ('gl_draw', 'a heavy hand cannon being swung out with an impact arc'),
+    ('gl_hwmaster', 'a heavy hand cannon with a gold gear and a stacking bar of three glowing pips'), ('gl_charge', 'a laser cannon charging with electric blue energy crackling at the muzzle'),
+    ('gl_apg', 'a small high-tech radar pulse module with green scanning rings'), ('gl_miracle', 'a heavy weapon glowing with a golden aura and an upward arrow'),
+    ('gl_fm92', 'a shoulder grenade launcher firing a shell that splits into many small bomblets in the sky'), ('gl_dual', 'a split circle half fire orange half light yellow balancing'),
+    ('gl_overheat', 'a red-hot overheating cannon barrel with steam and heat waves'), ('gl_plasma', 'a bulky plasma emitter shooting a crackling purple electric stream'),
+    ('gl_fm92sw', 'four spiked bombs falling onto a patch of burning ground'), ('gl_armor', 'a heavy armored gauntlet with bolts and a shield plate'),
+    ('gl_fsc7', 'a cluster bomb stuck to a target bursting into many small explosions'), ('gl_pt15', 'a boxy compressed-air cannon firing a swirling white air vortex'),
+    ('gl_awaken2', 'a red-and-gold powered assault armor suit firing lasers and rockets'), ('gl_pandora', 'a sleek blue mobile armor chest plate with a glowing core'),
+    ('gl_uht03', 'a roaring burst flamethrower spewing a huge explosive fireball'), ('gl_awaken3', 'twin heavy guns merging into a golden laser cannon firing a giant beam'),
+]
+for _i, _c in enumerate('abc'): ICON_SHEETS[f'gskills_{_c}'] = GUN2_ICONS[_i * 12:(_i + 1) * 12]
 def icon_prompt(items):
     return (f'A sprite sheet of {len(items)} separate game icons arranged in a grid of 4 columns and {len(items) // 4} rows on a plain pure white background, '
             f'evenly spaced with generous white gaps between icons, no icon touching another, {ICON_STYLE}. In reading order (left to right, top to bottom): '

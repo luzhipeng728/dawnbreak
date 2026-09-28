@@ -19,6 +19,14 @@ def main():
     """icons.py            切 art/src/icons 下的图标表
        icons.py --combat   切战斗组的技能图标表（主仓库 art/src/combat/icons，名字见 combatgen.ICON_SHEETS）"""
     out = os.path.join(ROOT, 'final', 'icon'); os.makedirs(out, exist_ok=True)
+    if '--single' in sys.argv:   # icons.py --single <名字> <原图>：单张图标（例如按精灵造型重出的图标），取最大的连通块
+        i = sys.argv.index('--single'); name, path = sys.argv[i + 1], sys.argv[i + 2]
+        im = remove_bg(Image.open(path)); arr = np.array(im)
+        lab, comps = components(arr[..., 3], min_cells=200); n = max(comps, key=lambda c: c[1])[0]
+        ys, xs = np.where(lab == n); crop = arr[ys.min():ys.max() + 1, xs.min():xs.max() + 1].copy()
+        crop[..., 3] = np.where(lab[ys.min():ys.max() + 1, xs.min():xs.max() + 1] == n, crop[..., 3], 0)
+        ic = Image.fromarray(crop, 'RGBA'); sz = max(ic.size); sq = Image.new('RGBA', (sz, sz), (0, 0, 0, 0)); sq.paste(ic, ((sz - ic.width) // 2, (sz - ic.height) // 2))
+        sq.resize((104, 104), Image.LANCZOS).save(os.path.join(out, f'{name}.webp'), 'WEBP', quality=84, method=6); print('single', name); return
     sheets, src = SHEETS, os.path.join(ROOT, 'src', 'icons')
     if '--combat' in sys.argv:
         from combatgen import ICON_SHEETS, OUT

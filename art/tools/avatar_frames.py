@@ -400,15 +400,23 @@ def process_sheet(char, sheet, path, names, res, fixes, pv_path, ref_h=None, ref
     rows_ok = [sum(1 for b in order if b['row'] == r) for r in range(3)]
     bad = len(order) != 9 or rows_ok != [3, 3, 3]
     print(f'{char}_{sheet}: {len(order)} frames rows={rows_ok}{"  <-- CHECK" if bad else ""}')
-    # 绿色连通块分给最近的帧
+    # 绿色连通块分给握着它的那一帧：先看棍子贴着哪一帧的身体（拳头），贴不上再按外框距离分给最近的帧
+    # （例：举过头顶的棍子顶端会伸到上一行那帧的脚边，只按外框距离会分错）
     lab_g, gcomps = components((solid * 255).astype(np.uint8), f=2, min_cells=6)
     owner = {}
+    H, W = lab.shape
     for gid, _ in gcomps:
         ys, xs = np.where(lab_g == gid)
         if not len(xs): continue
         x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max()
-        dist = lambda b: max(0, b['x0'] - x1, x0 - b['x1']) + max(0, b['y0'] - y1, y0 - b['y1'])
-        b = min(range(len(order)), key=lambda i: dist(order[i])); owner.setdefault(b, []).append(gid)
+        cy0, cy1, cx0, cx1 = max(0, y0 - 8), min(H, y1 + 9), max(0, x0 - 8), min(W, x1 + 9)
+        near = dil(lab_g[cy0:cy1, cx0:cx1] == gid, 6); touch = lab[cy0:cy1, cx0:cx1][near]
+        hits = [int(np.isin(touch, o['ids']).sum()) for o in order]
+        if max(hits) > 0: b = int(np.argmax(hits))
+        else:
+            dist = lambda b: max(0, b['x0'] - x1, x0 - b['x1']) + max(0, b['y0'] - y1, y0 - b['y1'])
+            b = min(range(len(order)), key=lambda i: dist(order[i]))
+        owner.setdefault(b, []).append(gid)
     ref = order[0]; k = HEIGHT[char] * res / (ref_h or (ref['y1'] - ref['y0']))
     fist = (ref['y1'] - ref['y0']) * 0.088
     frames, pv_items = {}, []

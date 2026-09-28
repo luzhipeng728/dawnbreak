@@ -398,17 +398,17 @@ function rideEnd(e, a, B = {}) { const m = a.m; rideOff(e); if (!m || m.gone) re
 // 学了魔道学助手：由助手放置，放完就可以走开（放置版，机械自己放电）
 function teslaZap(owner, m, st, lv, dt) {
   st.zapT -= dt; mClip(m, st.zapT < 0.25 ? 'zap' : 'spin');
-  if (st.zapT > 0) return; st.zapT = 1.2;
+  if (st.zapT > 0) return; st.zapT = 1.0;
   const n = { ok: 5, great: 8, super: 10 }[st.r] || 5; sfx.zap(); fxSpr('lightning', m.x, m.y, m.h * (m.scale || 1) * 0.9, { w: 60, h: 60, dur: 0.25, col: '#fff38a' });
   const L = ents.filter(t => foe(owner, t) && !t.dead && Math.abs(t.x - m.x) < 320 && Math.abs(t.y - m.y) < 100);
   for (let i = 0; i < n; i++) { const t = L[i % Math.max(1, L.length)], x = t ? t.x + rnd(-10, 10) : m.x + rnd(-220, 220), y = t ? t.y : clamp(m.y + rnd(-60, 60), 6, DEPTH - 6);
-    game.after(i * 0.06, () => { if (m.gone) return; lightningStrike({ x, y }); summonArea(m, x, y, 42, { dmg: wtLv(lv, 0.35, 0.035), stun: 1.4, knock: 0, hs: 0.03, elem: 'light', type: 'indep', downHit: true }, { zMax: 240, status: craftBig(st.r) ? 'shock' : null, sdur: 4 }); }); }
+    game.after(i * 0.06, () => { if (m.gone) return; lightningStrike({ x, y }); summonArea(m, x, y, 42, { dmg: wtLv(lv, 0.42, 0.042), stun: 1.4, knock: 0, hs: 0.03, elem: 'light', type: 'indep', downHit: true }, { zMax: 240, status: craftBig(st.r) ? 'shock' : null, sdur: 4 }); }); }
 }
 const TESLA_SEAT = [26, 6, 0.6];   // 仓鼠轮的中心（相对机械的前后偏移、高度、缩放）
 defSkill('wt_tesla', { name: '电鳗碰撞机', cls: 'mage', job: WT, lvReq: 19, mp: 60, cd: 25, type: 'indep', elem: 'light', col: '#e0d040', cast: true,
-  desc: '搭起电塔，钻进仓鼠轮里踩轮子发电：约 6 秒内每隔一会儿放出闪电（每次 5 道，大成功 8 道并感电），被电到的敌人长时间硬直。失败：漏电电到自己，只放 1 道。学了引爆实验可以按跳跃键提前引爆；学了魔道学助手后由助手放置，你可以直接走开。',
-  pow: lv => wtLv(lv, 0.35, 0.035) * 25 + wtLv(lv, 1.5, 0.15), ai: { kind: 'aoe', r: [0, 280], dy: 90 },
-  act: (lv, p) => p && hasSkill(p, 'wt_helper') ? helperPlace(lv, 'wt_tesla', 'eel') : rideAct(lv, p, { id: 'wt_tesla', key: 'wt_tesla', fam: 'eel', dur: 6, failDur: 1.6, dx: -10,
+  desc: '搭起电塔，钻进仓鼠轮里踩轮子发电：约 4 秒内每隔一秒放出闪电（每次 5 道，大成功 8 道并感电），被电到的敌人长时间硬直。失败：漏电电到自己，只放 1 道。学了引爆实验可以按跳跃键提前引爆；学了魔道学助手后由助手放置，你可以直接走开。',
+  pow: lv => wtLv(lv, 0.42, 0.042) * 20 + wtLv(lv, 1.5, 0.15), ai: { kind: 'aoe', r: [0, 280], dy: 90 },
+  act: (lv, p) => p && hasSkill(p, 'wt_helper') ? helperPlace(lv, 'wt_tesla', 'eel') : rideAct(lv, p, { id: 'wt_tesla', key: 'wt_tesla', fam: 'eel', dur: 4, failDur: 1.6, dx: -10,
     seat: () => TESLA_SEAT, pose: () => 'run',
     start: (e, a) => { a.zapT = 0.6; },
     ride: (e, a, m, k, dt) => teslaZap(e, m, a, lv, dt),
@@ -502,19 +502,19 @@ function helperSpawn(e, lv, x, fam) { fam = fam || pick(Object.keys(HELPER_SPR))
 function helperPlace(lv, key, fam) {
   return { name: key, clip: 'wtCheer', dur: 0.45, cancelFrom: 0.3, events: [evAt(0.15, e => {
     const r = rollCraft(e, fam), at = key === 'wt_tesla' ? { x: e.x + e.face * 90, y: e.y } : aimAhead(e, 150, 260), R = game.room, x = R ? clamp(at.x, R.x0 + 40, R.x1 - 40) : at.x;
-    const m = summon(e, key, { x, y: at.y, lv, life: key === 'wt_tesla' ? 8 : 2.4 }); if (!m) return; m.face = e.face; m.helper = HELPER_SPR[fam];
+    const m = summon(e, key, { x, y: at.y, lv, life: key === 'wt_tesla' ? 6 : 2.4 }); if (!m) return; m.face = e.face; m.helper = HELPER_SPR[fam];
     fxSpr('hexagram', x, at.y, 0, { w: 110, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: FAM[fam].col });
     if (key === 'wt_antigrav') { antigravRun(e, m, r, lv); return; }
     const st = { r, zapT: 0.8, t: 0 };
     m.auto = (s, dt) => { st.t += dt; if (st.t < 0.45) { mClip(s, 'build'); return; }
       if (r === 'fail') { if (!st.oops) { st.oops = true; mClip(s, 'fail'); lightningStrike({ x: s.x, y: s.y }); summonArea(s, s.x + s.face * 80, s.y, 60, { dmg: wtLv(lv, 1.0, 0.1), stun: 0.6, launch: 200, hs: 0.05, elem: 'light', type: 'indep' }); } if (st.t > 1.6) { dismissOne(s, 'life'); } return; }
-      teslaZap(s.owner, s, st, lv, dt); if (st.t > 6.4) { machBoom(s.owner, s, lv, { dmg: wtLv(lv, 1.5, 0.15), elem: 'light', col: '#fff38a', r: 120 }); dismissOne(s, 'life'); } }; })] };
+      teslaZap(s.owner, s, st, lv, dt); if (st.t > 4.45) { machBoom(s.owner, s, lv, { dmg: wtLv(lv, 1.5, 0.15), elem: 'light', col: '#fff38a', r: 120 }); dismissOne(s, 'life'); } }; })] };
 }
 // ---- 粉红糖果（三觉被动）：暗影斗篷进化成夜猫助手——夜猫扑出去用斗篷卷住一排敌人 ----
 function catHelperAct(lv) {
   return { name: 'wt_cloak', clip: 'fling', dur: 0.85, noCounter: true, invul: [0.04, 0.8],
     onStart: e => { const a = e.act; a.r = rollCraft(e, 'cat'); a.cx = e.x; sfx.swing(true);
-      a.fx = addFx({ x: e.x, y: e.y + 0.5, z: 0, dur: 0.85, face: e.face, draw(c) { const k = Math.min(1, this.t / 0.3); wtFrame(c, 'helperCat', this.t < 0.3 ? 'atk2' : 'atk4', this.x + this.face * 230 * easeOut(k), this.y, 0, 1, this.face, { col: '#c79aff', fh: 70 }); } }); },
+      a.fx = addFx({ x: e.x, y: e.y + 0.5, z: 0, dur: 0.85, face: e.face, draw(c) { const k = Math.min(1, this.t / 0.3); wtFrame(c, 'helperCat', this.t < 0.3 ? 'atk1' : 'atk2', this.x + this.face * 230 * easeOut(k), this.y, 0, 1, this.face, { col: '#c79aff', fh: 70 }); } }); },
     update: e => { const a = e.act; if (e.actT < 0.3 || e.actT > 0.7) return; for (const t of ents) if (foe(e, t) && !t.dead && (t.x - e.x) * e.face > -10 && Math.abs(t.x - e.x) < 260 && Math.abs(t.y - e.y) < 40) { addStatus(t, 'root', 0.3, { src: e, force: true }); if (Math.random() < 0.5) addFx({ x: t.x, y: t.y + 0.6, z: t.z, dur: 0.05, draw(c) { drawSpr(c, fxTint('darkorb', '#3a1a5a'), sx(this.x), sy(this.y, this.z + 45), 110, 90, { add: false, alpha: 0.8 }); } }); } },
     events: [evAt(0.32, e => { sfx.hit('slash', false); blastLine(e, 260, 40, { dmg: wtLv(lv, 1.4, 0.14), stun: 0.6, knock: 0, hs: 0.04, type: 'indep', elem: 'dark', sure: true }); }),
       evAt(0.66, e => { const r = e.act.r; sfx.boom(0.6); fxBurst(e.x + e.face * 150, e.y, 40, 220, '#8a5ab0');
@@ -525,7 +525,7 @@ function blastLine(e, len, dy, h) { for (const t of ents) if (foe(e, t) && !t.de
 // ---- 技艺融合（一觉）：拿着锤子到处跑，依次组装 4 台机械：电场装置（吸怪、强硬直）→ 南瓜工厂（放出一圈南瓜跑者）→ 雪人旋转机（喷出一堆杂物）→ 巨型夜猫机（暗属性重拳）
 //      连按技能键 / X 加快整个流程；收招时主角“阿咕咕”一声扑倒，躲开重拳 ----
 const AWK_PHASE = [[0.35, 1.35], [1.35, 2.3], [2.3, 3.25], [3.25, 4.35]];
-function awkMachine(e, a, f1, f2, x, y, T, h, col) { return addFx({ x, y: y - 0.5, z: 0, dur: T, face: e.face, draw(c) { const k = this.t / this.dur, pop = Math.min(1, this.t / 0.18); wtFrame(c, 'wtAwk', k < 0.35 ? f1 : f2, this.x, this.y, 0, 0.3 + 0.7 * easeOutBack(pop), this.face, { col, fh: h, alpha: k > 0.9 ? (1 - k) / 0.1 : 1 }); } }); }
+function awkMachine(e, a, f1, f2, x, y, T, S, col) { return addFx({ x, y: y - 0.5, z: 0, dur: T, face: e.face, draw(c) { const k = this.t / this.dur, pop = Math.min(1, this.t / 0.18); wtFrame(c, 'wtAwk', k < 0.35 ? f1 : f2, this.x, this.y, 0, S * (0.3 + 0.7 * easeOutBack(pop)), this.face, { col, fh: 110, alpha: k > 0.9 ? (1 - k) / 0.1 : 1 }); } }); }
 defSkill('wt_awaken', { name: '技艺融合', cls: 'mage', job: WT, lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'indep', awaken: true, col: '#ffd23a',
   desc: '【觉醒】拿着锤子在战场上跑来跑去，依次组装 4 台机械：电场装置（把敌人吸到中间并长时间硬直）→ 南瓜工厂（放出一圈南瓜跑者）→ 雪人旋转机（喷出一大堆杂物）→ 巨型夜猫机（张嘴打出暗属性重拳，把敌人轰飞）。连按技能键 / X 加快整个流程。施放中无敌。',
   pow: lv => wtLv(lv, 30, 8), ai: { kind: 'awaken', r: [0, 340], dy: 90 },
@@ -536,7 +536,7 @@ defSkill('wt_awaken', { name: '技艺融合', cls: 'mage', job: WT, lvReq: 21, m
       const ph = AWK_PHASE.findIndex(([t0, t1]) => t >= t0 && t < t1);
       if (ph !== a.ph && ph >= 0) { a.ph = ph; a.pt = 0; const R = game.room, side = [-1, 1, -1, 1][ph], x = clamp(a.cx + side * [0, 110, 90, -140][ph] * e.face, R ? R.x0 + 60 : -1e9, R ? R.x1 - 60 : 1e9), y = clamp(a.cy + [0, 30, -30, 0][ph], 10, DEPTH - 10);
         a.mx = x; a.my = y; const T = (AWK_PHASE[ph][1] - AWK_PHASE[ph][0]) / (a.spd || 1) + 0.3; sfx.hit('blunt', false); fxDust(x, y, 8, 30);
-        awkMachine(e, a, ['field1', 'pumpkin1', 'snow1', 'cat1'][ph], ['field2', 'pumpkin2', 'snow2', 'cat2'][ph], x, y, T, [110, 120, 110, 170][ph], ['#fff38a', '#ff9a50', '#bfefff', '#c79aff'][ph]); }
+        awkMachine(e, a, ['field1', 'pumpkin1', 'snow1', 'cat1'][ph], ['field2', 'pumpkin2', 'snow2', 'cat2'][ph], x, y, T, [1, 1.05, 1, 1.45][ph], ['#fff38a', '#ff9a50', '#bfefff', '#c79aff'][ph]); }
       if (ph < 0) return;
       a.pt += dt * (a.spd || 1); const x = a.mx, y = a.my;
       // 主角跑向下一台机械的位置
@@ -663,7 +663,7 @@ defSkill('wt_awaken3', { name: '糖果大作战：精怪乐园', cls: 'mage', jo
       a.fx = addFx({ y: a.y - 3, dur: 5.4, a, draw(c) { const A = this.a, t = this.t, k = clamp((t - 0.9) / 0.5, 0, 1), Y = sy(A.y, 0);
         // 轨道（夜猫铺出来的）
         if (t > 0.9) { c.save(); c.strokeStyle = '#6a4a2a'; c.lineWidth = 5; c.beginPath(); c.moveTo(sx(A.x0), Y - 4); c.lineTo(sx(A.x0 + (A.x1 - A.x0) * k), Y - 4); c.stroke(); c.strokeStyle = '#c0a060'; c.lineWidth = 2; for (let x = 0; x < Math.abs(A.x1 - A.x0) * k; x += 26) { const X = sx(A.x0 + Math.sign(A.x1 - A.x0) * x); c.beginPath(); c.moveTo(X, Y - 10); c.lineTo(X, Y + 2); c.stroke(); } c.restore();
-          if (k < 1) wtFrame(c, 'helperCat', 'walk' + (1 + Math.floor(t * 12) % 8), A.x0 + (A.x1 - A.x0) * k, A.y, 0, 1, Math.sign(A.x1 - A.x0), { col: '#c79aff', fh: 60 }); }
+          if (k < 1) wtFrame(c, 'helperCat', 'walk' + (1 + Math.floor(t * 12) % 4), A.x0 + (A.x1 - A.x0) * k, A.y, 0, 1, Math.sign(A.x1 - A.x0), { col: '#c79aff', fh: 60 }); }
         // 列车
         if (A.cx !== undefined && !A.derail) wtFrame(c, 'coaster', 'ride' + (1 + Math.floor(t * 10) % 2), A.cx, A.y, 10 + Math.abs(Math.sin(t * 14)) * 4, 1, Math.sign(A.x1 - A.x0), { col: '#ff9ad0', fh: 130 });
         if (A.derail && t < A.derail + 0.5) wtFrame(c, 'coaster', 'derail', A.cx, A.y, 30 + (t - A.derail) * 200, 1, Math.sign(A.x1 - A.x0), { col: '#ff9ad0', fh: 130, rot: (t - A.derail) * 3 }); } }); },

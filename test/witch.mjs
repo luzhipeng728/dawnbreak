@@ -1,4 +1,4 @@
-// 魔道学者（mage_witch.js）：暂停游戏循环、手动逐帧推进验证。node test/witch.mjs [--shots]
+// 魔道学者（mage_witch.js）：暂停游戏循环、手动逐帧推进验证。node test/witch.mjs（阶段交付时再跑一次 node test/classes.mjs mage:witch：按键放技能栏上的技能）
 // 转职登记 / 指令 / 任务；成功率（基础、被动、贤者之石、糖果、强制失败）；扫把飞行（6 连击、冲刺、缓降、没扫把不能飞）；
 // 每个主动技能都放一遍（伤害、召唤物 / 机械的生命周期、搭乘时免疫与减伤、引爆实验、苦涩的棒棒糖）；三个觉醒；转职送扫把
 import { launch, URL_BASE } from './lib.mjs';

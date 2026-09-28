@@ -3,7 +3,7 @@
    - 武器光效：武器 it.enh ≥ 5 → look.glow = { lv, amp }（带 it.dim 的是增幅，走另一套颜色）；lookFromEquip 里算，
      所以自己、城镇里的其他玩家（net/town.js 发的 look）、组队影子（net/coop.js）、决斗对手、选角立绘、状态窗口都一样。
      外观层（models/avatar.js）画武器时调这里：
-       vanityWeaponFx  在武器的同一个变换里画：着色光晕（缓存画布）+ 本体提亮 + 火花（按时间算位置，不存状态）+ 待机爆闪 + 电弧
+       vanityWeaponFx  在武器的同一个变换里画两次：武器图之前 = 光晕 + 刀身描边 + 爆闪的光 + 电弧（都在刀身后面）；之后 = 刀身外沿的火花 + 环绕光点 + 尖端星芒
        vanityTrail     挥砍拖尾：记下最近几帧的握点 / 角度，按角度插值画成扇形带（只在大幅挥动时出现）
        vanityGround    +15 起脚下的光环
    - 光效阶梯：GLOW_ENH / GLOW_AMP 一行一个等级，改数值就能调（见表头注释）。
@@ -20,34 +20,36 @@
 /* ---- 1. 武器光效阶梯 ----
    nm 名称；col 光晕色（数组 = 几种颜色轮流渐变）；col2 火花色（'rainbow' = 七彩）；a 光晕强度 0~1；r 光晕半径（游戏像素，跟角色大小走）；
    pulse 呼吸频率（次 / 秒）；spark 火花（个 / 秒）；trail 挥砍拖尾（秒）；flare 待机爆闪间隔（秒）；ground 脚下光环；arcs 电弧 */
-function vanityLadder(amp, T) { for (const lv in T) T[lv] = { spark: 0, trail: 0, flare: 0, ground: 0, arcs: 0, ...T[lv], lv: +lv, amp }; return T; }
+function vanityLadder(amp, T) { for (const lv in T) T[lv] = { spark: 0, trail: 0, flare: 0, ground: 0, arcs: 0, rim: 0, orbit: 0, aura2: null, ...T[lv], lv: +lv, amp }; return T; }
+/* +10 起刀身外面一圈清楚的描边（rim，游戏像素）+ 大光晕（r）；+12 光晕是 +10 的 1.5 倍、更亮；+13 起每级多一样一眼看得出的东西：
+   +13 变红 + 待机爆闪，+14 环绕光点（orbit 颗，绕着武器转、不压刀身），+15 变紫 + 外层第二圈光晕（aura2）+ 脚下光环，+16 七彩轮换 + 电弧 + 光点加倍 */
 const GLOW_ENH = vanityLadder(0, {
-  5: { nm: '微光', col: '#fff2b8', a: 0.1, r: 3, pulse: 0.4 },
-  6: { nm: '微光', col: '#ffeaa0', a: 0.15, r: 3, pulse: 0.5 },
-  7: { nm: '淡金', col: '#ffe488', a: 0.22, r: 3, pulse: 0.6 },
-  8: { nm: '金闪', col: '#ffd66a', a: 0.3, r: 4, pulse: 0.9 },
-  9: { nm: '冰蓝', col: '#8fd0ff', a: 0.36, r: 4, pulse: 0.7 },
-  10: { nm: '白蓝', col: '#eef8ff', col2: '#ffffff', a: 0.48, r: 5, pulse: 1.0, spark: 4 },
-  11: { nm: '湛蓝', col: '#2e9cff', col2: '#cfeaff', a: 0.6, r: 5, pulse: 1.6, spark: 8, trail: 0.09 },
-  12: { nm: '深蓝', col: '#4a64ff', col2: '#ffe27a', a: 0.7, r: 6, pulse: 2.2, spark: 12, trail: 0.12 },
-  13: { nm: '烈红', col: '#ff4a22', col2: '#ffc040', a: 0.8, r: 7, pulse: 1.4, spark: 16, trail: 0.15, flare: 3.2 },
-  14: { nm: '绯红', col: '#ff3c9a', col2: '#ffd4ee', a: 0.85, r: 7, pulse: 1.8, spark: 20, trail: 0.18, flare: 2.6 },
-  15: { nm: '紫耀', col: '#a45cff', col2: '#f0dcff', a: 0.9, r: 8, pulse: 2.0, spark: 26, trail: 0.21, flare: 2.2, ground: 1 },
-  16: { nm: '七彩圣辉', col: ['#ffd24a', '#5ae8ff', '#ff6ad8'], col2: 'rainbow', a: 1, r: 9, pulse: 2.4, spark: 34, trail: 0.25, flare: 1.8, ground: 1, arcs: 1 },
+  5: { nm: '微光', col: '#fff2b8', a: 0.12, r: 3, pulse: 0.4 },
+  6: { nm: '微光', col: '#ffeaa0', a: 0.18, r: 3, pulse: 0.5 },
+  7: { nm: '淡金', col: '#ffe488', a: 0.26, r: 3.5, pulse: 0.6, rim: 0.6 },
+  8: { nm: '金闪', col: '#ffd66a', a: 0.34, r: 4, pulse: 0.9, rim: 0.8 },
+  9: { nm: '冰蓝', col: '#8fd0ff', a: 0.42, r: 4.5, pulse: 0.7, rim: 1 },
+  10: { nm: '天蓝', col: '#58b8ff', col2: '#ffffff', a: 0.65, r: 6, pulse: 1.0, spark: 4, rim: 1.3 },
+  11: { nm: '湛蓝', col: '#2a86ff', col2: '#cfeaff', a: 0.78, r: 7.5, pulse: 1.6, spark: 6, trail: 0.09, rim: 1.5 },
+  12: { nm: '深蓝', col: '#3a5cff', col2: '#ffe27a', a: 0.9, r: 9, pulse: 2.2, spark: 8, trail: 0.12, rim: 1.8 },
+  13: { nm: '烈红', col: '#ff3a1a', col2: '#ffc040', a: 0.95, r: 10, pulse: 1.4, spark: 10, trail: 0.15, flare: 3.2, rim: 2 },
+  14: { nm: '绯红', col: '#ff2c8c', col2: '#ffd4ee', a: 1, r: 11, pulse: 1.8, spark: 10, trail: 0.18, flare: 2.6, rim: 2.2, orbit: 3 },
+  15: { nm: '紫耀', col: '#9a4cff', col2: '#f0dcff', a: 1, r: 12, pulse: 2.0, spark: 12, trail: 0.21, flare: 2.2, ground: 1, rim: 2.4, orbit: 4, aura2: '#ffd86a' },
+  16: { nm: '七彩圣辉', col: ['#ffb400', '#00c8ff', '#ff3ac8'], col2: 'rainbow', a: 1, r: 15, pulse: 2.4, spark: 14, trail: 0.25, flare: 1.8, ground: 1, arcs: 1, rim: 2.8, orbit: 7, aura2: 'cycle' },
 });
 const GLOW_AMP = vanityLadder(1, {
-  5: { nm: '血光', col: '#ffa0b0', col2: '#c890ff', a: 0.1, r: 3, pulse: 0.4 },
-  6: { nm: '血光', col: '#ff8ca0', col2: '#c080ff', a: 0.15, r: 3, pulse: 0.5 },
-  7: { nm: '血光', col: '#ff7890', col2: '#b878ff', a: 0.22, r: 3, pulse: 0.6 },
-  8: { nm: '血光', col: '#ff6480', col2: '#b070ff', a: 0.3, r: 4, pulse: 0.9 },
-  9: { nm: '血光', col: '#ff5070', col2: '#a868ff', a: 0.36, r: 4, pulse: 0.7 },
-  10: { nm: '蔷薇', col: '#ff7898', col2: '#ffc0d4', a: 0.48, r: 5, pulse: 1.0, spark: 4 },
-  11: { nm: '绯血', col: '#ff3a64', col2: '#ff9ab8', a: 0.6, r: 5, pulse: 1.6, spark: 8, trail: 0.09 },
-  12: { nm: '深红', col: '#e8224e', col2: '#c080ff', a: 0.7, r: 6, pulse: 2.2, spark: 12, trail: 0.12 },
-  13: { nm: '血焰', col: '#ff1a3a', col2: '#a050ff', a: 0.8, r: 7, pulse: 1.4, spark: 16, trail: 0.15, flare: 3.2 },
-  14: { nm: '魔红', col: '#ff1c6c', col2: '#ff70ff', a: 0.85, r: 7, pulse: 1.8, spark: 20, trail: 0.18, flare: 2.6 },
-  15: { nm: '暗血', col: '#d8103e', col2: '#8a3cff', a: 0.9, r: 8, pulse: 2.0, spark: 26, trail: 0.21, flare: 2.2, ground: 1 },
-  16: { nm: '异界之辉', col: ['#ff1030', '#9a40ff', '#ff5a80'], col2: '#ff80c0', a: 1, r: 9, pulse: 2.4, spark: 34, trail: 0.25, flare: 1.8, ground: 1, arcs: 1 },
+  5: { nm: '血光', col: '#ffa0b0', col2: '#c890ff', a: 0.12, r: 3, pulse: 0.4 },
+  6: { nm: '血光', col: '#ff8ca0', col2: '#c080ff', a: 0.18, r: 3, pulse: 0.5 },
+  7: { nm: '血光', col: '#ff7890', col2: '#b878ff', a: 0.26, r: 3.5, pulse: 0.6, rim: 0.6 },
+  8: { nm: '血光', col: '#ff6480', col2: '#b070ff', a: 0.34, r: 4, pulse: 0.9, rim: 0.8 },
+  9: { nm: '血光', col: '#ff5070', col2: '#a868ff', a: 0.42, r: 4.5, pulse: 0.7, rim: 1 },
+  10: { nm: '蔷薇', col: '#ff7898', col2: '#ffc0d4', a: 0.6, r: 6, pulse: 1.0, spark: 4, rim: 1.3 },
+  11: { nm: '绯血', col: '#ff3a64', col2: '#ff9ab8', a: 0.72, r: 7.5, pulse: 1.6, spark: 6, trail: 0.09, rim: 1.5 },
+  12: { nm: '深红', col: '#e8224e', col2: '#c080ff', a: 0.9, r: 9, pulse: 2.2, spark: 8, trail: 0.12, rim: 1.8 },
+  13: { nm: '血焰', col: '#ff1a3a', col2: '#a050ff', a: 0.95, r: 10, pulse: 1.4, spark: 10, trail: 0.15, flare: 3.2, rim: 2 },
+  14: { nm: '魔红', col: '#ff1c6c', col2: '#ff70ff', a: 1, r: 11, pulse: 1.8, spark: 10, trail: 0.18, flare: 2.6, rim: 2.2, orbit: 3 },
+  15: { nm: '暗血', col: '#d8103e', col2: '#8a3cff', a: 1, r: 12, pulse: 2.0, spark: 12, trail: 0.21, flare: 2.2, ground: 1, rim: 2.4, orbit: 4, aura2: '#8a3cff' },
+  16: { nm: '异界之辉', col: ['#ff1030', '#9a40ff', '#ff5a80'], col2: '#ff80c0', a: 1, r: 14, pulse: 2.4, spark: 14, trail: 0.25, flare: 1.8, ground: 1, arcs: 1, rim: 2.6, orbit: 7, aura2: '#ff80ff' },
 });
 const VANITY_BADGE_LV = 10;   // 名牌旁的 “+13” 徽章从 +10 起显示
 // 武器 → look.glow（< +5 没有光效，不发）
@@ -92,34 +94,61 @@ function vanityWings() {
   return (vanityWings.cv = cv);
 }
 
-/* ---- 2. 武器上的光效（外观层 AvatarLayer.weapon 在画完武器图、恢复变换之前调用；坐标 = 武器图像素） ---- */
-function vanityWeaponFx(c, L, w, A, im, s) {
+/* ---- 2. 武器上的光效（外观层 AvatarLayer.weapon 在武器的变换里调用两次；坐标 = 武器图像素） ----
+   back = true：画武器图之前 —— 外层第二圈光晕（+15 起）→ 大光晕（正常混合的外圈 + 叠加发光）→ 紧贴刀身的一圈实色描边（rim）→ 爆闪的光 → 电弧；
+                刀身画在它们上面，所以武器轮廓始终清楚，光从刀身四周透出来。
+   back = false：画武器图之后 —— 刀身外沿往外飘的火花、绕着武器转的光点（椭圆轨道把整把武器包在里面，不压刀身）、尖端星芒。 */
+const VANITY_SPARK_K = 0.6;
+function vanityWeaponFx(c, L, w, A, im, s, back) {
   const G = L.glow; if (!G || !im) return;
   const t = performance.now() / 1000 + (L.seed ??= Math.random() * 9), A0 = c.globalAlpha;
   const z = ((L.m.S && L.m.S.res) || 1) / s, pole = A.kind === 'pole';   // z：1 个游戏像素 = 多少武器图像素（光效大小跟着角色走，不受画布缩放影响）
   const ox = pole ? -A.tx : -A.gx, oy = pole ? -A.ty : -A.gy;
   const x0 = pole && w.bk !== undefined ? Math.max(0, A.tx - (w.len + w.bk + 6) / s) : 0;   // 长杆被身体挡住的那截（和武器图同样裁掉）
-  const pu = 0.7 + 0.3 * Math.sin(t * G.pulse * TAU), r = Math.max(2, Math.min(48, Math.round(G.r * z / 2) * 2));
+  const pu = 0.78 + 0.22 * Math.sin(t * G.pulse * TAU), R = v => Math.max(2, Math.min(160, Math.round(v * z / 2) * 2));   // 半径按游戏像素算（武器图存多大都一样）
   const blit = (img, pad, a) => {
     if (a <= 0.01) return; c.globalAlpha = A0 * Math.min(1, a);
     if (x0 > 0) { const q = x0 + pad; c.drawImage(img, q, 0, img.width - q, img.height, ox + x0, oy - pad, img.width - q, img.height); }
     else c.drawImage(img, ox - pad, oy - pad);
   };
-  c.save(); c.globalCompositeOperation = 'lighter';
-  if (Array.isArray(G.col)) {   // 多色：两种颜色交叉渐变
-    const n = G.col.length, ph = (t * 0.5) % n, i = Math.floor(ph), f = ph - i, H1 = vanityHalo(im, G.col[i], r), H2 = vanityHalo(im, G.col[(i + 1) % n], r);
-    c.globalCompositeOperation = 'source-over'; blit((f < 0.5 ? H1 : H2).ring, H1.p, G.a * 0.5 * pu); c.globalCompositeOperation = 'lighter';
-    blit(H1.cv, H1.p, G.a * pu * (1 - f)); blit(H2.cv, H2.p, G.a * pu * f);
-  } else { const H = vanityHalo(im, G.col, r); c.globalCompositeOperation = 'source-over'; blit(H.ring, H.p, G.a * 0.5 * pu); c.globalCompositeOperation = 'lighter'; blit(H.cv, H.p, G.a * pu); }   // 先正常混合画外圈（亮的城镇背景上也看得见），再叠加发光
-  const B = vanityHalo(im, G.amp ? G.col2 : vanityCol(G, t), r); blit(B.sil, 0, G.a * 0.32 * pu);   // 本体提亮（增幅用异次元紫）
   const gx = A.gx + ox, gy = A.gy + oy, tx = A.tx + ox, ty = A.ty + oy, dx = tx - gx, dy = ty - gy, dl = Math.hypot(dx, dy) || 1, nx = -dy / dl, ny = dx / dl, u0 = pole ? 0.45 : 0.2;
-  // 火花：每颗有固定寿命，位置由（编号, 第几轮）哈希出来；强化是十字星，增幅是菱形碎片
+  const multi = Array.isArray(G.col), n = multi ? G.col.length : 1, ph = (t * 0.5) % n, ci = Math.floor(ph), cf = ph - ci;
+  const colA = multi ? G.col[ci] : G.col, colB = multi ? G.col[(ci + 1) % n] : G.col, colC = multi ? G.col[(ci + 2) % n] : G.col;   // 多色：描边 / 光晕 / 外圈同时是三种颜色，一起轮换（七彩）
+  c.save();
+  if (back) {
+    // 一层光晕：正常混合的外圈（亮背景上也看得见）+ 叠加发光；多色时两种颜色交叉渐变
+    const layer = (col1, col2, f, rr, aRing, aGlow) => {
+      const H1 = vanityHalo(im, col1, rr), H2 = f > 0.01 ? vanityHalo(im, col2, rr) : H1;
+      c.globalCompositeOperation = 'source-over'; blit((f < 0.5 ? H1 : H2).ring, H1.p, aRing);
+      c.globalCompositeOperation = 'lighter'; blit(H1.cv, H1.p, aGlow * (1 - f)); if (f > 0.01) blit(H2.cv, H2.p, aGlow * f);
+    };
+    if (G.aura2) { if (G.aura2 === 'cycle') layer(colC, colA, cf, R(G.r * 1.7), 0.4 * pu, 0.6 * pu); else layer(G.aura2, G.aura2, 0, R(G.r * 1.7), 0.35 * pu, 0.55 * pu); }   // +15 起：外层第二圈（另一种颜色，更大）
+    layer(colA, colB, multi ? cf : 0, R(G.r), G.a * 0.7 * pu, G.a * 1.1 * pu);                              // 大光晕
+    if (G.rim) layer(multi ? colB : colA, multi ? colC : colB, multi ? cf : 0, R(G.rim), Math.min(1, 0.55 + G.a * 0.5), G.a * 0.9);     // 紧贴刀身的实色描边：沿整把武器一圈看得清的颜色
+    // 待机爆闪的光：整把武器外面亮一下（刀身挡在前面）
+    if (G.flare) { const ft = t % G.flare, D = 0.5; if (ft < D) { const H = vanityHalo(im, vanityCol(G, t), R(G.r * 1.3)); c.globalCompositeOperation = 'lighter'; blit(H.cv, H.p, (1 - ft / D) * 0.9); } }
+    // 电弧：沿刃身两道闪电，每秒换 14 次形状；在刀身后面，只从两侧露出来
+    if (G.arcs) {
+      const sd = Math.floor(t * 14); c.globalCompositeOperation = 'lighter';
+      for (let k = 0; k < 2; k++) {
+        if (vanityHash(sd * 1.3 + k * 9.1) < 0.3) continue;
+        c.beginPath();
+        for (let i = 0; i <= 6; i++) { const u = u0 + (1 - u0) * i / 6, jj = (vanityHash(sd + k * 11 + i * 3.7) - 0.5) * 22 * z * (i && i < 6 ? 1 : 0.3), px = gx + dx * u + nx * jj, py = gy + dy * u + ny * jj; if (i) c.lineTo(px, py); else c.moveTo(px, py); }
+        c.globalAlpha = A0 * 0.6; c.strokeStyle = G.amp ? G.col2 : vanityCol(G, t); c.lineWidth = 3.4 * z; c.stroke();
+        c.globalAlpha = A0 * 0.95; c.strokeStyle = '#ffffff'; c.lineWidth = 1.2 * z; c.stroke();
+      }
+    }
+    c.restore(); return;
+  }
+  c.globalCompositeOperation = 'lighter';
+  const half = Math.max(2, A.h * 0.22);   // 刀身半宽（武器图像素，粗估）
+  // 火花：每颗有固定寿命，位置由（编号, 第几轮）哈希出来；从刀身外沿往外飘（不压在刀身上）；强化是十字星，增幅是菱形碎片
   if (G.spark) {
-    const life = 0.6, n = Math.min(24, Math.round(G.spark * life)), rb = G.col2 === 'rainbow', big = G.lv >= 13 ? 2.3 : 1.7;
+    const life = 0.6, cnt = Math.min(16, Math.round(G.spark * life * VANITY_SPARK_K * 2)), rb = G.col2 === 'rainbow', big = G.lv >= 13 ? 2.2 : 1.7;
     if (!rb) c.fillStyle = G.col2 || G.col;
-    for (let j = 0; j < n; j++) {
-      const ph = t / life + j / n, cy = Math.floor(ph), u = ph - cy, h1 = vanityHash(j * 7.13 + cy * 1.77), h2 = vanityHash(j * 3.1 + cy * 5.3);
-      const along = u0 + (1 - u0) * h1, off = (1.5 + u * (6 + h2 * 9)) * z * (h2 < 0.5 ? -1 : 1);
+    for (let j = 0; j < cnt; j++) {
+      const q = t / life + j / cnt, cy = Math.floor(q), u = q - cy, h1 = vanityHash(j * 7.13 + cy * 1.77), h2 = vanityHash(j * 3.1 + cy * 5.3);
+      const along = u0 + (1 - u0) * h1, off = (half + (2 + u * (6 + h2 * 8)) * z) * (h2 < 0.5 ? -1 : 1);
       const px = gx + dx * along + nx * off, py = gy + dy * along + ny * off, sz = big * (1 - u * 0.4) * z;
       c.globalAlpha = A0 * Math.sin(u * Math.PI) * (0.6 + 0.4 * G.a);
       if (rb) c.fillStyle = `hsl(${(t * 140 + j * 47) % 360 | 0},100%,72%)`;
@@ -127,24 +156,25 @@ function vanityWeaponFx(c, L, w, A, im, s) {
       else { c.fillRect(px - sz * 1.8, py - sz * 0.3, sz * 3.6, sz * 0.6); c.fillRect(px - sz * 0.3, py - sz * 1.8, sz * 0.6, sz * 3.6); }
     }
   }
-  // 待机爆闪：每隔 flare 秒，尖端炸开一颗星芒，整把武器闪一下
+  // 环绕光点（+14 起）：椭圆轨道把整把武器包在里面（长轴沿刀身、比刀身长一截），光点永远在刀身外面；转到“前面”的一半更大更亮
+  if (G.orbit) {
+    const cx = gx + dx * (u0 + 1) / 2, cy = gy + dy * (u0 + 1) / 2, ea = dl * (1 - u0) / 2 + 8 * z, eb = half + 7 * z, rb = G.col2 === 'rainbow', ux = dx / dl, uy = dy / dl;
+    const at = b => [cx + ux * ea * Math.cos(b) + nx * eb * Math.sin(b), cy + uy * ea * Math.cos(b) + ny * eb * Math.sin(b)];
+    for (let j = 0; j < G.orbit; j++) {
+      const a = t * 2.2 + j / G.orbit * TAU, front = 0.65 + 0.35 * Math.sin(a), [px, py] = at(a);
+      const col = rb ? `hsl(${(t * 120 + j * 51) % 360 | 0},100%,65%)` : (G.amp ? G.col2 : vanityCol(G, t)), rr = (4 + 2 * front) * z;
+      c.globalAlpha = A0 * 0.8 * front; c.drawImage(vanityDot(rb ? '#ffffff' : col), px - rr * 1.6, py - rr * 1.6, rr * 3.2, rr * 3.2);
+      c.fillStyle = rb ? col : '#ffffff'; c.globalAlpha = A0 * front; c.beginPath(); c.arc(px, py, rr * 0.42, 0, TAU); c.fill();
+      c.fillStyle = col;
+      for (let k = 1; k <= 3; k++) { const [qx, qy] = at(a - k * 0.16); c.globalAlpha = A0 * 0.5 * front * (1 - k / 4); c.beginPath(); c.arc(qx, qy, rr * 0.4 * (1 - k / 5), 0, TAU); c.fill(); }   // 拖尾
+    }
+  }
+  // 待机爆闪：每隔 flare 秒，尖端炸开一颗星芒
   if (G.flare) {
     const ft = t % G.flare, D = 0.5;
     if (ft < D) {
-      const k = ft / D, col = vanityCol(G, t), img = vanityFxImg('spark', col), R = (10 + 30 * Math.sin(k * Math.PI / 2)) * z;
-      c.globalAlpha = A0 * (1 - k); if (img) c.drawImage(img, tx - R, ty - R, R * 2, R * 2); else c.drawImage(vanityDot(col), tx - R, ty - R, R * 2, R * 2);
-      const H = vanityHalo(im, col, r); blit(H.cv, H.p, (1 - k) * 0.8);
-    }
-  }
-  // 电弧：沿刃身两道闪电，每秒换 14 次形状
-  if (G.arcs) {
-    const sd = Math.floor(t * 14);
-    for (let k = 0; k < 2; k++) {
-      if (vanityHash(sd * 1.3 + k * 9.1) < 0.3) continue;
-      c.beginPath();
-      for (let i = 0; i <= 6; i++) { const u = u0 + (1 - u0) * i / 6, jj = (vanityHash(sd + k * 11 + i * 3.7) - 0.5) * 12 * z * (i && i < 6 ? 1 : 0.3), px = gx + dx * u + nx * jj, py = gy + dy * u + ny * jj; if (i) c.lineTo(px, py); else c.moveTo(px, py); }
-      c.globalAlpha = A0 * 0.5; c.strokeStyle = G.amp ? G.col2 : vanityCol(G, t); c.lineWidth = 3 * z; c.stroke();
-      c.globalAlpha = A0 * 0.95; c.strokeStyle = '#ffffff'; c.lineWidth = 1.1 * z; c.stroke();
+      const k = ft / D, col = vanityCol(G, t), img = vanityFxImg('spark', col), Rr = (10 + 26 * Math.sin(k * Math.PI / 2)) * z;
+      c.globalAlpha = A0 * (1 - k); if (img) c.drawImage(img, tx - Rr, ty - Rr, Rr * 2, Rr * 2); else c.drawImage(vanityDot(col), tx - Rr, ty - Rr, Rr * 2, Rr * 2);
     }
   }
   c.restore();
@@ -224,7 +254,7 @@ function vanityTipDecorate(el, it) {
     const G = vanityGlowRow(vanityGlowOf(it)); if (!G) return;
     const col = Array.isArray(G.col) ? G.col[0] : G.col, nm = el.querySelector('.nm');
     if (nm && G.lv >= VANITY_BADGE_LV) { nm.classList.add('vglow'); if (G.lv >= 12) nm.classList.add('vglow2'); nm.style.setProperty('--vg', col); }
-    const ex = [G.spark && '火花', G.trail && '挥砍拖尾', G.flare && '待机爆闪', G.ground && '脚下光环', G.arcs && '电弧'].filter(Boolean);
+    const ex = [G.rim && '刀身描边', G.spark && '火花', G.trail && '挥砍拖尾', G.flare && '待机爆闪', G.orbit && '环绕光点', G.aura2 && '双层光晕', G.ground && '脚下光环', G.arcs && '电弧'].filter(Boolean);
     el.append(h('div', { class: 'sec vglowl', style: `color:${col}` }, `✦ ${G.amp ? '增幅' : '强化'}光效 +${G.lv}「${G.nm}」${ex.length ? '：' + ex.join(' · ') : ''}`));
   } else if (AV_SLOTS.includes(it.slot)) {
     const S = it.set && typeof CASH_SETS !== 'undefined' ? CASH_SETS[it.set] : null, v = S && S.tier === 'rare' ? VANITY_TOWN.rarePiece : VANITY_TOWN.piece;

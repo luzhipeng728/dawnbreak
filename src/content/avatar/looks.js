@@ -85,8 +85,15 @@ function lookBodySet(cls, eq, prefer) {
   // 没穿身体部位：默认造型自带帽子的职业戴了时装帽子 / 发饰 → 换成那套，帽子才显示得出来（只戴眼镜不换）
   return AVATAR_HAT_CLS[cls] ? setOf('av_hat') || setOf('av_hair') : null;
 }
-function lookFromEquip(cls, eq, prefer) {
-  eq = eq || {};
+// 这套装备是谁的：当前角色 → game.job；存档里的其他角色（选角界面）→ 那个角色的 job；其他 → null
+function lookJobOf(eq) {
+  if (typeof inv !== 'undefined' && eq === inv.equip) return typeof game !== 'undefined' ? game.job || null : null;
+  const d = typeof save !== 'undefined' && save.chars && save.chars.find(c => c && c.equip === eq);
+  return d ? d.job || null : null;
+}
+// look.job：转职外观（content/avatar/job_looks.js）；联机时随 look 一起发给其他玩家
+function lookFromEquip(cls, eq, prefer, job) {
+  eq = eq || {}; if (job === undefined) job = lookJobOf(eq);
   const set = lookBodySet(cls, eq, prefer), parts = prefer ? null : avatarParts(cls, eq), upCostume = parts ? !!parts.up : !!set;   // 商城试穿（prefer）整套看
   const acc = [];
   for (const slot of ['av_hat', 'av_hair', 'av_face']) {
@@ -94,7 +101,7 @@ function lookFromEquip(cls, eq, prefer) {
     if (slot !== 'av_face' && AVATAR_HAT_CLS[cls] && !upCostume) continue;   // 默认上身自带帽子：上身换成时装后才显示帽子 / 发饰
     acc.push(it.key);
   }
-  return { wpn: weaponArtOf(eq.weapon, cls, eq.av_weapon), set, parts, acc, glow: vanityGlowOf(eq.weapon) };   // glow：强化 / 增幅光效（game/vanity.js）
+  return { wpn: weaponArtOf(eq.weapon, cls, eq.av_weapon), set, parts, acc: jobLookAcc(job, acc), glow: vanityGlowOf(eq.weapon), job: job || null };   // glow：强化 / 增幅光效（game/vanity.js）
 }
 // 职业默认外观（选角立绘、路人、决斗场对手等没有装备信息的模型）
 function defaultLook(cls) {

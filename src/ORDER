@@ -123,7 +123,10 @@ content/sprites.js
 # 外观与换装：武器图数据、外观规则、外观合成（给职业精灵模型挂外观层）
 content/avatar/weapon_art.js
 content/avatar/looks.js
+# 转职外观（每个转职一条数据 + 可选钩子，docs/JOB_VISUALS.md）→ 渲染器 models/job_fx.js（外观层 under / over 里调用）
+content/avatar/job_looks.js
 models/avatar.js
+models/job_fx.js
 # 商城与礼包（商城组）：点券、商城、时装 / 天空套、宠物 / 光环、礼包、魔盒与箱子（依赖物品系统、外观、菜单栏）
 content/cash/items.js
 content/cash/catalog.js

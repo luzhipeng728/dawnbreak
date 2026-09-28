@@ -390,13 +390,13 @@ defSkill('en_puppeteer', { name: '人偶操纵者', cls: 'mage', job: EN, lvReq:
 defSkill('en_curiosity', { name: '邪恶的好奇心', cls: 'mage', job: EN, lvReq: 16, passive: true, type: 'indep', col: '#8a2a5a',
   desc: '【被动】对一切都充满危险的好奇心：技能攻击力和暴击率提高。', infoExtra: lv => [['技能攻击力', '+' + pct(0.06 + 0.01 * lv)], ['暴击率', '+' + pct(0.03 + 0.005 * lv)]] });
 const enGirlLove = lv => ({ aspd: 0.05 + 0.005 * lv, mspd: 0.05 + 0.005 * lv, cspd: 0.05 + 0.005 * lv, atk: 0.02 + 0.004 * lv });
-defSkill('en_girllove', { name: '少女的爱', cls: 'mage', job: EN, lvReq: 21, passive: true, type: 'indep', col: '#e05a8a',
+defSkill('en_girllove', { name: '少女的爱', cls: 'mage', job: EN, tier: 1, lvReq: 21, passive: true, type: 'indep', col: '#e05a8a',
   desc: '【被动·一觉】少女满溢的爱意：900px 内的队伍成员（包括自己）攻击速度、移动速度、施放速度和攻击力提高。',
   infoExtra: lv => { const b = enGirlLove(lv); return [['攻速 / 移速 / 施放', '+' + pct(b.aspd)], ['攻击力', '+' + pct(b.atk)]]; } });
-defSkill('en_bloom', { name: '冥月绽放', cls: 'mage', job: EN, lvReq: 26, passive: true, type: 'indep', col: '#5a2a8a',
+defSkill('en_bloom', { name: '冥月绽放', cls: 'mage', job: EN, tier: 2, lvReq: 26, passive: true, type: 'indep', col: '#5a2a8a',
   desc: '【被动·二觉】冥月之力在攻击中绽放：命中敌人时叠加“冥月”（最多 5 层，5 秒），每层让该敌人受到的伤害提高；自己的技能攻击力提高。',
   infoExtra: lv => [['每层受到伤害', '+' + pct(0.012 + 0.0015 * lv)], ['技能攻击力', '+' + pct(0.08 + 0.01 * lv)]] });
-defSkill('en_sinister', { name: '不祥的微笑', cls: 'mage', job: EN, lvReq: 29, maxLv: 1, passive: true, type: 'indep', col: '#3a1a3a',
+defSkill('en_sinister', { name: '不祥的微笑', cls: 'mage', job: EN, tier: 3, lvReq: 29, maxLv: 1, passive: true, type: 'indep', col: '#3a1a3a',
   desc: '【被动·三觉】蔷薇藤鞭一下也没打中时，冷却缩短到 1 秒；疯疯熊每 30 秒自动替你挡下一次攻击。' });
 function enBloomHit(a, t) {
   const o = enOwner(a); if (!o || !enOn(o) || !t || t.fighter && !game.pvp) return; const lv = skLv(o, 'en_bloom'); if (!lv) return;
@@ -599,7 +599,7 @@ function enCurtain(e, dur, rip) {
     if (this.rip && k > 0.25 && k < 0.7) { const q = (k - 0.25) / 0.45; c.globalAlpha = 1 - q; c.strokeStyle = '#ffd0a0'; c.lineWidth = 6; c.beginPath(); for (let i = 0; i < 3; i++) { c.moveTo(WW / 2 - 90 + i * 60, 60); c.lineTo(WW / 2 - 160 + i * 60, WH - 40); } c.stroke(); }
     c.restore(); } });
 }
-defSkill('en_awaken', { name: '开幕！人偶剧场', cls: 'mage', job: EN, lvReq: 21, maxLv: 3, mp: 250, cd: 145, pvp: 0.45, type: 'indep', elem: 'dark', awaken: true, col: '#c0306a',
+defSkill('en_awaken', { name: '开幕！人偶剧场', cls: 'mage', job: EN, tier: 1, lvReq: 21, maxLv: 3, mp: 250, cd: 145, pvp: 0.45, type: 'indep', elem: 'dark', awaken: true, col: '#c0306a',
   desc: '【觉醒】疯疯熊拉上帷幕，暗黑少女从上方现身，用傀儡线操纵疯疯熊（约 3 秒的开场期间无敌）。36 秒内你改为操控疯疯熊：普攻和熊系技能都由熊出招，900px 内的队友攻击力、攻速、移速、施放速度提高，自己受到的伤害降低并免疫异常状态。开场时自动施放一次疯狂召唤。结束时巨熊撕破幕布，对全屏敌人造成巨大伤害。',
   pow: lv => skillDmg(24, 6, lv), infoExtra: lv => [['持续', '36 秒'], ['受到伤害', '-' + pct(0.3 + 0.03 * lv)], ['队友攻击力', '+' + pct(0.08 + 0.01 * lv)]], ai: { kind: 'awaken', r: [0, 400], dy: 120 },
   act: (lv) => ({ name: 'en_awaken', clip: 'enBanzai', dur: 2.4, invul: true, superArmor: true, noCounter: true,
@@ -609,7 +609,7 @@ defSkill('en_awaken', { name: '开幕！人偶剧场', cls: 'mage', job: EN, lvR
 /* =====================================================================
    P1：一觉之后（官方 Lv60～100 → 本作 Lv23～30），含二觉、三觉
    ===================================================================== */
-defSkill('en_puppettrick', { name: '人偶戏法', cls: 'mage', job: EN, lvReq: 23, mp: 110, cd: 30, type: 'indep', elem: 'dark', col: '#8a6a3a', cast: true,
+defSkill('en_puppettrick', { name: '人偶戏法', cls: 'mage', job: EN, tier: 1, lvReq: 23, mp: 110, cd: 30, type: 'indep', elem: 'dark', col: '#8a6a3a', cast: true,
   desc: '把 700px 内的敌人变成哥布林 / 牛头兽人偶（约 2.5 秒内不能行动），用法杖往人偶身上钉钉子，最后一钉把敌人打飞。施放中霸体。', pow: lv => skillDmg(1.2, 0.12, lv) * 4 + skillDmg(3, 0.3, lv), ai: { kind: 'burst', r: [0, 340], dy: 120 },
   act: (lv) => ({ name: 'en_puppettrick', clip: 'enNail', dur: 2.6, superArmor: true, noCounter: true,
     events: [evAt(0.2, e => { sfx.magic(); fxShock(e.x, e.y, 350, '#c8a070'); e.act.tg = ents.filter(t => foe(e, t) && t.invul <= 0 && Math.abs(t.x - e.x) < 350 && Math.abs(t.y - e.y) < 140);
@@ -621,7 +621,7 @@ defSummon('en_trick', { kind: 'attach', host: 'target', life: 2.4, max: 30, keep
   onSpawn(s) { const h = s.host, kind = h.weight > 1.5 ? 'tau' : 'goblin'; s.m0 = h.model; if (SPR_DATA[kind] && IMG[`spr/${kind}/idle`]) h.model = new SpriteModel(kind, { ...SPR_FALLBACK, _: 'idle' }, SPR_ANIMS.monster, { sat: 0.35, bright: 1.15 }); fxBurst(h.x, h.y, h.z + 40, 90, '#e0c090'); },
   onEnd(s) { const h = s.host; if (h && s.m0) h.model = s.m0; if (h && !h.dead) fxBurst(h.x, h.y, h.z + 40, 80, '#e0c090'); },
   draw(c, s) { const h = s.host; c.save(); c.strokeStyle = 'rgba(240,232,215,.7)'; c.lineWidth = 1; c.beginPath(); c.moveTo(sx(h.x - 6), sy(h.y, h.z + (h.h || 80))); c.lineTo(sx(h.x - 6), sy(h.y, h.z + (h.h || 80) + 140)); c.moveTo(sx(h.x + 8), sy(h.y, h.z + (h.h || 80) * 0.8)); c.lineTo(sx(h.x + 8), sy(h.y, h.z + (h.h || 80) + 140)); c.stroke(); c.restore(); } });
-defSkill('en_lovesting', { name: '爱之刺痛', cls: 'mage', job: EN, lvReq: 23, mp: 100, cd: 30, type: 'indep', elem: 'dark', col: '#c03a6a', cast: true,
+defSkill('en_lovesting', { name: '爱之刺痛', cls: 'mage', job: EN, tier: 1, lvReq: 23, mp: 100, cd: 30, type: 'indep', elem: 'dark', col: '#c03a6a', cast: true,
   desc: '抱紧坏坏兔，背后长出荆棘藤翼，荆棘像雨一样落在前方（持续引导约 2 秒，霸体；按跳跃键提前结束）。', pow: lv => skillDmg(0.55, 0.055, lv) * 14, ai: { kind: 'aoe', r: [40, 420], dy: 80 },
   act: (lv) => ({ name: 'en_lovesting', clip: 'enHug', dur: 2.5, superArmor: true, noCounter: true,
     onInput: (e, I) => { if (I.buffered('jump') && e.actT > 0.4) { I.consume('jump'); e.endAct(); } return false; },
@@ -632,24 +632,24 @@ function enThornDrop(e, x, y, lv) {
   addFx({ x, y: y + 1, z: 0, dur: 0.22, draw(c) { const k = this.t / this.dur, z = 260 * (1 - k); enThornLine(c, sx(this.x - 8), sy(this.y, z + 34), sx(this.x), sy(this.y, z), 3, x); } });
   game.after(0.22, () => { if (e.dead) return; fxDust(x, y, 2, 8, '#6a3a4a'); blast(e, x, y, 42, enH(skillDmg(0.55, 0.055, lv), { stun: 0.3, knock: 20, hs: 0.02, col: EN_ROSE }), { zMax: 120 }); });
 }
-defSkill('en_possession', { name: '永恒的占据', cls: 'mage', job: EN, lvReq: 25, mp: 150, cd: 60, type: 'indep', col: '#d0c0a0', cast: true, noForce: true,
+defSkill('en_possession', { name: '永恒的占据', cls: 'mage', job: EN, tier: 1, lvReq: 25, mp: 150, cd: 60, type: 'indep', col: '#d0c0a0', cast: true, noForce: true,
   desc: '傀儡线从天而降，把倒下的队友提起来复活。单人时没有效果。', req: p => !enSolo() || '组队时才能使用', ai: { kind: 'buff' },
   act: (lv) => ({ name: 'en_possession', clip: 'enBanzai', dur: 0.9, noCounter: true, events: [evAt(0.45, e => { sfx.buff(); fxAura(e, '#f0e8d0', 1);
     if (typeof coop !== 'undefined' && coop.mates) for (const g of coop.mates.values()) if (g.dead) { enSend('revive', { uid: g.uid }, e); fxText('复活', g.x, g.y, g.z + 60, { col: '#f0e8d0' }); } })] }) });
-defSkill('en_wakaka', { name: '哇咔咔！', cls: 'mage', job: EN, lvReq: 25, mp: 120, cd: 40, type: 'indep', elem: 'dark', col: '#c07030', bear: true,
+defSkill('en_wakaka', { name: '哇咔咔！', cls: 'mage', job: EN, tier: 1, lvReq: 25, mp: 120, cd: 40, type: 'indep', elem: 'dark', col: '#c07030', bear: true,
   desc: '【疯疯熊】疯疯熊把周围 400px 的敌人吸过来，瞬间变大咆哮三声（你捂住耳朵）。', pow: lv => skillDmg(2.5, 0.25, lv) * 3, ai: { kind: 'burst', r: [0, 380], dy: 120 },
   act: (lv, p) => p && p.enStage ? { ...EN_MOVES.roar(lv), name: 'en_wakaka' } : { name: 'en_wakaka', clip: 'enEars', dur: 1.2, noCounter: true, onStart: e => enBearDo(e, EN_MOVES.roar(lv)) } });
-defSkill('en_garden', { name: '苦痛庭院', cls: 'mage', job: EN, lvReq: 26, mp: 150, cd: 40, type: 'indep', elem: 'dark', col: '#6a1a3a', cast: true,
+defSkill('en_garden', { name: '苦痛庭院', cls: 'mage', job: EN, tier: 2, lvReq: 26, mp: 150, cd: 40, type: 'indep', elem: 'dark', col: '#6a1a3a', cast: true,
   desc: '以自身为中心展开约 500px 的荆棘庭院：8 段伤害，并把里面的敌人束缚 3 秒。', pow: lv => skillDmg(1.4, 0.14, lv) * 8, ai: { kind: 'aoe', r: [0, 240], dy: 110 },
   act: (lv) => ({ name: 'en_garden', clip: 'enBanzai', dur: 0.8, noCounter: true, events: [evAt(0.3, e => { sfx.magic(); fxShock(e.x, e.y, 250, EN_ROSE); summon(e, 'en_garden', { x: e.x, y: e.y, lv }); })] }) });
-defSkill('en_roarbear', { name: '咆哮吧！疯疯熊', cls: 'mage', job: EN, lvReq: 26, mp: 160, cd: 45, type: 'indep', elem: 'dark', col: '#7a3a8a', bear: true,
+defSkill('en_roarbear', { name: '咆哮吧！疯疯熊', cls: 'mage', job: EN, tier: 2, lvReq: 26, mp: 160, cd: 45, type: 'indep', elem: 'dark', col: '#7a3a8a', bear: true,
   desc: '【疯疯熊】疯疯熊变成巨熊，向前喷出诅咒吐息（24 段），地面留下 5 秒的紫色诅咒地带（诅咒 + 持续伤害）。', pow: lv => skillDmg(0.55, 0.055, lv) * 24 + skillDmg(0.3, 0.03, lv) * 10, ai: { kind: 'burst', r: [0, 380], dy: 60 },
   act: (lv, p) => enBearSkill(p, 'en_roarbear', lv, EN_MOVES.breath) });
-defSkill('en_lovecage', { name: '挚爱囚笼', cls: 'mage', job: EN, lvReq: 29, mp: 200, cd: 60, type: 'indep', elem: 'dark', col: '#a01a4a', cast: true,
+defSkill('en_lovecage', { name: '挚爱囚笼', cls: 'mage', job: EN, tier: 3, lvReq: 29, mp: 200, cd: 60, type: 'indep', elem: 'dark', col: '#a01a4a', cast: true,
   desc: '用荆棘编成一座巨大的鸟笼，把前方的敌人关起来“展览”（定身 5 秒，持续伤害）；结束时笼子收缩，把敌人聚到中心并造成巨大伤害。', pow: lv => skillDmg(0.9, 0.09, lv) * 10 + skillDmg(12, 1.2, lv), ai: { kind: 'burst', r: [60, 360], dy: 80 },
   act: (lv) => ({ name: 'en_lovecage', clip: 'enCmd', dur: 0.8, noCounter: true, events: [evAt(0.25, e => { sfx.magic(); const at = aimAhead(e, 200, 360, 90); summon(e, 'en_cage', { x: at.t ? at.x : e.x + e.face * 200, y: at.t ? at.y : e.y, lv }); })] }) });
 // 二觉：欢迎光临人偶之森 —— 当前空间变成人偶之森，超巨型疯疯熊扫激光、再挥两次手臂（共 7 段，7 秒，期间无敌）
-defSkill('en_awaken2', { name: '欢迎光临人偶之森', cls: 'mage', job: EN, lvReq: 27, maxLv: 3, mp: 400, cd: 180, pvp: 0.4, type: 'indep', elem: 'dark', awaken: true, awakenN: 2, col: '#5a2a6a',
+defSkill('en_awaken2', { name: '欢迎光临人偶之森', cls: 'mage', job: EN, tier: 2, lvReq: 27, maxLv: 3, mp: 400, cd: 180, pvp: 0.4, type: 'indep', elem: 'dark', awaken: true, col: '#5a2a6a',
   desc: '【二觉】把当前空间变成人偶之森：超巨型疯疯熊从森林深处现身，对全屏扫出激光，再挥两次巨臂，共 7 段伤害。持续 7 秒，期间你无敌。', pow: lv => skillDmg(9, 2.2, lv) * 7, ai: { kind: 'awaken', r: [0, 500], dy: 150 },
   act: (lv) => ({ name: 'en_awaken2', clip: 'enHug', dur: 7, invul: true, superArmor: true, noCounter: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '欢迎光临人偶之森', who: enCutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); enForest(e, 7); },
@@ -668,7 +668,7 @@ function enForest(e, dur) {
     else { c.save(); c.translate(WW / 2, WH - 30); c.scale(bs, bs); EN_BEAR_FB.draw(c, { __c: 'bRoar' }, this.t); c.restore(); }
     c.restore(); } });
 }
-defSkill('en_awaken3', { name: '终幕！人偶剧场', cls: 'mage', job: EN, lvReq: 30, maxLv: 3, mp: 500, cd: 290, pvp: 0.35, type: 'indep', elem: 'dark', awaken: true, awakenN: 3, col: '#8a0a3a',
+defSkill('en_awaken3', { name: '终幕！人偶剧场', cls: 'mage', job: EN, tier: 3, lvReq: 30, maxLv: 3, mp: 500, cd: 290, pvp: 0.35, type: 'indep', elem: 'dark', awaken: true, col: '#8a0a3a',
   desc: '【三觉】“Prepare... The Final Puppet Show...!”\n长篇舞台：没有在人偶剧场中时施放，进入加强版的人偶剧场（50 秒，全队加成和谢幕伤害更高）。\n短篇舞台：在一觉的人偶剧场中施放，剧场延长 20 秒并立即加强，同时对全屏敌人造成伤害。',
   pow: lv => skillDmg(40, 10, lv), ai: { kind: 'awaken', r: [0, 500], dy: 150 },
   act: (lv, p) => ({ name: 'en_awaken3', clip: p && p.enStage ? 'bRoar' : 'enBanzai', dur: 2.6, invul: true, superArmor: true, noCounter: true,
@@ -679,7 +679,7 @@ defSkill('en_awaken3', { name: '终幕！人偶剧场', cls: 'mage', job: EN, lv
 /* =====================================================================
    转职登记、指令、被动刷新、每帧逻辑
    ===================================================================== */
-CLASSES.mage.jobs.enchantress = { art: 'job/enchantress', name: '小魔女', role: '辅助 · 人偶', armor: 'plate', awaken: 'en_awaken', awakenName: '暗黑少女',
+CLASSES.mage.jobs.enchantress = { art: 'job/enchantress', name: '小魔女', role: '辅助 · 人偶', armor: 'plate', awaken: 'en_awaken', awakenName: '暗黑少女', awaken2: 'en_awaken2', awakenName2: '冥月女神', awaken3: 'en_awaken3', awakenName3: '知源·小魔女',
   desc: '用诅咒和人偶术强化队友、削弱敌人的辅助魔法师，身边永远跟着傀儡疯疯熊。组队时为全队带来强力的诅咒 BUFF 和回复；单刷时自动偏爱疯疯熊，攻击力和冷却大幅强化。',
   skills: ['en_rosevine', 'en_broom', 'en_puppeteer', 'en_mend', 'en_scratch', 'en_favor', 'en_curiosity', 'en_rocket', 'en_hotfeet', 'en_rosewhip', 'en_forbidden', 'en_guard', 'en_thornspike',
     'en_bearfall', 'en_madcall', 'en_rosejail', 'en_firstaid', 'en_hut', 'en_bigbear', 'en_girllove', 'en_awaken',

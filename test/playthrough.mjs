@@ -242,18 +242,18 @@ async function awaken() {
     await wait(300); await P.shot('buy-crystal');
     step('无色小晶块：' + await page.evaluate(() => inv.count('crystal'))); await P.closeAll();
   }
-  // 冒险级烈焰格拉卡，A 评价（最多 3 次）
+  // 冒险级烈焰格拉卡，B 评价（最多 3 次；多放技能，技能释放期间有霸体）
   check(await goScene('gf_graca'), '走不到格拉卡区域');
   let okS = false;
   for (let t = 1; t <= 3 && !okS; t++) {
     check(await P.toGate('blazing_graca'), '烈焰格拉卡门口没弹窗'); if (t === 1) await P.shot('warrior-gate');
     await P.enterDungeon('冒险');
-    const r = await P.fightDungeon({ onRoom: async s => { if (s.d.boss && t === 1) await P.shot('warrior-boss'); } });
+    const r = await P.fightDungeon({ skillRate: 0.4, onRoom: async s => { if (s.d.boss && t === 1) await P.shot('warrior-boss'); } });
     step(`冒险级烈焰格拉卡第 ${t} 次：${JSON.stringify(r)}`);
     if (r.state === 'result') { await P.shot(`warrior-result-${t}`); await P.flipAndReturn(); }
     okS = await page.evaluate(c => questRec(`q_awaken_${c}_2`) && goalVal(QUESTS[`q_awaken_${c}_2`], questRec(`q_awaken_${c}_2`), 0) >= 1, CLS);
   }
-  check(okS, '冒险级烈焰格拉卡 3 次都没打到 A');
+  check(okS, '冒险级烈焰格拉卡 3 次都没打到 B');
   const q2 = await page.evaluate(c => questState(`q_awaken_${c}_2`), CLS); step('觉醒任务 2 状态：' + q2);
   // 交任务 → 觉醒
   check(await goScene(mScene), '回不到导师处');

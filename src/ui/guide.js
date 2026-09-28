@@ -128,7 +128,7 @@ const guide = {
       c.fillStyle = n.lock ? '#b0a090' : '#ffd23a'; c.strokeStyle = '#3a2208'; c.lineWidth = 4;
       c.beginPath(); c.moveTo(X, y + 26); c.lineTo(X - 20, y); c.lineTo(X - 8, y); c.lineTo(X - 8, y - 22); c.lineTo(X + 8, y - 22); c.lineTo(X + 8, y); c.lineTo(X + 20, y); c.closePath(); c.stroke(); c.fill();
       const lx = clamp(X, 190, UW - 190), al = X > UW - 190 ? 'right' : X < 190 ? 'left' : 'center';   // 靠近屏幕边缘时文字往里收，不被裁掉
-      if (!n.final) uiText(`${n.label}${n.lock ? `（Lv.${n.ex.minLv}）` : ''}`, al === 'right' ? UW - 24 : al === 'left' ? 24 : lx, y - 34, { size: 22, align: al, color: '#ffe8a8', sw: 5 });
+      if (!n.final && !(n.ex && (n.ex.side === 'left' || n.ex.side === 'right' || n.ex.side === 'down'))) uiText(`${n.label}${n.lock ? `（Lv.${n.ex.minLv}）` : ''}`, al === 'right' ? UW - 24 : al === 'left' ? 24 : lx, y - 34, { size: 22, align: al, color: '#ffe8a8', sw: 5 });
     } else {   // 画面外：屏幕边缘的方向箭头
       const left = X <= 60, ex = left ? 34 : UW - 34, y = 540;
       c.translate(ex, y); if (left) c.scale(-1, 1);

@@ -95,7 +95,7 @@ Object.assign(menus, {
         h('div', { class: 'nm' }, J.name), h('div', { class: 'role' }, J.role ? `定位：${J.role}` : `${C.name} · 转职`),
         h('div', { class: 'desc' }, J.desc || ''),
         h('div', { class: 'sks' }, sks.map(s => h('div', { class: 'sk' }, h('img', { src: skillIcon(s).toDataURL() }), SKILLS[s].name))),
-        J.awakenName ? h('div', { class: 'aw' }, `觉醒：${J.awakenName}（Lv.18 觉醒任务后解锁）`) : null);
+        J.awakenName ? h('div', { class: 'aw' }, `觉醒：${J.awakenName}（Lv.21 觉醒任务后解锁）`) : null);
     })));
     const J = ui.sel && jobs[ui.sel];
     body.append(h('div', { class: 'row', style: 'justify-content:center' },

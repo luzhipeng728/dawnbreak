@@ -17,7 +17,7 @@ const bot = {
     const danger = groundFx.find(g => g.fire && !g.friendly && inGround(p, g.x, g.y, g.r + 10));
     if (danger) {
       const ty = danger.y > DEPTH / 2 ? 8 : DEPTH - 8;
-      if ((p.dodgeCd || 0) <= 0 && Math.random() < 0.5) { V[ty < p.y ? 'up' : 'down'] = 1; V.dodge = 2; this.dodges = (this.dodges || 0) + 1; return; }
+      if (canBackstep(p) && Math.random() < 0.3) { V.down = 1; V.jump = 2; this.dodges = (this.dodges || 0) + 1; return; }   // 后跳（官方没有闪避键）
       this.move(V, p, p.x + (p.x >= danger.x ? 60 : -60), ty, true); return;
     }
     // 2) 打怪
@@ -31,7 +31,7 @@ const bot = {
         if (p.face !== want) { V[want > 0 ? 'right' : 'left'] = 1; return; }
         if (p.st === 'act' && Math.random() < 0.6) { V.attack = 2; return; }
         const ready = [];
-        for (let i = 0; i < 12; i++) { const id = game.skillBar[i], S = id && SKILLS[id]; if (S && (game.skillLv[id] || 0) > 0 && (p.cool[id] || 0) <= 0 && p.mp >= S.mp && (!S.buff || !p.buffs[id])) ready.push(i); }
+        for (let i = 0; i < SKILL_SLOTS; i++) { const id = game.skillBar[i], S = id && SKILLS[id]; if (S && (game.skillLv[id] || 0) > 0 && (p.cool[id] || 0) <= 0 && p.mp >= S.mp && (!S.buff || !p.buffs[id])) ready.push(i); }
         if (ready.length && Math.random() < 0.08) V['s' + pick(ready)] = 2; else V.attack = 2;
         if (p.hp < p.hpMax * 0.35 && inv.potCd <= 0 && inv.count(inv.quick[0])) V.i0 = 2;
         if (p.mp < p.mpMax * 0.2 && inv.potCd <= 0 && inv.count(inv.quick[1])) V.i1 = 2;
@@ -79,7 +79,7 @@ function testLoadout(lv) {
   const p = game.player; game.lvl = lv;
   for (const s of Object.keys(SLOT_WEIGHT)) inv.equip[s] = makeEquip(s, lv, s === 'weapon' ? 2 : 1, p.cls);   // 只填能掉落的部位（称号 / 时装栏不填）
   for (const id of CLASSES[p.cls].skills) { const S = SKILLS[id]; if (S.lvReq <= lv) game.skillLv[id] = Math.max(1, Math.min(S.maxLv, 1 + Math.floor((lv - S.lvReq) / 2))); }
-  game.skillBar = CLASSES[p.cls].skills.filter(id => game.skillLv[id] > 0).concat(Array(12).fill(null)).slice(0, 12);
+  game.skillBar = CLASSES[p.cls].skills.filter(id => game.skillLv[id] > 0 && !SKILLS[id].passive).concat(Array(SKILL_SLOTS).fill(null)).slice(0, SKILL_SLOTS);
   inv.add(makeConsumable('hpM', 20)); inv.add(makeConsumable('mpM', 20)); inv.quick = ['hpM', 'mpM', null, null, null, null];
   recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax;
 }

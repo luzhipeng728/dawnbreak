@@ -21,15 +21,16 @@ const PARAMS = new URLSearchParams(location.search);
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const fmtNum = n => Math.round(n).toLocaleString('en-US');
 
-/* ---- 键位（官方默认：方向键移动，X 攻击/拾取，C 跳跃（↓+C 后跳，倒地时 C 受身），Z/空格 指令键（方向+Z 放技能），ASDFGH/QWERTY 两排技能，1-6 消耗品栏；
+/* ---- 键位（官方默认：方向键移动，X 攻击/拾取，C 跳跃（↓+C 后跳，倒地时 C 受身蹲伏），Z 指令键（方向+Z 放技能）、Space 指令键 2（方向+Space 放 Buff 类技能，和 Z 分开），
+   技能栏两排各 7 格：ASDFGH + 左 Alt、QWERTY + 第 7 格（官方是左 Ctrl；macOS 上 Ctrl+方向键会切换桌面，所以默认给 V，可以改键），1-6 消耗品栏；官方没有闪避键；
    界面：I 物品栏、M 个人信息、K 技能、L/F1 任务（官方老版任务是 Q，本作 Q 给了第二排技能栏）、N 地图、O 设置、Esc 系统菜单、
    Tab 切换界面、Ctrl 掉落物名称、End 隐藏评价、F12 截图）。
    玩家可以在 设置 → 按键设置 里改键：改键时原地替换 KEYMAP[动作] 数组，所以 input.is/hit 等读法不变 ---- */
 const KEYMAP_DEFAULT = {
   left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'],
-  attack: ['KeyX'], jump: ['KeyC'], cmd: ['KeyZ', 'Space'], cmdB: ['Space'], dodge: ['ShiftLeft', 'KeyV'],
-  s0: ['KeyA'], s1: ['KeyS'], s2: ['KeyD'], s3: ['KeyF'], s4: ['KeyG'], s5: ['KeyH'],
-  s6: ['KeyQ'], s7: ['KeyW'], s8: ['KeyE'], s9: ['KeyR'], s10: ['KeyT'], s11: ['KeyY'],
+  attack: ['KeyX'], jump: ['KeyC'], cmd: ['KeyZ'], cmdB: ['Space'],
+  s0: ['KeyA'], s1: ['KeyS'], s2: ['KeyD'], s3: ['KeyF'], s4: ['KeyG'], s5: ['KeyH'], s12: ['AltLeft'],
+  s6: ['KeyQ'], s7: ['KeyW'], s8: ['KeyE'], s9: ['KeyR'], s10: ['KeyT'], s11: ['KeyY'], s13: ['KeyV'],
   i0: ['Digit1'], i1: ['Digit2'], i2: ['Digit3'], i3: ['Digit4'], i4: ['Digit5'], i5: ['Digit6'],
   inv: ['KeyI'], status: ['KeyM'], skills: ['KeyK'], quests: ['KeyL', 'F1'], map: ['KeyN'], settings: ['KeyO'], pvp: ['KeyP'],
   menu: ['Escape'], confirm: ['Enter', 'NumpadEnter'],
@@ -39,19 +40,19 @@ const KEYMAP = JSON.parse(JSON.stringify(KEYMAP_DEFAULT));
 // 按键设置窗口的分组与中文名（顺序即显示顺序）
 const KEY_GROUPS = [
   ['移动', ['left', 'right', 'up', 'down']],
-  ['战斗', ['attack', 'jump', 'cmd', 'cmdB', 'dodge']],
-  ['技能栏', ['s0', 's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11']],
+  ['战斗', ['attack', 'jump', 'cmd', 'cmdB']],
+  ['技能栏', ['s0', 's1', 's2', 's3', 's4', 's5', 's12', 's6', 's7', 's8', 's9', 's10', 's11', 's13']],
   ['消耗品栏', ['i0', 'i1', 'i2', 'i3', 'i4', 'i5']],
   ['窗口', ['inv', 'status', 'skills', 'quests', 'map', 'settings', 'pvp']],
   ['其他', ['confirm', 'uiMode', 'dropNames', 'hideRank', 'tipDetail', 'shot']],
 ];
-const ACTION_NAME = { left: '向左', right: '向右', up: '向上（纵深）', down: '向下（纵深）', attack: '普通攻击 / 拾取', jump: '跳跃', cmd: '指令键（技能）', cmdB: 'Buff 指令键', dodge: '闪避',
-  s0: '技能栏 1', s1: '技能栏 2', s2: '技能栏 3', s3: '技能栏 4', s4: '技能栏 5', s5: '技能栏 6', s6: '扩展技能栏 1', s7: '扩展技能栏 2', s8: '扩展技能栏 3', s9: '扩展技能栏 4', s10: '扩展技能栏 5', s11: '扩展技能栏 6',
+const ACTION_NAME = { left: '向左', right: '向右', up: '向上（纵深）', down: '向下（纵深）', attack: '普通攻击 / 拾取', jump: '跳跃', cmd: '指令键（Z 类技能）', cmdB: '指令键 2（Space 类技能）',
+  s0: '技能栏 1', s1: '技能栏 2', s2: '技能栏 3', s3: '技能栏 4', s4: '技能栏 5', s5: '技能栏 6', s12: '技能栏 7', s6: '扩展技能栏 1', s7: '扩展技能栏 2', s8: '扩展技能栏 3', s9: '扩展技能栏 4', s10: '扩展技能栏 5', s11: '扩展技能栏 6', s13: '扩展技能栏 7',
   i0: '消耗品 1', i1: '消耗品 2', i2: '消耗品 3', i3: '消耗品 4', i4: '消耗品 5', i5: '消耗品 6',
   inv: '物品栏', status: '个人信息', skills: '技能', quests: '任务', map: '地图', settings: '游戏设置', pvp: '决斗场', menu: '系统菜单',
   confirm: '确认', uiMode: '切换界面显示', dropNames: '显示掉落物名称', hideRank: '隐藏实时评价', tipDetail: '说明详细 / 简略', shot: '截图' };
 const KEY_FIXED = new Set(['menu']);   // Esc 固定，避免把自己锁在菜单外
-const KEY_SHARE = { cmd: ['cmdB'], cmdB: ['cmd'] };   // 可以共用同一个键的动作（官方：Space 既是指令键，也是 Buff 指令键）
+const KEY_SHARE = {};   // 可以共用同一个键的动作（官方 Z 和 Space 是两个不同的指令键，现在没有共用）
 const KEY_BANNED = new Set(['F5', 'F11', 'MetaLeft', 'MetaRight', 'ContextMenu', 'CapsLock', 'NumLock', 'PrintScreen']);
 const KEY_LABEL = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Space: 'Space', Escape: 'Esc', Enter: 'Enter', NumpadEnter: '小键盘Enter', Tab: 'Tab', Backquote: '`',
   ShiftLeft: 'Shift', ShiftRight: '右Shift', ControlLeft: 'Ctrl', ControlRight: '右Ctrl', AltLeft: 'Alt', AltRight: '右Alt', Backspace: 'Backspace', Delete: 'Del', Insert: 'Ins',
@@ -103,9 +104,11 @@ function resetKeys() { for (const a in KEYMAP_DEFAULT) KEYMAP[a] = [...KEYMAP_DE
 loadPrefs();
 // 正在往输入框里打字（例如输入角色名）：键盘不再当作游戏操作
 const isTyping = () => { const e = document.activeElement; return !!e && (e.tagName === 'INPUT' || e.tagName === 'TEXTAREA' || e.tagName === 'SELECT' || e.isContentEditable) && e.type !== 'range' && e.type !== 'checkbox'; };
+// 会进输入缓冲（0.3 秒内有效）的动作：攻击 / 跳跃 / 两个指令键 / 14 格技能栏
+const BUF_ACTS = ['attack', 'jump', 'cmd', 'cmdB', 's0', 's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12', 's13'];
 const input = {
   down: new Set(), pressed: new Set(), released: new Set(), virt: {},   // virt：触屏/手柄的虚拟按键
-  lastTap: { left: -9, right: -9 }, runDir: 0, buf: [], dirHist: [], t: 0,
+  lastTap: { left: -9, right: -9 }, runDir: 0, buf: [], dirHist: [], holdT: {}, t: 0,
   is(a) { if (this.virt[a]) return true; for (const k of KEYMAP[a] || []) if (this.down.has(k)) return true; return false; },
   hit(a) { if (this.virt[a] === 2) return true; for (const k of KEYMAP[a] || []) if (this.pressed.has(k)) return true; return false; },
   up(a) { for (const k of KEYMAP[a] || []) if (this.released.has(k)) return true; return false; },
@@ -116,11 +119,14 @@ const input = {
     this.t = t;
     for (const [a, d] of [['left', -1], ['right', 1]]) if (this.hit(a)) { if (t - this.lastTap[a] < 0.26) this.runDir = d; this.lastTap[a] = t; }
     if (this.runDir && !this.is(this.runDir < 0 ? 'left' : 'right')) this.runDir = 0;
-    for (const a of ['left', 'right', 'up', 'down']) if (this.hit(a)) this.dirHist.push({ a, t });
+    const H = this.holdT || (this.holdT = {});
+    for (const a of ['left', 'right', 'up', 'down']) if (this.hit(a)) { this.dirHist.push({ a, t }); H[a] = t; }
     while (this.dirHist.length && t - this.dirHist[0].t > 0.6) this.dirHist.shift();
-    for (const a of ['attack', 'jump', 'cmd', 'cmdB', 'dodge', 's0', 's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11']) if (this.hit(a)) this.buf.push({ a, t });
+    for (const a of BUF_ACTS) if (this.hit(a)) this.buf.push({ a, t });
     while (this.buf.length && t - this.buf[0].t > 0.3) this.buf.shift();
   },
+  // 方向键已经按住了多久（没按住返回 0）：「按住 ↓ + Z」这类指令用
+  heldFor(a) { return this.is(a) ? this.t - ((this.holdT && this.holdT[a]) ?? -9) : 0; },
   // 指令判定：seq 为方向序列（相对朝向：'f' 前 'b' 后 'd' 下 'u' 上），facing 为当前朝向
   command(seq, facing, span = 0.45) {
     // 从最近的方向输入往前找，按顺序匹配 seq；最后一个方向要在 0.25 s 内，整串在 span 秒内
@@ -142,5 +148,8 @@ addEventListener('keydown', e => {
   if (!e.repeat) { input.pressed.add(e.code); }
   input.down.add(e.code);
 });
-addEventListener('keyup', e => { input.down.delete(e.code); input.released.add(e.code); });
+addEventListener('keyup', e => {
+  if ((e.code === 'AltLeft' || e.code === 'AltRight') && actionsOf(e.code).length) e.preventDefault();   // Windows 上单按 Alt 松开会把焦点移到浏览器菜单
+  input.down.delete(e.code); input.released.add(e.code);
+});
 addEventListener('blur', () => input.clearAll());

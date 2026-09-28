@@ -63,10 +63,10 @@ async function open(q) {
     p.stagger = 250; applyHit(p, s1, { dmg: 0.01, stun: 0.4, sure: true }, { proj: true }); const up = s1.stun; p.stagger = 0; s1.setState('idle');
     s1.hardness = 250; applyHit(p, s1, { dmg: 0.01, stun: 0.4, sure: true }, { proj: true }); const dn = s1.stun;
     out.stun = { base: +base.toFixed(3), stagger250: +up.toFixed(3), hardness250: +dn.toFixed(3) };
-    // 10) 取消规则：普攻 → 技能随时可取消；技能后摇前不能取消，cancelFrom 之后可以；觉醒不能取消
+    // 10) 取消规则（官方现版）：普攻 → 技能随时可取消；技能 → 技能只有白名单（links）里的可以，不在白名单里后摇也不能取消；觉醒不能取消
     T.clear(); T.reset(); p.doAct(p.acts.atk1); T.run(1); T.key('s0'); T.run(1); T.release('s0'); out.basicCancel = p.act && p.act.skill;
-    T.reset(); p.cool = {}; castSkill(p, 'ghost'); T.run(2); T.key('s0'); T.run(1); T.release('s0'); out.skillEarly = p.act && p.act.skill;
-    T.run(25); T.key('s0'); T.run(1); T.release('s0'); out.skillLate = p.act && p.act.skill;
+    T.reset(); p.cool = {}; castSkill(p, 'ghost'); T.run(25); T.key('s0'); T.run(1); T.release('s0'); out.skillLate = p.act && p.act.skill; T.run(40);
+    const L0 = SKILLS.ghost.links; SKILLS.ghost.links = ['upslash']; T.reset(); p.cool = {}; castSkill(p, 'ghost'); T.run(2); T.key('s0'); T.run(1); T.release('s0'); out.skillLinked = p.act && p.act.skill; SKILLS.ghost.links = L0; T.run(40);
     T.reset(); castSkill(p, 'awaken'); game.timeStop = 0; for (let i = 0; i < 60; i++) { T.key('s1'); T.run(1); T.release('s1'); T.run(1); } out.awakenCancel = p.act && p.act.skill; T.run(200);
     // 11) 蓄力：按住技能键蓄力（拔刀斩），松开或蓄满释放；倍率随蓄力提高
     T.reset(); p.cool = {}; T.key('s2'); T.run(2); T.run(52); const held = p.act && { name: p.act.name, t: +p.actT.toFixed(2), charging: p.act.charging, k: p.act.chargeK, mul: +p.act.dmgMul.toFixed(2) }; T.release('s2'); T.run(80);
@@ -94,7 +94,7 @@ async function open(q) {
   report('霸体不硬直、抓取能抓霸体、领主抓不住', R.saHit !== 'hit' && R.saGrab === 'held' && R.grabbed && R.afterRelease !== 'held' && R.bossGrab !== 'held', { saHit: R.saHit, saGrab: R.saGrab, after: R.afterRelease, boss: R.bossGrab });
   report('僵直度 / 硬直修正', R.stun.stagger250 > R.stun.base * 1.5 && R.stun.hardness250 < R.stun.base * 0.6, R.stun);
   report('普攻可被技能取消', R.basicCancel === 'upslash', { got: R.basicCancel });
-  report('技能后摇前不能取消，cancelFrom 后可以', R.skillEarly === 'ghost' && R.skillLate === 'upslash', { early: R.skillEarly, late: R.skillLate });
+  report('技能 → 技能：白名单外后摇也不能取消，links 里的可以', R.skillLate === 'ghost' && R.skillLinked === 'upslash', { late: R.skillLate, linked: R.skillLinked });
   report('觉醒不能被取消', R.awakenCancel === 'awaken', { got: R.awakenCancel });
   report('按住蓄力：蓄满倍率提高，点按不蓄', R.charge.held && R.charge.held.k > 0.9 && R.charge.held.mul > 1.4 && R.charge.tap && R.charge.tap.k < 0.2, R.charge);
   report('攻速 1.5 → 普攻动作更快', R.aspd === 1.5 && R.atk1Frames <= 14, { spd: R.aspd, frames: R.atk1Frames });
@@ -117,7 +117,7 @@ async function open(q) {
   await tap('ArrowLeft'); await tap('ArrowRight'); await tap('ArrowRight'); await tap('KeyZ'); await wait(60); res.bff = await skill(); await wait(1400);
   await page.waitForFunction(() => { const p = game.player; return p.z === 0 && p.free; }); await page.evaluate(() => { const p = game.player; p.face = 1; });
   await kb.down('ArrowUp'); await tap('KeyZ'); await kb.up('ArrowUp'); await wait(60); res.u = await skill(); await wait(800);
-  // Buff 指令键（Space = cmd + cmdB）：↓↑+Space 血之狂暴、↓↑+Z 怒气爆发（狂战士）
+  // 指令键 2（Space，和 Z 分开）：↓↑+Space 血之狂暴、↓↑+Z 怒气爆发（狂战士）
   await page.waitForFunction(() => { const p = game.player; return p.z === 0 && p.free; });
   await page.evaluate(() => { game.job = 'berserker'; for (const id of classSkills('sword', 'berserker')) game.skillLv[id] = 5; });
   await tap('ArrowDown'); await tap('ArrowUp'); await tap('Space'); await wait(60); res.duSpace = await skill(); await wait(700);
@@ -137,7 +137,7 @@ async function open(q) {
   await page.evaluate(() => { const p = game.player; p.reboundCd = 0; p.setState('down'); p.stT = 0.2; p.downTime = 3; });
   await tap('KeyC'); await wait(50);
   const tech = await page.evaluate(() => { const p = game.player; return { st: p.st, tech: p.tech, invul: +p.invul.toFixed(2) }; });
-  report('倒地按 C 受身（起身 + 无敌）', tech.st === 'getup' && tech.tech && tech.invul > 0.3, tech);
+  report('倒地按 C 受身蹲伏（蹲伏 + 无敌）', tech.st === 'getup' && tech.tech && tech.invul > 0.3, tech);
   // 后跳 ↓+C（带无敌窗口）
   await wait(900); await kb.down('ArrowDown'); await tap('KeyC'); await kb.up('ArrowDown'); await wait(40);
   const bs = await page.evaluate(() => { const p = game.player; return { act: p.act && p.act.name, invul: p.invul > 0 }; });

@@ -27,7 +27,7 @@ const SPR_ANIMS = {
     quake: [['quake1', 0]], quakeLand: [['slam2', 0]], bzAwk: [['bzAwk1', 0], ['bzAwk2', 1.72]] },
   gun: { ...BASE_ANIMS,
     gshot: [['shoot1', 0], ['shoot2', 0.03], ['shoot1', 0.12]], gup: { fps: 14, frames: ['shootUp1', 'shootUp2'] }, gdown: [['jatk1', 0], ['jatk2', 0.03], ['jatk3', 0.14]],
-    gaim: [['snipe', 0]], kick: [['kick1', 0], ['kick2', 0.08]], spinkick: { fps: 12, frames: ['sk1', 'sk2', 'kick3'] }, slide: [['slide1', 0], ['slide2', 0.06]],
+    gaim: [['snipe', 0]], holster: [['reload', 0]], kick: [['kick1', 0], ['kick2', 0.08]], spinkick: { fps: 12, frames: ['sk1', 'sk2', 'kick3'] }, slide: [['slide1', 0], ['slide2', 0.06]],
     gthrow: [['throw1', 0], ['throw2', 0.26]], ghawk: [['hawk1', 0], ['hawk2', 0.3]], gatling: { fps: 20, frames: ['gat1', 'gat2'] }, gbuff: [['twirl', 0]],
     flame: [['flame', 0]], flashKick: [['knee1', 0], ['flash', 0.06]], stomp: [['stomp1', 0], ['stomp2', 0.12]], bbq: [['bbq', 0]],
     aimShot: [['multi', 0], ['shoot2', 0.3], ['shoot1', 0.4]], gunDance: { fps: 12, frames: ['rapid1', 'backshot', 'rapid2', 'dual'] },
@@ -55,6 +55,8 @@ const SPR_ANIMS = {
     chargeW: { fps: 3, frames: ['low1', 'low1'] }, charge: { fps: 8, frames: ['low2', 'low1'] }, roar: [['cast1', 0], ['cast2', 0.45]],
     cast: { fps: 5, frames: ['cast1', 'cast2'] }, heal: { fps: 5, frames: ['cast1', 'cast2'] } },
 };
+// 通用技能（后跳-强化等）挂到每个职业的技能表：这里所有职业 / 转职文件都已加载
+addCommonSkills();
 // 没有骨骼片段的动画自动补一个（时长覆盖所有帧，循环动画按帧数 / fps）
 for (const c of ['sword', 'gun', 'mage']) {
   CLIPS[c] = CLIPS[c] || { ...HUMAN_CLIPS };

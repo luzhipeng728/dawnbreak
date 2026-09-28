@@ -28,7 +28,7 @@ const duel = {
     game.room = { x0: 0, x1: 1120, theme: o.theme, seed: 11 }; buildRoomArt(game.room);
     // 玩家一方：技能栏 / 等级写进 game（HUD 用），角色用同一份 kit
     const kA = aiKit(o.a, o.ja, o.lv);
-    if (o.me && o.me.skillLv) { kA.lv = { ...o.me.skillLv }; if (o.me.skillBar && o.me.skillBar.some(Boolean)) kA.bar = o.me.skillBar.slice(0, 12); }   // 我的角色：用自己的技能等级与技能栏
+    if (o.me && o.me.skillLv) { kA.lv = { ...o.me.skillLv }; if (o.me.skillBar && o.me.skillBar.some(Boolean)) kA.bar = o.me.skillBar.slice(0, SKILL_SLOTS); }   // 我的角色：用自己的技能等级与技能栏
     game.job = o.ja; game.skillLv = kA.lv; game.skillBar = kA.bar;
     const a = makePlayer(o.a, { kit: { bar: game.skillBar, lv: game.skillLv, job: o.ja, wtype: null }, name: o.nameA || CLASSES[o.a].name });
     if (o.auto) { a.pad = new Pad(); a.brain = new FighterBrain(a, o.ai); }
@@ -42,7 +42,7 @@ const duel = {
   resetRound() {
     projs.length = 0; groundFx.length = 0; game.timeStop = 0; game.cutin = null; game.slowmo = false;
     [[this.a, 330, 1], [this.b, 790, -1]].forEach(([p, x, f]) => {
-      Object.assign(p, { x, y: DEPTH / 2, z: 0, vx: 0, vy: 0, vz: 0, face: f, dead: false, hp: p.hpMax, mp: p.mpMax, invul: 0, superArmor: 0, stun: 0, hitstop: 0, act: null, status: {}, buffs: {}, cool: {}, chasers: [], rot: 0, reboundCd: 0, dodgeCd: 0, breakCd: 0, burning: false });
+      Object.assign(p, { x, y: DEPTH / 2, z: 0, vx: 0, vy: 0, vz: 0, face: f, dead: false, hp: p.hpMax, mp: p.mpMax, invul: 0, superArmor: 0, stun: 0, hitstop: 0, act: null, status: {}, buffs: {}, cool: {}, chasers: [], rot: 0, reboundCd: 0, bsCd: 0, charges: {}, burning: false });
       if (p.brain) p.brain.reset();
       p.grabbed = null; p.heldBy = null; p.deadT = 0; p.remove = false; if (!ents.includes(p)) ents.push(p); p.setState('idle'); p.play('idle', true); resetCmb(p); applyBuffs(p);
     });

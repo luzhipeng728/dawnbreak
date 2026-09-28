@@ -103,7 +103,7 @@ const R = await page.evaluate(() => {
   return out;
 });
 const o = R, S = o.skills;
-report('转职登记：第 1 阶段 21 个技能都有定义、有觉醒、有专属试炼', o.job.ok && o.job.n === 21 && !o.job.missing.length && o.job.awaken === 'wt_awaken' && o.job.trial, o.job);
+report('转职登记：31 个技能都有定义、有觉醒、有专属试炼', o.job.ok && o.job.n === 31 && !o.job.missing.length && o.job.awaken === 'wt_awaken' && o.job.trial, o.job);
 report('指令：主动技能都有指令', o.job.cmds >= 20, o.job.cmds);
 report('转职任务：魔道学概论 / 魔道学者的试炼', o.job.quests, o.job.quests);
 report('转职送扫把', o.gift.got, o.gift);

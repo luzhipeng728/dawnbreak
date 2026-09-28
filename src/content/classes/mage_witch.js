@@ -122,7 +122,16 @@ const MACH_ANIMS = {
   antigrav: { idle: [['idle', 0]], build: [['build', 0]], on: { fps: 6, frames: ['on1', 'on2', 'on3'] }, off: [['off', 0]], fail: [['fail', 0]], boom: [['boom', 0]] },
   shululu: { idle: [['idle2', 0]], walk: { fps: 8, frames: ['walk1', 'walk2', 'walk3', 'walk4', 'walk5', 'walk6', 'walk7', 'walk8'] }, taunt: { fps: 4, frames: ['taunt1', 'taunt2'] },
     swell: { fps: 8, frames: ['swell1', 'swell2'] }, hop: [['hop1', 0], ['hop2', 0.2]], sad: [['sad', 0]] },
+  // 觉醒段
+  rabbit: { idle: [['idle', 0]], build: [['build', 0]], zap: { fps: 12, frames: ['zap1', 'zap2'] }, charge: [['charge', 0]], hop: [['hop', 0]], fail: [['fail', 0]], boom: [['boom', 0]] },
+  shaved: { idle: [['idle', 0]], build: [['build', 0]], spin: { fps: 10, frames: ['spin1', 'spin2', 'spin3'] }, fail: [['fail', 0]], boom: [['boom', 0]] },
+  ouro: { idle: [['idle', 0]], build: [['build', 0]], move: { fps: 10, frames: ['move1', 'move2'] }, grab: { fps: 8, frames: ['grab1', 'grab2'] }, boom: [['boom', 0]] },
+  trickjack: { idle: [['idle', 0]], walk: { fps: 8, frames: ['walk1', 'walk2', 'walk3', 'walk4'] }, spray: [['spray1', 0], ['spray2', 0.1]], turn: [['turn', 0]] },
+  candyDoll: { idle: [['idle', 0]], walk: { fps: 12, frames: ['walk1', 'walk2', 'walk3', 'walk4'] }, hop: [['hop1', 0], ['hop2', 0.2]], pop: [['pop', 0]] },
 };
+// 四个助手共用一套片段名（助手的招式：throw 投掷 / cast 施法 / scratch 抓挠）
+for (const id of ['helperJack', 'helperSnow', 'helperEel', 'helperCat']) MACH_ANIMS[id] = { idle: [['idle', 0]], walk: { fps: 8, frames: ['walk1', 'walk2', 'walk3', 'walk4'] },
+  throw: [['atk1', 0], ['atk2', 0.35]], cast: [['cast1', 0]], scratch: [['atk1', 0], ['atk2', 0.25]] };
 // 片段表（Ent 需要 CLIPS 形式的片段：只用来计时，帧由 SpriteModel 按片段名选）
 function wtClips(anims) {
   const C = {}, mk = (n, A) => { const c = A && A.frames ? { dur: A.frames.length / A.fps, loop: true, keys: [k(0, POSE.idle)] } : { dur: 30, keys: [k(0, POSE.idle)] }; Object.defineProperty(c, '__name', { value: n }); return c; };
@@ -478,12 +487,6 @@ function wtFrame(c, id, f, x, y, z, sc, face = 1, o = {}) {
 }
 // ---- 魔道学助手：四只使魔改造成的人造人（跟随作战 30 秒；替你放置电塔 / 反重力装置）----
 const HELPER_SPR = { jack: 'helperJack', snow: 'helperSnow', eel: 'helperEel', cat: 'helperCat' };
-let WT_MONCLIPS = null;
-const monClips = () => WT_MONCLIPS || (WT_MONCLIPS = typeof SPR_ANIMS !== 'undefined' ? wtClips(SPR_ANIMS.monster) : BEAST_CLIPS);
-function monSprite(id, col) {
-  if (typeof SPR_DATA !== 'undefined' && SPR_DATA[id] && IMG[`spr/${id}/idle`]) return new SpriteModel(id, { ...SPR_FALLBACK, cast: 'cast1', roar: 'cast2', crouch: 'low1' }, SPR_ANIMS.monster);
-  return wtSprite('', col);
-}
 const HELPER_ATK = {
   jack: { clip: 'throw', range: [60, 320], dy: 60, cd: [1.4, 2.2], act: { dur: 0.8, events: [evAt(0.4, s => { const t = summonTarget(s); if (!t) return; lobProj(s, t.x, t.y, 0.45, { img: 'jack', h: 22, z0: 40, onLand: pr => { sfx.boom(0.3); fxBurst(pr.x, pr.y, 10, 90, '#ffb060'); summonArea(s, pr.x, pr.y, 60, { dmg: 0.7 * s.mul, launch: 240, knock: 60, hs: 0.05, type: 'indep', elem: 'fire' }, { zMax: 100 }); } }); })] } },
   snow: { clip: 'cast', range: [40, 360], dy: 40, cd: [1.2, 1.8], act: { dur: 0.7, events: [evAt(0.35, s => { sfx.ice(); spawnProj({ owner: s, x: s.x + s.face * 20, y: s.y, z: 40, vx: s.face * 480, face: s.face, life: 0.8, w: 12, d: 14, h: 18, pierce: false,
@@ -491,9 +494,9 @@ const HELPER_ATK = {
   eel: { clip: 'cast', range: [0, 360], dy: 80, cd: [1.6, 2.4], act: { dur: 0.8, events: [evAt(0.4, s => { const t = summonTarget(s); if (!t) return; lightningStrike({ x: t.x, y: t.y }); summonArea(s, t.x, t.y, 50, { dmg: 0.9 * s.mul, stun: 0.8, knock: 0, hs: 0.04, type: 'indep', elem: 'light' }, { zMax: 200 }); })] } },
   cat: { clip: 'scratch', range: [0, 70], dy: 20, cd: [0.9, 1.4], act: { dur: 0.6, hits: [{ t0: 0.3, t1: 0.4, box: [0, 70, 24, 0, 80], dmg: 0.7, stun: 0.4, knock: 60, hs: 0.05, snd: 'slash', type: 'indep', elem: 'dark' }] } },
 };
-for (const fam in HELPER_SPR) defSummon('wt_helper_' + fam, { kind: 'follower', name: FAM[fam].n + '助手', bundle: HELPER_SPR[fam], model: () => monSprite(HELPER_SPR[fam], FAM[fam].col), clips: BEAST_CLIPS,
+for (const fam in HELPER_SPR) defSummon('wt_helper_' + fam, { kind: 'follower', name: FAM[fam].n + '助手', bundle: HELPER_SPR[fam], model: () => wtSprite(HELPER_SPR[fam], FAM[fam].col), clips: WT_CLIPS[HELPER_SPR[fam]],
   w: 10, d: 10, h: 70, speed: 150, runSpeed: 300, pref: fam === 'cat' ? 40 : 150, sight: 560, life: 30, max: 1, tags: ['helper'], tagMax: { helper: 4 }, col: FAM[fam].col, type: 'indep', attacks: [HELPER_ATK[fam]],
-  onSpawn: s => { s.clips = monClips(); fxSpr('hexagram', s.x, s.y, 0, { w: 90, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: FAM[fam].col }); } });
+  onSpawn: s => { fxSpr('hexagram', s.x, s.y, 0, { w: 90, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: FAM[fam].col }); } });
 function helperSpawn(e, lv, x, fam) { fam = fam || pick(Object.keys(HELPER_SPR)); return summon(e, 'wt_helper_' + fam, { x, y: e.y, lv, mul: lvMul(lv, 0.1) }); }
 // 助手放置机械（电塔 / 反重力装置）：放完你就可以走开，机械自己运转
 function helperPlace(lv, key, fam) {
@@ -563,8 +566,6 @@ defSkill('wt_superswat', { name: '超级苍蝇拍', cls: 'mage', job: WT, lvReq:
   act: (lv, p) => airOr(p, { name: 'wt_superswat', clip: 'swat', dur: 0.75, superArmor: true, cancelFrom: 0.6, onStart: e => fxCharge(e, '#c79aff', 6), events: [evAt(0.28, e => swatHit(e, lv, true))] }, { clip: 'swatAir', lowGrav: 0.15 }) });
 // ---- 光电兔：操纵兔子造型的机械放出高压电（多段攻击 + 强硬直），结束时爆炸 ----
 machDef('rabbit', { name: '光电兔', h: 118, w: 26, col: '#fff38a' });
-MACH_ANIMS.rabbit = { idle: [['idle', 0]], build: [['build', 0]], zap: { fps: 12, frames: ['zap1', 'zap2'] }, charge: [['charge', 0]], hop: [['hop', 0]], fail: [['fail', 0]], boom: [['boom', 0]] };
-WT_CLIPS.rabbit = wtClips(MACH_ANIMS.rabbit); SUMMON_DEFS.wt_rabbit.clips = WT_CLIPS.rabbit;
 const RABBIT_SEAT = [-14, 64];
 defSkill('wt_rabbit', { name: '光电兔', cls: 'mage', job: WT, lvReq: 25, mp: 110, cd: 35, type: 'indep', elem: 'light', col: '#f0e060', cast: true,
   desc: '坐上兔子造型的机械，朝前方放出高压电（多段攻击 + 强硬直），方向键可以慢慢移动，约 3.5 秒后爆炸。大成功电流更粗、范围更大。失败：短路，只放出一小段电。学了引爆实验可以按跳跃键提前引爆。',
@@ -588,8 +589,6 @@ defSkill('wt_helper', { name: '魔道学助手', cls: 'mage', job: WT, lvReq: 26
   desc: '【被动 · 二觉】四只使魔被改造成人造人助手：电鳗碰撞机、反重力装置改由助手放置（放完你就可以走开）；变异苍蝇拍 / 超级苍蝇拍超大成功时召出一只助手协同作战 30 秒。' });
 // ---- 雪人刨冰：刨冰机冻住范围内的敌人并拉到中心，主角抓着摇杆跟机器一起转（无敌），约 5 秒后爆炸 ----
 machDef('shaved', { name: '雪人刨冰机', h: 120, w: 28, col: '#bfefff' });
-MACH_ANIMS.shaved = { idle: [['idle', 0]], build: [['build', 0]], spin: { fps: 10, frames: ['spin1', 'spin2', 'spin3'] }, fail: [['fail', 0]], boom: [['boom', 0]] };
-WT_CLIPS.shaved = wtClips(MACH_ANIMS.shaved); SUMMON_DEFS.wt_shaved.clips = WT_CLIPS.shaved;
 defSkill('wt_shaved', { name: '雪人刨冰', cls: 'mage', job: WT, lvReq: 26, mp: 120, cd: 40, type: 'indep', elem: 'ice', col: '#9fe6ff', cast: true,
   desc: '放下雪人刨冰机：冻住范围内的敌人并把它们拉到中心，不断造成冰属性伤害；主角抓着摇杆跟机器一起转（无敌），约 5 秒后爆炸。大成功范围更大。失败：刨冰机卡住，只喷出一小团冰。',
   pow: lv => wtLv(lv, 0.5, 0.05) * 20 + wtLv(lv, 4.0, 0.4), ai: { kind: 'aoe', r: [0, 220], dy: 80 },
@@ -604,9 +603,8 @@ defSkill('wt_shaved', { name: '雪人刨冰', cls: 'mage', job: WT, lvReq: 26, m
     boom: (e, a) => ({ dmg: wtLv(lv, 4.0, 0.4), elem: 'ice', col: '#bfefff', r: 170 }) });
     A.invul = true; return A; } });
 // ---- 超级棒棒糖（糖拍）：巨型棒棒糖砸下，每命中一个敌人生成一个糖果人偶（最多 10 个）：黑色 = 暗属性 + 致盲，白色 = 光属性 + 感电；人偶自动追敌自爆，会跟着进下一个房间 ----
-defSummon('wt_candy', { kind: 'follower', name: '糖果人偶', bundle: 'candyDoll', model: () => candyModel(false), clips: BEAST_CLIPS, w: 9, d: 9, h: 46, speed: 220, runSpeed: 300, pref: 0, sight: 600,
+defSummon('wt_candy', { kind: 'follower', name: '糖果人偶', bundle: 'candyDoll', model: () => candyModel(false), clips: WT_CLIPS.candyDoll, w: 9, d: 9, h: 46, speed: 220, runSpeed: 300, pref: 0, sight: 600,
   life: 25, max: 10, col: '#ff9ad0', type: 'indep', attacks: [], shadowR: 10,
-  onSpawn: s => { s.clips = monClips(); },
   ai: (s, dt) => { s.arm = (s.arm ?? 0.7) - dt; if (s.arm > 0) { s.vx = s.vy = 0; s.setState('idle'); s.z = Math.max(0, Math.sin(s.arm / 0.7 * Math.PI) * 30); return; } const t = nearestFoe(s, 700); if (!t) { const o = s.owner, gx = o.x - o.face * (40 + (s.slot % 5) * 12), dx = gx - s.x; s.vx = Math.abs(dx) > 10 ? Math.sign(dx) * 200 : 0; s.vy = (o.y - s.y) * 2; s.setState(s.vx ? 'walk' : 'idle'); if (s.vx) s.face = Math.sign(s.vx); return; }
     const dx = t.x - s.x, dy = t.y - s.y, l = Math.hypot(dx, dy * 1.4) || 1; s.vx = dx / l * 230; s.vy = dy / l * 160; s.face = Math.sign(dx) || s.face; s.setState('run');
     if (l < 30 && !s.pop) { s.pop = true; const w = s.white; fxBurst(s.x, s.y, 30, 110, w ? '#fff6c0' : '#8a5ab0'); sfx.boom(0.35);
@@ -622,11 +620,9 @@ defSkill('wt_lollipop', { name: '超级棒棒糖', cls: 'mage', job: WT, lvReq: 
       for (let i = 0; i < n; i++) { const t = hit[i], s = summon(e, 'wt_candy', { x: e.x + e.face * rnd(40, 110), y: clamp(e.y + rnd(-30, 30), 6, DEPTH - 6), lv }); if (s) { s.white = i % 2 === 1; s.dmg = wtLv(lv, 1.0, 0.1); s.model = candyModel(s.white); } } })] }) });
 // 糖果人偶的模型：黑色 = 原图，白色 = 提亮去饱和（同一套帧）
 function candyModel(white) { if (typeof SPR_DATA === 'undefined' || !SPR_DATA.candyDoll || !IMG['spr/candyDoll/idle']) return wtSprite('', white ? '#fff6c0' : '#8a5ab0');
-  return new SpriteModel('candyDoll', { ...SPR_FALLBACK }, SPR_ANIMS.monster, white ? { sat: 0.15, bright: 1.9 } : {}); }
+  return new SpriteModel('candyDoll', { _: 'idle', walk: 'walk1', run: 'walk1' }, MACH_ANIMS.candyDoll, white ? { sat: 0.15, bright: 1.9 } : {}); }
 // ---- 乌洛波洛斯之环（二觉）：衔尾蛇造型的环形履带载具，四只助手坐在上面；方向键移动，吸附并强控范围内的敌人，结束时爆炸 ----
 machDef('ouro', { name: '乌洛波洛斯之环', h: 150, w: 44, d: 20, col: '#ff5a8a', life: 10 });
-MACH_ANIMS.ouro = { idle: [['idle', 0]], build: [['build', 0]], move: { fps: 10, frames: ['move1', 'move2'] }, grab: { fps: 8, frames: ['grab1', 'grab2'] }, boom: [['boom', 0]] };
-WT_CLIPS.ouro = wtClips(MACH_ANIMS.ouro); SUMMON_DEFS.wt_ouro.clips = WT_CLIPS.ouro;
 defSkill('wt_awaken2', { name: '乌洛波洛斯之环', cls: 'mage', job: WT, lvReq: 27, maxLv: 3, mp: 200, cd: 145, pvp: 0.45, type: 'indep', awaken: true, col: '#ff5a8a',
   desc: '【觉醒 · 二觉】召出衔尾蛇造型的环形履带载具，四只助手坐在上面。方向键上下左右移动，吸附并强控范围内的敌人、不断碾压，约 6 秒后（或按跳跃键）大爆炸。施放中无敌。',
   pow: lv => wtLv(lv, 50, 12), ai: { kind: 'awaken', r: [0, 300], dy: 90 },
@@ -645,15 +641,13 @@ defSkill('wt_awaken2', { name: '乌洛波洛斯之环', cls: 'mage', job: WT, lv
 defSkill('wt_pink', { name: '粉红糖果', cls: 'mage', job: WT, lvReq: 29, maxLv: 1, passive: true, type: 'indep', col: '#ff9ad0',
   desc: '【被动 · 三觉】把贤者之石加工成粉红糖果喂给使魔：暗影斗篷进化成夜猫助手（扑出去卷住前方一排敌人，致盲几率更高）；魔道酸雨云进化成会追着敌人走的冰霜云（附带减速，持续 8 秒）。' });
 // ---- 糖果大作战：捣蛋杰克：巨型南瓜助手跟在身后，朝它面朝的方向喷岩浆；再按一次技能键让它转身 ----
-defSummon('wt_trickjack', { kind: 'follower', name: '捣蛋杰克', bundle: 'trickjack', model: () => wtSprite('trickjack', '#ff9a50'), clips: BEAST_CLIPS, w: 24, d: 16, h: 140, speed: 200, runSpeed: 320, pref: 0, sight: 0,
+defSummon('wt_trickjack', { kind: 'follower', name: '捣蛋杰克', bundle: 'trickjack', model: () => wtSprite('trickjack', '#ff9a50'), clips: WT_CLIPS.trickjack, w: 24, d: 16, h: 140, speed: 200, runSpeed: 320, pref: 0, sight: 0,
   life: 10, max: 1, col: '#ff9a50', type: 'indep', attacks: [], shadowR: 30, keepRoom: false,
-  onSpawn: s => { s.clips = WT_CLIPS.trickjack; s.dir = s.owner.face; s.fireT = 0.5; },
+  onSpawn: s => { s.dir = s.owner.face; s.fireT = 0.5; },
   ai: (s, dt) => { const o = s.owner, gx = o.x - s.dir * 70, dx = gx - s.x; s.vx = Math.abs(dx) > 10 ? clamp(dx * 4, -320, 320) : 0; s.vy = (o.y - 4 - s.y) * 4; s.face = s.dir;
     s.fireT -= dt; if (s.clipName !== 'spray') s.play(s.vx ? 'walk' : 'idle'); if (s.fireT > 0) return; s.fireT = 0.35; s.play('spray', true); sfx.flame ? sfx.flame() : sfx.hit('fire', false);
     fxBeam(s.x + s.face * 40, s.y, 80, 280, s.face, { img: 'flame', col: '#ff7a2a', w: 70, dur: 0.3 });
     const G = hitGroup(0.3); for (let i = 1; i <= 3; i++) summonArea(s, s.x + s.face * (70 * i), s.y, 60, { dmg: s.dmg, stun: 0.3, launch: i === 3 ? 180 : 0, knock: 40, hs: 0.03, type: 'indep', elem: 'fire', downHit: true }, { zMax: 140, hitGroup: G }); } });
-MACH_ANIMS.trickjack = { idle: [['idle', 0]], walk: { fps: 8, frames: ['walk1', 'walk2', 'walk3', 'walk4'] }, spray: [['spray1', 0], ['spray2', 0.1]], turn: [['turn', 0]] };
-WT_CLIPS.trickjack = wtClips(MACH_ANIMS.trickjack); SUMMON_DEFS.wt_trickjack.clips = WT_CLIPS.trickjack;
 defSkill('wt_trickjack', { name: '糖果大作战：捣蛋杰克', cls: 'mage', job: WT, lvReq: 29, mp: 150, cd: 40, type: 'indep', elem: 'fire', col: '#ff8a3a', cast: true,
   desc: '召出巨型南瓜助手捣蛋杰克，10 秒内跟在你身后，不断朝它面朝的方向喷出岩浆。再按一次技能键让它转身。大成功喷得更凶。',
   pow: lv => wtLv(lv, 0.5, 0.05) * 3 * 28, ai: { kind: 'buff', summon: 'wt_trickjack' },
@@ -684,9 +678,8 @@ defSkill('wt_awaken3', { name: '糖果大作战：精怪乐园', cls: 'mage', jo
    ===================================================================== */
 CLASSES.mage.jobs.witch = { art: 'job/witch', name: '魔道学者', role: '中距离 · 机械 / 使魔', armor: 'leather', awaken: 'wt_awaken', awakenName: '魔术师', trial: 'q_job_witch_2',
   desc: '好奇心旺盛、迷恋科学的魔法师。骑扫把从空中袭击，扔药瓶、放酸雨、搭乘自己发明的魔道机械作战；技能有失败 / 成功 / 大成功，失败了会被熏黑、摔个狗吃屎。伤害是独立攻击。',
-  // 觉醒段之后的技能（超级苍蝇拍、光电兔、贤者之石、魔道学助手、雪人刨冰、超级棒棒糖、二觉、粉红糖果、捣蛋杰克、三觉）已经写好，等它们的机械 / 助手美术画完再加进来（第 2 阶段）
   skills: ['wt_broom', 'wt_affinity', 'wt_book', 'wt_shululu', 'wt_missile', 'wt_cloak', 'wt_powder', 'wt_lucky', 'wt_swatter', 'wt_lava', 'wt_acid', 'wt_swatlock', 'wt_spin', 'wt_tesla', 'wt_bitter', 'wt_furnace',
-    'wt_antigrav', 'wt_detonate', 'wt_drill', 'wt_premonition', 'wt_awaken'] };
+    'wt_antigrav', 'wt_detonate', 'wt_drill', 'wt_premonition', 'wt_awaken', 'wt_superswat', 'wt_rabbit', 'wt_stone', 'wt_helper', 'wt_shaved', 'wt_lollipop', 'wt_awaken2', 'wt_pink', 'wt_trickjack', 'wt_awaken3'] };
 CLASSES.mage.cmds.push(['uu', 'wt_shululu'], ['fdf', 'wt_missile'], ['fd', 'wt_cloak'], ['ud', 'wt_powder', 'buff'], ['dd', 'wt_book', 'buff'], ['bdf', 'wt_swatter'], ['udu', 'wt_lava'], ['udd', 'wt_acid'], ['holdd', 'wt_spin'],
   ['bff', 'wt_tesla'], ['uff', 'wt_furnace'], ['dfd', 'wt_antigrav'], ['fuf', 'wt_drill'], ['uudd', 'wt_awaken'], ['bfb', 'wt_superswat'], ['dbf', 'wt_rabbit'], ['fdb', 'wt_shaved'], ['ffd', 'wt_lollipop'], ['dduu', 'wt_awaken2'],
   ['bdb', 'wt_trickjack'], ['uuddf', 'wt_awaken3']);

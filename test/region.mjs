@@ -49,7 +49,7 @@ if (parts.includes('data')) {
       for (const n of S.npcs) if (!NPCS[n.npc] || !has(NPCS[n.npc].art)) E.push(`${sid}: NPC ${n.npc} 缺少立绘`);
       for (const g of S.gates) if (!has(gateArt(DUNGEONS[g.dungeon]).art) || gateArt(DUNGEONS[g.dungeon]).art === 'world/b_gate') E.push(`${sid}: 门 ${g.dungeon} 没有专属美术`);
     }
-    const ES = SCENES[R.entry.scene]; if (!ES || !ES.exits.some(x => x.to === R.entry.to)) E.push(`入口 ${R.entry.scene} → ${R.entry.to} 没接上`);
+    if (R.entry) { const ES = SCENES[R.entry.scene]; if (!ES || !ES.exits.some(x => x.to === R.entry.to)) E.push(`入口 ${R.entry.scene} → ${R.entry.to} 没接上`); }   // 远古地下城没有自己的场景 / 入口（门放在已有场景上）
     const I = sp.items || {};
     for (const k of [...(I.epics || []).map(e => e.key), ...(I.sets || []).flatMap(s => s.pieces.map(p => p.key))]) { if (!ITEMS[k]) E.push(`史诗 ${k} 没有定义`); else if (!has('icon/item_' + k)) E.push(`史诗 ${k} 没有图标`); }
     for (const q of I.quest || []) if (!has('icon/' + q.key)) E.push(`任务道具 ${q.key} 没有图标`);
@@ -176,7 +176,8 @@ if (parts.includes('mechs')) {
   await page.evaluate(() => { window.__st = msMechStart(__b, { use: 'enrage', t: 0.4 }); window.__atk0 = __b.atk; });
   await simWait(0.8); S.enrage = await page.evaluate(() => ({ fired: !!__st.fired, cd: __b.msCdMul, atk: __b.atk > __atk0 }));
   check(S.enrage.fired && S.enrage.cd < 1 && S.enrage.atk, `狂暴计时没有触发：${JSON.stringify(S.enrage)}`);
-  // 分身：打中本体 → 分身散掉；打分身 → 惩罚
+  // 分身：打中本体 → 分身散掉；打分身 → 惩罚（区域里没有带分身的领主就跳过：分身要用领主自己的暗影）
+  if (R.shades.includes(boss + 'Shade')) {
   await clearMechs();
   await page.evaluate(() => { window.__st = msMechStart(__b, { use: 'clones', n: 2, dur: 30 }); });
   await simWait(0.6);
@@ -189,6 +190,7 @@ if (parts.includes('mechs')) {
   await simWait(0.3); const c3 = await page.evaluate(() => (MS_STATS.mech.clonePunish || 0) - __p0);
   S.clones = { spawned: c1, afterHit: c2, punish: c3 };
   check(c1 === 2 && c2.ended && c2.left === 0 && c3 > 0, `分身机制不对：${JSON.stringify(S.clones)}`);
+  }
   // 属性切换：站错位置伤害打折，站进相克的法阵里全额
   await clearMechs();
   await page.evaluate(() => { const p = game.player; if (p.act) p.endAct(); p.x = (game.room.x1) / 2; p.y = 100; p.z = 0; p.vx = p.vy = p.vz = 0; p.setState('idle'); window.__st = msMechStart(__b, { use: 'element', mul: 0.3, every: 999 }); });
@@ -254,7 +256,7 @@ if (parts.includes('monsters')) {
     await page.waitForFunction(() => __acts.length > 0, null, { timeout: 8000 }).catch(() => {});
     await page.screenshot({ path: `${out}/${kind}.png` });
     const r = await page.evaluate(() => {
-      const m = __m, sprite = !!(m.model && m.model.constructor && m.model.constructor.name === 'SpriteModel'), acted = __acts.length;
+      const m = __m, sprite = !!(m.def_.customModel || m.model && m.model.constructor && m.model.constructor.name === 'SpriteModel'), acted = __acts.length;   // customModel：手画的模型（远古的魔剑阿波菲斯）
       for (const s of m.msMechs || []) msMechEnd(m, s); m.msMechs = []; m.msMul = {}; m.dmgTakenMul = 1; if (m.msHidden) msHide(m, false); m.msShieldHp = 0;
       m.invul = 0; m.hp = 1; applyHit(game.player, m, { dmg: 50, sure: true }, { proj: true });
       return { hp: m.hpMax, atk: m.atk, sprite, acted, tele: __tele, dead: m.dead };
@@ -286,13 +288,15 @@ if (parts.includes('scenes')) {
       check(back && (await sceneNow()) === sid, `从 ${to} 回不到 ${sid}`);
     }
   }
-  // 从已有世界接进来的入口（例如天帷巨兽 · 脊背的次元裂缝）
+  // 从已有世界接进来的入口（例如天帷巨兽 · 脊背的次元裂缝）；远古地下城没有入口，门在已有场景上
+  if (R.entry) {
   await page.evaluate(E => enterScene(E.scene), R.entry); await wait(700);
   await page.evaluate(E => useExit(world.S.exits.find(x => x.to === E.to)), R.entry); await wait(900);
   check((await sceneNow()) === R.entry.to, `入口 ${R.entry.scene} → ${R.entry.to} 走不通`);
-  await page.evaluate(() => { game.lvl = 29; }); await page.evaluate(E => enterScene(E.scene), R.entry); await wait(700);
+  await page.evaluate(lv => { game.lvl = lv; }, R.entry.minLv - 1); await page.evaluate(E => enterScene(E.scene), R.entry); await wait(700);
   await page.evaluate(E => useExit(world.S.exits.find(x => x.to === E.to)), R.entry); await wait(700);
   check((await sceneNow()) === R.entry.scene, `入口的等级限制 Lv.${R.entry.minLv} 没拦住`);
+  }
   await page.evaluate(() => { game.lvl = 30; });
   console.log('场景：完成');
 }

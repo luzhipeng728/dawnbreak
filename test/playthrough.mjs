@@ -162,7 +162,7 @@ async function goScene(target) {
 const MENTOR = ['gsd', 'kiri', 'sharan'][ci];
 async function jobTrial() {
   await quickStart();
-  await skipTo(15, ['q_job_kill', `q_job_visit_${CLS}`, ...[1, 2, 3, 4, 5, 6].map(i => `q_job_${CLS}_${i}`), 'q_hidden_frozen']);
+  await skipTo(await page.evaluate(c => QUESTS[`q_job_${c}_final`].lvl, CLS), ['q_job_kill', `q_job_visit_${CLS}`, ...[1, 2, 3, 4, 5, 6].map(i => `q_job_${CLS}_${i}`), 'q_hidden_frozen']);
   await P.shot('lv15');
   const mScene = await page.evaluate(id => qSceneOfNpc(id).id, MENTOR);
   check(await goScene(mScene), `走不到导师所在的 ${mScene}`); await P.shot('mentor-scene');
@@ -198,7 +198,7 @@ async function jobTrial() {
 }
 // 林纳斯的试炼「格兰之森 - 杀手」：Lv.3，被击 ≤30 通关洛兰深处（最多 3 次）
 async function trial1() {
-  await quickStart(); await skipTo(3, []);
+  await quickStart(); await skipTo(await page.evaluate(() => Math.max(3, QUESTS.q_job_kill.lvl)), []);
   check(await P.exitTo('elvenguard'), '出不了房间');
   check(await P.talk('linus'), '和林纳斯对话失败');
   if (await page.evaluate(() => npcUI.qid) !== 'q_job_kill') await P.pickQuest('格兰之森 - 杀手');
@@ -216,7 +216,9 @@ async function trial1() {
 }
 async function awaken() {
   await quickStart();
-  await skipTo(18, ['q_job_kill', `q_job_visit_${CLS}`, ...[1, 2, 3, 4, 5, 6].map(i => `q_job_${CLS}_${i}`), `q_job_${CLS}_final`, `q_job_${CLS}_change`, 'q_hidden_frozen', 'q_dark_1', 'q_dark_2', 'q_hidden_dark']);
+  // 觉醒等级按任务数据来（不写死 18：对齐组会把觉醒改到 21）
+  const awLv = await page.evaluate(c => Math.max(QUESTS[`q_awaken_${c}_1`].lvl, QUESTS[`q_awaken_${c}_2`].lvl), CLS);
+  await skipTo(awLv, ['q_job_kill', `q_job_visit_${CLS}`, ...[1, 2, 3, 4, 5, 6].map(i => `q_job_${CLS}_${i}`), `q_job_${CLS}_final`, `q_job_${CLS}_change`, 'q_hidden_frozen', 'q_dark_1', 'q_dark_2', 'q_hidden_dark']);
   // 跳级：已转职（第一个方向）、烈焰格拉卡已经打到勇士难度（相当于之前通关过普通 / 冒险）
   await page.evaluate(() => { const j = Object.keys(CLASSES[game.player.cls].jobs)[0]; game.job = j; if (typeof onJobChange === 'function') onJobChange(game.player, j); save.data.unlocked.blazing_graca = 1; save.data.unlocked.dark_thunder = 1; save.write(); });
   const skip1 = !!process.env.AW_SKIP1;   // 觉醒任务 1（暗黑雷鸣废墟 ×3）这个职业已经实测过：直接记为完成，从任务 2 开始

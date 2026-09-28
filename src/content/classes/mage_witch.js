@@ -3,8 +3,7 @@
    伤害类型：独立攻击（智力型）。四只使魔：杰克（火）/ 雪人（冰）/ 光电鳗（光）/ 夜猫（暗）
    成功率 rollCraft(p, 使魔) → 'fail' | 'ok' | 'great'（学了贤者之石后 'fail' | 'great' | 'super'）：头顶弹出使魔表情；
      失败有搞笑演出（熏黑 sooty / 摔倒 faceplant / 触电），苦涩的棒棒糖：熔岩药瓶 / 加热炉 / 钻孔车按住技能键 0.15 秒强制失败，失败伤害 +50%
-   扫把掌握：装备扫把时跳跃中骑扫把（空中 6 连击、←← / →→ 空中冲刺 2 次、按住 C 缓降 2 次、空中施放技能后冲刺次数刷新）
-     空中钩子 CLASSES.mage.airControl（game/player.js 的钩子；没合进来之前临时包一层 playerControl）
+   扫把掌握：装备扫把时跳跃中骑扫把（空中 6 连击、←← / →→ 空中冲刺 2 次、按住 C 缓降 2 次、空中施放技能后冲刺次数刷新），走 game/player.js 的 CLASSES.mage.airControl 钩子
    搭乘机械（加热炉 / 钻孔车 / 电塔 / 光电兔 / 刨冰机）：机械是召唤框架的 follower（src/game/summon.js），魔道学者用自己的帧（带时装）坐在上面；
      期间免疫异常、受到伤害 −60%，学了引爆实验按跳跃当场引爆
    觉醒：技艺融合（一觉 21）/ 乌洛波洛斯之环（二觉 27）/ 糖果大作战：精怪乐园（三觉 30）
@@ -76,8 +75,8 @@ function witchModel(p) {
   };
 }
 const AIR_DASH = { n: 2, t: 0.26, v: 470 }, GLIDE = { n: 2, vz: -75 };
-// 空中钩子：←← / →→ 冲刺（每次跳跃 2 次）、按住 C 缓降（2 次）。post = 临时包装模式（默认逻辑已经跑过，这里只覆盖速度）
-function witchAir(p, I, dt, post) {
+// 空中钩子：←← / →→ 冲刺（每次跳跃 2 次）、按住 C 缓降（2 次）；冲刺中返回 true（空中 X 自己处理）
+function witchAir(p, I, dt) {
   if (!p._ride) return false;
   const st = p.st, act = st === 'act' && p.act;
   if (p._airDashT > 0) p._airDashT -= dt;
@@ -94,17 +93,12 @@ function witchAir(p, I, dt, post) {
   }
   if (p._airDashT > 0) {
     p.vx = p._dashDir * AIR_DASH.v * mspdOf(p); p.vz = Math.max(p.vz, -20); p.vy = I.dy() * p.speed * 0.4;
-    if (!post && I.buffered('attack') && p.airAtk < airMaxOf(p)) { I.consume('attack'); p.airAtk++; p._airDashT = 0; p.doAct(p.acts.jatk); }
-    return !post;
+    if (I.buffered('attack') && p.airAtk < airMaxOf(p)) { I.consume('attack'); p.airAtk++; p._airDashT = 0; p.doAct(p.acts.jatk); }
+    return true;
   }
   return false;
 }
-CLASSES.mage.airControl = (p, I, dt) => witchAir(p, I, dt, false);
-// player.js 还没有 airControl 钩子时：临时包一层 playerControl（钩子合进来后自动停用）
-if (!/airControl/.test(String(playerControl))) {
-  const pc0 = playerControl;
-  playerControl = function (p, dt) { pc0(p, dt); if (p._ride && !p.dead) witchAir(p, p.pad, dt, true); };
-}
+CLASSES.mage.airControl = witchAir;
 /* ---- 普攻：骑扫把时空中攻击换成扫把连击（最多 6 下，低空能打到倒地的敌人，下落很慢）；扫把粉末开着时普攻变成独立攻击，附带寒冰 / 猛毒 ---- */
 const WITCH_JATK = { name: 'jatk', clip: 'brAtk', dur: 0.3, basic: true, speed: 'aspd', airOnly: true, lowGrav: 0.22,
   onStart: e => { if (!e._ride) { e.play('mjatk', true); e.act.lowGrav = 0.75; return; } e.play(e.airAtk % 2 ? 'brAtk' : 'brAtkB', true); e.vz = Math.max(e.vz, -40); },

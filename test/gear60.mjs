@@ -135,7 +135,7 @@ if (run('migrate')) {
         apo: all.filter(it => it.key === 'ep_gs_apophis').map(it => ({ enh: it.enh, dim: it.dim || null, forge: it.forge || 0, orb: it.orb ? 1 : 0, where: inv.equip.weapon === it ? 'equip' : inv.storage.includes(it) ? 'storage' : 'inv' })),
         sets: (game.player.sets || []).map(s => s.id.replace(/_zz$/, '') + ':' + s.on.join('/')).sort().join(' '), g60m: Object.keys(save.data.g60m || {}).length, note: (save.data.g60note || []).length,
         items: all.map(it => [it.id, it.key]),
-        succ: all.filter(it => G60.pred[it.key]).map(it => ({ key: it.key, enh: it.enh, dim: it.dim || null, forge: it.forge || 0, orb: it.orb ? it.orb.key : null, lvl: it.lvl })) };
+        succ: all.filter(it => G60.pred[it.key]).map(it => ({ id: it.id, key: it.key, enh: it.enh, dim: it.dim || null, forge: it.forge || 0, orb: it.orb ? it.orb.key : null, lvl: it.lvl })) };
     };`;
   await page.addScriptTag({ content: SNAP });
   const real = await ev(() => !!G60.succ.ep_gs_apophis);
@@ -148,7 +148,8 @@ if (run('migrate')) {
   const c0o = oldRoot.chars[0], oldApo = [...c0o.inv.map(it => ['inv', it]), ...Object.values(c0o.equip).map(it => ['inv', it]), ...(c0o.storage || []).map(it => ['storage', it])].filter(([, it]) => it && it.key === 'ep_gs_apophis');   // maxout 自己也可能给 Lv30 剑魂配了阿波菲斯
   const apo = a0.apo.map(x => `${x.where}+${x.enh}${x.dim || ''}${x.forge ? 'F' : ''}${x.orb ? 'O' : ''}`).sort().join(' '), apoWant = oldApo.map(([w]) => w + '+0').sort().join(' ');
   check(apo === apoWant, `Lv30：${oldApo.length} 把阿波菲斯都还在（装备着的进背包），强化 / 红字 / 锻造 / 附魔都转移走了（+0）`, { apo, apoWant });
-  const sEnh = a0.succ.filter(x => x.key === succKey).map(x => x.enh).sort((a, b) => a - b).join(), sWant = oldApo.map(([, it]) => it.enh || 0).sort((a, b) => a - b).join();
+  const preIds = new Set(JSON.stringify(oldRoot.chars[0]).match(/"id":\d+/g).map(x => +x.slice(5)));   // 只数迁移新发的（maxout 可能本来就给了继承装备那把 Lv27 巨剑）
+  const sEnh = a0.succ.filter(x => x.key === succKey && !preIds.has(x.id)).map(x => x.enh).sort((a, b) => a - b).join(), sWant = oldApo.map(([, it]) => it.enh || 0).sort((a, b) => a - b).join();
   check(sEnh === sWant, `每把阿波菲斯补发一把继承装备，强化各自转移（${sEnh}）`, { sEnh, sWant });
   const idsOf = c => [...c.inv, ...Object.values(c.equip), ...(c.storage || [])].filter(it => it && it.kind === 'equip').map(it => it.id);
   const oldIds = idsOf(oldRoot.chars[0]);

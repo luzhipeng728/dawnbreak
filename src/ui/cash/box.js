@@ -40,6 +40,12 @@ addStyle(`
 .cbox-t .fr{background:linear-gradient(#2a2032,#120d16);border:.12em solid var(--glow);box-shadow:0 0 .9em var(--glow)}
 .cbox-t .fr img{width:4.2em;height:4.2em}
 .cbox-grid.many .cbox-t .fr img{width:3.4em;height:3.4em}
+.cbox-stage.ten.big{height:25em}
+.cbox-grid.huge{grid-template-columns:repeat(10,4.1em);gap:.35em;max-height:25em;overflow-y:auto;padding:.3em}
+.cbox-grid.huge .cbox-t{height:5.8em}
+.cbox-grid.huge .cbox-t .fr{box-shadow:0 0 .45em var(--glow)}
+.cbox-grid.huge .cbox-t .fr img{width:2.6em;height:2.6em}
+.cbox-grid.huge .cbox-t .fr .nm{font-size:.56em}
 .cbox-t .fr .nm{font-size:.72em;font-weight:900;line-height:1.2}
 .cbox-t .bk{transform:rotateY(180deg);background:linear-gradient(135deg,#5a2a6a,#2a1238 50%,#5a2a6a);border:.12em solid #c89a3a;box-shadow:inset 0 0 1em rgba(255,210,120,.25)}
 .cbox-t .bk b{font-size:2.4em;color:#ffd23a;text-shadow:0 0 .3em #000}
@@ -98,6 +104,19 @@ function cashBoxUI(key, count = 1) {
   itemsRefresh();
   return true;
 }
+// 大量开箱（百连）：同名同品级合并成一格 ×数量，品级高的在前，全部列出（格子区可滚动）；下面一行按品级汇总
+function cbMany(stage, sub, items) {
+  const G = new Map();
+  for (const it of items) { const k = `${it.key}|${it.rar || 0}|${cbItemName(it)}`; const g = G.get(k); if (g) g.n += it.n || 1; else G.set(k, { it, n: it.n || 1 }); }
+  const list = [...G.values()].sort((a, b) => (b.it.rar || 0) - (a.it.rar || 0) || b.n - a.n);
+  stage.classList.add('ten', 'big');
+  const g = h('div', { class: 'cbox-grid huge' });
+  for (const { it, n } of list) g.append(h('div', { class: 'cbox-t', style: `--glow:${cbTier(it.rar).col}` }, h('div', { class: 'fr' }, h('img', { src: cbIcon(it, 96) }), h('div', { class: `nm q${Math.min(5, it.rar || 0)}` }, cbItemName(it) + (n > 1 ? ` ×${n}` : '')))));
+  stage.append(g);
+  const by = {}; for (const it of items) by[it.rar || 0] = (by[it.rar || 0] || 0) + 1;
+  const RN = ['普通', '高级', '稀有', '神器', '传说', '史诗'];
+  sub.textContent = `共 ${items.length} 件（全部已放进背包）：` + Object.keys(by).sort((a, b) => b - a).map(r => `${RN[Math.min(5, r)]} ${by[r]}`).join(' · ') + (list.length > 30 ? '（往下滚动看全部）' : '');
+}
 // 获得物品一览（礼包 / 兑换 / 多买多送 / 抽奖）
 function cashShowGot(title, items) { if (!items || !items.length) return; cashOverlay({ mode: 'got', title, items }); }
 function cashOverlay(o) {
@@ -132,6 +151,7 @@ Object.assign(menus, {
         const left = inv.count(o.key);
         if (left > 0) foot.append(h('button', { class: 'btn buy', onclick: () => { sfx.click(); cashBoxUI(o.key, 1); } }, `再开 1 个（剩 ${left}）`));
         if (left >= 10 && !CASH_BOXES[o.key].rolls) foot.append(h('button', { class: 'btn buy', onclick: () => { sfx.click(); cashBoxUI(o.key, 10); } }, '十连'));
+        if (left >= 100 && !CASH_BOXES[o.key].rolls) foot.append(h('button', { class: 'btn buy', onclick: () => { sfx.click(); cashBoxUI(o.key, 100); } }, '百连'));
         if (o.key === 'box_magic') { const pg = cashGoods('box_magic'); if (left === 0 && cashBal('cera') >= pg.price) foot.append(h('button', { class: 'btn buy', onclick: () => { sfx.click(); const r = cashBuy('box_magic', 1); if (r.err) { toastMsg(r.err, '#ff6a6a'); return; } cashBoxUI('box_magic', 1); } }, `买 1 个再开（${pg.price} 点券）`)); }
         const S = cashData(); if (o.key === 'box_magic' || o.key === 'box_magic2') sub.textContent = `${o.res.results.some(R => R.forced) ? '保底触发！第 100 次必出大奖 · ' : ''}魔盒碎片 +${o.res.shards}（共 ${cashBal('shard')}）· 保底进度 ${S.pity.box_magic || 0}/100`;
       }
@@ -142,7 +162,8 @@ Object.assign(menus, {
         stage.append(h('div', { class: 'cbox-glow on' }));
         if (o.mode === 'synth' && !o.ok) { el.style.setProperty('--glow', '#8a8a9a'); stage.append(card(items[0])); sfx.enhanceFail(); sub.textContent = `这次没有成功……得到了 1 件随机的同部位高级装扮（成功率 ${Math.round(o.rate * 100)}%）`; }
         else { stage.append(card(items[0])); fx(o.mode === 'synth' ? 5 : best); if (o.mode === 'synth') sub.textContent = '稀有装扮（天空）！已发出全服公告'; }
-      } else {
+      } else if (items.length > 18) { cbMany(stage, sub, items); if (best >= 3) fx(best); else cbSnd.reveal(best); }
+      else {
         stage.classList.add('ten');
         const g = h('div', { class: 'cbox-grid' + (items.length > 10 ? ' many' : '') });
         for (const it of items.slice(0, 18)) g.append(h('div', { class: 'cbox-t', style: `--glow:${cbTier(it.rar).col}` }, h('div', { class: 'fr' }, h('img', { src: cbIcon(it, 96) }), h('div', { class: `nm q${Math.min(5, it.rar || 0)}` }, cbItemName(it)))));
@@ -165,6 +186,7 @@ Object.assign(menus, {
       timers.forEach(clearTimeout);
       stage.replaceChildren();
       if (items.length === 1) { stage.append(h('div', { class: 'cbox-glow on' }), card(items[0], jackIdx.has(0))); fx(best); done(); return; }
+      if (items.length > 18) { cbMany(stage, sub, items); if (best >= 3) fx(best); else cbSnd.reveal(best); done(); return; }   // 百连：合并同名 + 数量，按品级排，一次亮出
       stage.classList.add('ten');
       const g = h('div', { class: 'cbox-grid' + (items.length > 10 ? ' many' : '') }), tiles = [];
       items.slice(0, 18).forEach((it, i) => { const t = h('div', { class: 'cbox-t hide', style: `--glow:${cbTier(it.rar).col}` }, h('div', { class: 'fr' }, jackIdx.has(i) ? h('span', { class: 'jp', style: 'position:absolute;top:.2em;font-size:.6em;background:#d8283a;padding:0 .4em;border-radius:1em' }, '大奖') : null, h('img', { src: cbIcon(it, 96) }), h('div', { class: `nm q${Math.min(5, it.rar || 0)}` }, cbItemName(it))), h('div', { class: 'bk' }, h('b', {}, '?'))); tiles.push([t, it]); g.append(t); });

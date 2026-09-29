@@ -358,7 +358,7 @@ function cashBuyAsk(G, win, open) {
     CW.qty = 1; itemsRefresh();
     if (open) {
       const D = ITEMS[G.key];
-      if (D.cashUse === 'box') cashBoxUI(G.key, Math.min(10, (G.n || 1) * n));
+      if (D.cashUse === 'box') cashBoxUI(G.key, Math.min(100, (G.n || 1) * n));   // 买多少开多少，一次最多百连
       else if (D.cashUse === 'pack') { const it = inv.items.find(x => x.key === G.key); if (it) inv.useItem(it); itemsRefresh(); }
     } else if (r.items && r.items.length && (G.fest || G.whole || CASH_PACKS[G.key] === undefined && r.items.some(it => it.rar >= 3))) cashShowGot('购买成功', r.items);
   };

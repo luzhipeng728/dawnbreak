@@ -65,7 +65,7 @@ THICK = {   # 第一批出图时这两类刀身画得太细（巨剑像普通长
                   'The blade runs perfectly STRAIGHT along the center line and ends in a straight sharp point (or a squared chisel tip) centered on that line; '
                   'absolutely NO hook, no curved, curled, bent, forked or scythe-like tip, the point never turns up or down. Decorative spikes or serrations may run along the edges but the outline stays straight and roughly symmetric.',
     'katana': 'IMPORTANT: the blade is clearly wide and thick for a katana (its width is about one ninth of the whole weapon length), never a thin line. '
-              'The blade is almost straight (only a very slight natural curve) and ends in a clean pointed tip; NO hook, no curled, forked or scythe-like tip.',
+              'The blade runs STRAIGHT along the center line (no curve at all) and ends in a straight clean pointed tip; NO hook, no curled, forked, bent or scythe-like tip.',
     # 用户（2026-09-29）：所有刀剑都要直刃直尖，不许弯钩卷尖
     'shortsword': 'IMPORTANT: the blade runs STRAIGHT along the center line and ends in a straight sharp point; NO hook, no curled, forked, bent or scythe-like tip.',
     'lightsaber': 'IMPORTANT: the energy blade is a STRAIGHT thick beam along the center line ending in a straight rounded or pointed tip; NO hook, no curve, no curled or scythe-like tip.',

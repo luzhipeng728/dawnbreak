@@ -16,7 +16,7 @@ if (process.argv[2] === 'shots') {
   await page.goto(`${URL_BASE}?art&m=sword`);
   await page.waitForFunction(() => window.__ART_READY, null, { timeout: 30000 });
   const url = await page.evaluate(async ({ sel, WT, one }) => {
-    const all = Object.keys(WEAPON_IMG).filter(k => WEAPON_IMG[k].type && !/^(spring|summer)_/.test(k));
+    const skin = new Set(Object.values(WEAPON_SKINS)), all = Object.keys(WEAPON_IMG).filter(k => WEAPON_IMG[k].type && !skin.has(k.split('_')[0]));
     const byType = t => [t, `${t}_r2`, `${t}_r3`, `${t}_r4`, ...all.filter(k => k.startsWith('ep_') && WEAPON_IMG[k].type === t).sort((a, b) => ((ITEMS[a] || {}).lvl || 0) - ((ITEMS[b] || {}).lvl || 0))];
     const keys = sel === 'all' ? WT.flatMap(t => { const L = byType(t); return [...L, ...Array(Math.max(0, 11 - L.length)).fill(null)]; }) : sel === 'epics' ? all.filter(k => k.startsWith('ep_')) : sel === 'tiers' ? WT.flatMap(t => [t, `${t}_r2`, `${t}_r3`, `${t}_r4`]) : sel.split(',');
     const FR = { sword: ['idle', 'a1_2'], gun: ['idle', 'shoot2'], mage: ['idle', 'm1_2'] };
@@ -92,13 +92,15 @@ if (process.argv[2] === 'town') {
     const tiers = WT.flatMap(t => [2, 3, 4].map(n => `${t}_r${n}`));
     const keys = [...WT, ...epics, ...tiers];
     const miss = keys.filter(k => !WEAPON_IMG[k] || !ASSET_SRC['weapon/' + k]);
+    const skins = Object.values(WEAPON_SKINS), skinKeys = skins.flatMap(s => WT.map(t => `${s}_${t}`));   // 武器装扮：每款 15 种武器类型都要有图
+    const missSkin = skinKeys.filter(k => !WEAPON_IMG[k] || !ASSET_SRC['weapon/' + k] || WEAPON_IMG[k].type !== k.slice(k.indexOf('_') + 1));
     const wrongType = epics.filter(k => WEAPON_IMG[k] && WEAPON_IMG[k].type !== ITEMS[k].wtype);
-    await Promise.all(keys.map(k => loadArtKey('weapon/' + k)));
+    await Promise.all([...keys, ...skinKeys].map(k => loadArtKey('weapon/' + k)));
     const bad = [];
-    for (const k of keys) {
+    for (const k of [...keys, ...skinKeys]) {
       const A = WEAPON_IMG[k], im = IMG['weapon/' + k]; if (!A || !im) continue;
       const base = WEAPON_IMG[A.type], ratio = A.size / base.size;
-      if (ratio < 0.99 || ratio > 1.5) bad.push(`${k} 长度 ×${ratio.toFixed(2)}`);
+      if (!skinKeys.includes(k) && (ratio < 0.99 || ratio > 1.5)) bad.push(`${k} 长度 ×${ratio.toFixed(2)}`);
       if (Math.abs(im.width - A.w) > 1 || Math.abs(im.height - A.h) > 1) bad.push(`${k} 图片尺寸和数据不符`);
       const cv = document.createElement('canvas'); cv.width = A.w; cv.height = A.h; const c = cv.getContext('2d'); c.drawImage(im, 0, 0);
       const a = c.getImageData(0, 0, A.w, A.h).data, al = (x, y) => x < 0 || y < 0 || x >= A.w || y >= A.h ? 0 : a[(y * A.w + x) * 4 + 3];
@@ -119,10 +121,11 @@ if (process.argv[2] === 'town') {
       for (let y = 0; y < F.h; y++) for (let x = 0; x < F.w; x++) if (d[(y * F.w + x) * 4 + 3] > 100) { tot++; if (Math.hypot(x - w.gx, y - w.gy) < 14) n++; }
       if (!n || tot < 80) hand.push(`${cls}/${f}/${k} 握点附近 ${n} 像素，武器共 ${tot}`);
     }
-    return { n: keys.length, epics: epics.length, miss, wrongType, bad, hand };
+    return { n: keys.length + skinKeys.length, epics: epics.length, miss, wrongType, bad, hand, skins, missSkin };
   }, WT);
   ok(r.miss.length === 0, `史诗 ${r.epics} 件 + 15 种类型 × 4 个品级外观都有武器图`, r.miss.join(' '));
   ok(r.wrongType.length === 0, '史诗武器图的类型和物品一致', r.wrongType.join(' '));
+  ok(r.missSkin.length === 0 && r.skins.length >= 6, `武器装扮 ${r.skins.length} 款（${r.skins.join(' / ')}）× 15 种武器类型都有图、类型对得上`, r.missSkin.join(' '));
   ok(r.bad.length === 0, `握点在武器上、长度合理（${r.n} 张）`, r.bad.join('；'));
   ok(r.hand.length === 0, '拿在手里：武器贴着手（三职业抽查）', r.hand.join('；'));
   ok(!logs.some(l => l.type === 'pageerror'), '没有页面错误', JSON.stringify(logs.filter(l => l.type === 'pageerror').slice(0, 2)));

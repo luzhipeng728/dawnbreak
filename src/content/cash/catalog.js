@@ -17,6 +17,10 @@ for (const set of CASH_ADV_SETS) {
 }
 defGoods('av_weapon_spring', { key: 'av_weapon_spring', price: 2400, tab: 'weapon' });
 defGoods('av_weapon_summer', { key: 'av_weapon_summer', price: 2400, tab: 'weapon' });
+defGoods('av_weapon_holywing', { key: 'av_weapon_holywing', price: 3000, tab: 'weapon', tag: '天空配套' });
+defGoods('av_weapon_flamedragon', { key: 'av_weapon_flamedragon', price: 3000, tab: 'weapon', tag: '天空配套' });
+defGoods('av_weapon_academy', { key: 'av_weapon_academy', price: 2400, tab: 'weapon' });
+defGoods('av_weapon_gothic', { key: 'av_weapon_gothic', price: 2400, tab: 'weapon' });
 defGoods('tk_avopt', { key: 'tk_avopt', price: 100, tab: 'avatar', sub: 'etc' });
 defGoods('box_avatar', { key: 'box_avatar', price: 900, tab: 'avatar', sub: 'etc', tag: '合成材料' });
 // 天空（天空套本身不直接出售：合成 / 兑换券）
@@ -81,7 +85,7 @@ const CASH_DEALS_WEEK = [
 const CASH_PACKS = {
   pkg_spring: [{ set: 'av_spring' }, { key: 'pet_lion' }, { key: 'aura_spring' }, { key: 'title_spring' }, { key: 'orb_spring' }, { key: 'av_weapon_spring' }, { key: 'tk_enh7' }, { key: 'synth_basic', n: 2 }, { key: 'coin', n: 5 }, { key: 'tk_lotto', n: 2 }, { key: 'coin_gift', n: 10 }],
   pkg_summer: [{ set: 'av_summer' }, { key: 'pet_seal' }, { key: 'aura_summer' }, { key: 'title_summer' }, { key: 'orb_summer' }, { key: 'av_weapon_summer' }, { key: 'box_petgear' }, { key: 'synth_basic', n: 2 }, { key: 'fatigue', n: 2 }, { key: 'tk_lotto', n: 2 }, { key: 'coin_gift', n: 10 }],
-  pkg_academy: [{ set: 'av_academy' }, { key: 'pet_owl' }, { key: 'aura_academy' }, { key: 'title_academy' }, { key: 'orb_academy' }, { key: 'box_orb' }, { key: 'synth_basic', n: 2 }, { key: 'box_magic', n: 3 }, { key: 'tk_lotto', n: 2 }, { key: 'coin_gift', n: 10 }],
+  pkg_academy: [{ set: 'av_academy' }, { key: 'pet_owl' }, { key: 'aura_academy' }, { key: 'title_academy' }, { key: 'orb_academy' }, { key: 'av_weapon_academy' }, { key: 'box_orb' }, { key: 'synth_basic', n: 2 }, { key: 'box_magic', n: 3 }, { key: 'tk_lotto', n: 2 }, { key: 'coin_gift', n: 10 }],
   pkg_newbie: [{ key: 'coin', n: 10 }, { key: 'fatigue', n: 2 }, { key: 'guard' }, { key: 'box_magic', n: 3 }, { key: 'box_equip' }, { key: 'box_avatar', n: 2 }, { key: 'cera', n: 500 }],
   pkg_lv10: [{ key: 'box_equip', n: 2 }, { key: 'box_magic', n: 5 }, { key: 'tk_enh7' }, { key: 'cera', n: 1000 }],
   pkg_lv20: [{ key: 'egg_pet' }, { key: 'box_orb', n: 2 }, { key: 'box_magic', n: 10 }, { key: 'box_petgear2' }, { key: 'cera', n: 2000 }],
@@ -122,13 +126,13 @@ const CASH_EXCH = {
 /* ---- 箱子奖池：tiers 按权重（%），jackpot 档出货发全服公告；pity：连续 n-1 次不出大奖，第 n 次必出 ---- */
 const CASH_BOXES = {
   box_magic: { shard: 1, pity: 100, tiers: [
-    { name: '大奖', jackpot: true, items: [[0.5, { key: 'tk_sky' }], [0.5, { epic: true }], [0.4, { key: 'aura_box' }], [0.4, { key: 'title_box' }], [0.3, { key: 'tk_enh10' }], [0.3, { key: 'orb_pet_supreme' }], [0.3, { key: 'cera_l' }], [0.3, { key: 'pet_fox' }]] },
+    { name: '大奖', jackpot: true, items: [[0.5, { key: 'tk_sky' }], [0.5, { epic: true }], [0.3, { key: 'aura_box' }], [0.3, { key: 'title_box' }], [0.3, { key: 'tk_enh10' }], [0.3, { key: 'orb_pet_supreme' }], [0.3, { key: 'cera_l' }], [0.3, { key: 'pet_fox' }], [0.2, { key: 'av_weapon_gothic' }]] },   // 大奖档合计仍是 3%（暗夜哥特武器装扮的 0.2% 从两件魔盒限定装扮各匀 0.1%）
     { name: '稀有', items: [[3, { key: 'box_equip' }], [2.5, { key: 'box_orb' }], [2.5, { key: 'tk_enh7' }], [1.5, { key: 'egg_pet' }], [2, { key: 'tk_avatar' }], [2, { key: 'synth_gold' }], [1.5, { key: 'box_petgear2' }], [1.5, { key: 'cera_m' }], [0.5, { key: 'amp_purify' }]] },
     { name: '普通', items: [[10, { key: 'box_supply' }], [10, { key: 'coin', n: 2 }], [8, { key: 'synth_basic', n: 2 }], [8, { key: 'box_gold' }], [7, { key: 'fatigue' }], [5, { key: 'elixir', n: 2 }], [6, { key: 'box_avatar' }],
       [4, { key: 'crystal', n: 60 }], [2, { key: 'm_contra', n: 20 }], [5, { key: 'guard' }], [5, { key: 'cera_s' }], [3, { key: 'amp_guard' }], [3, { key: 'abyss_ticket', n: 2 }], [2, { key: 'amp_book' }], [2, { key: 'm_elem2', n: 3 }]] },
   ] },
   box_magic2: { shard: 3, pityOf: 'box_magic', tiers: [
-    { name: '大奖', jackpot: true, items: [[3, { key: 'tk_sky' }], [2.5, { epic: true }], [2, { key: 'aura_box' }], [2, { key: 'title_box' }], [2, { key: 'tk_enh10' }], [1.5, { key: 'orb_pet_supreme' }], [2, { key: 'cera_l' }], [1.5, { key: 'pet_fox' }]] },
+    { name: '大奖', jackpot: true, items: [[3, { key: 'tk_sky' }], [2.5, { epic: true }], [1.5, { key: 'aura_box' }], [1.5, { key: 'title_box' }], [2, { key: 'tk_enh10' }], [1.5, { key: 'orb_pet_supreme' }], [2, { key: 'cera_l' }], [1.5, { key: 'pet_fox' }], [1, { key: 'av_weapon_gothic' }]] },
     { name: '稀有', items: [[16, { key: 'box_equip' }], [12, { key: 'box_orb' }], [12, { key: 'tk_enh7' }], [10, { key: 'egg_pet' }], [10, { key: 'tk_avatar' }], [10, { key: 'synth_gold' }], [7, { key: 'box_petgear2' }], [8, { key: 'cera_m' }]] },
   ] },
   box_equip: { tiers: [{ name: '装备', items: [[50, { equip: true, rar: 1 }], [30, { equip: true, rar: 2 }], [14, { equip: true, rar: 3 }], [5, { equip: true, rar: 4 }], [1, { epic: true }]] }] },

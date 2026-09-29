@@ -252,7 +252,8 @@ if (run('content')) {
     const named = Object.values(ITEMS).filter(D => D.rar === 3 && D.named).filter(want);
     const moveBad = [], inhBad = [];
     for (const [k, l] of Object.entries(MOVES)) { const D = ITEMS[k]; if (!D || !want(D)) continue; if (D.lvl !== l) moveBad.push(`${k}@${D.lvl}≠${l}`); if (!G60.succ[k]) moveBad.push(`${k} 没有继承装备`); }
-    const eq = (a, b) => JSON.stringify(a || null) === JSON.stringify(b || null);
+    const norm = a => (a && typeof a === 'object' && !Object.keys(a).length) ? null : a || null;   // 空对象 {} 和“没有这个字段”算同一个（新定义的物品不存空 fx）
+    const eq = (a, b) => JSON.stringify(norm(a)) === JSON.stringify(norm(b));
     for (const [K, S] of Object.entries(G60.succ)) { const O = G60.orig[K], D = ITEMS[S]; if (!O || !D || !want(D)) continue; if (D.lvl !== O.lvl || !eq(D.fx, O.fx) || !eq(D.proc, O.proc) || D.slot !== O.slot) inhBad.push(`${S}（${K}）`); }
     const noIcon = E.concat(named).filter(want).filter(D => !ASSET_SRC['icon/' + (D.icon || 'item_' + D.key)]).map(D => D.key);
     const noArt = E.filter(D => D.slot === 'weapon' && want(D) && (!WEAPON_IMG[D.key] || !ASSET_SRC['weapon/' + D.key])).map(D => D.key);

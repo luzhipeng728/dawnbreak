@@ -125,9 +125,9 @@ const R = await page.evaluate(() => {
   m = T.mob(520, 100); hp0 = m.hp; T.cast('gm_magnet'); T.run(40); out.magnet = { g1: T.n('mech_g1'), g1cd: (p.cool.gm_g1 || 0) > 0 }; T.sec(1.5);
   out.magnet.lifted = Math.round(m.z); out.magnet.pulled = !!summonsOf(p, 'mech_magfield').length; T.sec(2.2); out.magnet.dmg = dealt(m, hp0) > 0; out.magnet.st = m.st;
   T.clear(); T.reset();
-  // 15) 空投支援：轰炸机投下 12 台银色破坏者，追着敌人自爆
+  // 15) 空投支援：轰炸机投下 20 台银色破坏者，追着敌人自爆
   m = T.mob(560); hp0 = m.hp; const sm0 = window.summon; let nb = 0; window.summon = (o, k, x) => { if (k === 'mech_buster') nb++; return sm0(o, k, x); };
-  T.cast('gm_drop'); T.sec(2.6); window.summon = sm0; out.drop = { busters: nb }; T.sec(5); out.drop.dmg = dealt(m, hp0); out.drop.left = T.n('mech_buster');
+  T.cast('gm_drop'); T.sec(3.6); window.summon = sm0; out.drop = { busters: nb }; T.sec(5); out.drop.dmg = dealt(m, hp0); out.drop.left = T.n('mech_buster');
   T.clear(); T.reset();
   // 16) 拦截机工厂：最多 6 架，工厂到时剩下的冲向敌人自爆；光反应能量模块：一次性光束
   m = T.mob(620); hp0 = m.hp; T.cast('gm_factory'); T.sec(4.5); out.factory = { sparrows: T.n('mech_sparrow'), max6: T.n('mech_sparrow') <= 6 }; T.sec(3.5); out.factory.dmg = dealt(m, hp0); out.factory.left = T.n('mech_sparrow');
@@ -174,7 +174,7 @@ const R = await page.evaluate(() => {
   T.cast('gm_field'); T.sec(2.8); window.summonHit = sh0; out.field = { hits: nf, dmg: dealt(m, hp0) > 0 };
   T.clear(); T.reset();
   // 26) 二觉 博尔特 MX：天降、回旋炮 → 步枪 → 激光剑 → 自爆
-  m = T.mob(520); m.boss = true; hp0 = m.hp; T.cast('gm_bolt'); T.sec(1.2); const bolt = summonsOf(p, 'mech_bolt')[0]; T.sec(6.5);
+  m = T.mob(520); m.boss = true; hp0 = m.hp; T.cast('gm_bolt'); T.sec(1.2); const bolt = summonsOf(p, 'mech_bolt')[0]; T.sec(7);
   out.bolt = { spawned: !!bolt, gone: bolt && bolt.gone, dmg: dealt(m, hp0), rifle: bolt && bolt.nR, blade: bolt && bolt.nB };
   T.clear(); T.reset();
   // 27) 微型制导：技能攻击力；超时空光耀加农炮：能量弹 + 4 次大爆炸
@@ -209,7 +209,7 @@ report('危机追击者：被打时放出 RX-78，有冷却', o.backup.first ===
 report('伪装：隐身、出招暂时现形、被打中解除', o.camo.cloak && o.camo.shown && o.camo.revealed && o.camo.broken, o.camo);
 report('狂风：跟着打；再按技能键冲向敌人自爆', o.gale.alive && o.gale.dmg && o.gale.dove && o.gale.boom > 0, o.gale);
 report('G-磁力弹：顺便放出 G-1（进冷却），把敌人托起，结束时打倒', o.magnet.g1 === 1 && o.magnet.g1cd && o.magnet.lifted > 20 && o.magnet.dmg, o.magnet);
-report('空投支援：投下 12 台银色破坏者，追着敌人自爆', o.drop.busters === 12 && o.drop.dmg > 0 && o.drop.left === 0, o.drop);
+report('空投支援：投下 20 台银色破坏者，追着敌人自爆', o.drop.busters === 20 && o.drop.dmg > 0 && o.drop.left === 0, o.drop);
 report('拦截机工厂：最多 6 架，到时冲向敌人自爆', o.factory.sparrows >= 4 && o.factory.max6 && o.factory.dmg > 0 && o.factory.left === 0, o.factory);
 report('光反应能量模块：一次性光束打到远处的敌人', o.solar.dmg > 0 && o.solar.sparrows === 0, o.solar);
 report('G-0 战争领主：要有 G 系列；锁定、合体轰炸，G 系列消失、G-1 冷却重置', typeof o.g0.noG === 'string' && o.g0.locks === 2 && o.g0.gs === 0 && o.g0.g1cd === 0 && o.g0.mech === 1 && o.g0.dmgBoss > 0 && o.g0.dmgAdd > 0 && o.g0.gone, o.g0);
@@ -221,7 +221,7 @@ report('G-4 雷行者：回旋多段、方向键派出（不打断动作）、�
 report('G-X 主宰者：旋雷者 4 / 捕食者 7、改装无动作、Buff On!、冷却 -15%', o.gop.form === 'g2' && o.gop.n2 === 4 && o.gop.noAct && o.gop.buffOn && o.gop.n3 === 7 && Math.abs(o.gop.cd - 3.5 * 0.85) < 0.05, o.gop);
 report('G-超级猎鹰：3 次充能；先放出（不攻击），再按按三种形态各自攻击都打到', o.falcon.charges === 3 && o.falcon.deploy === 0 && o.falcon.co > 0 && o.falcon.rt > 0 && o.falcon.rp > 0, o.falcon);
 report('高压电磁场：15 段', o.field.hits === 15 && o.field.dmg, o.field);
-report('二觉 博尔特 MX：步枪 4 发、激光剑 3 次、自爆', o.bolt.spawned && o.bolt.gone && o.bolt.dmg > 0 && o.bolt.rifle === 4 && o.bolt.blade === 3, o.bolt);
+report('二觉 博尔特 MX：步枪 11 发、激光剑 4 次（第 4 次是终结大招）、自爆', o.bolt.spawned && o.bolt.gone && o.bolt.dmg > 0 && o.bolt.rifle === 11 && o.bolt.blade === 4, o.bolt);
 report('微型制导 / 超时空光耀加农炮', o.micro >= 0.2 && o.hyper.dmg, { micro: o.micro, hyper: o.hyper });
 report('三觉 星尘天穹：要 G 系列、G-0 冷却中不能用、用后 G-0 冷却 / G-1 重置', typeof o.sd.noG === 'string' && typeof o.sd.g0cd === 'string' && o.sd.g0 > 100 && o.sd.g1 === 0 && o.sd.gs === 0 && o.sd.dmg, o.sd);
 report('转职任务线：3 步，接在职业试炼之后，60 白色小晶块 + 2 火种', o.quest.q1 && o.quest.q3 && o.quest.pre === 'q_job_gun_final' && o.quest.items === 'c_white:60,q_magic_tinder:2', o.quest);

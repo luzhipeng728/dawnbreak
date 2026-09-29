@@ -180,6 +180,7 @@ bus.on('dungeonEnter', () => {
 });
 bus.on('roomEnter', e => {
   const dg = game.dungeon; if (!dg || !dg.def.abyss || e.room !== dg.abyssRoom || abyssGuest()) return;
+  if (dg.abyssRun && dg.abyssRun.phase !== 'wait') return;   // 每趟只布置一次：再次进入这个房间（组队同步换房等）不能重放深渊柱、重置轮次
   const A = ABYSS[dg.def.id]; if (!A) return;
   dg.waves = [];   // 大房间的第二波由深渊派对代替（不然两轮打完又刷一波，门迟迟不开）
   const W = game.room.x1, pl = spawnMonster('abyssPillar', W * 0.64, DEPTH / 2, { lvl: dg.def.lvl[1], mul: dg.D.hp * A.seal });
@@ -251,10 +252,11 @@ function abyssLordMechs(b, L) {
   };
 }
 
-function abyssTick(dg) {
+function abyssTick(dg, chain) {
   if (game.dungeon !== dg || dg.state !== 'play' && dg.state !== 'dead') return;
   const R = dg.abyssRun; if (!R || R.phase === 'done' || R.phase === 'wait') return;
-  game.after(0.35, () => abyssTick(dg));
+  if (!chain) { if (R.ticking) return; R.ticking = true; }   // 只跑一条检查循环
+  game.after(0.35, () => abyssTick(dg, true));
   if (dg.state === 'dead' || dg.room !== dg.abyssRoom) return;
   if (R.phase === 'pillar') {
     if (!R.pillar.dead) return;

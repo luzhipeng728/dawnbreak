@@ -265,7 +265,7 @@ function drawCrowdLabels(c, npcRects) {
   for (const w of [...world.crowd].sort((a, b) => b.y - a.y)) {
     const X = sx(w.x); if (w.a <= 0.05 || X < -80 || X > WW + 80) continue;
     const half = Math.max(c.measureText(w.name).width, w.guild ? c.measureText(`<${w.guild}>`).width : 0) / 2 + 2, top = w.guild ? 20 : 10;
-    let ny = sy(w.y, 124), r = null;
+    let ny = sy(w.y, 124 + vanityLabelLift(w.char && w.char.look)), r = null;
     for (let k = 0; k < 3; k++, ny -= top + 3) { const t = { x0: X - half, x1: X + half, y0: ny - top, y1: ny + 3 }; if (!hit(t)) { r = t; break; } }
     if (!r) continue;
     taken.push(r); w.drawLabel(c, X, ny);
@@ -278,12 +278,12 @@ function drawOwnLabel(c, taken) {
   const t1 = `Lv.${game.lvl} ${d.name || C.name}`, job = J ? J.name : C.name;
   const me = typeof net !== 'undefined' && net.user ? net.user.id : null, tag = me != null && typeof netTagOf === 'function' ? netTagOf(me) : null;
   const t2 = tag ? `<${tag}> ${job}` : job, X = sx(p.x);
-  let ny = sy(p.y, 124 + (p.z || 0));
+  let ny = sy(p.y, 124 + (p.z || 0) + vanityLabelLift(vanityOwn()));
   c.save(); c.textAlign = 'center';
   c.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
   const half = Math.max(c.measureText(t1).width, c.measureText(t2).width * 0.8) / 2 + 2;
-  // 站在 NPC 跟前时会和 NPC 的名牌叠在一起：挪到 NPC 名牌下面（贴着自己头顶）
-  { const hits = taken.filter(o => X - half < o.x1 && X + half > o.x0 && ny - 20 < o.y1 && ny + 3 > o.y0); if (hits.length) ny = Math.max(...hits.map(o => o.y1)) + 21; }
+  // 站在 NPC 跟前时会和 NPC 的名牌叠在一起：挪到 NPC 名牌上面
+  { const hits = taken.filter(o => X - half < o.x1 && X + half > o.x0 && ny - 20 < o.y1 && ny + 3 > o.y0); if (hits.length) ny = Math.min(...hits.map(o => o.y0)) - 4; }   // 和 NPC 名牌重叠：往上让（以前往下挪会压到自己头上）
   vanityPlate(c, X, ny, c.measureText(t1).width / 2, vanityOwn());   // +13 徽章 / 天空套边框
   c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.85)'; c.strokeText(t1, X, ny); c.fillStyle = '#ffe8a8'; c.fillText(t1, X, ny);
   c.font = 'bold 8px "PingFang SC","Microsoft YaHei",sans-serif'; c.strokeText(t2, X, ny - 11); c.fillStyle = tag ? '#9aff7a' : '#e8dcc0'; c.fillText(t2, X, ny - 11);

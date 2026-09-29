@@ -270,6 +270,8 @@ const VANITY_SKY = {
   av_sky1: { col: '#ffe9a0', plate: '#ffd86a', wings: 1, step: 0.1 },   // 天穹圣翼：光翼 + 光羽脚印
   av_sky2: { col: '#ff7a2a', plate: '#ff7040', flame: 1, step: 0.08 },  // 炎龙之魂：火环 + 火焰脚印
 };
+// 名牌抬高：天空套 8 件头顶有光环 / 光翼，名牌按原高度会压住头（用户截图反馈）
+function vanityLabelLift(look) { return look && look.cash && VANITY_SKY[look.cash.sky8] ? 22 : 0; }
 function vanityPlate(c, X, ny, half, look) {
   if (!look) return;
   const K = look.cash && VANITY_SKY[look.cash.sky8], G = look.glow && look.glow.lv >= VANITY_BADGE_LV ? vanityGlowRow(look.glow) : null;

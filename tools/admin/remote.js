@@ -3,6 +3,7 @@
 //   node remote.js <db> users                         列出账号、角色、点券邮件
 //   node remote.js <db> dump <账号>                    打印 { updated_at, data }（云存档）
 //   node remote.js <db> mail <账号> <点券> [标题]       发管理员邮件（点券，单封上限 1000 万）
+//   node remote.js <db> item <账号> <物品key> <数量> [标题]  发管理员邮件（物品，按物品库 key，领取时生成；数量 1~9999）
 //   node remote.js <db> put <账号> <json 文件> <why>    写回云存档（角色必须和下载时一致，否则拒绝）
 const { DatabaseSync } = require('node:sqlite'); const fs = require('fs'); const crypto = require('crypto');
 const [db0, cmd, a1, a2, a3] = process.argv.slice(2);
@@ -21,6 +22,12 @@ if (cmd === 'users') {
   const r = db.prepare('INSERT INTO mail (to_id, from_id, from_name, kind, title, body, gold, cera, items, created, expires, rid) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .run(u.id, null, '管理员', 'gm', a3 || '点券补给', '管理员发放的点券，领取后所有角色共用。祝游戏愉快！', 0, cera, '[]', t, t + 30 * 86400000, null);
   console.log(`已发邮件 #${Number(r.lastInsertRowid)} → ${u.name}，点券 ${cera}`);
+} else if (cmd === 'item') {
+  const u = user(a1), n = Math.min(9999, Math.max(1, Math.floor(+a3 || 1))), t = Date.now();
+  if (!/^[a-z0-9_]{1,60}$/.test(a2 || '')) { console.error('物品 key 不对：' + a2); process.exit(1); }
+  const r = db.prepare('INSERT INTO mail (to_id, from_id, from_name, kind, title, body, gold, cera, items, created, expires, rid) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+    .run(u.id, null, '管理员', 'gm', process.argv[7] || '物品补给', '管理员发放的物品，领取后放进背包。祝游戏愉快！', 0, 0, JSON.stringify([{ key: a2, n }]), t, t + 30 * 86400000, null);
+  console.log(`已发邮件 #${Number(r.lastInsertRowid)} → ${u.name}，物品 ${a2} ×${n}`);
 } else if (cmd === 'put') {
   const u = user(a1), next = JSON.parse(fs.readFileSync(a2, 'utf8'));
   const cur = db.prepare('SELECT data, updated_at FROM saves WHERE user_id = ?').get(u.id), old = JSON.parse(cur.data);

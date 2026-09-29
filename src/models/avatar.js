@@ -75,6 +75,7 @@ class AvatarLayer {
   }
   // 钩子：帧之后（身前的武器 + 握拳、头部配件）
   over(c, m, f, F) {
+    jlHair(c, this, m, f, F);   // 转职发色：紧贴在帧图上面（身前武器 / 头饰之前，models/job_fx.js）
     const w = F.wpn, w2 = F.wpn2;
     if (w && w.front) { this.weapon(c, w, F); if (w.hand && this.wim) this.hand(c, m, f, F, w, 0); }
     if (w2 && w2.front && this.dual()) { this.weapon(c, w2, F); if (w2.hand && this.wim) this.hand(c, m, f, F, w2, 1); }

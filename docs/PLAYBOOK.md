@@ -85,6 +85,7 @@
 | 浮空 / 受身蹲伏定量测试 | `node test/juggle.mjs`（参数表 `JUGGLE`，docs/COMBAT_JUGGLE.md） |
 | 数据库备份 | `ssh cc 'sudo /opt/dawnbreak-server/backup.sh'`（每天 04:17 也会自动备份） |
 | 看玩家页面的逐帧报错（带堆栈，game.js `frameErr` 同一个错误每个页面报一次） | `sh tools/admin/admin.sh errs [条数]`；页面里查 `frameErrs` |
+| 转职头部总览（3 个基础职业 + 15 个转职：站立 / 跑动 / 攻击 / 时装，发色 + 头饰，约 30 秒） | `node test/jobvisuals.mjs heads`（`HEADS=blade,ranger` 只出几排）→ `test/shots/jobvisuals/heads.jpg`；头饰出图 `python3 art/tools/job_head_art.py gen <id> -j 3` → `prep`（docs/JOB_VISUALS.md §5） |
 | 组队深渊回归（2 页面满级狂战士 + 冷却 ×0.34，三种领主，测报错 / 没画出来的帧 / 卡死） | `node test/mp_abyss.mjs [A,B,C]`（约 1 分钟） |
 | 动作手感体检（走 / 跑 / 普攻逐步指标：帧停留、身体跳动、脚底打滑、相机甩动；`--pace` 测各种刷新率下的帧节奏） | `WEB=1 node test/animfeel.mjs <职业[:转职]> <名> [--pace] [--town] [--look=套装]`（约 6 秒）；改前 `B-<名>` / 改后 `A-<名>` 各跑一次后 `python3 test/animfeel_compare.py <名>` 出对比图（docs/ANIMATION.md） |
 
@@ -108,6 +109,7 @@
 
 - **组队主机上怪物的 `m.control` 是访问器**（net/coop.js hostMonster）：读出来是“选目标 + 调原 AI”的包装。要在原 AI 外面再包一层就读 `m.aiInner`；读 `m.control` 包进去 = 无限递归（2026-09-29 组队深渊第 2 轮领主降临后每帧爆栈、整帧不画，画面停在紫色闪光、地面告警特效堆到 5000+ 个发白）。单机测不出来，要用 `test/mp_abyss.mjs`。
 
+- **生图参考图别走 `sheets.upload` 的旧缓存**（2026-09-29 转职头饰）：缓存里的 hyprlab 地址会过期（生图 404），多线程同时写 `art/src/avatar/.upload_cache.json` 还会把 JSON 写坏（后面的脚本全部读档失败）。新脚本直接传 `'local:' + 本地路径`（gpt-image 路由自己按各家的方式传图），见 `art/tools/job_head_art.py` 的 `run`。
 - **给全局函数加参数要查包装层**：`itemTipOne` 被 game/vanity.js 包了一层（`one0(it, cur, head)`），新加的参数会被吞掉；`equipTotals` / `recalcStats` 也分别被公会、决斗包过。改签名前先 `grep -rn "= 函数名\|函数名 = "`。
 - **图标表切出来只剩碎片 + 一条横线**：生图偶尔在表的上下边缘画一条深色边框线（2026-09-29 `cdr60_sand_leather`），切图时它连成横跨三格的连通块，把中间格的物品挤掉。先查 `mn < 110` 占满一行的边缘行，把原图（`art/src/gear/`，先留 `.bak.png`）上下各 4 行涂白再 `cut`，不用重生成。
 - **画的时候位置是插值过的**（game.js `lerpIn / lerpOut`，docs/ANIMATION.md）：renderWorld / ui.draw 期间实体、投射物、城镇路人的 x / y / z 和 cam.x 是两个逻辑步之间的插值，画完立刻换回。绘制代码别写这些字段（会被换回去）；新加会移动、又不在 ents / projs / world.crowd 里的东西，要在 `snapPrev` / `lerpIn` 里补上，否则在高刷屏上会和角色差一步。

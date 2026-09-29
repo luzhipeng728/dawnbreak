@@ -55,8 +55,54 @@ const dungeon = async () => {
   await page.goto(`${URL_BASE}?test&mute&cls=sword&mon=goblin,goblin,goblin,goblinThrower`); await page.waitForFunction(() => window.__READY); await page.waitForTimeout(800); await page.evaluate(HELP); await page.evaluate(w => { window.WPN_ = w; }, WPN);
 };
 
+// 头部总览（node test/jobvisuals.mjs heads）：3 个基础职业 + 15 个转职一排一个，站立 / 跑动 / 攻击 / 时装全套（学院：帽子 + 发饰 + 眼镜）/ 时装跑动（炎龙之魂：龙角 + 发饰）/ 头部特写
+//   直接用游戏的模型绘制（外观层 + 转职外观），1.3 倍 → test/shots/jobvisuals/heads.jpg
+const headsSheet = async () => {
+  const url = await page.evaluate(async ([WPN, ONLY]) => {
+    let rows = []; for (const cls of ['sword', 'gun', 'mage']) { rows.push({ cls, job: null, name: CLASSES[cls].name }); for (const j in CLASSES[cls].jobs) rows.push({ cls, job: j, name: CLASSES[cls].jobs[j].name }); }
+    if (ONLY) rows = rows.filter(R => ONLY.includes(R.job || R.cls));   // HEADS=blade,ranger 只出这几排（调位置用）
+    const COST = { academy: ['av_academy', 'av_hat_academy', 'av_hair_academy', 'av_face_academy'], sky2: ['av_sky2', 'av_hat_sky2', 'av_hair_sky2'] };
+    const cols = [['城镇站立', 'idle'], ['跑动', 'run'], ['攻击', 'atk'], ['时装（学院 帽子+发饰+眼镜）', 'idle', 'academy'], ['时装跑动（炎龙 龙角+发饰）', 'run', 'sky2'], ['头部特写 ×2.6', 'idle', null, 1]];
+    const S = 1.3, CW = 150, CH = 186, LW = 128, TH = 26, W = LW + cols.length * CW, H = TH + rows.length * CH;
+    await loadBundles(['spr:sword', 'spr:gun', 'spr:mage', ...['sword', 'gun', 'mage'].flatMap(c => [`spr:${c}@academy`, `spr:${c}@sky2`])]);
+    const [cv, x] = offCanvas(W, H); x.fillStyle = '#201c24'; x.fillRect(0, 0, W, H);
+    x.font = 'bold 13px sans-serif'; x.fillStyle = '#ffe2a0'; cols.forEach(([t], i) => x.fillText(t, LW + i * CW + 6, 18));
+    const frameOf = (cls, k) => { if (k === 'idle') return 'idle'; const A = SPR_ANIMS[cls], c = k === 'run' ? A.run : A.atk2 || A.atk1; if (!c) return 'idle'; const fr = c.frames ? c.frames.map(f => f) : c.map(e => e[0]); return fr[Math.min(1, fr.length - 1)]; };
+    const models = [];
+    for (const [ri, R] of rows.entries()) {
+      for (const [ci, [, fk, set, zoom]] of cols.entries()) {
+        const eq = {}, wp = R.job ? WPN[R.job] : null;
+        if (wp) { eq.weapon = { key: wp, slot: 'weapon', kind: 'equip', wtype: ITEMS[wp] ? ITEMS[wp].wtype : null, rar: 4 }; await loadArtKey('weapon/' + wp); }
+        else { const t = CLASS_START_WEAPON[R.cls]; eq.weapon = { key: t, slot: 'weapon', kind: 'equip', wtype: t }; }
+        if (set) { const [st, ...acc] = COST[set]; for (const s of ['av_top', 'av_bottom', 'av_shoes']) eq[s] = { set: st }; for (const k of acc) eq['av_' + k.split('_')[1]] = { key: k, set: st }; }
+        const look = lookFromEquip(R.cls, eq, undefined, R.job);
+        const m = new SpriteModel(R.cls, SPR_FALLBACK, SPR_ANIMS[R.cls]); avatarSetLook(m, look);
+        const f = frameOf(R.cls, fk); m.frameOf = () => f; models.push({ m, ri, ci, zoom, R });
+        if (look.wpn) await loadArtKey('weapon/' + look.wpn);
+      }
+    }
+    const draw = () => {
+      for (const { m, ri, ci, zoom, R } of models) {
+        const X = LW + ci * CW, Y = TH + ri * CH;
+        x.save(); x.beginPath(); x.rect(X + 2, Y + 2, CW - 4, CH - 4); x.clip(); x.fillStyle = '#8f9aa6'; x.fillRect(X, Y, CW, CH);
+        if (zoom) { const Fh = m.S.frames.idle.head || { x: m.S.frames.idle.ax, y: 40 }, F0 = m.S.frames.idle, k = 2.6 / m.S.res; x.translate(X + CW / 2 - (Fh.x - F0.ax) * k, Y + CH / 2 - (Fh.y + (R.cls === 'sword' ? 6 : 22) - F0.ay) * k); x.scale(2.6, 2.6); }
+        else { x.translate(X + CW / 2, Y + CH - 12); x.scale(S, S); }
+        m.draw(x, { __c: 'idle', __t: 0 }, 0, NO_OPTS); x.restore();
+      }
+    };
+    draw(); await new Promise(r => setTimeout(r, 1500)); x.fillStyle = '#201c24'; x.fillRect(0, TH, W, H - TH); draw();
+    x.font = 'bold 15px sans-serif';
+    rows.forEach((R, i) => { x.fillStyle = R.job ? '#fff0d0' : '#a0c8ff'; x.fillText(R.name, 8, TH + i * CH + CH / 2); x.font = '11px sans-serif'; x.fillStyle = '#b0a898'; x.fillText(R.job || '（基础职业）', 8, TH + i * CH + CH / 2 + 18); x.font = 'bold 15px sans-serif'; });
+    return cv.toDataURL('image/png');
+  }, [WPN, process.env.HEADS ? process.env.HEADS.split(',') : null]);
+  fs.writeFileSync(`${out}/heads.png`, Buffer.from(url.split(',')[1], 'base64'));
+  execFileSync('python3', ['-c', `from PIL import Image; Image.open('${out}/heads.png').convert('RGB').save('${out}/heads.jpg', quality=88)`]);
+  console.log('  头部总览', `${out}/heads.jpg`);
+};
+
 const { browser, page, logs } = await launch({ width: 960, height: 540 });
 await town();
+if (process.argv.includes('heads')) { await headsSheet(); await browser.close(); process.exit(0); }
 
 console.log('1. look 带转职');
 const r1 = await page.evaluate(() => {
@@ -73,6 +119,51 @@ ok(r1.own === 'soulbender' && r1.other === 'berserker' && r1.stranger === null, 
 ok(r1.asura.includes('job_asura_eyes'), '阿修罗的眼罩在 look.acc 里', JSON.stringify(r1.asura));
 ok(!r1.missing.length && !r1.bad.length && r1.n === r1.all, `${r1.all} 个转职都有外观条目、都能解析`, JSON.stringify([r1.missing, r1.bad]));
 ok(!r1.noState.length, '每个转职都至少有一个状态特效（带 demo）', JSON.stringify(r1.noState));
+
+console.log('1b. 头部（发色 + 头饰）');
+const r1b = await page.evaluate(async () => {
+  const res = { dup: [], plain: [], noArt: [], noPos: [], hairCls: [], hairBad: [] };
+  const sig = {}; for (const c of ['sword', 'gun', 'mage']) sig[c] = { '|': c };   // 基础职业：原色头发、没有头饰
+  for (const c of ['sword', 'gun', 'mage']) for (const j in CLASSES[c].jobs) {
+    const J = JOB_LOOKS[j], acc = (J.acc || []).slice().sort(), s = (J.hair || '') + '|' + acc.join(',');
+    if (!J.hair && !acc.length) res.plain.push(j);
+    if (sig[c][s]) res.dup.push(j + '=' + sig[c][s]); sig[c][s] = j;
+    if (J.hair && !JL_HAIR_PICK[c]) res.hairCls.push(j);
+    for (const k of acc) { const A = AVATAR_ACC[k]; if (!A || !IMG['avatar/' + A.img]) res.noArt.push(k); else if (!A.pos[c] || !A.pos[c + '@'] && c !== 'sword') res.noPos.push(k); }
+  }
+  // 发色真的换上了：剑魂站姿的头发像素平均色接近目标色（棕），头发以外（衣服）不动
+  for (const [cls, job] of [['sword', 'blade'], ['mage', 'elemental']]) {
+    const F = SPR_DATA[cls].frames.idle, im = IMG[`spr/${cls}/idle`], o = jlHairImg(im, F, F.head, cls, JOB_LOOKS[job].hair);
+    if (!o) { res.hairBad.push(job + ':没找到头发'); continue; }
+    const d = o.cv.getContext('2d').getImageData(0, 0, o.cv.width, o.cv.height).data; let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 200) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+    const [tr, tg, tb] = hexRgb(JOB_LOOKS[job].hair), k = (r + g + b) / n / (tr + tg + tb);   // 亮度按比例对齐后比较颜色
+    const err = Math.hypot(r / n - tr * k, g / n - tg * k, b / n - tb * k) / 255;
+    res[job] = { n, area: +(n / (F.w * F.h)).toFixed(3), y1: o.y + o.cv.height - F.head.y, err: +err.toFixed(2) };
+  }
+  // 时装优先：戴了时装帽子 → 帽子类头饰不画；耳机 / 额饰 / 面罩照画；时装眼镜在 → 魔道学者的眼镜不画；阿修罗的眼罩照旧压掉时装眼镜
+  const eq = (set, parts) => { const e = {}; for (const s of ['av_top', 'av_bottom', 'av_shoes']) e[s] = { set: 'av_' + set }; for (const p of parts) e['av_' + p] = { key: `av_${p}_${set}`, set: 'av_' + set }; return e; };
+  const L = (cls, job, e) => lookFromEquip(cls, e, undefined, job).acc;
+  res.clash = {
+    rangerHat: L('gun', 'ranger', eq('academy', ['hat'])), rangerBare: L('gun', 'ranger', eq('academy', [])), rangerDefault: L('gun', 'ranger', {}),
+    paraHat: L('gun', 'paramedic', eq('academy', ['hat'])), witchFace: L('mage', 'witch', eq('academy', ['face'])), witch: L('mage', 'witch', eq('academy', ['hat'])),
+    bowHair: L('mage', 'enchantress', eq('academy', ['hair'])), bowHat: L('mage', 'enchantress', eq('academy', ['hat'])), asura: L('sword', 'asura', eq('academy', ['hat', 'face'])),
+    ghostHat: L('sword', 'ghostblade', eq('sky2', ['hat', 'hair'])),
+  };
+  return res;
+});
+ok(!r1b.plain.length && !r1b.dup.length, '15 个转职的头部（发色 + 头饰）两两不同，也都和基础职业不同', JSON.stringify([r1b.plain, r1b.dup]));
+ok(!r1b.noArt.length && !r1b.noPos.length, '转职头饰都有图、都写了本职业（默认帽子 / 时装）的位置', JSON.stringify([r1b.noArt, r1b.noPos]));
+ok(!r1b.hairCls.length, '只给能分出头发的职业（鬼剑士 / 魔法师）写发色', JSON.stringify(r1b.hairCls));
+ok(!r1b.hairBad.length && ['blade', 'elemental'].every(j => r1b[j] && r1b[j].err < 0.12 && r1b[j].area > 0.04), `发色换上了：剑魂 ${JSON.stringify(r1b.blade)}、元素师 ${JSON.stringify(r1b.elemental)}`, JSON.stringify(r1b.hairBad));
+ok(r1b.blade && r1b.blade.y1 < 40, `鬼剑士只染头上（头发像素最低到头心下 ${r1b.blade && r1b.blade.y1} 像素，不染到衣领）`);
+const C = r1b.clash, has = (a, k) => a.includes(k);
+ok(!has(C.rangerHat, 'job_ranger_hat') && has(C.rangerHat, 'av_hat_academy') && has(C.rangerBare, 'job_ranger_hat') && has(C.rangerDefault, 'job_ranger_hat'), '时装帽子优先：戴学院帽 → 牛仔帽不画；只穿时装不戴帽 / 默认造型 → 牛仔帽照画');
+ok(has(C.paraHat, 'job_paramedic_headset') && has(C.paraHat, 'av_hat_academy'), '不挡帽子的头饰照画：协战师的耳机 + 学院帽');
+ok(!has(C.witchFace, 'job_witch_glasses') && has(C.witchFace, 'av_face_academy') && has(C.witch, 'job_witch_glasses'), '时装眼镜优先：戴学院眼镜 → 魔道学者的圆眼镜不画；只戴帽子时照画');
+ok(!has(C.bowHair, 'job_enchantress_bow') && has(C.bowHat, 'job_enchantress_bow'), '时装发饰优先：戴学院发饰 → 小魔女的蝴蝶结不画；只戴帽子时照画');
+ok(has(C.asura, 'job_asura_eyes') && !has(C.asura, 'av_face_academy') && has(C.asura, 'av_hat_academy'), '阿修罗的眼罩照旧压掉时装眼镜（帽子照戴）');
+ok(has(C.ghostHat, 'job_ghostblade_mask'), '剑影的面罩戴着龙角 + 发饰也照画');
 
 console.log('2. 状态特效跟着 BUFF 开关（全部转职）');
 const r2 = await page.evaluate(async () => {

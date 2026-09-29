@@ -84,6 +84,8 @@
 | 决斗平衡（18 职业 AI 循环赛，无渲染快进约 40 秒） | `node test/pvp_balance.mjs 8 all`；自动调 `PVP_JOB`：`node test/pvp_balance.mjs 6 all 4` |
 | 浮空 / 受身蹲伏定量测试 | `node test/juggle.mjs`（参数表 `JUGGLE`，docs/COMBAT_JUGGLE.md） |
 | 数据库备份 | `ssh cc 'sudo /opt/dawnbreak-server/backup.sh'`（每天 04:17 也会自动备份） |
+| 看玩家页面的逐帧报错（带堆栈，game.js `frameErr` 同一个错误每个页面报一次） | `sh tools/admin/admin.sh errs [条数]`；页面里查 `frameErrs` |
+| 组队深渊回归（2 页面满级狂战士 + 冷却 ×0.34，三种领主，测报错 / 没画出来的帧 / 卡死） | `node test/mp_abyss.mjs [A,B,C]`（约 1 分钟） |
 
 改完存档让玩家**刷新页面**，弹“存档冲突”时选**使用云端存档**。
 
@@ -102,6 +104,8 @@
 - **PIL 画中文**：用 `/System/Library/Fonts/STHeiti Medium.ttc`，PingFang.ttc 读不出中文字形。
 - **生图接口**：`~/.claude/skills/gpt-image` 已改成三家中转自动切换（首选两家各重试 3 次，最后 hyprlab 兜底），图生图走标准 `/images/edits`，不再受上传 5 次/分钟限制。
 - 批量跑运维命令：本机 shell 是 **zsh，不会按空格拆 `$a`**（`set -- $a` 得到的是一整个参数），参数会错位（2026-09-29 发满级券时物品 key 变成了数量）。批量就一条条写全参数，或用 `${=a}`；admin.sh / remote.js 已加参数校验。发完用只读查询核对 mail 表。
+
+- **组队主机上怪物的 `m.control` 是访问器**（net/coop.js hostMonster）：读出来是“选目标 + 调原 AI”的包装。要在原 AI 外面再包一层就读 `m.aiInner`；读 `m.control` 包进去 = 无限递归（2026-09-29 组队深渊第 2 轮领主降临后每帧爆栈、整帧不画，画面停在紫色闪光、地面告警特效堆到 5000+ 个发白）。单机测不出来，要用 `test/mp_abyss.mjs`。
 
 - **给全局函数加参数要查包装层**：`itemTipOne` 被 game/vanity.js 包了一层（`one0(it, cur, head)`），新加的参数会被吞掉；`equipTotals` / `recalcStats` 也分别被公会、决斗包过。改签名前先 `grep -rn "= 函数名\|函数名 = "`。
 - **按别人的数据算属性**（查看信息，ui/social/inspect.js 的 `inspectCalc`）：recalcStats 读的是全局（game.lvl / job、inv.equip、save.data 的图鉴、GD.data 的公会技能），临时换成对方的、try/finally 换回；换之前先 `inv.ensure()`，并把 `inv._normEq` 一起换，否则 ensure 会把对方的装备塞进自己背包。

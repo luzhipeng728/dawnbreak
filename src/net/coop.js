@@ -207,6 +207,7 @@ const coop = {
     const C = this, upd = m.update;
     // AI：每次都先在全队活着的人里选目标，AI 执行期间 game.player 临时换成目标。
     // 用访问器包住 control：生成之后再换 AI 的怪（龙之雕像 m.control = skyStatueAI 等）也照样走这一层，不会只盯着队长
+    // 想在原 AI 外面再包一层的代码要读 m.aiInner：读 m.control 拿到的是这层包装，包进新 AI 里会“包装 → 新 AI → 包装”无限递归（深渊领主踩过）
     let ctl = m.control;
     const wrapped = function (e, dt) { const P = game.player, tg = C.pickTarget(e); if (tg) game.player = tg; try { if (ctl) ctl(e, dt); } finally { game.player = P; } };
     Object.defineProperty(m, 'control', { configurable: true, enumerable: true, get() { return ctl ? wrapped : null; }, set(f) { ctl = f; } });

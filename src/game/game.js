@@ -34,8 +34,8 @@ function step(dt) {
   }
   if (game.scene === 'dungeon' || game.scene === 'test') {
     for (const e of ents) if (e.fighter && e !== p) tickFighter(e, dt);   // AI / 网络格斗者：冷却、MP、BUFF
-    for (const e of ents) if (e.control && e.hitstop <= 0 && !(game.dungeon && game.dungeon.transition)) e.control(e, dt);
-    for (const e of ents) { e.update(dt); if (e.status && !e.dead) updateStatus(e, dt); }
+    for (const e of ents) if (e.control && e.hitstop <= 0 && !(game.dungeon && game.dungeon.transition)) { try { e.control(e, dt); } catch (err) { frameErr('control:' + (e.kind || e.cls || '?'), err); } }   // 一个实体出错不拖垮整帧
+    for (const e of ents) { try { e.update(dt); if (e.status && !e.dead) updateStatus(e, dt); } catch (err) { frameErr('update:' + (e.kind || e.cls || '?'), err); } }
     resolveHits();
     updateProjs(dt);
     updateGroundFx(dt);
@@ -105,7 +105,19 @@ function frame(now) {
   requestAnimationFrame(frame);   // 先排下一帧：即使本帧出错，游戏也不会整个卡死
   if (now - lastFrameT < 11) return;   // 最多 60 帧：120Hz 高刷屏（ProMotion）上隔一帧画一次，GPU 负载减半（逻辑本来就是固定 60Hz 步长）
   lastFrameT = now;
-  try { frameBody(now); } catch (e) { console.error(e); }
+  try { frameBody(now); } catch (e) { frameErr('frame', e); }
+}
+// 逐帧出错的安全网：实体 / 逻辑步 / 渲染 / 界面各自兜住，出错的部分跳过、其余照常跑和画（以前一个怪的 AI 每帧抛错 = 整帧不画，画面卡死）
+// 不吞错误：同一个错误（位置 + 消息 + 第一行堆栈）第一次出现时 console.error 完整堆栈并上报服务端（/api/cerr → client_err 表），之后只计数；页面里查 frameErrs
+const frameErrs = [];
+function frameErr(where, e) {
+  const msg = String((e && e.message) || e), stack = String((e && e.stack) || ''), key = where + '|' + msg + '|' + (stack.split('\n')[1] || '');
+  const r = frameErrs.find(x => x.key === key);
+  if (r) { r.n++; r.last = Date.now(); return; }
+  const dg = game.dungeon, info = { scene: game.scene, dungeon: dg && dg.def ? dg.def.id : null, room: dg && dg.room ? dg.room.gx + ',' + dg.room.gy : null, coop: typeof coop !== 'undefined' ? coop.role : null, ents: ents.length, fx: fxList.length };
+  frameErrs.push({ key, where, msg, stack: stack.slice(0, 3000), n: 1, first: Date.now(), last: Date.now(), info });
+  console.error(`[逐帧出错] ${where}`, e);
+  if (frameErrs.length <= 20 && typeof net !== 'undefined' && net.token) net.api('POST', '/api/cerr', { where, msg: msg.slice(0, 300), stack: stack.slice(0, 3000), info, ver: typeof BUILD_ID !== 'undefined' ? BUILD_ID : '' }).catch(() => { /* 上报失败不影响游戏 */ });
 }
 function frameBody(now) {
   const rdt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
@@ -115,11 +127,16 @@ function frameBody(now) {
   if (!game.paused && !blocked) {
     acc += rdt * (game.slowmo ? 0.35 : 1) * (game.speedMul || 1);
     let n = 0;
-    while (acc >= 1 / 60 && n < 5) { step(1 / 60); acc -= 1 / 60; n++; }
+    try { while (acc >= 1 / 60 && n < 5) { step(1 / 60); acc -= 1 / 60; n++; } } catch (e) { frameErr('step', e); acc = 0; input.endFrame(); }
     if (n === 5) acc = 0;
   } else { if (bot.on) bot.tick(rdt); if (touch.on) touch.tick(); input.frame(game.t); if (game.onPausedFrame) game.onPausedFrame(); input.endFrame(); }
-  renderWorld();
-  ui.draw();
+  try { renderWorld(); } catch (e) { frameErr('render', e); canvasUnwind(wctx); }
+  try { ui.draw(); } catch (e) { frameErr('ui', e); canvasUnwind(uctx); }
+}
+// 画到一半出错：c.save() 没有配对的 restore()，叠加模式 / 透明度会漏到后面的帧（整屏发白）。多 restore 几次（空栈时是空操作）再复位
+function canvasUnwind(c) {
+  for (let i = 0; i < 64; i++) c.restore();
+  c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.filter = 'none'; c.shadowBlur = 0;
 }
 /* ---- 测试房间（?test）：暮色林地 + 一群哥布林 ---- */
 function startTestRoom() {

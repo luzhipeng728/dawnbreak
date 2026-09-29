@@ -9,6 +9,7 @@
 #   sh tools/admin/admin.sh maxout <账号> '' <点券> '职业:转职:等级:max|normal:名字,...'   新建角色（只处理新建的）
 #       例：sh tools/admin/admin.sh maxout luzhipeng '' 999999 'sword:berserker:30:max:血狱狂战,sword:berserker:20:normal:狂战练级'
 #       做完让玩家刷新页面；弹“存档冲突”时选“使用云端存档”
+#   sh tools/admin/admin.sh errs [条数]                              客户端逐帧出错上报（带堆栈，最新的在前）
 set -e
 cd "$(dirname "$0")/../.."
 HOST=cc DB=/opt/dawnbreak-server/data/dawnbreak.db NODE=/opt/dawnbreak-server/runtime/bin/node
@@ -18,6 +19,7 @@ R() { ssh $HOST "$NODE --disable-warning=ExperimentalWarning /tmp/dnf-remote.js 
 RW() { ssh $HOST "sudo /opt/dawnbreak-server/backup.sh && sudo -u dawnbreak $NODE --disable-warning=ExperimentalWarning /tmp/dnf-remote.js $DB $*"; }
 case "$1" in
   users) R users ;;
+  errs) R errs "${2:-30}" ;;
   cera)
     left=$3
     while [ "$left" -gt 0 ]; do n=$left; [ $n -gt 10000000 ] && n=10000000; RW mail "$2" $n; left=$((left - n)); done ;;

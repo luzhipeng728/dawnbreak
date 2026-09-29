@@ -6,9 +6,10 @@
 //   node remote.js <db> item <账号> <物品key> <数量> [标题]  发管理员邮件（物品，按物品库 key，领取时生成；数量 1~9999）
 //   node remote.js <db> items <账号> <key@强化,key@强化,…> [标题]  一封邮件发多件装备（最多 5 件，强化 0~16）
 //   node remote.js <db> put <账号> <json 文件> <why>    写回云存档（角色必须和下载时一致，否则拒绝）
+//   node remote.js <db> errs [条数=30]                 客户端逐帧出错上报（client_err 表，最新的在前）
 const { DatabaseSync } = require('node:sqlite'); const fs = require('fs'); const crypto = require('crypto');
 const [db0, cmd, a1, a2, a3] = process.argv.slice(2);
-const db = new DatabaseSync(db0, { readOnly: cmd === 'users' || cmd === 'dump' });
+const db = new DatabaseSync(db0, { readOnly: cmd === 'users' || cmd === 'dump' || cmd === 'errs' });
 const user = n => { const u = db.prepare('SELECT id, name FROM users WHERE name = ?').get(n); if (!u) { console.error('没有这个账号：' + n); process.exit(1); } return u; };
 if (cmd === 'users') {
   for (const u of db.prepare('SELECT u.id, u.name, u.created, s.data FROM users u LEFT JOIN saves s ON s.user_id = u.id ORDER BY u.id').all()) {
@@ -46,4 +47,6 @@ if (cmd === 'users') {
   db.prepare('UPDATE saves SET data = ?, updated_at = ?, size = ? WHERE user_id = ?').run(text, t, text.length, u.id);
   db.exec('COMMIT');
   console.log(`已写回 ${u.name} 的云存档：`, data.chars.map(c => `${c.name} ${c.cls}/${c.job} Lv${c.lvl}`).join('、'), '点券', data.acct && data.acct.cera);
+} else if (cmd === 'errs') {
+  for (const e of db.prepare('SELECT * FROM client_err ORDER BY id DESC LIMIT ?').all(+(a1 || 30))) console.log(`#${e.id} ${new Date(e.at).toISOString().slice(0, 19)} ${e.user_name} [${e.place}] ${e.msg} ${e.info} ver=${e.ver}\n  ${e.stack.split('\n').slice(1, 6).join('\n  ')}`);
 } else { console.error('用法见文件开头'); process.exit(1); }

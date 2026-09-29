@@ -89,6 +89,7 @@ run mpduel    node test/mp_duel.mjs
 run duellag   env MAXMS=33 node test/mp_duel_lag.mjs 4 0,120   # 决斗：对方按键到自己出招（本地模拟，往返 120ms 下 ≤ 33ms）、不重播、位置一致
 run arena     node test/arena.mjs
 run mpmore    node test/mp_coop_more.mjs
+run mpabyss   node test/mp_abyss.mjs   # 组队深渊：满级狂战士 + 冷却 ×0.34 打完两轮和三种深渊领主，两边不报错、每帧都画；逐帧出错安全网
 run mprestart node test/mp_restart.mjs
 run findfriend node test/findfriend.mjs
 run partyhud  node test/mp_party_hud.mjs

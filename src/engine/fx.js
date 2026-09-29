@@ -5,9 +5,15 @@
 const fxList = [];
 const numList = [];
 function addFx(f) { f.t = 0; fxList.push(f); return f; }
+// 同屏特效预算：冷却很短时两三个人一起放大范围技能，特效会堆到几百个——超出上限先去掉最早的；发光特效多了整体调暗，免得叠加成一片白、也免得卡
+const FX_CAP = 240, NUM_CAP = 110;
+let FX_DIM = 1;
 function updateFx(dt) {
   for (let i = fxList.length - 1; i >= 0; i--) { const f = fxList[i]; f.t += dt; if (f.update) f.update(dt); if (f.t >= f.dur) fxList.splice(i, 1); }
   for (let i = numList.length - 1; i >= 0; i--) { const n = numList[i]; n.t += dt; if (n.t >= n.dur) numList.splice(i, 1); }
+  if (fxList.length > FX_CAP) fxList.splice(0, fxList.length - FX_CAP);
+  if (numList.length > NUM_CAP) numList.splice(0, numList.length - NUM_CAP);
+  FX_DIM = fxList.length > 70 ? Math.max(0.4, 70 / fxList.length) : 1;
 }
 
 /* ---- 手绘特效素材：fx/<名字>；发光类用“叠加”混合绘制，可按颜色换色 ---- */
@@ -24,7 +30,7 @@ function fxTint(name, col) {
 function drawSpr(c, img, x, y, w, h, o = {}) {
   if (typeof img === 'string') img = IMG['fx/' + img]; if (!img) return;
   if (!h) h = w * img.height / img.width; if (!w) w = h * img.width / img.height;
-  c.save(); if (o.add !== false) c.globalCompositeOperation = 'lighter'; if (o.alpha !== undefined) c.globalAlpha *= clamp(o.alpha, 0, 1);
+  c.save(); if (o.add !== false) { c.globalCompositeOperation = 'lighter'; c.globalAlpha *= FX_DIM; } if (o.alpha !== undefined) c.globalAlpha *= clamp(o.alpha, 0, 1);
   c.translate(x, y);
   if (o.ground) { c.scale(1, h / w); if (o.rot) c.rotate(o.rot); c.drawImage(img, -w / 2, -w / 2, w, w); c.restore(); return; }   // 平躺在地面的法阵：在地面平面里转，再按透视压扁（不会像立着的圆盘那样原地转）
   if (o.rot) c.rotate(o.rot); if (o.flip) c.scale(-1, 1);

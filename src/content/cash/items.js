@@ -7,9 +7,10 @@
 const CASH_SLOTS = ['av_weapon', 'av_aura', 'av_pet', 'av_petR', 'av_petB', 'av_petG'];
 SLOTS.push(...CASH_SLOTS.filter(s => !SLOTS.includes(s)));
 Object.assign(SLOT_NAME, { av_weapon: '武器装扮', av_aura: '光环', av_pet: '宠物', av_petR: '红色宠物装备', av_petB: '蓝色宠物装备', av_petG: '绿色宠物装备' });
-// 个人信息 → 时装页：左右两列各多一格（武器装扮 / 光环）；宠物有自己的窗口（pet）
+// 个人信息 → 时装页：左右两列各多一格（武器装扮 / 光环），下面一排宠物 + 宠物装备（宠物另外还有自己的窗口 pet）
 if (typeof AV_LEFT !== 'undefined' && !AV_LEFT.includes('av_weapon')) AV_LEFT.push('av_weapon');
 if (typeof AV_RIGHT !== 'undefined' && !AV_RIGHT.includes('av_aura')) AV_RIGHT.push('av_aura');
+if (typeof AV_BOTTOM !== 'undefined') for (const s of ['av_pet', 'av_petR', 'av_petB', 'av_petG']) if (!AV_BOTTOM.includes(s)) AV_BOTTOM.push(s);   // 个人信息的时装页：宠物 + 宠物装备一排
 
 /* ---- 货币（计数型：进背包时直接加余额，不占格子；见 game/shop.js 的 inv.add 包装） ---- */
 defineItem('cera', { kind: 'use', name: '点券', rar: 3, price: 1, noSell: true, cash: true, cashIcon: 'cera', desc: '破晓商城的通用货币。获得后自动存入点券余额。' });

@@ -24,7 +24,7 @@ g5() { for t in paramedic witch spitfire mechanic; do run 5 $t node test/$t.mjs;
 g6() { run 6 serverapi node server/test/api.mjs; run 6 restore node --disable-warning=ExperimentalWarning server/test/restore.mjs; run 6 arenasrv node --disable-warning=ExperimentalWarning server/test/arena.mjs
   run 6 netacct node test/net_account.mjs; run 6 svcapi node test/svc_api.mjs; run 6 svcplay node test/svc_play.mjs
   run 6 mptown node test/mp_town.mjs; run 6 mpcoop node test/mp_coop.mjs 2; run 6 mpmore node test/mp_coop_more.mjs
-  run 6 findfriend node test/findfriend.mjs; run 6 partyhud node test/mp_party_hud.mjs; }
+  run 6 findfriend node test/findfriend.mjs; run 6 partyhud node test/mp_party_hud.mjs; run 6 inspect node test/inspect.mjs; }
 t0=$(date +%s)
 g1 & g2 & g3 & g4 & g5 & g6 & wait
 cat $LOG/summary-[1-6].txt | tee $LOG/summary.txt

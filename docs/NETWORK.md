@@ -32,6 +32,7 @@
   | `POST /api/friends {user}` | 发送好友申请 |
   | `POST /api/friends/accept {user}` | 同意好友申请 |
   | `DELETE /api/friends/:user` | 删除好友 |
+  | `GET /api/inspect/:uid?cid=&char=` | 查看别人（server/modules/inspect.js）：只返回一个角色的公开字段——名字 / 职业 / 转职 / 等级 / cid、装备（白名单字段）、图鉴登记的 key、公会名 / 等级 / 已解锁公会技能；不返回金币、点券、背包、仓库、金库、任务、账号信息 |
 
 - **客户端存档**：`save.js` 由主线程授权服务端组改动。
   - 登录后以云端为准，写存档时防抖（2 秒）上传。

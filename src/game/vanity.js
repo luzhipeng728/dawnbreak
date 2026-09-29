@@ -240,9 +240,9 @@ for (const id in (typeof CASH_SETS !== 'undefined' ? CASH_SETS : {})) {
   B.desc = `${B.desc || ''}；城镇移动速度 +${Math.round(VANITY_TOWN.set8[rare ? 'rare' : 'adv'] * 100)}%（每件另有 +${Math.round((rare ? VANITY_TOWN.rarePiece : VANITY_TOWN.piece) * 100)}%，8 件合计 +${Math.round((VANITY_TOWN.set8[rare ? 'rare' : 'adv'] + 8 * (rare ? VANITY_TOWN.rarePiece : VANITY_TOWN.piece)) * 100)}%）`;
 }
 // 状态窗口的一行
-function vanityStatusLine() {
-  inv.ensure(); const v = vanityTownSpd(inv.equip), n = AV_SLOTS.filter(s => inv.equip[s]).length;
-  const sky = typeof cashLook === 'function' ? cashLook(inv.equip).sky8 : null;
+function vanityStatusLine(eq = inv.equip) {
+  inv.ensure(); const v = vanityTownSpd(eq), n = AV_SLOTS.filter(s => eq[s]).length;
+  const sky = typeof cashLook === 'function' ? cashLook(eq).sky8 : null;
   return h('div', {}, '城镇移动速度：', h('b', { class: 'gold' }, `+${Math.round(v * 100)}%`),
     h('span', { class: 'dim' }, v ? `（装扮 ${n} 件${sky ? ` · ${CASH_SETS[sky].name} 8 件` : ''}，只在城镇生效）` : '（每件装扮 +2%，集齐 8 件高级装扮 / 天空套加得更多；只在城镇生效）'));
 }
@@ -261,7 +261,7 @@ function vanityTipDecorate(el, it) {
     el.append(h('div', { class: 'sec vtown' }, `城镇移动速度 +${Math.round(v * 100)}%（只在城镇生效）`));
   }
 }
-{ const one0 = itemTipOne; itemTipOne = function (it, cur, head) { const el = one0(it, cur, head); try { vanityTipDecorate(el, it); } catch (e) { console.error('光效提示', e); } return el; }; }
+{ const one0 = itemTipOne; itemTipOne = function (it, cur, head, who) { const el = one0(it, cur, head, who); try { vanityTipDecorate(el, it); } catch (e) { console.error('光效提示', e); } return el; }; }
 addStyle(`#itip .nm.vglow{filter:drop-shadow(0 0 .22em var(--vg))}#itip .nm.vglow2{animation:vglow 1.4s ease-in-out infinite}
 @keyframes vglow{50%{filter:drop-shadow(0 0 .45em var(--vg)) drop-shadow(0 0 .12em #fff)}}#itip .vglowl{font-weight:700}#itip .vtown{color:#9fe8ff}`);
 

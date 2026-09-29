@@ -186,6 +186,8 @@ ui/social/rank.js
 ui/social/signin.js
 ui/social/gm.js
 ui/social/guild.js
+# 查看其他玩家（好友 / 玩家菜单 / 排行榜 / 公会 / 队伍）：复用 ui/items/status.js 的 statusBody；服务端 server/modules/inspect.js
+ui/social/inspect.js
 ui/social/achieve.js
 # 在线更新：发现新版本提示、存档后刷新、刷新后回到原来的位置（依赖存档 / 云存档 / 队伍 / 聊天 / 决斗 / 组队；启动流程 game/flow.js 的 boot 调用）
 net/liveupdate.js

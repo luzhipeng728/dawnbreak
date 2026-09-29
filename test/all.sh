@@ -91,4 +91,5 @@ run mpmore    node test/mp_coop_more.mjs
 run mprestart node test/mp_restart.mjs
 run findfriend node test/findfriend.mjs
 run partyhud  node test/mp_party_hud.mjs
+run inspect   node test/inspect.mjs
 echo; cat $LOG/summary.txt

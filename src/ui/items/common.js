@@ -116,8 +116,9 @@ function itemTypeName(it) {
   }
   return { use: '消耗品', mat: '材料', quest: '任务道具' }[it.kind] || '';
 }
-function itemTipOne(it, cur, head) {
-  const D = ITEMS[it.key] || {}, r = it.rar || 0, R = RARITY[r], p = game.player;
+function itemTipOne(it, cur, head, who) {
+  const D = ITEMS[it.key] || {}, r = it.rar || 0, R = RARITY[r];
+  const W = who || { lvl: game.lvl, cls: game.player && game.player.cls, job: game.job, equip: inv.equip, codex: save.data && save.data.codex };   // 查看别人（ui/social/inspect.js）时按对方的等级 / 职业 / 装备 / 图鉴
   const el = h('div', { class: `itip r${r}` });
   if (head) el.append(h('div', { class: 'cur' }, head));
   const tag = it.kind === 'equip' && r >= 3 ? h('span', { class: `tag r${r}${D.abyss ? ' abyss' : ''}` }, D.abyss ? '深渊' : D.set && r === 5 ? '史诗套装' : R.name) : null;
@@ -127,9 +128,9 @@ function itemTipOne(it, cur, head) {
     it.kind === 'equip' && it.grade != null ? h('div', { class: 'gr' }, GRADES[it.grade]) : null));
   if (it.kind === 'equip') {
     const s1 = h('div', { class: 'sec' });
-    s1.append(h('div', { class: it.lvl > game.lvl ? 'bad' : '' }, `Lv.${it.lvl} 以上可以使用`));
-    if (it.slot === 'weapon' && it.cls) s1.append(h('div', { class: p && it.cls !== p.cls ? 'bad' : '' }, `${CLASSES[it.cls] ? CLASSES[it.cls].name : it.cls}专用`));
-    if (it.atype && ARMOR_SLOTS.includes(it.slot)) { const m = p && masteryOf(p.cls, game.job) === it.atype; s1.append(h('div', {}, `${ATYPES[it.atype].name}`, h('span', { class: m ? 'good' : it.atype === 'heavy' || it.atype === 'plate' ? 'bad' : 'dimt' }, m ? '（精通：有额外加成）' : it.atype === 'heavy' || it.atype === 'plate' ? '（非精通：攻速 / 施放 / MP 恢复略微降低）' : '（非精通）'))); }
+    s1.append(h('div', { class: it.lvl > W.lvl ? 'bad' : '' }, `Lv.${it.lvl} 以上可以使用`));
+    if (it.slot === 'weapon' && it.cls) s1.append(h('div', { class: W.cls && it.cls !== W.cls ? 'bad' : '' }, `${CLASSES[it.cls] ? CLASSES[it.cls].name : it.cls}专用`));
+    if (it.atype && ARMOR_SLOTS.includes(it.slot)) { const m = W.cls && masteryOf(W.cls, W.job) === it.atype; s1.append(h('div', {}, `${ATYPES[it.atype].name}`, h('span', { class: m ? 'good' : it.atype === 'heavy' || it.atype === 'plate' ? 'bad' : 'dimt' }, m ? '（精通：有额外加成）' : it.atype === 'heavy' || it.atype === 'plate' ? '（非精通：攻速 / 施放 / MP 恢复略微降低）' : '（非精通）'))); }
     if (it.slot === 'weapon' && WTYPES[it.wtype]) { const T = WTYPES[it.wtype]; s1.append(h('div', {}, `攻击速度：${T.spd}`, T.aspd ? h('span', { class: T.aspd > 0 ? 'good' : 'bad' }, `（${T.aspd > 0 ? '+' : ''}${Math.round(T.aspd * 100)}%）`) : null, T.elem ? h('span', { class: 'enh' }, `　附带${{ fire: '火', ice: '冰', light: '光', dark: '暗' }[T.elem]}属性攻击`) : null)); }
     if (it.durMax) { const low = it.dur <= it.durMax * 0.2; s1.append(h('div', { class: it.dur <= 0 ? 'bad' : '' }, `耐久度 ${it.dur}/${it.durMax}`, h('span', { class: 'durbar' + (low ? ' low' : '') }, h('i', { style: `width:${Math.round(it.dur / it.durMax * 100)}%` })), it.dur <= 0 ? '　属性失效，请修理' : null)); }
     s1.append(h('div', { class: 'bindl' + (itemBind(it) ? '' : ' free') }, itemBindText(it)));
@@ -158,7 +159,7 @@ function itemTipOne(it, cur, head) {
     }
     if (D.proc) for (const P of [].concat(D.proc)) if (P && P.desc) el.append(h('div', { class: 'proc' }, h('b', {}, `${r >= 5 ? '专属特效' : '特效'}${P.name ? '【' + P.name.replace(/！$/, '') + '】' : ''}：`), P.desc));
     if (it.set && SETS[it.set]) {
-      const S = SETS[it.set], own = new Set(SLOTS.map(s => inv.equip[s]).filter(x => x && x.set === it.set && itemActive(x)).map(x => x.key));
+      const S = SETS[it.set], own = new Set(SLOTS.map(s => W.equip[s]).filter(x => x && x.set === it.set && itemActive(x)).map(x => x.key));
       const s4 = h('div', { class: 'sec set' }, h('div', { style: 'font-weight:900' }, `${S.name}（${own.size}/${S.pieces.length}）`));
       for (const k of S.pieces) s4.append(h('div', { class: own.has(k) ? '' : 'off', style: 'padding-left:.6em;font-size:.9em' }, (ITEMS[k] || {}).name || k));
       for (const n in S.bonus) { const B = S.bonus[n], P = B.proc && [].concat(B.proc).find(x => x && x.desc); s4.append(h('div', { class: own.size >= +n ? '' : 'off' }, `[${n} 件套] ${B.desc || Object.keys(B.st || {}).map(k => statLine(k, B.st[k])).join('，')}${P && !(B.desc || '').includes(P.desc) ? '；' + P.desc : ''}`)); }
@@ -176,7 +177,7 @@ function itemTipOne(it, cur, head) {
   if (it.kind === 'equip' && it.desc) el.append(h('div', { class: 'sec desc' }, it.desc));
   if (D.orb) el.append(h('div', { class: 'sec orb' }, `可附魔：${orbOnText(D.orb.on)}`, h('br'), Object.keys(D.orb.st).map(k => statLine(k, D.orb.st[k])).join('，'), h('div', { class: 'dimt', style: 'font-size:.85em' }, '右键打开附魔窗口')));
   const srcTxt = itemSourceText(it.key); if (srcTxt) el.append(h('div', { class: 'sec src' }, '获取途径：' + srcTxt));
-  const coded = !!(save.data && save.data.codex && save.data.codex[it.key]);
+  const coded = !!(W.codex && W.codex[it.key]);
   if (it.kind === 'equip' && !isAvatar(it)) el.append(h('div', { class: 'sec scorel' }, h('span', {}, '装备评分 ', h('b', {}, fmtNum(itemScore(it)))), codexWorthy(it) ? h('span', { class: coded ? 'good' : 'dimt' }, coded ? '图鉴已登记' : '图鉴未登记') : null));
   const sp = sellPrice(it);
   el.append(h('div', { class: 'sec price' }, canSell(it) ? `出售价格 ${fmtNum(sp)} G` : '不能出售'));
@@ -185,7 +186,7 @@ function itemTipOne(it, cur, head) {
 // 官方风格 tooltip：背包里的装备会并排显示“当前装备”方便对比
 function itemTip(it, opt = {}) {
   const cur = it.kind === 'equip' && opt.cmp !== false ? inv.equip[it.slot] : null;
-  const main = itemTipOne(it, cur);
+  const main = itemTipOne(it, cur, null, opt.who);
   const sum = it.kind === 'equip' && opt.cmp !== false && typeof equipCompareTip === 'function' ? equipCompareTip(it) : null;   // 换上后综合 ▲x%（输出 / 生存）
   if (sum) main.insertBefore(sum, main.firstChild);
   if (!cur || cur === it) return main;
@@ -214,14 +215,14 @@ const ptrOverWindow = () => { const el = document.elementFromPoint(lastPtr.x, la
 // 旧接口：返回 HTML 字符串
 menus.itemTip = it => itemTip(it).outerHTML;
 /* ---- 物品格子 ---- */
-// opt：{ onClick(ev), onRight(ev), onDbl(ev), drag: () => payload, drop: { accept, drop }, sel, chk, label, cmp, dim, quick }
+// opt：{ onClick(ev), onRight(ev), onDbl(ev), drag: () => payload, drop: { accept, drop }, sel, chk, label, cmp, dim, quick, who（查看别人：{ lvl, cls, job, equip, codex }） }
 function itemSlot(it, opt = {}) {
   const cls = ['islot'];
   if (!it) cls.push('empty');
   else {
     cls.push('q' + (it.rar || 0));
     if (it.kind === 'equip' && it.durMax && it.dur <= 0) cls.push('broken');
-    if (it.kind === 'equip' && it.lvl > game.lvl) cls.push('req');
+    if (it.kind === 'equip' && it.lvl > (opt.who ? opt.who.lvl : game.lvl)) cls.push('req');
   }
   if (opt.sel) cls.push('sel'); if (opt.chk) cls.push('chk'); if (opt.dim) cls.push('dim');
   const el = h('div', { class: cls.join(' ') });
@@ -230,12 +231,12 @@ function itemSlot(it, opt = {}) {
     if (it.n > 1) el.append(h('span', { class: 'n' }, it.n > 9999 ? '9999+' : String(it.n)));
     if (it.enh) el.append(h('span', { class: 'e' + (it.dim ? ' amp' : '') }, '+' + it.enh));   // 增幅（红字）显示成红色
     if (opt.quick && it.kind === 'use') { const qi = inv.quick.indexOf(it.key); if (qi >= 0) el.append(h('span', { class: 'qk' }, String(qi + 1))); }
-    if (it.kind === 'equip' && typeof setSlotDecor === 'function') setSlotDecor(el, it, opt.worn);   // 套装：绿框 + 件数角标
+    if (it.kind === 'equip' && typeof setSlotDecor === 'function') setSlotDecor(el, it, opt.worn, opt.who && opt.who.equip);   // 套装：绿框 + 件数角标
     if ((opt.quick || opt.cmp === true) && it.kind === 'equip' && typeof equipCompareBadge === 'function') { const b = equipCompareBadge(it); if (b) { el.append(b); if (b.classList.contains('up')) el.classList.add('better'); } }   // ▲▼ 比身上的好 / 差
-    el.addEventListener('mousemove', ev => { if (!dnd.cur) showItemTip(it, ev, { cmp: opt.cmp }); });
+    el.addEventListener('mousemove', ev => { if (!dnd.cur) showItemTip(it, ev, { cmp: opt.cmp, who: opt.who }); });
     el.addEventListener('mouseleave', () => hideItemTip());
     let lp = null;   // 触屏长按看说明
-    el.addEventListener('touchstart', ev => { const t = ev.touches[0]; lp = setTimeout(() => showItemTip(it, t, { cmp: opt.cmp }), 450); }, { passive: true });
+    el.addEventListener('touchstart', ev => { const t = ev.touches[0]; lp = setTimeout(() => showItemTip(it, t, { cmp: opt.cmp, who: opt.who }), 450); }, { passive: true });
     el.addEventListener('touchend', () => { clearTimeout(lp); setTimeout(() => hideItemTip(), 1500); });
   } else if (opt.label) el.append(h('span', { class: 'lbl' }, opt.label));
   if (opt.onClick) el.addEventListener('click', ev => { if (el._dndJustDropped) return; opt.onClick(ev); });

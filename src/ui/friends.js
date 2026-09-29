@@ -1,5 +1,5 @@
 /* =====================================================================
-   好友：好友列表窗口（在线状态、在哪、前往 / 私聊 / 邀请组队 / 决斗 / 删除）、好友申请、按名字加好友
+   好友：好友列表窗口（在线状态、在哪、查看信息 / 前往 / 私聊 / 邀请组队 / 决斗 / 删除）、好友申请、按名字加好友
    玩家菜单：城镇里点其他玩家（或好友列表 / 队伍窗口里的名字）弹出：查看信息、私聊、加好友、邀请组队、发起决斗
    ===================================================================== */
 const netFriends = {
@@ -64,6 +64,7 @@ Object.assign(menus, {
         h('div', { class: 'col', style: 'gap:0;min-width:0;flex:1' },
           h('span', {}, h('b', { class: 'frname', onclick: ev => netPlayerMenu({ id: f.id, name: f.name, char: f.char }, ev) }, f.name), f.char ? h('span', { class: 'small dim' }, '  ' + netCharLine(f.char)) : null),
           h('span', { class: 'small', style: `color:${f.online ? '#8aff9a' : '#8a8a8a'}` }, where)),
+        h('button', { class: 'btn', title: '查看装备 / 时装 / 属性', onclick: () => { sfx.click(); netInspect({ id: f.id, name: f.name, char: f.char }); } }, '查看'),
         f.online && f.scene && SCENES[f.scene] ? h('button', { class: 'btn', style: 'border-color:#ffd23a;color:#ffe070', title: '自动走到好友身边（按方向键取消；聊天里也可以用 /找 名字）', onclick: () => { sfx.click(); if (guide.goFriend(f)) this.close('friends'); } }, '前往') : null,
         f.online ? h('button', { class: 'btn', title: '私聊', onclick: () => chat.whisper(f.name) }, '私聊') : null,
         f.online ? h('button', { class: 'btn', title: '邀请组队', onclick: () => netPartyInvite(f.id, f.name) }, '组队') : null,
@@ -83,7 +84,7 @@ Object.assign(menus, {
     const body = h('div', { class: 'col pmenu' },
       p.char ? h('div', { class: 'small', style: 'text-align:center;color:#ffe8a8' }, netCharLine(p.char)) : null,
       h('div', { class: 'small dim', style: 'text-align:center' }, `账号 ${p.name}${friend ? ' · 好友' : ''}${inParty ? ' · 队友' : ''}`),
-      B('查看信息', () => this.show('pinfo', p)),
+      B('查看信息', () => netInspect(p)),   // 装备 / 时装 / 属性（ui/social/inspect.js）
       B('私聊', () => chat.whisper(p.name)),
       friend ? null : B('加为好友', () => netFriends.add(p.name)),
       inParty ? null : B('邀请组队', () => netPartyInvite(p.id, p.name)),
@@ -91,24 +92,6 @@ Object.assign(menus, {
       lead ? B('请离队伍', () => net.send({ t: 'party:kick', id: p.id }), 'red') : null,
       B('发起决斗', () => netDuelAsk(p)));
     return this.win(p.char ? p.char.name : p.name, body, { w: 12, drag: false });
-  },
-  w_pinfo(p) {
-    if (!p) return null;
-    const ch = p.char, box = h('div', { class: 'row', style: 'gap:1em;align-items:flex-start' });
-    if (ch && typeof avatarCanvas === 'function') { const cv = avatarCanvas(ch.cls, ch.look, 150, 200, 1.6); cv.className = 'pinfocv'; box.append(cv); }
-    const J = ch && ch.job && CLASSES[ch.cls] && CLASSES[ch.cls].jobs && CLASSES[ch.cls].jobs[ch.job];
-    const info = h('div', { class: 'col', style: 'gap:.3em' },
-      h('div', { style: 'font-size:1.3em;font-weight:900;color:#ffe8a8' }, ch ? ch.name : p.name),
-      ch ? h('div', {}, `Lv.${ch.lvl} ${CLASSES[ch.cls] ? CLASSES[ch.cls].name : ''}${J ? ' · ' + J.name : ''}`) : null,
-      h('div', { class: 'small dim' }, `账号：${p.name}`),
-      h('div', { class: 'small' }, netFriends.isFriend(p.id) ? '好友' : '', netParty.has(p.id) ? ' 队友' : ''),
-      h('div', { class: 'row', style: 'gap:.4em;margin-top:.5em;flex-wrap:wrap' },
-        h('button', { class: 'btn', onclick: () => chat.whisper(p.name) }, '私聊'),
-        netFriends.isFriend(p.id) ? null : h('button', { class: 'btn', onclick: () => netFriends.add(p.name) }, '加好友'),
-        netParty.has(p.id) ? null : h('button', { class: 'btn', onclick: () => netPartyInvite(p.id, p.name) }, '组队'),
-        h('button', { class: 'btn', onclick: () => netDuelAsk(p) }, '决斗')));
-    box.append(info);
-    return this.win('玩家信息', box, { w: 26 });
   },
 });
 // 在鼠标位置弹出玩家菜单
@@ -129,5 +112,4 @@ addStyle(`
 .frrow .frname{cursor:pointer}.frrow .frname:hover{text-decoration:underline}
 .frrow:not(.on){opacity:.75}
 .pmenu{gap:.35em}.pmenu .btn{padding:.35em .8em}
-.pinfocv{width:9em;height:12em;background:radial-gradient(ellipse at 50% 80%,rgba(255,220,150,.15),rgba(0,0,0,0) 70%);border-radius:.3em}
 `);

@@ -5,6 +5,7 @@
 addStyle(`
 .sxrank .rtop{display:flex;gap:.5em;align-items:center;flex-wrap:wrap}
 .sxrank .rlist{height:22em}
+.sxrank .rkname{cursor:pointer}.sxrank .rkname:hover{text-decoration:underline;color:#ffe070}
 .sxrank .mine{font-size:.88em;color:#ffe8a8;background:rgba(255,210,60,.08);border:.08em solid #6a5436;border-radius:.25em;padding:.3em .6em}
 `);
 const SX_BOARDS = [['lvl', '等级'], ['score', '装备评分'], ['ach', '成就点'], ['arena', '决斗场'], ['duel', '决斗胜场'], ['clear', '通关时间'], ['epic', '史诗收集'], ['guild', '公会']];
@@ -45,7 +46,7 @@ Object.assign(menus, {
         const myName = net.user && net.user.name, myCid = save.data ? String(save.data.created) : '';
         const rows = d.list.map(e => h('tr', { class: e.uid === (net.user && net.user.id) ? 'me' : '' },
           h('td', { class: 'num ' + (e.rank <= 3 ? 'rank' + e.rank : '') }, String(e.rank)),
-          h('td', { style: 'font-weight:900' }, e.char || '—', e.cid === myCid && e.user === myName ? h('span', { class: 'small', style: 'color:#ffd23a;margin-left:.3em' }, '（当前角色）') : null, typeof GD !== 'undefined' && GD.tags.get(e.uid) ? h('div', { class: 'small', style: 'color:#9aff7a;font-weight:700' }, `<${GD.tags.get(e.uid)}>`) : null),
+          h('td', { style: 'font-weight:900' }, e.char ? h('span', { class: 'rkname', title: '查看装备 / 属性', onclick: () => { sfx.click(); netInspect({ id: e.uid, name: e.user, cid: e.cid, char: { name: e.char } }); } }, e.char) : '—', e.cid === myCid && e.user === myName ? h('span', { class: 'small', style: 'color:#ffd23a;margin-left:.3em' }, '（当前角色）') : null, typeof GD !== 'undefined' && GD.tags.get(e.uid) ? h('div', { class: 'small', style: 'color:#9aff7a;font-weight:700' }, `<${GD.tags.get(e.uid)}>`) : null),
           h('td', { class: 'small' }, sxClsName(e.cls, e.job)),
           h('td', { class: 'num' }, SXR.board === 'lvl' ? '' : e.lvl ? `Lv.${e.lvl}` : '—'),
           h('td', { class: 'num', style: 'color:#ffe8a8;font-weight:900' }, sxrValue(SXR.board, e)),

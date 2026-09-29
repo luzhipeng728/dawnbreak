@@ -84,12 +84,12 @@ function equipCompareTip(it) {
     r.lost && r.lost.length ? h('div', { class: 'setd bad' }, '失去：' + r.lost.join('、')) : null);
 }
 // 套装装饰：绿框 + 角标。身上的部件显示“已穿件数 / 总件数”，套装效果生效时加流光；背包里的部件显示“套”
-function equippedSetCount(setId) { let n = 0; for (const s of SLOTS) { const x = inv.equip[s]; if (x && x.slot === s && x.set === setId && itemActive(x)) n++; } return n; }
-function setSlotDecor(el, it, worn) {
+function equippedSetCount(setId, eq = inv.equip) { let n = 0; for (const s of SLOTS) { const x = eq[s]; if (x && x.slot === s && x.set === setId && itemActive(x)) n++; } return n; }
+function setSlotDecor(el, it, worn, eq) {
   const S = it && it.set && SETS[it.set]; if (!S) return;
   el.classList.add('set'); el.dataset.set = it.set;
   if (worn) {
-    const n = equippedSetCount(it.set), min = Math.min(...Object.keys(S.bonus).map(Number));
+    const n = equippedSetCount(it.set, eq), min = Math.min(...Object.keys(S.bonus).map(Number));
     if (n >= min && itemActive(it)) el.classList.add('seton');
     el.append(h('span', { class: 'settag' }, `${n}/${S.pieces.length}`));
     // 悬停时同一套的其他部件一起高亮

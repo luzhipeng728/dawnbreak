@@ -153,6 +153,7 @@ function sxgMembers(el, d, G, me, off) {
     const J = m.char && m.char.cls ? sxClsName(m.char.cls, m.char.job) : '', loc = m.online ? (sxgScene(m.scene) || '冒险中') : `离线 · ${sxgAgo(m.lastOn)}`;
     const acts = [];
     if (m.id !== myId) {
+      acts.push(h('button', { class: 'btn sm', title: '查看装备 / 属性', onclick: () => netInspect({ id: m.id, name: m.name, char: m.char }) }, '查看'));
       if (m.online) acts.push(h('button', { class: 'btn sm', title: '邀请组队', onclick: () => { if (typeof netPartyInvite === 'function') netPartyInvite(m.id, m.name); } }, '组队'), h('button', { class: 'btn sm blue', onclick: () => { if (typeof chat !== 'undefined') chat.whisper(m.name); } }, '私聊'));
       if (me.role === 'leader') {
         acts.push(h('button', { class: 'btn sm', onclick: () => guildDo('POST', '/api/guild/role', { user: m.name, role: m.role === 'vice' ? 'member' : 'vice' }) }, m.role === 'vice' ? '撤销副会长' : '任命副会长'));

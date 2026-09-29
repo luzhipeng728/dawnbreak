@@ -103,6 +103,9 @@
 - **生图接口**：`~/.claude/skills/gpt-image` 已改成三家中转自动切换（首选两家各重试 3 次，最后 hyprlab 兜底），图生图走标准 `/images/edits`，不再受上传 5 次/分钟限制。
 - 批量跑运维命令：本机 shell 是 **zsh，不会按空格拆 `$a`**（`set -- $a` 得到的是一整个参数），参数会错位（2026-09-29 发满级券时物品 key 变成了数量）。批量就一条条写全参数，或用 `${=a}`；admin.sh / remote.js 已加参数校验。发完用只读查询核对 mail 表。
 
+- **给全局函数加参数要查包装层**：`itemTipOne` 被 game/vanity.js 包了一层（`one0(it, cur, head)`），新加的参数会被吞掉；`equipTotals` / `recalcStats` 也分别被公会、决斗包过。改签名前先 `grep -rn "= 函数名\|函数名 = "`。
+- **按别人的数据算属性**（查看信息，ui/social/inspect.js 的 `inspectCalc`）：recalcStats 读的是全局（game.lvl / job、inv.equip、save.data 的图鉴、GD.data 的公会技能），临时换成对方的、try/finally 换回；换之前先 `inv.ensure()`，并把 `inv._normEq` 一起换，否则 ensure 会把对方的装备塞进自己背包。
+
 ## 5. 复盘记录
 - **2026-09-28 官方技能 / 15 个转职对齐**：一开始每个职业组都从零调研、每次跑完整 all.sh（65 分钟）、样图逐张来回审，额度烧得快。改进后：quick.sh 4 分钟、样图拼总览一次审、成本规则写进每个子智能体的任务里、做完就停——后半程每个转职的消耗明显下降。下次同类工作直接按第 2.2 节做。
 - **2026-09-28 区域**：以前每个区域都是手写（约 60~120 万 token / 个）→ 改成区域生产线（配置驱动），目标 15~30 万 token / 个。

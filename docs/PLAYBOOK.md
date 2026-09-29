@@ -104,6 +104,7 @@
 - 批量跑运维命令：本机 shell 是 **zsh，不会按空格拆 `$a`**（`set -- $a` 得到的是一整个参数），参数会错位（2026-09-29 发满级券时物品 key 变成了数量）。批量就一条条写全参数，或用 `${=a}`；admin.sh / remote.js 已加参数校验。发完用只读查询核对 mail 表。
 
 - **给全局函数加参数要查包装层**：`itemTipOne` 被 game/vanity.js 包了一层（`one0(it, cur, head)`），新加的参数会被吞掉；`equipTotals` / `recalcStats` 也分别被公会、决斗包过。改签名前先 `grep -rn "= 函数名\|函数名 = "`。
+- **图标表切出来只剩碎片 + 一条横线**：生图偶尔在表的上下边缘画一条深色边框线（2026-09-29 `cdr60_sand_leather`），切图时它连成横跨三格的连通块，把中间格的物品挤掉。先查 `mn < 110` 占满一行的边缘行，把原图（`art/src/gear/`，先留 `.bak.png`）上下各 4 行涂白再 `cut`，不用重生成。
 - **按别人的数据算属性**（查看信息，ui/social/inspect.js 的 `inspectCalc`）：recalcStats 读的是全局（game.lvl / job、inv.equip、save.data 的图鉴、GD.data 的公会技能），临时换成对方的、try/finally 换回；换之前先 `inv.ensure()`，并把 `inv._normEq` 一起换，否则 ensure 会把对方的装备塞进自己背包。
 
 ## 5. 复盘记录

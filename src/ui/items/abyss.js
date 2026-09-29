@@ -32,7 +32,7 @@ Object.assign(menus, {
       const ic = k => h('img', { src: itemIconSrc(k, 32) });
       const head = h('div', { class: 'abyhead' }, h('span', {}, ic('abyss_ticket'), '邀请函 ', h('b', {}, tk)), h('span', {}, ic('m_cosmos'), '宇宙灵魂 ', h('b', {}, soul)), h('span', {}, ic('m_otherworld'), '异界精髓 ', h('b', {}, ess)),
         h('span', { class: 'small', style: 'margin-left:auto;color:#c8a8d8' }, `深渊派对 ${S.runs || 0} 次 · 史诗 ${S.epics || 0} 件`));
-      const tabs = h('div', { class: 'itabs' }, [['info', '深渊派对'], ['ticket', '邀请函'], ['epic', '史诗兑换'], ['ow', '异界兑换']].filter(([id]) => npc || id === 'info' || id === 'ticket').map(([id, nm]) => h('div', { class: 'itab' + (tab === id ? ' on' : ''), onclick: () => { IW.abyTab = id; IW.abySel = null; sfx.click(); el._render(); } }, nm)));
+      const tabs = h('div', { class: 'itabs' }, [['info', '深渊派对'], ['ticket', '邀请函'], ['epic', '史诗兑换'], ['ow', '异界兑换'], ['cdr', '纯冷却流']].filter(([id]) => npc || id === 'info' || id === 'ticket').map(([id, nm]) => h('div', { class: 'itab' + (tab === id ? ' on' : ''), onclick: () => { IW.abyTab = id; IW.abySel = null; sfx.click(); el._render(); } }, nm)));
       let body;
       if (tab === 'info') {
         body = h('div', { class: 'abydg', 'data-sk': 'aby' }, Object.keys(ABYSS).map(id => {
@@ -68,6 +68,14 @@ Object.assign(menus, {
           h('div', { class: 'exrow' }, sel ? [h('b', { class: 'q5' }, ITEMS[sel].name), h('span', { class: 'small dim' }, `Lv.${ITEMS[sel].lvl} ${itemTypeName(codexItemOf(sel))}`)] : h('span', { class: 'dim' }, '选择要兑换的史诗'), h('span', { class: 'sp' }),
             sel ? h('span', { class: 'price' }, `宇宙灵魂 ×${cost}`) : null, h('button', { class: 'btn sm' + (sel && soul >= cost ? '' : ' off'), onclick: () => sel && abyssTrade(el, 'm_cosmos', cost, sel, 1, true) }, '兑换')),
           h('div', { class: 'ihint' }, '单件史诗 28 个、Lv28 以上 40 个、史诗套装部件 36 个宇宙灵魂。深渊派对每次通关必得宇宙灵魂（难度越高越多）。兑换的史诗是封装状态：穿上之前可以交易。'));
+      } else if (tab === 'cdr') {   // 纯冷却流（content/items/cdr60.js）：传说「时之沙漏」/ 神器「流沙」，宇宙灵魂兑换
+        const keys = cdr60ExchangeKeys(), g = h('div', { class: 'igrid exgrid', 'data-sk': 'abyc' }), sel = keys.includes(IW.abySel) ? IW.abySel : null, D = sel && ITEMS[sel];
+        for (const k of keys) g.append(itemSlot(codexItemOf(k), { cmp: true, sel: k === sel, onClick: () => { IW.abySel = k; sfx.click(); el._render(); } }));
+        const cost = sel ? cdr60Cost(sel) : 0, buy = () => itemDialog(el, { title: '兑换纯冷却装备', msg: `用 <b style="color:#8ae0ff">宇宙灵魂 ×${cost}</b> 兑换 ${itemNameHtml(codexItemOf(sel))}？`, okText: '兑换', onOk: () => abyssTrade(el, 'm_cosmos', cost, sel, 1) });
+        body = h('div', { class: 'col', style: 'gap:.4em' }, g,
+          h('div', { class: 'exrow' }, sel ? [h('b', { class: 'q' + D.rar }, D.name), h('span', { class: 'small dim' }, `Lv.${D.lvl} ${itemTypeName(codexItemOf(sel))} · 技能冷却 -${Math.round(D.fx.cdr * 100)}%`)] : h('span', { class: 'dim' }, '选择要兑换的纯冷却装备'), h('span', { class: 'sp' }),
+            sel ? h('span', { class: 'price' }, `宇宙灵魂 ×${cost}`) : null, h('button', { class: 'btn sm' + (sel && soul >= cost ? '' : ' off'), onclick: () => sel && buy() }, '兑换')),
+          h('div', { class: 'ihint' }, `【纯冷却流】只减技能冷却、不加伤害。传说「时之沙漏」每件 -10%（2 / 3 / 5 件再各 -5% / -8% / -12%），${CDR60.cost[4]} 个宇宙灵魂；神器「流沙」每件 -6%，${CDR60.cost[3]} 个。冷却减少各来源相乘、不设上限（最低保底 5%）。Lv${CDR60.minLv} 以上地下城 / 深渊派对的领主也会小几率掉落。`));
       } else {
         const sets = Object.values(SETS).filter(X => X.job).sort((a, b) => (b.job === game.job) - (a.job === game.job));
         const g = h('div', { class: 'igrid exgrid', 'data-sk': 'abyo' }), sel = IW.abySel && ITEMS[IW.abySel] && ITEMS[IW.abySel].named ? IW.abySel : null;

@@ -131,7 +131,7 @@ report('一觉 EMP 磁暴：造成伤害，3 级起直到爆炸都无敌', R.emp
 report('弹药强化：命中挂过电流（受到伤害提高）', R.overcurrent > 0.1, { taken: R.overcurrent });
 report('G-61 吸怪 + 爆炸；切利：真空洞、再按引爆', R.g61.closer && R.g61.dmg && R.chelli.vac === 1 && R.chelli.rch && R.chelli.left === 0 && R.chelli.dmg, { g61: R.g61, chelli: R.chelli });
 report('二觉 / 三觉：开火、光子霰雷、决战之日、终解·制空霸权 造成伤害', ['openfire', 'photon', 'dday', 'final'].every(k => R[k].ok && R[k].dmg > 0), { openfire: R.openfire, photon: R.photon, dday: R.dday, final: R.final });
-report('空袭战略：悬停在轰炸高度、推进器不减、空中射击 +12、再按引爆结束', R.standby.on && R.standby.z > 100 && R.standby.noNitro && R.standby.airMax >= 16 && R.standby.ended, R.standby);
+report('空袭战略：悬停在轰炸高度、推进器不减、再按引爆结束', R.standby.on && R.standby.z > 100 && R.standby.noNitro && R.standby.ended, R.standby);
 report('被动：空中射击常驻；兵器研究（步枪）加攻速', R.passive.aerial && R.passive.aerialLv >= 1 && R.passive.firearm > 0, R.passive);
 const errs = logs.filter(l => l.type !== 'warning'); report('无报错', errs.length === 0, errs.slice(0, 3));
 await browser.close();

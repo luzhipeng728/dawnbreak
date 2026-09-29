@@ -391,16 +391,22 @@ REGION_HOOKS.bugKing = {
     A.burrow -= dt; if (A.burrow <= 0 && !m.busy) bugKingBurrow(m);
   },
   hud(c, m, x, y) { const A = m.anc; if (A && !A.dig && !msMechActive(m, 'invuln')) uiText(`钻地 ${Math.max(0, A.burrow).toFixed(0)}s`, x + 790, y + 14, { size: 15, align: 'right', color: '#d8b0ff', sw: 3 }); },
+  mirror: {   // 组队队员（net/coop_mech.js）：主机钻地时，这边的傀儡也钻下去，预警跟着同一个目标
+    burrow(m, d) { fxBurst(m.x, m.y, 60, 200, '#6a3aaa'); sfx.boom(0.6); m.remove = true; if (m.anc) { m.anc.dig = true; m.anc.burrow = 17; } bugKingDig(m, d.tgE, () => { if (m.anc) m.anc.dig = false; }); } },
 };
 function bugKingBurrow(m) {
   const A = m.anc, p = game.player; if (!p) return;
   A.dig = true; A.burrow = rnd(16, 20); ancStat('burrow');
-  toastMsg('虫王钻进了地下——它在找你！', '#d8b0ff'); msSay(m, '', '#d8b0ff');
   msHide(m, true);
+  bugKingDig(m, p, g => { A.dig = false; if (m.dead) return; msHide(m, false); m.x = clamp(g.x, 80, game.room.x1 - 80); m.y = clamp(g.y, 20, DEPTH - 20); m.z = 0; });
+  msNetEv(m, null, 'hook', { h: 'burrow', tgE: p });   // 组队：队员那边放同样的预警（跟着同一个目标），三圈冲击打的是队员自己
+}
+// 钻地的预警和破土冲击：预警跟着目标走，2.2 秒后在那里破土 + 两圈往外扩（跑远或者跳起来）；land(g) 由主机把领主摆到破土的位置
+function bugKingDig(m, p, land) {
+  toastMsg('虫王钻进了地下——它在找你！', '#d8b0ff'); msSay(m, '', '#d8b0ff');
   telegraph({ x: p.x, y: p.y, r: 120, dur: 2.2, follow: p, col: '#b070ff', kind: 'hex', friendly: true, fire: g => {   // 范围跟着虫王的体型（scale 2.2）
-    A.dig = false; if (m.dead) return;
-    msHide(m, false); m.x = clamp(g.x, 80, game.room.x1 - 80); m.y = clamp(g.y, 20, DEPTH - 20); m.z = 0; cam.shake = 14; sfx.boom(1.3);
-    const x = m.x, y = m.y;
+    land(g); if (m.dead) return;
+    const x = clamp(g.x, 80, game.room.x1 - 80), y = clamp(g.y, 20, DEPTH - 20); cam.shake = 14; sfx.boom(1.3);
     const ring = (r0, r1) => { fxShock(x, y, r1, '#b070ff'); for (const t of ancFoes()) if (t.invul <= 0 && t.z < 30 && inGround(t, x, y, r1) && !(r0 > 0 && inGround(t, x, y, r0))) { applyHit(m, t, { dmg: 1.3, sure: true, knock: 260, launch: 260, hs: 0.05 }, { proj: true }); ancStat('burrowHit'); } };
     ring(0, 125); game.after(0.35, () => ring(125, 250)); game.after(0.7, () => ring(250, 375));
   } });

@@ -209,14 +209,15 @@ const coop = {
     // 用访问器包住 control：生成之后再换 AI 的怪（龙之雕像 m.control = skyStatueAI 等）也照样走这一层，不会只盯着队长
     // 想在原 AI 外面再包一层的代码要读 m.aiInner：读 m.control 拿到的是这层包装，包进新 AI 里会“包装 → 新 AI → 包装”无限递归（深渊领主踩过）
     let ctl = m.control;
-    const wrapped = function (e, dt) { const P = game.player, tg = C.pickTarget(e); if (tg) game.player = tg; try { if (ctl) ctl(e, dt); } finally { game.player = P; } };
+    // game.realPlayer：AI 执行期间 game.player 换成了目标，机制里要按“本机玩家”算的（属性法阵）读 msSelf()
+    const wrapped = function (e, dt) { const P = game.player, R = game.realPlayer, tg = C.pickTarget(e); if (tg) { game.realPlayer = R || P; game.player = tg; } try { if (ctl) ctl(e, dt); } finally { game.player = P; game.realPlayer = R; } };
     Object.defineProperty(m, 'control', { configurable: true, enumerable: true, get() { return ctl ? wrapped : null; }, set(f) { ctl = f; } });
     Object.defineProperty(m, 'aiInner', { configurable: true, get() { return ctl; } });
-    m.update = function (dt) { const P = game.player, tg = this.tgt && !this.tgt.dead ? this.tgt : null; if (tg) game.player = tg; try { (upd || Ent.prototype.update).call(this, dt); } finally { game.player = P; } };
+    m.update = function (dt) { const P = game.player, R = game.realPlayer, tg = this.tgt && !this.tgt.dead ? this.tgt : null; if (tg) { game.realPlayer = R || P; game.player = tg; } try { (upd || Ent.prototype.update).call(this, dt); } finally { game.player = P; game.realPlayer = R; } };
     m.doAct = function (def, extra) { Ent.prototype.doAct.call(this, def, extra); this.actSeq = (this.actSeq || 0) + 1; C.monAct(this, def); };
     this.spawnQ.push(this.spawnRow(m));
   },
-  spawnRow(m) { m._sent = m.hpMax + '|' + m.name + '|' + (m.scale || 1); return { id: m.nid, rk: this.rk(), kind: m.kind, lvl: m.lvl, boss: m.boss ? 1 : 0, elite: m.elite ? 1 : 0, hp: Math.round(m.hp), hpMax: Math.round(m.hpMax), atk: Math.round(m.atk), def: Math.round(m.def), exp: m.exp, sc: +(m.scale || 1).toFixed(3), x: Math.round(m.x), y: Math.round(m.y), z: Math.round(m.z), f: m.face, name: m.name }; },
+  spawnRow(m) { m._sent = m.hpMax + '|' + m.name + '|' + (m.scale || 1) + '|' + Math.round(m.atk); return { id: m.nid, rk: this.rk(), kind: m.kind, lvl: m.lvl, boss: m.boss ? 1 : 0, elite: m.elite ? 1 : 0, hp: Math.round(m.hp), hpMax: Math.round(m.hpMax), atk: Math.round(m.atk), def: Math.round(m.def), exp: m.exp, sc: +(m.scale || 1).toFixed(3), x: Math.round(m.x), y: Math.round(m.y), z: Math.round(m.z), f: m.face, name: m.name }; },
   pickTarget(m) {
     const now = game.t, cur = m.tgt;
     const ok = e => e && !e.dead && e.hp > 0 && !e.away && !e.lag && !(e.ghost && !net.connected);   // 自己断线期间队友的影子是旧的，不当目标
@@ -236,6 +237,7 @@ const coop = {
   },
   monAct(m, def) {
     if (!m.nid || this.state !== 'play') return;
+    this.flushSpawns();   // 刚生成就出招的怪（召唤物）：生成信息要先到，不然队员那边找不到傀儡、这一招丢掉
     const D = m.def_, MA = D && D.msAll && def.msIdx !== undefined ? D.msAll[def.msIdx] : null, mi = MA && MA.act.onStart === def.onStart ? def.msIdx : undefined;   // 区域怪编译过的招式：按编号发（连招的每一步 / 反击也在内）
     const i = D && D.attacks ? (mi !== undefined ? D.attacks.indexOf(MA) : D.attacks.findIndex(A => A.clip === def.clip && A.act.dur === def.dur)) : -1;
     const tg = m.tgt && m.tgt.uid ? m.tgt.uid : this.me();
@@ -248,7 +250,8 @@ const coop = {
   remoteHit(uid, r) {
     const m = this.puppets.get(r.id), g = this.mates.get(uid);
     if (!m || m.dead || !g || !ents.includes(m)) { const S = this.stats; S.hitDrop = S.hitDrop || {}; const k = !m ? 'none' : m.dead ? 'dead' : !g ? 'nomate' : 'gone'; S.hitDrop[k] = (S.hitDrop[k] || 0) + 1; return; }
-    const h = coopCleanHit(r.h), tm = clamp(+r.tm || 1, 0.05, 20), dmg = clamp(Math.round((+r.dmg || 0) * coopTakenMul(m) / tm), 1, 5e7); this.stats.remoteHits++;
+    const em = typeof msElemMulFor === 'function' && m.msMul && m.msMul.element ? msElemMulFor(m, g) / m.msMul.element : 1;   // 属性法阵：按队员自己站的位置算（m.msMul.element 是主机本人的）
+    const h = coopCleanHit(r.h), tm = clamp(+r.tm || 1, 0.05, 20), dmg = clamp(Math.round((+r.dmg || 0) * coopTakenMul(m) * em / tm), 1, 5e7); this.stats.remoteHits++;
     m.hp -= dmg; m.lastDmg = dmg; m.lastHitBy = g;
     const c = m.cmb; c.hits++; c.dmg += dmg; if (m.st === 'air' || m.z > 2) c.airDmg += dmg; if (m.st === 'down') c.downDmg += dmg;
     addNumber(dmg, m.x, m.y, m.z, { crit: !!r.cr });
@@ -280,7 +283,7 @@ const coop = {
     const rows = [];
     for (const m of ents) {
       if (!m.nid || m.dead || m.team !== 'e') continue;
-      if (m._sent !== m.hpMax + '|' + m.name + '|' + (m.scale || 1)) this.spawnQ.push(this.spawnRow(m));   // 血量上限 / 名字 / 体型变了（深渊领主降临等）：重发一次生成信息
+      if (m._sent !== m.hpMax + '|' + m.name + '|' + (m.scale || 1) + '|' + Math.round(m.atk)) this.spawnQ.push(this.spawnRow(m));   // 血量上限 / 名字 / 体型 / 攻击力变了（深渊领主降临、狂暴等）：重发一次生成信息
       rows.push([m.nid, Math.round(m.x), Math.round(m.y), Math.round(m.z), m.face < 0 ? -1 : 1, Math.max(0, COOP_ST.indexOf(m.st)), Math.max(0, Math.round(m.hp)), m.actSeq || 0]);
     }
     const d = { k: 's', ts: Math.round(lastT), rk: this.rk(), m: rows };   // ts：这些位置是哪一帧的（发送方时钟），对方按它插值

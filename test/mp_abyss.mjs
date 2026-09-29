@@ -4,13 +4,14 @@
 //            roomEnter / 轮次开始 / 领主降临 / 轮次横幅的次数、怪物 / 特效 / 伤害数字 / 掉落数量随时间的变化
 // 场景：A 队长 alice 做主机，领主奈克斯；B 队长移交给 bob（主机换成第二个页面），领主暗杀者，降临前后地上一直堆着 150 件掉落；C 守门人
 //       HN / HA / HG 队员受击对照（奈克斯 / 暗杀者 / 守门人）：两边不开机器人，怪全盯队员，队员贴着站、不还手、不无敌；
-//       逐招对比主机发出的出招和队员本地重播的出招（招式名 + 有没有判定），统计队员被普通怪 / 深渊领主 / 普通区域领主（HN 对照）打中的次数
+//       逐招对比主机发出的出招和队员本地重播的出招（招式名 + 有没有判定），统计队员被普通怪 / 深渊领主 / 普通区域领主（HN 对照 GT-9600，HA 对照虫王戮蛊）打中的次数；
+//       领主机制（net/coop_mech.js）：主机启动的机制队员这边同样启动（时间差 < 0.3 秒）、地面预警（技能 + 机制）一个不少且时间差 < 0.3 秒、安全区到点判定队员自己、队员被机制攻击打中、还在进行的机制状态一致
 // 用法：node test/mp_abyss.mjs [场景=A,B,C,HN,HA,HG]
 import fs from 'node:fs';
 import { startServer, launchPlayers, ok, result, sleep, until, uiRegister, uiCreateChar, dumpErrors } from './net_lib.mjs';
 const SC = (process.argv[2] || 'A,B,C,HN,HA,HG').split(',');
 const SCENARIOS = { A: { host: 0, lord: 'nex' }, B: { host: 1, lord: 'assassin', drops: 150 }, C: { host: 0, lord: 'gatekeeper' },
-  HN: { host: 0, lord: 'nex', hit: true, cmp: true }, HA: { host: 0, lord: 'assassin', hit: true }, HG: { host: 0, lord: 'gatekeeper', hit: true } };
+  HN: { host: 0, lord: 'nex', hit: true, cmp: 'gt9600' }, HA: { host: 0, lord: 'assassin', hit: true, cmp: 'bugKing' }, HG: { host: 0, lord: 'gatekeeper', hit: true } };
 const DG = 'abyss_siroco', CDMUL = 0.34, FIGHT_MS = +(process.env.FIGHT_MS || 150000);
 const out = 'test/shots/mp_abyss'; fs.mkdirSync(out, { recursive: true });
 const srv = await startServer();
@@ -72,8 +73,12 @@ async function leave(H, G, sc) {
 // 受击探针：主机记发出去的怪物出招（ma：招式序号 i / 自带 AI 名 / 招式名 / 这一招有没有判定），队员记收到后本地重播出来的动作和自己挨的打（谁挨打谁结算）
 const HITPROBE = () => {
   if (window.__hp) return;
-  const Q = window.__hp = { on: false, seg: '', ma: [], rx: [], hurt: [], mech: [], def: null };
-  const ms0 = window.msMechStart; window.msMechStart = function (m, spec) { if (Q.on && m && m.boss) Q.mech.push({ seg: Q.seg, id: spec.use, puppet: !!m.puppet }); return ms0.apply(this, arguments); };
+  const Q = window.__hp = { on: false, seg: '', ma: [], rx: [], hurt: [], mech: [], tg: [], sz: [], def: null };
+  // 领主机制：主机记启动（本地的真机制），队员记收到的镜像启动；地面预警两边都记（墙钟时间，同一台机器上的两个页面可以直接比）
+  const ms0 = window.msMechStart; window.msMechStart = function (m, spec) { if (Q.on && coop.role === 'host' && m && m.boss && !m.puppet) Q.mech.push({ seg: Q.seg, id: spec.use, T: Date.now() }); return ms0.apply(this, arguments); };
+  const cr0 = window.coopMechRecv; window.coopMechRecv = function (d) { if (Q.on && d && d.e === 'start') Q.mech.push({ seg: Q.seg, id: d.use, T: Date.now(), nid: d.id, u: d.u }); return cr0.apply(this, arguments); };
+  const sz0 = window.msSafezoneFire; window.msSafezoneFire = function (m, st, p, who) { const me = game.player, hp0 = me.hp, inv = me.invul > 0; const r = sz0.apply(this, arguments); if (Q.on) Q.sz.push({ seg: Q.seg, T: Date.now(), res: inv ? 'invul' : me.hp < hp0 ? 'hit' : 'safe' }); return r; };
+  const tg0 = window.telegraph; window.telegraph = function (o) { const g = tg0.apply(this, arguments); if (Q.on) Q.tg.push({ seg: Q.seg, T: Date.now(), kind: g.kind, r: Math.round(g.r), g }); return g; };
   const ma0 = coop.monAct; coop.monAct = function (m, def) { Q.def = def; try { return ma0.call(this, m, def); } finally { Q.def = null; } };
   const send0 = coop.send; coop.send = function (d, to) {
     if (Q.on && d && d.k === 'ma') { const m = coop.puppets.get(d.id), D = Q.def || {}; Q.ma.push({ seg: Q.seg, id: d.id, kind: m && m.kind, lord: !!(m && m.abyssLord), boss: !!(m && m.boss), i: d.i, mi: d.mi, ph: d.ph, ai: d.ai || null, nm: d.nm, hits: (D.hits || []).length, ev: (D.events || []).length }); }
@@ -82,8 +87,22 @@ const HITPROBE = () => {
     const m = this.puppets.get(d.id), was = m && m.act; rx0.call(this, d);
     if (!Q.on) return; const a = m && m.act && m.act !== was ? m.act : null;
     Q.rx.push({ seg: Q.seg, id: d.id, kind: m && m.kind, boss: !!(m && m.boss), i: d.i, ai: d.ai || null, nm: d.nm, played: a ? a.name || a.clip : null, hits: a && a.hits ? a.hits.length : 0, ev: a && a.events ? a.events.length : 0 }); };
-  const hu0 = game.onPlayerHurt; game.onPlayerHurt = function (p, dmg, a) { if (Q.on && p === game.player) Q.hurt.push({ seg: Q.seg, dmg: Math.round(dmg), id: a && a.nid, kind: a && a.kind, boss: !!(a && a.boss) }); return hu0.call(this, p, dmg, a); };
+  const hu0 = game.onPlayerHurt; game.onPlayerHurt = function (p, dmg, a) { if (Q.on && p === game.player) Q.hurt.push({ seg: Q.seg, dmg: Math.round(dmg), id: a && a.nid, kind: a && a.kind, boss: !!(a && a.boss), mech: msNetSrc || null }); return hu0.call(this, p, dmg, a); };
 };
+const HITDUMP = () => { const Q = window.__hp; return { ...Q, def: null, tg: Q.tg.map(({ g, ...x }) => ({ ...x, mech: g.mech || null })) }; };
+// 强制放机制（主机）：保证每段都有安全区（远离领主型，半径盖满全场 = 队员一定挨打）、地火（落在目标附近）、护盾（3 秒没破 → 冲击波，队员贴着站会挨打），再压血量进下一阶段（阶段自带的机制）
+// 前半段领主正常出招（7 秒压血量进下一阶段，阶段自带机制）；10 秒起领主不再出招、只放机制（安全区 15 秒到点，地火 17.5 秒起每 2 秒一轮，护盾 20 秒没破 → 冲击波），
+// 这段时间队员站着时清掉起身无敌（测的是机制能不能打到人，不是躲闪）
+const FORCE_AT = [[7, 'phase'], [10, 'calm'], [12.5, 'safezone'], [16, 'hazard'], [17, 'shield']];
+// 两边的地面预警一一配对：同类型、同半径、时间差最小（不超过 0.3 秒）；主机在段末 0.5 秒内放的不算（队员那边可能已经停止记录）
+function matchTg(ht, gt, endT) {
+  const used = new Set(), miss = [], dts = [];
+  for (const a of ht.filter(x => x.T < endT - 500)) {
+    let best = -1, bd = 1e9; gt.forEach((b, j) => { if (used.has(j) || b.kind !== a.kind || b.r !== a.r) return; const d = Math.abs(b.T - a.T); if (d < bd) { bd = d; best = j; } });
+    if (best >= 0 && bd <= 300) { used.add(best); dts.push(bd); } else miss.push(`${a.kind}/${a.r}`);
+  }
+  return { host: ht.length, matched: dts.length, miss, maxDt: dts.length ? Math.max(...dts) : 0, guestMech: gt.filter(x => x.mech).length };
+}
 const tally = (L, f) => { const o = {}; for (const x of L) { const k = f(x); o[k] = (o[k] || 0) + 1; } return o; };
 // 受击对照：两边都不开机器人；主机本人无敌、站在最左边，所有怪固定盯住队员（同 mp_coop.mjs）；队员贴着目标站、不还手、不无敌（血低于 60% 才补满，接着测）
 // 分段：mob = 第 1 轮的普通深渊怪 + 房间里原有的小怪；lord = 深渊领主（其他怪一出来就清掉，只留领主；12 秒后血量压到 55% 进二阶段）；boss = 同一个房间里再刷一只普通（非深渊）的区域领主做对照
@@ -91,17 +110,27 @@ async function hitTest(H, G, sc, S) {
   for (const P of [H, G]) await P.evaluate(HITPROBE);
   await H.evaluate(() => { bot.on = false; game.speedMul = 1; const p = game.player; p.invul = 1e9;
     window.__aim = setInterval(() => { const g = [...coop.mates.values()][0], p = game.player; p.hp = p.hpMax; if (p.x > 120) { p.x = 60; p.y = DEPTH / 2; }
-      for (const m of ents) if (m.nid && !m.dead && m.team === 'e' && m.kind !== 'abyssBlock' && m.kind !== 'abyssPillar') { m.tgt = g; m.tgtT = game.t + 1e6; if (window.__killAdds && !m.boss) { m.invul = 0; m.hp = 0; killEnt(m, p, {}); } } }, 250); });
+      for (const m of ents) if (m.nid && !m.dead && m.team === 'e' && m.kind !== 'abyssBlock' && m.kind !== 'abyssPillar') { m.tgt = g; m.tgtT = game.t + 1e6; if (window.__calm && m.boss) m.aiCd = Math.max(m.aiCd || 0, 1); if (window.__killAdds && !m.boss) { m.invul = 0; m.hp = 0; killEnt(m, p, {}); } } }, 250); });
   await G.evaluate(() => { bot.on = false; game.speedMul = 1; const p = game.player; p.invul = 0;
-    window.__stick = setInterval(() => { const p = game.player, Q = window.__hp; if (p.hp < p.hpMax * 0.6) p.hp = p.hpMax;
+    window.__stick = setInterval(() => { const p = game.player, Q = window.__hp; if (p.hp < p.hpMax * 0.6) p.hp = p.hpMax; if (Q.calm && (p.st === 'idle' || p.st === 'walk')) p.invul = 0;
       let T = null, bd = 1e9; for (const m of coop.puppets.values()) if (!m.dead && ents.includes(m) && m.kind !== 'abyssBlock' && m.kind !== 'abyssPillar' && (Q.seg === 'mob' || m.boss)) { const d = Math.abs(m.x - p.x) + Math.abs(m.y - p.y); if (d < bd) { bd = d; T = m; } }
       if (T && (Math.abs(T.x - p.x) > 90 || Math.abs(T.y - p.y) > 30) && !p.act && p.st !== 'hit' && p.st !== 'air' && p.st !== 'down') { p.x = clamp(T.x + (p.x < T.x ? -60 : 60), 40, game.room.x1 - 40); p.y = T.y; } }, 500); });
-  const seg = async (name, sec, mid) => {
+  const segEnd = {};
+  const seg = async (name, sec, evs = []) => {
     for (const P of [H, G]) await P.evaluate(n => { window.__hp.seg = n; window.__hp.on = true; }, name);
     const t0 = await H.evaluate(() => game.t);
-    if (mid) { await until(H, ([t, s]) => game.t - t > s, [t0, sec / 2], sec * 3000); await H.evaluate(mid); }
+    for (const [at, fn, arg] of evs) { await until(H, ([t, s]) => game.t - t > s, [t0, at], sec * 3000); await H.evaluate(fn, arg); if (arg && arg[1] === 'calm') await calm(true); }
     await until(H, ([t, s]) => game.t - t > s, [t0, sec], sec * 3000);
+    segEnd[name] = Date.now();
+    for (const P of [H, G]) await P.evaluate(() => { window.__hp.on = false; window.__hp.calm = false; window.__calm = false; });
   };
+  const forced = which => FORCE_AT.map(([at, what]) => [at, ([w, x]) => { const b = w === 'lord' ? game.dungeon.abyssRun.lord : window.__cmpBoss; if (!b || b.dead) return;
+    if (x === 'safezone') msMechStart(b, { use: 'safezone', mode: 'far', r: 2000, windup: 2.5, frac: 0.12, say: '安全区（测试）' });
+    else if (x === 'hazard') msMechStart(b, { use: 'hazard', kind: 'fire', every: 2, n: 3, r: 70, dmg: 0.6, dur: 9, col: '#ff7a3a' });
+    else if (x === 'shield') msMechStart(b, { use: 'shield', hp: 0.9, dur: 3, punish: 'nova', col: '#7ae0c8', say: '护盾（测试）' });
+    else if (x === 'phase') b.hp = Math.round(b.hpMax * (w === 'lord' ? 0.55 : 0.25));
+    else if (x === 'calm') window.__calm = true; }, [which, what]]);
+  const calm = on => G.evaluate(v => { window.__hp.calm = v; }, on);
   const kill = f => H.evaluate(f => { for (const e of [...ents]) if (e.team === 'e' && !e.dead && e.kind !== 'abyssBlock' && new Function('e', 'return ' + f)(e)) { e.invul = 0; e.hp = 0; killEnt(e, game.player, {}); } }, f);
   await kill("e.kind === 'abyssPillar'");
   ok(await until(H, () => game.dungeon.abyssRun.round === 1, null, 8000), `场景 ${sc}：打破深渊柱，第 1 轮`);
@@ -110,20 +139,26 @@ async function hitTest(H, G, sc, S) {
   await kill('!e.boss');
   ok(await until(H, () => game.dungeon.abyssRun.lord && ents.includes(game.dungeon.abyssRun.lord), null, 10000), `场景 ${sc}：第 2 轮，深渊领主降临`);
   await sleep(1500);
-  await seg('lord', 24, () => { const b = game.dungeon.abyssRun.lord; b.hp = Math.round(b.hpMax * 0.55); });
+  await seg('lord', 24, forced('lord'));
+  // 还在进行的机制（出场自带的破招槽 / 狂暴 / 属性法阵 + 刚放的）：队员这边的镜像种类一样，属性法阵当前属性、破招槽数值一致
+  const live = async (P, guest) => (await P.evaluate(g => { const b = g ? [...coop.puppets.values()].find(m => m.boss && !m.dead && m.puppet) : game.dungeon.abyssRun.lord;
+    return ((b && b.msMechs) || []).filter(s => !s.done).map(s => ({ id: s.id, mode: s.mode, g: s.g === undefined ? undefined : Math.round(s.g) })).sort((a, b) => a.id < b.id ? -1 : 1); }, guest));
+  await sleep(600);
+  const [lh, lg] = [await live(H, false), await live(G, true)];
+  ok(lh.length > 0 && JSON.stringify(lh) === JSON.stringify(lg), `场景 ${sc}：领主身上还在进行的机制，队员镜像一致（${lh.map(x => x.id + (x.mode !== undefined ? '·' + x.mode : '') + (x.g !== undefined ? '·' + x.g : '')).join(' ')}）`, { host: lh, guest: lg });
   if (S.cmp) {
     await kill('e.abyssLord');
     await sleep(3500);   // 领主死后 2.6 秒如果按领主结算就会出结算界面
     const st = await G.evaluate(() => ({ state: coop.state, dg: game.dungeon && game.dungeon.state, result: menus.isOpen('result') }));
     ok(st.state === 'play' && st.dg === 'play' && !st.result, `场景 ${sc}：深渊领主死后队员还在地下城里（不按领主结算）`, st);
-    await H.evaluate(k => { const dg = game.dungeon, b = spawnMonster(k, 420, DEPTH / 2, { lvl: 62, boss: true, mul: dg.D.hp, atkMul: dg.D.atk }); window.__cmpBoss = b; }, S.lord);
-    await sleep(1000);
-    await seg('boss', 24, () => { const b = window.__cmpBoss; b.hp = Math.round(b.hpMax * 0.55); });
+    await H.evaluate(async k => { await loadBundles(monBundles([k])); const dg = game.dungeon, b = spawnMonster(k, 420, DEPTH / 2, { lvl: MON[k].lvl || 60, boss: true, mul: dg.D.hp, atkMul: dg.D.atk }); window.__cmpBoss = b; }, S.cmp);
+    await sleep(1500);
+    await seg('boss', 24, forced('boss'));
   }
   await H.evaluate(() => { clearInterval(window.__aim); window.__killAdds = false; window.__hp.on = false; });
   await G.evaluate(() => { clearInterval(window.__stick); window.__hp.on = false; });
-  const h = await H.evaluate(() => window.__hp), g = await G.evaluate(() => window.__hp);
-  for (const P of [H, G]) await P.evaluate(() => { const Q = window.__hp; Q.ma = []; Q.rx = []; Q.hurt = []; Q.mech = []; });
+  const h = await H.evaluate(HITDUMP), g = await G.evaluate(HITDUMP);
+  for (const P of [H, G]) await P.evaluate(() => { const Q = window.__hp; Q.ma = []; Q.rx = []; Q.hurt = []; Q.mech = []; Q.tg = []; Q.sz = []; });
   const R = {};
   for (const sg of S.cmp ? ['mob', 'lord', 'boss'] : ['mob', 'lord']) {
     const isT = x => sg === 'mob' ? !x.boss : x.boss;
@@ -134,11 +169,24 @@ async function hitTest(H, G, sc, S) {
       names: { host: tally(hm, x => x.nm), guest: tally(gr, x => x.played ? x.nm + (x.hits || x.ev ? '' : '(空)') : x.nm + '(没播)') } };
     const seqH = hm.map(x => x.nm + (x.hits || x.ev ? '' : '(空)')).join(), seqG = gr.map(x => (x.played || '没播') + (x.hits || x.ev ? '' : '(空)')).join();
     r.same = seqH === seqG; r.mech = { host: tally(h.mech.filter(x => x.seg === sg), x => x.id), guest: tally(g.mech.filter(x => x.seg === sg), x => x.id) };
-    const who = { mob: '普通怪', lord: `深渊领主 ${S.lord}`, boss: `普通区域领主 ${S.lord}（对照）` }[sg];
+    const who = { mob: '普通怪', lord: `深渊领主 ${S.lord}`, boss: `普通区域领主 ${S.cmp}（对照）` }[sg];
     ok(r.hostActs > 0 && r.same, `场景 ${sc}：${who} 的出招，队员这边逐招重播、招式名和判定都和主机一致（${r.hostActs} 招）`, { host: seqH, guest: seqG });
     ok(r.hurt > 0, `场景 ${sc}：队员被${who}打中 ${r.hurt} 次（共 ${r.dmg} 伤害）`);
     console.log(`  [${sg}] 主机出招 ${r.hostActs}（招式表 ${r.hostTbl}，表外 ${JSON.stringify(r.hostAi)}，带判定 ${r.hostLive}）→ 队员重播 ${r.guestActs}（带判定 ${r.guestLive}，空动作 ${r.guestGeneric}，没播 ${r.guestSkip}）；队员被打 ${r.hurt} 次 共 ${r.dmg}`);
-    console.log(`        招式 主机 ${JSON.stringify(r.names.host)}\n        招式 队员 ${JSON.stringify(r.names.guest)}\n        领主机制启动 主机 ${JSON.stringify(r.mech.host)} / 队员傀儡 ${JSON.stringify(r.mech.guest)}`);
+    console.log(`        招式 主机 ${JSON.stringify(r.names.host)}\n        招式 队员 ${JSON.stringify(r.names.guest)}`);
+    if (sg === 'mob') continue;
+    // 领主机制：启动一一对应（种类、次数、时间差）；地面预警一一配对；队员被机制打中
+    const hM = h.mech.filter(x => x.seg === sg), gM = g.mech.filter(x => x.seg === sg), dt = [];
+    const byId = L => { const o = {}; for (const x of L) (o[x.id] ??= []).push(x.T); return o; }, A = byId(hM), B = byId(gM);
+    for (const id in A) (A[id] || []).forEach((T, i) => { if (B[id] && B[id][i] !== undefined) dt.push(Math.abs(B[id][i] - T)); });
+    const tm = matchTg(h.tg.filter(x => x.seg === sg), g.tg.filter(x => x.seg === sg), segEnd[sg]);
+    const mh = tally(g.hurt.filter(x => x.seg === sg && x.mech), x => x.mech);
+    console.log(`        领主机制 主机 ${JSON.stringify(tally(hM, x => x.id))} / 队员镜像 ${JSON.stringify(tally(gM, x => x.id))}，最大时间差 ${Math.max(0, ...dt)}ms；地面预警 主机 ${tm.host} 个，队员配上 ${tm.matched} 个（其中机制 ${tm.guestMech}），最大时间差 ${tm.maxDt}ms，没配上 ${JSON.stringify(tm.miss)}；队员被机制打中 ${JSON.stringify(mh)}`);
+    ok(hM.length > 0 && JSON.stringify(tally(hM, x => x.id)) === JSON.stringify(tally(gM, x => x.id)) && Math.max(0, ...dt) < 300, `场景 ${sc}：${who} 的领主机制，队员这边同样启动（${hM.length} 个，时间差 < 0.3 秒）`, { host: tally(hM, x => x.id), guest: tally(gM, x => x.id), dt });
+    ok(tm.host > 0 && !tm.miss.length && tm.maxDt < 300, `场景 ${sc}：${who} 的地面预警（技能 + 机制）队员这边一个不少、时间差 < 0.3 秒（${tm.matched}/${tm.host}，最大 ${tm.maxDt}ms）`, tm);
+    const hz = h.sz.filter(x => x.seg === sg).length, gz = g.sz.filter(x => x.seg === sg);
+    ok(hz > 0 && gz.length === hz, `场景 ${sc}：${who} 的安全区，队员这边到点判定了自己 ${gz.length}/${hz} 次（${JSON.stringify(tally(gz, x => x.res))}）`, { host: hz, guest: gz });
+    ok(Object.values(mh).reduce((a, b) => a + b, 0) >= 2, `场景 ${sc}：队员被${who}的机制攻击打中（${JSON.stringify(mh)}）`, mh);
   }
   fs.writeFileSync(`${out}/${sc}-hits.json`, JSON.stringify({ host: h, guest: g }, null, 1));
   return R;

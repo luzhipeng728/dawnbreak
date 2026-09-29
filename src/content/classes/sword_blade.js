@@ -23,7 +23,7 @@ function wmWeaponFx(p, t, h, act) {
   if (!arcanaLv(p) || t.dead || h.wmFx) return;
   const w = swWt(p), job = act && act.skill && SKILLS[act.skill] && SKILLS[act.skill].job === 'blade';
   if (w === 'katana' && (job || (act && act.rk))) wmPierce(p, t);
-  else if (w === 'lightsaber' && Math.random() < (act && act.rk ? 0.5 : 0.2)) {
+  else if (w === 'lightsaber' && Math.random() < (act && act.rk ? 0.5 : act && (act.skill === 'dragon' && arcanaLv(p) >= 9 || act.skill === 'flow_leap' || act.skill === 'iai' && arcanaLv(p) >= 7) ? 1 : 0.2)) {
     addStatus(t, 'shock', 1.5, { src: p });
   } else if (w === 'club' && (job || (act && act.rk)) && Math.random() < 0.15) addStatus(t, 'stun', 0.8, { src: p });
 }
@@ -169,12 +169,12 @@ defSkill('iai', { name: '拔刀斩', cls: 'sword', job: 'blade', lvReq: 19, mp: 
       update: (e) => { if (!e.act.charging) e.drawOpts = { glow: e.actT < 0.4 ? e.actT / 0.4 : Math.max(0, 1 - (e.actT - 0.4) * 3) }; },
       onEnd: (e) => { e.drawOpts = {}; },
       events: [evAt(0.02, () => sfx.charge()), evAt(0.4, e => {
-        cam.flash = 0.12; cam.flashCol = '#fff6d0'; cam.shake = 7; sfx.iai();
-        fxShock(e.x, e.y, 300, '#ffd070'); fxSlashOn(e, { col: '#ffd070', a0: -3.1, a1: 3.1, r: 200, w: 34, off: [0, 50], squash: 0.45, dur: 0.3 });
-        fxBurst(e.x, e.y, e.z + 50, 320, '#ffd070');
-        instantHit(e, { box: [-270, 280, 64, 0, 130], dmg: skillDmg(6.5, 0.7, lv), down: true, knock: 260, radial: true, hs: 0.14, big: 1.8, col: '#ffe0a0', critBonus: 0.2, downHit: true });
+        cam.flash = 0.12; cam.flashCol = '#eaf6ff'; cam.shake = 7; sfx.iai();
+        fxShock(e.x, e.y, 300, '#bfe8ff'); fxSlashOn(e, { col: '#bfe8ff', a0: -3.1, a1: 3.1, r: 200, w: 34, off: [0, 50], squash: 0.45, dur: 0.3 });
+        fxBurst(e.x, e.y, e.z + 50, 320, '#bfe8ff');
+        instantHit(e, { box: [-270, 280, 64, 0, 130], dmg: skillDmg(6.5, 0.7, lv), down: true, knock: 260, radial: true, hs: 0.14, big: 1.8, col: '#dff2ff', critBonus: 0.2, downHit: true });
       })] };
-    if (w === 'greatsword' && ar) a.charge = { at: 0.3, max: 0.5, min: 0, dmg: 0.6, update: (e, dt, k) => { if (Math.random() < 0.5) fxCharge(e, '#ffd070'); e.drawOpts = { glow: 0.3 + k * 0.7 }; } };
+    if (w === 'greatsword' && ar) a.charge = { at: 0.3, max: 0.5, min: 0, dmg: 0.6, update: (e, dt, k) => { if (Math.random() < 0.5) fxCharge(e, '#bfe8ff'); e.drawOpts = { glow: 0.3 + k * 0.7 }; } };
     if ((w === 'katana' || w === 'lightsaber') && ar) { a.follow = () => ({ name: 'iai2', clip: 'rk1', dur: 0.45, noCounter: true, superArmor: true,
       hits: [HB(0.06, 0.14, [-20, 260, 44, 0, 130], skillDmg(2.4, 0.26, lv), { knock: 160, stun: 0.6, hs: 0.1, shake: 4, big: 1.4, col: w === 'lightsaber' ? '#fff38a' : '#ffb0b0' })],
       events: [evAt(0.05, e => { sfx.iai(); fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 60, face: e.face, len: 300, w: 20, col: w === 'lightsaber' ? '#fff38a' : '#ff9a9a', dur: 0.25 }); })] }); a.followWin = [0.5, 0.95]; }
@@ -228,7 +228,9 @@ defSkill('phantom', { name: '幻影剑舞', cls: 'sword', job: 'blade', lvReq: 2
         if (e.actT < a.end && a.tk >= step) { a.tk = 0; a.k = (a.k || 0) + 1; e.hitsDone.clear(); fxSlashOn(e, { col: '#b0c0ff', a0: rnd(-3, 0), a1: rnd(0, 3), r: rnd(64, 92), w: 10, off: [16, rnd(35, 70)], squash: rnd(0.4, 0.9), dur: 0.1, silent: a.k % 2 === 1 });
           if (a.k % 3 === 0) projWave(e, { speed: 480, life: 0.36, h: 64, hit: { dmg: skillDmg(0.15, 0.015, lv), knock: 20, stun: 0.25 } }); }
         if (e.actT >= a.end && !a.fin) { a.fin = true; e.play('atk3', true); sfx.iai(); cam.shake = Math.max(cam.shake, 5);
-          projWave(e, { speed: 520, vy: (a.aim || 0) * 190, life: 0.85, h: 130, hit: { dmg: skillDmg(3.0, 0.3, lv), down: true, downLift: 240, knock: 260, hs: 0.1, big: 1.6, rep: 0 } }); }   // 收尾巨大剑气把敌人吹倒（不浮空）；↑↓ 调纵深角度
+          if (swWt(e) === 'club' && arcanaLv(e) >= 7) { fxShock(e.x + e.face * 150, e.y, 330, '#d8c8a8'); fxDust(e.x + e.face * 150, e.y, 12, 50, '#8a7a6a'); cam.shake = Math.max(cam.shake, 9); sfx.boom(1);
+            blast(e, e.x + e.face * 150, e.y, 230, { dmg: skillDmg(3.6, 0.36, lv), down: true, knock: 260, hs: 0.1, big: 1.8, downHit: true }, { zMax: 200 }); }
+          else projWave(e, { speed: 520, vy: (a.aim || 0) * 190, life: 0.85, h: 130, hit: { dmg: skillDmg(3.0, 0.3, lv), down: true, downLift: 240, knock: 260, hs: 0.1, big: 1.6, rep: 0 } }); }   // 收尾巨大剑气把敌人吹倒（不浮空）；↑↓ 调纵深角度
       },
       hits: [HB(0, 2.4, [-20, 110, 38, 0, 120], skillDmg(0.3, 0.03, lv) * (fast ? 0.6 : 1), { rep: step, stun: 0.3, knock: 10, airLift: 140, hs: 0.02, snd: 'slash' })],
       onEnd: e => { e.vy = 0; } }; } });
@@ -325,18 +327,18 @@ defSkill('wm_meteor', { name: '极·神剑术（流星落）', cls: 'sword', job
       blast(e, e.x, e.y, 210, { dmg: skillDmg(4.0, 0.4, lv), launch: 460, knock: 120, hs: 0.12, big: 1.8, sure: true, downHit: true }, { zMax: 200 }); } }) });
 
 /* ---- 破空拔刀斩：按住蓄力；大范围拔刀斩，同时向前射出圆形剑气（约 850 像素），被拔刀斩中的敌人不再吃剑气 ---- */
-defSkill('wm_kuubatto', { name: '破空拔刀斩', cls: 'sword', job: 'blade', lvReq: 25, mp: 90, cd: 50, type: 'phys', col: '#ffd070',
+defSkill('wm_kuubatto', { name: '破空拔刀斩', cls: 'sword', job: 'blade', lvReq: 25, mp: 90, cd: 50, type: 'phys', col: '#bfe8ff',
   desc: '收刀蓄势（按住技能键可以蓄力），瞬间拔刀，斩出以自身为中心的大范围剑光，同时向前射出一道圆形剑气（约 850 像素）。被拔刀斩中的敌人不会再被剑气打到。蓄势期间霸体。', pow: lv => skillDmg(14, 1.4, lv), ai: { kind: 'burst', r: [0, 600], dy: 40 },
   act: (lv) => ({ name: 'wm_kuubatto', clip: 'iai', dur: 1.0, superArmor: true, noCounter: true,
-    charge: { at: 0.3, max: 0.8, min: 0, dmg: 0.5, update: (e, dt, k) => { if (Math.random() < 0.5) fxCharge(e, '#ffd070'); e.drawOpts = { glow: 0.3 + k * 0.7 }; } },
+    charge: { at: 0.3, max: 0.8, min: 0, dmg: 0.5, update: (e, dt, k) => { if (Math.random() < 0.5) fxCharge(e, '#bfe8ff'); e.drawOpts = { glow: 0.3 + k * 0.7 }; } },
     onEnd: e => { e.drawOpts = {}; },
-    events: [evAt(0.02, () => sfx.charge()), evAt(0.4, e => { cam.flash = 0.15; cam.flashCol = '#fff6d0'; cam.shake = 9; sfx.iai(); sfx.boom(0.8);
-      fxSlashOn(e, { col: '#ffd070', a0: -3.1, a1: 3.1, r: 200, w: 36, off: [0, 50], squash: 0.45, dur: 0.3 }); fxShock(e.x, e.y, 300, '#ffd070');
-      const hit = new Set(); for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - e.x, (t.y - e.y) * 1.8) < 260) { hit.add(t.id); applyHit(e, t, { dmg: skillDmg(8, 0.8, lv), knock: 200, down: true, radial: true, hs: 0.14, big: 1.8, col: '#ffe0a0', downHit: true }, {}); }
-      const w = swWt(e), col = w === 'lightsaber' ? '#fff38a' : '#ffd070';
+    events: [evAt(0.02, () => sfx.charge()), evAt(0.4, e => { cam.flash = 0.15; cam.flashCol = '#eaf6ff'; cam.shake = 9; sfx.iai(); sfx.boom(0.8);
+      fxSlashOn(e, { col: '#bfe8ff', a0: -3.1, a1: 3.1, r: 200, w: 36, off: [0, 50], squash: 0.45, dur: 0.3 }); fxShock(e.x, e.y, 300, '#bfe8ff');
+      const hit = new Set(); for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - e.x, (t.y - e.y) * 1.8) < 260) { hit.add(t.id); applyHit(e, t, { dmg: skillDmg(8, 0.8, lv), knock: 200, down: true, radial: true, hs: 0.14, big: 1.8, col: '#dff2ff', downHit: true }, {}); }
+      const w = swWt(e), col = w === 'lightsaber' ? '#fff38a' : '#bfe8ff';
       const pr = spawnProj({ owner: e, x: e.x + e.face * 60, y: e.y, z: 20, vx: e.face * 620, face: e.face, life: 1.37, w: 50, d: 40, h: 150, pierce: true,
         hit: { dmg: skillDmg(6, 0.6, lv), knock: 160, launch: 260, hs: 0.1, big: 1.6, col },
-        onHitT: (q, t) => { if (w === 'katana' && arcanaLv(e)) wmPierce(e, t); else if (w === 'lightsaber') addStatus(t, 'shock', 2, { src: e }); },
+        onHitT: (q, t) => { if (w === 'katana' && arcanaLv(e)) wmPierce(e, t); else if (w === 'lightsaber') addStatus(t, 'shock', 10, { src: e }); },
         draw(c, q) { const k = q.t / q.life, al = k > 0.85 ? (1 - k) / 0.15 : 1; drawSpr(c, fxTint('slash', col), sx(q.x), sy(q.y, q.z + 60), 170, 0, { rot: q.t * 16 * q.face, alpha: al }); drawSpr(c, fxTint('shock', col), sx(q.x), sy(q.y, 0), 150, 0, { alpha: 0.5 * al }); } });
       for (const id of hit) pr.hitMap.set(id, 0);   // 被拔刀斩中的敌人不再吃剑气
     })] }) });
@@ -349,7 +351,8 @@ defSkill('wm_hakuu', { name: '极·神剑术（破空斩）', cls: 'sword', job:
     charge: { at: 0.15, max: 1.0, min: 0.2, dmg: 0, update: e => wmHakuuMark(e) },
     events: [evAt(0.02, () => sfx.charge()), evAt(0.2, e => { wmHakuuMark(e); const L = [...e.act.marks].filter(t => !t.dead);
       e.play('iaiSpin', true); cam.flash = 0.12; cam.flashCol = '#eaf6ff'; sfx.iai(); fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 480, w: 24, col: '#bfe8ff', dur: 0.3 });
-      L.forEach((t, i) => game.after(i * 0.04, () => { if (t.dead) return; fxSlashX(t.x, t.y, t.z + 50, 140, '#bfe8ff'); applyHit(e, t, { dmg: skillDmg(9, 0.9, lv), stun: 1.0, knock: 20, hs: 0.08, sure: true, col: '#dff0ff' }, { proj: true }); }));
+      L.forEach((t, i) => game.after(i * 0.04, () => { if (t.dead) return; fxSlashX(t.x, t.y, t.z + 50, 140, '#bfe8ff'); applyHit(e, t, { dmg: skillDmg(9, 0.9, lv), stun: 1.0, knock: 20, hs: 0.08, sure: true, col: '#dff0ff' }, { proj: true });
+        const w = swWt(e); if (w === 'club') addStatus(t, 'stun', 4.5, { src: e }); else if (w === 'lightsaber') addStatus(t, 'shock', 2, { src: e }); else if (w === 'katana' && arcanaLv(e)) { wmPierce(e, t); wmPierce(e, t); wmPierce(e, t); } else if (w === 'shortsword' && !t.boss) { t.x = lerp(t.x, e.x + e.face * 60, 0.7); t.y = lerp(t.y, e.y, 0.5); } }));
       game.after(0.45, () => { if (e.dead) return; cam.shake = Math.max(cam.shake, 10); sfx.boom(1.1);
         for (const t of L) if (!t.dead) { fxBurst(t.x, t.y, t.z + 40, 140, '#bfe8ff'); applyHit(e, t, { dmg: skillDmg(7, 0.7, lv), launch: 380, knock: 80, hs: 0.1, sure: true, big: 1.6, downHit: true }, { proj: true }); }
         if (wmShin(e) && L.length) { const val = t => (t.boss ? 2e12 : t.elite ? 1e12 : 0) + t.hp, c = L.reduce((b, t) => val(t) > val(b) ? t : b, L[0]);
@@ -446,6 +449,9 @@ swordAwk3Finish('wm_awaken3', p => summonsOf(p, 'wm_swords').length > 0, e => di
   wrap('backslash', (a, lv, p) => { if (wmShin(p)) a.events.push(evAt(0.14, e => projWave(e, { speed: 560, life: 0.4, h: 90, hit: { dmg: skillDmg(1.5, 0.15, lv), knock: 120, stun: 0.4, downHit: true } }))); });
   wrap('rise', (a, lv, p) => { if (wmShin(p)) (a.events = a.events || []).push(evAt(0.7, e => { fxShock(e.x, e.y, 220, '#ffe070'); fxSpr('tornado', e.x + e.face * 50, e.y, 0, { h: 190, dur: 0.4, ay: 1, col: '#ffd070' });
     blast(e, e.x + e.face * 50, e.y, 160, { dmg: skillDmg(2.5, 0.25, lv), launch: 360, knock: 80, hs: 0.08, sure: true }, { zMax: 260 }); })); });
+  wrap('rise', (a, lv, p) => { const w = swWt(p); if ((w === 'greatsword' || w === 'club') && arcanaLv(p) >= 7) (a.events = a.events || []).push(evAt(0.78, e => { fxSlashOn(e, { col: '#ffd0a0', a0: -2.7, a1: 1.1, r: 90, w: 24, off: [10, 56], heavy: true }); sfx.boom(0.6);
+    blast(e, e.x + e.face * 60, e.y, 110, { dmg: skillDmg(1.6, 0.16, lv), down: true, knock: 120, hs: 0.08, sure: true, downHit: true, big: 1.4 }, { zMax: 200 }); })); });
+  wrap('iai', (a, lv, p) => { if (swWt(p) === 'shortsword' && arcanaLv(p) >= 7) (a.events = a.events || []).push(evAt(0.42, e => projWave(e, { speed: 600, life: 0.5, h: 90, hit: { dmg: skillDmg(1.5, 0.15, lv), knock: 100, stun: 0.4 } }))); });
   wrap('dragon', (a, lv, p) => { if (wmShin(p)) (a.events = a.events || []).push(evAt(0.66, e => { const x = e.x + e.face * 70; fxSpr('tornado', x, e.y, 0, { h: 240, dur: 0.6, ay: 1, col: '#9fc8ff', spin: 4 });
     for (const t of ents) if (hittable(e, t) && !t.boss && Math.abs(t.x - x) < 220 && Math.abs(t.y - e.y) < 70) t.x = lerp(t.x, x, 0.6);
     blast(e, x, e.y, 160, { dmg: skillDmg(3, 0.3, lv), launch: 420, knock: 20, hs: 0.08, sure: true }, { zMax: 300 }); })); });
@@ -453,9 +459,48 @@ swordAwk3Finish('wm_awaken3', p => summonsOf(p, 'wm_swords').length > 0, e => di
     for (let i = 0; i < 6; i++) game.after(0.06 * i, () => { const x = e.x + e.face * (60 + i * 50); fxSlashX(x, e.y, 60, 170, '#c0c8ff'); blast(e, x, e.y, 85, { dmg: skillDmg(0.8, 0.08, lv), stun: 0.4, knock: 20, hs: 0.03, sure: true }, { zMax: 200 }); }); } }; } });
 }
 
-CLASSES.sword.jobs.blade = { art: 'job/blade', name: '剑魂', role: '近战 · 连击', armor: 'light', awaken: 'awaken', awakenName: '剑圣',
+/* ---- 疾影手 / 神影手（剑魂的招牌）：在“身上的武器”和“备用武器”之间一键切换（默认键 \，可在按键设置里改）。
+   备用武器 = 背包里的另一把武器（记住上一把换下来的；没有就自动挑一把能装备的、类型不同、等级最高的）。切到不同类型的武器：攻速 / 移速提高一小段时间；同类只缩短切换冷却。
+   官方：切换冷却 10 秒 → 疾影手减半；神影手切换时前方冲击波，加成 15%、15 秒。正在里·鬼剑术、受击、倒地时不能切 ---- */
+defSkill('wm_swap', { name: '疾影手', cls: 'sword', job: 'blade', lvReq: 15, mp: 0, cd: 0, type: 'phys', passive: true, maxLv: 1, col: '#9fd8ff',
+  desc: '【被动】按切换武器键（默认 \\）在身上的武器和背包里的备用武器之间快速切换（冷却 10 秒，此技能让冷却减半）。切到不同类型的武器时，攻击速度和移动速度 +7.5%，持续 10 秒；切同类型的武器只缩短切换冷却。',
+  infoExtra: () => [['切换冷却', '5 秒'], ['攻速 / 移速', '+7.5%'], ['持续时间', '10 秒']] });
+defSkill('wm_swap2', { name: '神影手', cls: 'sword', job: 'blade', lvReq: 25, mp: 0, cd: 0, type: 'phys', passive: true, maxLv: 1, col: '#d8f0ff', pow: lv => skillDmg(5.0, 0.5, lv),
+  desc: '【被动】疾影手的进阶：切换到不同类型的武器时，在身前放出一道冲击波，攻击速度和移动速度提高到 +15%，持续 15 秒；切换冷却进一步缩短。',
+  infoExtra: () => [['切换冷却', '4.5 秒'], ['攻速 / 移速', '+15%'], ['持续时间', '15 秒']] });
+KEYMAP_DEFAULT.wswap = ['Backslash'];
+if (!KEYMAP.wswap) { KEYMAP.wswap = ['Backslash']; try { const k = (JSON.parse(localStorage.getItem(UI_PREF_KEY) || '{}').keys || {}).wswap; if (Array.isArray(k)) KEYMAP.wswap = k.filter(c => typeof c === 'string').slice(0, 2); } catch (e) { /* 用默认键 */ } }
+ACTION_NAME.wswap = '切换武器（剑魂）';
+{ const G = KEY_GROUPS.find(g => g[0] === '战斗'); if (G && !G[1].includes('wswap')) G[1].push('wswap'); }
+function wmAltWeapon() {
+  inv.ensure(); const cur = inv.equip.weapon, ok = it => it && it !== cur && it.kind === 'equip' && it.slot === 'weapon' && inv.items.includes(it) && inv.canWear(it, true);
+  if (ok(inv._alt)) return inv._alt;
+  let best = null, sc = -1; for (const it of inv.items) if (ok(it)) { const v = (cur && it.wtype !== cur.wtype ? 1e6 : 0) + it.lvl * 100 + (it.enh || 0); if (v > sc) { sc = v; best = it; } }
+  return best;
+}
+function wmSwapWeapon(p) {
+  if ((p.cool.wm_swap || 0) > 0) { fxText('切换武器冷却中', p.x, p.y, p.z + 40, { col: '#9fd8ff', size: 11 }); return false; }
+  const nw = wmAltWeapon(), cur = inv.equip.weapon;
+  if (!nw) { toastMsg('背包里没有可以切换的备用武器', '#ff6a6a'); return false; }
+  const diff = !cur || cur.wtype !== nw.wtype, deft = skLv(p, 'wm_swap2') > 0;
+  if (!inv.wear(nw)) return false;
+  inv._alt = cur || null; p.cool.wm_swap = (deft ? 4.5 : 5) * (diff ? 1 : 0.5);
+  fxAfterimage(p, '#9fd8ff'); fxAura(p, '#9fd8ff', 0.6); sfx.buff();
+  fxText((diff ? '' : '同类 ') + '切换：' + (nw.name || '武器'), p.x, p.y, p.z + 40, { col: '#9fd8ff', size: 11 });
+  if (diff) {
+    p.buffs.wm_swapbuff = { t: deft ? 15 : 10, aspd: deft ? 0.15 : 0.075, mspd: deft ? 0.15 : 0.075 };
+    if (deft) { const lv = skLv(p, 'wm_swap2'); fxShock(p.x + p.face * 60, p.y, 230, '#bfe8ff'); cam.shake = Math.max(cam.shake, 5); sfx.boom(0.6);
+      blast(p, p.x + p.face * 90, p.y, 190, { dmg: skillDmg(5.0, 0.5, lv), launch: 260, knock: 140, hs: 0.08, sure: true, big: 1.4, col: '#bfe8ff' }, { zMax: 200 }); }
+  }
+  return true;
+}
+{ const C = CLASSES.sword, pre0 = C.preControl;
+  C.preControl = (p, I, dt) => { if (isHuman(p) && jobOf(p) === 'blade' && hasSkill(p, 'wm_swap') && I.hit('wswap') && !p.dead && p.st !== 'hit' && p.st !== 'down' && (p.st !== 'act' || (p.act && p.act.basic && !p.act.rk))) wmSwapWeapon(p);
+    return pre0 ? pre0(p, I, dt) : false; }; }
+
+CLASSES.sword.jobs.blade = { art: 'job/blade', name: '剑魂', role: '近战 · 连击', armor: 'light', awaken: 'awaken', awakenName: '剑圣', auto: ['wm_swap'],
   desc: '专精剑术的鬼剑士，能驾驭所有武器。里·鬼剑术随武器变化，流心架势派生刺 / 跃 / 升 / 狂，拔刀斩、猛龙断空斩、幻影剑舞打出华丽的连招。',
-  skills: ['wm_saber', 'wm_arcana', 'rikiken', 'backslash', 'wm_mind', 'flow', 'flow_stab', 'flow_leap', 'flow_rise', 'flow_frenzy', 'wm_autoguard', 'wm_edge', 'wm_reverse', 'rise', 'iai', 'dragon', 'wm_dragonrush', 'phantom', 'awaken', 'wm_zantetsu', 'wm_meteor', 'wm_kuubatto', 'wm_shinken', 'wm_hakuu', 'wm_shunzan', 'wm_awaken2', 'wm_formless', 'wm_mukei', 'wm_awaken3'] };
+  skills: ['wm_swap', 'wm_saber', 'wm_arcana', 'rikiken', 'backslash', 'wm_mind', 'flow', 'flow_stab', 'flow_leap', 'flow_rise', 'flow_frenzy', 'wm_autoguard', 'wm_edge', 'wm_reverse', 'rise', 'iai', 'dragon', 'wm_dragonrush', 'phantom', 'awaken', 'wm_zantetsu', 'wm_meteor', 'wm_kuubatto', 'wm_swap2', 'wm_shinken', 'wm_hakuu', 'wm_shunzan', 'wm_awaken2', 'wm_formless', 'wm_mukei', 'wm_awaken3'] };
 CLASSES.sword.cmds.push(['du', 'wm_autoguard', 'buff'], ['ff', 'wm_edge', 'buff'], ['hit', 'wm_reverse'], ['bff', 'rise'], ['bdf', 'iai'], ['uff', 'dragon'], ['fbdf', 'wm_dragonrush'], ['fdf', 'phantom'], ['uudd', 'awaken'],
   ['dff', 'wm_meteor'], ['fbuf', 'wm_kuubatto'], ['fbf', 'wm_hakuu'], ['duf', 'wm_shunzan'], ['duff', 'wm_awaken2'], ['udff', 'wm_mukei'], ['bufd', 'wm_awaken3']);
 // 流心可以取消：普攻（强制，天然可以）、里·鬼剑术（算普攻）、三段刃、逆转反击

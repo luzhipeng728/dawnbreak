@@ -272,6 +272,21 @@ const R2 = await page.evaluate(() => {
 report('鬼印珠：飞行中抵消敌方投射物，激光类大判定不抵消', R2.orbErase && R2.orbKeepsBig, [R2.orbErase, R2.orbKeepsBig]);
 report('剑魂三段刃：太刀 7 段、巨剑 5 段', R2.bladeKatana === 7 && R2.bladeGreat === 5, [R2.bladeKatana, R2.bladeGreat]);
 report('满月斩：鬼神冠冕后变成造月 → 染黑 → 击碎（附带失明），没学时是普通上挑', R2.crownMoon === 0.72 && R2.crownBlind && R2.plainMoon === 0.5, [R2.crownMoon, R2.crownBlind, R2.plainMoon]);
+
+// ---- 疾影手 / 神影手：一键在身上的武器和背包备用武器之间切换 ----
+const R3 = await page.evaluate(() => {
+  const out = {}, p = game.player; T.clear(); inv.ensure(); T.job('blade'); game.lvl = Math.max(game.lvl, 30);
+  inv.equip.weapon = makeItem('katana_1_0', 1, { grade: 2 }); const club = makeItem('club_1_0', 1, { grade: 2 }), kat2 = makeItem('katana_1_0', 1, { grade: 2 });
+  inv.items = inv.items.filter(x => !(x.kind === 'equip' && x.slot === 'weapon')); inv.items.push(club, kat2); inv._alt = null;
+  game.skillLv.wm_swap = 1; game.skillLv.wm_swap2 = 0; T.reset(); T.mob(420, 100);
+  T.tap('wswap'); T.run(2); out.w1 = inv.equip.weapon && inv.equip.weapon.wtype; out.buff = p.buffs.wm_swapbuff ? [p.buffs.wm_swapbuff.aspd, p.buffs.wm_swapbuff.t] : null; out.cd = p.cool.wm_swap;
+  T.tap('wswap'); T.run(2); out.coolBlocks = inv.equip.weapon.wtype === 'club';
+  p.cool.wm_swap = 0; T.tap('wswap'); T.run(2); out.back = inv.equip.weapon.wtype; out.altKept = inv.items.some(x => x.wtype === 'club');
+  game.skillLv.wm_swap2 = 1; p.buffs = {}; p.cool.wm_swap = 0; T.tap('wswap'); T.run(2); out.deft = p.buffs.wm_swapbuff ? [p.buffs.wm_swapbuff.aspd, p.buffs.wm_swapbuff.t] : null; out.w3 = inv.equip.weapon.wtype;
+  T.clear(); return out;
+});
+report('疾影手：切到不同类武器 +7.5% 攻速 / 移速 10 秒、冷却 5 秒；冷却中不能再切；再切回换回原武器', R3.w1 === 'club' && R3.buff && R3.buff[0] === 0.075 && Math.abs(R3.buff[1] - 10) < 0.2 && R3.cd > 4 && R3.coolBlocks && R3.back === 'katana' && R3.altKept, R3);
+report('神影手：切到不同类武器 +15% 攻速 / 移速 15 秒', R3.deft && R3.deft[0] === 0.15 && Math.abs(R3.deft[1] - 15) < 0.2 && R3.w3 === 'club', R3.deft);
 const errs = logs.filter(l => l.type !== 'warning'); if (errs.length) fail++;
 console.log('LOGS', JSON.stringify(errs.slice(0, 6), null, 1));
 await browser.close();

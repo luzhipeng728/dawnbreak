@@ -9,14 +9,14 @@ smDef('sm_hilun', 'hilun', { h: 52, speed: 300, pref: 0, tags: ['spirit', 'fusio
 SUMMON_DEFS.sm_hilun.ai = s => { const o = s.owner, gx = o.x - o.face * 30, gy = o.y - 6, dx = gx - s.x, dy = gy - s.y;
   if (Math.abs(dx) > 400) { s.warp(gx, gy); return; }
   if (Math.abs(dx) > 4 || Math.abs(dy) > 3) { s.vx = dx * 6; s.vy = dy * 6; s.setState('walk'); } else { s.vx = s.vy = 0; s.setState('idle'); } s.face = o.face; };
-defSkill('sm_hilun', { noHitCheck: true, name: '融合精灵海伊伦', cls: 'mage', job: SM, tier: 1, lvReq: 23, mp: 60, cd: 10, type: 'mag', col: '#ffc0ff', cast: true,
+defSkill('sm_hilun', { noHitCheck: true, name: '融合精灵海伊伦', cls: 'mage', job: SM, tier: 1, lvReq: 23, mp: 60, cd: 24, type: 'mag', col: '#ffc0ff', cast: true,
   desc: '召唤融合精灵海伊伦（常驻，不攻击），贴在你身边：提高你的技能攻击力；600px 内的你和队友攻击速度、移动速度、施放速度提高；上级精灵获得霸体；全部召唤兽免疫异常状态。',
   ai: { kind: 'buff', summon: 'sm_hilun' }, infoExtra: lv => [['技能攻击力', '+' + pct(0.05 + 0.01 * lv)], ['攻速 / 移速 / 施放速度', '+' + pct(0.06 + 0.01 * lv)]],
-  act: (lv) => smSummonAct('sm_hilun', lv) });
+  act: (lv) => smSummonAct('sm_hilun', lv, 1.0) });
 // ---- 支配之环：极快地依次召出全部已学、当前不在场的召唤兽（卡西利亚斯、拉莫斯除外） ----
 const SM_RING = [['sm_lesser', LESSER], ['sm_frit', 'sm_frit'], ['sm_sandor', 'sm_sandor'], ['sm_aukuso', 'sm_aukuso'], ['sm_merkle', 'sm_merkle'], ['sm_glarelin', 'sm_glarelin'], ['sm_aqueris', 'sm_aqueris'],
   ['sm_flamehulk', 'sm_flamehulk'], ['sm_luise', 'sm_luise'], ['sm_echeverria', 'sm_echeverria'], ['sm_kuruta', 'sm_kuruta'], ['mg_hodor', 'hodor'], ['sm_hilun', 'sm_hilun']];
-defSkill('sm_ring', { name: '支配之环', cls: 'mage', job: SM, tier: 1, lvReq: 23, mp: 150, cd: 60, type: 'mag', col: '#b08aff', cast: true,
+defSkill('sm_ring', { name: '支配之环', cls: 'mage', job: SM, tier: 1, lvReq: 23, mp: 150, cd: 10, type: 'mag', col: '#b08aff', cast: true,
   desc: '举起支配之环，极快地依次召出你已学会、当前不在场的全部召唤兽（卡西利亚斯、拉莫斯除外）。', ai: { kind: 'buff' },
   act: () => ({ name: 'sm_ring', clip: 'smSummon', dur: 1.1, cancelFrom: 0.9, noCounter: true, events: [evAt(0.2, e => { sfx.magic(); fxShock(e.x, e.y, 160, '#b08aff'); let i = 0;
     for (const [id, keys] of SM_RING) { const lv = skLv(e, id); if (lv <= 0) continue;
@@ -29,7 +29,7 @@ SUMMON_DEFS.sm_kuruta.cmds.rage = (s, arg) => { smFront(s, arg); summonAct(s, { 
   evAt(1.8, e => { e.play('axe', true); sfx.boom(1.2); cam.shake = Math.max(cam.shake, 9); fxShock(e.x + e.face * 100, e.y, 320, '#ffb060'); fxBurst(e.x + e.face * 100, e.y, 30, 340, '#ffd090');
     summonArea(e, e.x + e.face * 100, e.y, 250, { dmg: 4.0 * ((arg && arg.mul) || 1), launch: 420, knock: 160, hs: 0.12, big: 1.7, type: 'mag', downHit: true }, { zMax: 220 }); })] }); };
 const smOrder = (key, cmd, name) => (lv) => ({ name: 'sm_cmd', clip: 'smCmd', dur: 0.35, noCounter: true, onStart: e => { summonCmd(e, key, cmd, { ...smCmdArg(e), mul: lvMul(lv, 0.1) }); fxText(name, e.x, e.y, e.z + 30, { col: '#e0c0ff', size: 10, dur: 0.5 }); } });
-defSkill('sm_roar', { name: '咒令：愤怒咆哮', cls: 'mage', job: SM, tier: 1, lvReq: 25, mp: 60, cd: 25, type: 'mag', col: '#e0a060', req: p => summonsOf(p, 'sm_kuruta').length > 0 || '库鲁塔不在场',
+defSkill('sm_roar', { name: '咒令：愤怒咆哮', cls: 'mage', job: SM, tier: 1, lvReq: 25, mp: 60, cd: 50, type: 'mag', col: '#e0a060', req: p => summonsOf(p, 'sm_kuruta').length > 0 || '库鲁塔不在场',
   desc: '库鲁塔在场时才能用：它跑到你前方咆哮（眩晕），斧头快速砸地 4 次，最后一记重击。', pow: lv => skillDmg(20, 2, lv), ai: { kind: 'aoe', r: [0, 340], dy: 110 }, act: smOrder('sm_kuruta', 'rage', '愤怒咆哮') });
 // ---- 蚀月附灵（二觉被动）：上级精灵、精灵王、拉莫斯再按一次召唤键 = 附灵（瞬移到你前方放专属招，冷却 15 秒） ----
 defSkill('sm_eclipse', { name: '蚀月附灵', cls: 'mage', job: SM, tier: 2, lvReq: 26, passive: true, type: 'mag', col: ECL,
@@ -68,22 +68,23 @@ SUMMON_DEFS.sm_echeverria.cmds = { special(s, arg) { smFront(s, arg); summonAct(
 const luiseFrenzy = s => s.frenzyT > game.t;
 for (const A of SUMMON_DEFS.sm_luise.attacks) { const c0 = A.cond; A.cond = (s, t) => !luiseFrenzy(s) && (!c0 || c0(s, t)); }
 SUMMON_DEFS.sm_luise.attacks.push(
-  { clip: 'cast', range: [60, 440], dy: 60, cd: [0.8, 1.2], w: 3, cond: luiseFrenzy, act: { dur: 0.6, events: [evAt(0.3, s => { sfx.magic(); smShot(s, { dmg: 1.0, col: ECL, elem: 'dark', img: 'darkorb', speed: 700, size: 1.5, pierce: true }); })] } },
-  { clip: 'club', range: [0, 170], dy: 40, cd: [1.6, 2.2], w: 2, cond: luiseFrenzy, act: { dur: 0.8, superArmor: true, events: [evAt(0.4, s => { sfx.boom(0.8); fxShock(s.x + s.face * 80, s.y, 200, ECL); fxBurst(s.x + s.face * 80, s.y, 60, 240, '#e0d0ff');
+  { clip: 'cast', range: [60, 440], dy: 60, cd: [1.2, 1.4], w: 3, cond: luiseFrenzy, act: { dur: 0.6, events: [evAt(0.3, s => { sfx.magic(); for (let i = 0; i < 3; i++) game.after(i * 0.08, () => { if (!s.gone) smShot(s, { dmg: 0.4, col: ECL, elem: 'dark', img: 'darkorb', speed: 700, size: 1.5, pierce: true }); }); })] } },
+  { clip: 'club', range: [0, 170], dy: 40, cd: [1.2, 1.4], w: 2, cond: luiseFrenzy, act: { dur: 0.8, superArmor: true, events: [evAt(0.4, s => { sfx.boom(0.8); fxShock(s.x + s.face * 80, s.y, 200, ECL); fxBurst(s.x + s.face * 80, s.y, 60, 240, '#e0d0ff');
     summonArea(s, s.x + s.face * 80, s.y, 165, { dmg: 1.6, launch: 300, knock: 80, hs: 0.06, elem: 'dark', type: 'mag', downHit: true }, { zMax: 180 }); })] } },
-  { clip: 'cast', range: [100, 520], dy: 120, cd: [2.4, 3.2], w: 1, cond: luiseFrenzy, act: { dur: 0.8, events: [evAt(0.35, s => { for (let i = 0; i < 3; i++) game.after(i * 0.1, () => { if (!s.gone) smShot(s, { dmg: 0.6, col: '#e8e0ff', elem: 'light', img: 'orb', home: true, speed: 420, life: 1.6 }); }); })] } });
-SUMMON_DEFS.sm_luise.cmds.frenzy = (s) => { s.frenzyT = game.t + 15; s.superArmor = Infinity; s.baseModel = s.baseModel || s.model; s.model = summonSprite('luise', { hue: 250, bright: 0.8, sat: 0.7 }, ECL); s.acd = s.acd.map(() => 0); fxShock(s.x, s.y, 140, ECL); fxBurst(s.x, s.y, 60, 160, ECL); };
+  { clip: 'cast', range: [100, 520], dy: 120, cd: [3.5, 4], w: 1, cond: luiseFrenzy, act: { dur: 0.8, events: [evAt(0.35, s => { for (let i = 0; i < 5; i++) game.after(i * 0.1, () => { if (!s.gone) smShot(s, { dmg: 0.4, col: '#e8e0ff', elem: 'light', img: 'orb', home: true, speed: 420, life: 1.6 }); }); })] } });
+SUMMON_DEFS.sm_luise.cmds.frenzy = (s) => { s.frenzyT = game.t + 15; s.superArmor = Infinity; s.baseModel = s.baseModel || s.model; s.model = summonSprite('luise', { hue: 250, bright: 0.8, sat: 0.7 }, ECL); s.acd = s.acd.map(() => 0); sfx.boom(0.8); cam.shake = Math.max(cam.shake, 5); fxShock(s.x, s.y, 240, ECL); fxBurst(s.x, s.y, 60, 260, ECL); summonArea(s, s.x, s.y, 240, { dmg: 2.5, stun: 0.6, knock: 100, hs: 0.06, elem: 'dark', type: 'mag', col: ECL, downHit: true }, { zMax: 180 }); };
+{ const r0 = SKILLS.sm_luise.recast; if (r0) { const ok0 = r0.ok; r0.ok = p => { const L = summonsOf(p, 'sm_luise')[0]; return (!L || !luiseFrenzy(L)) && ok0(p); }; } }
 { const u0 = SUMMON_DEFS.sm_luise.update; SUMMON_DEFS.sm_luise.update = (s, dt) => { if (u0) u0(s, dt); if (s.frenzyT && !luiseFrenzy(s)) { s.frenzyT = 0; if (s.baseModel) s.model = s.baseModel; } else if (luiseFrenzy(s) && Math.random() < 0.15) fxSpr('spark', s.x + rnd(-16, 16), s.y + 1, s.z + rnd(30, 110), { w: 16, dur: 0.2, col: ECL }); }; }
-defSkill('sm_blackmoon', { name: '狂化黑月', cls: 'mage', job: SM, tier: 2, lvReq: 26, mp: 80, cd: 30, type: 'mag', col: ECL, req: p => summonsOf(p, 'sm_luise').length > 0 || '露易丝不在场',
+defSkill('sm_blackmoon', { name: '狂化黑月', cls: 'mage', job: SM, tier: 2, lvReq: 26, mp: 80, cd: 40, type: 'mag', col: ECL, req: p => summonsOf(p, 'sm_luise').length > 0 || '露易丝不在场',
   desc: '露易丝在场时才能用：她暴走 15 秒，获得霸体，攻击换成蚀枪（穿透）、月之破碎（范围）、追踪月光。', ai: { kind: 'buff' }, act: smOrder('sm_luise', 'frenzy', '狂化黑月') });
 // ---- 传说召唤：月蚀之影：前方铺一片“蚀”，爆炸 15 次；区域里自己的召唤兽身上也跟着爆炸 ----
 defSummon('sm_eclZone', { kind: 'field', r: 250, tick: 0.2, hits: 15, life: 3.2, max: 1, col: ECL, keepRoom: false,
-  onTick(s) { const o = s.owner, x = s.x + rnd(-200, 200), y = clamp(s.y + rnd(-70, 70), 8, DEPTH - 8); sfx.boom(0.4); fxBurst(x, y, 30, 200, ECL);
+  onTick(s) { const o = s.owner, x = s.x + rnd(-150, 150), y = clamp(s.y + rnd(-55, 55), 8, DEPTH - 8); sfx.boom(0.4); fxBurst(x, y, 30, 200, ECL);
     summonArea(s, x, y, 155, { dmg: s.dmg || 1, stun: 0.4, knock: 20, hs: 0.03, elem: 'dark', type: 'mag', downHit: true }, { zMax: 200 });
     for (const m of summonsOf(o).filter(m => m.kind === 'follower' && inGround(m, s.x, s.y, 270))) if (Math.random() < 0.35) { fxBurst(m.x, m.y, 60, 120, '#c79aff'); summonArea(s, m.x, m.y, 95, { dmg: (s.dmg || 1) * 0.6, stun: 0.3, knock: 10, hs: 0.02, elem: 'dark', type: 'mag', downHit: true }, { zMax: 200 }); } },
   draw(c, s) { const k = s.lifeT / s.life, a = k < 0.1 ? k * 10 : k > 0.85 ? (1 - k) / 0.15 : 1; c.save(); c.translate(sx(s.x), sy(s.y, 0)); c.scale(1, GR); c.globalAlpha = 0.7 * a; c.fillStyle = '#14081e';
     c.beginPath(); c.arc(0, 0, 250, 0, TAU); c.fill(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.8 * a; drawSpr(c, fxTint('vortex', ECL), 0, 0, 520, 520, { rot: game.t * 2 }); c.restore(); } });
-defSkill('sm_shadow', { name: '传说召唤：月蚀之影', cls: 'mage', job: SM, tier: 2, lvReq: 26, mp: 100, cd: 40, type: 'mag', elem: 'dark', col: ECL, cast: true,
+defSkill('sm_shadow', { name: '传说召唤：月蚀之影', cls: 'mage', job: SM, tier: 2, lvReq: 26, mp: 100, cd: 43, type: 'mag', elem: 'dark', col: ECL, cast: true,
   desc: '在前方铺一片“蚀”，3 秒内爆炸 15 次；区域里你自己的召唤兽身上也会跟着爆炸。', pow: lv => skillDmg(22, 2.2, lv), ai: { kind: 'aoe', r: [40, 420], dy: 110 },
   act: (lv) => ({ name: 'sm_shadow', clip: 'smSac', dur: 0.6, cancelFrom: 0.45, noCounter: true, events: [evAt(0.25, e => { const at = aimAhead(e, 230, 340); sfx.charge(); const s = summon(e, 'sm_eclZone', { x: at.x, y: at.y, lv }); if (s) s.dmg = skillDmg(1.3, 0.13, lv); })] }) });
 // ---- 二觉：逆月者拉莫斯（在场 200 秒，除冲刺外霸体；离场时升空放光柱） ----
@@ -104,15 +105,17 @@ function eclipseMoonFx(x, y, dur, fall) {
 defSummon('sm_lamos', { kind: 'follower', name: '逆月者拉莫斯', bundle: 'lamos', model: () => summonSprite('lamos', {}, ECL, lamAnims()), clips: () => summonClipsFor(lamAnims()),
   w: 18, d: 14, h: 172, shadowR: 22, speed: 170, runSpeed: 360, pref: 70, sight: 720, life: 200, max: 1, col: ECL, tags: ['awaken'], ai: smAI,
   onSpawn: s => { s.superArmor = Infinity; s.statusImmune = BM_FORM_IMMUNE; },
-  update: s => { if (!s.upGo && s.life - s.lifeT < 1.2 && s.life > 5) { s.upGo = true; summonAct(s, { clip: 'lamRise', dur: 1.2, superArmor: true, events: [evAt(0.5, e => lamPillar(e.owner, e.x, e.y, e.mul))] }); } },
+  // 官方：身边每有一只精灵攻击 +4%、每有一只契约兽 +5%，最多 +15%
+  update: s => { const N = summonsOf(s.owner).filter(x => x !== s && Math.abs(x.x - s.x) < 500); s.buffs.lamSelf = { t: 0.5, dmg: Math.min(0.15, N.filter(x => x.sdef.tags.includes('spirit')).length * 0.04 + N.filter(x => x.sdef.tags.includes('contract')).length * 0.05) };
+    if (!s.upGo && s.life - s.lifeT < 1.2 && s.life > 5) { s.upGo = true; summonAct(s, { clip: 'lamRise', dur: 1.2, superArmor: true, events: [evAt(0.5, e => lamPillar(e.owner, e.x, e.y, e.mul))] }); } },
   onEnd: (s, why) => { if (!s.upGo && (why === 'cmd' || why === 'replaced' || why === 'dead')) lamPillar(s.owner, s.x, s.y, s.mul); },
   attacks: [
-    { clip: 'lamClaw', range: [0, 150], dy: 32, cd: [1.4, 2.0], w: 3, act: { dur: 0.7, superArmor: true, hits: [mH(0.12, 0.18, [0, 155, 36, 0, 160], 1.6, { elem: 'dark', snd: 'slash', knock: 40 }), mH(0.37, 0.43, [0, 155, 36, 0, 160], 2.0, { elem: 'dark', snd: 'slash', knock: 120 })],
+    { clip: 'lamClaw', range: [0, 150], dy: 32, cd: [3, 3.4], w: 3, act: { dur: 0.7, superArmor: true, hits: [mH(0.12, 0.18, [0, 155, 36, 0, 160], 2.2, { elem: 'dark', snd: 'slash', knock: 40 }), mH(0.37, 0.43, [0, 155, 36, 0, 160], 2.8, { elem: 'dark', snd: 'slash', knock: 120 })],
       events: [evAt(0.1, e => fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: ECL, a0: -1.4, a1: 1.0, r: 145, w: 22, off: [10, 90], dur: 0.18 })), evAt(0.35, e => fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#d0b0ff', a0: 1.0, a1: -1.4, r: 145, w: 22, off: [10, 90], dur: 0.18 }))] } },
-    { clip: 'lamDash', range: [140, 420], dy: 30, cd: [4, 6], w: 2, act: { dur: 0.75, move: [[0.05, 0.4, 900]], onStart: e => { e.superArmor = 0; }, onEnd: e => { e.superArmor = Infinity; },
-      hits: [mH(0.05, 0.45, [0, 120, 38, 0, 160], 2.2, { elem: 'dark', snd: 'slash', knock: 160, launch: 240, max: 1 })], events: [evAt(0.05, e => { sfx.swing(true); fxAfterimage(e, ECL); })] } },
-    { clip: 'lamSpin', range: [0, 220], dy: 80, cd: [6, 8], w: 1, act: { dur: 0.8, superArmor: true, events: [evAt(0.3, e => { sfx.swing(true); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: ECL, a0: -3.1, a1: 3.1, r: 230, w: 26, off: [0, 80], squash: 0.45, dur: 0.3 });
-      summonArea(e, e.x, e.y, 235, { dmg: 3.0, launch: 300, knock: 140, hs: 0.08, elem: 'dark', type: 'mag', radial: true, downHit: true }, { zMax: 200 }); })] } }],
+    { clip: 'lamDash', range: [140, 420], dy: 30, cd: [3, 3.4], w: 2, act: { dur: 0.75, move: [[0.05, 0.4, 900]], onStart: e => { e.superArmor = 0; }, onEnd: e => { e.superArmor = Infinity; },
+      hits: [mH(0.05, 0.45, [0, 120, 38, 0, 160], 3.0, { elem: 'dark', snd: 'slash', knock: 160, launch: 240, max: 1 })], events: [evAt(0.05, e => { sfx.swing(true); fxAfterimage(e, ECL); })] } },
+    { clip: 'lamSpin', range: [0, 220], dy: 80, cd: [6, 6.6], w: 1, act: { dur: 0.8, superArmor: true, events: [evAt(0.3, e => { sfx.swing(true); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: ECL, a0: -3.1, a1: 3.1, r: 230, w: 26, off: [0, 80], squash: 0.45, dur: 0.3 });
+      summonArea(e, e.x, e.y, 235, { dmg: 4.0, launch: 300, knock: 140, hs: 0.08, elem: 'dark', type: 'mag', radial: true, downHit: true }, { zMax: 200 }); })] } }],
   cmds: {
     // 附灵“蚀旋”：大范围把敌人卷到拉莫斯面前
     special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'lamRaise', dur: 1.5, superArmor: true, update: e => { if (e.actT > 0.2 && e.actT < 1.2) mgPull(e.owner, e.x + e.face * 80, e.y, 520, 0.05); },
@@ -127,10 +130,10 @@ defSummon('sm_lamos', { kind: 'follower', name: '逆月者拉莫斯', bundle: 'l
         for (let i = 0; i < 4; i++) game.after(i * 0.1, () => { if (!e.gone) summonArea(e, x, y, 260, { dmg: 2.0 * k, stun: 0.6, knock: 20, hs: 0.05, elem: 'dark', type: 'mag', downHit: true }, { zMax: 220 }); });
         game.after(0.45, () => { if (e.gone) return; summonArea(e, x, y, 290, { dmg: 5.0 * k, launch: 420, knock: 140, hs: 0.12, big: 1.6, elem: 'dark', type: 'mag', downHit: true }, { zMax: 240 }); }); }),
       evAt(1.5, e => { e.warp(e.act.tx - o.face * 60, e.act.ty); if (e.baseModel) e.model = e.baseModel; e.play('lamLand', true); })] }); } } });
-defSkill('sm_awaken2', { name: '传说召唤：逆月者拉莫斯', cls: 'mage', job: SM, tier: 2, lvReq: 27, maxLv: 3, mp: 200, cd: 170, pvp: 0.45, type: 'mag', awaken: true, col: ECL,
+defSkill('sm_awaken2', { name: '传说召唤：逆月者拉莫斯', cls: 'mage', job: SM, tier: 2, lvReq: 27, maxLv: 3, mp: 200, cd: 180, pvp: 0.45, type: 'mag', awaken: true, col: ECL,
   desc: '【二次觉醒】在月食之夜与“蚀”签约：黑色的月亮出现在前方上空，远古战士拉莫斯降临，落地冲击击倒大范围的敌人。在场 200 秒（决斗场 30 秒），除冲刺外常驻霸体，放养时施展爪击、冲刺、回旋；学会蚀月附灵后可附灵“蚀旋”；离场时升空放出光柱。召唤过程中你处于无敌状态。',
   pow: lv => skillDmg(34, 9, lv), ai: { kind: 'awaken', r: [0, 600], dy: 160 }, infoExtra: () => [['在场时间', '200 秒']],
-  recast: smPossess('sm_lamos', 15),
+  recast: smPossess('sm_lamos', 10),
   act: (lv) => ({ name: 'sm_awaken2', clip: 'smAwk', dur: 2.0, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '逆月者拉莫斯', who: cutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); dismissSummons(e, 'sm_lamos', 'replaced'); const R = game.room, x = e.x + e.face * 150; e.act.rx = R ? clamp(x, R.x0 + 40, R.x1 - 40) : x; e.act.ry = e.y; },
     events: [evAt(0.95, e => { sfx.charge(); eclipseMoonFx(e.act.rx, e.act.ry, 1.0, false); }),
@@ -153,7 +156,7 @@ SUMMON_DEFS.sm_echeverria.cmds.supreme = (s, arg) => { const o = s.owner, k = (a
   evAt(2.0, e => { cam.flash = 0.3; cam.flashCol = '#e8d8ff'; cam.shake = 12; sfx.boom(1.4); for (const c of [[e.x, e.y], [o.x, o.y]]) { fxShock(c[0], c[1], 320, ECL); fxBurst(c[0], c[1], 60, 380, '#e0d0ff'); }
     summonArea(e, e.x, e.y, 320, { dmg: 6 * k, launch: 420, knock: 160, hs: 0.12, big: 1.8, elem: 'dark', type: 'mag', downHit: true }, { zMax: 260 });
     summonArea(e, o.x, o.y, 320, { dmg: 6 * k, launch: 420, knock: 160, hs: 0.12, big: 1.8, elem: 'dark', type: 'mag', downHit: true }, { zMax: 260 }); })] }); };
-defSkill('sm_supreme', { name: '至高精灵王', cls: 'mage', job: SM, tier: 3, lvReq: 29, mp: 150, cd: 50, type: 'mag', col: '#ffd070', req: p => summonsOf(p, 'sm_echeverria').length > 0 || '伊伽贝拉不在场',
+defSkill('sm_supreme', { name: '至高精灵王', cls: 'mage', job: SM, tier: 3, lvReq: 29, mp: 150, cd: 60, type: 'mag', col: '#ffd070', req: p => summonsOf(p, 'sm_echeverria').length > 0 || '伊伽贝拉不在场',
   desc: '伊伽贝拉在场时才能用：她被注入“蚀”，向两侧放出多束超高密度激光，最后和你一起引爆。', pow: lv => skillDmg(30, 3, lv), ai: { kind: 'aoe', r: [0, 620], dy: 100 }, act: smOrder('sm_echeverria', 'supreme', '至高精灵王') });
 // ---- 三觉：魔月·德拉里昂（插图式演出，官方四步：召唤阵 → 敌人被逆召唤到月面 → 德拉里昂现身、喷出蚀之波涛 → 蚀化成牙齿，张开巨口吞掉整个月亮；全程无敌） ----
 // 演出层画在所有实体后面（y = -20）：敌人和你照常画在上面，看起来就是站在月面上被波涛卷过、最后连同月亮一起被吞掉
@@ -204,7 +207,7 @@ function delarionFx(cx, cy, dur) {
       c.globalCompositeOperation = 'lighter'; c.globalAlpha = ja; c.fillStyle = '#e070ff'; for (const s of [-1, 1]) { c.beginPath(); c.ellipse(mx + s * W * 0.2, my - gap / 2 - 70, 30, 9, s * 0.25, 0, TAU); c.fill(); } }
     c.restore(); } });
 }
-defSkill('sm_awaken3', { name: '魔月·德拉里昂', cls: 'mage', job: SM, tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 270, pvp: 0.45, type: 'mag', awaken: true, col: '#c050ff',
+defSkill('sm_awaken3', { name: '魔月·德拉里昂', cls: 'mage', job: SM, tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 290, pvp: 0.45, type: 'mag', awaken: true, col: '#c050ff',
   desc: '【三次觉醒】画出巨型召唤阵，把前方的敌人逆召唤到月面；魔月德拉里昂现身，喷出蚀之波涛，最后张开巨口吞掉整个月亮。范围内的敌人全程被困住。全程无敌。', pow: lv => skillDmg(46, 12, lv), ai: { kind: 'awaken', r: [0, 640], dy: 180 },
   act: (lv) => ({ name: 'sm_awaken3', clip: 'smAwk', dur: 5.0, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.2, name: '魔月·德拉里昂', who: cutinWho(e, 3) }; game.timeStop = 1.0; sfx.awaken(); const R = game.room, x = e.x + e.face * 160; e.act.cx = R ? clamp(x, R.x0 + 80, R.x1 - 80) : x; e.act.cy = e.y; },
@@ -225,5 +228,6 @@ CLASSES.mage.passives.push(p => {
   const H = summonsOf(p, 'sm_hilun')[0]; if (!H) return;
   const hl = H.lv || 1, sp = 0.06 + 0.01 * hl; setPassive(p, 'sm_hilunSelf', true, { dmg: 0.05 + 0.01 * hl });
   for (const a of ents) if (a.team === p.team && !a.summon && !a.dead && a.cls && Math.abs(a.x - p.x) < 600 && a.buffs) a.buffs.sm_hilunAura = { t: 0.5, aspd: sp, mspd: sp, cspd: sp };
-  for (const s of summonsOf(p)) if (s.kind === 'follower') { if (s.sdef.tags.includes('higher')) s.superArmor = Infinity; if (!s.statusImmune) s.statusImmune = BM_FORM_IMMUNE; }
+  const hold = p.summonMode && p.summonMode.hold;
+  for (const s of summonsOf(p)) if (s.kind === 'follower') { if (s.sdef.tags.includes('higher')) s.superArmor = Infinity; if (!s.statusImmune) s.statusImmune = BM_FORM_IMMUNE; if (hold) s.invul = Math.max(s.invul || 0, 0.5); }
 });

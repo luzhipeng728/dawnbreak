@@ -104,7 +104,7 @@
     "gs_cross": { "pre": ["gs_overcharge"], "hits": [3, 3], "launch": false, "cd": 8, "src": "N-spitfire", "conf": "high", "note": "双手交叉扇形 3 段，击退" },
     "gs_g35": { "hits": [1, 1], "launch": false, "cd": 3, "src": "N-spitfire", "conf": "high", "note": "感电手雷 150 px，3 颗装填" },
     "gs_g18": { "hits": [1, 1], "launch": false, "cd": 4, "src": "N-spitfire", "conf": "high", "note": "冰冻手雷，100% 冰冻 4 秒，3 颗装填" },
-    "gs_buster": { "far": 900, "sa": "none", "hits": [1, 1], "pre": ["gs_overcharge"], "cd": 18, "src": "N-spitfire#s-3.2.5", "conf": "high", "note": "单发贯穿弹：比交叉射击判定窄、射程远，没有霸体（NamuWiki 现版；旧 DOC 的“集中连射”不对）" },
+    "gs_buster": { "far": 900, "sa": "full", "hits": [1, 1], "pre": ["gs_overcharge"], "cd": 18, "src": "DFO-wiki Buster_Shot", "conf": "high", "note": "单发贯穿弹：比交叉射击判定窄、射程远，整个动作霸体（DFO World Wiki: Has Super Armor for the entire skill animation；上一轮据 Namu 写“没有霸体”，以 DFO Wiki 为准）" },
     "gs_c4": { "presses": [1.5], "hits": [1, 3], "summon": true, "cd": 20, "src": "N-spitfire", "conf": "high", "note": "飞盘弹跳贴 C4（最多 15 个），10 秒后或再按依次引爆" },
     "gs_napalm": { "pre": ["gs_overcharge"], "hits": [8, 16], "sa": "full", "cd": 20, "src": "N-spitfire", "conf": "high", "note": "炸地 + 3 秒属性地带（0.2 秒一段），射击段霸体" },
     "gs_lockon": { "far": 600, "deep": 90, "hits": [5, 5], "cd": 45, "src": "N-spitfire", "conf": "mid", "note": "信标锁定 → 支援射击 5 次，每次眩晕 1 秒" },
@@ -115,7 +115,7 @@
     "gs_photon": { "far": 450, "deep": 60, "reach": [170, 450], "cd": 45, "src": "N-spitfire", "conf": "low", "note": "跃起撒光子手雷 + 磁力弹打向前方最近的敌人脚下，手雷被吸过去爆炸" },
     "gs_dday": { "far": 750, "deep": 90, "cd": 170, "src": "N-spitfire / QQ-2604", "conf": "high", "note": "信号弹 → 炮击支援 + 机动队（约 40 段）" },
     "gs_standby": { "sa": "full", "cd": 30, "src": "N-spitfire", "conf": "high", "note": "悬停 2 秒（2023-12 起），推进器不耗、自动连投手雷，全程霸体" },
-    "gs_final": { "far": 750, "deep": 90, "cd": 270, "src": "N-spitfire / QQ-2604", "conf": "high", "note": "升空轰炸 7 段 + 俯冲全武装轰炸 5 段" },
+    "gs_final": { "far": 750, "deep": 90, "cd": 290, "src": "N-spitfire / QQ-2604", "conf": "high", "note": "升空轰炸 7 段 + 俯冲全武装轰炸 5 段" },
 
     "pm_lockshot": { "far": 900, "deep": 90, "hits": [2, 2], "cd": 3, "src": "DOC 8.1", "conf": "low", "note": "本作自定：对最近敌人快速 2 枪" },
     "pm_assault": { "far": 750, "deep": 30, "dx": [50, 400], "sa": "any", "cd": 6, "src": "N-paramedic", "conf": "high", "note": "向前滑行射击；施放后全队强化保护罩（减伤 + 霸体）" },

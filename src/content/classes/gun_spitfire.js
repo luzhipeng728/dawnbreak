@@ -322,9 +322,9 @@ defSummon('gs_mist', { kind: 'field', life: 3, r: 110, tick: 0.25, zMax: 60, max
   draw(c, s) { const k = s.lifeT / s.life; drawSpr(c, 'frost', sx(s.x), sy(s.y, 0), 230, 0, { ay: 0.7, alpha: 0.35 * (1 - k * k) }); } });
 // ---- 19 级 ----
 defSkill('gs_buster', { name: '聚合弹', cls: 'gun', job: SF, lvReq: 19, mp: 60, cd: 18, type: 'indep', col: '#d8502a', req: sfNeedOver, airIf: sfCanAir,
-  desc: '把火药聚合在一发子弹里，向前射出一发贯穿弹：判定窄、射程远（比交叉射击窄、远），一条直线上的敌人全部被贯穿并击退。属性随超负荷装填。空中施放时向斜下方射击。需要超负荷装填。（指令和烟尘弹相同，按千海天规则冷却长的聚合弹生效；烟尘弹仍可以用快捷栏放）',
+  desc: '把火药聚合在一发子弹里，向前射出一发贯穿弹（整个动作霸体）：判定窄、射程远（比交叉射击窄、远），一条直线上的敌人全部被贯穿并击退。属性随超负荷装填。空中施放时向斜下方射击。需要超负荷装填。（指令和烟尘弹相同，按千海天规则冷却长的聚合弹生效；烟尘弹仍可以用快捷栏放）',
   pow: lv => skillDmg(9.0, 0.9, lv), ai: { kind: 'burst', r: [0, 880], dy: 16 },
-  act: lv => sfAct({ name: 'gs_buster', clip: 'sfAim', dur: 0.55, noCounter: true,
+  act: lv => sfAct({ name: 'gs_buster', clip: 'sfAim', dur: 0.55, superArmor: true, noCounter: true,
     onStart: e => { fxCharge(e, sfElemCol(sfElem(e)), 3); },
     events: [evAt(0.16, e => { const el = sfElem(e), col = sfElemCol(el), air = e.act.air, m = sfShootMul(e);
       e.play('headShot', true); muzzle(e); sfx.cannon(0.7); sfx.gun(1.6); cam.shake = Math.max(cam.shake, 6); if (!air) e.vx = -e.face * 120;
@@ -589,7 +589,7 @@ function sfReinforced(e, id, lv) {
 defSummon('gs_magf', { kind: 'field', life: 2, r: 120, tick: 0.2, zMax: 120, max: 3, keepRoom: false, type: 'indep', elem: 'light',
   onTick(s, L) { for (const t of L) summonHit(s, t, { dmg: skillDmg(0.3, 0.03, s.lv), type: 'indep', elem: 'light', stun: 0.15, hs: 0.01, downHit: true, col: '#fff38a' }); },
   draw(c, s) { const X = sx(s.x), Y = sy(s.y, 0); c.save(); c.translate(X, Y); c.scale(1, GR); c.rotate(game.t * 3); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.55; drawSpr(c, fxTint('rune', '#fff38a'), 0, 0, 250, 250, {}); c.restore(); } });
-defSkill('gs_final', { name: '终解·制空霸权', cls: 'gun', job: SF, lvReq: 30, tier: 3, maxLv: 3, mp: 400, cd: 270, pvp: 0.45, type: 'indep', awaken: true, col: '#ffd23a', airIf: sfCanAir,
+defSkill('gs_final', { name: '终解·制空霸权', cls: 'gun', job: SF, lvReq: 30, tier: 3, maxLv: 3, mp: 400, cd: 290, pvp: 0.45, type: 'indep', awaken: true, col: '#ffd23a', airIf: sfCanAir,
   desc: '【三次觉醒】装上推进器-02X 和飞翼急速升空，先对前方大范围轰炸，再装上附加部件全武装俯冲突进，边下降边进行最后的轰炸，落地引发大爆炸。全程无敌。空中施放要有推进器次数；空袭战略中施放时，过载部件立刻坠落引爆。',
   pow: lv => skillDmg(90, 20, lv), ai: { kind: 'awaken', r: [0, 700], dy: 140 },
   act: lv => sfAct({ name: 'gs_final', clip: 'sfSoar', dur: 4.0, superArmor: true, noCounter: true, invul: [0, 4.2], lowGrav: 0,

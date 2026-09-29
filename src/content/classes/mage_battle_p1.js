@@ -69,7 +69,7 @@ defSkill('bm_descent', { name: '煌龙天临', cls: 'mage', job: BM, tier: 1, lv
           mgAfter(e, 0.06, () => blast(e, x, e.y, 260, { dmg: skillDmg(5, 0.5, lv), launch: 200, knock: 160, hs: 0.06, type: 'phys', col: '#ffd070', downHit: true, noChaser: true }, { zMax: 80 })); })] }) });
 // ---- 二觉段 ----
 defSkill('bm_potential', { name: '战灵潜能', cls: 'mage', job: BM, tier: 2, lvReq: 26, passive: true, type: 'phys', col: '#ffd23a',
-  desc: '【被动·二觉】物理 / 魔法两边的力量融为一体：技能攻击力和暴击率提高。', infoExtra: lv => [['技能攻击力', '+' + pct(0.12 + 0.02 * lv)], ['暴击率', '+' + pct(0.05)]] });
+  desc: '【被动·二觉】物理 / 魔法两边的力量融为一体：力量和智力、物理暴击和魔法暴击各自取较高的一边；炫纹外观改变。', infoExtra: lv => [['力量 / 智力', '取较高值'], ['物理 / 魔法暴击率', '取较高值']] });
 defSummon('bm_cluster', { kind: 'field', r: 160, life: 10, max: 1, col: CHASER_COL, keepRoom: false,
   onEnd: (s, why) => { if (why !== 'life' && why !== 'cmd') return; const o = s.owner; sfx.boom(0.9);
     for (let i = 0; i < 7; i++) mgAfter(o, i * 0.07, () => { const x = s.x + rnd(-110, 110), y = clamp(s.y + rnd(-50, 50), 8, DEPTH - 8); fxBurst(x, y, 70, 170, i % 2 ? CHASER_COL : '#ffe070');
@@ -153,7 +153,11 @@ CLASSES.mage.jobs.battlemage.skills.push('bm_flashsmash', 'bm_descent', 'bm_pote
 CLASSES.mage.cmds.push(['bdb', 'bm_flashsmash'], ['udf', 'bm_descent'], ['dud', 'bm_cluster'], ['fbf', 'bm_apostledance'], ['ddff', 'bm_awaken2'], ['dbu', 'bm_avatar', 'buff'], ['fdu', 'bm_light'], ['dbub', 'bm_primal', 'buff'], ['ffdd', 'bm_awaken3']);
 CLASSES.mage.passives.push(p => {
   if (jobOf(p) !== BM) return;
-  const po = skLv(p, 'bm_potential'); setPassive(p, 'bm_potential', po > 0, { dmg: 0.12 + 0.02 * po, crit: 0.05 });
+  // 战灵潜能：力量 / 智力、物理 / 魔法暴击各取较高的一边（重新计算属性后 p.stats 换了新对象，从干净的基础值重新取高；没有 p.stats 的决斗机器人保留旧的等价伤害加成）
+  const po = skLv(p, 'bm_potential');
+  if (p.stats && p.baseStats) { if (p.stats !== p._potRef) { p._potRef = p.stats; p._potAtk0 = p.baseStats.atk; p._potCrit0 = p.baseCrit; }
+    const on = po > 0, k = on && p.int > p.str ? (1 + p.int * 0.004) / (1 + p.str * 0.004) : 1; p.baseStats.atk = p._potAtk0 * k; p.baseCrit = on ? Math.max(p._potCrit0, p.baseMcrit ?? 0) : p._potCrit0; }
+  setPassive(p, 'bm_potential', po > 0, p.stats ? {} : { dmg: 0.12 + 0.02 * po, crit: 0.05 });
   const an = skLv(p, 'bm_ancient'); setPassive(p, 'bm_ancient', an > 0, { dmg: 0.08 + 0.02 * an }); if (an > 0 && hasSkill(p, 'bm_chaser')) chaserBuff(p);
   const F = bmForm(p);
   if (F && !p.noGrab) { p.noGrab = true; p._bmNoGrab = true; } else if (!F && p._bmNoGrab) { p.noGrab = false; p._bmNoGrab = false; }   // 变身中不能被抓

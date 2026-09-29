@@ -79,7 +79,8 @@ defSkill('bm_round', { name: '圆舞棍', cls: 'mage', job: BM, lvReq: 15, mp: 3
     onInput: (e, I) => { if (e.grabbed && I.dx() === e.face) e.act.fwd = true; return false; },
     hold: (e, t) => { const k = clamp((e.actT - 0.14) / 0.42, 0, 1), a = Math.PI * k, c = Math.cos(a); t.x = e.x + e.face * (e.act.fwd ? Math.abs(c) : c) * 44; t.y = e.y + 0.5; t.z = e.z + 30 + Math.sin(a) * 76; t.face = -e.face; },   // 举过头顶：默认落到身后，按 → 折回身前
     // 摔的过程中可以手动射 2 次炫纹（炫纹是无动作施放，本来就能按）；AI 不会手动按，替它射
-    events: [evAt(0.3, e => { if (e.grabbed && !isHuman(e) && liveChasers(e).length) { e.chasers.shift(); fireChaser(e, e.grabbed); } }),
+    events: [evAt(0.2, e => { if (e.grabbed) { sfx.swing(true); fxSlashOn(e, { col: '#ff86b8', a0: 0.5, a1: -2.9, r: 112, w: 30, off: [8, 62], dur: 0.26 }); } }),   // 官方：举过头顶时一道粉红的大弧光
+      evAt(0.3, e => { if (e.grabbed && !isHuman(e) && liveChasers(e).length) { e.chasers.shift(); fireChaser(e, e.grabbed); } }),
       evAt(0.45, e => { if (e.grabbed && !isHuman(e) && liveChasers(e).length) { e.chasers.shift(); fireChaser(e, e.grabbed); } }),
       evAt(0.58, e => { const g = e.grabbed; if (!g) { e.act.dur = Math.min(e.act.dur, 0.62); return; } const dir = e.act.fwd ? 1 : -1; sfx.swing(true);
         g.x = e.x + dir * e.face * 46; g.z = 30;
@@ -146,9 +147,9 @@ defSkill('bm_flash', { name: '流星闪影击', cls: 'mage', job: BM, lvReq: 19,
     onInput: (e, I) => { const a = e.act; if (e.actT >= 0.9 || a.fin) return false; const slot = barOf(e).indexOf('bm_flash'), sk = slot >= 0 ? 's' + slot : null;
       if (I.buffered('cmd') || (sk && I.buffered(sk))) { I.consume('cmd'); if (sk) I.consume(sk); e.actT = 0.92; return true; }
       if (I.buffered('jump')) { I.consume('jump'); a.dur = e.actT; return true; } return false; },
-    update: e => { const a = e.act; if (e.actT < 0.9 && Math.floor(e.actT / 0.06) !== a.k) { a.k = Math.floor(e.actT / 0.06); fxStreak({ x: e.x + e.face * 14, y: e.y + rnd(-5, 5), z: e.z + rnd(45, 70), face: e.face, len: rnd(100, 140), w: 8, col: '#ffe090', dur: 0.1 }); if (a.k % 2) sfx.swing(false); }
+    update: e => { const a = e.act; if (e.actT < 0.9 && Math.floor(e.actT / 0.06) !== a.k) { a.k = Math.floor(e.actT / 0.06); fxStreak({ x: e.x + e.face * 14, y: e.y + rnd(-5, 5), z: e.z + rnd(45, 70), face: e.face, len: rnd(100, 140), w: 8, col: '#dff2ff', dur: 0.1 }); if (a.k % 2) sfx.swing(false); }
       if (e.actT < 0.9) chaserAuto(e, 0.2);
-      if (e.actT >= 0.92 && !a.fin) { a.fin = true; e.play('bmSweep', true); sfx.swing(true); fxSlashOn(e, { col: '#ffe090', a0: -1.4, a1: 1.2, r: 125, w: 26, off: [28, 55] }); fxShock(e.x + e.face * 110, e.y, 180, '#ffe090'); } } }) });
+      if (e.actT >= 0.92 && !a.fin) { a.fin = true; e.play('bmSweep', true); sfx.swing(true); fxSlashOn(e, { col: '#4aa8ff', a0: -1.4, a1: 1.2, r: 125, w: 26, off: [28, 55] }); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: '#5ab8ff', a0: -3.1, a1: 3.1, r: 150, w: 26, off: [40, 50], squash: 0.5, dur: 0.3 }); fxShock(e.x + e.face * 110, e.y, 180, '#4aa8ff'); } } }) });   // 官方：连刺是白蓝火花，终结是一圈蓝色旋风
 // 炫纹强压：跳起把身上所有炫纹聚到武器前端，砸向前方地面爆炸；每消耗 1 个炫纹范围 +4%；没有炫纹时先生成 1 个
 // 炫纹聚拢：n 个炫纹从身边绕到武器前端（tip，相对人物），合成一个光球；dur 后半段光球落到 to（相对人物、地面）
 function bmGatherFx(e, n, dur, tip, to, col0) {
@@ -175,10 +176,10 @@ defSkill('bm_raid', { name: '强袭流星打', cls: 'mage', job: BM, lvReq: 19, 
   act: (lv, p) => ({ name: 'bm_raid', clip: 'fang', dur: 1.2, superArmor: true, noCounter: true,
     charge: { at: 0.06, max: hasSkill(p, 'bm_weapon') ? 0.2 : 0.4, min: 0, dmg: game.pvp ? 0.4 : 0, clip: 'charge', update: e => { if (Math.random() < 0.5) fxCharge(e, '#ffb060'); } },
     onStart: e => { e.act.x0 = e.x; },
-    update: e => { const a = e.act; if (a.charging || !a.chargeDone) return; if (!a.go) { a.go = e.actT; e.play('raid', true); sfx.iai(); fxAfterimage(e, '#ffb060'); const k = a.chargeK || 0, h = a.hits && a.hits[0]; if (h) h.box = [-20, 100 + 50 * k, 40 + 16 * k, 0, 120 + 30 * k]; }   // 蓄得越久范围越大
-      const k = e.actT - a.go; if (k < 0.3) { e.vx = e.face * (700 + (a.chargeK || 0) * 350); if (Math.random() < 0.7) fxStreak({ x: e.x - e.face * 30, y: e.y, z: e.z + 55, face: e.face, len: 150, w: 22, col: '#ffb060', dur: 0.15 }); }
+    update: e => { const a = e.act; if (a.charging || !a.chargeDone) return; if (!a.go) { a.go = e.actT; e.play('raid', true); sfx.iai(); fxAfterimage(e, '#ffb060'); fxBurst(e.x, e.y, 20, 170, '#ff8a30'); fxShock(e.x, e.y, 130, '#ff9a40'); const k = a.chargeK || 0, h = a.hits && a.hits[0]; if (h) h.box = [-20, 100 + 50 * k, 40 + 16 * k, 0, 120 + 30 * k]; }   // 蓄得越久范围越大
+      const k = e.actT - a.go; if (k < 0.3) { e.vx = e.face * (700 + (a.chargeK || 0) * 350); if (Math.random() < 0.7) fxStreak({ x: e.x - e.face * 30, y: e.y, z: e.z + 55, face: e.face, len: 150, w: 22, col: '#ff7a30', dur: 0.15 }); }
       else if (!a.back) { a.back = true; e.invul = Math.max(e.invul, 0.6); e.vx = (a.x0 - e.x) / (760 / GRAV); e.vz = 380; e.z = Math.max(e.z, 1); e.play('bmLeap', true); } },
-    hits: [HB(0.1, 0.5, [-20, 100, 40, 0, 120], skillDmg(7.0, 0.7, lv), { launch: 520, knock: 120, hs: 0.1, big: 1.6, shake: 4 })],
+    hits: [HB(0.1, 0.5, [-20, 100, 40, 0, 120], skillDmg(7.0, 0.7, lv), { launch: 520, knock: 120, hs: 0.1, big: 1.6, shake: 4, onHit: (a, t) => { fxBurst(t.x, t.y, t.z + 50, 150, '#ff9a40'); fxShock(t.x, t.y, 110, '#ffb060'); } })],
     onLand: e => { if (e.act.back) { e.vx = 0; e.endAct(); } } }) });
 // 煌龙偃月：召唤巨型金色偃月刀向前连续突刺，强制把敌人推到刀尖（霸体、不可抓取的也推得动，固定型除外）；刺到敌人时刀尖周围生成 7 颗龙之炫纹依次爆炸，最后一次大爆炸
 // 煌龙乱舞（官方 45 级 → 本作 20 级，可选的形态被动）：学会后煌龙偃月改为挥舞偃月刀连续横扫 6 次，没有抓取 / 推到刀尖；
@@ -261,6 +262,9 @@ CLASSES.mage.passives.push(p => {
   const bm = jobOf(p) === BM;
   if (bm && hasSkill(p, 'bm_niu')) { if (p.acts !== BM_ACTS) p.acts = BM_ACTS; } else if (p.acts === BM_ACTS) p.acts = MAGE_ACTS;
   if (!bm) return;
+  // 战斗法师武器精通：装矛 = 技能攻击范围 +20%（combat.js 的 rngOf，觉醒 / 普攻除外）；装棍 = 技能冷却 -5%（onCast 里扣，觉醒除外）
+  p.rngMul = wtypeOf(p) === 'spear' && hasSkill(p, 'bm_weapon') ? 1.2 : undefined;
+  p._jv0 ??= p.jumpV; p.jumpV = p._jv0 * (hasSkill(p, 'bm_niu') ? 1.12 : 1);   // 尼巫的战术：跳跃速度变快
   const nl = skLv(p, 'bm_niu'); setPassive(p, 'bm_niu', nl > 0, { dmg: 0.1 + 0.01 * nl, crit: 0.1 + 0.005 * nl });
   const wl = skLv(p, 'bm_weapon'); setPassive(p, 'bm_weapon', wl > 0, { atk: 0.04 + 0.01 * wl, crit: 0.02 + 0.003 * wl });
   if (p.buffs.mg_shield && hasSkill(p, 'bm_shieldup')) p.buffs.mg_shield.taken = -(0.08 + 0.01 * skLv(p, 'mg_shield'));
@@ -272,7 +276,7 @@ CLASSES.mage.passives.push(p => {
   if (wv > 0 && isHuman(p)) { const want = game.combo >= 30 ? 3 : game.combo >= 20 ? 2 : game.combo >= 10 ? 1 : 0; p._will = p._will || 0;
     if (want > p._will) { p._will = want; p._willT = 0; fxText(`斗神意志 ${want} 段`, p.x, p.y, p.z + 40, { col: '#ffd23a', size: 11, dur: 0.8 }); }
     else if (want < p._will) { p._willT = (p._willT || 0) + 0.25; if (p._willT >= 4) { p._will--; p._willT = 0; } }
-    const s = p._will; setPassive(p, 'bm_will', true, { dmg: 0.06 + 0.01 * wv, aspd: 0.05 * s, mspd: 0.05 * s }); }
+    const s = p._will; setPassive(p, 'bm_will', true, { dmg: 0.06 + 0.01 * wv, aspd: 0.05 * s, mspd: 0.05 * s }); const B = p.buffs.bm_will; B.t = 1e9; B.lab = s + '/3'; B.hl = s ? '#ffd23a' : '#7a6a4a'; }   // 血条旁 BUFF 行的段数角标（hud.js 的 drawBuffs 认 b.lab）
   if (p.buffs.bm_instinct && Math.random() < 0.5) fxSpr('spark', p.x + rnd(-14, 14), p.y + 1, p.z + rnd(20, 90), { w: 18, dur: 0.15, col: '#ff5a5a' });
 });
 // 魔法护盾强化：进入地下城时自动开启魔法护盾
@@ -285,3 +289,8 @@ CLASSES.mage.beforeHurt = (t, a, h) => {
 // 战斗法师武器精通：落花掌的满蓄时间减半（落花掌定义在 mage.js，这里包一层，只动蓄力上限）
 { const S = SKILLS.mg_palm, a0 = S && S.act;
   if (a0) S.act = (lv, p) => { const A = a0(lv, p); if (A && A.charge && p && jobOf(p) === BM && hasSkill(p, 'bm_weapon')) A.charge = { ...A.charge, max: Math.max(0.04, A.charge.max / 2) }; return A; }; }
+// 实战型替身草人：放完可以立即取消后摇（替身草人定义在 mage.js，这里包一层，只对学了实战型的战斗法师生效）
+{ const S = SKILLS.mg_phase, a0 = S && S.act;
+  if (a0) S.act = (lv, p) => { const A = a0(lv, p); if (A && p && jobOf(p) === BM && hasSkill(p, 'bm_realphase')) A.cancelFrom = 0.05; return A; }; }
+// 战斗法师武器精通：装棍时技能冷却 -5%（觉醒技能除外）
+CLASSES.mage.onCast = (p, id) => { if (jobOf(p) !== BM || !hasSkill(p, 'bm_weapon') || wtypeOf(p) !== 'pole') return; const S = SKILLS[id]; if (S && !S.awaken && !S.instant && p.cool[id] > 0) p.cool[id] *= 0.95; };

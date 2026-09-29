@@ -216,7 +216,7 @@ const ui = {
     this.drawBuffs(c, p, x0 + 10, y0 - 84);
   },
   drawBuffs(c, p, bx, by) {
-    if (p.buffs) for (const k in p.buffs) { const b = p.buffs[k]; if (!b || b.hide) continue; c.drawImage(buffIcon(k, b), bx, by, 34, 34); c.strokeStyle = b.hl || '#ffd23a'; c.lineWidth = b.hl ? 2.5 + Math.sin(game.t * 6) : 1.5; c.strokeRect(bx, by, 34, 34); if (b.n > 1) uiText('×' + b.n, bx + 33, by + 31, { size: 13, align: 'right', color: '#fff6c0', sw: 3 }); if (b.t < 900) uiText(Math.ceil(b.t) + '', bx + 17, by + 46, { size: 14, align: 'center', sw: 3 }); bx += 40; }
+    if (p.buffs) for (const k in p.buffs) { const b = p.buffs[k]; if (!b || b.hide) continue; c.drawImage(buffIcon(k, b), bx, by, 34, 34); c.strokeStyle = b.hl || '#ffd23a'; c.lineWidth = b.hl ? 2.5 + Math.sin(game.t * 6) : 1.5; c.strokeRect(bx, by, 34, 34); if (b.n > 1) uiText('×' + b.n, bx + 33, by + 31, { size: 13, align: 'right', color: '#fff6c0', sw: 3 }); if (b.lab) uiText(b.lab, bx + 33, by + 31, { size: 13, align: 'right', color: '#fff6c0', sw: 3 }); if (b.t < 900) uiText(Math.ceil(b.t) + '', bx + 17, by + 46, { size: 14, align: 'center', sw: 3 }); bx += 40; }
   },
   // 触屏：左上角精简状态（等级 / HP / MP / 经验 / BUFF）；技能栏、消耗品栏、后跳由虚拟按键显示（engine/touch.js）
   drawTouchPanel(c, p) {

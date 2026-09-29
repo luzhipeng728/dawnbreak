@@ -148,7 +148,8 @@ Object.assign(menus, {
         h('div', { class: 'row', style: 'margin-top:auto' },
           h('button', { class: 'btn' + (upWhy ? ' off' : ''), onclick: () => { if (skillUp(sel)) rf(); } }, lv ? '升级' : '学习'),
           h('button', { class: 'btn' + (skillDownBlock(sel) ? ' off' : ''), onclick: () => { if (skillDown(sel)) rf(); } }, '降级'),
-          cmd ? h('button', { class: 'btn', onclick: () => { toggleCmdLock(sel); rf(); } }, cmdLocked(sel) ? '解锁指令' : '锁定指令') : null),
+          cmd ? h('button', { class: 'btn', onclick: () => { toggleCmdLock(sel); rf(); } }, cmdLocked(sel) ? '解锁指令' : '锁定指令') : null,
+          S.switchOpt ? h('button', { class: 'btn', onclick: () => { toggleSwitchOpt(sel); rf(); } }, ((save.data.opts.swOff || {})[sel] ? '开启' : '关闭') + S.switchOpt) : null),
         upWhy && upWhy !== '已满级' ? h('div', { class: 'small', style: 'color:#ff9a8a' }, upWhy) : null].filter(Boolean));
     }
     // 技能栏预览（可以拖进来、点键位设置、右键清空）
@@ -171,6 +172,12 @@ Object.assign(menus, {
     return this.win('技能', body, { w: 54 });
   },
 });
+function toggleSwitchOpt(id) {   // 官方「可开关」技能（萨亚冰冻、恐惧光环减速）：save.data.opts.swOff[id] = 关
+  if (!save.data) return;
+  const O = (save.data.opts.swOff = save.data.opts.swOff || {});
+  if (O[id]) delete O[id]; else O[id] = true;
+  toastMsg(`${SKILLS[id].name}：${SKILLS[id].switchOpt}${O[id] ? '已关闭' : '已开启'}`, '#bfe8ff'); sfx.click(); save.write();
+}
 function toggleCmdLock(id) {
   if (!save.data) return;
   if (!skCmd(id)) { toastMsg('这个技能没有指令，不需要锁定', '#ffd0a0'); return; }

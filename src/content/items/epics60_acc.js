@@ -31,8 +31,8 @@ inheritEpic('ep_stone_merkel', 'ep_stone_nightheart', { name: '暗夜之心', de
 // 战神的天袭：官方 70 版 Lv60 首饰套装 → Lv60 T1（普通掉落：时空之门后段、希洛克）
 moveSet('set_wargod', { lvl: 60, tier: 1, abyss: false, desc: `战神从天而降时佩戴的首饰，连击越长越勇猛。（${T1}首饰套装）`,
   bonus: {
-    2: { st: { str: 60, int: 60, elemAll: 15 }, desc: '力量 / 智力 +60，所有属性强化 +15' },
-    3: { st: { dmgUp: 0.15 }, desc: '【连击流】伤害增加 15%；连击达到 50 时攻击 / 施放 / 移动速度 +10%，达到 100 时攻击力 +12%（各持续 10 秒）',
+    2: { st: { str: 48, int: 48, elemAll: 11 }, desc: '力量 / 智力 +48，所有属性强化 +11' },
+    3: { st: { dmgUp: 0.12 }, desc: '【连击流】伤害增加 12%；连击达到 50 时攻击 / 施放 / 移动速度 +10%，达到 100 时攻击力 +12%（各持续 10 秒）',
       proc: [{ combo: 50, cd: 10, act: 'buff', buff: { aspd: 0.1, cspd: 0.1, mspd: 0.1 }, dur: 10, key: 'wargod1', name: '战神·疾', col: '#ffd23a' }, { combo: 100, cd: 10, act: 'buff', buff: { atk: 0.12 }, dur: 10, key: 'wargod2', name: '战神·怒', col: '#ff6a3a' }] } } });
 // 时空主宰者：官方 80 版 Lv70 首饰套装 → Lv60 T3（魔界深渊专属 + 谜之觉悟 / 无形棺柩攻坚 0.3%）
 moveSet('set_timelord', { lvl: 60, tier: 3, desc: `主宰时空的人，从不等待冷却。（${T3}首饰套装）`,
@@ -40,37 +40,37 @@ moveSet('set_timelord', { lvl: 60, tier: 3, desc: `主宰时空的人，从不�
     2: { st: { cdr: 0.08, cspd: 0.06, aspd: 0.06 }, desc: '技能冷却 -8%，攻击 / 施放速度 +6%' },
     3: { st: { cdr: 0.1, dmgUp: 0.18 }, desc: '【冷却流】技能冷却 -10%，伤害增加 18%；施放技能时 12% 几率重置冷却，10% 几率撕开时间裂隙（周围 260% 伤害）',
       proc: [{ on: 'skill', chance: 0.12, act: 'reset', name: '时空回溯' }, { on: 'skill', chance: 0.1, cd: 2, act: 'strike', mul: 2.6, aoe: 130, vis: 'nova', col: '#7ad8ff', name: '时间裂隙' }] } } });
-moveEpic('ep_sup_michel', { lvl: 60, tier: 1, fx: { dmgUp: 0.07, allStat: 24, resAll: 12, dmgReduce: 0.03 }, desc: `圣职者米歇尔亲手祝福过的护符，替主人挡下一半的厄运。（${T1}辅助装备）` });
-moveEpic('ep_sup_paris', { lvl: 60, tier: 1, fx: { dmgUp: 0.09, allStat: 24 },
+moveEpic('ep_sup_michel', { lvl: 60, tier: 1, fx: { dmgUp: 0.07, allStat: 19, resAll: 12, dmgReduce: 0.03 }, desc: `圣职者米歇尔亲手祝福过的护符，替主人挡下一半的厄运。（${T1}辅助装备）` });
+moveEpic('ep_sup_paris', { lvl: 60, tier: 1, fx: { dmgUp: 0.09, allStat: 19 },
   proc: { vs: 'any', act: 'extra', frac: 0.15, desc: '攻击处于异常状态（灼伤、中毒、出血、冰冻、眩晕、减速）的敌人时附加 15% 伤害。' }, desc: `帕丽丝家族代代相传的徽记。（${T1}辅助装备）` });
-moveEpic('ep_stone_platani', { lvl: 60, tier: 2, noDrop: false, src: undefined, fx: { allStat: 36, hpPct: 0.05, dmgUp: 0.07 }, desc: `黄金巨人普拉塔尼的核心碎片，沉得要两只手才捧得住。（${T2}魔法石）` });
-moveEpic('ep_stone_grelin', { lvl: 60, tier: 2, fx: { light: 36, dmgUp: 0.08 }, desc: `极光龙格雷林的眼泪，凝成了永不融化的晶石。（${T2}魔法石「龙之泪」）` });
-moveEpic('ep_stone_herik', { lvl: 60, tier: 2, fx: { fire: 36, dmgUp: 0.08 }, desc: `火龙赫瑞克的眼泪，握在手里会发烫。（${T2}魔法石「龙之泪」）` });
-moveEpic('ep_stone_aqui', { lvl: 60, tier: 2, fx: { ice: 36, dmgUp: 0.08 }, desc: `冰龙阿奎利斯的眼泪，里面封着一片雪原。（${T2}魔法石「龙之泪」）` });
-moveEpic('ep_stone_merkel', { lvl: 60, tier: 2, fx: { dark: 36, dmgUp: 0.08 }, desc: `亡魂默克尔的眼泪，夜里会发出幽光。（${T2}魔法石「龙之泪」）` });
+moveEpic('ep_stone_platani', { lvl: 60, tier: 2, noDrop: false, src: undefined, fx: { allStat: 29, hpPct: 0.05, dmgUp: 0.07 }, desc: `黄金巨人普拉塔尼的核心碎片，沉得要两只手才捧得住。（${T2}魔法石）` });
+moveEpic('ep_stone_grelin', { lvl: 60, tier: 2, fx: { light: 25, dmgUp: 0.08 }, desc: `极光龙格雷林的眼泪，凝成了永不融化的晶石。（${T2}魔法石「龙之泪」）` });
+moveEpic('ep_stone_herik', { lvl: 60, tier: 2, fx: { fire: 25, dmgUp: 0.08 }, desc: `火龙赫瑞克的眼泪，握在手里会发烫。（${T2}魔法石「龙之泪」）` });
+moveEpic('ep_stone_aqui', { lvl: 60, tier: 2, fx: { ice: 25, dmgUp: 0.08 }, desc: `冰龙阿奎利斯的眼泪，里面封着一片雪原。（${T2}魔法石「龙之泪」）` });
+moveEpic('ep_stone_merkel', { lvl: 60, tier: 2, fx: { dark: 25, dmgUp: 0.08 }, desc: `亡魂默克尔的眼泪，夜里会发出幽光。（${T2}魔法石「龙之泪」）` });
 
 /* ---------------- 官方新增：Lv60 辅助装备（T1 ×2、T3 ×4）+ Lv65 魔法石（T2 ×2）---------------- */
-B3('ep_sup_orca', { slot: 'support', lvl: 60, tier: 1, name: '奥尔卡的头盔', fx: { dmgUp: 0.08, allStat: 24, hardness: 30 },
+B3('ep_sup_orca', { slot: 'support', lvl: 60, tier: 1, name: '奥尔卡的头盔', fx: { dmgUp: 0.08, allStat: 19, hardness: 30 },
   proc: { on: 'hurt', chance: 0.15, cd: 10, act: 'shield', amt: 0.1, dur: 5, name: '奥尔卡的守护', desc: '被击时 15% 几率获得吸收 10% HP 上限伤害的护盾（5 秒，冷却 10 秒）。' },
   desc: `老水手奥尔卡戴了一辈子的铁盔，被海浪砸出了好几个坑。（${T1}辅助装备）` });
-B3('ep_sup_bwanga', { slot: 'support', lvl: 60, tier: 1, name: '布万加的族长臂章', fx: { dmgUp: 0.09, allStat: 22, aspd: 0.04 },
+B3('ep_sup_bwanga', { slot: 'support', lvl: 60, tier: 1, name: '布万加的族长臂章', fx: { dmgUp: 0.09, allStat: 18, aspd: 0.04 },
   proc: { on: 'kill', act: 'buff', buff: { atk: 0.04 }, dur: 8, stack: 3, key: 'bwanga', name: '族长的战吼', col: '#ffb24a', desc: '击杀敌人时攻击力 +4%，最多叠加 3 层，持续 8 秒。' },
   desc: `雪山部族的族长布万加佩戴的臂章，只有打赢了族长的人才有资格戴上。（${T1}辅助装备）` });
-B3('ep_sup_owen', { slot: 'support', lvl: 60, tier: 3, name: '欧文的诅咒', fx: { dmgUp: 0.11, dark: 34, critDmg: 0.1 },
+B3('ep_sup_owen', { slot: 'support', lvl: 60, tier: 3, name: '欧文的诅咒', fx: { dmgUp: 0.11, dark: 24, critDmg: 0.1 },
   proc: { chance: 0.08, cd: 3, act: 'debuff', taken: 0.12, dur: 6, key: 'owen', vis: 'dark', col: '#9a4aff', name: '欧文的诅咒', desc: '攻击时 8% 几率诅咒敌人：6 秒内受到的伤害 +12%（冷却 3 秒）。' },
   desc: `被诅咒的骑士欧文的护手，诅咒没能杀死他，反倒成了他的武器。（${T3}辅助装备）` });
-B3('ep_sup_xinzang', { slot: 'support', lvl: 60, tier: 3, name: '信奘的药丸', fx: { dmgUp: 0.11, allStat: 30, hpPct: 0.05 },
+B3('ep_sup_xinzang', { slot: 'support', lvl: 60, tier: 3, name: '信奘的药丸', fx: { dmgUp: 0.11, allStat: 24, hpPct: 0.05 },
   proc: [{ on: 'lowhp', cd: 50, act: 'heal', hp: 0.25, name: '信奘的药丸', txtCol: '#8aff9a', desc: 'HP 低于 30% 时吞下药丸：恢复 25% HP，并在 8 秒内伤害 +20%（冷却 50 秒）。' }, { on: 'lowhp', cd: 50, act: 'buff', buff: { dmg: 0.2 }, dur: 8, key: 'xinzang', name: '药力', col: '#8aff9a' }],
   desc: `云游僧人信奘炼的药丸，一颗能顶三天的饭。（${T3}辅助装备）` });
-B3('ep_sup_goldmedal', { slot: 'support', lvl: 60, tier: 3, name: '龙之金章', fx: { dmgUp: 0.11, elemAll: 18, crit: 0.03, mcrit: 0.03 },
+B3('ep_sup_goldmedal', { slot: 'support', lvl: 60, tier: 3, name: '龙之金章', fx: { dmgUp: 0.11, elemAll: 13, crit: 0.03, mcrit: 0.03 },
   proc: { on: 'crit', chance: 0.08, cd: 1.5, act: 'strike', mul: 2.4, aoe: 110, elem: 'fire', vis: 'fire', col: '#ffc83a', name: '金龙咆哮', desc: '暴击时 8% 几率召出金龙咆哮（周围 240% 火属性伤害，冷却 1.5 秒）。' },
   desc: `屠龙者的勋章，纯金打造，龙鳞纹路一片一片都看得清。（${T3}辅助装备）` });
-B3('ep_sup_heaven', { slot: 'support', lvl: 60, tier: 3, name: '天之印记', fx: { dmgUp: 0.11, light: 28, cdr: 0.04 },
+B3('ep_sup_heaven', { slot: 'support', lvl: 60, tier: 3, name: '天之印记', fx: { dmgUp: 0.11, light: 20, cdr: 0.04 },
   proc: { on: 'skill', chance: 0.12, cd: 2, act: 'strike', mul: 2.5, aoe: 120, elem: 'light', vis: 'holy', name: '天之印记', desc: '施放技能时 12% 几率降下天之印记（周围 250% 光属性伤害，冷却 2 秒）。' },
   desc: `天界使者留在人间的印记，在手背上烫出一枚发光的纹章。（${T3}辅助装备）` });
-B3('ep_stone_elftear', { slot: 'stone', lvl: 60, tier: 2, name: '融合之高级精灵的眼泪', fx: { elemAll: 26, dmgUp: 0.07, mpRegen: 0.3 },
+B3('ep_stone_elftear', { slot: 'stone', lvl: 60, tier: 2, name: '融合之高级精灵的眼泪', fx: { elemAll: 18, dmgUp: 0.07, mpRegen: 0.3 },
   desc: `光、火、冰、暗四位高级精灵的眼泪融在一起，颜色一直在变。（${T2}魔法石）` });
-B3('ep_stone_xinzang', { slot: 'stone', lvl: 60, tier: 2, name: '信奘的宝珠', fx: { allStat: 34, dmgUp: 0.07, cdr: 0.03 },
+B3('ep_stone_xinzang', { slot: 'stone', lvl: 60, tier: 2, name: '信奘的宝珠', fx: { allStat: 27, dmgUp: 0.07, cdr: 0.03 },
   desc: `信奘念了九百九十九遍经的宝珠，据说能让人心静如水。（${T2}魔法石）` });
 
 /* ---------------- 原创补缺：1~30（每个等级段每个部位都有史诗）---------------- */
@@ -85,14 +85,14 @@ B3('ep_stone_puppet', { slot: 'stone', lvl: 16, name: '人偶的玻璃眼珠', f
 B3('ep_sup_scripture', { slot: 'support', lvl: 24, name: 'GBL教的圣典残页', fx: { allStat: 18, dmgUp: 0.04, mpRegen: 0.3 }, desc: '神殿里抢救出来的半页圣典，字迹还在慢慢变化。（本作原创）' });
 
 /* ---------------- 原创补缺：31~40（暗精灵、万年雪山）---------------- */
-B3('ep_brace_spider', { slot: 'bracelet', lvl: 33, name: '蛛后的丝缚手环', fx: { dmgUp: 0.06, dark: 18, aspd: 0.03 },
+B3('ep_brace_spider', { slot: 'bracelet', lvl: 33, name: '蛛后的丝缚手环', fx: { dmgUp: 0.1, dark: 18, aspd: 0.03 },
   proc: { chance: 0.06, cd: 2, act: 'status', status: 'slow', dur: 2, name: '蛛丝缠绕', desc: '攻击时 6% 几率用蛛丝缠住敌人（减速 2 秒，冷却 2 秒）。' },
   desc: '艾克洛索吐的丝一圈一圈缠成的手环，刀砍不断。（本作原创）' });
-B3('ep_ring_goliath', { slot: 'ring', lvl: 35, name: '熔岩巨人的指节环', fx: { fire: 24, dmgUp: 0.06, crit: 0.02, mcrit: 0.02 }, desc: '歌利亚指节上套着的铁环，被熔岩泡得通红，现在也没凉。（本作原创）' });
-B3('ep_sup_anvil', { slot: 'support', lvl: 36, name: '锤王的铁砧徽', fx: { dmgUp: 0.07, allStat: 20, hardness: 20 },
+B3('ep_ring_goliath', { slot: 'ring', lvl: 35, name: '熔岩巨人的指节环', fx: { fire: 24, dmgUp: 0.1, crit: 0.02, mcrit: 0.02 }, desc: '歌利亚指节上套着的铁环，被熔岩泡得通红，现在也没凉。（本作原创）' });
+B3('ep_sup_anvil', { slot: 'support', lvl: 36, name: '锤王的铁砧徽', fx: { dmgUp: 0.09, allStat: 20, hardness: 20 },
   proc: { chance: 0.04, cd: 2, act: 'strike', mul: 1.5, aoe: 90, vis: 'nova', col: '#ffb070', name: '锻打！', desc: '攻击时 4% 几率砸出一记锻打（周围 150% 伤害，冷却 2 秒）。' },
   desc: '锤王波罗丁用了一辈子的铁砧上敲下来的一块，还留着锤痕。（本作原创）' });
-B3('ep_stone_yeti', { slot: 'stone', lvl: 39, name: '雪怪的冰核', fx: { elemAll: 20, dmgUp: 0.06, hpPct: 0.04 }, desc: '白色废墟的雪怪塞斯奇体内结出的冰核，冷得发烫。（本作原创）' });
+B3('ep_stone_yeti', { slot: 'stone', lvl: 39, name: '雪怪的冰核', fx: { elemAll: 20, dmgUp: 0.08, hpPct: 0.04 }, desc: '白色废墟的雪怪塞斯奇体内结出的冰核，冷得发烫。（本作原创）' });
 // 白狼猎团（Lv40，万年雪山普通掉落）：【狼群流】暴击时狼牙追咬，击杀越多越快
 acc3('set_ac_whitewolf', '白狼猎团', 40, ['白狼牙项链', '白狼皮护腕', '狼王的银戒'], {
   2: { st: { crit: 0.04, mcrit: 0.04, mspd: 0.05 }, desc: '暴击率 +4%，移动速度 +5%' },
@@ -101,19 +101,19 @@ acc3('set_ac_whitewolf', '白狼猎团', 40, ['白狼牙项链', '白狼皮护�
   { desc: '山脊上的猎人们代代相传的信物：白狼的牙、白狼的皮、狼王的戒指。（本作原创）' });
 
 /* ---------------- 原创补缺：41~50（冰雪宫殿、比尔马克、哈穆林、根特）---------------- */
-B3('ep_neck_rose', { slot: 'neck', lvl: 42, name: '冰雪女王的泪坠', fx: { ice: 26, dmgUp: 0.07, mpRegen: 0.3 },
+B3('ep_neck_rose', { slot: 'neck', lvl: 42, name: '冰雪女王的泪坠', fx: { ice: 14, dmgUp: 0.07, mpRegen: 0.3 },
   proc: { chance: 0.03, cd: 4, act: 'status', status: 'freeze', dur: 1.2, vis: 'ice', name: '冰封', desc: '攻击时 3% 几率冰冻敌人 1.2 秒（冷却 4 秒）。' },
   desc: '洛丝唯一一次流泪时落下的冰晶，被做成了吊坠。（本作原创）' });
-B3('ep_brace_ratbell', { slot: 'bracelet', lvl: 47, name: '哈穆林的鼠铃手镯', fx: { dmgUp: 0.07, dark: 24, aspd: 0.04 },
+B3('ep_brace_ratbell', { slot: 'bracelet', lvl: 47, name: '哈穆林的鼠铃手镯', fx: { dmgUp: 0.07, dark: 13, aspd: 0.015 },
   proc: { chance: 0.05, cd: 2, act: 'status', status: 'poison', dur: 4, dps: 0.15, name: '鼠疫', desc: '攻击时 5% 几率让鼠群啃咬敌人（中毒 4 秒，冷却 2 秒）。' },
   desc: '一串小铃铛，一摇就能听见墙里窸窸窣窣的声音。（本作原创）' });
-B3('ep_stone_ember', { slot: 'stone', lvl: 49, name: '纵火犯的火种', fx: { fire: 32, dmgUp: 0.07 },
+B3('ep_stone_ember', { slot: 'stone', lvl: 49, name: '纵火犯的火种', fx: { fire: 18, dmgUp: 0.06 },
   proc: { chance: 0.05, cd: 2, act: 'status', status: 'burn', dur: 3, dps: 0.15, vis: 'fire', name: '点燃', desc: '攻击时 5% 几率点燃敌人（灼伤 3 秒，冷却 2 秒）。' },
   desc: '本汀克装在玻璃瓶里的火种，他说这是根特烧不完的原因。（本作原创）' });
-// 帝国试验体（Lv45，比尔马克 / 堕落的盗贼普通掉落）：【过载流】每放一个技能伤害 +2%，叠满 5 层
+// 帝国试验体（Lv45，比尔马克 / 堕落的盗贼普通掉落）：【冷却流】（41~48 段的冷却套，GEAR.md §10.4）技能冷却 + 每放一个技能伤害 +2%，叠满 5 层
 acc3('set_ac_imperial', '帝国试验体', 45, ['试验体的识别牌', '帝国抑制环', '过载核心指环'], {
-  2: { st: { aspd: 0.05, cspd: 0.05, elemAll: 12 }, desc: '攻击 / 施放速度 +5%，所有属性强化 +12' },
-  3: { st: { dmgUp: 0.12 }, desc: '【过载流】伤害增加 12%；每施放 1 个技能伤害 +2%，最多 5 层，持续 6 秒',
+  2: { st: { cdr: 0.05, aspd: 0.05, cspd: 0.05 }, desc: '技能冷却 -5%，攻击 / 施放速度 +5%' },
+  3: { st: { cdr: 0.08, dmgUp: 0.09 }, desc: '【冷却流】技能冷却 -8%，伤害增加 9%；每施放 1 个技能伤害 +2%，最多 5 层，持续 6 秒',
     proc: { on: 'skill', act: 'buff', buff: { dmg: 0.02 }, dur: 6, stack: 5, key: 'imperial', name: '过载', col: '#7affe0' } } },
   { desc: '比尔马克帝国试验场的试验体身上拆下来的东西，抑制环一摘，力量就停不下来。（本作原创）' });
 // 根特守备队（Lv48，根特外围 / 东门普通掉落）：【坚守流】标记集火 + 残血护盾
@@ -124,11 +124,11 @@ acc3('set_ac_gentguard', '根特守备队', 48, ['守备队的银哨', '守备�
   { desc: '根特陷落前最后一支守备队的装备。银哨一响，全城的弓都对准同一个方向。（本作原创）' });
 
 /* ---------------- 原创补缺：51~60（海上列车、时空之门）---------------- */
-B3('ep_neck_gaslamp', { slot: 'neck', lvl: 54, name: '雾都的煤气灯吊坠', fx: { dmgUp: 0.08, fire: 25, cdr: 0.03 }, desc: '赫伊斯街角的煤气灯里取出来的灯芯，雾再大也照得见路。（本作原创）' });
-B3('ep_brace_quicksand', { slot: 'bracelet', lvl: 56, name: '沙影的流沙手镯', fx: { dmgUp: 0.07, dark: 20, aspd: 0.04, cspd: 0.04 },
+B3('ep_neck_gaslamp', { slot: 'neck', lvl: 54, name: '雾都的煤气灯吊坠', fx: { dmgUp: 0.07, fire: 14, cdr: 0.03 }, desc: '赫伊斯街角的煤气灯里取出来的灯芯，雾再大也照得见路。（本作原创）' });
+B3('ep_brace_quicksand', { slot: 'bracelet', lvl: 56, name: '沙影的流沙手镯', fx: { dmgUp: 0.06, dark: 11, aspd: 0.015, cspd: 0.015 },
   proc: { chance: 0.06, cd: 2, act: 'status', status: 'slow', dur: 2, name: '流沙', desc: '攻击时 6% 几率让敌人陷进流沙（减速 2 秒，冷却 2 秒）。' },
   desc: '贝利特的手镯里装着一小把永远流不完的沙。（本作原创）' });
-B3('ep_ring_cerberus', { slot: 'ring', lvl: 57, name: '三头犬的项圈指环', fx: { dmgUp: 0.07, fire: 20 },
+B3('ep_ring_cerberus', { slot: 'ring', lvl: 57, name: '三头犬的项圈指环', fx: { dmgUp: 0.06, fire: 11 },
   proc: { on: 'crit', chance: 0.08, cd: 1, act: 'strike', mul: 1.6, elem: 'fire', vis: 'fire', name: '地狱三咬', desc: '暴击时 8% 几率让三头犬扑咬（160% 火属性伤害，冷却 1 秒）。' },
   desc: '地狱三头犬项圈上的一节铁环，缩小成了戒指还在发烫。（本作原创）' });
 

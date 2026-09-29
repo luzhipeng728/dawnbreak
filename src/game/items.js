@@ -111,7 +111,8 @@ function gearStats(D, R) {
   else if (D.slot === 'ring') { const cL = Math.min(L, 30) + Math.max(0, L - 30) * 0.5;   // 暴击率：Lv30 以后成长减半（满级 60 时一枚戒指不超过 ~18%）
     add('str', Math.round((2 + L * 0.8) * m)); add('int', Math.round((2 + L * 0.8) * m)); add('crit', 0.01 + 0.002 * cL * m); add('mcrit', 0.01 + 0.002 * cL * m); add('mdef', Math.round((5 + 2.5 * L) * m)); }
   else if (D.slot === 'support') { for (const k of ['str', 'int', 'vit', 'spr']) add(k, Math.round((1 + L * 0.45) * m)); add('hp', Math.round((10 + 6 * L) * m)); }
-  else if (D.slot === 'stone') { add('str', Math.round((1 + L * 0.5) * m)); add('int', Math.round((1 + L * 0.5) * m)); add('elemAll', Math.round((2 + L * 0.35) * m)); add('mp', Math.round((8 + 5 * L) * m)); }
+  else if (D.slot === 'stone') { const eL = D.rar === 5 ? Math.min(L, 30) + Math.max(0, L - 30) * 0.5 : L;   // 史诗魔法石的属强：Lv30 以后成长减半（和戒指暴击率同理，属强是固定值、按 /220 算加成，不该随等级线性放大；稀有及以下不变，GEAR.md §10.4）
+    add('str', Math.round((1 + L * 0.5) * m)); add('int', Math.round((1 + L * 0.5) * m)); add('elemAll', Math.round((2 + eL * 0.35) * m)); add('mp', Math.round((8 + 5 * L) * m)); }
   // 稀有以上附加 1~2 条随机属性（按 key 固定）
   if (D.rar >= 1 && D.slot !== 'title') {
     const pool = ['str', 'int', 'vit', 'spr', 'hp', 'mp', 'crit', 'hit', 'evade'], n = D.rar >= 3 ? 2 : 1;

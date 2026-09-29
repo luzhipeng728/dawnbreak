@@ -97,10 +97,10 @@ defineRegion({
 
   items: {
     epics: [
-      { key: 'ep_an_bullcore', slot: 'support', lvl: 45, name: '牛头械王的动力核心', fx: { dmgUp: 0.08, fire: 20, hardness: 20 },
+      { key: 'ep_an_bullcore', slot: 'support', lvl: 45, name: '牛头械王的动力核心', fx: { dmgUp: 0.1, fire: 11, hardness: 20 },
         proc: { chance: 0.05, cd: 3, act: 'strike', mul: 1.8, aoe: 120, elem: 'light', vis: 'bolt', name: '三道落雷' }, desc: '比尔马克帝国拿来驱动牛头械王的核心，拆下来以后还在嗡嗡作响。',
         look: 'a heavy brass and steel machine core with a glowing orange furnace window, small pipes and a bull horn emblem' },
-      { key: 'ep_an_bugfang', slot: 'ring', lvl: 50, name: '虫王戮蛊的毒牙', fx: { dmgUp: 0.08, dark: 25, crit: 0.03 },
+      { key: 'ep_an_bugfang', slot: 'ring', lvl: 50, name: '虫王戮蛊的毒牙', fx: { dmgUp: 0.07, dark: 14, crit: 0.03 },
         proc: { chance: 0.06, cd: 2, act: 'status', status: 'poison', dur: 5, name: '戮蛊之毒', desc: '攻击时 6% 几率让敌人中毒 5 秒。' }, desc: '悲鸣洞穴最深处的虫王留下的毒牙，做成了戒指。',
         look: 'a dark silver ring set with a curved violet insect fang dripping a tiny drop of glowing poison' },
     ],

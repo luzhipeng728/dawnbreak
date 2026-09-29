@@ -4,8 +4,9 @@
 //           不丢不复制、强化等转移、强度不变、刷新后不重复补发、云存档走真服务端往返、一键满级券升到 60 后能穿回老物品
 //           （还没有真实的搬家时，测试自己登记一个样本：阿波菲斯 → Lv55 + 继承装备，身上的 Lv28 五件套整套搬到 Lv60 + 继承套装）
 //   content B1~B3 交付时要过：每部位 × 等级段数量下限、蓝图的搬家表、继承装备数值一致、每件有图标 / 武器图、G60.problems 为空
-//   power   各等级「同级最好史诗」对「同级稀有」的综合倍率，和 Lv30 比在 ±10% 以内（content 交付后看）
+//   power   各等级「同级最好史诗」对「同级稀有（去掉随机属性）」的综合倍率，和 Lv30 比在 ±10% 以内（搜索见 test/lib_bestkit.mjs，结果和原因见 GEAR.md §10.4）；加 --why 输出拆解（因子 / 套装 / fx / 每件）
 import { launch, URL_BASE } from './lib.mjs';
+import { BEST_KIT_SRC } from './lib_bestkit.mjs';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -275,30 +276,43 @@ if (run('content')) {
 if (run('power')) {
   step('power：同级最好史诗 vs 同级稀有');
   await boot('town&fresh&mute&cls=sword');
-  const pw = await ev(async () => {
-    const out = {};
+  await ev(BEST_KIT_SRC);
+  const WHY = process.argv.includes('--why');
+  const R = await ev(async (WHY) => {
+    const out = {}, why = {};
     for (const cls of ['sword', 'gun', 'mage']) {
-      game.player = makePlayer(cls); game.job = null; const p = game.player, M = masteryOf(cls, null), W = CLASS_START_WEAPON[cls];
-      const score = () => { const m = gearMetrics(p, mainDmgType(p)); return Math.pow(m.off, 0.7) * Math.pow(m.ehp, 0.3); };
-      const GEARS = SLOTS.filter(s => !s.startsWith('av_') && s !== 'title');
-      out[cls] = {};
+      game.player = makePlayer(cls); game.job = null; const p = game.player;
+      // 按职业的伤害类型算（魔法师 = 魔法）；不用 mainDmgType：启动页是鬼剑士，game.skillLv 里是鬼剑士的物理技能，会把魔法师也算成物理（矛 vs 稀有魔杖）
+      const TYPE = p.dmgType || 'phys', score = () => { const m = gearMetrics(p, TYPE); return Math.pow(m.off, 0.7) * Math.pow(m.ehp, 0.3); };
+      // --why：把综合分拆成因子（攻击 / 暴击 / 伤害增加 / 速度 / 属强 / 有效生命），log 贡献 = 0.7·ln(输出因子比) 或 0.3·ln(生存比)
+      const parts = () => { const q = Object.create(p); recalcStats(q); const type = TYPE, m = gearMetrics(p, type);
+        const crit = clamp(type === 'mag' ? q.mcrit : q.crit, 0, 1), spd = type === 'mag' ? q.cspd : q.aspd, el = q.elem || {};
+        return { atk: type === 'mag' ? q.matk : q.baseStats.atk, crit: 1 + crit * (q.critDmg - 1), dmg: 1 + (q.dmgUp || 0), spd: 0.6 + 0.4 * spd,
+          elem: 1 + (q.atkElem ? (el[q.atkElem] || 0) / 220 : Math.max(0, el.fire || 0, el.ice || 0, el.light || 0, el.dark || 0) / 220 * 0.3), ehp: m.ehp }; };
+      out[cls] = {}; why[cls] = {};
       for (const L of [30, 35, 40, 45, 50, 55, 60]) {
-        game.lvl = L; const T = Math.floor(L / 5) * 5;
-        for (const s of GEARS) delete inv.equip[s];
-        for (const s of GEARS) { const D = GEAR.find(D => D.slot === s && D.rar === 2 && D.lvl === T && !D.set && !D.named && (s !== 'weapon' || D.wtype === W) && (!ARMOR_SLOTS.includes(s) || D.atype === M)); if (D) inv.equip[s] = makeItem(D.key, 1, { grade: 2 }); }
-        recalcStats(p); const base = score();
-        const cand = {}; for (const s of GEARS) cand[s] = Object.values(ITEMS).filter(D => D.kind === 'equip' && D.rar === 5 && D.slot === s && D.lvl <= L && D.lvl > L - 12 && (s !== 'weapon' || D.cls === cls)).map(D => makeItem(D.key));
-        let best = score();
-        for (let pass = 0; pass < 3; pass++) { let ch = false;
-          for (const s of GEARS) for (const it of cand[s]) { const prev = inv.equip[s]; inv.equip[s] = it; recalcStats(p); const v = score(); if (v > best * 1.0001) { best = v; ch = true; } else { inv.equip[s] = prev; } }
-          for (const sid in SETS) { const pcs = SETS[sid].pieces.map(k => GEARS.map(s => cand[s].find(x => x.key === k)).find(Boolean)).filter(Boolean); if (pcs.length < 2) continue; const prev = {}; for (const it of pcs) { prev[it.slot] = inv.equip[it.slot]; inv.equip[it.slot] = it; } recalcStats(p); const v = score(); if (v > best * 1.0001) { best = v; ch = true; } else for (const s in prev) inv.equip[s] = prev[s]; }
-          if (!ch) break; }
-        recalcStats(p); out[cls][L] = +(best / base).toFixed(3);
+        game.lvl = L;
+        const { best, base, baseKit, bestKit, GEARS } = g60BestKit(L);   // test/lib_bestkit.mjs
+        out[cls][L] = +(best / base).toFixed(3);
+        if (!WHY) continue;
+        for (const s of GEARS) { if (baseKit[s]) inv.equip[s] = baseKit[s]; else delete inv.equip[s]; } const P0 = parts();
+        for (const s of GEARS) { if (bestKit[s]) inv.equip[s] = bestKit[s]; else delete inv.equip[s]; }
+        const P1 = parts(), f = {}; for (const k in P0) f[k] = +((k === 'ehp' ? 0.3 : 0.7) * Math.log(P1[k] / P0[k])).toFixed(3);
+        const kit = {}; for (const s of GEARS) { const it = inv.equip[s]; if (!it) continue; const prev = it; inv.equip[s] = baseKit[s]; if (!baseKit[s]) delete inv.equip[s]; recalcStats(p); const drop = +Math.log(best / score()).toFixed(3); inv.equip[s] = prev;
+          kit[s] = `${it.key}@${it.lvl}${it.set ? '[' + it.set + ']' : ''} Δ${drop} ${JSON.stringify(it.st).replace(/"/g, '')} fx${JSON.stringify(it.fx || {}).replace(/"/g, '')}`; }
+        recalcStats(p); const sets = (p.sets || []).map(x => `${x.id}:${x.n}(${x.on.join('/')})`);
+        const bk = {}; for (const x of p.sets || []) { bk[x.id] = SETS[x.id].bonus; SETS[x.id].bonus = {}; } recalcStats(p); const noSet = +Math.log(best / score()).toFixed(3); for (const id in bk) SETS[id].bonus = bk[id];
+        const fxs = {}; for (const s of GEARS) { const it = inv.equip[s]; if (it && it.fx) { fxs[s] = it.fx; it.fx = undefined; } } recalcStats(p); const noFx = +Math.log(best / score()).toFixed(3); for (const s in fxs) inv.equip[s].fx = fxs[s];
+        recalcStats(p);
+        why[cls][L] = { lnTotal: +Math.log(best / base).toFixed(3), factor: f, setsLn: noSet, fxLn: noFx, sets, kit, base: Object.fromEntries(Object.entries(P0).map(([k, v]) => [k, +v.toFixed(3)])), epic: Object.fromEntries(Object.entries(P1).map(([k, v]) => [k, +v.toFixed(3)])) };
       }
     }
-    return out;
-  });
-  for (const cls in pw) { const r30 = pw[cls][30], bad = Object.entries(pw[cls]).filter(([L, v]) => +L > 30 && Math.abs(v / r30 - 1) > 0.1);
+    return { out, why };
+  }, WHY);
+  const pw = R.out;
+  if (WHY) { const f = path.join(os.tmpdir(), 'gear60_power_why.json'); fs.writeFileSync(f, JSON.stringify(R.why, null, 1)); console.log('  拆解（每件换回稀有的 ln 损失、套装 / fx 的 ln 贡献、因子 ln 贡献）写到', f);
+    for (const cls in R.why) for (const L in R.why[cls]) { const w = R.why[cls][L]; console.log(`  ${cls} Lv${L} ln=${w.lnTotal} 套装${w.setsLn} fx${w.fxLn} ${JSON.stringify(w.factor).replace(/"/g, '')} ${w.sets.join(' ')}`); } }
+  for (const cls of ['sword', 'gun', 'mage']) { const r30 = pw[cls][30], bad = Object.entries(pw[cls]).filter(([L, v]) => +L > 30 && Math.abs(v / r30 - 1) > 0.1);
     check(!bad.length, `${cls}：史诗 / 稀有倍率 ${Object.entries(pw[cls]).map(([L, v]) => `Lv${L} ×${v}`).join(' ')}（和 Lv30 比 ±10%）`, bad.map(([L, v]) => `Lv${L} ${(v / r30).toFixed(2)}`).join(' ')); }
 }
 

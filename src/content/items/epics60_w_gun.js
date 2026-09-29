@@ -43,74 +43,74 @@ EP('ep_hc_firework', { wtype: 'handcannon', lvl: 9, name: '庆典烟花炮', fx:
   desc: '节日里放烟花用的手炮，打在怪物身上也一样好看。（本作原创）' });
 
 /* ---------------- Lv34 原创（暗精灵地区普通掉落） ---------------- */
-EP('ep_rv_moonshade', { wtype: 'revolver', lvl: 34, name: '月影银弹', fx: { dmgUp: 0.09, dark: 25, crit: 0.04, mcrit: 0.04 },
+EP('ep_rv_moonshade', { wtype: 'revolver', lvl: 34, name: '月影银弹', fx: { dmgUp: 0.12, dark: 25, crit: 0.04, mcrit: 0.04 },
   proc: { on: 'crit', chance: 0.06, cd: 1.5, act: 'strike', mul: 1.2, elem: 'dark', vis: 'moon', col: '#bcd4ff', name: '月影！', desc: '暴击时 6% 几率追加一发月影银弹（120% 暗属性伤害，冷却 1.5 秒）。' },
   desc: '暗精灵的枪匠在月蚀之夜铸成，银弹在黑暗里拖出一道月光。（本作原创）' });
-EP('ep_ap_weaver', { wtype: 'autopistol', lvl: 34, name: '蛛丝-织网者', fx: { dmgUp: 0.09, crit: 0.04, mcrit: 0.04, critDmg: 0.08 },
+EP('ep_ap_weaver', { wtype: 'autopistol', lvl: 34, name: '蛛丝-织网者', fx: { dmgUp: 0.12, crit: 0.04, mcrit: 0.04, critDmg: 0.08 },
   proc: { chance: 0.05, act: 'status', status: 'slow', dur: 3, name: '蛛网', desc: '攻击时 5% 几率用蛛丝缠住敌人（减速 3 秒）。' },
   desc: '蜘蛛洞穴深处的织网者吐出的丝，被缠进了枪膛。（本作原创）' });
-EP('ep_rf_magma', { wtype: 'rifle', lvl: 34, name: '熔岩穿刺者', fx: { dmgUp: 0.09, fire: 26, crit: 0.03, mcrit: 0.03 },
+EP('ep_rf_magma', { wtype: 'rifle', lvl: 34, name: '熔岩穿刺者', fx: { dmgUp: 0.08, fire: 26, crit: 0.03, mcrit: 0.03, atkElem: 'fire' },
   proc: { chance: 0.04, act: 'status', status: 'burn', dur: 3, dps: 0.1, name: '熔岩', desc: '攻击时 4% 几率使敌人灼伤 3 秒。' },
   desc: '熔岩穴的黑曜石磨成的枪管，子弹出膛时还是红的。（本作原创）' });
-EP('ep_hc_goliath', { wtype: 'handcannon', lvl: 34, name: '巨人之锤', fx: { dmgUp: 0.09, fire: 25, crit: 0.03, mcrit: 0.03, stagger: 30 },
+EP('ep_hc_goliath', { wtype: 'handcannon', lvl: 34, name: '巨人之锤', fx: { dmgUp: 0.12, fire: 25, crit: 0.03, mcrit: 0.03, stagger: 30 },
   proc: { chance: 0.04, cd: 2, act: 'strike', mul: 1.2, aoe: 120, vis: 'nova', name: '巨锤！', desc: '攻击时 4% 几率震地：周围敌人受到 120% 伤害（冷却 2 秒）。' },
   desc: '用巨人歌利亚的战锤锤头改成的手炮，炮口就开在锤面上。（本作原创）' });
-EP('ep_bg_graveward', { wtype: 'bowgun', lvl: 34, name: '墓园守夜人', fx: { dmgUp: 0.09, dark: 25, crit: 0.03, mcrit: 0.03 },
+EP('ep_bg_graveward', { wtype: 'bowgun', lvl: 34, name: '墓园守夜人', fx: { dmgUp: 0.12, dark: 25, crit: 0.03, mcrit: 0.03 },
   proc: { on: 'kill', chance: 0.3, act: 'heal', hp: 0.02, name: '守夜', desc: '击杀敌人时 30% 几率恢复 2% HP。' },
   desc: '暗精灵墓地的守墓人留下的弩，弩前挂着一盏长明灯。（本作原创）' });
 
 /* ---------------- Lv38 原创（暗黑城深渊专属） ---------------- */
-EP('ep_rv_plague', { wtype: 'revolver', lvl: 38, name: '瘟疫医生', fx: { dmgUp: 0.12, dark: 27, crit: 0.04, mcrit: 0.04 },
+EP('ep_rv_plague', { wtype: 'revolver', lvl: 38, name: '瘟疫医生', fx: { dmgUp: 0.13, dark: 27, crit: 0.04, mcrit: 0.04 },
   proc: [{ chance: 0.06, act: 'status', status: 'poison', dur: 5, dps: 0.12, name: '疫弹', desc: '攻击时 6% 几率让敌人中毒 5 秒，' },
     { vs: 'poison', chance: 0.12, cd: 1.5, act: 'strike', mul: 1.9, aoe: 130, elem: 'dark', vis: 'dark', col: '#c8c070', name: '瘟疫爆发！', desc: '攻击中毒的敌人时 12% 几率引爆瘟疫：周围敌人受到 190% 暗属性伤害（冷却 1.5 秒）。' }],
   desc: '诺伊佩拉的瘟疫医生到最后也没放下这把枪，鸟嘴面具上的红镜片至今还盯着病人。（本作原创）' });
-EP('ep_ap_soullantern', { wtype: 'autopistol', lvl: 38, name: '冥灯-引魂者', fx: { dmgUp: 0.12, ice: 27, crit: 0.04, mcrit: 0.04 },
+EP('ep_ap_soullantern', { wtype: 'autopistol', lvl: 38, name: '冥灯-引魂者', fx: { dmgUp: 0.13, ice: 27, crit: 0.04, mcrit: 0.04 },
   proc: { on: 'crit', chance: 0.1, cd: 1.5, act: 'strike', mul: 1.9, aoe: 120, elem: 'ice', vis: 'ice', col: '#9fd8ff', name: '引魂！', desc: '暴击时 10% 几率放出冥灯里的鬼火：周围敌人受到 190% 冰属性伤害（冷却 1.5 秒）。' },
   desc: '暗黑城的引魂人提着的冥灯，灯里的蓝火从来不会熄。（本作原创）' });
-EP('ep_rf_bloodmoon', { wtype: 'rifle', lvl: 38, name: '血月猎手', fx: { dmgUp: 0.12, fire: 27, crit: 0.04, mcrit: 0.04 },
+EP('ep_rf_bloodmoon', { wtype: 'rifle', lvl: 38, name: '血月猎手', fx: { dmgUp: 0.13, fire: 27, crit: 0.04, mcrit: 0.04 },
   proc: { chance: 0.05, cd: 1.5, act: 'strike', mul: 2.0, elem: 'fire', vis: 'fire', col: '#ff5a4a', name: '血月！', desc: '攻击时 5% 几率射出血月之弹（200% 火属性伤害，冷却 1.5 秒）。' },
   desc: '只在血月之夜狩猎的猎人，枪上的红月会随着月相盈亏。（本作原创）' });
-EP('ep_hc_cathedral', { wtype: 'handcannon', lvl: 38, name: '血色圣堂', fx: { dmgUp: 0.12, light: 27, crit: 0.04, mcrit: 0.04, stagger: 30 },
+EP('ep_hc_cathedral', { wtype: 'handcannon', lvl: 38, name: '血色圣堂', fx: { dmgUp: 0.13, light: 27, crit: 0.04, mcrit: 0.04, stagger: 30 },
   proc: { chance: 0.05, cd: 1.5, act: 'strike', mul: 1.9, aoe: 150, elem: 'light', vis: 'holy', col: '#ffb0a0', name: '圣堂钟鸣！', desc: '攻击时 5% 几率降下圣光：周围敌人受到 190% 光属性伤害（冷却 1.5 秒）。' },
   desc: '诺伊佩拉大圣堂的尖塔被瘟疫染红之后，有人把它铸成了一门手炮。（本作原创）' });
-EP('ep_bg_spiderqueen', { wtype: 'bowgun', lvl: 38, name: '毒蛛女王', fx: { dmgUp: 0.12, dark: 27, crit: 0.04, mcrit: 0.04 },
+EP('ep_bg_spiderqueen', { wtype: 'bowgun', lvl: 38, name: '毒蛛女王', fx: { dmgUp: 0.13, dark: 27, crit: 0.04, mcrit: 0.04 },
   proc: [{ chance: 0.06, act: 'status', status: 'poison', dur: 5, dps: 0.12, name: '蛛毒', desc: '攻击时 6% 几率让敌人中毒 5 秒，' },
     { vs: 'poison', chance: 0.12, cd: 1.5, act: 'strike', mul: 1.85, aoe: 110, vis: 'dark', col: '#c070ff', name: '毒蛛之吻！', desc: '攻击中毒的敌人时 12% 几率追加 185% 伤害（小范围，冷却 1.5 秒）。' }],
   desc: '蜘蛛洞穴最深处的女王，八条腿化成了弩臂。（本作原创）' });
 
 /* ---------------- Lv45 原创（牛头 / 根特外围普通掉落） ---------------- */
-EP('ep_rv_glacier', { wtype: 'revolver', lvl: 45, name: '冰川执法者', fx: { dmgUp: 0.1, ice: 30, critDmg: 0.13 },
+EP('ep_rv_glacier', { wtype: 'revolver', lvl: 45, name: '冰川执法者', fx: { dmgUp: 0.13, ice: 30, critDmg: 0.13 },
   proc: [{ chance: 0.04, act: 'status', status: 'freeze', dur: 1.5, name: '冰封', desc: '攻击时 4% 几率冰冻敌人 1.5 秒，' }, { vs: 'freeze', act: 'extra', frac: 0.15, desc: '攻击冰冻中的敌人时附加 15% 伤害。' }],
   desc: '万年雪山的执法官配枪，冰晶枪管在极寒里反而更坚硬。（本作原创）' });
-EP('ep_ap_gear', { wtype: 'autopistol', lvl: 45, name: '机械之心-齿轮', fx: { dmgUp: 0.1, fire: 30, critDmg: 0.13 },
+EP('ep_ap_gear', { wtype: 'autopistol', lvl: 45, name: '机械之心-齿轮', fx: { dmgUp: 0.13, fire: 30, critDmg: 0.13 },
   proc: { combo: 15, chance: 0.12, cd: 2, act: 'strike', mul: 1.8, vis: 'bolt', col: '#ffc070', name: '过载！', desc: '连击数达到 15 时，攻击有 12% 几率让齿轮过载：追加 180% 伤害（冷却 2 秒）。' },
   desc: '比尔马克试验场流出来的样品，齿轮转得越快，子弹越狠。（本作原创）' });
-EP('ep_rf_snowhunter', { wtype: 'rifle', lvl: 45, name: '雪原猎手', fx: { dmgUp: 0.1, ice: 30, critDmg: 0.13 },
+EP('ep_rf_snowhunter', { wtype: 'rifle', lvl: 45, name: '雪原猎手', fx: { dmgUp: 0.07, ice: 30, critDmg: 0.13, atkElem: 'ice' },
   proc: { on: 'crit', chance: 0.08, cd: 1.5, act: 'strike', mul: 1.85, elem: 'ice', vis: 'ice', name: '雪原猎杀！', desc: '暴击时 8% 几率追加 185% 冰属性伤害（冷却 1.5 秒）。' },
   desc: '雪原上的猎人只开一枪。（本作原创）' });
-EP('ep_hc_ironbull', { wtype: 'handcannon', lvl: 45, name: '钢铁牛魔炮', fx: { dmgUp: 0.1, fire: 30, critDmg: 0.12 },
+EP('ep_hc_ironbull', { wtype: 'handcannon', lvl: 45, name: '钢铁牛魔炮', fx: { dmgUp: 0.13, fire: 30, critDmg: 0.12 },
   proc: { chance: 0.05, cd: 2, act: 'strike', mul: 1.9, aoe: 140, elem: 'fire', vis: 'fire', name: '牛魔烈焰！', desc: '攻击时 5% 几率喷出牛魔烈焰：周围敌人受到 190% 火属性伤害（冷却 2 秒）。' },
   desc: '仿照牛头械王打造的手炮，炮口的牛头会跟着开火一起怒吼。（本作原创）' });
-EP('ep_bg_icestring', { wtype: 'bowgun', lvl: 45, name: '冰晶之弦', fx: { dmgUp: 0.1, ice: 30, critDmg: 0.12 },
+EP('ep_bg_icestring', { wtype: 'bowgun', lvl: 45, name: '冰晶之弦', fx: { dmgUp: 0.13, ice: 30, critDmg: 0.12 },
   proc: [{ chance: 0.06, act: 'status', status: 'slow', dur: 4, name: '霜冻', desc: '攻击时 6% 几率冻伤敌人（减速 4 秒），' }, { vs: 'slow', act: 'extra', frac: 0.14, desc: '攻击减速中的敌人时附加 14% 伤害。' }],
   desc: '冰雪宫殿的冰晶磨成的弩臂，弦一拉开，四周就开始下雪。（本作原创）' });
 
 /* ---------------- Lv48 原创（根特、悲鸣洞穴普通掉落；神枪手 60 版 Lv50 史诗名单没查到，用原创补） ---------------- */
-EP('ep_rv_gendarme', { wtype: 'revolver', lvl: 48, name: '根特宪兵', fx: { dmgUp: 0.11, dark: 30, critDmg: 0.14 },
+EP('ep_rv_gendarme', { wtype: 'revolver', lvl: 48, name: '根特宪兵', fx: { dmgUp: 0.14, dark: 30, critDmg: 0.14 },
   proc: { on: 'crit', chance: 0.08, cd: 1.5, act: 'strike', mul: 1.9, vis: 'slash', col: '#ffd070', name: '执法射击！', desc: '暴击时 8% 几率追加一发执法射击（190% 伤害，冷却 1.5 秒）。' },
   desc: '根特宪兵队的制式左轮，枪柄上挂着红金色的绶带。（本作原创）' });
-EP('ep_ap_bulwark', { wtype: 'autopistol', lvl: 48, name: '防线守望者', fx: { dmgUp: 0.11, light: 30, critDmg: 0.13 },
+EP('ep_ap_bulwark', { wtype: 'autopistol', lvl: 48, name: '防线守望者', fx: { dmgUp: 0.14, light: 30, critDmg: 0.13 },
   proc: [{ on: 'hurt', chance: 0.2, cd: 10, act: 'shield', amt: 0.08, dur: 5, name: '守望', desc: '被击时 20% 几率获得 8% HP 上限的护盾（5 秒，冷却 10 秒）；' },
     { on: 'crit', chance: 0.08, cd: 1.5, act: 'strike', mul: 1.8, elem: 'light', vis: 'holy', name: '守望之光！', desc: '暴击时 8% 几率追加 180% 光属性伤害（冷却 1.5 秒）。' }],
   desc: '根特城墙上的皇家卫队配枪，直到城门被攻破都没有停过火。（本作原创）' });
-EP('ep_rf_beacon', { wtype: 'rifle', lvl: 48, name: '烽火之眼', fx: { dmgUp: 0.11, fire: 30, critDmg: 0.14 },
+EP('ep_rf_beacon', { wtype: 'rifle', lvl: 48, name: '烽火之眼', fx: { dmgUp: 0.07, fire: 30, critDmg: 0.14, atkElem: 'fire' },
   proc: { on: 'crit', chance: 0.08, cd: 1.5, act: 'strike', mul: 1.9, aoe: 120, elem: 'fire', vis: 'fire', name: '烽火！', desc: '暴击时 8% 几率点燃烽火：周围敌人受到 190% 火属性伤害（冷却 1.5 秒）。' },
   desc: '根特东门烽火台上架着的步枪，瞄准镜里映着火光。（本作原创）' });
-EP('ep_hc_siege', { wtype: 'handcannon', lvl: 48, name: '攻城塔-破门', fx: { dmgUp: 0.11, fire: 30, critDmg: 0.14 },
+EP('ep_hc_siege', { wtype: 'handcannon', lvl: 48, name: '攻城塔-破门', fx: { dmgUp: 0.14, fire: 30, critDmg: 0.14 },
   proc: [{ chance: 0.03, act: 'debuff', taken: 0.12, dur: 6, key: 'siege', vis: 'nova', col: '#ffc070', name: '破门！', desc: '攻击时 3% 几率破开防线：目标受到的伤害 +12%，持续 6 秒；' },
     { chance: 0.05, cd: 2, act: 'strike', mul: 1.8, aoe: 150, vis: 'fire', name: '攻城炮！', desc: '5% 几率轰出攻城炮：周围敌人受到 180% 伤害（冷却 2 秒）。' }],
   desc: '根特防御战里从城墙上拆下来的炮塔，被改成了单手也扛得动的手炮。（本作原创）' });
-EP('ep_bg_hivesting', { wtype: 'bowgun', lvl: 48, name: '虫后之刺', fx: { dmgUp: 0.11, crit: 0.04, mcrit: 0.04, critDmg: 0.12 },
+EP('ep_bg_hivesting', { wtype: 'bowgun', lvl: 48, name: '虫后之刺', fx: { dmgUp: 0.14, crit: 0.04, mcrit: 0.04, critDmg: 0.12 },
   proc: [{ chance: 0.06, act: 'status', status: 'poison', dur: 5, dps: 0.14, name: '虫毒', desc: '攻击时 6% 几率让敌人中毒 5 秒，' }, { vs: 'poison', act: 'extra', frac: 0.15, desc: '攻击中毒的敌人时附加 15% 伤害。' }],
   desc: '悲鸣洞穴里虫后的毒刺，射进去就拔不出来。（本作原创）' });
 

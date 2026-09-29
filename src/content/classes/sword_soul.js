@@ -184,7 +184,7 @@ defSkill('sb_flash', { name: '鬼影闪', cls: 'sword', job: 'soulbender', lvReq
   desc: '向前冲刺约 370 像素并斩击，命中的敌人先被短暂定住，随后暗属性爆发并强制倒地；会一次引爆敌人身上的冥炎。只能在残影之凯贾的冲刺斩（凯贾附身时的跑动攻击）中施放；学了御鬼之极后随时可用。', pow: lv => skillDmg(7.0, 0.7, lv), ai: { kind: 'gap', r: [0, 260], dy: 26 },
   req: p => (p.act && p.act.kaigaDash) || sbLv(p, 'sb_mastery') ? true : swordNeed(p, 'sb_kaiga', '凯贾的冲刺', `${swordHowTo(p, 'sb_kaiga')} 开启残影之凯贾，跑动攻击冲刺时再按`),
   act: (lv, p) => { const M = p && sbLv(p, 'sb_mastery') > 0; return { name: 'sb_flash', clip: 'dragon', dur: M ? 0.9 : 1.5, superArmor: true, noCounter: true, move: [[0, 0.2, 1260]], invul: [0, 0.2],   // 官方：没有御鬼之极时后摇约 2 秒、定住 0.3 秒；御鬼之极后后摇大减、定住更久
-    onStart: e => { e.act.victims = []; e.act.hold = M ? 0.55 : 0.32; fxAfterimage(e, '#9a6aff'); sfx.iai(); game.cutin = { t: 0, dur: 0.8, name: '鬼影闪', who: cutinWho(e) }; game.timeStop = 0.5; },
+    onStart: e => { e.act.victims = []; e.act.hold = M ? 0.55 : 0.32; fxAfterimage(e, '#9a6aff'); sfx.iai(); game.cutin = { t: 0, dur: 0.8, name: '鬼影闪', who: cutinWho(e) }; },
     hits: [HB(0.02, 0.22, [-30, 78, 36, 0, 120], skillDmg(1.5, 0.15, lv), { stun: 1.0, knock: 0, hs: 0.04, col: '#b08aff', onHit: (a, t) => { if (a.act) a.act.victims.push(t); addStatus(t, 'root', a.act.hold, { src: a }); } })],
     events: [evAt(0.02, e => { fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 420, w: 22, col: '#9ad8ff', dur: 0.3 }); fxAfterimage(e, '#bfe8ff'); }),
       evAt(M ? 0.7 : 0.5, e => { cam.shake = Math.max(cam.shake, 6); sfx.boom(0.9);

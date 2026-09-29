@@ -107,6 +107,19 @@ function regionQuests(spec) {
   });
   return ids;
 }
+// ---- 每日 / 支线 / 区域制霸链（content/quests/regions.js 按区域登记，docs/REGION_PIPELINE.md §2.3）----
+// Q = { chapter, scene（这个场景不在 = 区域没加载，任务不出现）, npc（默认发放人）, dailies: [任务], sides: [任务], tour: { pre, npc, lvl, steps: [{ id, name, dungeons, pre?, lvl?, desc, talk, reward }] } }
+// 任务写法同 defineQuest；每日的 reward 原样（expFrac 按玩家当前等级）；支线 / 制霸的 reward { exp: 比例, gold, ... } 走 QR（和主线同一条曲线）
+// 制霸链：每一步 = 通关 dungeons 里的每个地下城各一次，前后串成一条链；不能“一键完成”（noQuick），满级也得真的去打
+function defineRegionQuests(rid, Q) {
+  const R = REGIONS[rid]; if (!R) return;
+  const cond = () => !!SCENES[Q.scene];
+  const side = (s, o) => { const { exp, gold, ...rest } = s.reward || {}; return defineQuest(s.id, { type: 'side', chapter: Q.chapter, npc: Q.npc, cond, ...s, ...o, reward: QR(s.lvl, exp ?? 0.08, gold ?? 4000, rest) }).id; };
+  R.dailies = (Q.dailies || []).map(s => defineQuest(s.id, { type: 'daily', chapter: Q.chapter, npc: Q.npc, cond, ...s }).id);
+  R.sides = (Q.sides || []).map(s => side(s));
+  const T = Q.tour; let prev = T && T.pre;
+  R.tour = T ? T.steps.map(s => (prev = side({ npc: T.npc || Q.npc, lvl: T.lvl, ...s, pre: [].concat(prev || [], s.pre || []), goals: s.goals || s.dungeons.map(d => ({ type: 'clear', dungeon: d })) }, { noQuick: true }))) : [];
+}
 function defineRegion(spec) {
   const out = REGIONS[spec.id] = { spec, monsters: [], bosses: [], dungeons: Object.keys(spec.dungeons || {}), scenes: Object.keys(spec.scenes || {}), quests: [] };
   for (const [id, T] of Object.entries(spec.themes || {})) regionTheme(id, T);

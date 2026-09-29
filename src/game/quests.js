@@ -2,7 +2,7 @@
    任务引擎（任务与转职）：定义 / 状态 / 进度 / 奖励 / 每日重置
    - defineQuest(id, def)：
        def = { type: 'main'|'side'|'daily'|'job'|'hidden', name, npc（接取）, to（交付，默认同 npc）, lvl（等级要求）,
-               pre: [前置任务], cls: 职业限定, job: true（需已转职）/ false（需未转职）, cond: () => bool（额外条件）, chapter, desc,
+               pre: [前置任务], cls: 职业限定, job: true（需已转职）/ false（需未转职）, cond: () => bool（额外条件）, chapter, desc, noQuick（不能“一键完成”）,
                goals: [目标...], reward: { exp | expFrac, gold, sp, coins, items: [{ key, n } | { equip: 部位 | 'rand', lvl, rar }], title: 称号物品 key, flag, unlock },
                talk: { offer: [接取台词...], doing: [进行中...], done: [完成...] } }
      台词里「我：」开头的是玩家说的话；{name} 角色名，{cls} 职业名，{job} 转职名

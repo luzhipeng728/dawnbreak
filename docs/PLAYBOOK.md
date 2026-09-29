@@ -38,6 +38,7 @@
 3. `python3 art/tools/region_art.py <id> refs,bg,review1 --sample` → 把 `review_refs.png` 发主线程；通过后 `region_art.py <id>` 一条命令跑完（可断点续跑）。
 4. `node test/region.mjs <id>` 全量（含机器人 Lv30 +12 史诗通关）；难度只调 spec 顶上的 `power / bossPower / atkPower`。
 5. 把 `review_final.png` 发主线程 → 提交。精灵名是全局的（`art/final/spr/<名字>`），和已有角色重名时工具会停下，改名即可。
+6. 每日 / 支线 / 制霸链：在 `src/content/quests/regions.js` 照抄一段 `defineRegionQuests`（REGION_PIPELINE.md §2.3），把制霸最后一步加进赛丽亚里程碑的 `pre`；`node test/region.mjs <id> quest` + `node test/quests60.mjs`。
 
 **等级地图**（满级 60：老内容 1~30 不动，官方 60 版本的区域按剧情顺序放进 31~60；区域 spec 用 `lvl` + `lvlMax` 写跨度，机器人按各地下城自己的等级、同等级稀有 +7 对照）：
 
@@ -110,6 +111,7 @@
 - **组队主机上怪物的 `m.control` 是访问器**（net/coop.js hostMonster）：读出来是“选目标 + 调原 AI”的包装。要在原 AI 外面再包一层就读 `m.aiInner`；读 `m.control` 包进去 = 无限递归（2026-09-29 组队深渊第 2 轮领主降临后每帧爆栈、整帧不画，画面停在紫色闪光、地面告警特效堆到 5000+ 个发白）。单机测不出来，要用 `test/mp_abyss.mjs`。
 
 - **生图参考图别走 `sheets.upload` 的旧缓存**（2026-09-29 转职头饰）：缓存里的 hyprlab 地址会过期（生图 404），多线程同时写 `art/src/avatar/.upload_cache.json` 还会把 JSON 写坏（后面的脚本全部读档失败）。新脚本直接传 `'local:' + 本地路径`（gpt-image 路由自己按各家的方式传图），见 `art/tools/job_head_art.py` 的 `run`。
+- **测 NPC 对话别无脑按 Esc**：Esc 只在不是最后一页时“跳到最后一页”，只有一页的对话（很多交付台词只有一句）按 Esc 会直接关窗口。先看 `npcUI.page < npcUI.pages.length - 1`。
 - **给全局函数加参数要查包装层**：`itemTipOne` 被 game/vanity.js 包了一层（`one0(it, cur, head)`），新加的参数会被吞掉；`equipTotals` / `recalcStats` 也分别被公会、决斗包过。改签名前先 `grep -rn "= 函数名\|函数名 = "`。
 - **图标表切出来只剩碎片 + 一条横线**：生图偶尔在表的上下边缘画一条深色边框线（2026-09-29 `cdr60_sand_leather`），切图时它连成横跨三格的连通块，把中间格的物品挤掉。先查 `mn < 110` 占满一行的边缘行，把原图（`art/src/gear/`，先留 `.bak.png`）上下各 4 行涂白再 `cut`，不用重生成。
 - **画的时候位置是插值过的**（game.js `lerpIn / lerpOut`，docs/ANIMATION.md）：renderWorld / ui.draw 期间实体、投射物、城镇路人的 x / y / z 和 cam.x 是两个逻辑步之间的插值，画完立刻换回。绘制代码别写这些字段（会被换回去）；新加会移动、又不在 ents / projs / world.crowd 里的东西，要在 `snapPrev` / `lerpIn` 里补上，否则在高刷屏上会和角色差一步。

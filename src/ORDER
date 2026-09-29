@@ -130,6 +130,8 @@ content/regions/siroco.js
 # 装备深化：深渊派对（深渊地下城、深渊柱与两轮派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
 content/abyss.js
 content/items/gear60_apply.js
+# 31~60 区域的每日 / 支线 / 区域制霸链 + 里程碑（defineRegionQuests，game/region.js）：要在 content/abyss.js 后面（用到深渊地下城和资格任务）
+content/quests/regions.js
 ui/quest.js
 ui/quickquest.js
 ui/job.js

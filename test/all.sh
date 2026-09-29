@@ -23,6 +23,7 @@ run cdr60     node test/cdr60.mjs
 run quests    node test/quests.mjs
 run guide     node test/guide.mjs
 run quickquest node test/quickquest.mjs
+run quests60  node test/quests60.mjs
 run levelcap  node test/levelcap.mjs
 run world     node test/world.mjs
 run polish    node test/polish.mjs

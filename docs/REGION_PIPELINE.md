@@ -103,6 +103,23 @@ abyss: {
 - 约定：`e.botSkip = true` 的目标机器人不打（机关物件、暂时打不动的领主），这样机器人能“按机制”打；`D.customModel` = 手画模型（没有逐帧精灵也算合格）；`ANC.stats` 记录每种机制触发了几次。
 - 测试：`node test/ancient.mjs [bilmark,wailing]` 每个机关都要触发、也要能解开（例如伊凡超时自爆 / 清完才开路障、保护模式超时变牛头统帅 / 清完才解除、幼虫吞噬变成虫、爬到洞口给虫王回血）。
 
+### 2.3 每日 / 支线 / 区域制霸链（`content/quests/regions.js`）
+主线之外，每个区域还要有 1~2 个每日、2~4 个跟剧情走的支线、一条制霸链（官方 60~70 版的重复任务 / 支线思路）。统一写在 `src/content/quests/regions.js`（放在 `content/abyss.js` 后面，能引用深渊地下城和资格任务），新区域照抄一段：
+```js
+defineRegionQuests('<区域 id>', { chapter: '<篇名> · 支线', scene: '<城镇场景>', npc: '<默认发放人>',
+  dailies: [{ id: 'd_xx_...', name, npc?, lvl, pre?, desc, goals: [...], talk, reward: { expFrac: 0.06, gold, items } }],   // 奖励原样；expFrac 按玩家当前等级
+  sides:   [{ id: 's_xx_...', name, npc?, to?, lvl, pre: '<主线某一步>', desc, goals, talk, reward: { exp: 0.08, gold, items } }],   // exp / gold 走 QR（和主线同一条曲线）
+  tour: { pre: '<最后一个主线>', lvl, npc?, steps: [{ id: 'r_xx1', name, dungeons: [地下城...], pre?, desc, talk, reward: { exp, gold, items, title } }] } });
+```
+- `scene` 不在（区域没加载）→ 这批任务都不出现；ids 记在 `REGIONS[id].dailies / sides / tour`（`R.quests` 只放主线链，region 测试按它检查前后串联）。
+- 目标写法同 `defineQuest`（clear / kill / collect / talk / item …）；collect 的任务道具只借现有图标（`icon: 'q_scroll'` 这类），不另外出图；dungeon 可以写数组（任意一个都算），数组很长时写 `text` 当显示文字。
+- 制霸链：每一步 = `dungeons` 各通关一次（最后一步放领主攻坚 + 本区域深渊，`pre` 带上深渊资格任务），最后一步奖励区域称号；自动带 `noQuick`（不能“一键完成”）。
+- 老存档（满级、主线全部完成）：前置只写已有的主线 / 资格任务，满级存档都满足，所以一进城就能接；不要用“某个主线进行中”“某个事件发生过”这类老存档没有的条件。
+- 数值（2026-09-29）：每日金币 ≈ 一趟同级地下城（Lv32 2500 → Lv60 6500~8000）+ 区域材料 / 矛盾的结晶体 ×2~3 / 邀请函 ×1 / 宇宙灵魂 ×1~3；支线 QR(lv, 0.06~0.1, 3000~12000)；制霸最后一步 = 称号（Lv38~60，四维 24~36 + 伤害 4~5%）+ 宇宙灵魂 ×3~5。每日任务给的点券一天只算 5 个（`CASH_EARN.dailyMax`，商城经济按 5 个算），加再多每日也不会冲垮点券经济。
+- 城镇追踪栏（`questTownAvail`）：可接的每日 / 支线最多 3 个，这个场景的 NPC 发的排前面，其次等级高的。
+- 赛丽亚的里程碑（`q_ms40 / q_ms50 / q_ms60`：百战精英 / 超越极限 / 破晓之巅）前置是各区域的制霸链，新区域做好后把它的制霸最后一步加进对应里程碑的 `pre`。
+- 测试：`node test/region.mjs <id> quest` 主线做完接着把本区域的支线 / 制霸 / 每日做一遍；`node test/quests60.mjs` 用 Lv35 / Lv50 / Lv60 / 满级老存档进每个城镇看 NPC 的 ! 和追踪栏，接取 → 完成 → 交付 → 奖励到手，每日第二天重置，NPC 对话界面接 / 交，自动前往。
+
 ## 3. 怪物技能库（`skills: [{ use, ... }]`）
 
 所有技能都能写的公共参数：
@@ -174,7 +191,7 @@ abyss: {
 - `mechs`：破招槽会破、无敌阶段满足条件就结束（水晶 / 撑过）、护盾挡伤害并能打破、安全区里没事外面挨打、地火 / 缩圈、狂暴、分身（打本体散、打暗影炸）、属性切换、连线（搭档死 → 破招）、钩子（凝视）、阶段切换。
 - `monsters`：每个怪物 / 领主 / 暗影有逐帧精灵、会出手、领主每招都能强制放出、能打死。
 - `scenes`：每个场景能进、背景和 NPC 立绘加载、每个出口来回走通、入口的等级限制。
-- `quest`：主线从头做到尾。
+- `quest`：主线从头做到尾，再把本区域的支线 / 制霸链 / 每日各做一遍（§2.3）。
 - `bot`：机器人以各地下城自己的等级、全身 +12 史诗通关每个地下城（`BOT=law_gate:sword,...` 可改分配），要求通关、用时不超限、死亡 ≤ 2、被击 ≤ 160。
   调难度用 `GEAR=rare`（全身同等级稀有 +7，`ENH=` 可改）或 `GEAR=base`（只有 testLoadout），`LV=` 强制等级；把老区域的同类地下城放进同一个 `BOT=` 一起跑当对照。
 `test/quick.sh` 跑前五个快的部分；`test/all.sh` 跑全部。

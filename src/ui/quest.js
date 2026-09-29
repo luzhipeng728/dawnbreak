@@ -76,6 +76,11 @@ function drawQuestMarker(c, X, Y, npcId) {
 
 /* ---- 右侧任务追踪（城镇由 world.js 调用，地下城由 hud.js 调用；hud 还没接上时下面有同帧去重的兜底） ---- */
 function qtFit(c, s, w) { if (c.measureText(s).width <= w) return s; while (s.length > 1 && c.measureText(s + '…').width > w) s = s.slice(0, -1); return s + '…'; }
+// 城镇里：可接的每日 / 支线（没接的不在 questTrack 里，以前只能进任务日志看）；这个场景里的 NPC 发的排前面，其次等级高的（满级时先看到 Lv60 的，而不是 Lv5 的）
+function questTownAvail(n = 3) {
+  const here = new Set(((world && world.S && world.S.npcs) || []).map(x => x.npc));
+  return questList(q => q.type !== 'main' && !q.story && questState(q.id) === 'avail').sort((a, b) => here.has(b.npc) - here.has(a.npc) || b.lvl - a.lvl || a.seq - b.seq).slice(0, n);
+}
 function drawQuestTracker(c) {
   questUI.drawn = true;
   const d = qdata(); if (!d || !game.player || game.duel) return;   // 决斗场用的是临时存档，不显示任务
@@ -83,7 +88,7 @@ function drawQuestTracker(c) {
   if (dg && dg.state !== 'play') return;
   const ids = d.questTrack.filter(id => d.quests[id] && QUESTS[id]).slice(0, dg ? 4 : QUEST_TRACK_MAX);
   const hint = !dg && questNextMain();
-  const extra = dg ? [] : questList(q => q.type !== 'main' && !q.story && questState(q.id) === 'avail').slice(0, 3);   // 城镇里：可接的每日 / 支线（没接的不在 questTrack 里，以前只能进任务日志看）
+  const extra = dg ? [] : questTownAvail();
   if (!ids.length && !hint && !extra.length) { questUI.trackRect = null; return; }
   const W = 420, x1 = 1900, x0 = x1 - W, y0 = dg ? 330 + hudComboDy() : (typeof townTrackerTop === 'function' ? townTrackerTop() : 128), font = '"PingFang SC","Microsoft YaHei",sans-serif';
   // 先量高度

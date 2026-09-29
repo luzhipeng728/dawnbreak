@@ -3,11 +3,14 @@
 // 两边都采集：pageerror / console.error（带堆栈）、长任务、每帧耗时、requestAnimationFrame 有没有停、整帧出错没画出来的帧（step 抛错时 renderWorld 被跳过）、
 //            roomEnter / 轮次开始 / 领主降临 / 轮次横幅的次数、怪物 / 特效 / 伤害数字 / 掉落数量随时间的变化
 // 场景：A 队长 alice 做主机，领主奈克斯；B 队长移交给 bob（主机换成第二个页面），领主暗杀者，降临前后地上一直堆着 150 件掉落；C 守门人
-// 用法：node test/mp_abyss.mjs [场景=A,B,C]
+//       HN / HA / HG 队员受击对照（奈克斯 / 暗杀者 / 守门人）：两边不开机器人，怪全盯队员，队员贴着站、不还手、不无敌；
+//       逐招对比主机发出的出招和队员本地重播的出招（招式名 + 有没有判定），统计队员被普通怪 / 深渊领主 / 普通区域领主（HN 对照）打中的次数
+// 用法：node test/mp_abyss.mjs [场景=A,B,C,HN,HA,HG]
 import fs from 'node:fs';
 import { startServer, launchPlayers, ok, result, sleep, until, uiRegister, uiCreateChar, dumpErrors } from './net_lib.mjs';
-const SC = (process.argv[2] || 'A,B,C').split(',');
-const SCENARIOS = { A: { host: 0, lord: 'nex' }, B: { host: 1, lord: 'assassin', drops: 150 }, C: { host: 0, lord: 'gatekeeper' } };
+const SC = (process.argv[2] || 'A,B,C,HN,HA,HG').split(',');
+const SCENARIOS = { A: { host: 0, lord: 'nex' }, B: { host: 1, lord: 'assassin', drops: 150 }, C: { host: 0, lord: 'gatekeeper' },
+  HN: { host: 0, lord: 'nex', hit: true, cmp: true }, HA: { host: 0, lord: 'assassin', hit: true }, HG: { host: 0, lord: 'gatekeeper', hit: true } };
 const DG = 'abyss_siroco', CDMUL = 0.34, FIGHT_MS = +(process.env.FIGHT_MS || 150000);
 const out = 'test/shots/mp_abyss'; fs.mkdirSync(out, { recursive: true });
 const srv = await startServer();
@@ -61,11 +64,90 @@ const PROBE = () => {
     if (P.samples.length < 400) P.samples.push([Math.round(performance.now() / 100) / 10, mon, fxList.length, numList.length, drops.length, R ? R.phase + (R.round || '') : '-', P.frames, P.render]);
   }, 500);
 };
+// 回城（先队员再主机），准备下一个场景
+async function leave(H, G, sc) {
+  await G.evaluate(() => { menus.closeAll(); goTown(); }); await H.evaluate(() => { menus.closeAll(); goTown(); });
+  ok((await Promise.all([H, G].map(P => until(P, () => game.scene === 'town' && coop.state === 'none', null, 20000)))).every(Boolean), `场景 ${sc}：全员回城`);
+}
+// 受击探针：主机记发出去的怪物出招（ma：招式序号 i / 自带 AI 名 / 招式名 / 这一招有没有判定），队员记收到后本地重播出来的动作和自己挨的打（谁挨打谁结算）
+const HITPROBE = () => {
+  if (window.__hp) return;
+  const Q = window.__hp = { on: false, seg: '', ma: [], rx: [], hurt: [], mech: [], def: null };
+  const ms0 = window.msMechStart; window.msMechStart = function (m, spec) { if (Q.on && m && m.boss) Q.mech.push({ seg: Q.seg, id: spec.use, puppet: !!m.puppet }); return ms0.apply(this, arguments); };
+  const ma0 = coop.monAct; coop.monAct = function (m, def) { Q.def = def; try { return ma0.call(this, m, def); } finally { Q.def = null; } };
+  const send0 = coop.send; coop.send = function (d, to) {
+    if (Q.on && d && d.k === 'ma') { const m = coop.puppets.get(d.id), D = Q.def || {}; Q.ma.push({ seg: Q.seg, id: d.id, kind: m && m.kind, lord: !!(m && m.abyssLord), boss: !!(m && m.boss), i: d.i, mi: d.mi, ph: d.ph, ai: d.ai || null, nm: d.nm, hits: (D.hits || []).length, ev: (D.events || []).length }); }
+    return send0.call(this, d, to); };
+  const rx0 = coop.onMonAct; coop.onMonAct = function (d) {
+    const m = this.puppets.get(d.id), was = m && m.act; rx0.call(this, d);
+    if (!Q.on) return; const a = m && m.act && m.act !== was ? m.act : null;
+    Q.rx.push({ seg: Q.seg, id: d.id, kind: m && m.kind, boss: !!(m && m.boss), i: d.i, ai: d.ai || null, nm: d.nm, played: a ? a.name || a.clip : null, hits: a && a.hits ? a.hits.length : 0, ev: a && a.events ? a.events.length : 0 }); };
+  const hu0 = game.onPlayerHurt; game.onPlayerHurt = function (p, dmg, a) { if (Q.on && p === game.player) Q.hurt.push({ seg: Q.seg, dmg: Math.round(dmg), id: a && a.nid, kind: a && a.kind, boss: !!(a && a.boss) }); return hu0.call(this, p, dmg, a); };
+};
+const tally = (L, f) => { const o = {}; for (const x of L) { const k = f(x); o[k] = (o[k] || 0) + 1; } return o; };
+// 受击对照：两边都不开机器人；主机本人无敌、站在最左边，所有怪固定盯住队员（同 mp_coop.mjs）；队员贴着目标站、不还手、不无敌（血低于 60% 才补满，接着测）
+// 分段：mob = 第 1 轮的普通深渊怪 + 房间里原有的小怪；lord = 深渊领主（其他怪一出来就清掉，只留领主；12 秒后血量压到 55% 进二阶段）；boss = 同一个房间里再刷一只普通（非深渊）的区域领主做对照
+async function hitTest(H, G, sc, S) {
+  for (const P of [H, G]) await P.evaluate(HITPROBE);
+  await H.evaluate(() => { bot.on = false; game.speedMul = 1; const p = game.player; p.invul = 1e9;
+    window.__aim = setInterval(() => { const g = [...coop.mates.values()][0], p = game.player; p.hp = p.hpMax; if (p.x > 120) { p.x = 60; p.y = DEPTH / 2; }
+      for (const m of ents) if (m.nid && !m.dead && m.team === 'e' && m.kind !== 'abyssBlock' && m.kind !== 'abyssPillar') { m.tgt = g; m.tgtT = game.t + 1e6; if (window.__killAdds && !m.boss) { m.invul = 0; m.hp = 0; killEnt(m, p, {}); } } }, 250); });
+  await G.evaluate(() => { bot.on = false; game.speedMul = 1; const p = game.player; p.invul = 0;
+    window.__stick = setInterval(() => { const p = game.player, Q = window.__hp; if (p.hp < p.hpMax * 0.6) p.hp = p.hpMax;
+      let T = null, bd = 1e9; for (const m of coop.puppets.values()) if (!m.dead && ents.includes(m) && m.kind !== 'abyssBlock' && m.kind !== 'abyssPillar' && (Q.seg === 'mob' || m.boss)) { const d = Math.abs(m.x - p.x) + Math.abs(m.y - p.y); if (d < bd) { bd = d; T = m; } }
+      if (T && (Math.abs(T.x - p.x) > 90 || Math.abs(T.y - p.y) > 30) && !p.act && p.st !== 'hit' && p.st !== 'air' && p.st !== 'down') { p.x = clamp(T.x + (p.x < T.x ? -60 : 60), 40, game.room.x1 - 40); p.y = T.y; } }, 500); });
+  const seg = async (name, sec, mid) => {
+    for (const P of [H, G]) await P.evaluate(n => { window.__hp.seg = n; window.__hp.on = true; }, name);
+    const t0 = await H.evaluate(() => game.t);
+    if (mid) { await until(H, ([t, s]) => game.t - t > s, [t0, sec / 2], sec * 3000); await H.evaluate(mid); }
+    await until(H, ([t, s]) => game.t - t > s, [t0, sec], sec * 3000);
+  };
+  const kill = f => H.evaluate(f => { for (const e of [...ents]) if (e.team === 'e' && !e.dead && e.kind !== 'abyssBlock' && new Function('e', 'return ' + f)(e)) { e.invul = 0; e.hp = 0; killEnt(e, game.player, {}); } }, f);
+  await kill("e.kind === 'abyssPillar'");
+  ok(await until(H, () => game.dungeon.abyssRun.round === 1, null, 8000), `场景 ${sc}：打破深渊柱，第 1 轮`);
+  await seg('mob', 8);
+  await H.evaluate(() => { window.__killAdds = true; });
+  await kill('!e.boss');
+  ok(await until(H, () => game.dungeon.abyssRun.lord && ents.includes(game.dungeon.abyssRun.lord), null, 10000), `场景 ${sc}：第 2 轮，深渊领主降临`);
+  await sleep(1500);
+  await seg('lord', 24, () => { const b = game.dungeon.abyssRun.lord; b.hp = Math.round(b.hpMax * 0.55); });
+  if (S.cmp) {
+    await kill('e.abyssLord');
+    await sleep(3500);   // 领主死后 2.6 秒如果按领主结算就会出结算界面
+    const st = await G.evaluate(() => ({ state: coop.state, dg: game.dungeon && game.dungeon.state, result: menus.isOpen('result') }));
+    ok(st.state === 'play' && st.dg === 'play' && !st.result, `场景 ${sc}：深渊领主死后队员还在地下城里（不按领主结算）`, st);
+    await H.evaluate(k => { const dg = game.dungeon, b = spawnMonster(k, 420, DEPTH / 2, { lvl: 62, boss: true, mul: dg.D.hp, atkMul: dg.D.atk }); window.__cmpBoss = b; }, S.lord);
+    await sleep(1000);
+    await seg('boss', 24, () => { const b = window.__cmpBoss; b.hp = Math.round(b.hpMax * 0.55); });
+  }
+  await H.evaluate(() => { clearInterval(window.__aim); window.__killAdds = false; window.__hp.on = false; });
+  await G.evaluate(() => { clearInterval(window.__stick); window.__hp.on = false; });
+  const h = await H.evaluate(() => window.__hp), g = await G.evaluate(() => window.__hp);
+  for (const P of [H, G]) await P.evaluate(() => { const Q = window.__hp; Q.ma = []; Q.rx = []; Q.hurt = []; Q.mech = []; });
+  const R = {};
+  for (const sg of S.cmp ? ['mob', 'lord', 'boss'] : ['mob', 'lord']) {
+    const isT = x => sg === 'mob' ? !x.boss : x.boss;
+    const hm = h.ma.filter(x => x.seg === sg && isT(x)), gr = g.rx.filter(x => x.seg === sg && isT(x)), gh = g.hurt.filter(x => x.seg === sg && (sg === 'mob' ? !x.boss : x.boss));
+    const r = R[sg] = { hostActs: hm.length, hostTbl: hm.filter(x => x.i >= 0).length, hostAi: tally(hm.filter(x => x.i < 0), x => x.ai ? 'AI ' + x.ai : x.mi !== undefined ? '按编号' : x.ph !== undefined ? '阶段咆哮' : '通用动作'), hostLive: hm.filter(x => x.hits || x.ev).length,
+      guestActs: gr.length, guestLive: gr.filter(x => x.hits || x.ev).length, guestGeneric: gr.filter(x => x.played && !x.hits && !x.ev).length, guestSkip: gr.filter(x => !x.played).length,
+      hurt: gh.length, dmg: gh.reduce((a, x) => a + x.dmg, 0),
+      names: { host: tally(hm, x => x.nm), guest: tally(gr, x => x.played ? x.nm + (x.hits || x.ev ? '' : '(空)') : x.nm + '(没播)') } };
+    const seqH = hm.map(x => x.nm + (x.hits || x.ev ? '' : '(空)')).join(), seqG = gr.map(x => (x.played || '没播') + (x.hits || x.ev ? '' : '(空)')).join();
+    r.same = seqH === seqG; r.mech = { host: tally(h.mech.filter(x => x.seg === sg), x => x.id), guest: tally(g.mech.filter(x => x.seg === sg), x => x.id) };
+    const who = { mob: '普通怪', lord: `深渊领主 ${S.lord}`, boss: `普通区域领主 ${S.lord}（对照）` }[sg];
+    ok(r.hostActs > 0 && r.same, `场景 ${sc}：${who} 的出招，队员这边逐招重播、招式名和判定都和主机一致（${r.hostActs} 招）`, { host: seqH, guest: seqG });
+    ok(r.hurt > 0, `场景 ${sc}：队员被${who}打中 ${r.hurt} 次（共 ${r.dmg} 伤害）`);
+    console.log(`  [${sg}] 主机出招 ${r.hostActs}（招式表 ${r.hostTbl}，表外 ${JSON.stringify(r.hostAi)}，带判定 ${r.hostLive}）→ 队员重播 ${r.guestActs}（带判定 ${r.guestLive}，空动作 ${r.guestGeneric}，没播 ${r.guestSkip}）；队员被打 ${r.hurt} 次 共 ${r.dmg}`);
+    console.log(`        招式 主机 ${JSON.stringify(r.names.host)}\n        招式 队员 ${JSON.stringify(r.names.guest)}\n        领主机制启动 主机 ${JSON.stringify(r.mech.host)} / 队员傀儡 ${JSON.stringify(r.mech.guest)}`);
+  }
+  fs.writeFileSync(`${out}/${sc}-hits.json`, JSON.stringify({ host: h, guest: g }, null, 1));
+  return R;
+}
 const stats = a => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y); return { avg: +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(1), p99: +s[Math.floor(s.length * 0.99)].toFixed(1), max: +s[s.length - 1].toFixed(1), n: a.length }; };
 const GET = () => { const P = window.__pr, dg = game.dungeon, R = dg && dg.abyssRun, L = R && R.lord;
   return { frames: P.frames, render: P.render, stepErr: P.stepErr, raf: P.raf, gapMax: Math.round(P.gapMax), errs: P.errs.slice(), roomEnter: P.roomEnter, rounds: P.rounds, lords: P.lords, banners: P.banners, peak: P.peak,
     phase: R && R.phase, round: R && R.round, lord: L ? { kind: L.kind, hp: Math.round(L.hp), hpMax: Math.round(L.hpMax), dead: !!L.dead } : null, aroom: dg && dg.abyssRoom ? dg.abyssRoom.gx + ',' + dg.abyssRoom.gy : '', room: dg && dg.room ? dg.room.gx + ',' + dg.room.gy : '',
-    ferrs: frameErrs.map(e => `${e.where} ×${e.n}：${e.msg}`), mon: ents.filter(e => e.team === 'e' && !e.dead).length, fx: fxList.length, nums: numList.length, drops: drops.length, flash: +(cam.flash || 0).toFixed(2), role: coop.role, state: coop.state, cards: document.querySelectorAll('#abytreasure .card').length }; };
+    ferrs: frameErrs.map(e => `${e.where} ×${e.n}：${e.msg}`), mon: ents.filter(e => e.team === 'e' && !e.dead).length, fx: fxList.length, nums: numList.length, drops: drops.length, flash: +(cam.flash || 0).toFixed(2), role: coop.role, state: coop.state, dgState: dg && dg.state, cards: document.querySelectorAll('#abytreasure .card').length }; };
 try {
   for (let i = 0; i < 2; i++) {
     ok(await uiRegister(pages[i], srv.url, names[i]), `${names[i]} 注册`);
@@ -115,6 +197,7 @@ try {
     ok(walk.at, `场景 ${sc}：主机走到深渊柱房间（${walk.log.join('→') || '起点就是'}）`, walk);
     ok(await until(G,() => game.dungeon && game.dungeon.room === game.dungeon.abyssRoom && !game.dungeon.transition, null, 15000), `场景 ${sc}：队员跟进深渊柱房间`);
     ok(await until(H, () => game.dungeon.abyssRun.phase === 'pillar' && ents.some(e => e.kind === 'abyssPillar' && !e.dead), null, 8000), `场景 ${sc}：深渊柱出现`);
+    if (S.hit) { await hitTest(H, G, sc, S); await leave(H, G, sc); continue; }
     // 两边机器人一起打（正常速度），血蓝保持满（只测卡顿 / 报错，不测难度）；场景 B：地上一直保持很多掉落
     for (const P of pages) await P.evaluate(n => {
       bot.on = true; game.speedMul = 1;
@@ -151,12 +234,11 @@ try {
     ok(!h.stepErr && !g.stepErr && !h.errs.length && !g.errs.length && !h.ferrs.length && !g.ferrs.length, `场景 ${sc}：两边都没有逐帧报错（主机 step 出错 ${h.stepErr} 次、错误记录 ${h.ferrs.length} 种 / 队员 ${g.stepErr} 次、${g.ferrs.length} 种）`, [...h.ferrs, ...g.ferrs, ...[...h.errs, ...g.errs].slice(0, 2).map(s => s.split('\n').slice(0, 5).join(' | '))]);
     ok(perf.every(p => p.render >= p.frames * 0.97), `场景 ${sc}：每帧都画出来了（主机 ${perf[0].render}/${perf[0].frames}，队员 ${perf[1].render}/${perf[1].frames}）`);
     ok(h.gapMax < 3000 && g.gapMax < 3000 && perf.every(p => p.lt.max < 3000), `场景 ${sc}：没有卡死（rAF 最长间隔 ${h.gapMax} / ${g.gapMax}ms，最长任务 ${perf[0].lt.max} / ${perf[1].lt.max}ms）`);
+    ok(g.state === 'play' && g.dgState === 'play', `场景 ${sc}：派对结束后队员还在地下城里（深渊领主死了不按领主结算）`, { state: g.state, dg: g.dgState });
     ok(h.flash < 0.3 && g.flash < 0.3, `场景 ${sc}：屏幕闪光正常衰减（${h.flash} / ${g.flash}）`);
-    // 回城（先队员再主机），准备下一个场景
-    await G.evaluate(() => { menus.closeAll(); goTown(); }); await H.evaluate(() => { menus.closeAll(); goTown(); });
-    ok((await Promise.all([H, G].map(P => until(P, () => game.scene === 'town' && coop.state === 'none', null, 20000)))).every(Boolean), `场景 ${sc}：全员回城`);
+    await leave(H, G, sc);
   }
-  const errs = dumpErrors(players);
+  const errs = [...new Set(dumpErrors(players).map(s => s.slice(0, 300)))];
   ok(!errs.length, '页面没有报错', errs.slice(0, 5));
   // 安全网（game.js frameErr）：怪物 AI 每帧抛错、特效画到一半抛错（留下 save + 叠加模式）→ 游戏照常跑、每帧照常画；错误只 console.error 一次、记进 frameErrs 并上报服务端
   const A = pages[0];

@@ -153,7 +153,7 @@ const coop = {
       const onCleared0 = dg.onCleared.bind(dg);
       dg.onCleared = function (silent) { onCleared0(silent); if (!silent) C.send({ k: 'clear', rk: C.rk() }); };
       const onKill0 = dg.onKill.bind(dg);
-      dg.onKill = function (t, a) { if (t.nid) C.flushSpawns(); if (t.nid) C.send({ k: 'kill', id: t.nid, a: a && a.uid ? a.uid : a === game.player ? C.me() : 0, ld: Math.round(t.lastDmg || 0) }); onKill0(t, a); };
+      dg.onKill = function (t, a) { if (t.nid) C.flushSpawns(); if (t.nid) C.send({ k: 'kill', id: t.nid, a: a && a.uid ? a.uid : a === game.player ? C.me() : 0, ld: Math.round(t.lastDmg || 0), b: t.boss ? 1 : 0 }); onKill0(t, a); };
     } else {
       dg.go = dir => { if (!this.doorAsk || performance.now() - this.doorAsk > 800) { this.doorAsk = performance.now(); this.send({ k: 'door', dir }); } };
     }
@@ -236,11 +236,13 @@ const coop = {
   },
   monAct(m, def) {
     if (!m.nid || this.state !== 'play') return;
-    const D = m.def_, i = D && D.attacks ? D.attacks.findIndex(A => A.clip === def.clip && A.act.dur === def.dur) : -1;
+    const D = m.def_, MA = D && D.msAll && def.msIdx !== undefined ? D.msAll[def.msIdx] : null, mi = MA && MA.act.onStart === def.onStart ? def.msIdx : undefined;   // 区域怪编译过的招式：按编号发（连招的每一步 / 反击也在内）
+    const i = D && D.attacks ? (mi !== undefined ? D.attacks.indexOf(MA) : D.attacks.findIndex(A => A.clip === def.clip && A.act.dur === def.dur)) : -1;
     const tg = m.tgt && m.tgt.uid ? m.tgt.uid : this.me();
-    // 自带 AI 的怪（龙之雕像等）的招式不在招式表里：告诉队员是哪个 AI 函数，队员那边用同一个函数现场出招（事件、投射物都一样）
-    const f = i < 0 ? m.aiInner : null, ai = f && f !== monsterAI && f.name && typeof globalThis[f.name] === 'function' ? f.name : undefined;
-    this.send({ k: 'ma', id: m.nid, i, ai, c: def.clip || def.name, nm: def.name, du: +Math.min(999, def.dur || 1).toFixed(2), sa: def.superArmor === true ? 1 : 0, f: m.face, tg, sq: m.actSeq, x: Math.round(m.x), y: Math.round(m.y) });
+    // 自带 AI 的怪（龙之雕像等）的招式不在招式表里：告诉队员是哪个 AI 函数，队员那边用同一个函数现场出招（事件、投射物都一样）；外面又包了一层的（深渊领主）按 aiBase 往里找
+    let f = i < 0 && mi === undefined && def.msPhase === undefined ? m.aiInner : null; while (f && f.aiBase) f = f.aiBase;
+    const ai = f && f !== monsterAI && f.name && typeof globalThis[f.name] === 'function' ? f.name : undefined;
+    this.send({ k: 'ma', id: m.nid, i, mi, ph: def.msPhase, ai, c: def.clip || def.name, nm: def.name, du: +Math.min(999, def.dur || 1).toFixed(2), sa: def.superArmor === true ? 1 : 0, f: m.face, tg, sq: m.actSeq, x: Math.round(m.x), y: Math.round(m.y) });
   },
   // 队员打中了怪（队员客户端算好的伤害和受击反应）→ 主机扣血、做受击反应
   remoteHit(uid, r) {
@@ -352,14 +354,22 @@ const coop = {
     if (d.c === 'idle' && d.nm === 'statue' && typeof skyMakeStatue === 'function') {   // 石像：用同一套表现（灰色石像，本地按最近的人苏醒）
       const live = m.model; skyMakeStatue(m); m.statueLive = live; m.replaySq = d.sq; return;
     }
-    if (d.i < 0 && d.ai && typeof globalThis[d.ai] === 'function' && /AI$/.test(d.ai)) {   // 自带 AI：让同一个 AI 函数在傀儡身上立刻出一招
+    if (d.ph !== undefined && m.def_ && m.def_.msPhases && m.def_.msPhases[d.ph]) {   // 领主进阶段的咆哮：本地放同一个咆哮（震开的是自己）和台词；阶段机制只在主机上跑
+      const P = game.player; game.player = m.tgt;
+      try { msPhaseRoar(m, d.ph); } catch (e) { console.error('傀儡进阶段咆哮出错', e); } finally { game.player = P; }
+      const E = m.def_.msPhases[d.ph].enter || {}; if (E.say) { msSay(m, E.say, E.col || '#ffb0ff', 15); toastMsg(E.say, E.col || '#d8b0ff'); }
+      m.msPhase = d.ph; m.replaySq = d.sq; m.lockSt = 0; return;
+    }
+    const MA = d.mi !== undefined && m.def_ && m.def_.msAll ? m.def_.msAll[d.mi] : null;
+    if (!MA && d.i < 0 && d.ai && typeof globalThis[d.ai] === 'function' && /AI$/.test(d.ai)) {   // 自带 AI：让同一个 AI 函数在傀儡身上立刻出一招
+      if (m.msQueue) m.msQueue.length = 0; m.msCounterNow = false;   // 连招后续 / 反击主机都会按编号单独发，本地重播留下的队列不能再放一遍
       const P = game.player; game.player = m.tgt;
       const was = m.act, aiCd = m.aiCd;
       try { if (m.act) { m.act = null; } m.setState('idle'); m.aiCd = 0; globalThis[d.ai](m, 1 / 60); } catch (e) { console.error('傀儡自带 AI 出招出错', e); } finally { game.player = P; }
       m.vx = m.vy = 0; if (aiCd !== undefined && m.act === was) m.aiCd = aiCd;
       if (m.act && m.act !== was) { m.replaySq = d.sq; m.lockSt = 0; return; }
     }
-    const A = d.i >= 0 && m.def_ && m.def_.attacks ? m.def_.attacks[d.i] : null;
+    const A = MA || (d.i >= 0 && m.def_ && m.def_.attacks ? m.def_.attacks[d.i] : null);
     const def = A ? { name: A.clip, clip: A.clip, ...A.act, hits: A.act.hits && A.act.hits.map(h => ({ ...h })) } : { name: d.c, clip: d.c, dur: d.du, superArmor: !!d.sa, noCounter: true };
     const P = game.player; game.player = m.tgt;
     try { Ent.prototype.doAct.call(m, def); } catch (e) { console.error('傀儡出招出错', e); m.act = null; }
@@ -372,6 +382,7 @@ const coop = {
     if (!m) { const s = this.spawnInfo.get(d.id); if (!s || !MON[s.kind]) return; this.makePuppet(s); m = this.puppets.get(d.id); if (!m) return; }
     if (m._rewarded) return; m._rewarded = true; this.stats.kills++;
     m.lastDmg = d.ld || 0;
+    if (d.b === 0) m.boss = false;   // 主机那边死的时候已经不算这张图的领主（深渊领主）：队员这边也不能按领主结算（不然会清场、直接出结算）
     const a = d.a === this.me() ? game.player : (this.mates.get(d.a) || game.player);
     if (!m.dead) { m.dead = true; m.setState('dead'); m.deadT = 0; m.act = null; m.vz = 0; }
     this.spawnInfo.delete(d.id);

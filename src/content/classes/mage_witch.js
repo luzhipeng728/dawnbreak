@@ -234,7 +234,7 @@ function airOr(p, ground, air) {
 }
 // ---- 改良舒露露：往前走的挑衅人偶（杰克扮的），嘲讽周围的敌人；时间到 / 被打爆 / 再按一次技能键时爆炸 ----
 defSummon('wt_shululu', { kind: 'follower', name: '舒露露', bundle: 'shululu', model: () => wtSprite('shululu', '#ff9a50'), clips: WT_CLIPS.shululu, w: 11, d: 10, h: 64, speed: 45, pref: 0, sight: 0,
-  life: 8, max: 1, col: '#ff9a50', type: 'indep', attacks: [], hp: o => o.hpMax * 0.35, shadowR: 12,
+  life: 10, max: 1, col: '#ff9a50', type: 'indep', attacks: [], hp: o => o.hpMax * 0.35, shadowR: 12,
   ai: (s, dt) => { const o = s.owner, R = game.room;
     if (s.fail) { const gx = o.x - o.face * 50, dx = gx - s.x; s.vx = Math.abs(dx) > 8 ? Math.sign(dx) * Math.min(170, Math.abs(dx) * 3) : 0; s.vy = (o.y - s.y) * 3; s.setState(s.vx ? 'walk' : 'idle'); if (s.vx) s.face = Math.sign(s.vx); return; }
     const edge = R && ((s.face > 0 && s.x > R.x1 - 40) || (s.face < 0 && s.x < R.x0 + 40));
@@ -245,7 +245,7 @@ defSummon('wt_shululu', { kind: 'follower', name: '舒露露', bundle: 'shululu'
     sfx.boom(0.5 * K); fxBurst(s.x, s.y, 30, 200 * K, '#ffb060'); fxShock(s.x, s.y, 165 * K, '#ffb060'); fxSpr('explosion', s.x, s.y, 20, { w: 165 * K, dur: 0.5, ay: 0.8 });
     summonArea(s, s.x, s.y, 120 * K, { dmg: s.dmg * (K > 1 ? 1.2 : 1), launch: 360, knock: 120, hs: 0.1, big: 1.4, elem: 'fire', type: 'indep', downHit: true, shake: 3 }, { zMax: 200 }); } });
 defSkill('wt_shululu', { name: '改良舒露露', cls: 'mage', job: WT, lvReq: 15, mp: 35, cd: 16, type: 'indep', elem: 'fire', col: '#ff9a50', cast: true, air: true,
-  desc: '扔出挑衅人偶舒露露（杰克扮的）：它慢慢往前走，嘲讽周围的敌人（技能 5 级起领主也会被嘲讽），8 秒后、被打爆或再按一次技能键时爆炸。失败：它只会跟着你走，不爆炸；大成功：爆炸更大。可以空中施放。',
+  desc: '扔出挑衅人偶舒露露（杰克扮的）：它慢慢往前走，嘲讽周围的敌人（技能 5 级起领主也会被嘲讽），10 秒后、被打爆或再按一次技能键时爆炸。失败：它只会跟着你走，不爆炸；大成功：爆炸更大。可以空中施放。',
   pow: lv => wtLv(lv, 5.0, 0.5), ai: { kind: 'buff', summon: 'wt_shululu' },
   recast: { ok: p => summonsOf(p, 'wt_shululu').some(s => !s.fail), cd: 0.3, mp: 0, act: () => ({ name: 'wt_boom', clip: 'fling', dur: 0.22, noCounter: true, onStart: e => dismissSummons(e, 'wt_shululu', 'cmd') }) },
   act: (lv, p) => airOr(p, { name: 'wt_shululu', clip: 'potion', dur: 0.45, cancelFrom: 0.32, events: [evAt(0.15, e => { const r = rollCraft(e, 'jack');
@@ -274,7 +274,7 @@ function wtMissile(e, lv) {
 // ---- 暗影斗篷：黑斗篷把身前一片敌人一起卷住、强制拖到身前（特殊抓取，能抓霸体和格挡中的敌人），命中致盲；施放中无敌（官方没有成功率判定）----
 defSkill('wt_cloak', { name: '暗影斗篷', cls: 'mage', job: WT, lvReq: 16, mp: 30, cd: 7, type: 'indep', elem: 'dark', col: '#4a2a6a',
   desc: '甩出一件巨大的黑斗篷，把身前一大片敌人一起卷住、强制拖到你面前（特殊抓取，能抓霸体和格挡中的敌人），命中必定致盲。施放中无敌。', pow: lv => wtLv(lv, 3.4, 0.34), ai: { kind: 'grab', r: [0, 190], dy: 50 },
-  infoExtra: () => [['致盲', '100%（6 秒）']],
+  infoExtra: () => [['致盲', '100%（10 秒）']],
   act: (lv, p) => p && hasSkill(p, 'wt_pink') ? catHelperAct(lv) : ({ name: 'wt_cloak', clip: 'fling', dur: 0.8, noCounter: true, invul: [0.04, 0.78],
     onStart: e => { e.act.tg = []; e.act.gx = e.x + e.face * 72; sfx.swing(true); },
     update: (e, dt) => { const a = e.act; if (!a.tg.length) return; a.gx = e.x + e.face * 72;
@@ -285,7 +285,7 @@ defSkill('wt_cloak', { name: '暗影斗篷', cls: 'mage', job: WT, lvReq: 16, mp
         if (a.tg.length) { sfx.hit('slash', false); fxBurst(a.gx, e.y, 40, 170, '#5a2a8a'); } }),
       evAt(0.3, e => { for (const t of e.act.tg) if (!t.dead) applyHit(e, t, { dmg: wtLv(lv, 1.2, 0.12), stun: 0.3, hs: 0.04, type: 'indep', elem: 'dark', sure: true }, { proj: true }); }),
       evAt(0.62, e => { const a = e.act; if (!a.tg.length) return; sfx.boom(0.4); fxBurst(a.gx, e.y, 40, 150, '#8a5ab0');
-        for (const t of a.tg) if (!t.dead) { unroot(t); addStatus(t, 'blind', 6, { src: e }); applyHit(e, t, { dmg: wtLv(lv, 2.2, 0.22), launch: 300, knock: 120, hs: 0.08, type: 'indep', elem: 'dark', sure: true }, { proj: true, src: { x: e.x, y: e.y, z: 0, face: e.face } }); } })] }) });
+        for (const t of a.tg) if (!t.dead) { unroot(t); addStatus(t, 'blind', 10, { src: e }); applyHit(e, t, { dmg: wtLv(lv, 2.2, 0.22), launch: 300, knock: 120, hs: 0.08, type: 'indep', elem: 'dark', sure: true }, { proj: true, src: { x: e.x, y: e.y, z: 0, face: e.face } }); } })] }) });
 // ---- 变异苍蝇拍：霸体抡起大苍蝇拍从身后拍下（地面 180°、空中 120°）；几率诅咒，打致盲的敌人伤害更高；几率召出变异怪 ----
 function mutantModel(kind, hue) {
   const A = typeof MON_ART !== 'undefined' && MON_ART[kind]; if (!A || typeof SPR_DATA === 'undefined' || !SPR_DATA[A[0]] || !IMG[`spr/${A[0]}/idle`]) return MON[kind].model();
@@ -347,7 +347,7 @@ defSummon('wt_acid', { kind: 'field', r: 170, tick: 0.5, life: 6, max: 1, col: '
   update(s, dt) { if (!s.frost) return; const t = strongestFoe({ ...s.owner, x: s.x, y: s.y }, 600); if (t) { s.x = damp(s.x, t.x, 1.4, dt); s.y = damp(s.y, t.y, 1.4, dt); } },   // 冰霜云：追着附近最强的敌人走
   onTick(s, foes) { for (const t of ents) { if (!foe(s.owner, t) || t.invul > 0 || t.z > 200 || !inGround(t, s.x, s.y, 170 * s.K)) continue;
     summonHit(s, t, { dmg: s.dmg, stun: 0.2, knock: 0, hs: 0.02, elem: 'ice', type: 'indep', sure: true });
-    if (s.frost) { addStatus(t, 'slow', 1, { src: s.owner }); if (Math.random() < 0.1) addStatus(t, 'freeze', 1.5, { src: s.owner }); fxSpr('icespike', t.x + rnd(-14, 14), t.y + 0.5, t.z + 40, { w: 26, dur: 0.25, rot: Math.PI / 2 }); }   // 冰雹和冰锥：10% 冰冻
+    if (s.frost) { addStatus(t, 'slow', 1, { src: s.owner }); if (Math.random() < 0.1) addStatus(t, 'freeze', 2, { src: s.owner }); fxSpr('icespike', t.x + rnd(-14, 14), t.y + 0.5, t.z + 40, { w: 26, dur: 0.25, rot: Math.PI / 2 }); }   // 冰雹和冰锥：10% 冰冻
     if (craftBig(s.r) && Math.random() < 0.15) { lightningStrike({ x: t.x, y: t.y }); summonHit(s, t, { dmg: s.dmg, stun: 0.8, knock: 0, hs: 0.04, elem: 'light', type: 'indep', sure: true }); } } },
   drawUpright(c, s) { const X = sx(s.x), Y = sy(s.y, 150), k = s.lifeT / s.life, a = k < 0.1 ? k * 10 : k > 0.9 ? (1 - k) / 0.1 : 1, W = 360 * s.K; c.save(); c.globalAlpha = a;
     const img = IMG[s.frost ? 'fx/wt_frostcloud' : 'fx/wt_cloud'] || fxTint('poison', s.frost ? '#bfefff' : '#7a8a7a'); drawSpr(c, img, X, Y, W, W * 0.42, { add: false });
@@ -566,7 +566,7 @@ function catHelperAct(lv) {
       for (const t of a.tg) { if (t.dead) continue; addStatus(t, 'root', 0.3, { src: e, force: true }); if (!t.boss) { t.x = damp(t.x, a.cx + (t.id % 3 - 1) * 12, 7, dt); t.y = damp(t.y, a.cy + 0.5, 7, dt); } } },
     events: [evAt(0.34, e => { sfx.hit('slash', false); for (const t of e.act.tg) if (!t.dead) applyHit(e, t, { dmg: wtLv(lv, 1.4, 0.14), stun: 0.6, knock: 0, hs: 0.04, type: 'indep', elem: 'dark', sure: true }, { proj: true, src: { x: e.act.cx, y: e.act.cy, z: 0, face: e.face } }); }),
       evAt(0.72, e => { const a = e.act; sfx.boom(0.6); fxBurst(a.cx, a.cy, 40, 280, '#8a5ab0'); fxShock(a.cx, a.cy, 260, '#8a5ab0');
-        for (const t of a.tg) if (!t.dead) { unroot(t); addStatus(t, 'blind', 6, { src: e }); applyHit(e, t, { dmg: wtLv(lv, 2.6, 0.26), launch: 320, knock: 120, hs: 0.08, type: 'indep', elem: 'dark', sure: true, downHit: true }, { proj: true, src: { x: a.cx - e.face * 20, y: a.cy, z: 0, face: e.face } }); } })] };
+        for (const t of a.tg) if (!t.dead) { unroot(t); addStatus(t, 'blind', 10, { src: e }); applyHit(e, t, { dmg: wtLv(lv, 2.6, 0.26), launch: 320, knock: 120, hs: 0.08, type: 'indep', elem: 'dark', sure: true, downHit: true }, { proj: true, src: { x: a.cx - e.face * 20, y: a.cy, z: 0, face: e.face } }); } })] };
 }
 // ---- 技艺融合（一觉）：拿着锤子在战场上跑来跑去，依次组装 4 台机械，装好的机械一直工作到最后：
 //      电场装置（把敌人拖过来定住、光属性多段）→ 南瓜工厂（一圈圈放出南瓜跑者）→ 雪人旋转机（喷出一大堆雪人头和杂物）→ 巨型夜猫机（张嘴打出暗属性重拳，
@@ -672,7 +672,7 @@ defSummon('wt_candy', { kind: 'follower', name: '糖果人偶', bundle: 'candyDo
   ai: (s, dt) => { s.arm = (s.arm ?? 0.7) - dt; if (s.arm > 0) { s.vx = s.vy = 0; s.setState('idle'); s.z = Math.max(0, Math.sin(s.arm / 0.7 * Math.PI) * 30); return; } const t = nearestFoe(s, 700); if (!t) { const o = s.owner, gx = o.x - o.face * (40 + (s.slot % 5) * 12), dx = gx - s.x; s.vx = Math.abs(dx) > 10 ? Math.sign(dx) * 200 : 0; s.vy = (o.y - s.y) * 2; s.setState(s.vx ? 'walk' : 'idle'); if (s.vx) s.face = Math.sign(s.vx); return; }
     const dx = t.x - s.x, dy = t.y - s.y, l = Math.hypot(dx, dy * 1.4) || 1; s.vx = dx / l * 230; s.vy = dy / l * 160; s.face = Math.sign(dx) || s.face; s.setState('run');
     if (l < 30 && !s.pop) { s.pop = true; const w = s.white; fxBurst(s.x, s.y, 30, s.big ? 210 : 130, w ? '#fff6c0' : '#8a5ab0'); sfx.boom(0.35);
-      summonArea(s, s.x, s.y, s.big ? 150 : 90, { dmg: s.dmg, launch: 260, knock: 80, hs: 0.05, type: 'indep', elem: w ? 'light' : 'dark', downHit: true }, { zMax: 140, status: w ? 'shock' : 'blind', sdur: 4 }); dismissOne(s, 'cmd'); } } });
+      summonArea(s, s.x, s.y, s.big ? 150 : 90, { dmg: s.dmg, launch: 260, knock: 80, hs: 0.05, type: 'indep', elem: w ? 'light' : 'dark', downHit: true }, { zMax: 140, status: w ? 'shock' : 'blind', sdur: w ? 7 : 4 }); dismissOne(s, 'cmd'); } } });
 defSkill('wt_lollipop', { name: '超级棒棒糖', cls: 'mage', job: WT, lvReq: 26, mp: 130, cd: 45, type: 'indep', elem: 'dark', col: '#ff7ac0', air: true,
   desc: '举起巨型棒棒糖狠狠砸下（地面、空中都能放）。每命中一个敌人就生成一个糖果人偶，被这一下砸死的敌人再多变出一个（领主 / 精英变成更强的大号暗黑人偶），最多 10 个：黑色人偶是暗属性、附带致盲，白色人偶是光属性、附带感电。人偶会自动追着敌人自爆，还会跟着你进下一个房间。',
   pow: lv => wtLv(lv, 7.0, 0.7) + wtLv(lv, 1.0, 0.1) * 5, ai: { kind: 'burst', r: [0, 290], dy: 90 },
@@ -707,8 +707,8 @@ defSkill('wt_awaken2', { name: '乌洛波洛斯之环', cls: 'mage', job: WT, lv
       m.x += (a.mx || 0) * 190 * dt; m.y = clamp(m.y + (a.my || 0) * 120 * dt, 6, DEPTH - 6); if (R) m.x = clamp(m.x, R.x0 + 50, R.x1 - 50); if (a.mx) m.face = a.mx;
       a.fast = Math.max(0, (a.fast || 0) - dt); mClip(m, a.mx || a.my || a.fast > 0 ? 'move' : 'grab');
       for (const t of ents) if (foe(e, t) && !t.dead && inGround(t, m.x, m.y, 480)) { if (!t.boss) { t.x = damp(t.x, m.x, 4, dt); t.y = damp(t.y, m.y, 4, dt); } addStatus(t, 'root', 0.3, { src: e, force: true }); }
-      a.cT = (a.cT || 0) + dt * (a.fast > 0 ? 1.5 : 1);   // 碾压：平时 0.21 秒一段，连按 X 0.14 秒一段
-      if (a.cT >= 0.21) { a.cT -= 0.21; a.cn = (a.cn || 0) + 1; summonArea(m, m.x, m.y, 260, { dmg: D * 0.012, stun: 0.4, knock: 0, hs: 0.02, type: 'indep', elem: 'dark', downHit: true, sure: true }, { zMax: 200 }); if (a.cn % 4 === 0) fxShock(m.x, m.y, 260, '#ff9ad0'); if (a.cn % 8 === 0) fxShock(m.x, m.y, 480, '#ff5a8a'); }
+      a.cT = (a.cT || 0) + dt * (a.fast > 0 ? 1.5 : 1);   // 碾压：平时 0.3 秒一段，连按 X 0.2 秒一段
+      if (a.cT >= 0.3) { a.cT -= 0.3; a.cn = (a.cn || 0) + 1; summonArea(m, m.x, m.y, 260, { dmg: D * 0.017, stun: 0.4, knock: 0, hs: 0.02, type: 'indep', elem: 'dark', downHit: true, sure: true }, { zMax: 200 }); if (a.cn % 4 === 0) fxShock(m.x, m.y, 260, '#ff9ad0'); if (a.cn % 8 === 0) fxShock(m.x, m.y, 480, '#ff5a8a'); }
       a.sT = (a.sT ?? 0.3) - dt; if (a.sT <= 0) { a.sT = 0.45;   // 四色火花：每只助手各挑一个不同的敌人
         const L = ents.filter(t => foe(e, t) && !t.dead && t.invul <= 0 && Math.abs(t.x - m.x) < 480 && Math.abs(t.y - m.y) < 200).sort(() => Math.random() - 0.5);
         OURO_SPARK.forEach(([el, col], n) => { const t = L[n], tx = t ? t.x : m.x + rnd(-400, 400), ty = t ? t.y : clamp(m.y + rnd(-90, 90), 6, DEPTH - 6);
@@ -717,7 +717,7 @@ defSkill('wt_awaken2', { name: '乌洛波洛斯之环', cls: 'mage', job: WT, lv
     A.invul = true; return A; } });
 // ---- 粉红糖果（三觉被动）：暗影斗篷进化成夜猫助手；魔道酸雨云进化成会追击敌人的冰霜云 ----
 defSkill('wt_pink', { name: '粉红糖果', cls: 'mage', job: WT, lvReq: 29, maxLv: 1, passive: true, type: 'indep', col: '#ff9ad0',
-  desc: '【被动 · 三觉】把贤者之石加工成粉红糖果喂给使魔：暗影斗篷进化成夜猫助手（扑到身前变成斗篷卷住敌人，再向四面伸出长腿，把斗篷外面够得着的敌人也拖进来）；魔道酸雨云进化成冰霜云（追着附近最强的敌人走，落下冰雹和冰锥，附带减速、几率冰冻，持续 8 秒）。' });
+  desc: '【被动 · 三觉】普攻和技能攻击 +20%。把贤者之石加工成粉红糖果喂给使魔：暗影斗篷进化成夜猫助手（扑到身前变成斗篷卷住敌人，再向四面伸出长腿，把斗篷外面够得着的敌人也拖进来）；魔道酸雨云进化成冰霜云（追着附近最强的敌人走，落下冰雹和冰锥，附带减速、几率冰冻，持续 8 秒）。' });
 // ---- 糖果大作战：捣蛋杰克：巨型南瓜助手跟在身后，朝它面朝的方向喷岩浆；再按一次技能键让它转身 ----
 defSummon('wt_trickjack', { kind: 'follower', name: '捣蛋杰克', bundle: 'trickjack', model: () => wtSprite('trickjack', '#ff9a50'), clips: WT_CLIPS.trickjack, w: 24, d: 16, h: 140, speed: 200, runSpeed: 320, pref: 0, sight: 0,
   life: 10, max: 1, col: '#ff9a50', type: 'indep', attacks: [], shadowR: 30, keepRoom: false,
@@ -783,7 +783,7 @@ CLASSES.mage.passives.push(p => {
   p.airBonus = p._ride ? 5 : 0; p._wtAir = true;
   if (p.z <= 0.01) { p._dashN = 0; p._glideN = 0; p._gliding = false; }
   const lu = skLv(p, 'wt_lucky'); setPassive(p, 'wt_lucky', lu > 0, { dmg: 0.03 + 0.01 * lu });
-  const pr = skLv(p, 'wt_premonition'); setPassive(p, 'wt_premonition', pr > 0, { crit: 0.05 + 0.005 * pr, critDmg: 0.05 + 0.01 * pr });
+  const pr = skLv(p, 'wt_premonition'); setPassive(p, 'wt_pink', hasSkill(p, 'wt_pink'), { dmg: 0.2 }); setPassive(p, 'wt_premonition', pr > 0, { crit: 0.05 + 0.005 * pr, critDmg: 0.05 + 0.01 * pr });
   if (p._oopsT > 0) { p._oopsT -= 0.25; if (p._oopsT <= 0 && p.st === 'act' && p.act && p.clipName === p._oopsClip) p.play(p.act.clip || p.act.name); }
   if (p.buffs.wt_candy && !p._candyFx) p._candyFx = addFx({ y: p.y, dur: 1e9, p, update() { const P = this.p; this.y = P.y + 0.7; if (!P.buffs.wt_candy || P.dead) { this.t = this.dur; P._candyFx = null; } },
     draw(c) { const P = this.p, X = sx(P.x), Y = sy(P.y, P.z + 138 + Math.sin(game.t * 4) * 3); if (IMG['icon/wt_candy']) c.drawImage(IMG['icon/wt_candy'], X - 11, Y - 11, 22, 22); else drawSpr(c, fxTint('orb', '#ff9ad0'), X, Y, 18, 18, {}); } });

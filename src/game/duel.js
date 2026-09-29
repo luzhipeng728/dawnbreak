@@ -52,7 +52,7 @@ const PVP_SKILL = { awaken: 0.5, grab: 0.8, summon: 0.8, burst: 0.85, aoe: 0.9 }
 const PVP_JOB = {
   'sword:': [1.95, 0.55], 'sword:blade': 0.66, 'sword:berserker': 0.76, 'sword:asura': [0.34, 1.15], 'sword:soulbender': 0.8, 'sword:ghostblade': 0.64,
   'gun:': [2.8, 0.65], 'gun:ranger': 1.16, 'gun:launcher': 1.15, 'gun:spitfire': 0.58, 'gun:mechanic': 0.62, 'gun:paramedic': 1.4,
-  'mage:': 1.7, 'mage:elemental': 0.76, 'mage:battlemage': 0.88, 'mage:summoner': 0.45, 'mage:witch': 0.6, 'mage:enchantress': 0.78,
+  'mage:': 1.7, 'mage:elemental': 0.76, 'mage:battlemage': 0.88, 'mage:summoner': 0.45, 'mage:witch': 0.48, 'mage:enchantress': 0.78,
 };
 for (const id in SKILLS) {
   const S = SKILLS[id]; if (!S || S.passive) continue;

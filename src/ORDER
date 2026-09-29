@@ -77,6 +77,7 @@ content/items/epics60_w_gun.js
 content/items/epics60_w_mage.js
 content/items/epics60_armor.js
 content/items/epics60_acc.js
+content/items/cdr60.js
 content/items/cards.js
 content/items/shops.js
 content/items/droptables.js

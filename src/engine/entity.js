@@ -114,6 +114,7 @@ class Ent {
         if (this.act === a && this.actT >= a.dur) this.endAct();
       }
     }
+    if ((this.st === 'walk' || this.st === 'run') && this.model && this.model.loopRate) spd = this.model.loopRate(this.clipName, Math.hypot(this.vx, this.vy));   // 走 / 跑的播放速度跟实际移速走（models/imgmodel.js loopRate）
     if (!(this.act && this.act.charging && !this.act.charge.clip)) this.animT += dt * spd;
     // ---- 物理 ----
     const inAir = this.z > 0 || this.vz > 0;
@@ -199,6 +200,7 @@ class Ent {
     if (a <= 0) return;
     const sa = !this.dead && hasSA(this);
     const fsx = this.face * (this.drawFlip ? -1 : 1) * sc;
+    this.pose.__f = fsx < 0 ? -1 : 1;   // 给精灵模型的换帧缓动用：转身时清掉偏移（models/imgmodel.js）
     const rot = this.rot, cy = -this.h * 0.42;
     const body = (x) => { if (rot) { x.translate(0, cy); x.rotate(rot); x.translate(0, -cy); } this.model.draw(x, this.pose, game.t + this.id, this.drawOpts || NO_OPTS); };
     if (!sa && !(this.flash > 0)) {   // 普通情况：直接画到世界层

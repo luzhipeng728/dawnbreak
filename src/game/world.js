@@ -228,7 +228,7 @@ class Passerby {
     const S = world.S;
     this.a = clamp(this.a + dt * 2 * this.fade, 0, 1);
     if (this.fade < 0 && this.a <= 0) { this.gone = true; return; }
-    this.pose.__t += dt;
+    this.pose.__t += dt * (this.st === 'move' && this.model.loopRate ? this.model.loopRate(this.pose.__c, this.run ? this.sp * 2.1 : this.sp) : 1);   // 路人走得比玩家慢：步频跟着放慢，不再原地滑步
     if (this.st === 'move') {
       const dx = this.tx - this.x, dy = this.ty - this.y, d = Math.hypot(dx, dy), sp = this.run ? this.sp * 2.1 : this.sp;
       if (d < 4) { this.st = 'idle'; this.pose.__c = 'idle'; this.wait = this.leaving ? 0 : rnd(1.5, 5); if (this.leaving) this.fade = -1; if (this.lookAt !== undefined) this.face = this.lookAt > this.x ? 1 : -1; return; }

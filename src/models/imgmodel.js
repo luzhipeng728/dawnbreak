@@ -76,6 +76,29 @@ function sprSil(im, col) {
    anims：{ 片段名: [[帧, 起始时间], ...]（一次性动作）或 { fps, frames: [...] }（循环） }，按片段内时间选帧；
    没列出的片段按姿势名对照表 map 兜底；翻滚帧按姿势的整体转角旋转；站立时带轻微呼吸起伏 */
 const SPR_ROT = { roll: 1 };
+/* ---- 动作顺滑（docs/ANIMATION.md，所有职业 / 时装 / 转职共用）----
+   1) 走 / 跑的身体起伏：美术帧里头部高度和前倾一帧一个样（跑步第 3、7 帧突然站直、头往上跳 6~7 像素，下一帧又落回去），
+      按原装帧的头部锚点（F.head）把这一圈的头部轨迹拟合成“每步一次”的正弦（只保留均值 + 二次谐波；前倾的起伏再减半），
+      每帧绕脚底做一点竖向压缩 / 水平错切把头对到拟合位置：脚不离地、时装 / 武器 / 配件跟着一起变，形变不超过 6% / 0.08
+   2) 换帧时身体的水平跳动：同一个动作里相邻两帧的锚点常对不齐（普攻 1 起手 → 挥砍头部往后跳 28 像素、法师普攻往前跳 26），
+      换帧时把头部的水平跳动记成偏移，再按指数衰减在 ~0.1 秒内收回到 0：瞬移变成很快的滑步，停下来时仍在原锚点（判定 / 特效位置不变）。
+      循环动作内部、受击 / 浮空 / 倒地类片段、转身、跳动超过 max 的（跳斩起跳 / 落地、冲刺这类本来就是换姿势的整段位移）照旧直接换帧 */
+const SPR_LOOP_NORM = { walk: 1, run: 1 }, SPR_LOOP_CACHE = {};
+const SPR_EASE = { k: 28, max: 40, skip: { hit: 1, hit2: 1, air: 1, airUp: 1, bounceUp: 1, down: 1, getup: 1, tech: 1, held: 1 } };
+function sprLoopNorm(m, clip, A) {
+  const ck = m.key + '|' + clip; if (ck in SPR_LOOP_CACHE) return SPR_LOOP_CACHE[ck];
+  const n = A.frames.length, H = A.frames.map(f => { const F = m.S.frames[f]; return F && F.head && [F.head.x - F.ax, F.head.y - F.ay]; });
+  if (n < 4 || n % 2 || H.some(h => !h || h[1] > -10)) return (SPR_LOOP_CACHE[ck] = null);
+  const fit = (i, keep) => {   // 均值 + 二次谐波（一圈两步 → 每步一个起伏）
+    let mu = 0, a = 0, b = 0;
+    for (let j = 0; j < n; j++) { const w = 4 * Math.PI * j / n; mu += H[j][i]; a += H[j][i] * Math.cos(w); b += H[j][i] * Math.sin(w); }
+    mu /= n; a *= 2 / n; b *= 2 / n;
+    return H.map((_, j) => mu + keep * (a * Math.cos(4 * Math.PI * j / n) + b * Math.sin(4 * Math.PI * j / n)));
+  };
+  const TX = fit(0, 0.5), TY = fit(1, 1), R = {};
+  A.frames.forEach((f, j) => { const [hx, hy] = H[j]; R[f] = [clamp((TX[j] - hx) / hy, -0.08, 0.08), clamp(TY[j] / hy, 0.94, 1.06)]; });
+  return (SPR_LOOP_CACHE[ck] = R);
+}
 class SpriteModel {
   constructor(key, map, anims, o = {}) {
     this.S = SPR_DATA[key]; this.key = key; this.map = map || {}; this.anims = anims || {}; this.o = o; this.skel = { map: {} }; this.img = {}; this.style = {};
@@ -91,6 +114,26 @@ class SpriteModel {
     if (!f || !this.img[f]) f = this.map[pose.__n || ''] || this.map._;
     return this.img[f] ? f : 'idle';
   }
+  // 走 / 跑的播放速度倍率（engine/entity.js、路人）：A.v = 这个 fps 对应的移动速度；每帧停留的逻辑步数取整（节奏均匀），最少 2 步
+  loopRate(clip, speed) {
+    const A = this.anims[clip]; if (!A || !A.v || !A.frames || !(speed > 1)) return 1;
+    const h0 = 60 / A.fps, h = Math.max(2, Math.round(h0 * A.v / speed));
+    return clamp(h0 / h, 0.4, 2.5);
+  }
+  // 换帧时身体的水平跳动（见下方 SPR_EASE）：返回这一帧要额外平移的量（世界单位，模型本地朝向）
+  ease(pose, f, t, A) {
+    const B = this.S.frames[f], hx = B && B.head ? (B.head.x - B.ax) / this.S.res : null;
+    let o = this.eo || 0;
+    if (o && this.et !== undefined) { o *= Math.exp(-SPR_EASE.k * Math.max(0, t - this.et)); if (Math.abs(o) < 0.2) o = 0; }
+    const flip = pose.__f !== this.ed; if (flip) { this.ed = pose.__f; o = 0; }   // 转身：偏移是本地坐标，翻面后会反向，直接清掉（这次换帧也不再记跳动）
+    if (f !== this.ef) {
+      const inLoop = A && A.frames && pose.__c === this.ec;
+      if (flip || hx === null || this.eh == null || SPR_EASE.skip[pose.__c]) o = 0;
+      else if (!inLoop) { o += this.eh - hx; if (Math.abs(o) > SPR_EASE.max) o = 0; }
+      this.ef = f; this.ec = pose.__c; this.eh = hx;
+    }
+    this.eo = o; this.et = t; return o;
+  }
   // 外观层钩子（外观与换装组 models/avatar.js）：this.av = { frame(m, f) → {F, im} 换帧来源（时装），under / over(c, m, f, F) 在帧前后叠加武器与配件 }；没有 av 时行为不变
   draw(c, pose, t = 0, opts = NO_OPTS) {
     const f = this.frameOf(pose), av = this.av;
@@ -98,10 +141,13 @@ class SpriteModel {
     if (av) { const s = av.frame(this, f); if (s) { F = s.F; im = s.im; } }
     if (!im) return;
     const k = 1 / this.S.res, rot = SPR_ROT[f] && pose.r ? pose.r[2] * SPR_ROT[f] * D2R : 0;
+    const A = pose.__c && this.anims[pose.__c], N = A && A.frames && SPR_LOOP_NORM[pose.__c] ? sprLoopNorm(this, pose.__c, A) : null, nf = N && N[f], ex = this.ease(pose, f, t, A);
     c.save();
+    if (ex) c.translate(ex, 0);
     if (rot) { const cy = -F.h * k * 0.45; c.translate(0, cy); c.rotate(rot); c.translate(0, -cy); }
     if (f === 'idle') c.scale(1 - Math.sin(t * 2.6) * 0.006, 1 + Math.sin(t * 2.6) * 0.012);   // 呼吸
     c.scale(k, k);
+    if (nf) c.transform(1, 0, nf[0], nf[1], 0, 0);   // 绕脚底：水平错切（前倾）+ 竖向压缩（起伏），时装 / 武器 / 配件一起变
     if (opts.sil) { c.drawImage(sprSil(im, opts.sil), -F.ax, -F.ay); c.restore(); return; }   // 纯色剪影：实体的霸体描边 / 受击闪白（engine/entity.js，只用于没有外观层的模型）
     if (av) av.under(c, this, f, F);
     c.drawImage(im, -F.ax, -F.ay);

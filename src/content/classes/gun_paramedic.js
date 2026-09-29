@@ -88,7 +88,7 @@ function pmParty(p, id, b, aura) {
 // 战斗服帧集的动画表（帧名见 art/tools/paramedic_art.py；没画的帧自动退回站姿）
 let PM_ANIMS = null;
 function pmAnims() {
-  return PM_ANIMS || (PM_ANIMS = { ...BASE_ANIMS,
+  return PM_ANIMS || (PM_ANIMS = { ...BASE_ANIMS, walk: SPR_ANIMS.gun.walk, run: SPR_ANIMS.gun.run,   // 走 / 跑和神枪手同一套节奏（docs/ANIMATION.md）
     jumpUp: [['jump2', 0]], jumpFall: [['jump3', 0], ['jump4', 0.12]], land: [['jump5', 0]], back: [['jump4', 0]],
     pmA1: [['a1_1', 0], ['a1_2', 0.06]], pmA2: [['a2_1', 0], ['a2_2', 0.07]], pmA3: [['a3_1', 0], ['a3_2', 0.09]], pmA4: [['a4_1', 0], ['a4_2', 0.11]],
     pmDash: [['dash1', 0], ['dash2', 0.06]], pmJatk: [['jatk1', 0], ['jatk2', 0.05], ['jatk3', 0.13]],

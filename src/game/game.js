@@ -15,6 +15,7 @@ const game = {
   after(sec, fn) { this.timers.push({ t: sec, fn }); },
 };
 function step(dt) {
+  snapPrev();
   game.t += dt;
   if (bot.on) bot.tick(dt);
   if (touch.on) touch.tick();
@@ -62,7 +63,8 @@ function applyBuffs(p) {
 function updateCamera(dt) {
   const p = game.player, R = game.room;
   if (p && R) {
-    const want = clamp((game.duel ? game.duel.focusX() : p.x + p.face * 70) - WW / 2, R.x0, R.x1 - WW);
+    cam.look = damp(cam.look ?? p.face * 70, p.face * 70, 4, dt);   // 朝向前瞻先平滑一层：转身时相机速度连续变化，不会突然甩一下（docs/ANIMATION.md）
+    const want = clamp((game.duel ? game.duel.focusX() : p.x + cam.look) - WW / 2, R.x0, R.x1 - WW);
     cam.x = damp(cam.x, want, 5, dt);
     cam.x = clamp(cam.x, R.x0, Math.max(R.x0, R.x1 - WW));
   }
@@ -130,9 +132,39 @@ function frameBody(now) {
     try { while (acc >= 1 / 60 && n < 5) { step(1 / 60); acc -= 1 / 60; n++; } } catch (e) { frameErr('step', e); acc = 0; input.endFrame(); }
     if (n === 5) acc = 0;
   } else { if (bot.on) bot.tick(rdt); if (touch.on) touch.tick(); input.frame(game.t); if (game.onPausedFrame) game.onPausedFrame(); input.endFrame(); }
-  try { renderWorld(); } catch (e) { frameErr('render', e); canvasUnwind(wctx); }
-  try { ui.draw(); } catch (e) { frameErr('ui', e); canvasUnwind(uctx); }
+  const L = lerpIn(clamp(acc * 60, 0, 1));
+  try {
+    try { renderWorld(); } catch (e) { frameErr('render', e); canvasUnwind(wctx); }
+    try { ui.draw(); } catch (e) { frameErr('ui', e); canvasUnwind(uctx); }
+  } finally { lerpOut(L); }
 }
+/* ---- 渲染插值（docs/ANIMATION.md）：逻辑固定 60Hz，画面画在“上一步 → 这一步”之间 acc 对应的位置 ----
+   显示器刷新和逻辑步对不齐时（抖动、120/144/90/75Hz、偶尔掉帧）不插值会出现“这一帧 0 步、下一帧 2 步”：跑动时整屏背景一顿一跳。
+   只在画的时候临时换成插值位置、画完立刻换回，逻辑 / 联机 / 测试读到的永远是真实位置；一步里移动太远的（瞬移、换房间）不插值 */
+const LERP_MAX = 48, LERP_CAM_MAX = 120;
+function snapPrev() {
+  for (const e of ents) { e._px = e.x; e._py = e.y; e._pz = e.z; }
+  for (const p of projs) { p._px = p.x; p._py = p.y; p._pz = p.z; }
+  if (world && game.scene === 'town') for (const w of world.crowd) { w._px = w.x; w._py = w.y; w._pz = w.z; }
+  cam._px = cam.x;
+}
+function lerpIn(al) {
+  const L = [];
+  if (al >= 1) return L;
+  const one = o => {
+    if (o._px === undefined) return;
+    const dx = o.x - o._px, dy = o.y - o._py, dz = (o.z || 0) - (o._pz || 0);
+    if (!(dx || dy || dz) || Math.abs(dx) > LERP_MAX || Math.abs(dy) > LERP_MAX || Math.abs(dz) > LERP_MAX) return;
+    L.push(o, o.x, o.y, o.z); o.x = o._px + dx * al; o.y = o._py + dy * al; if (o.z !== undefined) o.z = (o._pz || 0) + dz * al;
+  };
+  for (const e of ents) one(e);
+  for (const p of projs) one(p);
+  if (world && game.scene === 'town') for (const w of world.crowd) one(w);
+  const dc = cam.x - cam._px;
+  if (dc && Math.abs(dc) < LERP_CAM_MAX) { L.push(cam, cam.x, cam.y, undefined); cam.x = cam._px + dc * al; }
+  return L;
+}
+function lerpOut(L) { for (let i = 0; i < L.length; i += 4) { const o = L[i]; o.x = L[i + 1]; if (L[i + 2] !== undefined) o.y = L[i + 2]; if (L[i + 3] !== undefined) o.z = L[i + 3]; } }
 // 画到一半出错：c.save() 没有配对的 restore()，叠加模式 / 透明度会漏到后面的帧（整屏发白）。多 restore 几次（空栈时是空操作）再复位
 function canvasUnwind(c) {
   for (let i = 0; i < 64; i++) c.restore();

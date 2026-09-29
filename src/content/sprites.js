@@ -94,6 +94,9 @@ const SPR_ANIMS = {
 addCommonSkills();
 // 转职自带的动作片段（CLASSES[cls].jobs[job].anims，职业文件比这里早加载、碰不到 SPR_ANIMS）；帧名各转职用自己的前缀，不要互相覆盖
 for (const c in SPR_ANIMS) { const C = CLASSES[c]; if (C && C.jobs) for (const J of Object.values(C.jobs)) if (J.anims) Object.assign(SPR_ANIMS[c], J.anims); }
+// 玩家职业的走 / 跑（docs/ANIMATION.md）：每帧停留整数个 60Hz 逻辑步（走 5 步 = 12fps、跑 3 步 = 20fps，原来跑 16.7fps 是 3 / 4 步交替，节奏发瘸）；
+// v = 这个 fps 对应的移动速度（职业基础移速），实际速度不同（移速装备 / BUFF、城镇移速、路人）时按比例加快 / 放慢，见 SpriteModel.loopRate
+for (const c of ['sword', 'gun', 'mage']) { SPR_ANIMS[c].walk = { ...seq('walk', 8, 12), v: CLASSES[c].speed }; SPR_ANIMS[c].run = { ...seq('run', 8, 20), v: CLASSES[c].runSpeed }; }
 // 没有骨骼片段的动画自动补一个（时长覆盖所有帧，循环动画按帧数 / fps）
 for (const c of ['sword', 'gun', 'mage']) {
   CLIPS[c] = CLIPS[c] || { ...HUMAN_CLIPS };
@@ -101,6 +104,7 @@ for (const c of ['sword', 'gun', 'mage']) {
     const A = SPR_ANIMS[c][name];
     if (!CLIPS[c][name]) CLIPS[c][name] = A.frames ? { dur: A.frames.length / A.fps, loop: true, keys: [k(0, POSE.idle)] } : { dur: A[A.length - 1][1] + 2, keys: [k(0, POSE.idle)] };
     else if (!A.frames && CLIPS[c][name].dur < A[A.length - 1][1] + 0.05) CLIPS[c][name] = { ...CLIPS[c][name], dur: A[A.length - 1][1] + 0.5 };
+    else if (A.frames && CLIPS[c][name].loop && Math.abs(CLIPS[c][name].dur - A.frames.length / A.fps) > 1e-3) CLIPS[c][name] = { ...CLIPS[c][name], dur: A.frames.length / A.fps };   // 循环长度 = 帧数 / fps（骨骼片段的时长对不上时会在一轮中间绕回第 1 帧）
   }
 }
 // 怪物：重受击 / 被抓 / 上升浮空沿用已有的受击片段

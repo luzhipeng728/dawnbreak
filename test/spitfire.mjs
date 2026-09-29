@@ -6,7 +6,7 @@ import { launch, URL_BASE } from './lib.mjs';
 let fail = 0;
 const report = (name, ok, info) => { if (!ok) fail++; console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}  ${JSON.stringify(info)}`); };
 const { browser, page, logs } = await launch({ width: 960, height: 540 });
-await page.goto(`${URL_BASE}?test&cls=gun&mobs=0&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
+await page.goto(`${URL_BASE}?rawcd&test&cls=gun&mobs=0&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
 await page.evaluate(() => {
   game.paused = true;
   window.T = {

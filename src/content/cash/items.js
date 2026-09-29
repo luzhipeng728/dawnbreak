@@ -49,8 +49,8 @@ const avKey = (set, slot) => `${slot}_${set.slice(3)}`;   // av_spring + av_top 
 for (const set in CASH_SETS) {
   const S = CASH_SETS[set], rare = S.tier === 'rare';
   defineSet(set, { name: `${S.name}${rare ? '（稀有装扮）' : '（高级装扮）'}`, bonus: rare
-    ? { 3: { st: { str: 10, int: 10, vit: 10, spr: 10 }, desc: '四维 +10' }, 5: { st: { aspd: 0.02, cspd: 0.02, mspd: 0.02 }, desc: '攻击 / 施放 / 移动速度 +2%' }, 8: { st: { dmgUp: 0.03, crit: 0.015, mcrit: 0.015 }, desc: '伤害增加 3%，暴击率 +1.5%；激活套装光效' } }
-    : { 3: { st: { str: 5, int: 5, vit: 5, spr: 5 }, desc: '四维 +5' }, 5: { st: { aspd: 0.015, cspd: 0.015 }, desc: '攻击 / 施放速度 +1.5%' }, 8: { st: { dmgUp: 0.01, mspd: 0.02 }, desc: '伤害增加 1%，移动速度 +2%' } } });
+    ? { 3: { st: { str: 10, int: 10, vit: 10, spr: 10 }, desc: '四维 +10' }, 5: { st: { aspd: 0.02, cspd: 0.02, mspd: 0.02 }, desc: '攻击 / 施放 / 移动速度 +2%' }, 8: { st: { dmgUp: 0.03, crit: 0.015, mcrit: 0.015, cdr: 0.05 }, desc: '伤害增加 3%，暴击率 +1.5%，技能冷却 -5%；激活套装光效' } }
+    : { 3: { st: { str: 5, int: 5, vit: 5, spr: 5 }, desc: '四维 +5' }, 5: { st: { aspd: 0.015, cspd: 0.015 }, desc: '攻击 / 施放速度 +1.5%' }, 8: { st: { dmgUp: 0.01, mspd: 0.02, cdr: 0.02 }, desc: '伤害增加 1%，移动速度 +2%，技能冷却 -2%' } } });
   for (const slot of AV_PIECE_SLOTS) {
     const key = avKey(set, slot), f = rare ? 5 : 3;
     defineItem(key, { kind: 'equip', slot, lvl: 1, rar: rare ? 2 : 1, price: rare ? 4000 : 800, name: S.parts[slot], set, avSet: set, avOpt: true, cash: true, cashIcon: key,
@@ -79,8 +79,8 @@ defPet('pet_lion', { name: '福瑞小醒狮', rar: 2, pet: 'lion', st: { str: 8,
 defPet('pet_seal', { name: '冲浪小海豹', rar: 2, pet: 'seal', st: { str: 8, int: 8, vit: 8, spr: 8, mspd: 0.03 }, desc: '抱着冲浪板的小海豹，走路一扭一扭的。' });
 defPet('pet_owl', { name: '学院小猫头鹰', rar: 2, pet: 'owl', st: { str: 8, int: 8, vit: 8, spr: 8, cspd: 0.02 }, desc: '星辉学院的吉祥物，戴着小小的学士帽。' });
 defPet('pet_panda', { name: '团团熊猫', rar: 2, pet: 'panda', st: { str: 8, int: 8, vit: 8, spr: 8, hpPct: 0.03 }, desc: '抱着竹笋的小熊猫，吃饱了就跟着你慢慢走。HP 上限 +3%。' });
-defPet('pet_fox', { name: '幻彩星狐', rar: 3, pet: 'fox', st: { str: 10, int: 10, vit: 10, spr: 10, crit: 0.01, mcrit: 0.01, mspd: 0.02 }, desc: '魔盒 / 宠物蛋限定。尾巴上的星星会随着心情变色。' });
-defPet('pet_pegasus', { name: '至尊·金翼天马', rar: 4, pet: 'pegasus', st: { str: 15, int: 15, vit: 15, spr: 15, dmgUp: 0.02, aspd: 0.02, cspd: 0.02, mspd: 0.02 }, desc: '至尊宠物。披着金色羽翼的小天马，据说能把主人带到天空之上。' });
+defPet('pet_fox', { name: '幻彩星狐', rar: 3, pet: 'fox', st: { str: 10, int: 10, vit: 10, spr: 10, crit: 0.01, mcrit: 0.01, mspd: 0.02, cdr: 0.02 }, desc: '魔盒 / 宠物蛋限定。尾巴上的星星会随着心情变色。' });
+defPet('pet_pegasus', { name: '至尊·金翼天马', rar: 4, pet: 'pegasus', st: { str: 15, int: 15, vit: 15, spr: 15, dmgUp: 0.02, aspd: 0.02, cspd: 0.02, mspd: 0.02, cdr: 0.05 }, desc: '至尊宠物。技能冷却 -5%。披着金色羽翼的小天马，据说能把主人带到天空之上。' });
 // 宠物装备（红 攻击 / 蓝 速度 / 绿 属性）
 const defPetGear = (key, def) => defineItem(key, { kind: 'equip', lvl: 1, price: 800, cash: true, cashIcon: key, durMax: 0, noEnhance: true, noDisassemble: true, noDrop: true, ...def });
 defPetGear('petR_1', { slot: 'av_petR', name: '炽焰之心', rar: 2, st: { atkPct: 0.01 }, desc: '红色宠物装备。攻击力 +1%。' });
@@ -103,15 +103,15 @@ defAura('aura_spring', { name: '祥云瑞彩', rar: 2, aura: 'spring', st: { str
 defAura('aura_summer', { name: '浪花之环', rar: 2, aura: 'summer', st: { str: 5, int: 5, vit: 5, spr: 5, mspd: 0.02 }, desc: '清凉的浪花在脚边打着旋。' });
 defAura('aura_academy', { name: '星辉魔法阵', rar: 2, aura: 'academy', st: { str: 5, int: 5, vit: 5, spr: 5, cspd: 0.015 }, desc: '星辉学院入学考试用的魔法阵，一直亮着。' });
 defAura('aura_box', { name: '幻彩星轨', rar: 3, aura: 'box', st: { str: 10, int: 10, vit: 10, spr: 10, crit: 0.01, mcrit: 0.01 }, desc: '魔盒限定光环。彩色的星轨绕着脚下旋转。' });
-defAura('aura_supreme', { name: '至尊·天界圣环', rar: 4, aura: 'supreme', st: { str: 12, int: 12, vit: 12, spr: 12, aspd: 0.02, cspd: 0.02, mspd: 0.02, elemAll: 6 }, desc: '至尊光环。天界的圣光在脚下凝成圆环。' });
+defAura('aura_supreme', { name: '至尊·天界圣环', rar: 4, aura: 'supreme', st: { str: 12, int: 12, vit: 12, spr: 12, aspd: 0.02, cspd: 0.02, mspd: 0.02, elemAll: 6, cdr: 0.03 }, desc: '至尊光环。技能冷却 -3%。天界的圣光在脚下凝成圆环。' });
 
 /* ---- 称号 ---- */
 const defCashTitle = (key, def) => defineTitle(key, { lvl: 1, price: 1000, cash: true, cashIcon: key, noDrop: true, shopOnly: true, ...def });
-defCashTitle('title_spring', { name: '锦鲤附体', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12, crit: 0.02, mcrit: 0.02 }, fx: { dmgUp: 0.02 }, desc: '新春礼包称号。好运连连，锦鲤附体！' });
-defCashTitle('title_summer', { name: '晴空之子', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12, mspd: 0.03 }, fx: { dmgUp: 0.02 }, desc: '夏日礼包称号。和晴空一样明朗。' });
-defCashTitle('title_academy', { name: '首席优等生', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12, cspd: 0.03 }, fx: { dmgUp: 0.02 }, desc: '学院礼包称号。星辉学院的首席。' });
-defCashTitle('title_box', { name: '魔盒收藏家', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12 }, fx: { goldUp: 0.1 }, desc: '魔盒限定称号。金币获得量 +10%。' });
-defCashTitle('title_supreme', { name: '至尊·破晓之光', rar: 4, st: { str: 20, int: 20, vit: 20, spr: 20, crit: 0.02, mcrit: 0.02, mspd: 0.02 }, fx: { dmgUp: 0.04 }, desc: '至尊称号。多买多送奖励：在破晓时分照亮阿拉德的光。' });
+defCashTitle('title_spring', { name: '锦鲤附体', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12, crit: 0.02, mcrit: 0.02, cdr: 0.02 }, fx: { dmgUp: 0.02 }, desc: '新春礼包称号。好运连连，锦鲤附体！' });
+defCashTitle('title_summer', { name: '晴空之子', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12, mspd: 0.03, cdr: 0.02 }, fx: { dmgUp: 0.02 }, desc: '夏日礼包称号。和晴空一样明朗。' });
+defCashTitle('title_academy', { name: '首席优等生', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12, cspd: 0.03, cdr: 0.02 }, fx: { dmgUp: 0.02 }, desc: '学院礼包称号。星辉学院的首席。' });
+defCashTitle('title_box', { name: '魔盒收藏家', rar: 3, st: { str: 12, int: 12, vit: 12, spr: 12, cdr: 0.02 }, fx: { goldUp: 0.1 }, desc: '魔盒限定称号。金币获得量 +10%。' });
+defCashTitle('title_supreme', { name: '至尊·破晓之光', rar: 4, st: { str: 20, int: 20, vit: 20, spr: 20, crit: 0.02, mcrit: 0.02, mspd: 0.02, cdr: 0.02 }, fx: { dmgUp: 0.04 }, desc: '至尊称号。多买多送奖励：在破晓时分照亮阿拉德的光。' });
 
 /* ---- 宝珠（附魔：装备深化组实现，每件装备 1 个槽；on 可以写 slot 名或别名 armor / acc / special / avatar） ---- */
 const defOrb = (key, def) => defineItem(key, { kind: 'mat', price: 500, cash: true, cashIcon: def.cashIcon || key, ...def });

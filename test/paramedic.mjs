@@ -12,7 +12,7 @@ const onlySolo = process.argv[2] === 'solo';
 /* ================= 单机 ================= */
 {
   const { browser, page, logs } = await launch({ width: 960, height: 540 });
-  await page.goto(`${URL_BASE}?test&cls=gun&mobs=0&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
+  await page.goto(`${URL_BASE}?rawcd&test&cls=gun&mobs=0&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
   await page.evaluate(() => new Promise(res => loadBundles(['spr:pmsuit']).then(res)));
   await page.evaluate(() => {
     game.paused = true;

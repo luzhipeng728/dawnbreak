@@ -1,3 +1,5 @@
+// 冷却显示：实际冷却（乘上角色的冷却倍率，刷图基准 ×0.6 + 装备冷却减少），和表里的原始数值不同时括号里写原始值
+function skCdText(S) { const p = game.player, c = S.cd ?? 0, m = p && p.cdMul || 1, v = Math.round(c * m * 10) / 10; return v !== c ? `${v} 秒（原 ${c} 秒）` : `${c} 秒`; }
 /* =====================================================================
    技能窗口 K（官方式）
    - 页签：基础技能（SKILLS[id].job 为空）/ 转职技能（当前 game.job 的技能）
@@ -76,7 +78,7 @@ function skillTipHtml(id) {
   const lv = game.skillLv[id] || 0, max = skillMaxLv(S), cmd = skCmd(id), detail = uiPref('tipDetail');
   const kind = S.awaken ? '觉醒技能' : S.passive ? '被动技能' : '主动技能';
   let s = `<div class="nm" style="color:#ffe070">${S.name}</div><div class="dim small">${kind}${S.type ? ' · ' + (SK_TYPE[S.type] || S.type) : ''}${S.elem ? ' · ' + (SK_ELEM[S.elem] || S.elem) + '属性' : ''} · Lv.${lv}/${max}</div><hr>`;
-  if (!S.passive) s += `MP ${S.mp ?? 0} · 冷却 ${S.cd ?? 0} 秒<br>`;
+  if (!S.passive) s += `MP ${S.mp ?? 0} · 冷却 ${skCdText(S)}<br>`;
   if (cmd) s += `<span class="gold">指令：${cmd}</span>${cmdLocked(id) ? ' <span style="color:#ff8a8a">（已锁定）</span>' : ''}<br>`;
   s += `<span class="small">${S.desc || ''}</span>`;
   if (detail) {
@@ -138,7 +140,7 @@ Object.assign(menus, {
       detail.append(...[
         h('div', { class: 'row' }, icon(sel, 64), h('div', { class: 'col', style: 'gap:.1em' }, h('b', { class: 'sknm' }, S.name), h('span', { class: 'small dim' }, `${S.awaken ? '觉醒技能' : S.passive ? '被动技能' : '主动技能'}${S.type ? ' · ' + (SK_TYPE[S.type] || S.type) : ''} · Lv.${lv}/${skillMaxLv(S)}`))),
         h('div', { class: 'small', style: 'line-height:1.5' }, S.desc || ''),
-        !S.passive ? h('div', { class: 'kv' }, h('span', {}, 'MP / 冷却'), h('b', {}, `${S.mp ?? 0} / ${S.cd ?? 0} 秒`)) : null,
+        !S.passive ? h('div', { class: 'kv' }, h('span', {}, 'MP / 冷却'), h('b', {}, `${S.mp ?? 0} / ${skCdText(S)}`)) : null,
         cmd ? h('div', { class: 'kv' }, h('span', {}, '指令'), h('b', { class: 'gold' }, cmd, cmdLocked(sel) ? h('span', { style: 'color:#ff8a8a' }, '（已锁定）') : null)) : null,
         Object.keys(S.pre || {}).length ? h('div', { class: 'kv' }, h('span', {}, '前置技能'), h('b', {}, Object.entries(S.pre).map(([p, l]) => `${SKILLS[p] ? SKILLS[p].name : p} Lv.${l}`).join('、'))) : null,
         cur.length ? h('div', { class: 'sksec' }, h('div', { class: 'small dim' }, `当前 Lv.${lv}`), kv(cur)) : null,

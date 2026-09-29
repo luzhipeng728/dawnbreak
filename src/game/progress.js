@@ -4,6 +4,7 @@
    ===================================================================== */
 // 满级：2026-09-28 从 30 提到 60（官方 1~100 压缩进 1~30 的老内容不动，31~60 是官方 60 版本区域的新成长段；觉醒仍是 21 / 26 / 30）
 const MAX_LVL = 60, OLD_CAP = 30;
+const PVE_CD_BASE = PARAMS.has('rawcd') ? 1 : 0.6;   // 技能表里的 cd 是官方原始数值；刷图时统一 ×0.6（官方玩家靠装备普遍有 30%~50% 冷却减少）；?rawcd = 按表里原值（技能机制测试用）
 // 升级所需经验（2026-09-27 主线程拍板 ×1.8：每个地下城约打 1.5~2 次，Lv1→20 约 15 次，见 test/econ.mjs）
 const EXP_CURVE_MUL = 1.8, EXP_HI_POW = 1.25;
 const expNeedLo = lv => Math.round((200 * Math.pow(lv, 1.85) + 300) * EXP_CURVE_MUL);
@@ -149,7 +150,7 @@ function recalcStats(p) {
   p.hardness = g('hardness') + (WT.hardness || 0); p.stagger = g('stagger') + (WT.stagger || 0);
   p.atkElem = WT.elem || eq.atkElem || null;
   p.dmgUp = g('dmgUp'); p.dmgTaken = 1 - Math.min(0.5, g('dmgReduce'));
-  p.cdMul = 1 - Math.min(0.4, g('cdr')); p.mpRegen = 1 + g('mpRegen');
+  p.cdMul = PVE_CD_BASE * (1 - Math.min(0.4, g('cdr'))); p.mpRegen = 1 + g('mpRegen');   // 刷图冷却基准 ×0.6（官方配装后的冷却手感，用户反馈 CD 太长）；决斗在 duel.js 里另外定
   p.killHeal = g('killHeal'); p.killMp = g('killMp'); p.goldUp = g('goldUp'); p.expUp = g('expUp');
   p.mastery = E.mastery; p.masteryN = E.masteryN; p.sets = E.sets; p.gearProcs = gearProcList(E);   // 装备特效（game/gear_fx.js）
   // 冒险失败后的虚弱：攻击 / 防御 / HP 上限 -25%

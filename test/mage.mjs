@@ -4,7 +4,7 @@
 // 用法：node test/mage.mjs（约 30 秒）
 import { launch, URL_BASE } from './lib.mjs';
 const { browser, page, logs } = await launch();
-await page.goto(`${URL_BASE}?test&mute&cls=mage&mobs=0`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
+await page.goto(`${URL_BASE}?rawcd&test&mute&cls=mage&mobs=0`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
 const r = await page.evaluate(() => {
   game.paused = true; const p = game.player, out = {};
   const stepN = n => { for (let i = 0; i < n; i++) step(1 / 60); };

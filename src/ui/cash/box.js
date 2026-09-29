@@ -75,7 +75,7 @@ addStyle(`
 .cpet .pv canvas{width:100%;height:100%}
 .cpet .slots{display:grid;grid-template-columns:repeat(2,auto);gap:.35em .5em;align-items:center;font-size:.8em}
 .cpet .slots .islot{width:3.3em;height:3.3em}
-.ctk-list{max-height:16em}
+.ctk-list{max-height:16em;overflow-y:auto}
 `);
 const CB_TIER = [
   { col: '#e8f0ff', name: '普通' }, { col: '#9ae8ff', name: '高级' }, { col: '#b36bff', name: '稀有' },

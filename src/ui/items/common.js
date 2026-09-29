@@ -12,7 +12,7 @@ addStyle(`
 .itab:hover{color:#fff2d0}
 .itab.on{background:linear-gradient(#6a4e26,#2e2010);color:#ffe8a8;border-color:#b89450;box-shadow:inset 0 .08em 0 rgba(255,230,160,.35)}
 .itab .cnt{font-size:.8em;color:#9a8f7c;margin-left:.25em}
-.igrid{display:grid;grid-template-columns:repeat(8,3.1em);gap:.16em;padding:.3em;background:#0b090e;border:.1em solid #3a3040;border-radius:.25em;align-content:start}
+.igrid{display:grid;grid-template-columns:repeat(8,3.1em);gap:.16em;padding:.3em;background:#0b090e;border:.1em solid #3a3040;border-radius:.25em;align-content:start;overflow-y:auto;overflow-x:hidden}
 .islot{position:relative;width:3.1em;height:3.1em;background:linear-gradient(#1e1a24,#110d15);border:.1em solid #2e2838;border-radius:.2em;cursor:pointer;box-sizing:border-box;touch-action:none}
 .islot img{width:100%;height:100%;display:block;border-radius:.12em;pointer-events:none}
 .islot:hover{border-color:#e8c26a;z-index:1}

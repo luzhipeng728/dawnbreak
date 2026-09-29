@@ -23,7 +23,7 @@ function asFx(p) {
   p._asFx = addFx({ x: p.x, y: p.y, z: 0, dur: 1e9, p,
     update() { const P = this.p; this.x = P.x; this.y = P.y + 0.6; if (P.dead || P.remove || jobOf(P) !== 'asura' || (!asOn(P) && !asAuraOn(P))) this.t = this.dur; },
     draw(c) { const P = this.p, n = asMarks(P), T = game.t;
-      if (asAuraOn(P)) { const k = 0.5 + 0.5 * Math.sin(T * 5); drawSpr(c, fxTint('shock', AS_COL), sx(P.x), sy(P.y, 0), 170 + k * 20, 0, { alpha: 0.35 + k * 0.15 }); }
+      if (asAuraOn(P)) { const k = 0.5 + 0.5 * Math.sin(T * 5); drawSpr(c, fxTint('shock', AS_COL), sx(P.x), sy(P.y, 0), 400 + k * 30, 0, { alpha: 0.28 + k * 0.12 }); }
       for (let i = 0; i < n; i++) { const a = T * 2.2 + i * TAU / n, X = sx(P.x + Math.cos(a) * 30), Y = sy(P.y + Math.sin(a) * 10, P.z + 62 + Math.sin(a * 2) * 4); drawSpr(c, fxTint('orb', AS_COL), X, Y, 14, 0, { alpha: 0.9 }); }
     } });
 }
@@ -56,8 +56,8 @@ defSkill('as_orb', { name: '鬼印珠', cls: 'sword', job: 'asura', lvReq: 15, m
         update(pr, dt) { if (Math.abs(pr.vx) > 70) pr.vx *= Math.exp(-0.25 * dt);
           // 飞行中抵消敌方的远程攻击（子弹 / 火球 / 飞石……；激光这类大判定的不行）
           if (eraseProjs(pr.team, { x0: pr.x - pr.w, x1: pr.x + pr.w, y0: pr.y - pr.d, y1: pr.y + pr.d, z0: pr.z - 10, z1: pr.z + pr.h }, q => fxBurst(q.x, q.y, q.z, 50, AS_COL))) sfx.hit(); },
-        onEnd(pr) { sfx.boom(0.6); fxBurst(pr.x, pr.y, pr.z, 150, AS_COL); fxShock(pr.x, pr.y, 90, AS_COL);
-          blast(e, pr.x, pr.y, 80, { dmg: skillDmg(1.4, 0.14, lv) * m, launch: 300, knock: 120, hs: 0.06, type: 'indep', col: AS_COL }, { zMax: 150 }); },
+        onEnd(pr) { sfx.boom(0.6); fxBurst(pr.x, pr.y, pr.z, 200, AS_COL); fxShock(pr.x, pr.y, 140, AS_COL);
+          blast(e, pr.x, pr.y, 120, { dmg: skillDmg(1.4, 0.14, lv) * m, launch: 300, knock: 120, hs: 0.06, type: 'indep', col: AS_COL }, { zMax: 150 }); },
         draw(c, pr) { const X = sx(pr.x), Y = sy(pr.y, pr.z); drawSpr(c, fxTint('darkorb', AS_COL), X, Y, 44, 0, { rot: pr.t * 12 }); drawSpr(c, fxTint('rune', AS_COL), X, Y, 60, 0, { rot: -pr.t * 5, alpha: 0.6 }); } }); })] }) });
 
 /* ---- 邪光斩：挥剑放出巨大剑气，多段攻击，容易打中高处和倒地的敌人。学了修罗邪光斩可以按住蓄力（蓄满 / 接在冰刃、爆炎之后 = 满蓄） ---- */
@@ -83,52 +83,52 @@ defSkill('as_evil', { name: '邪光斩', cls: 'sword', job: 'asura', lvReq: 16, 
 
 /* ---- 波动爆发：瞬间爆发体内的波动，把周围的敌人往面朝方向击飞；霸体；生成 2 个波动印；倒地时也能用 ---- */
 defSkill('as_burst', { name: '波动爆发', cls: 'sword', job: 'asura', lvReq: 17, mp: 30, cd: 7.5, type: 'indep', col: '#9a7aff',
-  desc: '瞬间爆发体内的波动，把周围的敌人往面朝方向震飞。霸体，生成 2 个波动印。倒地时也能施放。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'aoe', r: [0, 110], dy: 40 },
+  desc: '瞬间爆发体内的波动，把周围的敌人往面朝方向震飞。霸体，生成 2 个波动印。倒地时也能施放。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'aoe', r: [0, 190], dy: 60 },
   whenHit: p => p.st === 'down' || p.st === 'getup', hitStates: ['down', 'getup'],
   act: (lv) => ({ name: 'as_burst', clip: 'asBurst', dur: 0.55, superArmor: true, noCounter: true,
     onStart: e => { if (e.z < 1) e.z = 0; asWill(e); if (skLv(e, 'as_eye') && e.pad.dx() * e.face > 0) e.act.move = [[0.02, 0.14, 700]]; },
-    events: [evAt(0.12, e => { asMarkAdd(e, 2); cam.shake = Math.max(cam.shake, 6); sfx.boom(0.9); fxShock(e.x, e.y, 180, AS_COL); fxBurst(e.x + e.face * 30, e.y, e.z + 50, 200, AS_COL);
-      blast(e, e.x + e.face * 20, e.y, 120, { dmg: skillDmg(4.0, 0.4, lv), launch: 380, knock: 280, hs: 0.1, big: 1.5, type: 'indep', col: AS_COL, radial: false }, { zMax: 160 }); })] }) });
+    events: [evAt(0.12, e => { asMarkAdd(e, 2); cam.shake = Math.max(cam.shake, 6); sfx.boom(0.9); fxShock(e.x + e.face * 20, e.y, 260, AS_COL); fxBurst(e.x + e.face * 30, e.y, e.z + 50, 280, AS_COL);
+      blast(e, e.x + e.face * 20, e.y, 200, { dmg: skillDmg(4.0, 0.4, lv), launch: 380, knock: 280, hs: 0.1, big: 1.5, type: 'indep', col: AS_COL, radial: false }, { zMax: 160 }); })] }) });
 
 /* ---- 无尽波动：开关光环。开启期间持续消耗 MP，周围的敌人每 0.5 秒受到伤害并被挑衅；自身攻击力提高；无双波的前置 ---- */
 defSkill('as_aura', { name: '无尽波动', cls: 'sword', job: 'asura', lvReq: 18, mp: 20, cd: 1, type: 'indep', buff: true, col: '#8a6aff',
   desc: '【开关 BUFF · 再按一次解除】放出无尽的杀意波动：周围的敌人每 0.5 秒受到一次伤害，并被挑衅转而攻击自己；自身攻击力提高。开启期间持续消耗 MP，MP 不足时自动解除。无双波只能在无尽波动开启时施放。',
   pow: lv => skillDmg(0.3, 0.03, lv), ai: { kind: 'buff', core: true }, infoExtra: lv => [['攻击力', '+' + pct(0.03 + 0.005 * lv)], ['每秒消耗 MP', '3%']],
   act: (lv) => ({ name: 'as_aura', clip: 'asAura', dur: 0.45, noCounter: true,
-    onStart: e => { if (toggleBuff(e, 'as_aura', 9999, { atk: 0.03 + 0.005 * lv, lv, tick: 0, hl: '#b89aff' })) { asWill(e); sfx.buff(); fxShock(e.x, e.y, 150, AS_COL); asFx(e); } } }) });
+    onStart: e => { if (toggleBuff(e, 'as_aura', 9999, { atk: 0.03 + 0.005 * lv, lv, tick: 0, hl: '#b89aff' })) { asWill(e); sfx.buff(); fxShock(e.x, e.y, 230, AS_COL); asFx(e); } } }) });
 
 /* ---- 冰刃·波动剑：沿地面接连刺出一排冰柱，100% 冰冻；冰冻中的敌人可以连续命中；生成 1 个波动印 ---- */
 defSkill('as_ice', { name: '冰刃·波动剑', cls: 'sword', job: 'asura', lvReq: 18, mp: 35, cd: 7, type: 'indep', elem: 'ice', col: '#8fdcff',
-  desc: '把剑插进地面，沿地面向前接连刺出一排冰柱，命中的敌人 100% 冰冻（冰冻中的敌人可以被连续命中）。生成 1 个波动印。之后可以直接接满蓄的邪光斩。', pow: lv => skillDmg(4.4, 0.44, lv), ai: { kind: 'proj', r: [0, 280], dy: 26 },
+  desc: '把剑插进地面，沿地面向前接连刺出一排冰柱，命中的敌人 100% 冰冻（冰冻中的敌人可以被连续命中）。生成 1 个波动印。之后可以直接接满蓄的邪光斩。', pow: lv => skillDmg(4.4, 0.44, lv), ai: { kind: 'proj', r: [0, 400], dy: 30 },
   act: (lv) => ({ name: 'as_ice', clip: 'asPlant', dur: 0.8, noCounter: true, links: ['as_evil'], linkFrom: 0.3,
     update: e => { if (e.actT >= 0.3) e._asEvilFull = game.t; }, onEnd: e => { e._asEvilFull = game.t; },   // 后摇中接邪光斩 = 满蓄
     events: [evAt(0.14, e => { sfx.ice(); asMarkAdd(e, 1); cam.shake = Math.max(cam.shake, 2); const x0 = e.x, y0 = e.y, f = e.face;
-      for (let i = 0; i < 11; i++) game.after(i * 0.04, () => { if (e.dead) return; const x = x0 + f * (40 + i * 24), y = y0 + (i % 2 ? 8 : -8);
-        fxSpr('icespike', x, y, 0, { h: 70 + (i % 3) * 14, dur: 0.5, ay: 1, grow: [0.2, 1] });
+      for (let i = 0; i < 16; i++) game.after(i * 0.028, () => { if (e.dead) return; const x = x0 + f * (40 + i * 24), y = y0 + (i % 2 ? 8 : -8);
+        fxSpr('icespike', x, y, 0, { h: 84 + (i % 3) * 16, dur: 0.5, ay: 1, grow: [0.2, 1] });
         blast(e, x, y, 30, { dmg: skillDmg(0.4, 0.04, lv), stun: 0.3, knock: 10, airLift: 120, hs: 0.02, type: 'indep', elem: 'ice', col: '#bfefff' }, { zMax: 100, status: 'freeze', sdur: 1.6 }); }); })] }) });
 
 /* ---- 爆炎·波动剑：连锁火焰爆炸，100% 灼伤 4 秒；生成 1 个波动印 ---- */
 defSkill('as_fire', { name: '爆炎·波动剑', cls: 'sword', job: 'asura', lvReq: 19, mp: 45, cd: 15, type: 'indep', elem: 'fire', col: '#ff8a4a',
-  desc: '把剑插进地面，向前引发一连串火焰爆炸，命中的敌人 100% 灼伤 4 秒。生成 1 个波动印。之后可以直接接满蓄的邪光斩。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'proj', r: [0, 260], dy: 30 },
+  desc: '把剑插进地面，向前引发一连串火焰爆炸，命中的敌人 100% 灼伤 4 秒。生成 1 个波动印。之后可以直接接满蓄的邪光斩。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'proj', r: [0, 380], dy: 36 },
   act: (lv) => ({ name: 'as_fire', clip: 'asPlant', dur: 0.9, noCounter: true, links: ['as_evil'], linkFrom: 0.35,
     update: e => { if (e.actT >= 0.3) e._asEvilFull = game.t; }, onEnd: e => { e._asEvilFull = game.t; },   // 后摇中接邪光斩 = 满蓄
     events: [evAt(0.16, e => { asMarkAdd(e, 1); const x0 = e.x, y0 = e.y, f = e.face;
-      for (let i = 0; i < 5; i++) game.after(i * 0.09, () => { if (e.dead) return; const x = x0 + f * (60 + i * 50); sfx.boom(0.5); cam.shake = Math.max(cam.shake, 3);
-        fxSpr('explosion', x, y0, 30, { w: 120 + i * 10, dur: 0.45, grow: [0.4, 1.1] });
-        blast(e, x, y0, 60, { dmg: skillDmg(1.2, 0.12, lv), launch: i === 4 ? 360 : 200, knock: 60, hs: 0.05, type: 'indep', elem: 'fire', col: '#ffb070' }, { zMax: 160, status: 'burn', sdur: 4, dps: 0.06 }); }); })] }) });
+      for (let i = 0; i < 7; i++) game.after(i * 0.09, () => { if (e.dead) return; const x = x0 + f * (60 + i * 50); sfx.boom(0.5); cam.shake = Math.max(cam.shake, 3);
+        fxSpr('explosion', x, y0, 30, { w: 130 + i * 10, dur: 0.45, grow: [0.4, 1.1] });
+        blast(e, x, y0, 60, { dmg: skillDmg(1.2, 0.12, lv), launch: i === 6 ? 360 : 200, knock: 60, hs: 0.05, type: 'indep', elem: 'fire', col: '#ffb070' }, { zMax: 160, status: 'burn', sdur: 4, dps: 0.06 }); }); })] }) });
 
 /* ---- 无双波（仅无尽波动中）：在前方撕开波动裂缝，把周围的敌人吸过去；再按一次（或时间到）引爆。可以中途接不动明王阵 ---- */
 defSkill('as_musou', { name: '无双波', cls: 'sword', job: 'asura', lvReq: 19, mp: 45, cd: 12, type: 'indep', col: '#9a6aff', req: p => asAuraOn(p) ? true : swordNeed(p, 'as_aura', '无尽波动'),
-  desc: '【无尽波动中】在前方撕开波动裂缝，把周围的敌人吸到裂缝里持续伤害；再按一次技能键（或 1.5 秒后）引爆裂缝。可以中途接不动明王阵。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'aoe', r: [60, 220], dy: 50 },
+  desc: '【无尽波动中】在前方撕开波动裂缝，把周围的敌人吸到裂缝里持续伤害；再按一次技能键（或 1.5 秒后）引爆裂缝。可以中途接不动明王阵。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'aoe', r: [60, 300], dy: 70 },
   act: (lv) => ({ name: 'as_musou', clip: 'asPull', dur: 1.7, noCounter: true, superArmor: true, links: ['as_fudo'],
     onStart: e => { asWill(e); e.act.cx = e.x + e.face * 150; e.act.cy = e.y; e._asMusou = { x: e.act.cx, y: e.act.cy }; sfx.charge(); },
     follow: () => asMusouBoom(lv), followWin: [0.3, 1.6],
     update: (e, dt) => { const a = e.act;
-      for (const t of ents) if (hittable(e, t) && !t.boss && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.5) < 230) { t.x = damp(t.x, a.cx, 5, dt); t.y = damp(t.y, a.cy, 5, dt); }
+      for (const t of ents) if (hittable(e, t) && !t.boss && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.5) < 310) { t.x = damp(t.x, a.cx, 5, dt); t.y = damp(t.y, a.cy, 5, dt); }
       a.tk = (a.tk || 0) + dt; if (a.tk >= 0.2) { a.tk = 0; fxSpr('vortex', a.cx, a.cy, 50, { w: 150, dur: 0.3, alpha: 0.7, col: AS_COL, spin: 6 }); blast(e, a.cx, a.cy, 90, { dmg: skillDmg(0.35, 0.035, lv), stun: 0.3, knock: 0, hs: 0.02, type: 'indep', col: AS_COL }, { zMax: 200 }); }
       if (e.actT >= 1.5 && !a.boomed) { a.boomed = true; asMusouFinish(e, lv, a.cx, a.cy); } } }) });
-function asMusouFinish(e, lv, x, y) { cam.shake = Math.max(cam.shake, 7); sfx.boom(1); fxBurst(x, y, 50, 240, AS_COL); fxShock(x, y, 200, AS_COL);
-  blast(e, x, y, 120, { dmg: skillDmg(3.4, 0.34, lv), launch: 480, knock: 120, hs: 0.1, big: 1.6, type: 'indep', col: AS_COL }, { zMax: 220 }); }
+function asMusouFinish(e, lv, x, y) { cam.shake = Math.max(cam.shake, 7); sfx.boom(1); fxBurst(x, y, 50, 320, AS_COL); fxShock(x, y, 270, AS_COL);
+  blast(e, x, y, 180, { dmg: skillDmg(3.4, 0.34, lv), launch: 480, knock: 120, hs: 0.1, big: 1.6, type: 'indep', col: AS_COL }, { zMax: 220 }); }
 function asMusouBoom(lv) {   // 再按一次：立即引爆（裂缝中心取上一段动作记下的位置）
   return { name: 'as_musou2', clip: 'asBurst', dur: 0.45, noCounter: true, superArmor: true, links: ['as_fudo'],
     onStart: e => { const p = e._asMusou || { x: e.x + e.face * 150, y: e.y }; asMusouFinish(e, lv, p.x, p.y); } };
@@ -136,36 +136,36 @@ function asMusouBoom(lv) {   // 再按一次：立即引爆（裂缝中心取上
 
 /* ---- 邪光波动阵：剑劈地面放出冲击波，生成圆形波动阵，持续 2 秒、7 段伤害，定住敌人（连抓取免疫的大型怪也能定住）。可以接无双波 ---- */
 defSkill('as_array', { name: '邪光波动阵', cls: 'sword', job: 'asura', lvReq: 19, mp: 50, cd: 20, type: 'indep', col: '#b08aff',
-  desc: '把剑劈进地面放出冲击波，生成圆形的波动阵：持续 2 秒、共 7 段伤害，并定住阵里的敌人（抓取免疫的大型怪物也能定住）。之后可以接无双波。', pow: lv => skillDmg(6.5, 0.65, lv), ai: { kind: 'aoe', r: [0, 150], dy: 40 },
+  desc: '把剑劈进地面放出冲击波，生成圆形的波动阵：持续 2 秒、共 7 段伤害，并定住阵里的敌人（抓取免疫的大型怪物也能定住）。之后可以接无双波。', pow: lv => skillDmg(6.5, 0.65, lv), ai: { kind: 'aoe', r: [0, 240], dy: 60 },
   act: (lv) => ({ name: 'as_array', clip: 'a3slam', dur: 0.7, noCounter: true, superArmor: [0, 0.5], links: ['as_musou'], linkFrom: 0.3,
     onStart: e => asWill(e),
-    events: [evAt(0.28, e => { const cx = e.x + e.face * 70, cy = e.y; cam.shake = Math.max(cam.shake, 5); sfx.boom(0.8); fxShock(cx, cy, 160, AS_COL);
-      addFx({ x: cx, y: cy - 30, z: 0, dur: 2, draw(c) { const k = this.t / this.dur, al = k < 0.1 ? k / 0.1 : k > 0.85 ? (1 - k) / 0.15 : 1; drawSpr(c, fxTint('hexagram', AS_COL), sx(cx), sy(cy, 0), 240, 90, { ground: true, rot: this.t * 0.8, alpha: 0.75 * al }); } });
-      for (let i = 0; i < 7; i++) game.after(i * 0.28, () => { if (e.dead) return; fxSpr('wave', cx + rnd(-60, 60), cy + rnd(-16, 16), 0, { h: 90, dur: 0.3, ay: 1, col: AS_COL, alpha: 0.8 });
-        blast(e, cx, cy, 130, { dmg: skillDmg(0.93, 0.093, lv), stun: 0.6, knock: 0, hs: 0.03, downHit: true, type: 'indep', col: AS_COL, onHit: (a, t) => asRoot(t, a, 0.5) }, { zMax: 140 }); }); })] }) });
+    events: [evAt(0.28, e => { const cx = e.x + e.face * 80, cy = e.y; cam.shake = Math.max(cam.shake, 5); sfx.boom(0.8); fxShock(cx, cy, 250, AS_COL);
+      addFx({ x: cx, y: cy - 30, z: 0, dur: 2, draw(c) { const k = this.t / this.dur, al = k < 0.1 ? k / 0.1 : k > 0.85 ? (1 - k) / 0.15 : 1; drawSpr(c, fxTint('hexagram', AS_COL), sx(cx), sy(cy, 0), 400, 150, { ground: true, rot: this.t * 0.8, alpha: 0.75 * al }); } });
+      for (let i = 0; i < 7; i++) game.after(i * 0.28, () => { if (e.dead) return; fxSpr('wave', cx + rnd(-120, 120), cy + rnd(-36, 36), 0, { h: 110, dur: 0.3, ay: 1, col: AS_COL, alpha: 0.8 });
+        blast(e, cx, cy, 200, { dmg: skillDmg(0.93, 0.093, lv), stun: 0.6, knock: 0, hs: 0.03, downHit: true, type: 'indep', col: AS_COL, onHit: (a, t) => asRoot(t, a, 0.5) }, { zMax: 140 }); }); })] }) });
 const asRoot = (t, a, dur) => addStatus(t, 'root', dur, { src: a });   // 定身（对领主自动变为减速）
 
 /* ---- 不动明王阵：需要波动印，一次消耗全部。在前方生成阵法强控敌人，不动明王现身，焰珠绕阵旋转后爆炸；按 C 立刻引爆。全程霸体 ---- */
 defSkill('as_fudo', { name: '不动明王阵', cls: 'sword', job: 'asura', lvReq: 20, mp: 70, cd: 45, type: 'indep', col: '#7a8aff', req: asMarkReq,
-  desc: '【需要波动印，消耗全部】在前方生成不动明王阵：阵里的敌人被牢牢定住，不动明王现身，焰珠绕阵旋转后一起爆炸；按跳跃键立刻引爆。全程霸体。消耗的波动印越多伤害越高。', pow: lv => skillDmg(9.0, 0.9, lv), ai: { kind: 'aoe', r: [40, 220], dy: 50 },
+  desc: '【需要波动印，消耗全部】在前方生成不动明王阵：阵里的敌人被牢牢定住，不动明王现身，焰珠绕阵旋转后一起爆炸；按跳跃键立刻引爆。全程霸体。消耗的波动印越多伤害越高。', pow: lv => skillDmg(9.0, 0.9, lv), ai: { kind: 'aoe', r: [40, 320], dy: 70 },
   act: (lv) => ({ name: 'as_fudo', clip: 'asSeal', dur: 2.4, superArmor: true, noCounter: true,
-    onStart: e => { const a = e.act; a.n = asMarkTake(e); a.m = 1 + 0.08 * Math.max(0, a.n - 1); a.cx = e.x + e.face * 160; a.cy = e.y; asWill(e); sfx.charge(); cam.shake = Math.max(cam.shake, 4);
-      fxShock(a.cx, a.cy, 200, AS_COL2);
+    onStart: e => { const a = e.act; a.n = asMarkTake(e); a.m = 1 + 0.08 * Math.max(0, a.n - 1); a.cx = e.x + e.face * 170; a.cy = e.y; asWill(e); sfx.charge(); cam.shake = Math.max(cam.shake, 4);
+      fxShock(a.cx, a.cy, 280, AS_COL2);
       a.fx = addFx({ x: a.cx, y: a.cy - 40, z: 0, dur: 2.4, a, draw(c) { const A = this.a, k = this.t, al = k < 0.25 ? k / 0.25 : A.boomed ? Math.max(0, 1 - (k - A.boomT) * 3) : 1;
-        drawSpr(c, fxTint('rune', AS_COL2), sx(A.cx), sy(A.cy, 0), 260, 96, { ground: true, rot: k * 0.6, alpha: 0.7 * al });
+        drawSpr(c, fxTint('rune', AS_COL2), sx(A.cx), sy(A.cy, 0), 420, 156, { ground: true, rot: k * 0.6, alpha: 0.7 * al });
         drawSpr(c, 'fudo', sx(A.cx), sy(A.cy - 30, 0), 0, 230 * Math.min(1, k * 2), { ay: 1, alpha: 0.85 * al, add: true });
-        if (!A.boomed) for (let i = 0; i < 6; i++) { const ang = k * 3 + i * TAU / 6; drawSpr(c, fxTint('fireball', '#7ab0ff'), sx(A.cx + Math.cos(ang) * 120), sy(A.cy + Math.sin(ang) * 40, 40), 36, 0, { alpha: al }); } } });
+        if (!A.boomed) for (let i = 0; i < 6; i++) { const ang = k * 3 + i * TAU / 6; drawSpr(c, fxTint('fireball', '#7ab0ff'), sx(A.cx + Math.cos(ang) * 180), sy(A.cy + Math.sin(ang) * 60, 40), 44, 0, { alpha: al }); } } });
     },
     onInput: (e, I) => { const a = e.act; if (!a.boomed && e.actT > 0.4 && I.buffered('jump')) { I.consume('jump'); asFudoBoom(e, lv); return true; } return false; },
     update: (e, dt) => { const a = e.act; a.tk = (a.tk || 0) + dt;
-      if (!a.boomed && a.tk >= 0.25) { a.tk = 0; blast(e, a.cx, a.cy, 150, { dmg: skillDmg(0.3, 0.03, lv) * a.m, stun: 0.5, knock: 0, hs: 0.02, type: 'indep', col: AS_COL2, onHit: (x, t) => asRoot(t, x, 0.6) }, { zMax: 200 });
-        for (const t of ents) if (hittable(e, t) && !t.boss && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.5) < 170) { t.x = damp(t.x, a.cx, 3, dt * 10); t.y = damp(t.y, a.cy, 3, dt * 10); } }
+      if (!a.boomed && a.tk >= 0.25) { a.tk = 0; blast(e, a.cx, a.cy, 220, { dmg: skillDmg(0.3, 0.03, lv) * a.m, stun: 0.5, knock: 0, hs: 0.02, type: 'indep', col: AS_COL2, onHit: (x, t) => asRoot(t, x, 0.6) }, { zMax: 200 });
+        for (const t of ents) if (hittable(e, t) && !t.boss && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.5) < 250) { t.x = damp(t.x, a.cx, 3, dt * 10); t.y = damp(t.y, a.cy, 3, dt * 10); } }
       if (!a.boomed && e.actT >= 1.9) asFudoBoom(e, lv); } }) });
 function asFudoBoom(e, lv) { const a = e.act; a.boomed = true; a.boomT = e.actT; a.dur = Math.min(a.dur, e.actT + 0.5);
   cam.flash = 0.15; cam.flashCol = '#cfd8ff'; cam.shake = Math.max(cam.shake, 9); sfx.boom(1.3);
-  for (let i = 0; i < 6; i++) { const ang = i * TAU / 6; fxSpr('explosion', a.cx + Math.cos(ang) * 110, a.cy + Math.sin(ang) * 36, 40, { w: 110, dur: 0.4, col: '#8ab0ff', grow: [0.5, 1.1] }); }
-  fxBurst(a.cx, a.cy, 60, 280, AS_COL2);
-  blast(e, a.cx, a.cy, 180, { dmg: skillDmg(6.0, 0.6, lv) * a.m, launch: 520, knock: 160, hs: 0.14, big: 1.9, type: 'indep', col: AS_COL2, downHit: true }, { zMax: 260 }); }
+  for (let i = 0; i < 6; i++) { const ang = i * TAU / 6; fxSpr('explosion', a.cx + Math.cos(ang) * 170, a.cy + Math.sin(ang) * 56, 40, { w: 150, dur: 0.4, col: '#8ab0ff', grow: [0.5, 1.1] }); }
+  fxBurst(a.cx, a.cy, 60, 380, AS_COL2); fxShock(a.cx, a.cy, 320, AS_COL2);
+  blast(e, a.cx, a.cy, 260, { dmg: skillDmg(6.0, 0.6, lv) * a.m, launch: 520, knock: 160, hs: 0.14, big: 1.9, type: 'indep', col: AS_COL2, downHit: true }, { zMax: 260 }); }
 
 /* ---- 一觉：暗天波动眼（仅无尽波动中）。施放 1 秒（无敌），生成持续 40 秒的黑暗领域（换房间也不消失）：
    地裂·波动剑 → 波动剑·光翼、冰刃 → 波动眼·天照、爆炎 → 波动剑·闪枪、普攻第 3 击 → 波动剑·刺轮；时间到或再按一次，天穹之眼爆炸 ---- */
@@ -192,18 +192,18 @@ function asSkyEyes(e) {   // 天穹之眼：全屏爆炸（再按一次 / 时间
 defSkill('as_wing', { name: '波动剑·光翼', cls: 'sword', job: 'asura', lvReq: 21, mp: 20, cd: 1.2, type: 'indep', col: '#c0b0ff', hidden: true,
   desc: '暗天波动眼中的地裂·波动剑：放出交叉的光翼剑气，范围很大。', pow: lv => skillDmg(3.0, 0.3, lv), ai: { kind: 'proj', r: [0, 300], dy: 40 },
   act: (lv) => ({ name: 'as_wing', clip: 'asEvil', dur: 0.4, noCounter: true, links: swordAttackIds(), linkFrom: 0.2,
-    events: [evAt(0.1, e => { sfx.iai(); for (const dy of [-26, 26]) projWave(e, { speed: 620, life: 0.55, h: 130, col: '#d8c8ff', hit: { dmg: skillDmg(1.5, 0.15, lv), launch: 300, knock: 120, hs: 0.06, type: 'indep' } }); })] }) });
+    events: [evAt(0.1, e => { sfx.iai(); for (const dy of [-26, 26]) projWave(e, { speed: 620, life: 0.72, h: 140, col: '#d8c8ff', hit: { dmg: skillDmg(1.5, 0.15, lv), launch: 300, knock: 120, hs: 0.06, type: 'indep' } }); })] }) });
 defSkill('as_amaterasu', { name: '波动眼·天照', cls: 'sword', job: 'asura', lvReq: 21, mp: 25, cd: 2, type: 'indep', col: '#a0d0ff', hidden: true,
   desc: '暗天波动眼中的冰刃·波动剑：地面突刺并把敌人拉近，生成 1 个波动印。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'proj', r: [0, 280], dy: 30 },
   act: (lv) => ({ name: 'as_amaterasu', clip: 'asPlant', dur: 0.5, noCounter: true,
-    events: [evAt(0.12, e => { asMarkAdd(e, 1); sfx.boom(0.6); for (let i = 0; i < 6; i++) game.after(i * 0.03, () => { const x = e.x + e.face * (60 + i * 40); fxSpr('pillar', x, e.y, 0, { h: 120, dur: 0.35, ay: 1, col: '#c8d8ff', grow: [0.2, 1] });
-      blast(e, x, e.y, 36, { dmg: skillDmg(0.66, 0.066, lv), launch: 260, knock: -140, hs: 0.04, type: 'indep', col: '#c8d8ff' }, { zMax: 140 }); }); })] }) });
+    events: [evAt(0.12, e => { asMarkAdd(e, 1); sfx.boom(0.6); for (let i = 0; i < 6; i++) game.after(i * 0.03, () => { const x = e.x + e.face * (60 + i * 56); fxSpr('pillar', x, e.y, 0, { h: 140, dur: 0.35, ay: 1, col: '#c8d8ff', grow: [0.2, 1] });
+      blast(e, x, e.y, 46, { dmg: skillDmg(0.66, 0.066, lv), launch: 260, knock: -140, hs: 0.04, type: 'indep', col: '#c8d8ff' }, { zMax: 140 }); }); })] }) });
 defSkill('as_spear', { name: '波动剑·闪枪', cls: 'sword', job: 'asura', lvReq: 21, mp: 30, cd: 4.9, type: 'indep', col: '#e0c0ff', hidden: true,
   desc: '暗天波动眼中的爆炎·波动剑：在前方敌人身后生成长枪向前穿刺，生成 1 个波动印。', pow: lv => skillDmg(5.0, 0.5, lv), ai: { kind: 'proj', r: [0, 320], dy: 30 },
   act: (lv) => ({ name: 'as_spear', clip: 'asBurst', dur: 0.55, noCounter: true,
-    events: [evAt(0.14, e => { asMarkAdd(e, 1); const t = aimAhead(e, 200, 360), x = t.x + e.face * 60; sfx.iai(); cam.shake = Math.max(cam.shake, 4);
-      fxBeam(x, t.y, 60, 260, -e.face, { col: '#e0c8ff', w: 30, dur: 0.35 });
-      for (let k = 0; k < 3; k++) blast(e, x - e.face * (50 + k * 80), t.y, 55, { dmg: skillDmg(1.7, 0.17, lv), knock: -200, launch: 260, hs: 0.08, big: 1.4, type: 'indep', col: '#e0c8ff', radial: false }, { zMax: 160 }); })] }) });
+    events: [evAt(0.14, e => { asMarkAdd(e, 1); const t = aimAhead(e, 240, 460), x = t.x + e.face * 70; sfx.iai(); cam.shake = Math.max(cam.shake, 4);
+      fxBeam(x, t.y, 60, 330, -e.face, { col: '#e0c8ff', w: 34, dur: 0.35 });
+      for (let k = 0; k < 3; k++) blast(e, x - e.face * (50 + k * 100), t.y, 72, { dmg: skillDmg(1.7, 0.17, lv), knock: -200, launch: 260, hs: 0.08, big: 1.4, type: 'indep', col: '#e0c8ff', radial: false }, { zMax: 160 }); })] }) });
 // 领域中的普攻第 3 击：刺轮（向前滚动的波动刺轮）
 const SWORD_ACTS_AS = { ...SWORD_ACTS, atk3: { ...SWORD_ACTS.atk3, events: [...SWORD_ACTS.atk3.events, evAt(0.12, e => {
   spawnProj({ owner: e, x: e.x + e.face * 30, y: e.y, z: 20, vx: e.face * 360, face: e.face, life: 0.9, w: 30, d: 26, h: 60, pierce: true,
@@ -229,24 +229,24 @@ defSkill('as_eye', { name: '波动视界：慧眼', cls: 'sword', job: 'asura', 
 
 /* ---- 极冰·裂波剑：分叉成三叉戟状的强化冰柱，远距离滑行多段攻击并冰冻（雷神之息：附加定身）---- */
 defSkill('as_ice2', { name: '极冰·裂波剑', cls: 'sword', job: 'asura', lvReq: 23, mp: 70, cd: 30, type: 'indep', elem: 'ice', col: '#9fe6ff',
-  desc: '把剑插进地面，放出分叉成三叉戟形状的强化冰柱，沿地面远距离滑行多段攻击并冰冻敌人。生成 1 个波动印。', pow: lv => skillDmg(12, 1.2, lv), ai: { kind: 'proj', r: [0, 420], dy: 50 },
+  desc: '把剑插进地面，放出分叉成三叉戟形状的强化冰柱，沿地面远距离滑行多段攻击并冰冻敌人。生成 1 个波动印。', pow: lv => skillDmg(12, 1.2, lv), ai: { kind: 'proj', r: [0, 540], dy: 60 },
   act: (lv) => ({ name: 'as_ice2', clip: 'asPlant', dur: 0.9, noCounter: true, links: ['as_evil'], linkFrom: 0.4,
     update: e => { if (e.actT >= 0.4) e._asEvilFull = game.t; },
     events: [evAt(0.16, e => { sfx.ice(); asMarkAdd(e, 1); cam.shake = Math.max(cam.shake, 4); const x0 = e.x, y0 = e.y, f = e.face, th = asThunder(e);
-      for (let i = 0; i < 14; i++) game.after(i * 0.035, () => { if (e.dead) return; for (const dy of [-1, 0, 1]) { const x = x0 + f * (50 + i * 30), y = clamp(y0 + dy * i * 3, 6, DEPTH - 6);
-        fxSpr('icespike', x, y, 0, { h: 80 + (i % 3) * 16, dur: 0.6, ay: 1, grow: [0.2, 1] });
-        blast(e, x, y, 30, { dmg: skillDmg(0.3, 0.03, lv), stun: 0.3, knock: 10, airLift: 100, hs: 0.02, type: 'indep', elem: 'ice', col: '#bfefff', onHit: th ? (a, t) => addStatus(t, 'root', 3, { src: a }) : undefined }, { zMax: 120, status: 'freeze', sdur: 2 }); } }); })] }) });
+      for (let i = 0; i < 14; i++) game.after(i * 0.035, () => { if (e.dead) return; for (const dy of [-1, 0, 1]) { const x = x0 + f * (40 + i * 38), y = clamp(y0 + dy * i * 4, 6, DEPTH - 6);
+        fxSpr('icespike', x, y, 0, { h: 96 + (i % 3) * 18, dur: 0.6, ay: 1, grow: [0.2, 1] });
+        blast(e, x, y, 36, { dmg: skillDmg(0.3, 0.03, lv), stun: 0.3, knock: 10, airLift: 100, hs: 0.02, type: 'indep', elem: 'ice', col: '#bfefff', onHit: th ? (a, t) => addStatus(t, 'root', 3, { src: a }) : undefined }, { zMax: 120, status: 'freeze', sdur: 2 }); } }); })] }) });
 
 /* ---- 极炎·裂波剑：火焰剑气渗入地面形成火焰地带（2 秒、8 段、减速），随后大爆炸（4 段），灼伤（雷神之息：附加眩晕）---- */
 defSkill('as_fire2', { name: '极炎·裂波剑', cls: 'sword', job: 'asura', lvReq: 25, mp: 80, cd: 35, type: 'indep', elem: 'fire', col: '#ff8a4a',
-  desc: '挥动火焰剑，剑气渗入前方的地面形成火焰地带（2 秒、8 段伤害、减速），随后大爆炸（4 段），附加灼伤。生成 1 个波动印。', pow: lv => skillDmg(14, 1.4, lv), ai: { kind: 'aoe', r: [40, 260], dy: 50 },
+  desc: '挥动火焰剑，剑气渗入前方的地面形成火焰地带（2 秒、8 段伤害、减速），随后大爆炸（4 段），附加灼伤。生成 1 个波动印。', pow: lv => skillDmg(14, 1.4, lv), ai: { kind: 'aoe', r: [40, 380], dy: 70 },
   act: (lv) => ({ name: 'as_fire2', clip: 'asEvil', dur: 0.7, noCounter: true, links: ['as_evil'], linkFrom: 0.35,
     update: e => { if (e.actT >= 0.35) e._asEvilFull = game.t; },
-    events: [evAt(0.14, e => { asMarkAdd(e, 1); sfx.swing(true); const cx = e.x + e.face * 150, cy = e.y, th = asThunder(e);
-      addFx({ x: cx, y: cy - 30, z: 0, dur: 2.6, draw(c) { const k = this.t; if (k > 2.1) return; drawSpr(c, 'flame', sx(cx) + Math.sin(k * 20) * 2, sy(cy, 0), 280, 60, { alpha: 0.7, ay: 0.8 }); } });
-      for (let i = 0; i < 8; i++) game.after(0.1 + i * 0.25, () => { if (e.dead) return; blast(e, cx, cy, 130, { dmg: skillDmg(0.7, 0.07, lv), stun: 0.25, knock: 0, hs: 0.02, type: 'indep', elem: 'fire', col: '#ffb070' }, { zMax: 100, status: 'slow', sdur: 1 }); });
-      for (let i = 0; i < 4; i++) game.after(2.1 + i * 0.1, () => { if (e.dead) return; cam.shake = Math.max(cam.shake, 6); sfx.boom(0.8); fxSpr('explosion', cx + rnd(-80, 80), cy + rnd(-20, 20), 30, { w: 170, dur: 0.45 });
-        blast(e, cx, cy, 150, { dmg: skillDmg(2.1, 0.21, lv), launch: i === 3 ? 440 : 200, knock: 60, hs: 0.06, type: 'indep', elem: 'fire', col: '#ffb070', onHit: th ? (a, t) => addStatus(t, 'stun', 1.5, { src: a }) : undefined }, { zMax: 220, status: 'burn', sdur: 4, dps: 0.06 }); }); })] }) });
+    events: [evAt(0.14, e => { asMarkAdd(e, 1); sfx.swing(true); const cx = e.x + e.face * 190, cy = e.y, th = asThunder(e);
+      addFx({ x: cx, y: cy - 30, z: 0, dur: 2.6, draw(c) { const k = this.t; if (k > 2.1) return; drawSpr(c, 'flame', sx(cx) + Math.sin(k * 20) * 2, sy(cy, 0), 420, 90, { alpha: 0.7, ay: 0.8 }); } });
+      for (let i = 0; i < 8; i++) game.after(0.1 + i * 0.25, () => { if (e.dead) return; blast(e, cx, cy, 200, { dmg: skillDmg(0.7, 0.07, lv), stun: 0.25, knock: 0, hs: 0.02, type: 'indep', elem: 'fire', col: '#ffb070' }, { zMax: 100, status: 'slow', sdur: 1 }); });
+      for (let i = 0; i < 4; i++) game.after(2.1 + i * 0.1, () => { if (e.dead) return; cam.shake = Math.max(cam.shake, 6); sfx.boom(0.8); fxSpr('explosion', cx + rnd(-130, 130), cy + rnd(-36, 36), 30, { w: 220, dur: 0.45 });
+        blast(e, cx, cy, 220, { dmg: skillDmg(2.1, 0.21, lv), launch: i === 3 ? 440 : 200, knock: 60, hs: 0.06, type: 'indep', elem: 'fire', col: '#ffb070', onHit: th ? (a, t) => addStatus(t, 'stun', 1.5, { src: a }) : undefined }, { zMax: 220, status: 'burn', sdur: 4, dps: 0.06 }); }); })] }) });
 
 /* ---- 天雷·波动剑：发出雷电波，把敌人困进雷电波动珠（至少 3 个，随波动印增加），珠子之间连成雷链；持续伤害后爆炸，再按一次提前引爆 ---- */
 defSummon('as_trap', { kind: 'attach', host: 'target', tags: ['asura'], max: 12, over: 'oldest', life: 3, tick: 0.3, type: 'indep', elem: 'light',
@@ -258,11 +258,11 @@ defSummon('as_trap', { kind: 'attach', host: 'target', tags: ['asura'], max: 12,
     const o = summonsOf(s.owner, 'as_trap'), i = o.indexOf(s), n = o[i + 1]; if (n && n.host && !n.host.dead) { c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = AS_LIGHT; c.lineWidth = 2; c.globalAlpha = 0.7;
       c.beginPath(); c.moveTo(sx(h.x), sy(h.y, h.z + h.h * 0.5)); c.lineTo(sx(n.host.x), sy(n.host.y, n.host.z + n.host.h * 0.5)); c.stroke(); c.restore(); } } });
 defSkill('as_indra', { name: '天雷·波动剑', cls: 'sword', job: 'asura', lvReq: 26, mp: 90, cd: 40, type: 'indep', elem: 'light', col: AS_LIGHT,
-  desc: '发出雷电波，把前方的敌人困进雷电波动珠（至少 3 个，波动印越多困住越多），珠子之间连成雷链；持续伤害后爆炸并附加感电。再按一次技能键提前引爆。生成 1 个波动印。', pow: lv => skillDmg(15, 1.5, lv), ai: { kind: 'aoe', r: [0, 360], dy: 60 },
+  desc: '发出雷电波，把前方的敌人困进雷电波动珠（至少 3 个，波动印越多困住越多），珠子之间连成雷链；持续伤害后爆炸并附加感电。再按一次技能键提前引爆。生成 1 个波动印。', pow: lv => skillDmg(15, 1.5, lv), ai: { kind: 'aoe', r: [0, 460], dy: 80 },
   recast: { ok: p => summonsOf(p, 'as_trap').length > 0, cd: 0.3, act: () => ({ name: 'as_indra2', clip: 'asBurst', dur: 0.35, noCounter: true, onStart: e => { dismissSummons(e, 'as_trap', 'cmd'); cam.shake = Math.max(cam.shake, 6); } }) },
   act: (lv) => ({ name: 'as_indra', clip: 'asEvil', dur: 0.6, noCounter: true,
-    events: [evAt(0.15, e => { const n = 3 + asMarks(e); asMarkAdd(e, 1); sfx.boom(0.6); fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 360, w: 20, col: AS_LIGHT, dur: 0.3 });
-      const L = ents.filter(t => hittable(e, t) && (t.x - e.x) * e.face > -10 && Math.abs(t.x - e.x) < 380 && Math.abs(t.y - e.y) < 70).sort((a, b) => Math.abs(a.x - e.x) - Math.abs(b.x - e.x)).slice(0, n);
+    events: [evAt(0.15, e => { const n = 3 + asMarks(e); asMarkAdd(e, 1); sfx.boom(0.6); fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 470, w: 24, col: AS_LIGHT, dur: 0.3 });
+      const L = ents.filter(t => hittable(e, t) && (t.x - e.x) * e.face > -10 && Math.abs(t.x - e.x) < 480 && Math.abs(t.y - e.y) < 90).sort((a, b) => Math.abs(a.x - e.x) - Math.abs(b.x - e.x)).slice(0, n);
       for (const t of L) summon(e, 'as_trap', { target: t, lv }); })] }) });
 
 /* ---- 天雷·降魔杵（仅无尽波动中）：召唤雷云（50 秒），每秒向敌人射出一根降魔杵；再按一次落下 8 根，最后砸下巨型降魔杵 ---- */
@@ -272,8 +272,8 @@ defSummon('as_cloud', { kind: 'attach', host: 'owner', tags: ['asura'], max: 1, 
 function asVajra(p, x, y, lv, k, big) {
   const img = asImg('as_vajra', 'thunderbolt', AS_LIGHT), h = big ? 300 : 120;
   addFx({ x, y: y + 0.4, z: 380, dur: 0.2, vz: -2000, update(d) { this.z = Math.max(0, this.z + this.vz * d); }, draw(c) { drawSpr(c, img, sx(this.x), sy(this.y, this.z), 0, h, { ay: 1 }); } });
-  game.after(0.18, () => { if (p.dead) return; fxShock(x, y, big ? 240 : 70, AS_LIGHT); if (big) { cam.shake = 12; cam.flash = 0.25; cam.flashCol = '#fff6c0'; sfx.boom(1.3); } else sfx.hit('crit', false);
-    blast(p, x, y, big ? 200 : 50, { dmg: skillDmg(big ? 10 : 0.9, big ? 1 : 0.09, lv) * k, stun: 0.5, launch: big ? 480 : 0, knock: big ? 120 : 20, hs: big ? 0.14 : 0.03, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 260, status: 'shock', sdur: 3 }); });
+  game.after(0.18, () => { if (p.dead) return; fxShock(x, y, big ? 320 : 90, AS_LIGHT); if (big) { cam.shake = 12; cam.flash = 0.25; cam.flashCol = '#fff6c0'; sfx.boom(1.3); } else sfx.hit('crit', false);
+    blast(p, x, y, big ? 260 : 64, { dmg: skillDmg(big ? 10 : 0.9, big ? 1 : 0.09, lv) * k, stun: 0.5, launch: big ? 480 : 0, knock: big ? 120 : 20, hs: big ? 0.14 : 0.03, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 260, status: 'shock', sdur: 3 }); });
 }
 defSkill('as_vajra', { name: '天雷·降魔杵', cls: 'sword', job: 'asura', lvReq: 26, mp: 100, cd: 45, type: 'indep', elem: 'light', col: '#fff0a0', req: p => asAuraOn(p) || summonsOf(p, 'as_cloud').length ? true : swordNeed(p, 'as_aura', '无尽波动'),
   desc: '【无尽波动中】在头顶召唤雷云（50 秒），每秒向附近的敌人射出一根降魔杵。再按一次技能键：接连落下 8 根降魔杵，最后砸下巨型降魔杵。附加感电。', pow: lv => skillDmg(18, 1.8, lv), ai: { kind: 'buff' },
@@ -285,46 +285,46 @@ defSkill('as_vajra', { name: '天雷·降魔杵', cls: 'sword', job: 'asura', lv
 
 /* ---- 波动慧眼：无为法：沿着敌人看不见的波纹移动并画出法阵（无敌），法阵引爆（5 段 + 终结）；按 → 移动到法阵对侧 ---- */
 defSkill('as_mui', { name: '波动慧眼：无为法', cls: 'sword', job: 'asura', lvReq: 29, mp: 120, cd: 60, type: 'indep', elem: 'light', col: '#e8e0ff',
-  desc: '沿着敌人看不见的波纹移动，在前方画出法阵（无敌），法阵随即引爆（5 段 + 终结）。施放时按住 →，或者在重新现身之前再按一次技能键 / →，会出现在法阵的另一侧。', pow: lv => skillDmg(22, 2.2, lv), ai: { kind: 'aoe', r: [40, 280], dy: 60 },
+  desc: '沿着敌人看不见的波纹移动，在前方画出法阵（无敌），法阵随即引爆（5 段 + 终结）。施放时按住 →，或者在重新现身之前再按一次技能键 / →，会出现在法阵的另一侧。', pow: lv => skillDmg(22, 2.2, lv), ai: { kind: 'aoe', r: [40, 400], dy: 80 },
   act: (lv) => ({ name: 'as_mui', clip: 'asSeal', dur: 1.6, noCounter: true, invul: true,
     onInput: (e, I) => { const a = e.act; if (e.actT < 0.3 && !a.cross && (I.dx() * e.face > 0 || (a.key && I.buffered(a.key)))) { if (a.key) I.consume(a.key); a.cross = true; } return false; },   // 再现身之前追加输入：移到法阵另一侧
-    onStart: e => { const a = e.act; a.cx = e.x + e.face * 150; a.cy = e.y; a.cross = e.pad.dx() * e.face > 0; sfx.charge(); fxAfterimage(e, '#e8e0ff');
-      addFx({ x: a.cx, y: a.cy - 40, z: 0, dur: 1.5, draw(c) { const k = Math.min(1, this.t * 2); drawSpr(c, fxTint('hexagram', '#e8e0ff'), sx(a.cx), sy(a.cy, 0), 280 * k, 100 * k, { ground: true, rot: this.t * 1.5, alpha: 0.8 }); } }); },
-    events: [evAt(0.3, e => { const a = e.act; if (a.cross) { e.x = a.cx + e.face * 150; e.face = -e.face; fxAfterimage(e, '#e8e0ff'); } }),
-      ...[0.5, 0.62, 0.74, 0.86, 0.98].map(t => evAt(t, e => { const a = e.act; fxSpr('lightning', a.cx + rnd(-100, 100), a.cy + rnd(-20, 20), 0, { h: 200, dur: 0.2, ay: 1 }); sfx.hit('crit', false);
-        blast(e, a.cx, a.cy, 150, { dmg: skillDmg(2.2, 0.22, lv), stun: 0.5, knock: 0, hs: 0.03, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 240, status: 'shock', sdur: 3 }); })),
-      evAt(1.2, e => { const a = e.act; cam.flash = 0.25; cam.flashCol = '#f0f0ff'; cam.shake = 12; sfx.boom(1.3); fxBurst(a.cx, a.cy, 40, 300, '#e8e0ff'); fxShock(a.cx, a.cy, 260, AS_LIGHT);
-        blast(e, a.cx, a.cy, 170, { dmg: skillDmg(11, 1.1, lv), launch: 460, knock: 140, hs: 0.14, big: 1.8, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 300 }); })] }) });
+    onStart: e => { const a = e.act; a.cx = e.x + e.face * 190; a.cy = e.y; a.cross = e.pad.dx() * e.face > 0; sfx.charge(); fxAfterimage(e, '#e8e0ff');
+      addFx({ x: a.cx, y: a.cy - 40, z: 0, dur: 1.5, draw(c) { const k = Math.min(1, this.t * 2); drawSpr(c, fxTint('hexagram', '#e8e0ff'), sx(a.cx), sy(a.cy, 0), 460 * k, 170 * k, { ground: true, rot: this.t * 1.5, alpha: 0.8 }); } }); },
+    events: [evAt(0.3, e => { const a = e.act; if (a.cross) { e.x = a.cx + e.face * 190; e.face = -e.face; fxAfterimage(e, '#e8e0ff'); } }),
+      ...[0.5, 0.62, 0.74, 0.86, 0.98].map(t => evAt(t, e => { const a = e.act; fxSpr('lightning', a.cx + rnd(-170, 170), a.cy + rnd(-40, 40), 0, { h: 220, dur: 0.2, ay: 1 }); sfx.hit('crit', false);
+        blast(e, a.cx, a.cy, 230, { dmg: skillDmg(2.2, 0.22, lv), stun: 0.5, knock: 0, hs: 0.03, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 240, status: 'shock', sdur: 3 }); })),
+      evAt(1.2, e => { const a = e.act; cam.flash = 0.25; cam.flashCol = '#f0f0ff'; cam.shake = 12; sfx.boom(1.3); fxBurst(a.cx, a.cy, 40, 400, '#e8e0ff'); fxShock(a.cx, a.cy, 350, AS_LIGHT);
+        blast(e, a.cx, a.cy, 260, { dmg: skillDmg(11, 1.1, lv), launch: 460, knock: 140, hs: 0.14, big: 1.8, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 300 }); })] }) });
 
 /* ---- 雷神降世：裁决（二觉）：召唤阵强控周围的敌人，雷神现身吸收雷光，砸向地面引发光属性大爆炸，附加 3 秒感电。全程无敌 ---- */
 defSkill('as_awaken2', { name: '雷神降世：裁决', cls: 'sword', job: 'asura', lvReq: 27, maxLv: 3, mp: 180, cd: 170, pvp: 0.45, type: 'indep', elem: 'light', awaken: true, col: AS_LIGHT,
   desc: '【二觉】召唤阵把周围的敌人牢牢定住，雷神现身，抬手吸收四周的雷光，随后砸向地面引发光属性大爆炸审判所有敌人，附加 3 秒感电。全程无敌。', pow: lv => skillDmg(34, 9, lv), ai: { kind: 'awaken', r: [0, 360], dy: 90 },
   act: (lv) => ({ name: 'as_awaken2', clip: 'asSeal', dur: 3.0, superArmor: true, noCounter: true, invul: [0, 3.0],
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '雷神降世：裁决', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); const a = e.act; a.cx = e.x + e.face * 150; a.cy = e.y;
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '雷神降世：裁决', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); const a = e.act; a.cx = e.x + e.face * 180; a.cy = e.y;
       addFx({ x: a.cx, y: a.cy - 60, z: 0, dur: 3.0, a, draw(c) { const t = this.t; if (t < 0.9) return; const k = Math.min(1, (t - 0.9) * 3) * Math.min(1, (3 - t) * 4);
-        drawSpr(c, fxTint('hexagram', AS_LIGHT), sx(this.a.cx), sy(this.a.cy, 0), 360, 120, { ground: true, rot: t, alpha: 0.6 * k });
+        drawSpr(c, fxTint('hexagram', AS_LIGHT), sx(this.a.cx), sy(this.a.cy, 0), 520, 180, { ground: true, rot: t, alpha: 0.6 * k });
         drawSpr(c, asImg('as_raijin', 'ghost', AS_LIGHT), sx(this.a.cx), sy(this.a.cy - 40, 0), 0, 320 * k, { ay: 1, alpha: 0.9 * k }); } }); },
-    events: [evAt(0.95, e => { const a = e.act; cam.shake = Math.max(cam.shake, 8); sfx.boom(1); fxShock(a.cx, a.cy, 300, AS_LIGHT);   // 雷神降临：把阵里的敌人吸向中心并震倒（官方入场击倒），随后定住
-        for (const t of ents) if (hittable(e, t) && !t.boss && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 300) { t.x = lerp(t.x, a.cx, 0.6); t.y = lerp(t.y, a.cy, 0.6); }
-        blast(e, a.cx, a.cy, 300, { dmg: skillDmg(1.5, 0.4, lv), down: true, downLift: 200, knock: 0, hs: 0.06, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 320 });
-        for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 300) addStatus(t, 'root', 2.2, { src: e }); sfx.charge(); }),
-      ...[1.1, 1.3, 1.5, 1.7].map(t => evAt(t, e => { const a = e.act; fxSpr('lightning', a.cx + rnd(-200, 200), a.cy + rnd(-30, 30), 0, { h: 260, dur: 0.2, ay: 1 }); sfx.hit('crit', false);
-        blast(e, a.cx, a.cy, 280, { dmg: skillDmg(2.5, 0.7, lv), stun: 0.4, knock: 0, hs: 0.02, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 320 }); })),
-      evAt(2.2, e => { const a = e.act; cam.flash = 0.4; cam.flashCol = '#fffbe0'; cam.shake = 16; sfx.boom(1.6); fxShock(a.cx, a.cy, 380, AS_LIGHT); fxBurst(a.cx, a.cy, 60, 380, AS_LIGHT);
-        for (let i = 0; i < 8; i++) fxSpr('thunderbolt', a.cx + rnd(-260, 260), a.cy + rnd(-40, 40), 0, { h: 300, dur: 0.4, ay: 1 });
-        blast(e, a.cx, a.cy, 320, { dmg: skillDmg(24, 7, lv), launch: 560, knock: 200, hs: 0.22, big: 2.4, critBonus: 0.2, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 360, status: 'shock', sdur: 3 }); })] }) });
+    events: [evAt(0.95, e => { const a = e.act; cam.shake = Math.max(cam.shake, 8); sfx.boom(1); fxShock(a.cx, a.cy, 400, AS_LIGHT);   // 雷神降临：把阵里的敌人吸向中心并震倒（官方入场击倒），随后定住
+        for (const t of ents) if (hittable(e, t) && !t.boss && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 400) { t.x = lerp(t.x, a.cx, 0.6); t.y = lerp(t.y, a.cy, 0.6); }
+        blast(e, a.cx, a.cy, 400, { dmg: skillDmg(1.5, 0.4, lv), down: true, downLift: 200, knock: 0, hs: 0.06, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 320 });
+        for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 400) addStatus(t, 'root', 2.2, { src: e }); sfx.charge(); }),
+      ...[1.1, 1.3, 1.5, 1.7].map(t => evAt(t, e => { const a = e.act; fxSpr('lightning', a.cx + rnd(-300, 300), a.cy + rnd(-50, 50), 0, { h: 280, dur: 0.2, ay: 1 }); sfx.hit('crit', false);
+        blast(e, a.cx, a.cy, 380, { dmg: skillDmg(2.5, 0.7, lv), stun: 0.4, knock: 0, hs: 0.02, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 320 }); })),
+      evAt(2.2, e => { const a = e.act; cam.flash = 0.4; cam.flashCol = '#fffbe0'; cam.shake = 16; sfx.boom(1.6); fxShock(a.cx, a.cy, 480, AS_LIGHT); fxBurst(a.cx, a.cy, 60, 480, AS_LIGHT);
+        for (let i = 0; i < 8; i++) fxSpr('thunderbolt', a.cx + rnd(-340, 340), a.cy + rnd(-60, 60), 0, { h: 300, dur: 0.4, ay: 1 });
+        blast(e, a.cx, a.cy, 410, { dmg: skillDmg(24, 7, lv), launch: 560, knock: 200, hs: 0.22, big: 2.4, critBonus: 0.2, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 360, status: 'shock', sdur: 3 }); })] }) });
 
 /* ---- 波动神诀：万空（三觉）：以雷神之力凝成雷剑向下斩，闪电沿波纹向四方扩散后爆炸（约 10 段）。无敌；与暗天波动眼共享冷却 ---- */
 defSkill('as_awaken3', { name: '波动神诀：万空', cls: 'sword', job: 'asura', lvReq: 30, maxLv: 3, mp: 250, cd: 135, pvp: 0.45, type: 'indep', elem: 'light', awaken: true, col: '#fffbe0',
   desc: '【三觉】用慧眼看见波动的流向，以雷神之力凝成雷剑向下斩：闪电沿着波纹向四方扩散，最后一起爆炸（约 10 段）。全程无敌。与暗天波动眼共享冷却；暗天波动眼的领域还在时施放，会代替天穹之眼作为收尾。', pow: lv => skillDmg(48, 12, lv), ai: { kind: 'awaken', r: [0, 400], dy: 90 },
   act: (lv) => ({ name: 'as_awaken3', clip: 'asEvil', dur: 3.0, superArmor: true, noCounter: true, invul: [0, 3.0],
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '波动神诀：万空', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.cool.as_awaken = Math.max(e.cool.as_awaken || 0, e.cool.as_awaken3 || 0); e.act.cx = e.x + e.face * 120; e.act.cy = e.y; },
-    events: [evAt(0.95, e => { const a = e.act; e.play('a3slam', true); cam.shake = 12; sfx.iai(); sfx.boom(1.2); fxSpr('thunderbolt', a.cx, a.cy, 0, { h: 360, dur: 0.4, ay: 1 }); fxShock(a.cx, a.cy, 200, AS_LIGHT);
-        blast(e, a.cx, a.cy, 180, { dmg: skillDmg(8, 2, lv), launch: 320, knock: 40, hs: 0.12, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 300 }); }),
-      ...[0, 1, 2, 3, 4, 5].map(i => evAt(1.15 + i * 0.12, e => { const a = e.act, ang = i * TAU / 6, r = 90 + i * 30; const x = a.cx + Math.cos(ang) * r, y = clamp(a.cy + Math.sin(ang) * r * 0.35, 6, DEPTH - 6);
-        fxSpr('lightning', x, y, 0, { h: 240, dur: 0.22, ay: 1 }); sfx.hit('crit', false); blast(e, x, y, 110, { dmg: skillDmg(3, 0.8, lv), stun: 0.5, knock: 20, hs: 0.04, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 300, status: 'shock', sdur: 3 }); })),
-      ...[0, 1, 2].map(i => evAt(2.1 + i * 0.18, e => { const a = e.act; cam.flash = 0.2 + i * 0.1; cam.flashCol = '#fffbe0'; cam.shake = 14 + i * 2; sfx.boom(1.2 + i * 0.2); fxBurst(a.cx, a.cy, 50, 300 + i * 60, AS_LIGHT);
-        blast(e, a.cx, a.cy, 260 + i * 40, { dmg: skillDmg(i === 2 ? 16 : 6, i === 2 ? 4 : 1.5, lv), launch: i === 2 ? 560 : 300, knock: 160, hs: 0.16, big: 2.2, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 360 }); }))] }) });
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '波动神诀：万空', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.cool.as_awaken = Math.max(e.cool.as_awaken || 0, e.cool.as_awaken3 || 0); e.act.cx = e.x + e.face * 150; e.act.cy = e.y; },
+    events: [evAt(0.95, e => { const a = e.act; e.play('a3slam', true); cam.shake = 12; sfx.iai(); sfx.boom(1.2); fxSpr('thunderbolt', a.cx, a.cy, 0, { h: 360, dur: 0.4, ay: 1 }); fxShock(a.cx, a.cy, 300, AS_LIGHT);
+        blast(e, a.cx, a.cy, 250, { dmg: skillDmg(8, 2, lv), launch: 320, knock: 40, hs: 0.12, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 300 }); }),
+      ...[0, 1, 2, 3, 4, 5].map(i => evAt(1.15 + i * 0.12, e => { const a = e.act, ang = i * TAU / 6, r = 110 + i * 40; const x = a.cx + Math.cos(ang) * r, y = clamp(a.cy + Math.sin(ang) * r * 0.35, 6, DEPTH - 6);
+        fxSpr('lightning', x, y, 0, { h: 260, dur: 0.22, ay: 1 }); sfx.hit('crit', false); blast(e, x, y, 150, { dmg: skillDmg(3, 0.8, lv), stun: 0.5, knock: 20, hs: 0.04, sure: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 300, status: 'shock', sdur: 3 }); })),
+      ...[0, 1, 2].map(i => evAt(2.1 + i * 0.18, e => { const a = e.act; cam.flash = 0.2 + i * 0.1; cam.flashCol = '#fffbe0'; cam.shake = 14 + i * 2; sfx.boom(1.2 + i * 0.2); fxBurst(a.cx, a.cy, 50, 400 + i * 70, AS_LIGHT); fxShock(a.cx, a.cy, 360 + i * 60, AS_LIGHT);
+        blast(e, a.cx, a.cy, 340 + i * 50, { dmg: skillDmg(i === 2 ? 16 : 6, i === 2 ? 4 : 1.5, lv), launch: i === 2 ? 560 : 300, knock: 160, hs: 0.16, big: 2.2, sure: true, downHit: true, type: 'indep', elem: 'light', col: AS_LIGHT }, { zMax: 360 }); }))] }) });
 { const A = SKILLS.as_awaken, a0 = A.act; A.act = (lv, p) => { const a = a0(lv, p); if (p && p.cool) p.cool.as_awaken3 = Math.max(p.cool.as_awaken3 || 0, p.cool.as_awaken || 0); return a; }; }
 // 暗天波动眼的领域还在时放三觉：万空代替天穹之眼的收尾（官方：两者共享冷却，三觉替代一觉的终结），领域随之结束
 swordAwk3Finish('as_awaken3', p => asDomain(p), e => { delete e.buffs.as_domain; });
@@ -360,7 +360,7 @@ CLASSES.sword.passives.push(p => {
   const A = p.buffs.as_aura;
   if (A) { const cost = p.mpMax * 0.03 * 0.25; if (p.mp < cost) { delete p.buffs.as_aura; fxText('无尽波动解除', p.x, p.y, p.z + 20, { col: '#ccc', size: 10 }); }
     else { p.mp -= cost; A.tick = (A.tick || 0) + 0.25; asFx(p);
-      if (A.tick >= 0.5) { A.tick = 0; for (const t of ents) if (hittable(p, t) && Math.hypot(t.x - p.x, (t.y - p.y) * 1.5) < 150) {
+      if (A.tick >= 0.5) { A.tick = 0; for (const t of ents) if (hittable(p, t) && Math.hypot(t.x - p.x, (t.y - p.y) * 1.5) < 225) {
         applyHit(p, t, { dmg: skillDmg(0.3, 0.03, A.lv || 1), sure: true, hs: 0, stun: 0.05, knock: 0, type: 'indep', col: AS_COL, asAura: true }, { proj: true });
         addStatus(t, 'taunt', 1, { src: p }); } } } }
 });

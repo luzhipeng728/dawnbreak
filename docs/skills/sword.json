@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "about": "鬼剑士（男）逐技能官方规格，给 test/skillaudit.mjs --compare 用。数值按本作尺度（像素距离与官方大致 1:1；等级按 SKILLS_OFFICIAL_common.md 第 7 节压缩；冷却写官方现版值，本作有意不同的写在 why.cd）",
+  "about": "鬼剑士（男）逐技能官方规格，给 test/skillaudit.mjs --compare 用。数值按本作尺度（官方 px × 1.05 = 本作单位，见 SKILLS_OFFICIAL_sword.md 10.10 和 docs/skills/sword_range.md；等级按 SKILLS_OFFICIAL_common.md 第 7 节压缩；冷却写官方现版值，本作有意不同的写在 why.cd）",
   "version": "国服 2026-04「千海天」/ DFO 2025–2026 现版；满级角色（被动全学满、主动技能满级），默认武器太刀",
   "sources": [
    "wiki.dfo.world 各技能页（英文，有冷却 / 多段数 / 霸体说明）",
@@ -157,7 +157,7 @@
    ],
    "dx": [
     150,
-    600
+    750
    ],
    "cd": 6
   },
@@ -175,7 +175,7 @@
    ],
    "dx": [
     150,
-    900
+    1100
    ],
    "cd": 6
   },

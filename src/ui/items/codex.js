@@ -30,11 +30,11 @@ Object.assign(menus, {
       const C = save.data.codex || {}, S = codexStats(), tab = IW.codexTab || 'weapon';
       const pct = S.epicTotal ? S.epic / S.epicTotal : 0;
       const sum = h('div', { class: 'csum' }, h('span', {}, '史诗 ', h('b', {}, `${S.epic}/${S.epicTotal}`)), h('div', { class: 'cbar' }, h('i', { style: `width:${(pct * 100).toFixed(1)}%` })),
-        h('span', {}, '集齐套装 ', h('b', {}, `${S.set}/${S.setTotal}`)), h('span', {}, '异界 ', h('b', {}, `${S.legend}/${S.legendTotal}`)), h('span', {}, '深渊史诗 ', h('b', {}, S.abyssEpic)));
+        h('span', {}, '集齐套装 ', h('b', {}, `${S.set}/${S.setTotal}`)), h('span', {}, '异界 ', h('b', {}, `${S.legend}/${S.legendTotal}`)), S.namedTotal ? h('span', {}, '领主神器 ', h('b', {}, `${S.named}/${S.namedTotal}`)) : null, h('span', {}, '深渊史诗 ', h('b', {}, S.abyssEpic)));
       const tabs = h('div', { class: 'itabs' }, [...CODEX_PAGES.map(P => [P.id, P.name, codexKeys(P.id)]), ['bonus', '收集加成'], ['log', '获得记录']].map(([id, nm, keys]) =>
         h('div', { class: 'itab' + (tab === id ? ' on' : ''), onclick: () => { IW.codexTab = id; IW.codexSel = null; sfx.click(); el._render(); } }, nm, keys ? h('span', { class: 'cnt' }, `${keys.filter(k => C[k]).length}/${keys.length}`) : null)));
       if (tab === 'bonus') {
-        const L = h('div', { class: 'cbonus', 'data-sk': 'cb' }, CODEX_BONUS.map(B => { const on = codexBonusOn(B, S), k = Object.keys(B.need)[0], nm = { epic: '史诗', set: '集齐套装', legend: '异界 / 传说' }[k];
+        const L = h('div', { class: 'cbonus', 'data-sk': 'cb' }, CODEX_BONUS.map(B => { const on = codexBonusOn(B, S), k = Object.keys(B.need)[0], nm = { epic: '史诗', set: '集齐套装', legend: '异界 / 传说', named: '领主神器' }[k];
           return h('div', { class: on ? 'on' : '' }, h('span', { class: 'need' }, `${nm} ${Math.min(S[k] || 0, B.need[k])}/${B.need[k]}`), h('span', {}, B.desc), h('span', { style: 'margin-left:auto' }, on ? '✔ 生效中' : '')); }));
         const tot = codexBonusStats();
         return [sum, tabs, L, h('div', { class: 'cdet' }, h('b', { style: 'color:#8aff8a' }, '当前加成：'), Object.keys(tot).map(k => statLine(k, tot[k])).join('，') || '还没有（登记第一件史诗就能解锁）'),

@@ -80,6 +80,7 @@ const save = {
       this.skillReset = true;
     }
     if ((d.v || 1) < 5) this.migrateV5(d);
+    if (typeof g60MigrateChar === 'function') g60MigrateChar(d);   // 装备 2.0：官方史诗回到官方等级 → 等级不够的补发继承装备（content/items/gear60_api.js，按 d.g60m 只处理一次）
     if (!Array.isArray(d.skillBar)) d.skillBar = [];
     while (d.skillBar.length < SKILL_SLOTS) d.skillBar.push(null);   // 技能栏 14 格（旧存档 12 格）
     d.v = SAVE_V; return d;

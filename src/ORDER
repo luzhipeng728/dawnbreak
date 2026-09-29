@@ -70,6 +70,13 @@ content/items/misc.js
 content/items/epics.js
 content/items/epics2.js
 content/items/epics3.js
+# 装备 2.0（满级 60，docs/GEAR_PLAN_60.md）：注册接口 → 各块的内容（B1a/B1b/B1c 武器、B2 防具、B3 首饰特殊）；统一生效在 content/abyss.js 之后的 gear60_apply.js
+content/items/gear60_api.js
+content/items/epics60_w_sword.js
+content/items/epics60_w_gun.js
+content/items/epics60_w_mage.js
+content/items/epics60_armor.js
+content/items/epics60_acc.js
 content/items/cards.js
 content/items/shops.js
 content/items/droptables.js
@@ -121,6 +128,7 @@ content/regions/siroco_bosses.js
 content/regions/siroco.js
 # 装备深化：深渊派对（深渊地下城、深渊柱与两轮派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
 content/abyss.js
+content/items/gear60_apply.js
 ui/quest.js
 ui/quickquest.js
 ui/job.js

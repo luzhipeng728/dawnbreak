@@ -64,7 +64,11 @@ THICK = {   # 第一批出图时这两类刀身画得太细（巨剑像普通长
     'greatsword': 'IMPORTANT: a GIANT heavy two-handed greatsword, never a normal longsword: the blade is a huge thick slab about one quarter as wide as the whole weapon is long, much wider than the grip is long. '
                   'The blade runs perfectly STRAIGHT along the center line and ends in a straight sharp point (or a squared chisel tip) centered on that line; '
                   'absolutely NO hook, no curved, curled, bent, forked or scythe-like tip, the point never turns up or down. Decorative spikes or serrations may run along the edges but the outline stays straight and roughly symmetric.',
-    'katana': 'IMPORTANT: the blade is clearly wide and thick for a katana (its width is about one ninth of the whole weapon length), never a thin line.',
+    'katana': 'IMPORTANT: the blade is clearly wide and thick for a katana (its width is about one ninth of the whole weapon length), never a thin line. '
+              'The blade is almost straight (only a very slight natural curve) and ends in a clean pointed tip; NO hook, no curled, forked or scythe-like tip.',
+    # 用户（2026-09-29）：所有刀剑都要直刃直尖，不许弯钩卷尖
+    'shortsword': 'IMPORTANT: the blade runs STRAIGHT along the center line and ends in a straight sharp point; NO hook, no curled, forked, bent or scythe-like tip.',
+    'lightsaber': 'IMPORTANT: the energy blade is a STRAIGHT thick beam along the center line ending in a straight rounded or pointed tip; NO hook, no curve, no curled or scythe-like tip.',
 }
 APOPHIS = ('Apophis the cursed demon sword, THE SHOWPIECE and the most menacing, domineering greatsword of all. '   # 按官方立绘的要素重写（2026-09-29）：紫色直刃、蓝色眼宝石、骷髅护手 + 两对角、三骷髅柄头，没有弯钩
            'A huge, wide, perfectly straight double-edged blade of deep glossy violet-purple with bright silver bevelled cutting edges, widest near the guard and tapering in long straight lines '

@@ -147,6 +147,14 @@ SHEETS['mats'] = [
     ('gear_spare', 'a small pile of golden glowing dust'),
 ]
 
+# 装备 2.0（docs/GEAR_PLAN_60.md）：各块的图标表写在 art/tools/gear_icons_*60*.py 的 SHEETS = { 表名: [(key, 描述) × 6] }（B2 armor60、B3 acc60、B1 pink60_<职业>），这里合并进来
+import glob as _glob, importlib.util as _iu
+for _p in sorted(_glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gear_icons_*60*.py'))):
+    _s = _iu.spec_from_file_location(os.path.basename(_p)[:-3], _p); _m = _iu.module_from_spec(_s); _s.loader.exec_module(_m)
+    for _n, _v in getattr(_m, 'SHEETS', {}).items():
+        if _n in SHEETS: raise SystemExit(f'{os.path.basename(_p)}：表名 {_n} 重复')
+        SHEETS[_n] = _v
+
 def cmd_gen(names, force=False):
     os.makedirs(SRC, exist_ok=True)
     for n in names:

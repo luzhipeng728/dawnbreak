@@ -72,6 +72,8 @@ const isAvatar = it => !!it && typeof it.slot === 'string' && it.slot.startsWith
 const TAB_OF = it => it.kind === 'equip' ? (it.slot === 'title' ? 'title' : isAvatar(it) ? 'avatar' : 'equip') : it.kind === 'use' ? 'use' : it.kind === 'quest' ? 'quest' : 'mat';
 function defineItem(key, def) {
   const D = { key, kind: 'mat', rar: 0, price: 10, ...def };
+  const prev = ITEMS[key];   // 重新定义（装备 2.0 的 moveEpic 等）：去掉旧的随机池 / 史诗表条目，不留重复
+  if (prev && prev.kind === 'equip') { const gi = GEAR.indexOf(prev); if (gi >= 0) GEAR.splice(gi, 1); const ei = EPICS.findIndex(E => E.key === key); if (ei >= 0) EPICS.splice(ei, 1); }
   if (D.kind === 'equip') {
     D.lvl = D.lvl || 1;
     if (D.slot === 'weapon' && D.wtype) D.cls = D.cls || WTYPES[D.wtype].cls;
@@ -133,13 +135,14 @@ function gearAffixes(D, R) {
   return fx;
 }
 // 装备注册的便捷写法：物品库只需要写名字 / 类型 / 等级 / 品级，属性自动生成（也可以用 st / fx 覆盖或追加）
+// def.seed：随机基础属性按这个 key 的种子生成（装备 2.0 的继承装备用原物品的种子，数值完全一样）；D._def 保留原始定义（gear60_api.js 按新等级重新定义时用）
 function defineGear(key, def) {
-  const R = mulberry(keySeed(key));
+  const R = mulberry(keySeed(def.seed || key));
   const D = { kind: 'equip', ...def };
   const st = def.st && def.stOnly ? {} : gearStats(D, R);
   if (def.st) for (const k in def.st) st[k] = +((st[k] || 0) + def.st[k]).toFixed(3);
   const fx = def.fx ? { ...def.fx } : gearAffixes(D, R);
-  return defineItem(key, { ...def, kind: 'equip', st, fx: Object.keys(fx).length ? fx : undefined });
+  return defineItem(key, { ...def, kind: 'equip', st, fx: Object.keys(fx).length ? fx : undefined, _def: def });
 }
 /* ---- 套装 ---- */
 const SETS = {};
@@ -359,10 +362,12 @@ const bank = {
   load() {
     const k = this.key(); if (this.loadedKey === k) return this;
     this.items = []; this.gold = 0;
-    try { const d = JSON.parse(localStorage.getItem(k) || 'null'); if (d) { this.items = (d.items || []).filter(Boolean).map(normalizeItem); this.gold = Math.max(0, d.gold | 0); } } catch (e) { /* 损坏就当空的 */ }
-    this.loadedKey = k; return this;
+    let mig = 0; this.g60m = {};
+    try { const d = JSON.parse(localStorage.getItem(k) || 'null'); if (d) { this.items = (d.items || []).filter(Boolean); this.gold = Math.max(0, d.gold | 0); this.g60m = d.g60m || {}; if (typeof g60MigrateBank === 'function') mig = g60MigrateBank(this); this.items = this.items.map(normalizeItem); } } catch (e) { /* 损坏就当空的 */ }
+    this.loadedKey = k; if (mig) this.write();   // 装备 2.0 的补发：立刻写回（g60m 记下处理过的，不会重复补发）
+    return this;
   },
-  write() { try { localStorage.setItem(this.key(), JSON.stringify({ v: 1, items: this.items, gold: this.gold })); } catch (e) { /* 存储已满 */ } },
+  write() { try { localStorage.setItem(this.key(), JSON.stringify({ v: 1, items: this.items, gold: this.gold, g60m: this.g60m || {} })); } catch (e) { /* 存储已满 */ } },
 };
 /* ---- 出售 / 回购 ---- */
 const sellPrice = it => { const D = ITEMS[it.key]; if (it.kind === 'quest' || (D && D.noSell)) return 0; return Math.max(1, Math.floor((it.price || 10) * (D && D.sellMul || (it.kind === 'equip' ? 0.125 : 0.2)))) * (it.kind === 'equip' ? 1 : it.n || 1); };

@@ -11,6 +11,9 @@ const RARITY = [
 const DROP_TABLES = {};
 // defineDropTable(地下城 id, { boss: [[物品 key, 几率, 数量?]...], mats: [[key, 几率, 数量]...], epics: [key...] })
 function defineDropTable(id, def) { DROP_TABLES[id] = { boss: [], mats: [], ...def }; }
+// 指定怪物的专属掉落（装备 2.0：领主神器、骷髅凯恩的阿波菲斯……精英 / 深渊领主也行，不限领主房）：kind → [{ key, p, n, dg（只在这些地下城，空 = 哪里都掉） }]
+// 用 content/items/gear60_api.js 的 monDrop(kind, [[key, p, n?]...], { dungeons }) 登记
+const MON_DROPS = {};
 function rollRarity(bonus = 0, boss = false) {
   const w = [50, 30, 13 + bonus * 20, 4.5 + bonus * 10, 1.2 + bonus * 4 + (boss ? 1.5 : 0), 0.25 + bonus * 1.5 + (boss ? 0.8 : 0)];
   let r = Math.random() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < w.length; i++) { r -= w[i]; if (r <= 0) return i; } return 0;
@@ -52,6 +55,9 @@ function rollDrop(t, dg) {
   }
   // 领主专属掉落（套装部件、专属首饰、史诗等）
   if (t.boss && T) for (const [key, p, cnt] of T.boss) if (Math.random() < p * (1 + bonus * 2)) { const it = makeItem(key, cnt || 1); if (it) spawnDrop({ kind: 'item', item: it, x: t.x + rnd(-20, 20), y: t.y, z: 30 }); }
+  // 指定怪物的专属掉落（MON_DROPS）
+  const ND = MON_DROPS[t.kind];
+  if (ND) for (const e of ND) if ((!e.dg || (dg && e.dg.includes(dg.def.id))) && Math.random() < e.p * (1 + bonus * 2)) { const it = makeItem(e.key, e.n || 1); if (it) spawnDrop({ kind: 'item', item: it, x: t.x + rnd(-20, 20), y: t.y, z: 30 }); }
   // 材料 / 消耗品
   if (Math.random() < (t.boss ? 1 : t.elite ? 0.3 : 0.06)) spawnDrop({ kind: 'item', item: makeItem(pick(['hpS', 'mpS', 'hpM', 'crystal']), t.boss ? 3 : 1), x: t.x, y: t.y, z: 20 });
   if (T) for (const [key, p, cnt] of T.mats) if (Math.random() < p * (t.boss ? 4 : t.elite ? 2 : 1)) { const it = makeItem(key, cnt || 1); if (it) spawnDrop({ kind: 'item', item: it, x: t.x, y: t.y, z: 20 }); }

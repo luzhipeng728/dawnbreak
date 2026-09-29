@@ -19,7 +19,8 @@ addStyle(`
 .abywin .price{color:#8ae0ff;font-weight:900}
 `);
 const abyssTicketPrice = () => 3000 + game.lvl * 150;   // 不限购（深渊派对没有次数限制，有邀请函就能进）
-const abyssEpicCost = key => { const D = ITEMS[key]; return D.set ? 36 : D.lvl >= 28 ? 40 : 28; };
+// 宇宙灵魂兑换价（装备 2.0 按等级 / 档加价：Lv50~59 55，Lv60 T1 / T2 70，Lv60 T3 和 Lv60 套装部件 90）
+const abyssEpicCost = key => { const D = ITEMS[key]; if (D.lvl >= 60) return D.set || (D.tier || 1) >= 3 ? 90 : 70; if (D.lvl >= 50) return 55; return D.set ? 36 : D.lvl >= 28 ? 40 : 28; };
 // 史诗兑换列表：等级 ≤ 当前等级 + 3，武器只列本职业（含深渊专属）
 const abyssExchangeKeys = () => { const cls = game.player.cls; return EPICS.filter(E => { const D = ITEMS[E.key]; return D && !D.noDrop && E.lvl <= game.lvl + 3 && (!E.cls || E.cls === cls); }).sort((a, b) => b.lvl - a.lvl || SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot)).map(E => E.key); };
 function abyssDay() { const S = abyssData(), d = dayKey(); if (S.day !== d) { S.day = d; S.bought = 0; } return S; }

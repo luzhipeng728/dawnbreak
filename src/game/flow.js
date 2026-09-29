@@ -16,6 +16,7 @@ function afterEnterWorld() {
   if (save.skillReset) { save.skillReset = false; toastMsg('版本更新：操作与技能按官方现版对齐——闪避改为 ↓+C 后跳（10 级可学后跳-强化）、受身改为蹲伏，技能栏 14 格；技能已初始化，SP 全部返还（按 K 重新加点）', '#8aff9a'); }
   if (save.migrated) { save.migrated = false; toastMsg('版本更新：角色变强了！获得 150 SP、1000 G 与药剂补给', '#8aff9a'); }
   if (!save.data.capNote) { if (game.lvl >= OLD_CAP) toastMsg(`版本更新：等级上限提升到 Lv.${MAX_LVL}！经验保留，可以继续升级；技能等级上限也会随等级继续提高`, '#ffe070'); save.data.capNote = MAX_LVL; }   // 满级 30 → 60
+  if (Array.isArray(save.data.g60note) && save.data.g60note.length) { const L = save.data.g60note; toastMsg(`版本更新：官方史诗回到官方等级——${L.slice(0, 3).join('；')}${L.length > 3 ? ` 等 ${L.length} 件` : ''}`, '#ffcf5a'); for (const t of L) toastMsg(t, '#ffcf5a', 'log'); delete save.data.g60note; }   // 装备 2.0 迁移（gear60_api.js）
   if (!save.data.seenHelp) { save.data.seenHelp = true; menus.open('help'); }
 }
 function enterDungeon(id, diff) {

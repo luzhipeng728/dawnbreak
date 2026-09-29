@@ -16,6 +16,8 @@ run items     node test/items.mjs
 run compare   node test/compare.mjs
 run bulk      node test/bulk.mjs
 run gear      node test/gear.mjs
+run gear60    node test/gear60.mjs core
+run gear60mig node test/gear60.mjs migrate
 run gearsim   node test/gear_sim.mjs 20
 run quests    node test/quests.mjs
 run guide     node test/guide.mjs

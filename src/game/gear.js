@@ -216,6 +216,7 @@ const CODEX_PAGES = [
   { id: 'epicset', name: '史诗套装', test: D => D.rar === 5 && !!D.set },
   { id: 'set', name: '神器 · 稀有套装', test: D => !!D.set && D.rar < 5 && !D.named && !isAvatar(D) },
   { id: 'legend', name: '传说 · 异界套装', test: D => D.rar === 4 && !!D.named },
+  { id: 'named', name: '领主神器', test: D => D.rar === 3 && !!D.named },   // 装备 2.0：官方领主神器（粉色，只在对应领主身上掉）
 ];
 let codexKeysCache = null;
 function codexKeys(page) {
@@ -263,7 +264,8 @@ function codexStats() {
   let setDone = 0; const sets = new Set(codexKeys().map(k => ITEMS[k].set).filter(Boolean));
   for (const id of sets) if (SETS[id] && SETS[id].pieces.every(k => C[k])) setDone++;
   const abyssEpic = Object.keys(C).filter(k => ITEMS[k] && ITEMS[k].rar === 5 && /^深渊派对/.test(C[k].src || '')).length;
-  return { epic, epicTotal, set: setDone, setTotal: sets.size, legend: cnt('legend'), legendTotal: codexKeys('legend').length, artifact: cnt('set'), artifactTotal: codexKeys('set').length, abyssEpic };
+  return { epic, epicTotal, set: setDone, setTotal: sets.size, legend: cnt('legend'), legendTotal: codexKeys('legend').length, artifact: cnt('set'), artifactTotal: codexKeys('set').length, abyssEpic,
+    named: cnt('named'), namedTotal: codexKeys('named').length };
 }
 const epicCollectCount = () => codexStats().epic;
 // 收集加成（参照官方收集箱：登记越多加成越多；本作按“不同史诗数量 / 集齐的套装数 / 传说数量”分档）
@@ -278,12 +280,19 @@ const CODEX_BONUS = [
   { need: { epic: 40 }, st: { dmgUp: 0.02 }, desc: '伤害增加 +2%' },
   { need: { epic: 55 }, st: { atkPct: 0.01, hpPct: 0.02 }, desc: '攻击力 +1%，HP +2%' },
   { need: { epic: 75 }, st: { dmgUp: 0.02, elemAll: 8 }, desc: '伤害增加 +2%，所有属性强化 +8' },
+  { need: { epic: 100 }, st: { str: 10, int: 10, vit: 10, spr: 10 }, desc: '四维 +10' },   // 装备 2.0（史诗约 490 件）加的四档
+  { need: { epic: 140 }, st: { atkPct: 0.01, hp: 400 }, desc: '攻击力 +1%，HP +400' },
+  { need: { epic: 200 }, st: { dmgUp: 0.02 }, desc: '伤害增加 +2%' },
+  { need: { epic: 280 }, st: { elemAll: 10, hpPct: 0.03 }, desc: '所有属性强化 +10，HP +3%' },
   { need: { set: 1 }, st: { hp: 150 }, desc: '集齐 1 套：HP +150' },
   { need: { set: 3 }, st: { str: 5, int: 5, vit: 5, spr: 5 }, desc: '集齐 3 套：四维 +5' },
   { need: { set: 6 }, st: { dmgReduce: 0.02 }, desc: '集齐 6 套：受到的伤害 -2%' },
   { need: { set: 10 }, st: { atkPct: 0.01 }, desc: '集齐 10 套：攻击力 +1%' },
   { need: { legend: 3 }, st: { mspd: 0.02 }, desc: '传说 3 件：移动速度 +2%' },
   { need: { legend: 8 }, st: { critDmg: 0.03 }, desc: '传说 8 件：暴击伤害 +3%' },
+  { need: { named: 5 }, st: { hp: 300 }, desc: '领主神器 5 件：HP +300' },
+  { need: { named: 15 }, st: { str: 6, int: 6, vit: 6, spr: 6 }, desc: '领主神器 15 件：四维 +6' },
+  { need: { named: 30 }, st: { critDmg: 0.03 }, desc: '领主神器 30 件：暴击伤害 +3%' },
 ];
 const codexBonusOn = (B, S) => Object.keys(B.need).every(k => (S[k] || 0) >= B.need[k]);
 let codexBonusCache = null;
@@ -329,13 +338,20 @@ function itemSourceText(key) {
     itemSrcIndex = {};
     const add = (k, txt) => { const L = itemSrcIndex[k] = itemSrcIndex[k] || []; if (!L.includes(txt)) L.push(txt); };
     for (const id in DROP_TABLES) { const T = DROP_TABLES[id], dn = DUNGEONS[id] ? DUNGEONS[id].name : null; if (!dn) continue; for (const [k] of T.boss || []) add(k, dn); }
+    if (typeof MON_DROPS !== 'undefined') for (const kind in MON_DROPS) for (const e of MON_DROPS[kind]) {   // 指定怪物的专属掉落：「地下城 · 怪物名」
+      const mn = MON[kind] ? MON[kind].name : kind, dgs = (e.dg || []).map(id => DUNGEONS[id] && DUNGEONS[id].name).filter(Boolean);
+      (itemSrcIndex['@' + e.key] = itemSrcIndex['@' + e.key] || []).push(dgs.length ? `${dgs.join('、')} · ${mn}` : mn);
+    }
     if (typeof SHOPS !== 'undefined') for (const id in SHOPS) for (const T of SHOPS[id].tabs) if (Array.isArray(T.goods)) for (const k of T.goods) add(k, SHOPS[id].name);
   }
-  const L = itemSrcIndex[key] || [];
+  const L = itemSrcIndex[key] || [], NM = itemSrcIndex['@' + key] || [];
+  const nmTxt = NM.length ? NM.slice(0, 3).join('、') + (NM.length > 3 ? ' 等' : '') + '；' : '';
   if (D.kind === 'equip' && D.rar === 5) {
-    if (D.abyss) return '深渊派对' + (D.abyssFrom && D.abyssFrom !== '深渊派对' ? `（${D.abyssFrom}）` : '') + '；歌兰蒂斯处用宇宙灵魂兑换';
-    return (L.length ? L.slice(0, 3).join('、') + (L.length > 3 ? ' 等' : '') + '的领主；' : '') + `Lv.${Math.max(1, D.lvl - 3)} 以上地下城随机掉落；深渊派对；宇宙灵魂兑换`;
+    const boss = (L.length ? L.slice(0, 3).join('、') + (L.length > 3 ? ' 等' : '') + '的领主；' : '') + nmTxt;
+    if (D.abyss) return boss + '深渊派对' + (D.abyssFrom && D.abyssFrom !== '深渊派对' ? `（${D.abyssFrom}）` : '') + '；歌兰蒂斯处用宇宙灵魂兑换';   // 深渊专属也写上攻坚 / 指定领主的来源（官方：深渊 + 攻坚奖励）
+    return boss + `Lv.${Math.max(1, D.lvl - 3)} 以上地下城随机掉落；深渊派对；宇宙灵魂兑换`;
   }
+  if (D.kind === 'equip' && D.named && (NM.length || L.length)) return (nmTxt + (L.length ? L.slice(0, 3).join('、') + '的领主' : '')).replace(/；$/, '');   // 领主神器 / 名品
   if (D.kind === 'equip' && D.set && L.length) return L.slice(0, 3).join('、') + (L.length > 3 ? ' 等' : '') + '的领主';
   return L.length && D.kind !== 'equip' ? L.slice(0, 3).join('、') : '';
 }

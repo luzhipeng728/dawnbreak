@@ -129,14 +129,15 @@ check(await page.isVisible('[data-win=status] .stscore'), '个人信息窗口显
 /* ---------- 7. 套装效果与装备特效 ---------- */
 step('史诗套装与装备特效');
 const set = await ev(() => {
-  for (const s of ARMOR_SLOTS) { const it = makeItem('set_arad_' + s); inv.add(it); inv.wear(it); }
-  const p = game.player, S = (p.sets || []).find(x => x.id === 'set_arad');
+  const AR = G60.setSucc.set_arad || 'set_arad';   // 装备 2.0：阿拉德之息搬到 Lv60 以后，用留在 Lv28 的继承套装测同一套效果
+  for (const k of SETS[AR].pieces) { const it = makeItem(k); inv.add(it); inv.wear(it); }
+  const p = game.player, S = (p.sets || []).find(x => x.id === AR);
   const scene0 = game.scene; game.scene = 'test';
   const t = { team: 'e', hp: 1e6, hpMax: 1e6, x: p.x + 30, y: p.y, z: 0, status: {}, dead: false };
   for (let i = 0; i < 12; i++) bus.emit('playerHit', { target: t, dmg: 100, crit: false });
   const b = p.buffs && p.buffs.gear_arad ? { n: p.buffs.gear_arad.n, aspd: p.buffs.gear_arad.aspd } : null;
   // 屠戮之刃：攻击出血中的敌人时附加 20% 伤害
-  const k = makeItem('ep_kt_slaughter'); inv.add(k); const w0 = inv.equip.weapon; inv.wear(k);
+  const k = makeItem(G60.succ.ep_kt_slaughter || 'ep_kt_slaughter'); inv.add(k); const w0 = inv.equip.weapon; inv.wear(k);   // 同上：屠戮之刃搬到 Lv55 后用继承装备
   t.status = { bleed: { t: 3 } }; const hp0 = t.hp; bus.emit('playerHit', { target: t, dmg: 1000, crit: false });
   const extra = hp0 - t.hp; game.scene = scene0; inv.wear(w0);
   return { on: S && S.on, b, extra, procs: (p.gearProcs || []).length };

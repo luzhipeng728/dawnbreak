@@ -438,6 +438,17 @@ WEAPON_SHEETS['x_apophis_sword'] = [('ep_gs_apophis', 'w_greatsword', f"{BOLD['g
     'a dark gold crossguard shaped like curled demon horns; a long crimson-wrapped two-handed grip and a clawed pommel. Mostly smooth blade edges (no rows of spikes), so it never looks like a spiky dragon blade')]
 for _t in BOLD:
     WEAPON_SHEETS[f't_{_t}_{WCLS[_t]}'] = [(f'{_t}_r{r}', f'w_{_t}', f'{BOLD[_t]}. {TIER_DESC[r]}') for r in (2, 3, 4)]
+# 装备 2.0（docs/GEAR_PLAN_60.md）：B1a / B1b / B1c 的武器设计写在 art/tools/wdesign_{sword,gun,mage}.py 的 DESIGNS = { 类型: [(key, 设计), ...] }，
+# 追加进 BOLD_EPICS（weapon_gen.py 按它出 v2 单张图），各自单独一组表名（x60_<类型>），不打乱上面老表的分组（老表切图按位置对应）
+import importlib.util as _iu
+for _c in ('sword', 'gun', 'mage'):
+    _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'wdesign_{_c}.py')
+    if not os.path.exists(_p): continue
+    _s = _iu.spec_from_file_location(f'wdesign_{_c}', _p); _m = _iu.module_from_spec(_s); _s.loader.exec_module(_m)
+    for _t, _its in getattr(_m, 'DESIGNS', {}).items():
+        BOLD_EPICS.setdefault(_t, []).extend(_its)
+        for _i in range(0, len(_its), 6):
+            WEAPON_SHEETS[f'x60_{_t}{_i // 6 or ""}_{WCLS[_t]}'] = [(k, f'w_{_t}', f'{BOLD[_t]}. Design: {d}') for k, d in _its[_i:_i + 6]]
 
 def bold_prompt(name, items):
     tier = name.startswith('t_')

@@ -122,13 +122,15 @@
 
 ## 4. 迁移（老存档）
 
-规则（存档 v6，`save.migrate` 里加 `migrateV6`；B0 实现，内容块只登记「老 key → 继承 key」）：
+实现（B0，`content/items/gear60_api.js` 的 `g60MigrateChar` / `g60MigrateBank`）：不按存档版本号，而是**每次读档都跑、按角色的 `g60m`（处理过的搬家 key）只处理一次**——B1 / B2 / B3 分批上线也各自只补发一次；还没写回就刷新会按原始数据重算（结果一样，不叠加）。内容块只要登记「老 key → 继承 key」（`inheritEpic` / `inheritSet`）和 `moveEpic` / `moveSet`。规则：
 1. 物品等级从定义里读（`applyDef`），搬家的物品在所有存档里自动变成新等级。
 2. **已装备且新等级 > 角色等级的，卸到背包**。不能「保持装备、保留加成」：基础属性按新等级重算，Lv30 角色会拿到 Lv55 的攻击力，1~30 的难度全部作废。
 3. **一次性补发继承装备**：角色（背包 / 装备栏 / 仓库 / 账号仓库）里每件搬家物品，补一件它的继承装备；强化 / 增幅 / 锻造 / 附魔**从原物品转移到继承装备**（原物品回到 +0）；原来装备着的，继承装备直接穿回同一格。结果：Lv30 老玩家的强度一点不变、什么都没丢，官方原物品留着等到了等级再用。
 4. 图鉴：老 key 的登记保留（件数不掉），继承装备自动登记；收集加成按新总数加几档（§5）。
 5. 提示一次：「官方史诗回到官方等级：月之光芒 → Lv50，已补发继承装备『xxx』（强化已转移）」。
-6. 不迁移的：服务端的拍卖 / 邮件里的物品（key 不变，只是等级变了）；老 key 原地改名成继承装备的那几件（Lv20 三件套里官方没有的部位）。
+6. 角色等级已经够（例如 maxout 过的 Lv60 角色）的不动：老物品直接变成高等级版本，照穿。账号金库按账号里最高的角色等级算，补发后立刻写回（金库自己的 `g60m`）。
+7. 不迁移的：服务端的拍卖 / 邮件里的物品（key 不变，领取时就是新等级）；老 key 原地改名成继承装备的那几件（Lv20 三件套里官方没有的部位）。
+8. 服务端：云存档只校验结构（`server/core/saves.js validSave`），新字段 `g60m` / `g60note` / 金库 `g60m` 原样往返；`cleanChar` 只管外观，不涉及。测试 `node test/gear60.mjs migrate`（maxout 造的 Lv30 +12 存档 + Lv60 角色 + 仓库 + 金库 + 真服务端往返 + 一键满级券）。
 
 为什么这样定：和用户对阿波菲斯的要求一致（拥有者到 Lv55 才能装）；没有强度突变、没有损失、没有复制（强化是转移不是复制）；老区域不用重调难度。
 
@@ -155,10 +157,34 @@
 
 | 块 | 做什么 | 拥有的文件（只有它能改） | 生图 |
 |---|---|---|---|
-| **B0 骨架 + 迁移 + 掉落** | ① 注册接口（`content/items/gear60_api.js`，ORDER 放在 epics3 后）：`moveEpic(key, {lvl, tier, name?, slot?, fx?, proc?})`（按新等级重算基础属性，改 EPICS）、`inheritEpic(oldKey, newKey, {name, desc})`（复制搬家前的定义 + 登记继承 + 掉落表 / 深渊归属自动替换）、`lordDrop(dungeon, monsterKind, [[key, p]])`、`gearDrop(dungeon, [[key, p]])`、`abyssClaim(regionId, keys)`；② 末尾应用文件 `content/items/gear60_apply.js`（ORDER 放在 abyss.js 后，统一处理登记队列）；③ `drops.js` 支持 `named` 掉落（精英 / 指定怪）；④ `items.js` 存 `_st0`（重算用）；⑤ `save.js` migrateV6（§4）；⑥ `gear.js`：获取途径、图鉴「领主神器」页、收集加成加档（史诗 100 / 140 / 200 / 280，神器 5 / 15 / 30）；⑦ `ui/items/abyss.js` 兑换价；⑧ 美术钩子：`avatar_gen.py` 读 `art/tools/wdesign_{sword,gun,mage}.py`（追加到 BOLD_EPICS，放在老表分组之后，不打乱老表）、`gear_icons.py` 读 `gear_icons_{armor60,acc60,pink60}.py`；⑨ ORDER 里先放好 B1~B3 的空文件；⑩ 测试：`test/gear60.mjs`（每部位 × 段数量下限、搬家等级、继承数值一致、每件有图标 / 武器图、迁移用例、`power` 强度）、`gear_sim.mjs` 基线按继承表对齐并延伸到 Lv60、改掉 `test/gear.mjs` 等里拿搬家物品做低等级测试的地方；⑪ GEAR.md 新章节骨架（§10.1 武器 / 10.2 防具 / 10.3 首饰特殊 / 10.4 神器 / 10.5 迁移，各块只填自己那节） | `src/game/{items,drops,gear,save}.js`、`src/ui/items/{abyss,codex}.js`、`src/content/items/gear60_{api,apply}.js`、`src/ORDER`、`art/tools/{avatar_gen,gear_icons}.py`、`test/gear60.mjs`、`test/gear_sim.mjs`、`test/gear.mjs`、GEAR.md 骨架 | 0 |
-| **B1 武器**（建议再按职业拆 B1a 鬼剑士 / B1b 神枪手 / B1c 魔法师，类型不重叠） | 搬家 55 件（`moveEpic`，含阿波菲斯 → Lv55 + 骷髅凯恩 + 海上列车深渊）、继承 55 件、31~49 原创 ~55 件、官方新增 43 件、武器领主神器 18 + Lv55 粉装 12（只做图标）、各自的掉落 / 深渊登记；直刃直尖（巨剑 / 太刀 / 短剑 / 光剑都不许弯钩卷尖） | `src/content/items/epics60_w_{sword,gun,mage}.js`、`art/tools/wdesign_{sword,gun,mage}.py`、`art/tools/avatar_weapons.json`（只加自己的 key）、`art/final/weapon/<自己的 key>`、`art/final/icon/item_<自己的 key>`、`art/tools/gear_icons_pink60.py` 里自己职业那段 | ~153 张武器图 + ~5 张图标表（三个人各 ~53） |
+| **B0 骨架 + 迁移 + 掉落**（✅ 已完成） | 注册接口 `content/items/gear60_api.js` + 统一生效 `gear60_apply.js`（§6.1）；`drops.js` 的 `MON_DROPS`（指定怪物掉落）；`items.js` 的 `_def` / `seed`（按新等级重定义、继承装备同种子）和重定义去重；老存档迁移 `g60MigrateChar / g60MigrateBank`（§4，挂在 `save.migrate` 和 `bank.load`，进城提示在 `flow.js`）；`gear.js` 获取途径（深渊专属也写攻坚 / 指定领主）、图鉴「领主神器」页、收集加成加档；`ui/items/abyss.js` 兑换价；美术钩子（`wdesign_*.py`、`gear_icons_*60*.py`、刀剑直刃直尖写进 `weapon_gen.py THICK`）；ORDER 里 5 个空内容文件；`test/gear60.mjs`；`gear_sim.mjs` 基线对齐继承表 + 可跑到 Lv60；`test/gear.mjs` 改用继承装备 | `src/game/{items,drops,gear,save,flow}.js`、`src/ui/items/{abyss,codex}.js`、`src/content/items/gear60_{api,apply}.js`、`src/ORDER`、`art/tools/{avatar_gen,gear_icons,weapon_gen}.py`、`test/{gear60,gear_sim,gear}.mjs` | 0 |
+| **B1 武器**（按职业拆 B1a 鬼剑士 / B1b 神枪手 / B1c 魔法师，类型不重叠） | Lv1~10 每类补 1 件（P2，已拍板要做）；搬家 55 件（`moveEpic`，含阿波菲斯 → Lv55 + 骷髅凯恩 + 海上列车深渊）、继承 55 件、31~49 原创 ~55 件、官方新增 43 件、武器领主神器 18 + Lv55 粉装 12（只做图标）、各自的掉落 / 深渊登记；直刃直尖（巨剑 / 太刀 / 短剑 / 光剑都不许弯钩卷尖） | `src/content/items/epics60_w_{sword,gun,mage}.js`、`art/tools/wdesign_{sword,gun,mage}.py`、`art/tools/avatar_weapons.json`（只加自己的 key）、`art/final/weapon/<自己的 key>`、`art/final/icon/item_<自己的 key>`、`art/tools/gear_icons_pink60_{sword,gun,mage}.py`（各自一个） | ~165 张武器图（含 Lv1~10 每类 1 件）+ ~5 张图标表（三个人各 ~55） |
 | **B2 防具 + 精通** | 搬家：Lv20 三件套 ×5（官方部位新 key + 老 key 原地改继承）、Lv28 五件套 ×5 → T3（改官方件名）、4 件 Lv50 散件；继承 ~44 件；官方新增 Lv50 / 55 散件 ~20 件；原创 Lv40 / Lv48 五件套各 5 套；防具领主神器 14；§3 的精通校验 | `src/content/items/epics60_armor.js`、`art/tools/gear_icons_armor60.py`、`src/game/progress.js` 的精通段、`art/final/icon/item_<自己的 key>` | ~23 张图标表 |
 | **B3 首饰 + 辅助 + 魔法石** | 搬家：战神的天袭、时空主宰者、米歇尔、帕丽丝、普拉塔尼、龙之泪 ×4；继承 ~13；官方新增辅助 6 + 魔法石 2；31~50 首饰补缺 ~16；首饰 / 辅助领主神器 ~6；（精炼的异界魔石核实后再定） | `src/content/items/epics60_acc.js`、`art/tools/gear_icons_acc60.py`、`art/final/icon/item_<自己的 key>` | ~8 张图标表 |
+
+### 6.1 注册接口（`src/content/items/gear60_api.js`，B1~B3 只用这些，不改共享文件）
+
+内容文件（`epics60_*.js`）在 ORDER 里排在 epics / epics2 / epics3 之后、所有区域之前：老物品都已定义，区域 spec 里的物品还没有（要改它们用 `g60Later`）。
+
+| 接口 | 作用 | 何时生效 |
+|---|---|---|
+| `moveEpic(key, { lvl, tier?, name?, fx?, proc?, st?, desc?, abyss?: false, ... })` | 官方物品回到官方等级：按新等级**重算基础属性**，传了的字段整个替换（`fx` / `proc` 传就要传完整的），`tier`：Lv60 的 1 / 2 / 3（官方 60 / 65 / 70）。等级调高的自动登记进 `G60.moved`（老存档迁移按它补发） | 立即 |
+| `redefEpic(key, patch)` | 原地改（不算搬家，比如 Lv20 三件套的老 key 原地改名成继承装备、改件名） | 立即 |
+| `inheritEpic(老 key, 新 key, { name, desc, icon?, ... })` | 继承装备：复制**搬家之前**的定义（部位 / 类型 / 等级 / fx / proc / 深渊归属 / 同一个随机种子 → 基础属性一模一样），只换名字外观；登记 `G60.succ / pred`。**先后顺序无所谓**（第一次改动前自动留快照） | 立即 |
+| `inheritSet(老套装, 新套装, { name, pieces: { top: '名字' | { key, name }, ... }, desc? })` | 继承整套（件数效果照抄，部件新 key 默认 `${新套装}_${部位}`） | 立即 |
+| `moveSet(套装, { lvl, tier?, name?, bonus?, pieces: { <部位>: { name?, fx? } }, ...共用字段 })` | 整套搬家（每个部件走 moveEpic） | 立即 |
+| `defineNamed(key, { slot, wtype? / atype?, lvl, name, fx?, proc?, desc })` | 领主神器（粉色 `rar 3, named`，不进随机池，图鉴「领主神器」页；图标 `item_<key>`） | 立即 |
+| `monDrop(怪物 kind, [[key, 几率, 数量?]], { dungeons?: [地下城 id] })` | 指定怪物掉落（精英、深渊领主、房间脚本刷的怪都算；不写 dungeons = 哪里都掉）。例：`monDrop('kain', [['ep_gs_apophis', 0.08]], { dungeons: ['wailing_cave'] })` | 立即 |
+| `gearDrop(地下城 id, [[key, 几率, 数量?]])` | 领主掉落表追加（同 key 覆盖；没有表的地下城先按 autoDropTable 生成） | apply |
+| `dropRemove(地下城 id \| '*', key)` | 从领主表去掉（例：阿波菲斯从虫王戮蛊身上去掉） | apply |
+| `abyssClaim(区域 id, [key 或套装 id])` | 深渊专属 + 归属（进这个区域深渊的保底池、掉史诗时一半从这里出）。区域：`darkelf` `snow` `gent` `train` `timegate` `siroco`，老区域 `grand_flores` `sky_castle` `behemoth` | apply |
+| `g60Later(fn)` | 等所有区域 / 深渊定义完再执行 | apply |
+
+apply（`gear60_apply.js`，abyss.js 之后）自动做：① 继承装备接过老物品的深渊归属；② 搬家的老物品在原深渊够不着了就去掉归属（要 `abyssClaim` 重新认领）；③ **掉落表自动替换**：老 key 在低等级地下城（≤ 原等级 + 6）换成继承装备、新等级附近（≥ 新等级 − 6）保留、其余去掉——**1~30 的老表不用手改**；④ 执行排队的操作；⑤ 检查写进 `G60.problems`（搬家没有继承装备、深渊专属没有够得着的深渊）。
+
+美术钩子：武器设计写 `art/tools/wdesign_{sword,gun,mage}.py`（`DESIGNS = { 类型: [(key, 设计), ...] }`，自动进 `weapon_gen.py` / `avatar_weapons.py`，老表分组不变）；图标表写 `art/tools/gear_icons_{armor60,acc60,pink60_<职业>}.py`（`SHEETS = { 表名: [(key, 描述) × 6] }`，`gear_icons.py gen / cut <表名>`）。刀剑的直刃直尖已写进 `weapon_gen.py` 的 `THICK`（巨剑 / 太刀 / 短剑 / 光剑）。
+
+验收：`node test/gear60.mjs core`（B0，一直要过）；`content --only weapon|armor|acc`（各块交付：数量下限、搬家表、继承一致、图标 / 武器图、`G60.problems` 为空）；`power`（全部合并后）；`migrate`（改了迁移相关才跑，约 3 分钟）。
 
 key 规则（避免撞名）：武器 `ep_<类型缩写>_*`（缩写三职业不重叠）；防具单件 `ep_{top,head,bottom,belt,shoes}_*`、防具套装 `set_ar_*`；首饰 / 特殊 `ep_{neck,brace,ring,sup,stone}_*`、首饰套装 `set_ac_*`；领主神器 / 粉装 `nm_<类型或部位>_*`。新 id 先在 ITEMS / MON 里查重。
 
@@ -176,9 +202,9 @@ key 规则（避免撞名）：武器 `ep_<类型缩写>_*`（缩写三职业不
 
 每块先出 2~3 张样图自己审（武器：直刃直尖、史诗要一眼认得出），再批量；每块交一张总览图（武器 `node test/weapons.mjs shots <keys> <out.jpg>`，图标拼表）。
 
-## 8. 待主线程拍板
+## 8. 主线程的决定（2026-09-29）
 
-1. D1 的「官方 Lv65 / 70 都放 Lv60」vs「65 → 58、70 → 60」：本文选前者（满级段更厚、不会刚拿到就过时）。
-2. 85 版客串（冰火之莲、爱之闪耀魔法少女棒、流光星陨刀）留在 1~30 还是也搬到 Lv60 T3。
-3. 精炼的异界魔石、晨星之眼、狂龙赫斯的龙骨的官方等级没核实：先按原创留下。
-4. 1~10 段每类补一件史诗（P2，+12 张武器图）做不做。
+1. 官方 Lv65 → Lv60 T2、官方 Lv70 → Lv60 T3（按本文）。
+2. 85 版客串（冰火之莲、爱之闪耀魔法少女棒、流光星陨刀）留在 1~30。
+3. 精炼的异界魔石、晨星之眼、狂龙赫斯的龙骨没核实的，按原创留下。
+4. Lv1~10 每类武器补一件史诗（+12 张武器图），归 B1。

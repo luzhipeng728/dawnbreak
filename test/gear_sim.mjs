@@ -10,7 +10,7 @@ await page.goto(`${URL_BASE}?town&fresh&cls=${CLS}&mute`);
 await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 30000 });
 const res = await page.evaluate(({ N, TARGET, OFF }) => {
   window.toastMsg = () => {}; bus.map.announce = []; save.write = () => {};
-  const OLD_EPIC = k => /^ep_[a-z]+\d?$/.test(k);
+  const OLD_K = k => /^ep_[a-z]+\d?$/.test(k), OLD_EPIC = k => OLD_K(k) || OLD_K(G60.pred[k] || '');   // 装备 2.0：老史诗的继承装备算「旧版」（1~30 的强度曲线不变）
   const NEW_EPICS = Object.keys(ITEMS).filter(k => ITEMS[k].rar === 5 && !OLD_EPIC(k));
   const origBoss = {}; for (const id in DROP_TABLES) origBoss[id] = DROP_TABLES[id].boss.slice();
   const extraDrops = window.abyssExtraDrops, codexBonus = window.codexBonusStats;
@@ -23,7 +23,7 @@ const res = await page.evaluate(({ N, TARGET, OFF }) => {
   }
   for (const k of NEW_EPICS) ITEMS[k]._noDrop0 = !!ITEMS[k].noDrop;
   const normalDgs = Object.values(DUNGEONS).filter(d => !d.hidden && !d.abyss).sort((a, b) => a.lvl[0] - b.lvl[0]);
-  const LV = [5, 10, 12, 15, 18, 20, 22, 24, 26, 28, 30];
+  const LV = [5, 10, 12, 15, 18, 20, 22, 24, 26, 28, 30, 35, 40, 45, 50, 55, 60];   // 目标等级 60：node test/gear_sim.mjs 2 sword 60
   function sim(base) {
     setMode(base);
     const p = game.player;
@@ -68,9 +68,10 @@ const res = await page.evaluate(({ N, TARGET, OFF }) => {
       // 邀请函：金币宽裕时每次买 1 张
       if (game.gold > game.lvl * 4000 + 20000 && abyssOpen()) { game.gold -= abyssTicketPrice(); inv.add(makeItem('abyss_ticket')); log.tickets++; }
     };
-    const abyssOpen = () => base ? null : game.lvl >= 29 && log.spineUnlocked ? DUNGEONS.abyss_spine : game.lvl >= 22 && log.skyUnlocked ? DUNGEONS.abyss_sky : game.lvl >= 15 && log.gfUnlocked ? DUNGEONS.abyss_gf : null;   // 天帷巨兽合并后有第二脊椎深渊
+    const hiAbyss = () => Object.values(DUNGEONS).filter(d => d.abyss && d.lvl[0] >= 31 && d.lvl[0] <= game.lvl + 1).sort((a, b) => a.lvl[0] - b.lvl[0]).pop() || null;   // 31~60：按等级够得着的最高一张（资格任务按做过算）
+    const abyssOpen = () => base ? null : game.lvl >= 36 && hiAbyss() ? hiAbyss() : game.lvl >= 29 && log.spineUnlocked ? DUNGEONS.abyss_spine : game.lvl >= 22 && log.skyUnlocked ? DUNGEONS.abyss_sky : game.lvl >= 15 && log.gfUnlocked ? DUNGEONS.abyss_gf : null;   // 天帷巨兽合并后有第二脊椎深渊
     const collect = () => { for (const d of drops) if (d.item) { if (d.item.rar >= 5) { log.epics++; if (game.dungeon && game.dungeon.def.abyss) log.epicsAbyss++; } giveItem(d.item); } drops.length = 0; };
-    while (game.lvl < TARGET && log.runs < 500) {
+    while (game.lvl < TARGET && log.runs < (TARGET > 30 ? 1500 : 500)) {
       town(); snap();
       // 资格任务：Lv15 通关过烈焰格拉卡 → 格兰之森深渊；Lv22 通关过城主宫殿 → 天空之城深渊（各送 3 张邀请函）
       if (!base && !log.gfUnlocked && game.lvl >= 15 && log.seen && log.seen.blazing_graca) { log.gfUnlocked = true; inv.add(makeItem('abyss_ticket', 3)); }

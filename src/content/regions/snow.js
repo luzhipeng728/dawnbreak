@@ -180,7 +180,7 @@ defineRegion({
 
   items: {
     epics: [
-      { key: 'ep_sn_charlie', slot: 'neck', lvl: 37, name: '查理的石晶项链', fx: { ice: 25, dmgUp: 0.07, hpPct: 0.04 }, desc: '巴尔雷娜小时候送给哥哥查理的项链，碎成了好几块，又被一块一块拼了回来。',
+      { key: 'ep_sn_charlie', slot: 'neck', lvl: 37, name: '查理的石晶项链', fx: { ice: 25, dmgUp: 0.09, hpPct: 0.04 }, desc: '巴尔雷娜小时候送给哥哥查理的项链，碎成了好几块，又被一块一块拼了回来。',
         look: 'a simple leather cord necklace with a pale blue stone crystal pendant that was broken and pieced back together with thin silver wire' },
     ],
     sets: [

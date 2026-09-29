@@ -116,16 +116,16 @@ defineRegion({
   /* ---- 史诗（Lv60；原来是 Lv30、比当时的 Lv30 史诗略强一档，见 docs/REGION_PIPELINE.md 的数值说明）；look = 图标描述 ---- */
   items: {
     epics: [
-      { key: 'ep_si_nex', slot: 'support', lvl: 60, name: '奈克斯的锁链', fx: { dmgUp: 0.09, allStat: 24 },
+      { key: 'ep_si_nex', slot: 'support', lvl: 60, name: '奈克斯的锁链', fx: { dmgUp: 0.09, allStat: 19 },
         proc: { chance: 0.05, cd: 2, act: 'status', status: 'slow', dur: 2, name: '锁链束缚', desc: '攻击时 5% 几率用锁链束缚敌人（减速 2 秒）。' }, desc: '奈克斯的锁链球上拆下来的一截，还在轻轻颤动。',
         look: 'a coiled black iron chain with a small spiked chain ball and teal glowing rune links' },
-      { key: 'ep_si_gate', slot: 'stone', lvl: 60, name: '守门人的幻灭之石', fx: { light: 30, dark: 30, dmgUp: 0.06 }, desc: '一半发光一半漆黑的魔石，守门人用它分辨光与暗。',
+      { key: 'ep_si_gate', slot: 'stone', lvl: 60, name: '守门人的幻灭之石', fx: { light: 21, dark: 21, dmgUp: 0.06 }, desc: '一半发光一半漆黑的魔石，守门人用它分辨光与暗。',
         look: 'a round magic gem split into a glowing golden half and a deep violet half, set in a silver frame' },
     ],
     sets: [
       { id: 'set_siroco', name: '潜行者希洛克的残香', lvl: 60, desc: '希洛克留在幻界里的残香凝成的首饰。',
-        bonus: { 2: { st: { elemAll: 15, crit: 0.05, mcrit: 0.05 }, desc: '所有属性强化 +15，暴击率 +5%' },
-          3: { st: { dmgUp: 0.15, elemAll: 8 }, desc: '【残影流】伤害增加 15%，所有属性强化 +8；攻击时 6% 几率召出希洛克的残影（周围 160% 暗属性伤害）', proc: { chance: 0.06, cd: 1, act: 'strike', mul: 1.6, aoe: 110, elem: 'dark', vis: 'dark', name: '残影！' } } },
+        bonus: { 2: { st: { elemAll: 11, crit: 0.05, mcrit: 0.05 }, desc: '所有属性强化 +11，暴击率 +5%' },
+          3: { st: { dmgUp: 0.15, elemAll: 6 }, desc: '【残影流】伤害增加 15%，所有属性强化 +6；攻击时 6% 几率召出希洛克的残影（周围 160% 暗属性伤害）', proc: { chance: 0.06, cd: 1, act: 'strike', mul: 1.6, aoe: 110, elem: 'dark', vis: 'dark', name: '残影！' } } },
         pieces: [
           { key: 'ep_si_neck', slot: 'neck', name: '希洛克的残香项链', look: 'a dark violet pendant shaped like a small porcelain mask with a glowing lilac gem, black silk cord' },
           { key: 'ep_si_bracelet', slot: 'bracelet', name: '希洛克的残香手镯', look: 'a black and silver bangle wrapped with wisps of violet shadow and tiny mask charms' },
@@ -133,7 +133,7 @@ defineRegion({
         ] },
       // 深渊专属（abyss: true → 只在本区域的深渊派对掉落 / 宇宙灵魂兑换）：官方 Lv100 特殊装备套「军神的隐秘遗产」（本作没有耳环栏位，做成辅助装备 + 魔法石两件套）
       { id: 'set_armygod', name: '军神的隐秘遗产', lvl: 60, abyss: true, desc: '沉在魔界深渊里的军神遗物。据说它的主人一生从未败过。',
-        bonus: { 2: { st: { dmgUp: 0.12, cdr: 0.06, elemAll: 12 }, desc: '【军神】伤害增加 12%，技能冷却 -6%，所有属性强化 +12；攻击时 5% 几率插下军神的战旗（周围 180% 伤害）',
+        bonus: { 2: { st: { dmgUp: 0.12, cdr: 0.06, elemAll: 8 }, desc: '【军神】伤害增加 12%，技能冷却 -6%，所有属性强化 +8；攻击时 5% 几率插下军神的战旗（周围 180% 伤害）',
           proc: { chance: 0.05, cd: 2, act: 'strike', mul: 1.8, aoe: 120, vis: 'holy', name: '军神的战旗' } } },
         pieces: [
           { key: 'ep_si_armygod_gem', slot: 'support', name: '军神的庇护宝石', look: 'an old bronze military medal shaped like a shield with a glowing amber gem in the middle and a torn red ribbon' },

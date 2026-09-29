@@ -145,48 +145,48 @@ moveEpic('ep_gs_guardian', { lvl: 60, tier: 3, fx: { dmgUp: 0.15, dmgReduce: 0.0
 
 /* ---------------- 4. 新增：31~49 原创 + 官方 Lv50~60 ---------------- */
 // Lv34 原创（暗精灵地下城领主表）
-W('ep_ss_widow', { wtype: 'shortsword', lvl: 34, name: '蛛丝影刃', st: { str: 40, int: 40 }, fx: { dmgUp: 0.09, crit: 0.03, mcrit: 0.03 },
+W('ep_ss_widow', { wtype: 'shortsword', lvl: 34, name: '蛛丝影刃', st: { str: 40, int: 40 }, fx: { dmgUp: 0.12, crit: 0.03, mcrit: 0.03 },
   proc: { chance: 0.05, act: 'status', status: 'slow', dur: 3, name: '蛛网缠绕', desc: '攻击时 5% 几率用蛛丝缠住敌人（减速 3 秒）。' },
   desc: '蜘蛛洞穴的女王吐出的丝，比钢还韧。（本作原创）' });
-W('ep_kt_moonshadow', { wtype: 'katana', lvl: 34, name: '暗精灵的月影刀', st: { str: 30 }, fx: { dmgUp: 0.09, crit: 0.04, mcrit: 0.04, dark: 25 },
+W('ep_kt_moonshadow', { wtype: 'katana', lvl: 34, name: '暗精灵的月影刀', st: { str: 30 }, fx: { dmgUp: 0.12, crit: 0.04, mcrit: 0.04, dark: 25 },
   desc: '暗精灵在没有月亮的地底，仿照传说里的月亮打出的太刀。（本作原创）' });
-W('ep_cb_tombstone', { wtype: 'club', lvl: 34, name: '墓碑重锤', st: { str: 45 }, fx: { dmgUp: 0.09, stagger: 40, dark: 25 },
+W('ep_cb_tombstone', { wtype: 'club', lvl: 34, name: '墓碑重锤', st: { str: 45 }, fx: { dmgUp: 0.12, stagger: 40, dark: 25 },
   desc: '暗精灵墓地里一块没有名字的墓碑，被人拴上铁链当成了锤子。（本作原创）' });
-W('ep_gs_lavafang', { wtype: 'greatsword', lvl: 34, name: '熔岩巨牙剑', st: { str: 40 }, fx: { dmgUp: 0.09, fire: 28, hardness: 30 },
+W('ep_gs_lavafang', { wtype: 'greatsword', lvl: 34, name: '熔岩巨牙剑', st: { str: 40 }, fx: { dmgUp: 0.12, fire: 28, hardness: 30 },
   desc: '熔岩穴深处的黑曜石，裂缝里的岩浆一直没有冷却。（本作原创）' });
-W('ep_ls_elfstar', { wtype: 'lightsaber', lvl: 34, name: '暗精灵的星辉剑', fx: { dmgUp: 0.09, light: 28, aspd: 0.04 },
+W('ep_ls_elfstar', { wtype: 'lightsaber', lvl: 34, name: '暗精灵的星辉剑', fx: { dmgUp: 0.12, light: 28, aspd: 0.04, crit: 0.03, mcrit: 0.03, critDmg: 0.1 },
   desc: '暗精灵的工匠把地底晶石的微光收进了剑柄。（本作原创）' });
 // Lv38 原创（暗黑城深渊专属）
-W('ep_ss_raven', { wtype: 'shortsword', lvl: 38, name: '渡鸦之吻', st: { str: 45, int: 45 }, fx: { dmgUp: 0.12, dark: 28 },
+W('ep_ss_raven', { wtype: 'shortsword', lvl: 38, name: '渡鸦之吻', st: { str: 45, int: 45 }, fx: { dmgUp: 0.13, dark: 28 },
   proc: { on: 'crit', chance: 0.1, cd: 1.5, act: 'strike', mul: 1.9, aoe: 120, elem: 'dark', vis: 'dark', name: '鸦羽乱舞！', desc: '暴击时 10% 几率掀起鸦羽：对周围敌人造成 190% 暗属性伤害（冷却 1.5 秒）。' },
   desc: '诺伊佩拉的渡鸦只亲吻将死之人。（本作原创）' });
-W('ep_kt_ferryman', { wtype: 'katana', lvl: 38, seed: 'ep_kt_ferryman#18', name: '冥河摆渡刀', st: { str: 35 }, fx: { dmgUp: 0.12, crit: 0.04, mcrit: 0.04, ice: 28 },
+W('ep_kt_ferryman', { wtype: 'katana', lvl: 38, seed: 'ep_kt_ferryman#18', name: '冥河摆渡刀', st: { str: 35 }, fx: { dmgUp: 0.13, crit: 0.04, mcrit: 0.04, ice: 28 },
   proc: { chance: 0.06, cd: 1, act: 'strike', mul: 1.9, elem: 'ice', vis: 'ice', col: '#9fe8e0', name: '冥河寒流！', desc: '攻击时 6% 几率掀起冥河寒流（190% 冰属性伤害）。' },
   desc: '摆渡人的刀上挂着一盏小灯，照着亡魂过河。（本作原创）' });
-W('ep_cb_plague', { wtype: 'club', lvl: 38, name: '狄瑞吉的毒瓶锤', st: { str: 45 }, fx: { dmgUp: 0.12, stagger: 40, critDmg: 0.1 },
+W('ep_cb_plague', { wtype: 'club', lvl: 38, name: '狄瑞吉的毒瓶锤', st: { str: 45 }, fx: { dmgUp: 0.13, stagger: 40, critDmg: 0.1 },
   proc: [{ chance: 0.06, cd: 1, act: 'strike', mul: 1.8, aoe: 120, vis: 'dark', col: '#a8c840', name: '毒瓶炸裂！', desc: '攻击时 6% 几率砸碎毒瓶：对周围敌人造成 180% 伤害，' },
     { chance: 0.05, act: 'status', status: 'poison', dur: 5, dps: 0.12, name: '瘟疫', desc: '5% 几率使敌人中毒 5 秒。' }],
   desc: '瘟疫之源狄瑞吉装毒的瓶子，瓶塞是一颗小骷髅。（本作原创）' });
-W('ep_gs_blackknight', { wtype: 'greatsword', lvl: 38, name: '黑暗骑士之誓', st: { str: 45 }, fx: { dmgUp: 0.12, dark: 28, hardness: 40 },
+W('ep_gs_blackknight', { wtype: 'greatsword', lvl: 38, name: '黑暗骑士之誓', st: { str: 45 }, fx: { dmgUp: 0.13, dark: 28, hardness: 40 },
   proc: { chance: 0.05, cd: 1, act: 'strike', mul: 2.0, aoe: 150, elem: 'dark', vis: 'dark', name: '黑骑士斩！', desc: '攻击时 5% 几率挥出黑骑士斩：对周围敌人造成 200% 暗属性伤害。' },
   desc: '无头骑士生前立誓守护暗黑城时佩的剑。（本作原创）' });
-W('ep_ls_void', { wtype: 'lightsaber', lvl: 38, seed: 'ep_ls_void#6', name: '虚空光刃', fx: { dmgUp: 0.12, light: 28 },
+W('ep_ls_void', { wtype: 'lightsaber', lvl: 38, seed: 'ep_ls_void#6', name: '虚空光刃', fx: { dmgUp: 0.13, light: 28 },
   proc: { on: 'crit', chance: 0.1, cd: 1.5, act: 'strike', mul: 1.9, aoe: 120, elem: 'light', vis: 'nova', col: '#b98cff', name: '虚空裂隙！', desc: '暴击时 10% 几率撕开虚空裂隙：对周围敌人造成 190% 光属性伤害（冷却 1.5 秒）。' },
   desc: '光刃里是一片没有星星的夜空，边缘却亮得刺眼。（本作原创）' });
 // Lv45 原创（根特外围 / 比尔马克 / 哈穆林）
-W('ep_ss_lion', { wtype: 'shortsword', lvl: 45, seed: 'ep_ss_lion#5', name: '皇家近卫短剑-荣光', st: { str: 50, int: 50 }, fx: { dmgUp: 0.1, critDmg: 0.13 },
+W('ep_ss_lion', { wtype: 'shortsword', lvl: 45, seed: 'ep_ss_lion#5', name: '皇家近卫短剑-荣光', st: { str: 50, int: 50 }, fx: { dmgUp: 0.13, critDmg: 0.13 },
   proc: { on: 'skill', chance: 0.1, cd: 3, act: 'strike', mul: 1.8, aoe: 130, vis: 'swords', col: '#ffe08a', name: '荣光之剑！', desc: '施放技能时 10% 几率召唤荣光之剑：对周围敌人造成 180% 伤害（冷却 3 秒）。' },
   desc: '根特皇家近卫队的佩剑，剑格上是皇室的狮子纹章。（本作原创）' });
-W('ep_kt_whitenight', { wtype: 'katana', lvl: 45, seed: 'ep_kt_whitenight#25', name: '雪原寒刃-白夜', fx: { dmgUp: 0.1, ice: 30, crit: 0.04, mcrit: 0.04 },
+W('ep_kt_whitenight', { wtype: 'katana', lvl: 45, seed: 'ep_kt_whitenight#25', name: '雪原寒刃-白夜', fx: { dmgUp: 0.13, ice: 30, crit: 0.04, mcrit: 0.04 },
   proc: [{ chance: 0.05, act: 'status', status: 'freeze', dur: 1.5, name: '冰封', desc: '攻击时 5% 几率冰冻敌人 1.5 秒，' }, { vs: 'freeze', act: 'extra', frac: 0.25, desc: '攻击冰冻中的敌人时附加 25% 伤害。' }],
   desc: '万年雪山的白夜里锻成的太刀，刀纹像结冰的湖面。（本作原创）' });
-W('ep_cb_gear', { wtype: 'club', lvl: 45, name: '齿轮破甲锤', st: { str: 55 }, fx: { dmgUp: 0.1, stagger: 50, critDmg: 0.12 },
+W('ep_cb_gear', { wtype: 'club', lvl: 45, name: '齿轮破甲锤', st: { str: 55 }, fx: { dmgUp: 0.13, stagger: 50, critDmg: 0.12 },
   proc: { chance: 0.06, act: 'debuff', taken: 0.12, dur: 5, name: '破甲', desc: '攻击时 6% 几率击碎护甲：敌人 5 秒内受到的伤害 +12%。' },
   desc: '比尔马克试验场的工程师做的破甲锤，锤头里的活塞一直在动。（本作原创）' });
-W('ep_gs_siege', { wtype: 'greatsword', lvl: 45, name: '破城者', st: { str: 50 }, fx: { dmgUp: 0.1, critDmg: 0.14, hardness: 40 },
+W('ep_gs_siege', { wtype: 'greatsword', lvl: 45, name: '破城者', st: { str: 50 }, fx: { dmgUp: 0.13, critDmg: 0.14, hardness: 40 },
   proc: { chance: 0.05, cd: 1, act: 'strike', mul: 1.9, aoe: 160, vis: 'nova', col: '#ffa050', name: '攻城锤击！', desc: '攻击时 5% 几率打出攻城锤击：对周围敌人造成 190% 伤害。' },
   desc: '卡勒特攻城用的蒸汽巨剑，剑脊上装着活塞和锅炉。（本作原创）' });
-W('ep_ls_coil', { wtype: 'lightsaber', lvl: 45, seed: 'ep_ls_coil#2', name: '电磁光剑-根特试作型', fx: { dmgUp: 0.08, light: 28 },
+W('ep_ls_coil', { wtype: 'lightsaber', lvl: 45, seed: 'ep_ls_coil#2', name: '电磁光剑-根特试作型', fx: { dmgUp: 0.12, light: 28, crit: 0.03, mcrit: 0.03, critDmg: 0.1 },
   proc: [{ chance: 0.05, act: 'status', status: 'stun', dur: 1, name: '电磁脉冲', desc: '攻击时 5% 几率放出电磁脉冲（眩晕 1 秒），' }, { vs: 'stun', act: 'extra', frac: 0.2, desc: '攻击眩晕中的敌人时附加 20% 伤害。' }],
   desc: '根特技术部的试作品，电池一次能用三天。（本作原创）' });
 // 官方 60 版 Lv50（新增）

@@ -145,13 +145,13 @@ defineRegion({
 
   items: {
     epics: [
-      { key: 'ep_tr_dawneye', slot: 'stone', lvl: 56, name: '黎明之眼', fx: { dmgUp: 0.09, light: 20, crit: 0.03 }, desc: '卡勒特总指挥安祖·塞弗的机械义眼。据说它看得见黎明前最暗的那一刻。',
+      { key: 'ep_tr_dawneye', slot: 'stone', lvl: 56, name: '黎明之眼', fx: { dmgUp: 0.075, light: 11, crit: 0.03 }, desc: '卡勒特总指挥安祖·塞弗的机械义眼。据说它看得见黎明前最暗的那一刻。',
         look: 'a round golden mechanical eye gem with a glowing warm amber iris, brass gears and tiny rivets around it, set in a sunburst shaped gold frame' },
     ],
     sets: [
       // 深渊专属（海上列车深渊）：本作原创，戒指 + 项链两件套
       { id: 'set_ironscale', name: '铁鳞海贼团的宝藏', lvl: 55, abyss: true, desc: '铁鳞海贼团从海上列车抢来、藏在深渊里的宝藏。',
-        bonus: { 2: { st: { dmgUp: 0.11, crit: 0.04, aspd: 0.06 }, desc: '【海贼】伤害增加 11%，暴击率 +4%，攻击速度 +6%；攻击时 6% 几率召来一发海盗炮弹（周围 160% 火属性伤害）',
+        bonus: { 2: { st: { cdr: 0.08, dmgUp: 0.08, aspd: 0.06 }, desc: '【冷却流】技能冷却 -8%，伤害增加 8%，攻击速度 +6%；攻击时 6% 几率召来一发海盗炮弹（周围 160% 火属性伤害）',
           proc: { chance: 0.06, cd: 1.5, act: 'strike', mul: 1.6, aoe: 110, elem: 'fire', vis: 'fire', name: '海盗炮击' } } },
         pieces: [
           { key: 'ep_tr_blackscale', slot: 'ring', name: '莫贝尼的黑鳞戒指', look: 'a heavy dark iron ring set with a single glossy black crocodile scale and small gold rivets' },

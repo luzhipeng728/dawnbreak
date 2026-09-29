@@ -141,7 +141,7 @@ defineRegion({
 
   items: {
     epics: [
-      { key: 'ep_gt_core', slot: 'stone', lvl: 52, name: 'GT-9600 的量子核心', fx: { dmgUp: 0.08, light: 25, cdr: 0.04 }, desc: '卡勒特拿来驱动战斗兵器 GT-9600 的量子核心，拆下来以后还在嗡嗡作响。',
+      { key: 'ep_gt_core', slot: 'stone', lvl: 52, name: 'GT-9600 的量子核心', fx: { dmgUp: 0.07, light: 14, cdr: 0.04 }, desc: '卡勒特拿来驱动战斗兵器 GT-9600 的量子核心，拆下来以后还在嗡嗡作响。',
         look: 'a glowing pale blue quantum core sphere inside a brass and steel cage with small pipes and a warning stripe band' },
     ],
     sets: [

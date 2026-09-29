@@ -184,10 +184,10 @@ defineRegion({
   /* ---- 史诗（区域掉落）+ 深渊专属（abyss: true）---- */
   items: {
     epics: [
-      { key: 'ep_de_morgan', slot: 'support', lvl: 32, name: '摩根的炼金毒瓶', fx: { dmgUp: 0.07, allStat: 18 },
+      { key: 'ep_de_morgan', slot: 'support', lvl: 32, name: '摩根的炼金毒瓶', fx: { dmgUp: 0.11, allStat: 18 },
         proc: { chance: 0.06, cd: 2, act: 'status', status: 'poison', dur: 4, name: '炼金剧毒', desc: '攻击时 6% 几率让敌人中毒 4 秒。' }, desc: '怨恨之摩根到死都攥在手里的毒瓶。他本想用它找出传染病的解药。',
         look: 'a round alchemist flask with a long thin neck full of bubbling violet liquid, a skull-shaped cork and a small brass label, dark elf style silver filigree' },
-      { key: 'ep_de_cross', slot: 'stone', lvl: 38, name: '燃烧之血十字架', fx: { fire: 30, dark: 20, dmgUp: 0.06 }, desc: '诺伊佩拉的祭坛上燃烧的血色十字架（官方远古地下城「诺伊佩拉」的专属神器）。',
+      { key: 'ep_de_cross', slot: 'stone', lvl: 38, name: '燃烧之血十字架', fx: { fire: 30, dark: 20, dmgUp: 0.08 }, desc: '诺伊佩拉的祭坛上燃烧的血色十字架（官方远古地下城「诺伊佩拉」的专属神器）。',
         look: 'a small blood red crystal cross wrapped in dark flames at its edges, set in a blackened silver frame' },
     ],
     sets: [

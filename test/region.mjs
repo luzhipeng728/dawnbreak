@@ -6,10 +6,11 @@
 //   scenes   每个场景能进、背景加载、出口能走通（含从已有世界接进来的入口）
 //   quest    主线任务链从头做到尾
 //   abyss    深渊派对（spec.abyss）：所有深渊的数据、进图扣票、封印之门 → 配置的几波 → 深渊领主（机制 / 循环机制）→ 保底 → 深渊宝藏翻牌
-//   bot      机器人以区域等级（Lv30 全身 +12 史诗）通关每个地下城，统计用时 / 被击 / 死亡（BOT=abyss_<id>:sword 也能跑深渊；GEAR=base 只穿稀有装备、LV=等级，用来和老区域对照难度）
+//   bot      机器人以区域等级（Lv30 全身 +12 史诗）通关每个地下城，统计用时 / 被击 / 死亡（BOT=abyss_<id>:sword 也能跑深渊；GEAR=base 只穿稀有装备、GEAR=rare 同级稀有 +7、GEAR=epic 同级最好的一套史诗 +7（ENH 改强化）、LV=等级，用来和老区域对照难度）
 // 默认全跑；环境变量 SPEED（默认 3）、BOT=地下城:职业,...（覆盖机器人的分配）。截图在 test/shots/region_<id>/
 // 整个测试只开一个无头浏览器（各部分用同一个页面换地址）
 import { launch, URL_BASE } from './lib.mjs';
+import { BEST_KIT_SRC } from './lib_bestkit.mjs';
 import fs from 'fs';
 const id = process.argv[2] || 'siroco';
 const parts = (process.argv[3] || 'data,skills,mechs,monsters,scenes,quest,abyss,bot').split(',');
@@ -464,12 +465,14 @@ if (parts.includes('bot')) {
   const rows = [];
   for (const [did, cls] of plan) {
     await open(`town&mute&cls=${cls}`);
+    if (process.env.GEAR === 'epic') await page.evaluate(BEST_KIT_SRC);
     const setup = await page.evaluate(({ did, lv, base, enh }) => {
       testLoadout(lv); const p = game.player, eq = [], A = typeof ABYSS !== 'undefined' && ABYSS[did], U = DUNGEONS[did].unlock;
       if (A) { save.data.questDone[A.quest] = Date.now(); inv.add(makeItem('abyss_ticket', A.cost)); }
       if (U && U.quest) save.data.questDone[U.quest] = Date.now();
-      // GEAR=base：只有 testLoadout；GEAR=rare：全身同等级稀有 +ENH（默认 7，“等级合适的稀有装”）；默认：全身史诗 +12
-      if (base !== 'base') for (const s of Object.keys(SLOT_WEIGHT)) { const it = rollEquip({ slot: s, lvl: lv, rar: base === 'rare' ? 2 : 5, cls: p.cls }) || inv.equip[s]; if (it) { it.enh = base === 'rare' ? enh : 12; inv.equip[s] = it; eq.push(it.rar); } }
+      // GEAR=base：只有 testLoadout；GEAR=rare：全身同等级稀有 +ENH（默认 7，“等级合适的稀有装”）；GEAR=epic：同级最好的一套史诗 +ENH（和 gear60.mjs power 同一个搜索）；默认：全身史诗 +12
+      if (base === 'epic') { const lv0 = game.lvl; game.lvl = lv; const K = g60BestKit(lv); game.lvl = lv0; for (const s in K.bestKit) { const it = K.bestKit[s]; it.enh = enh; inv.equip[s] = it; eq.push(it.rar); } }
+      else if (base !== 'base') for (const s of Object.keys(SLOT_WEIGHT)) { const it = rollEquip({ slot: s, lvl: lv, rar: base === 'rare' ? 2 : 5, cls: p.cls }) || inv.equip[s]; if (it) { it.enh = base === 'rare' ? enh : 12; inv.equip[s] = it; eq.push(it.rar); } }
       recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax; save.data.fatigue = 999; bot.on = true; window.__botDone = null;
       enterDungeon(did, 0);
       return { epics: eq.filter(r => r === 5).length, slots: eq.length, atk: Math.round(p.atk || 0), hp: p.hpMax };

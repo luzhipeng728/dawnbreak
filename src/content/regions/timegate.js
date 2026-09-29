@@ -241,7 +241,7 @@ defineRegion({
 
   items: {
     epics: [
-      { key: 'ep_tg_harp', slot: 'support', lvl: 59, name: '吟游诗人的竖琴', fx: { dmgUp: 0.1, dark: 25, cdr: 0.04 }, desc: '暗黑城的使者艾丽丝弹过的竖琴。弹响它的时候，好像能听见过去的声音。',
+      { key: 'ep_tg_harp', slot: 'support', lvl: 59, name: '吟游诗人的竖琴', fx: { dmgUp: 0.1, dark: 18, cdr: 0.04 }, desc: '暗黑城的使者艾丽丝弹过的竖琴。弹响它的时候，好像能听见过去的声音。',
         look: 'an ornate small golden lyre harp with dark violet strings, a crescent moon and clock gear motif on the frame, a tiny violet ribbon' },
     ],
     sets: [

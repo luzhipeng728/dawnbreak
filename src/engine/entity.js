@@ -206,6 +206,18 @@ class Ent {
       body(c);
       c.restore(); return;
     }
+    const col = this.flash > 0 ? '#ffffff' : (Math.floor(game.t * 8) % 2 ? '#ff2020' : '#ff6a3a');
+    // 精灵帧模型（怪物）：直接画到世界层——霸体描边 = 4 个偏移的纯色剪影、闪白 = 再叠一层白色剪影（剪影按帧图缓存，models/imgmodel.js sprSil）。
+    // 不走下面的离屏合成：那条路每只怪要在 3 张画布之间来回拷贝，大范围技能同时打中一屋子怪时占了世界层绘制的一半（docs/PERF.md）
+    if (this.model instanceof SpriteModel && !this.model.av) {
+      const M = this.model, t = game.t + this.id, sil = { sil: col };
+      const put = (ox, oy, o) => { c.save(); c.translate(X + shk + ox, Y + oy); c.scale(fsx, sc); if (rot) { c.translate(0, cy); c.rotate(rot); c.translate(0, -cy); } M.draw(c, this.pose, t, o); c.restore(); };
+      c.globalAlpha = a;
+      if (sa) for (const [ox, oy] of SA_OFF) put(ox / RS, oy / RS, sil);
+      put(0, 0, this.drawOpts || NO_OPTS);
+      if (this.flash > 0) { c.globalAlpha = a * 0.7; put(0, 0, sil); }
+      c.globalAlpha = 1; return;
+    }
     // 受击闪白 / 霸体红描边：先画进离屏精灵再整体着色合成
     const S = spriteBuf;
     S.x.setTransform(RS, 0, 0, RS, 0, 0); S.x.clearRect(0, 0, S.w, S.h);
@@ -213,7 +225,7 @@ class Ent {
     body(S.x);
     const dx = X - S.ox + shk, dy = Y - S.oy;
     const T = tintBuf; T.x.globalCompositeOperation = 'copy'; T.x.drawImage(S.cv, 0, 0); T.x.globalCompositeOperation = 'source-in';
-    T.x.fillStyle = this.flash > 0 ? '#ffffff' : (Math.floor(game.t * 8) % 2 ? '#ff2020' : '#ff6a3a'); T.x.fillRect(0, 0, S.cv.width, S.cv.height); T.x.globalCompositeOperation = 'source-over';
+    T.x.fillStyle = col; T.x.fillRect(0, 0, S.cv.width, S.cv.height); T.x.globalCompositeOperation = 'source-over';
     const C = compBuf; C.x.clearRect(0, 0, S.cv.width, S.cv.height);
     if (sa) for (const [ox, oy] of SA_OFF) C.x.drawImage(T.cv, ox, oy);
     C.x.drawImage(S.cv, 0, 0);

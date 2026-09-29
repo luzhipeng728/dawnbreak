@@ -86,6 +86,7 @@ run mptown    node test/mp_town.mjs
 run mpcoop    node test/mp_coop.mjs 2
 run mpdrop    node test/mp_coop_drop.mjs
 run mpduel    node test/mp_duel.mjs
+run duellag   env MAXMS=33 node test/mp_duel_lag.mjs 4 0,120   # 决斗：对方按键到自己出招（本地模拟，往返 120ms 下 ≤ 33ms）、不重播、位置一致
 run arena     node test/arena.mjs
 run mpmore    node test/mp_coop_more.mjs
 run mprestart node test/mp_restart.mjs

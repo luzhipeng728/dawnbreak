@@ -84,25 +84,42 @@ function addNumber(n, x, y, z, { crit = false, player = false, heal = false, col
   numStackT = game.t; const off = (numStack++ % 6) * 11;
   numList.push({ n: Math.round(n), x: x + rnd(-6, 6), y, z: z + off, t: 0, dur: 0.85, crit, player, heal, col });
 }
+// 伤害数字的字形图集：每种（字号 × 描边色 × 填充）一张，0-9、逗号、负号；上一行是描边层、下一行是填充层（渐变按字高，和整串画时一样）。
+// 画一串数字 = 先把每个字的描边层贴上去，再贴填充层，效果同 strokeText + fillText；大范围技能一次几十上百个数字时不用每帧重新排版、描边、建渐变（docs/PERF.md）
+const NUM_GLYPHS = '0123456789,-', NUM_ATLAS = new Map(), NUM_GRAD = {
+  heal: [[0, '#d6ffd0'], [1, '#3ad060']], player: [[0, '#ffd0d0'], [1, '#ff3040']], crit: [[0, '#ffe0d0'], [0.45, '#ff5a3a'], [1, '#c80a0a']], norm: [[0, '#fffbe8'], [1, '#ffd24a']] };
+let numMeasure = null;
+function numAtlas(size, stroke, fill) {
+  const key = size + stroke + fill; let A = NUM_ATLAS.get(key); if (A) return A;
+  const font = `900 ${size}px "Arial Black","Impact",sans-serif`, pad = 4, ch = Math.ceil(size * 0.8) * 2, G = {};
+  if (!numMeasure) numMeasure = offCanvas(1, 1)[1];
+  numMeasure.font = font; let W = 0;
+  for (const g of NUM_GLYPHS) { const adv = numMeasure.measureText(g).width; G[g] = { x: W, w: Math.ceil(adv) + pad * 2, adv }; W += G[g].w + 2; }
+  const [cv, x] = offCanvas(W * RS, ch * 2 * RS);
+  x.setTransform(RS, 0, 0, RS, 0, 0); x.font = font; x.textAlign = 'left'; x.textBaseline = 'middle';
+  x.lineWidth = 4; x.strokeStyle = stroke; x.lineJoin = 'round';
+  for (const g of NUM_GLYPHS) x.strokeText(g, G[g].x + pad, ch / 2);
+  let fs = fill; if (NUM_GRAD[fill]) { fs = x.createLinearGradient(0, ch * 1.5 - size * 0.5, 0, ch * 1.5 + size * 0.5); for (const [o, col] of NUM_GRAD[fill]) fs.addColorStop(o, col); }
+  x.fillStyle = fs; for (const g of NUM_GLYPHS) x.fillText(g, G[g].x + pad, ch * 1.5);
+  A = { cv, G, pad, ch }; NUM_ATLAS.set(key, A); return A;
+}
 function drawNumbers(c) {
   if (typeof uiPref === 'function' && !uiPref('dmgNum')) return;   // 设置里关闭了伤害数字
   for (const d of numList) {
     const k = d.t / d.dur, pop = d.t < 0.08 ? 1.7 - d.t / 0.08 * 0.7 : 1, rise = easeOut(Math.min(1, d.t / 0.5)) * 18;
     const X = sx(d.x), Y = sy(d.y, d.z + rise + 70);
-    const size = (d.crit ? 21 : 15) * pop;
-    c.save(); c.globalAlpha = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
-    c.font = `900 ${size.toFixed(1)}px "Arial Black","Impact",sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    const txt = fmtNum(d.n);
-    c.lineWidth = 4; c.strokeStyle = d.player ? '#3a0008' : '#2a1400'; c.lineJoin = 'round'; c.strokeText(txt, X, Y);
-    const g = c.createLinearGradient(0, Y - size * 0.5, 0, Y + size * 0.5);
-    if (d.heal) { g.addColorStop(0, '#d6ffd0'); g.addColorStop(1, '#3ad060'); }
-    else if (d.player) { g.addColorStop(0, '#ffd0d0'); g.addColorStop(1, '#ff3040'); }
-    else if (d.crit) { g.addColorStop(0, '#ffe0d0'); g.addColorStop(0.45, '#ff5a3a'); g.addColorStop(1, '#c80a0a'); }
-    else { g.addColorStop(0, '#fffbe8'); g.addColorStop(1, '#ffd24a'); }
-    c.fillStyle = d.col || g; c.fillText(txt, X, Y);
-    if (d.crit) { c.fillStyle = '#fff'; c.font = '900 9px sans-serif'; c.fillText('★', X - c.measureText(txt).width * 0.5 - 22, Y - 6); }
-    c.restore();
+    const txt = d.txt || (d.txt = fmtNum(d.n)), A = numAtlas(d.crit ? 21 : 15, d.player ? '#3a0008' : '#2a1400', d.col || (d.heal ? 'heal' : d.player ? 'player' : d.crit ? 'crit' : 'norm'));
+    let w = 0; for (const g of txt) { const G = A.G[g]; if (!G) { w = -1; break; } w += G.adv; }
+    if (w < 0) continue;
+    c.globalAlpha = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1;
+    const y = Y - A.ch / 2 * pop, h = A.ch * pop, x0 = X - w * pop / 2;
+    for (let row = 0; row < 2; row++) {
+      let x = x0;
+      for (const g of txt) { const G = A.G[g]; c.drawImage(A.cv, G.x * RS, row * A.ch * RS, G.w * RS, A.ch * RS, Math.round((x - A.pad * pop) * RS) / RS, y, G.w * pop, h); x += G.adv * pop; }
+    }
+    if (d.crit) { c.fillStyle = '#fff'; c.font = '900 9px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; if (d.sw === undefined) d.sw = c.measureText(txt).width; c.fillText('★', X - d.sw * 0.5 - 22, Y - 6); }
   }
+  c.globalAlpha = 1;
 }
 /* ---- 文字弹出：COUNTER / BACK ATTACK / 连击评价等 ---- */
 function fxText(txt, x, y, z, { col = '#ff5a3a', size = 13, dur = 0.7 } = {}) {

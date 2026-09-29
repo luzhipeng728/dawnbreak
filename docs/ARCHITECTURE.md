@@ -126,3 +126,4 @@
 - **新增角色动作帧必须走外观流水线**：`art/tools/avatar_gen.py wpn` → `avatar_frames.py`。不要用 `frames2.py` 直接覆盖这三个目录，否则会画出两把武器。
 - 时装是整套帧集：`art/final/spr/<职业>@<套装>/`，分包 `spr:<职业>@<套装>`。帽子 / 发饰 / 眼镜按头部锚点叠加。
 - 绘制规范（性能）：每帧的绘制里不要用 `imageSmoothingQuality = 'high'`、`filter`、`shadowBlur`，混合模式只用 `source-over` / `lighter`。实测前两项会让 GPU 满载，帧率从 60 掉到 20~40。
+  - 每帧也不要让很多实体各自在几张离屏画布之间来回拷贝（每次拷贝都要先冲刷源画布；受击闪白原来这么做，一屋子怪同时挨打时占世界层一半），不要每帧对大量文字 `strokeText` / 建渐变 / `toLocaleString`——着色剪影、文字都缓存成图再 `drawImage`。量法见 docs/PERF.md。

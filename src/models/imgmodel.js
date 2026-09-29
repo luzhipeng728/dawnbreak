@@ -60,6 +60,18 @@ class StaticModel {
     c.save(); c.scale(k, k * br); c.drawImage(im, -im.width / 2, -im.height); c.restore();
   }
 }
+// 纯色剪影缓存（怪物的受击闪白 / 霸体描边）：帧图 → 颜色 → 画布；最多 SPR_SIL_MAX 张帧图，最久没用的先释放
+const SPR_SIL = new Map(), SPR_SIL_MAX = 96;
+function sprSil(im, col) {
+  let M = SPR_SIL.get(im);
+  if (M) { SPR_SIL.delete(im); SPR_SIL.set(im, M); } else {
+    SPR_SIL.set(im, M = new Map());
+    if (SPR_SIL.size > SPR_SIL_MAX) { const k0 = SPR_SIL.keys().next().value; for (const cv of SPR_SIL.get(k0).values()) cv.width = cv.height = 0; SPR_SIL.delete(k0); }
+  }
+  let cv = M.get(col); if (cv) return cv;
+  const [c2, x] = offCanvas(im.width, im.height); x.drawImage(im, 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, im.width, im.height);
+  M.set(col, cv = c2); return cv;
+}
 /* ---- 逐帧精灵模型：同一角色的手绘动作帧（每张动作表 8 帧连续动画，比例画风一致）
    anims：{ 片段名: [[帧, 起始时间], ...]（一次性动作）或 { fps, frames: [...] }（循环） }，按片段内时间选帧；
    没列出的片段按姿势名对照表 map 兜底；翻滚帧按姿势的整体转角旋转；站立时带轻微呼吸起伏 */
@@ -90,6 +102,7 @@ class SpriteModel {
     if (rot) { const cy = -F.h * k * 0.45; c.translate(0, cy); c.rotate(rot); c.translate(0, -cy); }
     if (f === 'idle') c.scale(1 - Math.sin(t * 2.6) * 0.006, 1 + Math.sin(t * 2.6) * 0.012);   // 呼吸
     c.scale(k, k);
+    if (opts.sil) { c.drawImage(sprSil(im, opts.sil), -F.ax, -F.ay); c.restore(); return; }   // 纯色剪影：实体的霸体描边 / 受击闪白（engine/entity.js，只用于没有外观层的模型）
     if (av) av.under(c, this, f, F);
     c.drawImage(im, -F.ax, -F.ay);
     if (av) av.over(c, this, f, F);

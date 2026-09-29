@@ -16,7 +16,7 @@ const COOP_INTERP = 100;                        // 傀儡 / 影子的插值延�
 const COOP_ST = ['idle', 'walk', 'run', 'jump', 'act', 'hit', 'air', 'down', 'getup', 'held', 'dead'];
 const coop = {
   role: null, room: null, state: 'none', dg: null, def: null, diff: 0, hostId: 0, mates: new Map(), puppets: new Map(), spawnInfo: new Map(),
-  nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, stats: { remoteHits: 0, sentHits: 0, snaps: 0, kills: 0, mateActs: 0, monActs: 0 }, lastSnap: 0, lastSelf: 0, prep: null, waitT: 0, hostLag: false, lagSince: 0,
+  nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, stats: { remoteHits: 0, sentHits: 0, snaps: 0, kills: 0, mateActs: 0, monActs: 0 }, lastSnap: 0, lastSelf: 0, prep: null, waitT: 0, hostLag: false, lagSince: 0, hostClk: {},
   active() { return !!this.role && (this.state === 'play' || this.state === 'prep' || this.state === 'load'); },
   isGuest() { return this.role === 'guest' && this.state !== 'none'; },
   me() { return net.user ? net.user.id : 0; },
@@ -280,7 +280,7 @@ const coop = {
       if (m._sent !== m.hpMax + '|' + m.name + '|' + (m.scale || 1)) this.spawnQ.push(this.spawnRow(m));   // 血量上限 / 名字 / 体型变了（深渊领主降临等）：重发一次生成信息
       rows.push([m.nid, Math.round(m.x), Math.round(m.y), Math.round(m.z), m.face < 0 ? -1 : 1, Math.max(0, COOP_ST.indexOf(m.st)), Math.max(0, Math.round(m.hp)), m.actSeq || 0]);
     }
-    const d = { k: 's', rk: this.rk(), m: rows };
+    const d = { k: 's', ts: Math.round(lastT), rk: this.rk(), m: rows };   // ts：这些位置是哪一帧的（发送方时钟），对方按它插值
     if (this.dmgQ.length) { d.d = this.dmgQ; this.dmgQ = []; }
     this.send(d);
   },
@@ -330,13 +330,13 @@ const coop = {
     }
     this.misT = 0;
     this.stats.snaps++;
-    const seen = new Set();
+    const seen = new Set(), t = netClock(this.hostClk, d.ts, recvT, COOP_SNAP_MS);
     for (const r of d.m) {
       const [id, x, y, z, f, sti, hp, sq] = r; seen.add(id);
       let m = this.puppets.get(id);
       if (!m) { const s = this.spawnInfo.get(id); if (s && s.rk === d.rk) { this.makePuppet({ ...s, x, y, z, f, hp }); m = this.puppets.get(id); } if (!m) continue; }
       if (m.dead) continue;
-      m.netBuf.push({ t: recvT, x, y, z, f }); if (m.netBuf.length > 20) m.netBuf.splice(0, m.netBuf.length - 20); m.seenT = recvT;
+      m.netBuf.push({ t, x, y, z, f }); if (m.netBuf.length > 20) m.netBuf.splice(0, m.netBuf.length - 20); m.seenT = recvT; m.netDelay = this.hostClk.delay;
       m.hp = hp; m.netSt = COOP_ST[sti] || 'idle'; m.netSq = sq;
       if (m.act && m.netSt !== 'act' && sq >= (m.replaySq || 0)) { const a = m.act; m.act = null; if (a.onEnd) { const P = game.player; if (m.tgt) game.player = m.tgt; try { a.onEnd(m, true); } finally { game.player = P; } } }
       if (m.statue && m.statueLive && m.netSt !== 'act') { m.model = m.statueLive; m.statue = false; m.noGrab = false; m.statueLive = null; }
@@ -390,13 +390,13 @@ const coop = {
   sendSelf() {
     const p = game.player; if (!p || !this.dg) return;
     const st = COOP_ST.indexOf(p.st);
-    this.send({ k: 'p', rk: this.rk(), x: Math.round(p.x), y: Math.round(p.y), z: Math.round(p.z), f: p.face < 0 ? -1 : 1, st: st < 0 ? 0 : st, c: p.clipName, t: +p.animT.toFixed(2),
+    this.send({ k: 'p', ts: Math.round(lastT), rk: this.rk(), x: Math.round(p.x), y: Math.round(p.y), z: Math.round(p.z), f: p.face < 0 ? -1 : 1, st: st < 0 ? 0 : st, c: p.clipName, t: +p.animT.toFixed(2),
       hp: +clamp(p.hp / p.hpMax, 0, 1).toFixed(3), mp: +clamp(p.mp / p.mpMax, 0, 1).toFixed(3), dd: p.dead ? 1 : 0, lv: game.lvl }, 'all');
   },
   onMateState(uid, d, recvT) {
     const g = this.mates.get(uid); if (!g) return;
     g.away = d.rk !== this.rk() || (this.dg && !!this.dg.transition);
-    g.netBuf.push({ t: recvT, x: d.x, y: d.y, z: d.z, f: d.f }); if (g.netBuf.length > 20) g.netBuf.splice(0, g.netBuf.length - 20);
+    const C = g.clk || (g.clk = {}); g.netBuf.push({ t: netClock(C, d.ts, recvT, COOP_SNAP_MS), x: d.x, y: d.y, z: d.z, f: d.f }); g.netDelay = C.delay; if (g.netBuf.length > 20) g.netBuf.splice(0, g.netBuf.length - 20);
     const st = COOP_ST[d.st] || 'idle';
     g.netSt = st; g.netClip = d.c; g.netT = d.t; g.netT0 = performance.now();
     g.hp = d.hp * g.hpMax; g.mpFrac = d.mp; g.lvl = d.lv || g.lvl;
@@ -554,7 +554,7 @@ const coop = {
     if (this.entryCost && (this.state === 'prep' || this.state === 'load')) coopRefund(this.entryCost);   // 进图没成功：退还入场道具（深渊邀请函）
     this.entryCost = null;
     clearTimeout(this.waitT); clearTimeout(this.resumeT); clearTimeout(this.roomT);
-    Object.assign(this, { role: null, room: null, state: 'none', dg: null, def: null, prep: null, hostLag: false, nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, mem: null });
+    Object.assign(this, { role: null, room: null, state: 'none', dg: null, def: null, prep: null, hostLag: false, hostClk: {}, nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, mem: null });
     this.mates.clear(); this.puppets.clear(); this.spawnInfo.clear();
   },
 };
@@ -587,10 +587,21 @@ function coopSafe(fn) {
   try { fn(); } catch (e) { console.error('队友动作重放出错', e); }
   game.timeStop = s.ts; game.cutin = s.cut; game.slowmo = s.sm; cam.shake = Math.max(s.sh, Math.min(cam.shake, 3)); cam.flash = s.fl;
 }
+// 发送方的时间戳 → 本地时间：偏移取“到达 − 发送”的最小值（最快的一条 ≈ 纯网络延迟；每条允许涨 0.5ms，延迟整体变大时几秒内跟上），
+// 比最快那条晚到的部分 = 抖动（衰减峰值），插值延迟 = max(COOP_INTERP, 发送间隔 + 一帧 + 抖动)。
+// 以前按到达时间插值：发送是 25ms 定时器、位置是上一帧的，间隔忽长忽短，再叠上网络抖动，匀速跑动的队友 / 怪物会一顿一顿（docs/PERF.md）
+function netClock(o, ts, recvT, every) {
+  if (typeof ts !== 'number') return recvT;   // 旧版本页面发来的（没有时间戳）
+  const d = recvT - ts;
+  o.off = o.off === undefined || d < o.off || d - o.off > 1000 ? d : Math.min(d, o.off + 0.5);   // 差出 1 秒以上 = 对方刷新过页面（时钟起点变了），重新对
+  o.jit = Math.max(d - o.off, (o.jit || 0) * 0.98);
+  o.delay = Math.max(COOP_INTERP, every + 17 + o.jit);
+  return ts + o.off;
+}
 // 按插值缓冲取位置（renderT = 现在 − 插值延迟）
 function coopInterp(e, dt, k = 18, keepZ = false) {
   const B = e.netBuf; if (!B || !B.length) return;
-  const rt = performance.now() - COOP_INTERP;
+  const rt = performance.now() - (e.netDelay || COOP_INTERP);
   while (B.length > 2 && B[1].t <= rt) B.shift();
   const A = B[0], N = B[1];
   let tx, ty, tz;

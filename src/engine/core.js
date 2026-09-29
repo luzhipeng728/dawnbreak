@@ -19,7 +19,7 @@ function mulberry(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0
 function hash2(x, y) { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 const PARAMS = new URLSearchParams(location.search);
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-const fmtNum = n => Math.round(n).toLocaleString('en-US');
+const NUM_FMT = new Intl.NumberFormat('en-US'), fmtNum = n => NUM_FMT.format(Math.round(n));   // 同 toLocaleString('en-US')，但不用每次新建格式化器（每帧画很多数字时 toLocaleString 很慢）
 
 /* ---- 键位（官方默认：方向键移动，X 攻击/拾取，C 跳跃（↓+C 后跳，倒地时 C 受身蹲伏），Z 指令键（方向+Z 放技能）、Space 指令键 2（方向+Space 放 Buff 类技能，和 Z 分开），
    技能栏两排各 7 格：ASDFGH + 左 Alt、QWERTY + 第 7 格（官方是左 Ctrl；macOS 上 Ctrl+方向键会切换桌面，所以默认给 V，可以改键），1-6 消耗品栏；官方没有闪避键；

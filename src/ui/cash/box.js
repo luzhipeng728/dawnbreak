@@ -62,7 +62,7 @@ addStyle(`
 .csy-pick span.on{background:#5a4424;color:#ffe8a8;border-color:#a88450}
 .csy-in{display:flex;gap:.3em;flex-wrap:wrap;padding:.4em;background:#0b090e;border:.1em solid #3a3040;border-radius:.25em;min-height:3.8em}
 .csy-rate{font-size:1.2em;font-weight:900;color:#ffd23a}
-.csy-list{max-height:13em}
+.csy-list{max-height:13em;overflow-y:auto;overflow-x:hidden;align-content:start;padding-right:.2em}
 .clotto{display:grid;grid-template-columns:repeat(5,1fr);gap:.35em}
 .clot{position:relative;background:linear-gradient(#241b2a,#140f18);border:.1em solid #3a3040;border-radius:.3em;padding:.35em .2em;text-align:center;font-size:.72em;min-height:6.2em;display:flex;flex-direction:column;align-items:center;gap:.15em}
 .clot img{width:3em;height:3em}

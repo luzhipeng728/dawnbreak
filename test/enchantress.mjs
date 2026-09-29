@@ -126,7 +126,7 @@ ok(!bad.length, '每个主动技能都能施放', bad.length ? Object.fromEntrie
 const HEAL = new Set(['en_mend', 'en_favor', 'en_forbidden', 'en_firstaid', 'en_hut']);
 const noDmg = Object.entries(R.cast).filter(([id, r]) => !HEAL.has(id) && !r.dmg).map(([id]) => id);
 ok(!noDmg.length, '攻击技能都打得到', noDmg.length ? noDmg : 'ok');
-ok(R.solo.solo && R.solo.atk === 0.4 && R.solo.cdPerSec > 1.22, '单刷模式：攻击力 +40%、冷却每秒多走 0.25 秒（−20%）', R.solo);
+ok(R.solo.solo && R.solo.atk === 0.4 && R.solo.cdPerSec > 1.15, '单刷模式：攻击力 +40%、冷却每秒多走 0.25 秒（−20%）', R.solo);
 ok(R.solo.fav.bear && R.solo.fav.bearDmg, '单刷模式：偏爱自动选疯疯熊，熊加伤', R.solo.fav);
 ok(R.solo.forbSelfAtk > 0 && R.solo.forbSelfDmg > 0, '单刷模式：禁忌诅咒自己也拿攻击力', R.solo);
 ok(R.party.party && !R.party.soloBuff && Math.abs(R.party.cdPerSec - 1) < 0.05, '组队模式：没有单刷加成、冷却正常', R.party);

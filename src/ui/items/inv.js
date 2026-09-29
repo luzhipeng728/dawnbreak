@@ -86,6 +86,7 @@ Object.assign(menus, {
         h('span', { class: 'sp' }),
         h('span', { class: 'small dim' }, INV_NOCAP[tab] ? `${list.length} 件 · 不限格子` : `${list.length}/${inv.cap}`),
         h('button', { class: 'btn sm', onclick: () => { inv.sort(); sfx.click(); itemsRefresh(); } }, '整理'),
+        (() => { const c = repairCost(); return h('button', { class: 'btn sm' + (c ? '' : ' off'), 'data-repair': 1, title: '修理身上和背包里所有装备（任何地方都能用）', onclick: () => { if (repairAll(true)) itemsRefresh(); } }, c ? `一键修理 ${fmtNum(c)} G` : '无需修理'); })(),
         menus.w_status ? h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('status')) menus.open('status'); } }, '个人信息') : null,
         h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('codex')) menus.open('codex'); } }, '图鉴'));
       const acts = invActions(IW.invSel, el);

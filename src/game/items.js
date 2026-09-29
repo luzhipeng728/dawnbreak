@@ -405,6 +405,7 @@ let hurtCount = 0;
 bus.on('playerHurt', () => { if (game.scene !== 'dungeon') return; if (++hurtCount % 4 === 0) wearDurability(1, false); });   // 每被击 4 次随机一件装备 -1 耐久
 bus.on('playerDeath', () => { for (const it of durItems()) { const b = it.dur; it.dur = Math.max(0, it.dur - Math.ceil(it.durMax * 0.1)); if (b > 0 && it.dur === 0) toastMsg(`${it.name} 的耐久度为 0，属性失效了！`, '#ff6a6a'); } if (game.player) recalcStats(game.player); });
 bus.on('dungeonClear', () => { hurtCount = 0; });
+bus.on('dungeonEnter', () => { if (!uiPref('autoRepair')) return; const c = repairCost(); if (c && game.gold >= c) repairAll(false); });   // 进图自动修理（设置里可关）
 // 修理：身上 + 背包里的装备
 const repairList = () => [...SLOTS.map(s => inv.equip[s]), ...inv.items].filter(it => it && it.kind === 'equip' && it.durMax && it.dur < it.durMax);
 const repairCostOf = it => Math.ceil((it.durMax - it.dur) * (5 + it.lvl * 2) * (1 + it.rar * 0.35));

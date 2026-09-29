@@ -36,6 +36,7 @@ Object.assign(menus, {
       toggle('屏幕震动', 'shake', '重击、爆炸时的镜头震动'),
       toggle('技能插图特效', 'cutin', '觉醒技能的角色插图'),
       toggle('掉落物名称', 'dropNames', `快捷键 ${keyName('dropNames')}`),
+      toggle('进图自动修理', 'autoRepair', '进地下城前自动把装备修好（金币够才修）；物品栏里也能一键修理'),
       toggle('小地图', 'minimap', '城镇 / 区域地图右上角的小地图（点击打开世界地图）'),
       toggle('任务指引', 'questGuide', '左上角的任务路线、头顶的指引箭头和“自动前往”'),
       toggle('实时评价', 'hideRank', `右下角的操作 / 技巧评价，快捷键 ${keyName('hideRank')}`, true),

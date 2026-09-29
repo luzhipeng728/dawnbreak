@@ -48,6 +48,15 @@ function fxSigil(name, x, y, z, o = {}) {
     const a = (o.alpha ?? 1) * (k < 0.08 ? k / 0.08 : k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1);
     drawSpr(c, img, sx(this.x), sy(y, this.z), w, w * GR, { ground: true, rot: (o.rot || 0) + (o.spin ?? 1.2) * this.t, alpha: a, add: o.add !== false }); } });
 }
+/* ---- 魔法护盾：两圈蓝色轨道（原子模型）绕身体旋转，光点沿轨道跑（官方演示帧） ---- */
+function fxAtom(e, col = '#4a8aff') {
+  const dur = 1.1;
+  return addFx({ x: e.x, y: e.y, z: e.z, dur, draw(c) { const k = this.t / dur, a = k < 0.12 ? k / 0.12 : k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1, X = sx(e.x), Y = sy(e.y, e.z + 46);
+    c.save(); c.translate(X, Y); c.globalCompositeOperation = 'lighter'; c.lineWidth = 3; c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 10;
+    for (let i = 0; i < 2; i++) { const tilt = (i ? 1 : -1) * 0.62 + this.t * (i ? 0.66 : -0.66); c.globalAlpha = a * 0.9; c.beginPath(); c.ellipse(0, 0, 40, 15, tilt, 0, TAU); c.stroke();
+      for (let j = 0; j < 2; j++) { const th = this.t * 7 + i * 2 + j * Math.PI, ex = Math.cos(th) * 40, ey = Math.sin(th) * 15; c.globalAlpha = a; c.fillStyle = '#cfe4ff'; c.beginPath(); c.arc(ex * Math.cos(tilt) - ey * Math.sin(tilt), ex * Math.sin(tilt) + ey * Math.cos(tilt), 3.2, 0, TAU); c.fill(); } }
+    c.restore(); } });
+}
 /* ---- 蓄气：PvE 只放大范围、决斗场才加伤害（官方 2017 年以后的规则）；学了移动施法（元素师）可以边蓄边走、蓄满后按住保持、带进下一个房间；
    蓄气中双击方向可以冲刺；魔法秀 / 魔法记忆（BUFF 字段 chargeCut）缩短蓄气时间；basic = 四个基础元素技能（魔法记忆额外缩短） ---- */
 const chargeCut = (p, basic) => clamp(buffVal(p, 'chargeCut') + (basic ? buffVal(p, 'chargeCutB') : 0), 0, 0.95);
@@ -99,13 +108,15 @@ defSkill('mg_sky', { name: '天击', cls: 'mage', lvReq: 1, mp: 10, cd: 2, type:
     events: [slashAt(0.11, { a0: 1.4, a1: -1.9, r: 72, w: 12, off: [10, 50], col: '#e0c0ff' })], onEnd: e => { e.vy = 0; } }) });
 defSkill('mg_fang', { name: '龙牙', cls: 'mage', lvReq: 5, mp: 12, cd: 2, type: 'phys', col: '#c0c8e0',
   desc: '挥杖向前长距离直刺，命中的敌人陷入长时间僵直；命中后可以立即接天击、落花掌。', pow: lv => skillDmg(1.5, 0.15, lv), ai: { kind: 'poke', r: [0, 150], dy: 22 },
-  act: (lv, p) => ({ name: 'mg_fang', clip: 'fang', dur: 0.46, cancelFrom: 0.2, move: [[0.08, 0.16, 300]], links: p && jobOf(p) === 'battlemage' && typeof BM_BODY !== 'undefined' ? BM_BODY : ['mg_sky', 'mg_palm'], hitCancel: true,
+  act: (lv, p) => ({ name: 'mg_fang', clip: 'fang', dur: 0.46, cancelFrom: 0.2,
+    onStart: e => { e.act.spd *= 1 + 0.3 * Math.min(1, (lv - 1) / 14); },   // 官方：学满速度 +30%
+    move: [[0.08, 0.16, 300]], links: p && jobOf(p) === 'battlemage' && typeof BM_BODY !== 'undefined' ? BM_BODY : ['mg_sky', 'mg_palm'], hitCancel: true,
     hits: [HB(0.12, 0.2, [0, 150, 26, 30, 90], skillDmg(1.5, 0.15, lv), { stun: 1.0, knock: 30, hs: 0.08, snd: 'stab', chaser: 'ice' })],
     events: [evAt(0.11, e => { sfx.swing(true); fxStreak({ x: e.x + e.face * 10, y: e.y, z: e.z + 56, face: e.face, len: 160, w: 12, col: '#dfe8ff', dur: 0.16 }); })] }) });
 // 魔法护盾（现版）：开关型防御 BUFF（旧版“伤害改扣 MP”已在韩服 2019 年删除）
 defSkill('mg_shield', { name: '魔法护盾', cls: 'mage', lvReq: 5, mp: 30, cd: 5, type: 'mag', buff: true, col: '#3a8ad8', cmdNote: undefined,
   desc: '【开关】全身罩上一层魔力薄膜，提高物理与魔法防御（受到的伤害降低）。再按一次关闭。', infoExtra: lv => [['受到伤害', '-' + pct(0.05 + 0.01 * lv)]], ai: { kind: 'buff' },
-  act: (lv) => ({ name: 'mg_shield', clip: 'cheer', dur: 0.4, noCounter: true, onStart: e => { if (toggleBuff(e, 'mg_shield', 1e9, { taken: -(0.05 + 0.01 * lv) })) { sfx.buff(); fxAura(e, '#6ab0ff'); } } }) });
+  act: (lv) => ({ name: 'mg_shield', clip: 'cheer', dur: 0.4, noCounter: true, onStart: e => { if (toggleBuff(e, 'mg_shield', 1e9, { taken: -(0.05 + 0.01 * lv) })) { sfx.buff(); fxAtom(e); } } }) });
 // 杰克爆弹：发射瞬间锁定方向后直线飞行（飞行中对纵深有中等追踪），碰到敌人小范围爆炸；蓄气只放大南瓜和射程
 function jackBomb(e, lv, k, air) {
   sfx.swing(false);
@@ -141,7 +152,8 @@ defSkill('mg_eel', { name: '光电鳗', cls: 'mage', lvReq: 5, mp: 18, cd: 2, ty
         spawnProj({ owner: e, x: cx, y: cy, z: 36, face: e.face, life, w: 14 * sc, d: 14 * sc, h: 40 * sc, pierce: true,
           hit: { dmg: skillDmg(0.22, 0.022, lv), stun: 0.3, knock: 20, airLift: 110, hs: 0.02, rep: 0.35, col: '#fff6a0', elem: 'light', type: 'mag', snd: 'crit' },
           update(pr) { const u = pr.t / pr.life, r = 26 + u * 170 * sc, a = a0 + pr.t * (5.5 - u * 2.5); pr.x = cx + Math.cos(a) * r; pr.y = clamp(cy + Math.sin(a) * r * 0.45, 4, DEPTH - 4); },
-          draw(c, pr) { const u = pr.t / pr.life; drawSpr(c, 'eel', sx(pr.x), sy(pr.y, pr.z), 40 * sc, 40 * sc, { rot: pr.t * 10, alpha: u > 0.85 ? (1 - u) / 0.15 : 1 }); } }); } })] }) });
+          draw(c, pr) { const u = pr.t / pr.life, al = u > 0.85 ? (1 - u) / 0.15 : 1, X = sx(pr.x), Y = sy(pr.y, pr.z);   // 官方：蓝白发光球，里面一道旋涡
+          drawSpr(c, fxTint('orb', '#5aa0ff'), X, Y, 58 * sc, 58 * sc, { alpha: 0.8 * al }); drawSpr(c, fxTint('eel', '#dff0ff'), X, Y, 34 * sc, 34 * sc, { rot: pr.t * 10, alpha: al }); } }); } })] }) });
 // 契约召唤：赫德尔（召唤框架 follower；地下城里敌人打不到它；素材复用哥布林十夫长）
 function hodorModel() {
   if (typeof SPR_DATA !== 'undefined' && SPR_DATA.goblinCaptain && IMG['spr/goblinCaptain/idle']) return new SpriteModel('goblinCaptain', { ...SPR_FALLBACK, cast: 'cast1', roar: 'cast2', crouch: 'low1' }, SPR_ANIMS.monster, { sat: 0.72, bright: 1.06 });
@@ -173,7 +185,7 @@ defSkill('mg_hodor', { name: '契约召唤：赫德尔', cls: 'mage', lvReq: 5, 
   desc: '召唤与你签订契约的机甲哥布林赫德尔协同作战，在场 200 秒。它会用棍棒击打、给自己加速、投掷石块（单发 / 三连投 / 扇形 5 连）和炸弹（落地后停一会儿再爆炸），偶尔使出带霸体的强力重击（可能眩晕敌人）。地下城里敌人打不到它。伤害按你的魔法攻击力计算。',
   pow: lv => skillDmg(0.55, 0.055, lv), infoExtra: lv => [['在场时间', '200 秒'], ['伤害倍率', pct(lvMul(lv, 0.1))]], ai: { kind: 'buff', summon: 'hodor' },
   act: (lv) => ({ name: 'mg_hodor', clip: 'summon', dur: 0.55, cancelFrom: 0.4, noCounter: true,
-    events: [evAt(0.25, e => { sfx.magic(); const s = summon(e, 'hodor', { lv, mul: lvMul(lv, 0.1) }); if (s) { fxBurst(s.x, s.y, 30, 120, '#d8c0ff'); fxSigil('hexagram', s.x, s.y, 0, { w: 110, dur: 0.6, ay: 0.5, grow: [0.4, 1] }); } })] }) });
+    events: [evAt(0.25, e => { sfx.magic(); const s = summon(e, 'hodor', { lv, mul: lvMul(lv, 0.1) }); if (s) { fxBurst(s.x, s.y, 30, 120, '#d8c0ff'); fxSigil('hexagram', s.x, s.y, 0, { w: 110, dur: 0.9, ay: 0.5, grow: [0.4, 1], col: '#40d0e8' }); fxShock(s.x, s.y, 60, '#40d0e8'); game.after(0.15, () => fxShock(s.x, s.y, 90, '#40d0e8')); } })] }) });
 // 别过来!：把诅咒人偶贴到敌人身上定住它，自己背身抱头蹲下（人偶爆炸前无敌）；抓不住的敌人（霸体 / 领主）直接爆炸
 function keepawayBlast(e, x, y, z, lv) {
   sfx.boom(0.6); cam.shake = Math.max(cam.shake, 3); fxBurst(x, y, z + 30, 180, '#c79aff'); fxShock(x, y, 130, '#c79aff');
@@ -212,7 +224,8 @@ defSkill('mg_cat', { name: '暗影夜猫', cls: 'mage', lvReq: 10, mp: 14, cd: 1
         update(pr, dt) {
           if (!pr.back) { pr.x += dir * 620 * dt; if ((pr.x - x0) * dir >= R) { pr.back = true; pr.face = -dir; } }
           else { const dx = e.x - pr.x, dy = e.y - pr.y, l = Math.hypot(dx, dy) || 1; pr.x += dx / l * 640 * dt; pr.y += dy / l * 640 * dt; pr.face = Math.sign(dx) || pr.face; if (l < 24 || e.dead) pr.t = pr.life; }
-          pr.z = 24 + Math.sin(pr.t * TAU * 2) * 8; },
+          pr.z = 24 + Math.sin(pr.t * TAU * 2) * 8;
+          if (Math.random() < 0.7) addFx({ x: pr.x, y: pr.y + 0.3, z: pr.z, dur: 0.3, draw(c) { const q = this.t / this.dur; drawSpr(c, fxTint('orb', '#e050c8'), sx(this.x), sy(this.y, this.z), 26 * (1 - q), 26 * (1 - q), { alpha: 0.7 * (1 - q) }); } }); },   // 官方：洋红拖尾
         draw(c, pr) { const X = sx(pr.x), Y = sy(pr.y, pr.z); c.save(); c.translate(X, Y); c.scale(pr.face * sc, sc); c.globalCompositeOperation = 'lighter';
           drawSpr(c, 'darkorb', -6, -4, 44, 26, { alpha: 0.7 }); c.globalCompositeOperation = 'source-over'; c.fillStyle = '#1a0a26';
           c.beginPath(); c.ellipse(0, 0, 14, 8, 0, 0, TAU); c.fill(); c.beginPath(); c.arc(12, -6, 7, 0, TAU); c.fill(); c.beginPath(); c.moveTo(8, -12); c.lineTo(10, -18); c.lineTo(13, -12); c.moveTo(14, -12); c.lineTo(17, -18); c.lineTo(18, -10); c.fill();
@@ -237,7 +250,7 @@ function whipAllies(e, L) {
   if (to.length) partySend('mg_whip', { to }, e);
 }
 partyOn('mg_whip', (me, d) => { if (!Array.isArray(d.to) || typeof coop === 'undefined' || !d.to.includes(coop.me()) || me.dead) return;
-  me.buffs.mg_whipAlly = { t: 20, mspd: 0.1, party: 1 }; if (typeof applyBuffs === 'function') applyBuffs(me); fxAura(me, '#e090ff', 0.5); });
+  me.buffs.mg_whipAlly = { t: 20, mspd: 0.05, party: 1 }; if (typeof applyBuffs === 'function') applyBuffs(me); fxAura(me, '#e090ff', 0.5); });
 function whipDomin(p) { return !!p && typeof jobOf === 'function' && jobOf(p) === 'summoner' && skLv(p, 'sm_domin') > 0; }
 function whipBuffSummons(e, lv) {
   const dom = whipDomin(e), cx = e.x + e.face * (dom ? 155 : 105);
@@ -245,12 +258,12 @@ function whipBuffSummons(e, lv) {
 }
 // 替身草人：受击 / 倒地时施放（通用组的 whenHit 钩子），瞬移一段距离（默认向后，可用方向键选方向），之后 0.5 秒无敌；原地留下草人，捡到的人获得攻速 / 移速提升
 defSummon('strawdoll', { kind: 'field', life: 10, max: 1, r: 20, tick: 0.1, keepRoom: false,
-  onTick(s) { const o = s.owner; if (Math.hypot(o.x - s.x, (o.y - s.y) * 2) < 26 && o.z < 20) { o.buffs.mg_doll = { t: 10, aspd: 0.1, mspd: 0.1 }; fxText('攻速 / 移速提升', o.x, o.y, o.z + 20, { col: '#ffe070', size: 10 }); fxAura(o, '#ffe070', 0.5); dismissOne(s, 'cmd'); } },
+  onTick(s) { const o = s.owner; if (Math.hypot(o.x - s.x, (o.y - s.y) * 2) < 26 && o.z < 20) { o.buffs.mg_doll = { t: 20, aspd: 0.1, mspd: 0.1 }; fxText('攻速 / 移速提升', o.x, o.y, o.z + 20, { col: '#ffe070', size: 10 }); fxAura(o, '#ffe070', 0.5); dismissOne(s, 'cmd'); } },
   draw(c, s) { const X = sx(s.x), Y = sy(s.y, 0), bob = Math.sin(game.t * 4) * 1.5, a = s.life - s.lifeT < 2 ? 0.5 + 0.5 * Math.sin(game.t * 20) : 1; c.save(); c.globalAlpha = a; c.translate(X, Y - 2 + bob);
     c.fillStyle = '#c8a050'; c.strokeStyle = '#6a4a20'; c.lineWidth = 2; c.beginPath(); c.ellipse(0, -14, 7, 12, 0, 0, TAU); c.fill(); c.stroke(); c.beginPath(); c.arc(0, -30, 6, 0, TAU); c.fill(); c.stroke();
     c.beginPath(); c.moveTo(-11, -18); c.lineTo(11, -18); c.stroke(); c.fillStyle = '#e05a4a'; c.fillRect(-3, -32, 2, 2); c.fillRect(2, -32, 2, 2); c.restore(); } });
 defSkill('mg_phase', { noHitCheck: true, name: '替身草人', cls: 'mage', lvReq: 10, mp: 20, cd: 30, type: 'mag', col: '#b89a50', whenHit: p => !(typeof hasSkill === 'function' && hasSkill(p, 'bm_realphase')), cmdNote: '受击中 Space',
-  desc: '只能在受击或倒地时施放（被抓取、冰冻、眩晕时不能用）：瞬间脱身，向后（或方向键指定的方向）瞬移一段距离，之后 0.5 秒无敌；原地留下一个草人，捡到后 10 秒内攻速、移速提高。', infoExtra: lv => [['冷却时间', Math.max(21, 31 - lv) + ' 秒']], ai: { kind: 'escape' },
+  desc: '只能在受击或倒地时施放（被抓取、冰冻、眩晕时不能用）：瞬间脱身，向后（或方向键指定的方向）瞬移一段距离，之后 0.5 秒无敌；原地留下一个草人，捡到后 20 秒内攻速、移速提高。', infoExtra: lv => [['冷却时间', Math.max(21, 31 - lv) + ' 秒'], ['加速持续', '20 秒']], ai: { kind: 'escape' },
   act: (lv) => ({ name: 'mg_phase', clip: 'jumpFall', dur: 0.3, noCounter: true, invul: [0, 0.3],
     onStart: e => { const x0 = e.x, y0 = e.y, dx = e.pad ? e.pad.dx() : 0, dy = e.pad ? e.pad.dy() : 0, dir = dx || (dy ? 0 : -e.face);
       const real = hasSkill(e, 'bm_realphase');   // 战斗法师：实战型替身草人（随时可放、冷却 −5 秒、不留草人，改为自己加速 5 秒）
@@ -266,7 +279,7 @@ defSkill('mg_palm', { name: '落花掌', cls: 'mage', lvReq: 15, mp: 20, cd: 3, 
       if (a.chargeDone && !a._mv) { a._mv = true; const k = a.chargeK || 0; a.move = e.pad && e.pad.dx() === -e.face ? [] : [[0.05, 0.13 + k * 0.05, 420 * (1 + k * 0.5)]]; }
       if (a.chargeDone && (a.chargeK || 0) > 0.95 && !a._sa) { a._sa = true; a.superArmor = [a.charge.at, 0.4]; } },
     hits: [HB(0.05, 0.16, [-24, 92, 30, 20, 110], skillDmg(2.4, 0.24, lv), { down: true, downLift: 150, knock: 520, hs: 0.1, snd: 'blunt', shake: 3, big: 1.4, chaser: 'fire',
-      onHit: (a, t) => { fxSpr('petal', t.x, t.y, t.z + 50, { w: 120, dur: 0.5, flip: a.face < 0, grow: [0.5, 1.2] });
+      onHit: (a, t) => { fxBurst(t.x, t.y, t.z + 50, 150, '#ffd860'); fxShock(t.x, t.y, 90, '#fff0a0'); fxAura(a, '#ffd860', 0.4);
         const pr = spawnProj({ owner: a, x: t.x, y: t.y, z: t.z, face: a.face, life: 0.5, w: 20, d: 16, h: 60, pierce: true,
           hit: { dmg: skillDmg(1.2, 0.12, lv), knock: 260, down: true, downLift: 120, hs: 0.06, snd: 'blunt', type: 'phys' }, update(q) { q.x = t.x; q.y = t.y; q.z = t.z; }, draw() { } });
         pr.hitMap.set(t.id, 0); pr.hitMap.set(-t.id, 99); pr.hit.max = 1;
@@ -282,7 +295,7 @@ function palmWall(a, t, lv) {
 defSkill('mg_dispel', { noHitCheck: true, name: '驱散魔法', cls: 'mage', lvReq: 15, mp: 40, cd: 20, type: 'mag', col: '#5a6ad8', cast: true,
   desc: '以自身为中心展开驱散法阵（300px）：驱散范围内敌人身上的增益，并让它们减速 5 秒；每驱散一个增益，自己的攻击力提高（20 秒）。', infoExtra: lv => [['每个增益', '攻击力 +' + pct(0.02 + 0.002 * lv)]], ai: { kind: 'aoe', r: [0, 260], dy: 120 },
   act: (lv) => ({ name: 'mg_dispel', clip: 'dispel', dur: 0.9, cancelFrom: 0.7, noCounter: true,
-    events: [evAt(0.45, e => { sfx.buff(); fxShock(e.x, e.y, 300, '#8a9aff'); fxSigil('hexagram', e.x, e.y, 0, { w: 300, dur: 0.7, ay: 0.5, grow: [0.3, 1], col: '#8a9aff' });
+    events: [evAt(0.45, e => { sfx.buff(); fxShock(e.x, e.y, 300, '#e040d8'); fxSigil('hexagram', e.x, e.y, 0, { w: 300, dur: 0.9, ay: 0.5, grow: [0.3, 1], col: '#e040d8' });
       let n = 0; for (const t of ents) if (foe(e, t) && inGround(t, e.x, e.y, 300)) {
         if (t.buffs) for (const k in t.buffs) { delete t.buffs[k]; n++; }
         if (t.enraged && t.speed && t.def_ && t.def_.speed) { t.speed = t.def_.speed; }
@@ -292,7 +305,7 @@ defSkill('mg_dispel', { noHitCheck: true, name: '驱散魔法', cls: 'mage', lvR
 defSkill('mg_showtime', { name: '魔法秀', cls: 'mage', lvReq: 16, mp: 60, cd: 40, type: 'mag', buff: true, col: '#e05ab0', excl: ['battlemage', 'enchantress'],
   desc: '【BUFF】华丽的魔法表演：20 秒内施放速度提高、蓄气时间缩短，魔法技能的冷却加快（对物理技能、BUFF 技能和觉醒无效）。', ai: { kind: 'buff' },
   infoExtra: lv => [['施放速度', '+' + pct(0.05 + 0.01 * lv)], ['蓄气时间', '-' + pct(0.05 + 0.02 * lv)], ['魔法技能冷却', '-' + pct(Math.min(0.3, 0.02 * lv + 0.03))]],
-  act: (lv) => ({ name: 'mg_showtime', clip: 'showtime', dur: 0.7, noCounter: true,
+  act: (lv) => ({ name: 'mg_showtime', clip: 'showtime', dur: 1.0, noCounter: true,
     onStart: e => { e.buffs.mg_showtime = { t: 20, cspd: 0.05 + 0.01 * lv, chargeCut: 0.05 + 0.02 * lv, showCd: Math.min(0.3, 0.02 * lv + 0.03) }; sfx.buff(); fxAura(e, '#ff9ae0', 1); for (let i = 0; i < 8; i++) fxCharge(e, pick(['#ff9ae0', '#fff38a', '#9fe6ff'])); } }) });
 CLASSES.mage = { name: '魔法师', hp0: 1450, hpPer: 120, mp0: 1100, mpPer: 60, atk0: 500, atkPer: 60, str0: 5, strPer: 1.8, def0: 220, defPer: 22, crit: 0.07, speed: 160, runSpeed: 290,
   desc: '操纵火、冰、光、暗四种元素的魔法师，身板脆弱但 MP 充沛；转职后可以成为元素师或战斗法师。', model: () => buildSwordsman(PAL_MAGE, { weapon: 'staff', hair: 'long', hat: 'wizard', scarf: false, pauldron: false, coatTail: true }),

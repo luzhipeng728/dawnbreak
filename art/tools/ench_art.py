@@ -16,8 +16,9 @@ A.SRC = os.path.join(A.MAIN, 'src', 'ench')
 A.PAR = 1
 A.M = {
     'madbear': dict(h=100, hold=None, sheets=('walk', 'act', 'more'),
-        desc='Mad, a big creepy-cute stitched teddy bear puppet: brown fur made of patched fabric with visible cross stitches, mismatched black button eyes, a stitched smile, '
-             'one ear half torn and sewn back, a purple patch on the belly, big round paws with sharp little claws, standing upright like a guardian, faint puppet strings from its shoulders.',
+        desc='Mad, a big creepy stitched teddy bear puppet (Dungeon Fighter Enchantress doll): light grey and off-white patched plush fabric with visible dark cross stitches all over, '
+             'one glowing orange-amber slit eye and one stitched-shut X eye, a wide stitched mouth full of sharp interlocking shark teeth, a big red satin bow tie with a tiny skull at the neck, '
+             'thick round paws with black sharp claws, gold metal spiked cuffs on both wrists, a purple patch on the belly, standing upright like a guardian, faint puppet strings from its shoulders.',
         atk='its clawed paws', cast='roaring with both arms raised', low='crouching to leap',
         custom={'act': [('scratch1', 'slashing forward with the right claws, body twisted, the two thin puppet strings from its shoulders going straight up out of frame as always'), ('scratch2', 'slashing forward with the left claws, body twisted the other way, the two thin puppet strings from its shoulders going straight up out of frame as always'),
                         ('punch1', 'pulling one paw back to punch, the two thin puppet strings from its shoulders going straight up out of frame as always'), ('punch2', 'punching forward, the whole forearm shooting forward on a stretched string, the two thin puppet strings from its shoulders going straight up out of frame as always'),

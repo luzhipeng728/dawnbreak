@@ -165,7 +165,7 @@ function jlWeapon(c, L, A, im, s) {
    神枪手：棕发和默认报童帽、皮夹克同一种棕色，按颜色分不开 → 不染发，靠头饰区分（JL_HAIR_PICK 里没有 gun）。
    pick(h 色相 0~360, s, v 0~1, lx, ly 相对头心、按头部转角转正后的帧像素) → 是不是头发；edge：头发边缘往外扩 2 像素（同色系的暗边也一起染，不留浅色毛边） */
 const JL_HAIR_PICK = {
-  sword: { ref: 0.86, pick: (h, s, v, lx, ly) => lx * lx + ly * ly < 3900 && (ly < 22 || (lx < -4 && ly < 36)) && s < 0.3 && v > 0.33 && !(h > 5 && h < 50 && s > 0.1) && (lx - 15) ** 2 + (ly - 21) ** 2 > 60,
+  sword: { ref: 0.86, pick: (h, s, v, lx, ly) => lx * lx + ly * ly < 3900 && (ly < 22 || (lx < 12 && ly < 37)) && s < 0.3 && v > 0.33 && !(h > 5 && h < 50 && s > 0.1) && (lx - 16) ** 2 + ((ly - 22) * 0.8) ** 2 > 30,   // 鬓角 / 耳边的发丝也算（肤色按色相排除），眼白按眼睛位置排除
     edge: (h, s, v) => s < 0.3 },
   mage: { ref: 0.8, pick: (h, s, v, lx, ly) => ly < 150 && h > 240 && h < 305 && s > 0.1 && s < 0.55 && v > 0.665 && !(s > 0.38 && v < 0.72),   // 巫师帽的亮面：s 0.4~0.5、v 0.62~0.66
     edge: (h, s, v) => h > 230 && h < 320 && s < 0.4 && v > 0.3 },   // 巫师帽 s 0.4 以上：不往帽子上扩
@@ -207,7 +207,7 @@ function jlHairImg(im, F, H, cls, col) {
   for (let i = 0; i < n; i++) {
     if (!mk[i]) { p[i * 4 + 3] = 0; continue; }
     const x = i % W, y = i / W | 0; if (x < X0) X0 = x; if (x > X1) X1 = x; if (y < Y0) Y0 = y; if (y > Y1) Y1 = y;
-    const l = (0.3 * p[i * 4] + 0.59 * p[i * 4 + 1] + 0.11 * p[i * 4 + 2]) / 255 / P.ref, u = Math.min(1, Math.max(0, (l - 1) * 1.6));
+    const l = (0.3 * p[i * 4] + 0.59 * p[i * 4 + 1] + 0.11 * p[i * 4 + 2]) / 255 / P.ref, u = Math.min(0.5, Math.max(0, (l - 1) * 2.5));   // 高光：往同色相的浅色走，最多一半到白（不会变回白发）
     p[i * 4] = l <= 1 ? tr * l : tr + (255 - tr) * u; p[i * 4 + 1] = l <= 1 ? tg * l : tg + (255 - tg) * u; p[i * 4 + 2] = l <= 1 ? tb * l : tb + (255 - tb) * u;
   }
   if (X1 < 0) { M.set(k, null); return null; }

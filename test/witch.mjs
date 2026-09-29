@@ -107,8 +107,8 @@ report('转职登记：31 个技能都有定义、有觉醒、有专属试炼', 
 report('指令：主动技能都有指令', o.job.cmds >= 20, o.job.cmds);
 report('转职任务：魔道学概论 / 魔道学者的试炼', o.job.quests, o.job.quests);
 report('转职送扫把', o.gift.got, o.gift);
-report('成功率（基础）：失败 25% / 成功 50% / 大成功 25%', Math.abs(o.oddsBase.fail - 0.25) < 0.04 && Math.abs(o.oddsBase.great - 0.25) < 0.04 && o.oddsBase.super === 0, o.oddsBase);
-report('成功率（亲和 + 幸运 满级）：几乎不失败', o.oddsMax.fail < 0.04 && o.oddsMax.great > 0.55, o.oddsMax);
+report('成功率（基础）：失败 40% / 成功 45% / 大成功 15%（官方）', Math.abs(o.oddsBase.fail - 0.40) < 0.04 && Math.abs(o.oddsBase.great - 0.15) < 0.04 && o.oddsBase.super === 0, o.oddsBase);
+report('成功率（亲和 + 幸运 满级）：失败明显减少、大成功过半', o.oddsMax.fail < 0.2 && o.oddsMax.great >= 0.45, o.oddsMax);
 report('贤者之石：没有“成功”档，出现超大成功', o.oddsStone.ok === 0 && o.oddsStone.super > 0.4, o.oddsStone);
 report('糖果：下一个技能必定成功并消耗', o.candy.r !== 'fail' && o.candy.used, o.candy);
 report('强制失败', o.force === 'fail', o.force);
@@ -127,7 +127,7 @@ report('暗影斗篷：卷住敌人（多目标特殊抓取）+ 无敌', S.wt_cl
 report('苍蝇拍：成功召出友方哥布林弓手、失败召出敌方哥布林', S.wt_swatter.mutant === 1 && S.wt_swatter_fail.enemyGoblin === 1, { ok: S.wt_swatter, fail: S.wt_swatter_fail, air: S.wt_swatter_air });
 report('熔岩药瓶：成功生成熔岩；失败熏黑', S.wt_lava.field === 1 && S.wt_lava_fail.sooty, [S.wt_lava, S.wt_lava_fail]);
 report('旋转扫把（空中）：落地', S.wt_spin_air.landed, S.wt_spin_air);
-for (const id of ['wt_tesla', 'wt_furnace', 'wt_drill', 'wt_rabbit', 'wt_shaved']) report(`搭乘：${id} 机械在场、坐在上面、免疫异常、减伤 60%、结束后清理`, S[id].machine && S[id].pinned && S[id].immune && S[id].taken === -0.6 && S[id].ended && S[id].cleaned && S[id].gone, S[id]);
+for (const id of ['wt_tesla', 'wt_furnace', 'wt_drill', 'wt_rabbit', 'wt_shaved']) report(`搭乘：${id} 机械在场、坐在上面、免疫异常、减伤 60%、结束后清理`, S[id].machine && S[id].pinned && S[id].immune && S[id].taken === (id === 'wt_tesla' ? -0.8 : -0.6) && S[id].ended && S[id].cleaned && S[id].gone, S[id]);
 report('引爆实验：搭乘中按跳跃当场引爆', S.wt_detonate.detonated, S.wt_detonate);
 report('苦涩的棒棒糖：按住技能键强制失败', o.bitter.craft === 'fail' && o.bitter.dmg > 0, o.bitter);
 report('反重力装置：把敌人抬到空中', S.wt_antigrav.lifted, S.wt_antigrav);

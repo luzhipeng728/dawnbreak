@@ -47,7 +47,8 @@ const save = {
   // 老存档 / 本机导入的角色身上还留着的余额，读取时收进账号（收完清零，重复执行也不会多算）
   mergeAcctCurrency() {
     const A = this.acct;
-    A.cera = A.cera || 0; A.shard = A.shard || 0; A.gcoin = A.gcoin || 0;
+    A.cera = A.cera || 0; A.shard = A.shard || 0; A.gcoin = A.gcoin || 0; A.maxlv = A.maxlv || 0;
+    for (const c of this.chars) for (const k of ['inv', 'storage']) if (Array.isArray(c[k])) c[k] = c[k].filter(it => { if (it && it.key === 'tk_maxlv') { A.maxlv += it.n || 1; return false; } return true; });   // 一键满级券账号共享（以前领进了某个角色的背包，别的角色用不到）
     for (const c of this.chars) {
       A.cera += c.cera || 0; c.cera = 0;
       if (c.shop) { A.shard += c.shop.shard || 0; A.gcoin += c.shop.gcoin || 0; c.shop.shard = 0; c.shop.gcoin = 0; }

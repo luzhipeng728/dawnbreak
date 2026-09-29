@@ -56,6 +56,7 @@ run bag       node test/bag.mjs
 run skyguide  node test/skyguide.mjs
 run epicfx    node test/epicfx.mjs
 run maxlv     node test/maxlv.mjs
+run maxlvacct node test/maxlv_acct.mjs
 run box100    node test/box100.mjs
 run repair    node test/repair.mjs
 run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,sword:asura,sword:soulbender,sword:ghostblade,gun:ranger,gun:launcher,gun:mechanic,gun:spitfire,gun:paramedic,mage:elemental,mage:battlemage,mage:summoner,mage:witch,mage:enchantress

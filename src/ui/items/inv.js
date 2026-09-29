@@ -86,6 +86,7 @@ Object.assign(menus, {
         h('span', { class: 'sp' }),
         h('span', { class: 'small dim' }, INV_NOCAP[tab] ? `${list.length} 件 · 不限格子` : `${list.length}/${inv.cap}`),
         h('button', { class: 'btn sm', onclick: () => { inv.sort(); sfx.click(); itemsRefresh(); } }, '整理'),
+        acctMaxLvN() > 0 && game.lvl < MAX_LVL ? h('button', { class: 'btn sm', 'data-maxlv': 1, style: 'background:linear-gradient(180deg,#c8902a,#7a4a10);border-color:#ffd070', title: '账号共享：任何角色都能用', onclick: () => { if (acctMaxLvUse()) itemsRefresh(); } }, `一键满级 ×${acctMaxLvN()}`) : null,
         (() => { const c = repairCost(); return h('button', { class: 'btn sm' + (c ? '' : ' off'), 'data-repair': 1, title: '修理身上和背包里所有装备（任何地方都能用）', onclick: () => { if (repairAll(true)) itemsRefresh(); } }, c ? `一键修理 ${fmtNum(c)} G` : '无需修理'); })(),
         menus.w_status ? h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('status')) menus.open('status'); } }, '个人信息') : null,
         h('button', { class: 'btn sm blue', onclick: () => { sfx.click(); if (!menus.isOpen('codex')) menus.open('codex'); } }, '图鉴'));

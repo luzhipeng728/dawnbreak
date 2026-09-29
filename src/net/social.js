@@ -141,7 +141,7 @@ function sxApplyClaim(res) {
   const got = [];
   if (res.gold) { game.gold += res.gold; got.push(`${fmtNum(res.gold)} G`); }
   if (res.cera) { if (typeof addCera === 'function') addCera(res.cera, '邮件'); else giveItem(makeItem('cera', res.cera)); got.push(`点券 ${fmtNum(res.cera)}`); }
-  for (const it of sxMakeItems(res.items)) { const nm = it.name + (it.n > 1 ? ` ×${it.n}` : ''); sxGiveBack(it); got.push(nm); if ((it.rar || 0) >= 5) sfx.epic(); }
+  for (const it of sxMakeItems(res.items)) { const nm = it.name + (it.n > 1 ? ` ×${it.n}` : ''); if (it.key === 'tk_maxlv' && save.acct) { save.acct.maxlv = (save.acct.maxlv || 0) + (it.n || 1); got.push(nm + '（账号共享）'); continue; } sxGiveBack(it); got.push(nm); if ((it.rar || 0) >= 5) sfx.epic(); }
   if (res.gold || res.cera) sfx.coin(); else sfx.pickup();
   return got;
 }

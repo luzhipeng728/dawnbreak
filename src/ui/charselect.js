@@ -96,6 +96,12 @@ Object.assign(menus, {
         input: { placeholder: d.name, max: 16, check: v => v === d.name ? '和现在的名字一样' : checkCharName(v, sel) },
         ok: v => { const old = d.name; d.name = v; save.persist(); toastMsg(`${old} 已改名为 ${v}`, '#8aff9a'); this.refresh('charselect'); } });
     };
+    const maxlv = () => {   // 账号共享的一键满级券：选角界面直接给选中的角色用（改存档里的等级 / SP，和游戏内用券一样）
+      if (!d || (d.lvl || 1) >= MAX_LVL || !(save.acct && save.acct.maxlv > 0)) return; sfx.click();
+      this.ask({ title: '一键满级', okText: '使用',
+        text: `给 <b class="gold">${escHtml(d.name)}</b>（Lv.${d.lvl}）使用 1 张一键满级券，直接升到 Lv.${MAX_LVL}？（剩 ${save.acct.maxlv} 张，账号共享）`,
+        ok: () => { const from = d.lvl || 1; save.acct.maxlv--; for (let l = from + 1; l <= MAX_LVL; l++) d.sp = (d.sp || 0) + 28 + l; d.lvl = MAX_LVL; d.exp = 0; save.persist(); toastMsg(`${d.name} 一键满级：Lv.${from} → Lv.${MAX_LVL}`, '#ffe070'); this.refresh('charselect'); } });
+    };
     const el = h('div', { id: 'charsel', 'data-block': '1' },
       h('div', { class: 'cshd' }, h('div', { class: 'logo' }, '选择角色'), h('div', { class: 'small dim' }, `角色位 ${chars.length}/${MAX_CHARS}`)),
       h('div', { class: 'csrow' }, slots), info,
@@ -103,6 +109,7 @@ Object.assign(menus, {
         h('button', { class: 'btn big' + (d ? '' : ' off'), onclick: () => start(sel) }, '开始游戏'),
         h('button', { class: 'btn big blue' + (full ? ' off' : ''), onclick: () => { sfx.click(); this.close('charselect'); this.open('newgame'); } }, '创建角色'),
         h('button', { class: 'btn' + (d ? '' : ' off'), onclick: rename }, '改名'),
+        save.acct && save.acct.maxlv > 0 && d && (d.lvl || 1) < MAX_LVL ? h('button', { class: 'btn', 'data-maxlv': 1, onclick: maxlv }, `一键满级 ×${save.acct.maxlv}`) : null,
         h('button', { class: 'btn red' + (d ? '' : ' off'), onclick: del }, '删除角色'),
         h('button', { class: 'btn', onclick: () => { sfx.click(); this.close('charselect'); this.open('title'); } }, '返回')),
       full ? h('div', { class: 'small dim' }, `角色位已满（最多 ${MAX_CHARS} 个），删除角色后才能创建新角色`) : null);

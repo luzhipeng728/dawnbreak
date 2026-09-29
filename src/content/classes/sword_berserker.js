@@ -134,7 +134,7 @@ defSkill('bz_twister', { name: '嗜魂封魔斩', cls: 'sword', job: 'berserker'
   desc: '【狂暴之力中】举剑卷起血色旋风，把前方的敌人快速吸到身前，再用血剑强力上斩把它们击飞。抓不动的敌人不受吸引。', pow: lv => skillDmg(7.5, 0.75, lv), ai: { kind: 'aoe', r: [0, 330], dy: 50 },
   act: (lv) => ({ name: 'bz_twister', clip: 'twister', dur: 1.2, superArmor: true, noCounter: true,
     update: (e, dt) => { if (e.actT < 0.7) { const cx = e.x + e.face * 70; for (const t of ents) if (hittable(e, t) && !t.boss && (t.x - e.x) * e.face > -40 && Math.abs(t.x - e.x) < 380 && Math.abs(t.y - e.y) < 90) { t.x = damp(t.x, cx, 6, dt); t.y = damp(t.y, e.y, 6, dt); }
-      if (Math.random() < 0.5) fxSpr('vortex', e.x + e.face * 90, e.y, e.z + 60, { w: 210, dur: 0.25, alpha: 0.5, col: '#ff3a4a' }); } },
+      if (Math.random() < 0.5) addFx({ x: e.x + e.face * 90, y: e.y + 1, z: e.z + 60, dur: 0.25, draw(c) { drawSpr(c, tintImg('fx/vortex', 78, 1, 1), sx(this.x), sy(this.y, this.z), 210, 0, { rot: this.t * 8, alpha: 0.55 }); } }); } },
     hits: [HB(0.1, 0.7, [-10, 150, 44, 0, 130], skillDmg(0.4, 0.04, lv), { rep: 0.1, stun: 0.3, knock: 0, hs: 0.02, col: '#ff5a5a' })],
     events: [evAt(0.05, e => sfx.charge()), evAt(0.75, e => { e.play('bladeW', true); sfx.swing(true); sfx.iai(); cam.shake = Math.max(cam.shake, 6);
       fxSlashOn(e, { col: '#ff3040', a0: 1.4, a1: -1.9, r: 120, w: 26, off: [10, 50], heavy: true }); fxSpr('bloodwave', e.x + e.face * 80, e.y, 0, { h: 200, dur: 0.4, ay: 1, flip: e.face < 0 });

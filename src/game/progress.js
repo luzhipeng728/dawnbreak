@@ -64,12 +64,14 @@ function masteryOf(cls, job) {
   return (J && J.armor) || (job && JOB_ARMOR[job]) || CLASS_ARMOR[cls] || 'light';
 }
 // 每件精通防具的加成（官方精通：布甲 MP / 智力 / 施放，皮甲 攻速 / 物暴，轻甲 力量 / 硬直，重甲 力量 / 物防，板甲 物防 / HP；L = 这件防具的等级）
+// 四维加成按等级段：Lv30 以内不变；Lv30 以后斜率 0.3 → 0.34、0.2 → 0.22，5 件精通的四维和「基础四维」的比例在 Lv60 与 Lv30 一致（装备 2.0 校验，GEAR.md §10.2）
+const masteryStat = (a, k, L) => Math.round(a + Math.min(L, 30) * k + Math.max(0, L - 30) * (k === 0.3 ? 0.34 : 0.22));
 const MASTERY_BONUS = {
-  cloth: L => ({ int: Math.round(2 + L * 0.3), mpPct: 0.02, cspd: 0.012, mcrit: 0.004 }),
-  leather: L => ({ aspd: 0.012, crit: 0.008, mcrit: 0.008, str: Math.round(1 + L * 0.2), int: Math.round(1 + L * 0.2) }),
-  light: L => ({ str: Math.round(2 + L * 0.3), int: Math.round(1 + L * 0.2), hardness: 6, aspd: 0.006, mspd: 0.006 }),
-  heavy: L => ({ str: Math.round(2 + L * 0.3), defPct: 0.02, hpPct: 0.01 }),
-  plate: L => ({ defPct: 0.03, hpPct: 0.015, hardness: 6, str: Math.round(1 + L * 0.2) }),
+  cloth: L => ({ int: masteryStat(2, 0.3, L), mpPct: 0.02, cspd: 0.012, mcrit: 0.004 }),
+  leather: L => ({ aspd: 0.012, crit: 0.008, mcrit: 0.008, str: masteryStat(1, 0.2, L), int: masteryStat(1, 0.2, L) }),
+  light: L => ({ str: masteryStat(2, 0.3, L), int: masteryStat(1, 0.2, L), hardness: 6, aspd: 0.006, mspd: 0.006 }),
+  heavy: L => ({ str: masteryStat(2, 0.3, L), defPct: 0.02, hpPct: 0.01 }),
+  plate: L => ({ defPct: 0.03, hpPct: 0.015, hardness: 6, str: masteryStat(1, 0.2, L) }),
 };
 // 官方：不精通的职业穿重甲 / 板甲，攻速、施放速度、MP 恢复会降低（每件）
 const HEAVY_PENALTY = { aspd: -0.01, cspd: -0.01, mpRegen: -0.03 };

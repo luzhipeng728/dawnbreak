@@ -64,7 +64,7 @@ defSkill('silver', { name: '银光落刃', cls: 'sword', lvReq: 5, mp: 12, cd: 4
       const h = clamp(e.act.z0 / 140, 0.4, 1.4); e.vx = 0; e.act.hits = null; e.act.dur = e.actT + 0.26; e.act.onLand = null; e.play('silverLand', true);
       cam.shake = Math.max(cam.shake, 3 + h * 3); sfx.boom(0.5 + h * 0.3); fxDust(e.x, e.y, 8, 24);
       instantHit(e, { box: [-30, 70, 34, -5, 60], dmg: skillDmg(1.5, 0.15, lv) * h, down: true, knock: 120, hs: 0.08, downHit: true });
-      if (e.act.z0 > 60) { fxShock(e.x, e.y, 170 * h, '#cfe6ff'); blast(e, e.x, e.y, 145 * h, { dmg: skillDmg(1.2, 0.12, lv) * h, launch: 260, knock: 120, hs: 0.05, downHit: true }); }
+      if (e.act.z0 > 60) { fxShock(e.x, e.y, 170 * h, '#b8b0a4'); blast(e, e.x, e.y, 145 * h, { dmg: skillDmg(1.2, 0.12, lv) * h, launch: 260, knock: 120, hs: 0.05, downHit: true }); }
     } }) });
 defSkill('aircut', { name: '空之连刃', cls: 'sword', lvReq: 5, mp: 0, cd: 0, type: 'phys', passive: true, maxLv: 10, col: '#5ab0e0',
   desc: '【被动】跳跃中可以连按 X 连续斩击（最多 3 斩），第 2、3 斩按本技能的攻击力计算，第 3 斩把敌人砸向地面。', cmdNote: '跳跃中连按 X', pow: lv => (1.0 + 1.3) * (1 + 0.08 * (lv - 1)) });
@@ -89,17 +89,20 @@ function slamImpact(e, dmg) {
 }
 defSkill('rip', { name: '裂波斩', cls: 'sword', lvReq: 10, mp: 30, cd: 8, type: 'mag', col: '#3a9ae0',
   desc: '向上刺出带抓取判定的一剑（可以抓住霸体和格挡中的敌人），随后释放 3 段裂波攻击周围的敌人并把它们击飞。', pow: lv => skillDmg(4.2, 0.42, lv), ai: { kind: 'grab', r: [0, 70], dy: 20 },
-  act: (lv) => ({ name: 'rip', clip: 'rip', dur: 0.95, noCounter: true, superArmor: [0.2, 0.9], move: [[0.02, 0.1, 140]],
-    hits: [HB(0.08, 0.18, [0, 72, 26, 10, 120], skillDmg(1.0, 0.1, lv), { grab: true, stun: 0.4, hs: 0.06 })],
-    grabAt: [40, 50],
-    hold: (e, t) => { const k = clamp((e.actT - 0.12) / 0.2, 0, 1); t.x = e.x + e.face * 42; t.y = e.y + 0.5; t.z = e.z + 20 + k * 45; t.face = -e.face; },
-    events: [slashAt(0.08, { a0: 1.2, a1: -1.6, r: 64, w: 18, off: [10, 50], heavy: true }),
-      evAt(0.2, e => { if (jobOf(e) === 'asura' && typeof asMarkAdd === 'function') asMarkAdd(e, 1); }),   // 阿修罗：裂波斩生成 1 个波动印
-      ...[0.32, 0.46, 0.6].map((t, i) => evAt(t, e => { fxShock(e.x + e.face * 20, e.y, 180 + i * 20, '#8fd8ff'); fxSpr('wave', e.x + e.face * 60, e.y, 0, { h: 120, dur: 0.25, ay: 1, alpha: 0.7, flip: e.face < 0 }); sfx.swing(false);
+  act: (lv) => ({ name: 'rip', clip: 'rip', dur: 1.1, noCounter: true, superArmor: [0.1, 1.0], move: [[0.1, 0.18, 140]],
+    hits: [HB(0.16, 0.26, [0, 72, 26, 10, 120], skillDmg(1.0, 0.1, lv), { grab: true, stun: 0.4, hs: 0.06 })],
+    grabAt: [48, 58],
+    hold: (e, t) => { const up = clamp((e.actT - 0.2) / 0.2, 0, 1), dn = clamp((e.actT - 0.4) / 0.07, 0, 1); t.x = e.x + e.face * 42; t.y = e.y + 0.5; t.z = e.z + (20 + up * 45) * (1 - dn); t.face = -e.face; },   // 上斩挑起，下斩砸回地面
+    events: [slashAt(0.16, { a0: 1.2, a1: -1.6, r: 64, w: 18, off: [10, 50], heavy: true }),
+      evAt(0.28, e => { if (jobOf(e) === 'asura' && typeof asMarkAdd === 'function') asMarkAdd(e, 1); }),   // 阿修罗：裂波斩生成 1 个波动印
+      slashAt(0.38, { a0: -1.9, a1: 1.3, r: 70, w: 20, off: [12, 46], heavy: true }),   // 下斩：只打被抓住的敌人，砸地
+      evAt(0.43, e => { const g = e.grabbed; if (!g) return; cam.shake = Math.max(cam.shake, 4); sfx.boom(0.6); fxDust(g.x, g.y, 8, 26); fxShock(g.x, g.y, 90, '#8fd8ff');
+        applyHit(e, g, { dmg: skillDmg(1.2, 0.12, lv), hs: 0.07, sure: true, snd: 'blunt', big: 1.3 }, { proj: true }); }),
+      ...[0.52, 0.64, 0.76].map((t, i) => evAt(t, e => { fxShock(e.x + e.face * 20, e.y, 180 + i * 20, '#8fd8ff'); fxSpr('wave', e.x + e.face * 60, e.y, 0, { h: 120, dur: 0.25, ay: 1, alpha: 0.7, flip: e.face < 0 }); sfx.swing(false);
         blast(e, e.x + e.face * 20, e.y, 170, { dmg: skillDmg(0.73, 0.073, lv), airLift: 160, stun: 0.35, hs: 0.03, knock: 30 }, { zMax: 140 }); })),
-      evAt(0.72, e => { cam.shake = Math.max(cam.shake, 5); sfx.boom(0.7); fxBurst(e.x + e.face * 40, e.y, e.z + 70, 240, '#8fd8ff');
-        throwGrab(e, { dmg: skillDmg(1.2, 0.12, lv), launch: 480, knock: 120, hs: 0.1, big: 1.5 });
-        blast(e, e.x + e.face * 20, e.y, 180, { dmg: skillDmg(1.0, 0.1, lv), launch: 420, knock: 100, hs: 0.06 }, { zMax: 160 }); })] }) });
+      evAt(0.88, e => { cam.shake = Math.max(cam.shake, 5); sfx.boom(0.7); fxBurst(e.x + e.face * 40, e.y, e.z + 70, 240, '#8fd8ff');
+        throwGrab(e, { dmg: skillDmg(0.4, 0.04, lv), launch: 480, knock: 120, hs: 0.1, big: 1.5 });
+        blast(e, e.x + e.face * 20, e.y, 180, { dmg: skillDmg(0.6, 0.06, lv), launch: 420, knock: 100, hs: 0.06 }, { zMax: 160 }); })] }) });
 defSkill('triple', { name: '三段刃', cls: 'sword', lvReq: 15, mp: 25, cd: 6, type: 'phys', icon: 'triple', col: '#2aa0a0',
   desc: '边向前滑行边斩击，再次按键追加下一段（最多 5 段，最后一段上挑浮空；剑魂装备太刀 / 光剑且武器奥义 5 级以上时最多 7 段），每段之间可以用方向键转向。常用作位移。', pow: lv => skillDmg(1.3, 0.14, lv) * 5.4, ai: { kind: 'gap', r: [20, 160], dy: 26 },
   act: (lv, p) => tripleStage(lv, 1, tripleN(p)) });
@@ -151,7 +154,8 @@ defSkill('kazan', { name: '刀魂之卡赞', cls: 'sword', lvReq: 5, mp: 30, cd:
   desc: '【BUFF】召唤鬼神卡赞，120 秒内力量、智力提升（攻击力提升）。再次施放会重新召唤。', ai: { kind: 'buff' },
   infoExtra: lv => [['攻击力', '+' + pct(kazanAtk(lv))], ['持续时间', '120 秒']],
   act: (lv) => ({ name: 'kazan', clip: 'focus', dur: 0.5, noCounter: true,
-    onStart: e => { e.buffs.kazan = { t: 120, atk: kazanAtk(lv) }; sfx.buff(); fxAura(e, '#ff5a4a', 1); fxSpr('ghost', e.x - e.face * 10, e.y, e.z + 70, { w: 90, dur: 0.6, alpha: 0.7, grow: [0.5, 1.1], col: '#ff6a5a' }); swKazanFx(e); } }) });
+    onStart: e => { e.buffs.kazan = { t: 120, atk: kazanAtk(lv) }; sfx.buff(); fxAura(e, '#ff5a4a', 1); fxSpr('ghost', e.x - e.face * 10, e.y, e.z + 70, { w: 90, dur: 0.6, alpha: 0.7, grow: [0.5, 1.1], col: '#ff6a5a' }); swKazanFx(e);
+      addFx({ x: e.x, y: e.y, z: 0, dur: 1.1, add: true, draw(c) { const k = this.t / this.dur; drawSpr(c, fxTint('rune', '#e03a2a'), sx(this.x), sy(this.y, 0), 520, 190, { ground: true, rot: k * 0.8, alpha: 0.6 * (k < 0.15 ? k / 0.15 : 1 - (k - 0.15) / 0.85) }); } }); } }) });
 const kazanAtk = lv => 0.03 + 0.005 * (lv - 1);
 // 刀魂卡赞现身跟随（官方：召唤卡赞跟随施放者）：BUFF 期间半透明的卡赞飘在身后，慢半拍跟着走；换房间清掉特效后由被动刷新补上
 function swKazanFx(e) {

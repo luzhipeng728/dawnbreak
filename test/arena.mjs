@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import { startServer, launchPlayers, ok, result, sleep, until, uiRegister, uiCreateChar, dumpErrors } from './net_lib.mjs';
 const out = 'test/shots/arena'; fs.mkdirSync(out, { recursive: true });
-const srv = await startServer({ arenaAiMs: 4000, arenaMinMs: 2000, arenaForfeitMs: 5000, arenaRematchMs: 60_000 });
+const srv = await startServer({ arenaAiMs: 4000, arenaMinMs: 2000, arenaForfeitMs: 5000, arenaRematchMs: 300_000 });   // 防重复匹配窗口要比整场测试长（第一局 + 结算 + 回城可能超过 60 秒）
 const AR = srv.app.ctx.mods.arena;
 const { players, close } = await launchPlayers(2);
 const [A, B] = players.map(p => p.page);

@@ -5,7 +5,7 @@
    - 保护机制（engine/combat.js）：浮空保护、倒地保护、抓取保护；燃斗模式（HP ≤25%：攻击 +15%、受到伤害 −10%）
    - 决斗不写玩家存档（存档键切到 dawnbreak_duel）
    ===================================================================== */
-const DUEL_CFG = { rounds: 3, time: 60, lv: 30 };   // 决斗等级固定 Lv30（2026-09-28 满级提到 60 后不变：PVP_JOB / DUEL_BASE 都是按 Lv30 技能等级调的，见 docs/PVP.md）
+const DUEL_CFG = { rounds: 1, time: 60, lv: 30 };   // 一局定胜负（用户要求，2026-09-29；原来三局两胜）   // 决斗等级固定 Lv30（2026-09-28 满级提到 60 后不变：PVP_JOB / DUEL_BASE 都是按 Lv30 技能等级调的，见 docs/PVP.md）
 const DUEL_BASE = {   // 每个职业的 PvP 基准属性（天平后）
   sword: { hp: 21000, mp: 4200, atk: 2100, matk: 1800, def: 2100, mdef: 1800 },
   gun: { hp: 19500, mp: 4400, atk: 2000, matk: 1700, def: 1900, mdef: 1900 },
@@ -102,7 +102,8 @@ const duel = {
     }
     if (this.state === 'ko') {
       this.koT += dt; if (this.koT > 0.9) game.slowmo = false;
-      if (this.koT > 2.6) { if (this.wins[0] >= 2 || this.wins[1] >= 2 || this.round >= DUEL_CFG.rounds) this.finish(); else { this.round++; this.resetRound(); } }
+      const last = Math.max(this.wins[0], this.wins[1]) > DUEL_CFG.rounds / 2 || this.round >= DUEL_CFG.rounds;
+      if (this.koT > (last ? 1.2 : 2.6)) { if (last) this.finish(); else { this.round++; this.resetRound(); } }   // 最后一局 K.O. 后 1.2 秒直接出结果
       return;
     }
     if (this.state === 'result') { if (input.hit('attack') || input.hit('confirm') || this.o.auto && this.t > 3) { if (this.o.auto) { window.__duelDone = this.result; this.state = 'done'; return; } this.start(this.o); } }

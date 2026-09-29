@@ -13,7 +13,7 @@ const sxrDungeons = () => typeof DUNGEONS === 'undefined' ? [] : Object.values(D
 function sxrValue(board, e) {
   if (board === 'lvl') return `Lv.${e.lvl}`;
   if (board === 'score') return fmtNum(e.score);
-  if (board === 'arena') return `${e.tier} ${e.rating}（${e.win} 胜 ${e.lose} 负）`;
+  if (board === 'arena') return `${e.tier} ${e.rating}（${(e.win || 0) + (e.aiWin || 0)} 胜 ${(e.lose || 0) + (e.aiLose || 0)} 负）`;   // 含 AI 局（排位赛大部分是 AI 补位）
   if (board === 'duel') return `${e.win} 胜 ${e.lose} 负${e.draw ? ` ${e.draw} 平` : ''}`;
   if (board === 'clear') return sxFmtTime(e.time);
   if (board === 'ach') return `${fmtNum(e.ach)} 点`;
@@ -41,13 +41,13 @@ Object.assign(menus, {
           top.append(dg, df);
         }
         top.append(h('span', { class: 'sp' }), h('button', { class: 'btn sm blue', onclick: () => { sxRankReport(); setTimeout(() => el.isConnected && el._reload(), 400); } }, '刷新'));
-        const vh = { lvl: '等级', score: '装备评分', duel: '战绩', clear: '用时', epic: '史诗', ach: '成就点' }[SXR.board];
+        const vh = { lvl: '等级', score: '装备评分', duel: '战绩', arena: '段位 · 积分（战绩）', clear: '用时', epic: '史诗', ach: '成就点' }[SXR.board];
         const myName = net.user && net.user.name, myCid = save.data ? String(save.data.created) : '';
         const rows = d.list.map(e => h('tr', { class: e.uid === (net.user && net.user.id) ? 'me' : '' },
           h('td', { class: 'num ' + (e.rank <= 3 ? 'rank' + e.rank : '') }, String(e.rank)),
           h('td', { style: 'font-weight:900' }, e.char || '—', e.cid === myCid && e.user === myName ? h('span', { class: 'small', style: 'color:#ffd23a;margin-left:.3em' }, '（当前角色）') : null, typeof GD !== 'undefined' && GD.tags.get(e.uid) ? h('div', { class: 'small', style: 'color:#9aff7a;font-weight:700' }, `<${GD.tags.get(e.uid)}>`) : null),
           h('td', { class: 'small' }, sxClsName(e.cls, e.job)),
-          h('td', { class: 'num' }, SXR.board === 'lvl' ? '' : `Lv.${e.lvl}`),
+          h('td', { class: 'num' }, SXR.board === 'lvl' ? '' : e.lvl ? `Lv.${e.lvl}` : '—'),
           h('td', { class: 'num', style: 'color:#ffe8a8;font-weight:900' }, sxrValue(SXR.board, e)),
           h('td', { class: 'small dim' }, e.user)));
         const table = h('div', { class: 'sxscroll rlist', 'data-sk': 'rl' }, d.list.length ? h('table', { class: 'sxtbl' },

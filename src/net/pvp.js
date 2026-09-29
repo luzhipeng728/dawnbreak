@@ -37,6 +37,7 @@ const netDuel = {
   },
   // 决斗期间：先存档、停写、禁用消耗品快捷栏
   freeze() {
+    const p = game.player; if (save.data && game.scene === 'town' && world.S && p) save.data.loc = { scene: world.S.id, x: Math.round(p.x), y: Math.round(p.y), face: p.face };   // 决斗完回到开打前站的位置
     if (save.data && save.live) save.write();
     this.saved = { quick: inv.quick.slice(), cls: game.player.cls };
     save.live = false; inv.quick = [null, null, null, null, null, null];
@@ -160,7 +161,7 @@ const netDuel = {
     this.state = 'end'; this.endT = performance.now();
     chatSys(`决斗结束：${draw ? '平局' : win ? '你赢了' : '你输了'}（${this.result.wins[0]} : ${this.result.wins[1]}）`);
     bus.emit('pvpResult', { win, vs: this.peer.name, wins: this.result.wins, draw });
-    setTimeout(() => this.backToTown(), 3500);
+    setTimeout(() => this.backToTown(), 1500);
   },
   abort(msg) {
     if (!this.active()) return;

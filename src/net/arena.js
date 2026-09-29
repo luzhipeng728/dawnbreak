@@ -54,7 +54,7 @@ const arena = {
     if (C && C.ai && C.state === 'fight' && duel.state === 'result' && duel.result) {
       C.state = 'end'; const w = duel.result.winner;
       net.send({ t: 'arena:end', id: C.id, win: w === 0, draw: w < 0 });
-      setTimeout(() => this.back(), 3500);
+      this.backT = setTimeout(() => this.back(), 1200);
     }
   },
   back() {
@@ -135,7 +135,7 @@ bus.on('sceneEnter', () => { if (arena.on() && (!arena.st || arena.stCid !== are
 addEventListener('beforeunload', () => { const C = arena.cur; if (C && C.ai && C.state === 'fight' && net.connected) net.send({ t: 'arena:end', id: C.id, abort: 2 }); });
 setInterval(() => { arena.tick(); if (arena.q && arena.btn && arena.btn.isConnected) arena.btn.textContent = `取消匹配（已等待 ${Math.floor((Date.now() - arena.q.t0) / 1000)} 秒）`; }, 200);
 // AI 对局结算画面：不“再来一局”，自动回城
-{ const up0 = duel.update; duel.update = function (dt) { if (arena.aiFight() && this.state === 'result') { this.t += dt; return; } return up0.call(this, dt); }; }
+{ const up0 = duel.update; duel.update = function (dt) { if (arena.aiFight() && this.state === 'result') { this.t += dt; if (arena.cur && arena.cur.state === 'end' && this.t > 0.3 && (input.hit('attack') || input.hit('confirm'))) { clearTimeout(arena.backT); arena.back(); } return; } return up0.call(this, dt); }; }   // 结果画面：按攻击 / 确认立刻回城
 { const dr0 = duel.drawOverlay; duel.drawOverlay = function (c) {
   if (!arena.aiFight() || this.state !== 'result') return dr0.call(this, c);
   const s = this.state, mt = this.msgT, md = this.msgDur; this.state = 'ko'; this.msgT = 99; this.msgDur = 99;

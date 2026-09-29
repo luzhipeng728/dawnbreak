@@ -79,8 +79,8 @@ export default {
       const inIds = ids ? ` AND c.user_id IN (${ids.map(x => int(x, 0, 1e15)).join(',')})` : '';
       let rows;
       if (board === 'arena') {   // 决斗场排位：按积分（打过至少一场的角色）
-        rows = ctx.db.all(`SELECT * FROM arena c WHERE c.win + c.lose + c.draw + c.ai_win + c.ai_lose > 0${inIds} ORDER BY c.rating DESC, c.updated ASC LIMIT 2000`);
-        const all = rows.map((r, i) => ({ rank: i + 1, user: r.user_name, uid: r.user_id, cid: r.cid, char: r.char_name, cls: r.cls, job: r.job, rating: r.rating, tier: tierOf(r.rating), win: r.win, lose: r.lose, draw: r.draw, aiWin: r.ai_win, aiLose: r.ai_lose }));
+        rows = ctx.db.all(`SELECT c.*, k.lvl AS lvl FROM arena c LEFT JOIN rank_char k ON k.user_id = c.user_id AND k.cid = c.cid WHERE c.win + c.lose + c.draw + c.ai_win + c.ai_lose > 0${inIds} ORDER BY c.rating DESC, c.updated ASC LIMIT 2000`);   // 等级从角色榜表取
+        const all = rows.map((r, i) => ({ rank: i + 1, user: r.user_name, uid: r.user_id, cid: r.cid, char: r.char_name, cls: r.cls, job: r.job, lvl: r.lvl || 0, rating: r.rating, tier: tierOf(r.rating), win: r.win, lose: r.lose, draw: r.draw, aiWin: r.ai_win, aiLose: r.ai_lose }));
         return { board, scope: ids ? 'friends' : 'all', total: all.length, list: all.slice(0, TOP), me: all.filter(e => e.uid === uid), now: now(ctx) };
       }
       if (board === 'clear') {

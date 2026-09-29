@@ -10,7 +10,7 @@
      arena:result { id, win, draw, void, why, delta, rating, tier, ai, reward }
    规则（docs/NETWORK.md「决斗场排位」）：
      - 匹配：积分差在范围内（100 起，每等 1 秒 +30，最多 600）；不和自己、不和 cfg.arenaRematchMs 内刚打过的账号再匹配；断线 / 进地下城就移出队列
-     - AI 补位：等了 cfg.arenaAiMs（默认 12 秒）还没有真人，就给一个 AI 对手（18 种职业 / 转职随机，名字像玩家，积分在你附近，难度按段位）
+     - AI 补位：等了 cfg.arenaAiMs（默认 4 秒）还没有真人，就给一个 AI 对手（18 种职业 / 转职随机，名字像玩家，积分在你附近，难度按段位）
      - AI 局只给一半积分，而且白金（1500）以上赢 AI 不再加分——天梯上半段只能靠打真人（防刷）
      - 逃跑：真人对局开打（cfg.arenaForfeitMs）之后掉线 / 离开 = 判负；开打前取消不计；双方报的结果对不上 = 作废
      - AI 局超过 cfg.arenaAiTimeout 还没报结果 / 重新排队时还有没报完的 AI 局 = 判负 */
@@ -21,7 +21,7 @@ const START = 1000, K = 32, AI_GAIN = 0.5, AI_CAP = 1500, FLOOR = 0;
 export const TIERS = [[0, '青铜'], [1100, '白银'], [1300, '黄金'], [1500, '白金'], [1700, '钻石'], [1900, '斗神']];
 export const tierOf = r => { let t = TIERS[0][1]; for (const [lo, n] of TIERS) if (r >= lo) t = n; return t; };
 export const REWARD = { gold: 2000, aiGold: 1000, goldWins: 10, cera: 5, ceraCap: 30, first: { gold: 5000, cera: 20 } };
-const DEF = { arenaAiMs: 12_000, arenaRematchMs: 300_000, arenaReportMs: 15_000, arenaForfeitMs: 30_000, arenaMinMs: 15_000, arenaAiTimeout: 360_000 };
+const DEF = { arenaAiMs: 4_000, arenaRematchMs: 300_000, arenaReportMs: 15_000, arenaForfeitMs: 30_000, arenaMinMs: 5_000, arenaAiTimeout: 360_000 };   // 4 秒没真人就配 AI；一局定胜负，最短有效 5 秒
 // AI 对手的职业：3 个基础职业 + 15 个转职 = 18 种
 export const AI_POOL = { sword: [null, 'blade', 'berserker', 'asura', 'soulbender', 'ghostblade'], gun: [null, 'ranger', 'launcher', 'spitfire', 'mechanic', 'paramedic'], mage: [null, 'elemental', 'battlemage', 'summoner', 'witch', 'enchantress'] };
 const ALL18 = Object.entries(AI_POOL).flatMap(([c, js]) => js.map(j => [c, j]));

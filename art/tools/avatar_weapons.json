@@ -1,4 +1,34 @@
 {
+ "ep_rd_aria": {
+  "mul": 1.25
+ },
+ "ep_rd_jester": {
+  "mul": 1.25
+ },
+ "ep_rd_owl": {
+  "mul": 1.25
+ },
+ "ep_rd_firefly": {
+  "mul": 1.25
+ },
+ "ep_rd_spider": {
+  "mul": 1.25
+ },
+ "ep_rd_skullcandle": {
+  "mul": 1.25
+ },
+ "ep_rd_baton": {
+  "mul": 1.25
+ },
+ "ep_rd_gear": {
+  "mul": 1.25
+ },
+ "ep_rd_icedragon": {
+  "mul": 1.25
+ },
+ "ep_rd_rabbit": {
+  "mul": 1.25
+ },
  "summer_club": {
   "size": 56
  },

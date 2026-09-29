@@ -43,7 +43,7 @@ function fireChaser(p, t, o = {}) {
     draw(c, q) { drawSpr(c, 'chaser', sx(q.x), sy(q.y, q.z), 22 * big, 22 * big); drawSpr(c, img, sx(q.x), sy(q.y, q.z), 16 * big, 16 * big); } });
   sfx.magic(); return pr;
 }
-function chaserBuff(p) { const lv = Math.max(1, skLv(p, 'bm_chaser')); p.buffs.bm_chaserHit = { t: 30, dmg: 0.1 + 0.005 * lv, aspd: 0.1, mspd: 0.15, crit: 0.1 + 0.005 * lv }; }
+function chaserBuff(p) { const lv = Math.max(1, skLv(p, 'bm_chaser')); p.buffs.bm_chaserHit = { t: 30, dmg: 0.15 + 0.005 * lv, aspd: 0.1, mspd: 0.15, crit: 0.1 + 0.005 * lv }; }
 // 最后一次直接攻击命中的目标（2 秒内、800px 内）
 function chaserTarget(p) { const t = p._lastHitTgt; return t && !t.dead && !t.remove && game.t - (p._lastHitT || -9) < 2 && Math.abs(t.x - p.x) < 800 ? t : null; }
 function shootOneChaser(p) {
@@ -66,7 +66,7 @@ defSkill('bm_will', { name: '斗神意志', cls: 'mage', job: BM, lvReq: 21, pas
 // ---- 炫纹（→+Space）：无动作施放，把最早的炫纹射向最后命中的敌人 ----
 defSkill('bm_chaser', { name: '炫纹', cls: 'mage', job: BM, lvReq: 15, mp: 3, cd: 0.5, type: 'phys', col: '#5aa8e0', noForce: true,
   desc: '战斗法师的核心。每 7 秒自动生成 1 个炫纹，普攻或技能命中敌人时也会生成；每个炫纹存在 30 秒，最多 9 个。直接攻击命中敌人后按技能键，把最早生成的炫纹射向最后命中的敌人（800px 内）。炫纹命中后 30 秒内技能攻击力、攻速、移速、暴击率提高。其他动作中也能施放。',
-  pow: lv => skillDmg(0.9, 0.09, lv), infoExtra: lv => [['炫纹上限', '9'], ['命中增益', `攻击 +${pct(0.1 + 0.005 * lv)}，攻速 +10%，移速 +15%，暴击 +${pct(0.1 + 0.005 * lv)}`]], ai: { kind: 'buff' },
+  pow: lv => skillDmg(0.9, 0.09, lv), infoExtra: lv => [['炫纹上限', '9'], ['命中增益', `攻击 +${pct(0.15 + 0.005 * lv)}，攻速 +10%，移速 +15%，暴击 +${pct(0.1 + 0.005 * lv)}`]], ai: { kind: 'buff' },
   instant: (lv, p) => { if (!shootOneChaser(p) && isHuman(p)) fxText('没有目标', p.x, p.y, p.z + 30, { col: '#9ab', size: 10, dur: 0.5 }); return true; },
   act: (lv) => ({ name: 'bm_chaser', clip: 'chaser', dur: 0.2, noCounter: true, onStart: e => shootOneChaser(e) }) });
 // ---- 技能 ----
@@ -88,8 +88,8 @@ defSkill('bm_round', { name: '圆舞棍', cls: 'mage', job: BM, lvReq: 15, mp: 3
         blast(e, x, e.y, 130, { dmg: skillDmg(1.2, 0.12, lv), down: true, knock: 120, hs: 0.06, downHit: true }); })] }) });
 // 战斗本能：开关型增益，技能攻击力提高，身上出现红色电光
 defSkill('bm_instinct', { name: '战斗本能', cls: 'mage', job: BM, lvReq: 16, mp: 30, cd: 5, type: 'phys', buff: true, col: '#e04a4a',
-  desc: '【开关 BUFF】身上出现红色电光气场，技能攻击力提高。再按一次关闭。', infoExtra: lv => [['技能攻击力', '+' + pct(0.1 + 0.01 * lv)]], ai: { kind: 'buff' },
-  act: (lv) => ({ name: 'bm_instinct', clip: 'cheer', dur: 0.4, noCounter: true, onStart: e => { if (toggleBuff(e, 'bm_instinct', 1e9, { dmg: 0.1 + 0.01 * lv })) { sfx.buff(); fxAura(e, '#ff5a5a'); } } }) });
+  desc: '【开关 BUFF】身上出现红色电光气场，技能攻击力提高。再按一次关闭。', infoExtra: lv => [['技能攻击力', '+' + pct(0.15 + 0.015 * lv)]], ai: { kind: 'buff' },
+  act: (lv) => ({ name: 'bm_instinct', clip: 'cheer', dur: 0.4, noCounter: true, onStart: e => { if (toggleBuff(e, 'bm_instinct', 1e9, { dmg: 0.15 + 0.015 * lv })) { sfx.buff(); fxAura(e, '#ff5a5a'); } } }) });
 // 双重锤击：先下砸一次，再跳起在空中转体下砸第二次（带冲击波，小幅击飞），能打倒地的敌人
 defSkill('bm_double', { name: '双重锤击', cls: 'mage', job: BM, lvReq: 16, mp: 30, cd: 8, type: 'phys', col: '#8a5ab0',
   desc: '先把武器砸向前方，再跳起在空中转体砸下第二次，第二下带冲击波把敌人小幅击飞。共 3 段，能打到倒地的敌人。', pow: lv => skillDmg(4.2, 0.42, lv), ai: { kind: 'poke', r: [0, 130], dy: 30 },
@@ -261,6 +261,7 @@ CLASSES.mage.passives.push(p => {
   const bm = jobOf(p) === BM;
   if (bm && hasSkill(p, 'bm_niu')) { if (p.acts !== BM_ACTS) p.acts = BM_ACTS; } else if (p.acts === BM_ACTS) p.acts = MAGE_ACTS;
   if (!bm) return;
+  p._jv0 ??= p.jumpV; p.jumpV = p._jv0 * (hasSkill(p, 'bm_niu') ? 1.12 : 1);   // 尼巫的战术：跳跃速度变快
   const nl = skLv(p, 'bm_niu'); setPassive(p, 'bm_niu', nl > 0, { dmg: 0.1 + 0.01 * nl, crit: 0.1 + 0.005 * nl });
   const wl = skLv(p, 'bm_weapon'); setPassive(p, 'bm_weapon', wl > 0, { atk: 0.04 + 0.01 * wl, crit: 0.02 + 0.003 * wl });
   if (p.buffs.mg_shield && hasSkill(p, 'bm_shieldup')) p.buffs.mg_shield.taken = -(0.08 + 0.01 * skLv(p, 'mg_shield'));
@@ -285,3 +286,6 @@ CLASSES.mage.beforeHurt = (t, a, h) => {
 // 战斗法师武器精通：落花掌的满蓄时间减半（落花掌定义在 mage.js，这里包一层，只动蓄力上限）
 { const S = SKILLS.mg_palm, a0 = S && S.act;
   if (a0) S.act = (lv, p) => { const A = a0(lv, p); if (A && A.charge && p && jobOf(p) === BM && hasSkill(p, 'bm_weapon')) A.charge = { ...A.charge, max: Math.max(0.04, A.charge.max / 2) }; return A; }; }
+// 实战型替身草人：放完可以立即取消后摇（替身草人定义在 mage.js，这里包一层，只对学了实战型的战斗法师生效）
+{ const S = SKILLS.mg_phase, a0 = S && S.act;
+  if (a0) S.act = (lv, p) => { const A = a0(lv, p); if (A && p && jobOf(p) === BM && hasSkill(p, 'bm_realphase')) A.cancelFrom = 0.05; return A; }; }

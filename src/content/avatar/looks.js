@@ -4,7 +4,7 @@
    ===================================================================== */
 // 武器图：武器装扮 > 史诗专属外观 > 品级外观（稀有 / 神器 / 传说）> 武器类型（WEAPON_IMG 由 art/tools/avatar_weapons.py 生成）
 //   武器装扮（时装栏 av_weapon，商城组）：一件覆盖三职业 15 种武器类型，图 key = <装扮>_<武器类型>，缺图就显示真实武器
-const WEAPON_SKINS = { av_weapon_spring: 'spring', av_weapon_summer: 'summer' };
+const WEAPON_SKINS = { av_weapon_spring: 'spring', av_weapon_summer: 'summer', av_weapon_holywing: 'holywing', av_weapon_flamedragon: 'flamedragon', av_weapon_academy: 'academy', av_weapon_gothic: 'gothic' };
 function weaponArtOf(it, cls, skin) {
   if (!it) return null;                                     // 没拿武器：空手（装扮只改外观，不会凭空变出武器）
   const t = it.wtype || (typeof CLASS_START_WEAPON !== 'undefined' && CLASS_START_WEAPON[it.cls || cls]);

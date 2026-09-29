@@ -104,9 +104,10 @@ const HELPERS = () => {
     r.overEpic = lookFromEquip('sword', { weapon: { key: 'ep_katana', wtype: 'katana' }, av_weapon: skin('spring') }).wpn;
     r.byKey = lookFromEquip('gun', { weapon: W('rifle', 'gun'), av_weapon: { key: 'av_weapon_summer' } }).wpn;
     r.dual = WEAPON_IMG.summer_rifle && WEAPON_IMG.summer_rifle.dual === 0 && WEAPON_IMG.spring_revolver.dual !== 0;
+    r.skins = Object.values(WEAPON_SKINS);
     return r;
   });
-  for (const s of ['spring', 'summer']) if (sk[s]) ok(sk[s].n === 15 && sk[s].ok, `${s} 装扮覆盖 ${sk[s].n}/15 种武器类型，装上后换成对应的图`);
+  for (const s of sk.skins) ok(sk[s].n === 15 && sk[s].ok, `${s} 装扮覆盖 ${sk[s].n}/15 种武器类型，装上后换成对应的图`);
   ok(sk.noWeapon === null, '只装武器装扮、没装武器：空手');
   ok(sk.overEpic === 'spring_katana', '装扮优先于史诗专属外观');
   ok(sk.byKey === 'summer_rifle', '物品没有 skin 字段时按 key 查表');

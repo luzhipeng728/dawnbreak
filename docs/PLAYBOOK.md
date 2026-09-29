@@ -62,6 +62,12 @@
 - 多张一起审：先用 PIL 拼成一张总览图再看（省额度）。
 - 常见打回：召唤物和玩家撞色（露易丝）、领主不够大（希洛克）、写实画风（第一版不动明王）。
 
+### 2.5 加一款武器装扮（已做 6 款，约 40 分钟，大部分是等生图）
+1. `art/tools/avatar_gen.py` 的 `WEAPON_SKINS` 加一款：key 不能带下划线（图 key = `<key>_<武器类型>`），15 种类型各写一句设计；刀剑类写明 STRAIGHT，枪身用亮色（全黑的枪 1 倍下看不清）。
+2. 样图：`python3 art/tools/weapon_gen.py <key>_greatsword,<key>_katana,<key>_revolver,<key>_staff -j 3` → 自己拼图审 → `weapon_gen.py <key>_ -j 3` 补齐（已有的自动跳过）→ `python3 art/tools/avatar_weapons.py <key>_`。
+3. 接线：`looks.js` 的 `WEAPON_SKINS`、`cash/items.js` 物品（`skin` / `cashIcon`）、`catalog.js` 商品（tab `weapon`）；图标在 `cash_art.py` 的 `weapon_skins` 表加一项 → `cash_art.py icons --only weapon_skins`（先把旧原图改名 .bak）→ `cash_art.py cut --only icons`（旧图标重切结果不变）。
+4. 验证：`node test/weapons.mjs`（每款 15 种都有图）+ `node test/weapons.mjs shots <keys> <out.jpg>` 看拿在手里的样子。
+
 ## 3. 常用命令
 | 做什么 | 命令 |
 |---|---|

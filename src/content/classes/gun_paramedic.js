@@ -145,7 +145,7 @@ const PM_ACTS = {
     events: [evAt(0.07, () => sfx.swing(true))] },
   atk4: { name: 'atk4', clip: 'pmA4', dur: 0.48, basic: true, type: 'indep', speed: 'aspd', move: [[0.02, 0.08, 60]],
     events: [evAt(0.11, e => { pmMuzzle(e, 62, 1.4); sfx.gun(1.3); cam.shake = Math.max(cam.shake, 3);
-      instantHit(e, { box: [10, 150, 24, 36, 100], dmg: 1.7, stun: 0.55, knock: 240, heavy: true, hs: 0.09, big: 1.4, snd: 'stab', col: '#bff4ff' }); })] },
+      instantHit(e, { box: [10, 190, 28, 36, 100], dmg: 1.7, stun: 0.55, knock: 240, heavy: true, hs: 0.09, big: 1.4, snd: 'stab', col: '#bff4ff' }); })] },
   dash: { name: 'dash', clip: 'pmDash', dur: 0.46, basic: true, type: 'indep', speed: 'aspd', move: [[0, 0.28, 440]], noCounter: true,
     hits: [HB(0.04, 0.28, [0, 66, 26, 28, 95], 1.35, { stun: 0.45, knock: 230, hs: 0.07, shake: 2, heavy: true, col: '#bff4ff' })],
     events: [evAt(0.03, e => { fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 90, w: 10, col: '#8fe8ff' }); sfx.pmBlade(); })] },
@@ -210,7 +210,7 @@ defSummon('pm_drone', { kind: 'attach', host: 'owner', life: 1e9, keepRoom: true
 // 协战师的直线射击（能量手枪，立即命中）：画一道光迹，打第一个挡在前面的敌人
 function pmShot(e, t, dmg, o = {}) {
   const z = e.z + (o.z || 62); pmMuzzle(e, o.z || 62); if (!o.quiet) sfx.gun(o.vol || 0.9);
-  const tx = t ? t.x : e.x + e.face * 420, ty = t ? t.y : e.y, tz = t ? t.z + t.hurtH() * 0.6 : z;
+  const tx = t ? t.x : e.x + e.face * 600, ty = t ? t.y : e.y, tz = t ? t.z + t.hurtH() * 0.6 : z;
   addFx({ x: e.x + e.face * 40, y: Math.max(e.y, ty) + 1, z, tx, ty, tz, dur: 0.09, add: true, draw(c) { const k = this.t / this.dur; c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = `rgba(150,235,255,${1 - k})`; c.lineWidth = 3; c.beginPath(); c.moveTo(sx(this.x), sy(this.y, this.z)); c.lineTo(sx(this.tx), sy(this.ty, this.tz)); c.stroke(); c.restore(); } });
   if (t && hittable(e, t)) applyHit(e, t, { dmg, stun: 0.3, knock: 30, airLift: 130, hs: 0.04, snd: 'stab', col: '#bff4ff', sure: true, pmTok: e.act, ...(o.hit || {}) }, { proj: true });
 }
@@ -230,16 +230,16 @@ pmSkill('pm_info', { name: '系统·战场信息', lvReq: 15, sp: 0, passive: tr
   infoExtra: lv => [['信息收集量', '+' + pct(0.03 * lv)], ['激光轰炸', pct(skillDmg(1.5, 0.15, lv)) + ' × 4'], ['单人加成', '独立攻击 +32% / 冷却 −20%']] });
 // ---- 攻击 ----
 pmSkill('pm_lockshot', { name: '近战·锁定连射', lvReq: 5, lvStep: 2, sp: 20, mp: 12, cd: 3, col: '#4aa0d8', pmInfo: 10,
-  desc: '锁定前方最近的敌人（远距离也能锁定），快速连开 2 枪。', pow: lv => skillDmg(1.1, 0.11, lv) * 2, ai: { kind: 'poke', r: [0, 600], dy: 60 },
+  desc: '锁定前方最近的敌人（远距离也能锁定），快速连开 2 枪。', pow: lv => skillDmg(1.1, 0.11, lv) * 2, ai: { kind: 'poke', r: [0, 1000], dy: 80 },
   act: (lv) => ({ name: 'pm_lockshot', clip: 'pmShot', dur: 0.34, noCounter: true,
-    onStart: e => { const t = pmNearest(e, 640, 120); e.act.tg = t; if (t) e.face = t.x >= e.x ? 1 : -1; },
-    events: [0.05, 0.16].map(tt => evAt(tt, e => pmShot(e, e.act.tg && !e.act.tg.dead ? e.act.tg : pmNearest(e, 640, 120), skillDmg(1.1, 0.11, lv)))) }) });
+    onStart: e => { const t = pmNearest(e, 1100, 140); e.act.tg = t; if (t) e.face = t.x >= e.x ? 1 : -1; },
+    events: [0.05, 0.16].map(tt => evAt(tt, e => pmShot(e, e.act.tg && !e.act.tg.dead ? e.act.tg : pmNearest(e, 1100, 140), skillDmg(1.1, 0.11, lv)))) }) });
 pmSkill('pm_assault', { name: '战服·强袭目标', lvReq: 15, mp: 30, cd: 6, col: '#3a7ac8', pmInfo: 20,
-  desc: '单膝跪地向前滑行，边滑边连开 5 枪。施放后全队获得 8 秒强化保护罩（受到的伤害 −20%、霸体，外加一层小护盾）。', pow: lv => skillDmg(0.68, 0.068, lv) * 5, ai: { kind: 'poke', r: [0, 420], dy: 30 },
+  desc: '单膝跪地向前滑行，边滑边连开 5 枪。施放后全队获得 8 秒强化保护罩（受到的伤害 −20%、霸体，外加一层小护盾）。', pow: lv => skillDmg(0.68, 0.068, lv) * 5, ai: { kind: 'poke', r: [0, 600], dy: 40 },
   infoExtra: () => [['强化保护罩', '8 秒']],
   act: (lv) => ({ name: 'pm_assault', clip: 'pmSlide', dur: 0.62, noCounter: true, move: [[0.02, 0.45, 300]],
     update: e => { if (e.actT < 0.45 && Math.random() < 0.6) fxDust(e.x - e.face * 12, e.y, 1, 5); },
-    events: [...[0.08, 0.16, 0.24, 0.32, 0.4].map((tt, i) => evAt(tt, e => pmShot(e, pmNearest(e, 460, 40), skillDmg(0.68, 0.068, lv), { quiet: i % 2 === 1, hit: { stun: 0.35, knock: 60 } }))),
+    events: [...[0.08, 0.16, 0.24, 0.32, 0.4].map((tt, i) => evAt(tt, e => pmShot(e, pmNearest(e, 640, 50), skillDmg(0.68, 0.068, lv), { quiet: i % 2 === 1, hit: { stun: 0.35, knock: 60 } }))),
       evAt(0.45, e => pmRedShield(e))] }) });
 // 机动打击：突进 → 回旋后踢；命中后再按一次追加第二击（学了“系统·临战编程”自动追加）
 function pmStrike2(lv) {
@@ -260,35 +260,35 @@ pmSkill('pm_strike', { name: '战服·机动打击', lvReq: 16, mp: 35, cd: 8, c
 pmSkill('pm_evade', { name: '近战·闪退射击', lvReq: 17, mp: 25, cd: 6, col: '#4a8ad8',
   desc: '挥出能量刃同时向后跳开，落地前再对前方的敌人连开 2 枪。学会“系统·临战编程”后，施放时给全队一层保护罩。', pow: lv => skillDmg(1.6, 0.16, lv) + skillDmg(1.3, 0.13, lv) * 2, ai: { kind: 'escape', r: [0, 90], dy: 26 },
   act: (lv) => ({ name: 'pm_evade', clip: 'pmEvade', dur: 0.62, noCounter: true, move: [[0.04, 0.3, -300, 180]],
-    hits: [HB(0.02, 0.1, [-10, 88, 30, 10, 110], skillDmg(1.6, 0.16, lv), { stun: 0.45, knock: 120, hs: 0.06, col: '#bff4ff' })],
+    hits: [HB(0.02, 0.1, [-10, 100, 34, 10, 110], skillDmg(1.6, 0.16, lv), { stun: 0.45, knock: 120, hs: 0.06, col: '#bff4ff' })],
     onLand: e => { e.vx = 0; },
     events: [pmSlash(0.02, { a0: -2.4, a1: 0.9, r: 60, w: 15, off: [14, 62], squash: 0.75 }), evAt(0.02, e => { sfx.pmBlade(); if (hasSkill(e, 'pm_program')) pmShield(e, 'pm_buffer', 0.05, 10); }),
-      ...[0.3, 0.42].map(tt => evAt(tt, e => pmShot(e, pmNearest(e, 520, 80), skillDmg(1.3, 0.13, lv))))] }) });
+      ...[0.3, 0.42].map(tt => evAt(tt, e => pmShot(e, pmNearest(e, 680, 90), skillDmg(1.3, 0.13, lv))))] }) });
 // 指定射击：按怪物等级（领主 > 精英 > 等级高的）再按距离锁定，连开 6 枪
 function pmMarkTarget(e) {
   let best = null, bv = -1;
-  for (const o of ents) if (hittable(e, o) && Math.abs(o.x - e.x) < 620 && Math.abs(o.y - e.y) < 160) { const v = (o.boss ? 3 : o.elite ? 2 : 1) * 1e6 + (o.lvl || 1) * 1e3 - Math.abs(o.x - e.x); if (v > bv) { bv = v; best = o; } }
+  for (const o of ents) if (hittable(e, o) && Math.abs(o.x - e.x) < 800 && Math.abs(o.y - e.y) < 180) { const v = (o.boss ? 3 : o.elite ? 2 : 1) * 1e6 + (o.lvl || 1) * 1e3 - Math.abs(o.x - e.x); if (v > bv) { bv = v; best = o; } }
   return best;
 }
 pmSkill('pm_mark', { name: '近战·指定射击', lvReq: 18, mp: 40, cd: 10, col: '#5a9ae8',
-  desc: '锁定一个目标（优先领主和精英，其次等级高的，再其次距离近的），连开 6 枪，暴击率提高。', pow: lv => skillDmg(1.0, 0.1, lv) * 6, ai: { kind: 'burst', r: [0, 600], dy: 120 },
+  desc: '锁定一个目标（优先领主和精英，其次等级高的，再其次距离近的），连开 6 枪，暴击率提高。', pow: lv => skillDmg(1.0, 0.1, lv) * 6, ai: { kind: 'burst', r: [0, 760], dy: 150 },
   act: (lv) => ({ name: 'pm_mark', clip: 'pmShot', dur: 0.95, noCounter: true, superArmor: [0, 0.95],
     onStart: e => { const t = pmMarkTarget(e); e.act.tg = t; if (t) { e.face = t.x >= e.x ? 1 : -1; pmReticle(t); } sfx.pmBeep(); },
     events: [0.2, 0.3, 0.4, 0.5, 0.6, 0.7].map((tt, i) => evAt(tt, e => { const t = e.act.tg && !e.act.tg.dead ? e.act.tg : pmMarkTarget(e); if (t) e.face = t.x >= e.x ? 1 : -1; pmShot(e, t, skillDmg(1.0, 0.1, lv), { quiet: i % 2 === 1, hit: { critBonus: 0.2, stun: 0.3, knock: 20 } }); })) }) });
 function pmReticle(t) { addFx({ ent: t, y: t.y + 3, dur: 0.9, draw(c) { const e = this.ent, X = sx(e.x), Y = sy(e.y, e.z + e.hurtH() * 0.6), r = 12 + (1 - Math.min(1, this.t / 0.25)) * 14; c.save(); c.strokeStyle = '#8ff0ff'; c.lineWidth = 2; c.beginPath(); c.arc(X, Y, r, 0, TAU); c.moveTo(X - r - 5, Y); c.lineTo(X - r + 5, Y); c.moveTo(X + r - 5, Y); c.lineTo(X + r + 5, Y); c.moveTo(X, Y - r - 5); c.lineTo(X, Y - r + 5); c.moveTo(X, Y + r - 5); c.lineTo(X, Y + r + 5); c.stroke(); c.restore(); } }); }
 // 爆刃突袭：能量刃把前方的敌人拉到身前连斩，最后沿直线回到原位；施放中无敌
 pmSkill('pm_raid', { name: '近战·爆刃突袭', lvReq: 19, mp: 55, cd: 15, col: '#3a6ad8',
-  desc: '伸长能量刃把前方的敌人拉到身前，一阵连斩后最后一击把敌人斩飞，然后沿直线退回原来的位置。施放中无敌。', pow: lv => skillDmg(1.0, 0.1, lv) + skillDmg(0.9, 0.09, lv) * 5 + skillDmg(2.5, 0.25, lv), ai: { kind: 'burst', r: [0, 240], dy: 40 },
+  desc: '伸长能量刃把前方的敌人拉到身前，一阵连斩后最后一击把敌人斩飞，然后沿直线退回原来的位置。施放中无敌。', pow: lv => skillDmg(1.0, 0.1, lv) + skillDmg(0.9, 0.09, lv) * 5 + skillDmg(2.5, 0.25, lv), ai: { kind: 'burst', r: [0, 340], dy: 60 },
   act: (lv) => ({ name: 'pm_raid', clip: 'pmRaid', dur: 1.35, noCounter: true, invul: [0, 1.35],
     onStart: e => { e.act.ox = e.x; e.act.oy = e.y; },
-    events: [evAt(0.05, e => { sfx.pmBlade(); fxStreak({ x: e.x, y: e.y, z: e.z + 62, face: e.face, len: 260, w: 12, col: '#8fe8ff', dur: 0.25 });
-        for (const t of ents) if (hittable(e, t) && (t.x - e.x) * e.face > -10 && Math.abs(t.x - e.x) < 280 && Math.abs(t.y - e.y) < 50) {
+    events: [evAt(0.05, e => { sfx.pmBlade(); fxStreak({ x: e.x, y: e.y, z: e.z + 62, face: e.face, len: 370, w: 14, col: '#8fe8ff', dur: 0.25 });
+        for (const t of ents) if (hittable(e, t) && (t.x - e.x) * e.face > -10 && Math.abs(t.x - e.x) < 380 && Math.abs(t.y - e.y) < 70) {
           if (!t.boss && !t.noGrab && t.weight <= 2.2) { t.x = e.x + e.face * rnd(40, 60); t.y = clamp(lerp(t.y, e.y, 0.7), 4, DEPTH - 4); }
           applyHit(e, t, { dmg: skillDmg(1.0, 0.1, lv), stun: 0.8, knock: 0, hs: 0.04, sure: true, col: '#bff4ff', pmTok: e.act }, { proj: true }); } }),
-      ...[0.3, 0.45, 0.6, 0.75, 0.9].map((tt, i) => evAt(tt, e => { sfx.pmBlade(); fxSlashOn(e, { a0: i % 2 ? 1.1 : -2.2, a1: i % 2 ? -2.0 : 0.9, r: 60, w: 14, off: [16, 60], squash: 0.7, col: '#8fe8ff' });
-        instantHit(e, { box: [-20, 110, 34, 0, 130], dmg: skillDmg(0.9, 0.09, lv), stun: 0.6, knock: 5, airLift: 60, hs: 0.035, col: '#bff4ff' }); })),
-      evAt(1.05, e => { sfx.pmBlade(); cam.shake = 5; fxSlashOn(e, { a0: -2.8, a1: 1.2, r: 76, w: 22, off: [10, 58], squash: 0.9, col: '#dffaff', heavy: true });
-        instantHit(e, { box: [-20, 130, 36, 0, 140], dmg: skillDmg(2.5, 0.25, lv), launch: 460, knock: 160, hs: 0.1, big: 1.5, col: '#dffaff' }); }),
+      ...[0.3, 0.45, 0.6, 0.75, 0.9].map((tt, i) => evAt(tt, e => { sfx.pmBlade(); fxSlashOn(e, { a0: i % 2 ? 1.1 : -2.2, a1: i % 2 ? -2.0 : 0.9, r: 76, w: 16, off: [20, 60], squash: 0.7, col: '#8fe8ff' });
+        instantHit(e, { box: [-20, 140, 40, 0, 130], dmg: skillDmg(0.9, 0.09, lv), stun: 0.6, knock: 5, airLift: 60, hs: 0.035, col: '#bff4ff' }); })),
+      evAt(1.05, e => { sfx.pmBlade(); cam.shake = 5; fxSlashOn(e, { a0: -2.8, a1: 1.2, r: 96, w: 26, off: [14, 58], squash: 0.9, col: '#dffaff', heavy: true });
+        instantHit(e, { box: [-20, 170, 44, 0, 140], dmg: skillDmg(2.5, 0.25, lv), launch: 460, knock: 160, hs: 0.1, big: 1.5, col: '#dffaff' }); }),
       evAt(1.15, e => { fxAfterimage(e, '#6ad8ff'); const x0 = e.x, y0 = e.y; e.warp(e.act.ox, e.act.oy); fxStreak({ x: Math.min(x0, e.x), y: e.y, z: e.z + 50, face: 1, len: Math.abs(x0 - e.x), w: 8, col: '#8fe8ff', dur: 0.2 }); })] }) });
 // 护盾冲击：展开护盾向前冲撞；施放后全队强化保护罩
 function pmHexShield(e, dur) {
@@ -300,17 +300,17 @@ pmSkill('pm_bash', { name: '战服·护盾冲击', lvReq: 19, mp: 45, cd: 25, co
   desc: '在身前展开能量护盾向前冲撞，把路上的敌人撞飞。冲撞中霸体。施放后全队获得 8 秒强化保护罩。', pow: lv => skillDmg(11.5, 1.15, lv), ai: { kind: 'gap', r: [0, 300], dy: 30 },
   act: (lv) => ({ name: 'pm_bash', clip: 'pmBash', dur: 0.62, noCounter: true, superArmor: true, move: [[0.06, 0.42, 380]],
     onStart: e => { pmHexShield(e, 0.55); sfx.pmZap(0.8); },
-    hits: [HB(0.06, 0.44, [0, 74, 34, 0, 130], skillDmg(11.5, 1.15, lv), { knock: 280, stun: 0.6, airLift: 120, heavy: true, hs: 0.09, shake: 4, big: 1.4, snd: 'blunt', col: '#bff4ff' })],
+    hits: [HB(0.06, 0.44, [0, 95, 40, 0, 130], skillDmg(11.5, 1.15, lv), { knock: 280, stun: 0.6, airLift: 120, heavy: true, hs: 0.09, shake: 4, big: 1.4, snd: 'blunt', col: '#bff4ff' })],
     events: [evAt(0.46, e => pmRedShield(e))] }) });
 // 开拓射线：战斗服手炮向前发射激光（多段），扫过的地面随后依次爆炸
 pmSkill('pm_ray', { name: '战服·开拓射线', lvReq: 20, mp: 60, cd: 45, col: '#3a9ae0', elem: 'light',
-  desc: '把护臂变形成手炮，向前发射贯穿的激光（6 段），激光扫过的地面随后从近到远依次爆炸。施放中霸体。', pow: lv => skillDmg(2.25, 0.225, lv) * 6 + skillDmg(2.5, 0.25, lv) * 5, ai: { kind: 'burst', r: [0, 600], dy: 16 },
+  desc: '把护臂变形成手炮，向前发射贯穿的激光（6 段），激光扫过的地面随后从近到远依次爆炸。施放中霸体。', pow: lv => skillDmg(2.25, 0.225, lv) * 6 + skillDmg(2.5, 0.25, lv) * 5, ai: { kind: 'burst', r: [0, 860], dy: 24 },
   act: (lv) => ({ name: 'pm_ray', clip: 'pmRay', dur: 1.3, noCounter: true, superArmor: true,
     update: e => { if (e.actT < 0.34 && Math.random() < 0.6 && typeof fxCharge === 'function') fxCharge(e, '#8fe8ff'); },
-    events: [evAt(0.02, () => sfx.charge()), evAt(0.34, e => { sfx.pmZap(1.3); sfx.iai(); cam.shake = 5; fxBeam(e.x + e.face * 52, e.y, e.z + 58, 620, e.face, { w: 44, dur: 0.6, col: '#8fe8ff' }); }),
-      ...[0.36, 0.44, 0.52, 0.6, 0.68, 0.76].map(tt => evAt(tt, e => instantHit(e, { box: [40, 640, 16, 24, 90], dmg: skillDmg(2.25, 0.225, lv), stun: 0.4, knock: 30, airLift: 140, hs: 0.03, col: '#bff4ff', elem: 'light' }))),
-      ...[0, 1, 2, 3, 4].map(i => evAt(0.82 + i * 0.08, e => { const x = e.x + e.face * (110 + i * 120); fxBurst(x, e.y, 20, 150, '#8fe8ff'); fxShock(x, e.y, 70, '#9fe8ff'); sfx.boom(0.4); cam.shake = Math.max(cam.shake, 3);
-        blast(e, x, e.y, 70, { dmg: skillDmg(2.5, 0.25, lv), type: 'indep', launch: 300, knock: 60, hs: 0.05, col: '#bff4ff', snd: 'fire', pmTok: e.act }, { zMax: 150 }); }))] }) });
+    events: [evAt(0.02, () => sfx.charge()), evAt(0.34, e => { sfx.pmZap(1.3); sfx.iai(); cam.shake = 5; fxBeam(e.x + e.face * 52, e.y, e.z + 58, 880, e.face, { w: 54, dur: 0.6, col: '#8fe8ff' }); }),
+      ...[0.36, 0.44, 0.52, 0.6, 0.68, 0.76].map(tt => evAt(tt, e => instantHit(e, { box: [40, 900, 24, 24, 90], dmg: skillDmg(2.25, 0.225, lv), stun: 0.4, knock: 30, airLift: 140, hs: 0.03, col: '#bff4ff', elem: 'light' }))),
+      ...[0, 1, 2, 3, 4].map(i => evAt(0.82 + i * 0.08, e => { const x = e.x + e.face * (110 + i * 170); fxBurst(x, e.y, 20, 200, '#8fe8ff'); fxShock(x, e.y, 110, '#9fe8ff'); sfx.boom(0.4); cam.shake = Math.max(cam.shake, 3);
+        blast(e, x, e.y, 100, { dmg: skillDmg(2.5, 0.25, lv), type: 'indep', launch: 300, knock: 60, hs: 0.05, col: '#bff4ff', snd: 'fire', pmTok: e.act }, { zMax: 150 }); }))] }) });
 // ---- BUFF（无动作施放、全队同步）----
 pmBuff('pm_mobility', { name: '机动强化', lvReq: 15, mp: 30, cd: 15, col: '#3ac0d8', req: pmReqStacks(1),
   desc: '【BUFF · 无动作】消耗 1 层战场信息：12 秒内全队攻击速度、移动速度、施放速度提高。可以在任何动作中施放，不打断当前动作。', infoExtra: lv => [['三速', '+' + pct(0.08 + 0.006 * (lv - 1))], ['持续', '12 秒'], ['消耗', '战场信息 1 层']],
@@ -334,17 +334,17 @@ pmSkill('pm_tactic', { name: '系统·作战应对', lvReq: 21, passive: true, c
   desc: '【被动 · 光环】根据战场信息调整全队的作战参数：全队攻击力、攻击速度、移动速度提高（不看距离，队员在别的房间也生效）。', infoExtra: lv => [['攻击力', '+' + pct(0.02 + 0.004 * (lv - 1))], ['攻速 / 移速', '+' + pct(0.03 + 0.005 * (lv - 1))]] });
 // ---- 一觉：强袭策略：区域肃清（督战官）----
 pmSkill('pm_awk1', { name: '强袭策略：区域肃清', lvReq: 21, maxLv: 3, mp: 150, cd: 160, pvp: 0.45, awaken: true, col: '#3ac0ff',
-  desc: '【觉醒】呼叫医神设备升空，对周围的敌人进行 10 轮激光支援；同时 33 秒内全队（不含自己）攻击力、攻击速度、移动速度大幅提高。施放中无敌。', pow: lv => skillDmg(2.2, 0.6, lv) * 10, ai: { kind: 'awaken', r: [0, 500], dy: 120 },
+  desc: '【觉醒】呼叫医神设备升空，对周围的敌人进行 10 轮激光支援；同时 33 秒内全队（不含自己）攻击力、攻击速度、移动速度大幅提高。施放中无敌。', pow: lv => skillDmg(2.2, 0.6, lv) * 10, ai: { kind: 'awaken', r: [0, 680], dy: 160 },
   infoExtra: lv => [['队员攻击力', '+' + pct(0.12 + 0.03 * (lv - 1))], ['队员攻速 / 移速', '+' + pct(0.1)], ['持续', '33 秒（不含自己）']],
   act: (lv) => ({ name: 'pm_awk1', clip: 'pmCommand', dur: 2.2, superArmor: true, noCounter: true, invul: [0, 2.2],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '强袭策略：区域肃清', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken();
       if (e === game.player) partySend('buff', { id: 'pm_awk1', b: { t: 33, atk: 0.12 + 0.03 * (lv - 1), aspd: 0.1, mspd: 0.1, col: '#3ac0ff' }, aura: '#8fe8ff' }, e); },
     update: e => { const a = e.act; if (!a.dev && e.actT > 0.95) a.dev = pmMedic(e, 1.3); },
     events: Array.from({ length: 10 }, (_, i) => evAt(1.0 + i * 0.1, e => {
-      const L = ents.filter(t => hittable(e, t) && Math.abs(t.x - e.x) < 520 && Math.abs(t.y - e.y) < 200), t = L.length ? L[i % L.length] : null;
-      const x = t ? t.x : e.x + e.face * rnd(60, 360), y = t ? t.y : clamp(e.y + rnd(-60, 60), 8, DEPTH - 8);
-      pmSkyLaser(x, y, 0.4, 36); sfx.pmZap(0.8); cam.shake = Math.max(cam.shake, 4);
-      blast(e, x, y, 80, { dmg: skillDmg(2.2, 0.6, lv), type: 'indep', stun: 0.5, launch: 260, knock: 40, hs: 0.05, sure: true, downHit: true, col: '#bff4ff', pmTok: e.act }, { zMax: 220 }); })) }) });
+      const L = ents.filter(t => hittable(e, t) && Math.abs(t.x - e.x) < 700 && Math.abs(t.y - e.y) < 200), t = L.length ? L[i % L.length] : null;
+      const x = t ? t.x : e.x + e.face * rnd(80, 520), y = t ? t.y : clamp(e.y + rnd(-80, 80), 8, DEPTH - 8);
+      pmSkyLaser(x, y, 0.4, 50); sfx.pmZap(0.8); cam.shake = Math.max(cam.shake, 4);
+      blast(e, x, y, 120, { dmg: skillDmg(2.2, 0.6, lv), type: 'indep', stun: 0.5, launch: 260, knock: 40, hs: 0.05, sure: true, downHit: true, col: '#bff4ff', pmTok: e.act }, { zMax: 220 }); })) }) });
 // 医神设备（觉醒用的空中支援平台）：从天上降下来悬停，结束后升空
 function pmMedic(e, dur) {
   return addFx({ x: e.x, y: e.y - 2, z: 0, dur, add: false, draw(c) { const k = this.t / this.dur, up = k < 0.2 ? (1 - k / 0.2) * 200 : k > 0.85 ? (k - 0.85) / 0.15 * 260 : 0, X = sx(this.x), Y = sy(this.y, 230 + up + Math.sin(game.t * 3) * 5);
@@ -364,24 +364,24 @@ pmBuff('pm_revive', { name: '保护模件（黄金复苏）', lvReq: 23, mp: 50,
     if (!soloPlay() && !dead.length) { fxText('没有需要复苏的队员', p.x, p.y, p.z + 30, { col: '#ffd23a', size: 11 }); p.cool.pm_revive = 1; p.mp += SKILLS.pm_revive.mp; return; }
     if (!pmSpend(p, 1)) return; sfx.pmZap(1.2);
     for (const g of dead) { partySend('revive', { uid: g.uid }, p); fxSpr('spark', g.x, g.y, g.z + 50, { w: 160, dur: 0.5, col: '#ffe07a' }); }
-    if (soloPlay()) { fxShock(p.x, p.y, 150, '#ffe07a'); cam.shake = 4;
-      blast(p, p.x, p.y, 150, { dmg: skillDmg(3.0, 0.3, lv), type: 'indep', stun: 0.8, knock: 60, hs: 0.06, snd: 'crit', col: '#fff0a0', sure: true }, { zMax: 150 });
-      for (const t of ents) if (foe(p, t) && inGround(t, p.x, p.y, 150)) addStatus(t, 'shock', 3, { src: p });
+    if (soloPlay()) { fxShock(p.x, p.y, 210, '#ffe07a'); cam.shake = 4;
+      blast(p, p.x, p.y, 200, { dmg: skillDmg(3.0, 0.3, lv), type: 'indep', stun: 0.8, knock: 60, hs: 0.06, snd: 'crit', col: '#fff0a0', sure: true }, { zMax: 150 });
+      for (const t of ents) if (foe(p, t) && inGround(t, p.x, p.y, 200)) addStatus(t, 'shock', 3, { src: p });
       pmShield(p, 'pm_buffer', 0.15, 15); }
   } });
 // 系统·区域防御：无人机展开力场，持续伤害力场内的敌人；力场期间自己免疫伤害，全队短暂无敌
-defSummon('pm_field', { kind: 'field', life: 3, tick: 0.3, r: 150, zMax: 160, max: 1, tags: ['pm'], col: PM_COL,
+defSummon('pm_field', { kind: 'field', life: 3, tick: 0.3, r: 200, zMax: 160, max: 1, tags: ['pm'], col: PM_COL,
   onTick: (s, L) => { for (const t of L) summonHit(s, t, { dmg: skillDmg(0.55, 0.055, s.lv), type: 'indep', stun: 0.3, knock: 20, hs: 0.02, col: '#bff4ff', snd: 'crit' }); },
   draw(c, s) { const k = s.lifeT / s.life, a = k < 0.1 ? k / 0.1 : k > 0.85 ? (1 - k) / 0.15 : 1, X = sx(s.x), Y = sy(s.y, 0);
     c.save(); c.translate(X, Y); c.scale(1, GR); c.globalCompositeOperation = 'lighter';
-    if (IMG['fx/pm_field']) { c.globalAlpha = 0.55 * a; drawSpr(c, 'pm_field', 0, 0, 320, 320, { rot: game.t * 0.6 }); }
-    else { c.globalAlpha = 0.5 * a; c.strokeStyle = PM_COL; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, 150, 0, TAU); c.stroke(); c.globalAlpha = 0.12 * a; c.fillStyle = PM_COL; c.fill(); }
+    if (IMG['fx/pm_field']) { c.globalAlpha = 0.55 * a; drawSpr(c, 'pm_field', 0, 0, 420, 420, { rot: game.t * 0.6 }); }
+    else { c.globalAlpha = 0.5 * a; c.strokeStyle = PM_COL; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, 200, 0, TAU); c.stroke(); c.globalAlpha = 0.12 * a; c.fillStyle = PM_COL; c.fill(); }
     c.restore(); } });
 pmSkill('pm_field', { name: '系统·区域防御', lvReq: 23, mp: 60, cd: 25, col: '#2a8ac8',
-  desc: '分析无人机在身边展开 3 秒的防御力场：力场内的敌人持续受到伤害；力场期间自己免疫伤害，全队获得 1.5 秒无敌。', pow: lv => skillDmg(0.55, 0.055, lv) * 10, ai: { kind: 'aoe', r: [0, 150], dy: 60 },
+  desc: '分析无人机在身边展开 3 秒的防御力场：力场内的敌人持续受到伤害；力场期间自己免疫伤害，全队获得 1.5 秒无敌。', pow: lv => skillDmg(0.55, 0.055, lv) * 10, ai: { kind: 'aoe', r: [0, 200], dy: 80 },
   infoExtra: () => [['力场', '3 秒'], ['全队无敌', '1.5 秒']],
   act: (lv) => ({ name: 'pm_field', clip: 'pmField', dur: 0.55, noCounter: true, invul: [0, 0.55],
-    events: [evAt(0.18, e => { sfx.pmZap(1); fxShock(e.x, e.y, 160, PM_COL); summon(e, 'pm_field', { x: e.x, y: e.y, lv });
+    events: [evAt(0.18, e => { sfx.pmZap(1); fxShock(e.x, e.y, 220, PM_COL); summon(e, 'pm_field', { x: e.x, y: e.y, lv });
       partyOn.fx.buff(e, { id: 'pm_field', b: { t: 3, inv: 1, col: PM_COL, name: '区域防御' } }, null);
       if (e === game.player) partySend('buff', { id: 'pm_field', b: { t: 1.5, inv: 1, col: PM_COL, name: '区域防御' }, aura: PM_COL }, e); })] }) });
 // 战服·歼灭行动：6 架小无人机在身前排成扇形，一齐向前发射直线激光（2 轮）；然后后撤，回收无人机合体成大剑挥斩
@@ -393,23 +393,23 @@ function pmMiniDrones(e, dur) {
 }
 const pmDronePos = (o, i, u = 1) => ({ x: o.x + o.face * (40 + (i % 2) * 22) * u, y: o.y + (i - 2.5) * 12 * u, z: 36 + (i % 3) * 34 * u });
 pmSkill('pm_annihilate', { name: '战服·歼灭行动', lvReq: 25, mp: 80, cd: 30, col: '#2a7ae0', elem: 'light',
-  desc: '放出 6 架小型无人机在身前排成扇形，一齐向前方发射直线激光（2 轮）；随后向后撤开，回收无人机合体成大剑向前挥斩。施放中霸体。', pow: lv => skillDmg(1.8, 0.18, lv) * 2 + skillDmg(4.0, 0.4, lv), ai: { kind: 'burst', r: [0, 560], dy: 40 },
+  desc: '放出 6 架小型无人机在身前排成扇形，一齐向前方发射直线激光（2 轮）；随后向后撤开，回收无人机合体成大剑向前挥斩。施放中霸体。', pow: lv => skillDmg(1.8, 0.18, lv) * 2 + skillDmg(4.0, 0.4, lv), ai: { kind: 'burst', r: [0, 860], dy: 50 },
   act: (lv) => ({ name: 'pm_annihilate', clip: 'pmCommand', dur: 1.75, noCounter: true, superArmor: true,
     onStart: e => { e.act.dr = pmMiniDrones(e, 1.0); sfx.pmBeep(); },
     events: [...[0.3, 0.55].map(tt => evAt(tt, e => { sfx.pmZap(0.9); cam.shake = Math.max(cam.shake, 3); const D = e.act.dr;
-        for (let i = 0; i < 6; i++) { const P = D ? pmDronePos(D, i) : { x: e.x + e.face * 40, y: e.y, z: 60 }; fxBeam(P.x + e.face * 8, P.y, P.z, 620, e.face, { w: 14, dur: 0.24, col: '#9fe8ff' }); }
-        instantHit(e, { box: [30, 660, 40, 0, 160], dmg: skillDmg(1.8, 0.18, lv), stun: 0.45, knock: 20, airLift: 110, hs: 0.03, col: '#bff4ff', elem: 'light', pmTok: e.act }); })),
+        for (let i = 0; i < 6; i++) { const P = D ? pmDronePos(D, i) : { x: e.x + e.face * 40, y: e.y, z: 60 }; fxBeam(P.x + e.face * 8, P.y, P.z, 880, e.face, { w: 18, dur: 0.24, col: '#9fe8ff' }); }
+        instantHit(e, { box: [30, 900, 55, 0, 160], dmg: skillDmg(1.8, 0.18, lv), stun: 0.45, knock: 20, airLift: 110, hs: 0.03, col: '#bff4ff', elem: 'light', pmTok: e.act }); })),
       evAt(0.95, e => { e.play('pmFlip', true); e.vz = 300; e.vx = -e.face * 260; sfx.jump(); }),
-      evAt(1.3, e => { e.vx = 0; e.play('pmSwing', true); sfx.pmBlade(); sfx.swing(true); cam.shake = 6; fxSlashOn(e, { a0: -2.9, a1: 1.3, r: 120, w: 30, off: [20, 60], squash: 0.6, col: '#dffaff', heavy: true });
-        instantHit(e, { box: [-20, 260, 40, 0, 150], dmg: skillDmg(4.0, 0.4, lv), launch: 420, knock: 220, hs: 0.12, big: 1.8, col: '#dffaff', sure: true }); })] }) });
+      evAt(1.3, e => { e.vx = 0; e.play('pmSwing', true); sfx.pmBlade(); sfx.swing(true); cam.shake = 6; fxSlashOn(e, { a0: -2.9, a1: 1.3, r: 155, w: 34, off: [30, 60], squash: 0.6, col: '#dffaff', heavy: true });
+        instantHit(e, { box: [-20, 340, 55, 0, 150], dmg: skillDmg(4.0, 0.4, lv), launch: 420, knock: 220, hs: 0.12, big: 1.8, col: '#dffaff', sure: true }); })] }) });
 pmSkill('pm_limit', { name: '系统·限制解除', lvReq: 26, tier: 2, passive: true, col: '#d05ae0',
   desc: '【被动 · 二觉】解除战斗服的输出限制：攻击力提高；保护罩总量上限提高到最大 HP 的 70%，强化保护罩的减伤提高到 30%。', infoExtra: lv => [['攻击力', '+' + pct(0.05 + 0.01 * (lv - 1))], ['保护罩上限', '70%'], ['强化保护罩减伤', '30%']] });
 CLASSES.gun.passives.push(p => { if (!isPM(p)) return; const lv = skLv(p, 'pm_limit'); setPassive(p, 'pm_limit', lv > 0, { atk: 0.05 + 0.01 * (lv - 1), col: '#d05ae0' }); });
 // 战服·超限压制：全功率向前突进，追踪前方的敌人连续打击 5 次（敌人多时逐个打），然后回到原位；施放中无敌
 pmSkill('pm_overlimit', { name: '战服·超限压制', lvReq: 26, mp: 90, cd: 35, col: '#3a5ae0',
-  desc: '战斗服全功率运转：高速追踪前方的敌人连续打击 5 次（敌人多时逐个打，最多 5 个），然后回到原来的位置。施放中无敌。', pow: lv => skillDmg(1.6, 0.16, lv) * 5, ai: { kind: 'burst', r: [0, 520], dy: 120 },
+  desc: '战斗服全功率运转：高速追踪前方的敌人连续打击 5 次（敌人多时逐个打，最多 5 个），然后回到原来的位置。施放中无敌。', pow: lv => skillDmg(1.6, 0.16, lv) * 5, ai: { kind: 'burst', r: [0, 680], dy: 150 },
   act: (lv) => ({ name: 'pm_overlimit', clip: 'pmRush', dur: 1.55, noCounter: true, invul: [0, 1.55],
-    onStart: e => { e.act.ox = e.x; e.act.oy = e.y; e.act.list = ents.filter(t => hittable(e, t) && (t.x - e.x) * e.face > -20 && Math.abs(t.x - e.x) < 560 && Math.abs(t.y - e.y) < 160).sort((a, b) => Math.abs(a.x - e.x) - Math.abs(b.x - e.x)).slice(0, 5); sfx.pmZap(1); },
+    onStart: e => { e.act.ox = e.x; e.act.oy = e.y; e.act.list = ents.filter(t => hittable(e, t) && (t.x - e.x) * e.face > -20 && Math.abs(t.x - e.x) < 720 && Math.abs(t.y - e.y) < 180).sort((a, b) => Math.abs(a.x - e.x) - Math.abs(b.x - e.x)).slice(0, 5); sfx.pmZap(1); },
     events: [...Array.from({ length: 5 }, (_, i) => evAt(0.12 + i * 0.2, e => { const L = e.act.list.filter(t => !t.dead && !t.remove), t = L.length ? L[i % L.length] : null;
         fxAfterimage(e, '#6ad8ff'); const x0 = e.x;
         if (t) { e.face = t.x >= e.x ? 1 : -1; e.warp(t.x - e.face * 40, t.y); } else e.warp(e.x + e.face * 60, e.y);
@@ -420,7 +420,7 @@ pmSkill('pm_overlimit', { name: '战服·超限压制', lvReq: 26, mp: 90, cd: 3
       evAt(1.2, e => { fxAfterimage(e, '#6ad8ff'); const x0 = e.x; e.warp(e.act.ox, e.act.oy); e.play('pmA1', true); fxStreak({ x: Math.min(x0, e.x), y: e.y, z: e.z + 50, face: 1, len: Math.max(8, Math.abs(x0 - e.x)), w: 8, col: '#8fe8ff', dur: 0.2 }); })] }) });
 // 战服·超负荷炮：在前方部署遥控兵器，充能后向前方冲击；施放后全队强化保护罩
 pmSkill('pm_overload', { name: '战服·超负荷炮', lvReq: 26, mp: 100, cd: 40, col: '#e05a3a',
-  desc: '在前方部署遥控兵器：充能时吸住附近的敌人并持续造成伤害，1 秒后向前方释放超负荷冲击波，把路上的敌人全部轰飞。施放后全队获得 8 秒强化保护罩。', pow: lv => skillDmg(1.0, 0.1, lv) * 5 + skillDmg(8.0, 0.8, lv), ai: { kind: 'burst', r: [0, 520], dy: 30 },
+  desc: '在前方部署遥控兵器：充能时吸住附近的敌人并持续造成伤害，1 秒后向前方释放超负荷冲击波，把路上的敌人全部轰飞。施放后全队获得 8 秒强化保护罩。', pow: lv => skillDmg(1.0, 0.1, lv) * 5 + skillDmg(8.0, 0.8, lv), ai: { kind: 'burst', r: [0, 860], dy: 50 },
   act: (lv) => ({ name: 'pm_overload', clip: 'pmDeploy', dur: 0.6, noCounter: true, superArmor: true,
     events: [evAt(0.25, e => { sfx.pmBeep(); pmRemote(e, lv); }), evAt(0.4, e => pmRedShield(e, 8, 0.05))] }) });
 // 在指定位置朝指定方向做一次立即判定（遥控兵器等：发射点不是施放者本人）
@@ -433,11 +433,11 @@ function pmRemote(e, lv) {
   addFx({ x, y: y + 0.5, z: 0, dur: 1.8, draw(c) { const k = this.t, X = sx(this.x), Y = sy(this.y, 18);
     if (IMG['fx/pm_remote']) drawSpr(c, 'pm_remote', X, Y, 64, 0, { add: false, flip: face < 0 });
     else { c.fillStyle = '#e8eef4'; c.strokeStyle = '#1e2a44'; c.lineWidth = 2; c.fillRect(X - 22, Y - 14, 44, 24); c.strokeRect(X - 22, Y - 14, 44, 24); }
-    if (k < 1.1) drawSpr(c, fxTint('spark', '#ff9a7a'), X + face * 26, Y - 2, 30 + k * 60, 0, { alpha: 0.6 + 0.4 * Math.sin(game.t * 30) }); } });
-  for (let i = 0; i < 5; i++) game.after(0.2 + i * 0.18, () => { if (owner.dead) return; pmHitAt(owner, x, y, face, { box: [0, 90, 40, 0, 120], dmg: skillDmg(1.0, 0.1, lv), type: 'indep', stun: 0.4, knock: -40, hs: 0.02, col: '#ffc0a0', pmTok: tok }); });
+    if (k < 1.1) drawSpr(c, fxTint('spark', '#ff9a7a'), X + face * 26, Y - 2, 40 + k * 90, 0, { alpha: 0.6 + 0.4 * Math.sin(game.t * 30) }); } });
+  for (let i = 0; i < 5; i++) game.after(0.2 + i * 0.18, () => { if (owner.dead) return; pmHitAt(owner, x, y, face, { box: [0, 130, 50, 0, 120], dmg: skillDmg(1.0, 0.1, lv), type: 'indep', stun: 0.4, knock: -40, hs: 0.02, col: '#ffc0a0', pmTok: tok }); });
   game.after(1.1, () => { if (owner.dead) return; sfx.cannon(1.4); sfx.pmZap(1.4); cam.shake = 10; cam.flash = 0.15; cam.flashCol = '#ffe0d0';
-    fxBeam(x + face * 30, y, 40, 620, face, { w: 90, dur: 0.7, col: '#ff9a7a' });
-    pmHitAt(owner, x, y, face, { box: [20, 640, 40, 0, 160], dmg: skillDmg(8.0, 0.8, lv), type: 'indep', launch: 480, knock: 300, hs: 0.14, big: 2, sure: true, downHit: true, col: '#ffd0c0', pmTok: tok }); });
+    fxBeam(x + face * 30, y, 40, 880, face, { w: 110, dur: 0.7, col: '#ff9a7a' });
+    pmHitAt(owner, x, y, face, { box: [20, 900, 55, 0, 160], dmg: skillDmg(8.0, 0.8, lv), type: 'indep', launch: 480, knock: 300, hs: 0.14, big: 2, sure: true, downHit: true, col: '#ffd0c0', pmTok: tok }); });
 }
 // ---- 二觉：绝境策略：极限歼灭（战勤统帅）----
 // 二觉的“自律神经系统激活”：头顶的蓄能环慢慢充满
@@ -448,20 +448,20 @@ function pmNerveFx(e, dur) {
     c.font = 'bold 10px sans-serif'; c.textAlign = 'center'; c.fillStyle = '#e8dcff'; c.fillText('神经系统激活', X, Y - 24); c.restore(); } });
 }
 pmSkill('pm_awk2', { name: '绝境策略：极限歼灭', lvReq: 27, maxLv: 3, mp: 200, cd: 180, pvp: 0.45, awaken: true, tier: 2, col: '#6a3ae0',
-  desc: '【二觉】先用约 2.5 秒“激活自律神经系统”（蓄能，无敌），然后调用战斗服的全部兵器发动歼灭连段：手炮连射 → 能量刃乱斩 → 无人机齐射 → 合体大剑终结。全部命中时获得 2 层战场信息。施放中无敌。', pow: lv => skillDmg(30, 9, lv), ai: { kind: 'awaken', r: [0, 420], dy: 80 },
+  desc: '【二觉】先用约 2.5 秒“激活自律神经系统”（蓄能，无敌），然后调用战斗服的全部兵器发动歼灭连段：手炮连射 → 能量刃乱斩 → 无人机齐射 → 合体大剑终结。全部命中时获得 2 层战场信息。施放中无敌。', pow: lv => skillDmg(30, 9, lv), ai: { kind: 'awaken', r: [0, 640], dy: 90 },
   act: (lv) => ({ name: 'pm_awk2', clip: 'pmAwk2', dur: 4.95, superArmor: true, noCounter: true, invul: [0, 4.95],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '绝境策略：极限歼灭', who: pmCutin(e, 2) }; game.timeStop = 0.9; sfx.awaken(); e.act.hitN = 0; e.act.need = 0; pmNerveFx(e, 2.55); },
-    update: e => { if (e.actT < 2.55 && Math.random() < 0.7) fxCharge(e, '#c8b0ff', 2); if (e.actT > 2.5 && !e.act.go) { e.act.go = true; sfx.pmZap(1.4); cam.flash = 0.12; cam.flashCol = '#e0d0ff'; fxShock(e.x, e.y, 180, '#c8b0ff'); } },
+    update: e => { if (e.actT < 2.55 && Math.random() < 0.7) fxCharge(e, '#c8b0ff', 2); if (e.actT > 2.5 && !e.act.go) { e.act.go = true; sfx.pmZap(1.4); cam.flash = 0.12; cam.flashCol = '#e0d0ff'; fxShock(e.x, e.y, 240, '#c8b0ff'); } },
     events: [
       ...Array.from({ length: 8 }, (_, i) => evAt(2.6 + i * 0.08, e => { e.act.need++; pmMuzzle(e, 50, 1.6); sfx.gun(1.2); cam.shake = Math.max(cam.shake, 3);
-        if (instantHit(e, { box: [20, 520, 30, 0, 110], dmg: skillDmg(1.2, 0.35, lv), stun: 0.5, knock: 20, airLift: 110, hs: 0.02, sure: true, downHit: true, col: '#d8c0ff', pmTok: e.act })) e.act.hitN++; })),
-      ...Array.from({ length: 6 }, (_, i) => evAt(3.35 + i * 0.1, e => { e.act.need++; e.play(i % 2 ? 'pmA2' : 'pmA1', true); sfx.pmBlade(); fxSlashOn(e, { a0: i % 2 ? 1.1 : -2.3, a1: i % 2 ? -2.0 : 0.9, r: 80, w: 18, off: [20, 60], squash: 0.7, col: '#c8b0ff' });
-        if (instantHit(e, { box: [-20, 150, 40, 0, 150], dmg: skillDmg(1.3, 0.4, lv), stun: 0.6, knock: 5, airLift: 60, hs: 0.03, sure: true, downHit: true, col: '#d8c0ff' })) e.act.hitN++; })),
+        if (instantHit(e, { box: [20, 760, 40, 0, 110], dmg: skillDmg(1.2, 0.35, lv), stun: 0.5, knock: 20, airLift: 110, hs: 0.02, sure: true, downHit: true, col: '#d8c0ff', pmTok: e.act })) e.act.hitN++; })),
+      ...Array.from({ length: 6 }, (_, i) => evAt(3.35 + i * 0.1, e => { e.act.need++; e.play(i % 2 ? 'pmA2' : 'pmA1', true); sfx.pmBlade(); fxSlashOn(e, { a0: i % 2 ? 1.1 : -2.3, a1: i % 2 ? -2.0 : 0.9, r: 105, w: 20, off: [24, 60], squash: 0.7, col: '#c8b0ff' });
+        if (instantHit(e, { box: [-20, 200, 50, 0, 150], dmg: skillDmg(1.3, 0.4, lv), stun: 0.6, knock: 5, airLift: 60, hs: 0.03, sure: true, downHit: true, col: '#d8c0ff' })) e.act.hitN++; })),
       evAt(4.0, e => { pmMiniDrones(e, 0.5); sfx.pmZap(1.2); e.act.need++; let n = 0;
-        for (let i = 0; i < 6; i++) { const x = e.x + e.face * (60 + i * 60); pmSkyLaser(x, e.y, 0.3, 26, '#c8b0ff'); for (const t of ents) if (hittable(e, t) && Math.abs(t.x - x) < 50 && Math.abs(t.y - e.y) < 70) { applyHit(e, t, { dmg: skillDmg(0.8, 0.25, lv), stun: 0.6, airLift: 140, hs: 0.02, sure: true, downHit: true, col: '#d8c0ff' }, { proj: true }); n++; } }
+        for (let i = 0; i < 6; i++) { const x = e.x + e.face * (80 + i * 90); pmSkyLaser(x, e.y, 0.3, 36, '#c8b0ff'); for (const t of ents) if (hittable(e, t) && Math.abs(t.x - x) < 65 && Math.abs(t.y - e.y) < 90) { applyHit(e, t, { dmg: skillDmg(0.8, 0.25, lv), stun: 0.6, airLift: 140, hs: 0.02, sure: true, downHit: true, col: '#d8c0ff' }, { proj: true }); n++; } }
         if (n) e.act.hitN++; }),
-      evAt(4.4, e => { e.play('pmAwk2b', true); e.act.need++; sfx.boom(1.3); cam.shake = 12; cam.flash = 0.25; cam.flashCol = '#e0d0ff'; fxSlashOn(e, { a0: -3.0, a1: 1.4, r: 130, w: 34, off: [20, 60], squash: 0.6, col: '#e8d8ff', heavy: true });
-        if (instantHit(e, { box: [-30, 260, 50, 0, 180], dmg: skillDmg(8, 2.4, lv), launch: 520, knock: 260, hs: 0.16, big: 2.2, sure: true, downHit: true, col: '#e8d8ff' })) e.act.hitN++;
+      evAt(4.4, e => { e.play('pmAwk2b', true); e.act.need++; sfx.boom(1.3); cam.shake = 12; cam.flash = 0.25; cam.flashCol = '#e0d0ff'; fxSlashOn(e, { a0: -3.0, a1: 1.4, r: 170, w: 38, off: [30, 60], squash: 0.6, col: '#e8d8ff', heavy: true });
+        if (instantHit(e, { box: [-30, 380, 65, 0, 180], dmg: skillDmg(8, 2.4, lv), launch: 520, knock: 260, hs: 0.16, big: 2.2, sure: true, downHit: true, col: '#e8d8ff' })) e.act.hitN++;
         if (e.act.hitN >= e.act.need) { pmGain(e, 200); fxText('全部命中！战场信息 +2', e.x, e.y, e.z + 40, { col: '#e0d0ff', size: 14, dur: 1.2 }); } })] }) });
 // 系统常量·战斗服（改良型）：战斗服外观二选一（标准型 / 改良型）——施放一次切换
 pmBuff('pm_suit2', { name: '系统常量·战斗服（改良型）', lvReq: 29, maxLv: 1, sp: 15, mp: 0, cd: 1, col: '#c8a04a', ai: null,
@@ -471,17 +471,17 @@ pmSkill('pm_program', { name: '系统·临战编程', lvReq: 29, maxLv: 1, passi
   desc: '【被动】预先编写的作战程序：战服·机动打击命中后自动追加第二击；近战·闪退射击施放时给全队一层保护罩（最大 HP 的 5%）。' });
 // 系统·孤军突破：医神设备突围——蹲伏无敌，医神设备向周围倾泻能量攻击，结束时获得 1 层战场信息
 pmSkill('pm_breakout', { name: '系统·孤军突破', lvReq: 29, mp: 80, cd: 45, col: '#e0c03a',
-  desc: '呼叫医神设备强行突围：蹲低防御（无敌）等待支援，医神设备向周围倾泻能量攻击，最后一次大爆发；结束时获得 1 层战场信息。', pow: lv => skillDmg(1.2, 0.12, lv) * 6 + skillDmg(5.0, 0.5, lv), ai: { kind: 'aoe', r: [0, 260], dy: 100 },
+  desc: '呼叫医神设备强行突围：蹲低防御（无敌）等待支援，医神设备向周围倾泻能量攻击，最后一次大爆发；结束时获得 1 层战场信息。', pow: lv => skillDmg(1.2, 0.12, lv) * 6 + skillDmg(5.0, 0.5, lv), ai: { kind: 'aoe', r: [0, 320], dy: 120 },
   act: (lv) => ({ name: 'pm_breakout', clip: 'pmGuard', dur: 1.7, noCounter: true, invul: [0, 1.7],
     onStart: e => { pmMedic(e, 1.7); sfx.pmBeep(); },
-    events: [...Array.from({ length: 6 }, (_, i) => evAt(0.35 + i * 0.15, e => { const a = i * 1.1, x = e.x + Math.cos(a) * 140, y = clamp(e.y + Math.sin(a) * 50, 8, DEPTH - 8); pmSkyLaser(x, y, 0.3, 28, '#ffe07a'); sfx.pmZap(0.6);
-        blast(e, x, y, 80, { dmg: skillDmg(1.2, 0.12, lv), type: 'indep', stun: 0.5, knock: 60, hs: 0.03, sure: true, col: '#fff0a0', pmTok: e.act }, { zMax: 180 }); })),
-      evAt(1.4, e => { e.play('pmField', true); cam.shake = 9; sfx.boom(1.2); fxShock(e.x, e.y, 240, '#ffe07a'); fxBurst(e.x, e.y, 60, 320, '#ffe07a');
-        blast(e, e.x, e.y, 240, { dmg: skillDmg(5.0, 0.5, lv), type: 'indep', launch: 420, knock: 200, hs: 0.1, big: 1.6, sure: true, downHit: true, col: '#fff0a0' }, { zMax: 220 }); pmGain(e, 100); })] }) });
+    events: [...Array.from({ length: 6 }, (_, i) => evAt(0.35 + i * 0.15, e => { const a = i * 1.1, x = e.x + Math.cos(a) * 200, y = clamp(e.y + Math.sin(a) * 70, 8, DEPTH - 8); pmSkyLaser(x, y, 0.3, 40, '#ffe07a'); sfx.pmZap(0.6);
+        blast(e, x, y, 110, { dmg: skillDmg(1.2, 0.12, lv), type: 'indep', stun: 0.5, knock: 60, hs: 0.03, sure: true, col: '#fff0a0', pmTok: e.act }, { zMax: 180 }); })),
+      evAt(1.4, e => { e.play('pmField', true); cam.shake = 9; sfx.boom(1.2); fxShock(e.x, e.y, 330, '#ffe07a'); fxBurst(e.x, e.y, 60, 430, '#ffe07a');
+        blast(e, e.x, e.y, 320, { dmg: skillDmg(5.0, 0.5, lv), type: 'indep', launch: 420, knock: 200, hs: 0.1, big: 1.6, sure: true, downHit: true, col: '#fff0a0' }, { zMax: 220 }); pmGain(e, 100); })] }) });
 // ---- 三觉：空袭策略：神兵天降（重霄·协战师）：超高空速降，全队强化 + 激光 10 段 + 连锁爆炸 15 段；和一觉共享冷却 ----
 pmSkill('pm_awk3', { name: '空袭策略：神兵天降', lvReq: 30, maxLv: 3, mp: 250, cd: 160, pvp: 0.45, awaken: true, tier: 3, col: '#ffd23a',
   desc: '【三觉】从超高空的医神设备上速降：全队（含自己）攻击力、三速大幅提高 40 秒，医神设备进行 10 段激光轰炸，落地时引发 15 段连锁爆炸。和“强袭策略：区域肃清”共享冷却；区域肃清可用时，在升空阶段输入区域肃清可以把它的威力合并进来（激光和爆炸加伤，全队同时获得区域肃清的 BUFF）。施放中无敌。',
-  pow: lv => skillDmg(2.5, 0.8, lv) * 10 + skillDmg(1.4, 0.45, lv) * 15, ai: { kind: 'awaken', r: [0, 520], dy: 140 },
+  pow: lv => skillDmg(2.5, 0.8, lv) * 10 + skillDmg(1.4, 0.45, lv) * 15, ai: { kind: 'awaken', r: [0, 700], dy: 170 },
   infoExtra: lv => [['全队攻击力', '+' + pct(0.15 + 0.03 * (lv - 1))], ['全队三速', '+12%'], ['持续', '40 秒'], ['共享冷却', '强袭策略：区域肃清']],
   act: (lv) => ({ name: 'pm_awk3', clip: 'pmSalute', dur: 3.4, superArmor: true, noCounter: true, invul: [0, 3.4], lowGrav: 0.001,
     onStart: e => { game.cutin = { t: 0, dur: 1.1, name: '空袭策略：神兵天降', who: pmCutin(e, 3) }; game.timeStop = 1.0; sfx.awaken(); e.act.ox = e.x; e.act.oy = e.y;
@@ -493,13 +493,13 @@ pmSkill('pm_awk3', { name: '空袭策略：神兵天降', lvReq: 30, maxLv: 3, m
       else if (t >= 2.25 && !a.landed) { a.landed = true; e.z = 0; e.play('pmLand', true); } },
     onEnd: e => { e.z = 0; },
     onInput: (e, I) => pmAwk3Merge(e, I),
-    events: [...Array.from({ length: 10 }, (_, i) => evAt(1.35 + i * 0.09, e => { const L = ents.filter(t => hittable(e, t) && Math.abs(t.x - e.act.ox) < 560 && Math.abs(t.y - e.act.oy) < 220), t = L.length ? L[i % L.length] : null;
-        const x = t ? t.x : e.act.ox + rnd(-360, 360), y = t ? t.y : clamp(e.act.oy + rnd(-70, 70), 8, DEPTH - 8); pmSkyLaser(x, y, 0.35, 34, '#ffe07a'); sfx.pmZap(0.7); cam.shake = Math.max(cam.shake, 4);
-        blast(e, x, y, 80, { dmg: skillDmg(2.5, 0.8, lv) * (e.act.mergeMul || 1), type: 'indep', stun: 0.6, launch: 240, knock: 30, hs: 0.04, sure: true, downHit: true, col: e.act.merged ? '#bff4ff' : '#fff0a0', pmTok: e.act }, { zMax: 400 }); if (e.act.merged) pmSkyLaser(x + rnd(-30, 30), y, 0.3, 24, '#8fe8ff'); })),
-      evAt(2.25, e => { cam.shake = 14; cam.flash = 0.3; cam.flashCol = '#fff6d0'; sfx.boom(1.5); fxShock(e.x, e.y, 260, '#ffe07a'); fxDust(e.x, e.y, 14, 40); }),
-      ...Array.from({ length: 15 }, (_, i) => evAt(2.3 + i * 0.06, e => { const r = 60 + i * 26, a = i * 2.4, x = e.x + Math.cos(a) * r, y = clamp(e.y + Math.sin(a) * r * 0.35, 8, DEPTH - 8);
-        fxBurst(x, y, 20, 170, '#ffc060'); if (i % 3 === 0) sfx.boom(0.5); cam.shake = Math.max(cam.shake, 5);
-        blast(e, x, y, 85, { dmg: skillDmg(1.4, 0.45, lv) * (e.act.mergeMul || 1), type: 'indep', launch: 360, knock: 120, hs: 0.04, sure: true, downHit: true, col: '#ffd0a0' }, { zMax: 300 }); }))] }) });
+    events: [...Array.from({ length: 10 }, (_, i) => evAt(1.35 + i * 0.09, e => { const L = ents.filter(t => hittable(e, t) && Math.abs(t.x - e.act.ox) < 720 && Math.abs(t.y - e.act.oy) < 220), t = L.length ? L[i % L.length] : null;
+        const x = t ? t.x : e.act.ox + rnd(-460, 460), y = t ? t.y : clamp(e.act.oy + rnd(-85, 85), 8, DEPTH - 8); pmSkyLaser(x, y, 0.35, 48, '#ffe07a'); sfx.pmZap(0.7); cam.shake = Math.max(cam.shake, 4);
+        blast(e, x, y, 115, { dmg: skillDmg(2.5, 0.8, lv) * (e.act.mergeMul || 1), type: 'indep', stun: 0.6, launch: 240, knock: 30, hs: 0.04, sure: true, downHit: true, col: e.act.merged ? '#bff4ff' : '#fff0a0', pmTok: e.act }, { zMax: 400 }); if (e.act.merged) pmSkyLaser(x + rnd(-30, 30), y, 0.3, 24, '#8fe8ff'); })),
+      evAt(2.25, e => { cam.shake = 14; cam.flash = 0.3; cam.flashCol = '#fff6d0'; sfx.boom(1.5); fxShock(e.x, e.y, 380, '#ffe07a'); fxDust(e.x, e.y, 14, 50); }),
+      ...Array.from({ length: 15 }, (_, i) => evAt(2.3 + i * 0.06, e => { const r = 80 + i * 34, a = i * 2.4, x = e.x + Math.cos(a) * r, y = clamp(e.y + Math.sin(a) * r * 0.35, 8, DEPTH - 8);
+        fxBurst(x, y, 20, 230, '#ffc060'); if (i % 3 === 0) sfx.boom(0.5); cam.shake = Math.max(cam.shake, 5);
+        blast(e, x, y, 115, { dmg: skillDmg(1.4, 0.45, lv) * (e.act.mergeMul || 1), type: 'indep', launch: 360, knock: 120, hs: 0.04, sure: true, downHit: true, col: '#ffd0a0' }, { zMax: 300 }); }))] }) });
 // 神兵天降的“预输入一觉合并威力”：升空阶段（激光开始前）输入一觉（技能栏键或 ↑↑↓↓+Z），而且一觉施放前是好的 →
 // 一觉的威力并进三觉（后面的激光和连锁爆炸按一觉 / 三觉的威力比例加伤，激光多一道蓝色光束），同时给全队挂上一觉的 BUFF；一觉照常进共享冷却
 function pmAwk3Merge(e, I) {

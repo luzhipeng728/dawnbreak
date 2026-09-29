@@ -134,6 +134,7 @@ const ORB_TIER = { rare: ['orb_title1', 'orb_weapon1', 'orb_armor1', 'orb_acc1',
 /* ---- 可以直接使用的商城道具（cashUse：由 game/shop.js 包装 inv.useItem 统一处理） ---- */
 const defCashUse = (key, def) => defineItem(key, { kind: 'use', price: 10, noSell: true, cash: true, cashIcon: def.cashIcon || key, use: { open: def.cashUse === 'box' || def.cashUse === 'pack' || def.cashUse === 'red' }, ...def });
 // 券
+defCashUse('tk_maxlv', { name: '一键满级券', rar: 5, cashUse: 'maxlv', desc: '使用后当前角色直接升到满级（Lv.60），每一级的 SP 照常获得。主线任务不会自动完成，可以回头补做领奖励。' });
 defCashUse('tk_enh7', { name: '+7 装备强化券', rar: 2, cashUse: 'ticket', ticket: { kind: 'enh', lvl: 7 }, desc: '选择一件装备，把强化等级直接变为 +7（已经 +7 以上的不能用；增幅过的装备不能用）。' });
 defCashUse('tk_enh10', { name: '+10 装备强化券', rar: 4, cashUse: 'ticket', ticket: { kind: 'enh', lvl: 10 }, desc: '选择一件装备，把强化等级直接变为 +10（已经 +10 以上的不能用；增幅过的装备不能用）。' });
 defCashUse('tk_amp7', { name: '+7 装备增幅券', rar: 3, cashUse: 'ticket', ticket: { kind: 'amp', lvl: 7 }, desc: '选择一件装备，把增幅等级直接变为 +7（没有异次元属性时按选择赋予；强化过的装备会转为增幅）。' });

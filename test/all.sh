@@ -51,6 +51,7 @@ run acct      node test/acct.mjs
 run bag       node test/bag.mjs
 run skyguide  node test/skyguide.mjs
 run epicfx    node test/epicfx.mjs
+run maxlv     node test/maxlv.mjs
 run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,sword:asura,sword:soulbender,sword:ghostblade,gun:ranger,gun:launcher,gun:mechanic,gun:spitfire,gun:paramedic,mage:elemental,mage:battlemage,mage:summoner,mage:witch,mage:enchantress
 run audit_mage node test/skillaudit.mjs mage,mage:elemental,mage:battlemage,mage:summoner,mage:witch,mage:enchantress --compare   # 魔法师技能对官方规格 docs/skills/mage.json
 [ "$1" = quick ] && exit 0

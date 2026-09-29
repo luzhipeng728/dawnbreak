@@ -24,7 +24,7 @@ if (cmd === 'users') {
   console.log(`已发邮件 #${Number(r.lastInsertRowid)} → ${u.name}，点券 ${cera}`);
 } else if (cmd === 'item') {
   const u = user(a1), n = Math.min(9999, Math.max(1, Math.floor(+a3 || 1))), t = Date.now();
-  if (!/^[a-z0-9_]{1,60}$/.test(a2 || '')) { console.error('物品 key 不对：' + a2); process.exit(1); }
+  if (!/^[a-z][a-z0-9_]{0,59}$/.test(a2 || '') || !/^\d+$/.test(a3 || '')) { console.error(`参数不对：key=${a2} 数量=${a3}`); process.exit(1); }   // key 以字母开头、数量必须是数字（防参数错位）
   const r = db.prepare('INSERT INTO mail (to_id, from_id, from_name, kind, title, body, gold, cera, items, created, expires, rid) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .run(u.id, null, '管理员', 'gm', process.argv[7] || '物品补给', '管理员发放的物品，领取后放进背包。祝游戏愉快！', 0, 0, JSON.stringify([{ key: a2, n }]), t, t + 30 * 86400000, null);
   console.log(`已发邮件 #${Number(r.lastInsertRowid)} → ${u.name}，物品 ${a2} ×${n}`);

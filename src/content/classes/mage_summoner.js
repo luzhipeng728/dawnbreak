@@ -28,40 +28,40 @@ function smShot(s, o) {
     draw(c, pr) { drawSpr(c, img, sx(pr.x), sy(pr.y, pr.z), 24 * (o.size || 1), 24 * (o.size || 1), { rot: pr.t * 8 }); } });
 }
 // 落雷（格雷林 / 伊伽贝拉）：能打到空中和倒地的敌人
-function smBolt(s, x, y, dmg, o = {}) { lightningStrike({ x, y }); summonArea(s, x, y, o.r || 46, { dmg: dmg, stun: 0.5, launch: 200, knock: 20, hs: 0.05, snd: 'crit', col: '#fff6a0', elem: 'light', downHit: true, type: 'mag' }, { zMax: 220 }); if (o.shock && Math.random() < o.shock) for (const t of ents) if (foe(s.owner, t) && inGround(t, x, y, 50)) addStatus(t, 'shock', 4, { src: s.owner }); }
+function smBolt(s, x, y, dmg, o = {}) { lightningStrike({ x, y }); fxShock(x, y, o.r || 65, '#fff6a0'); summonArea(s, x, y, o.r || 65, { dmg: dmg, stun: 0.5, launch: 200, knock: 20, hs: 0.05, snd: 'crit', col: '#fff6a0', elem: 'light', downHit: true, type: 'mag' }, { zMax: 220 }); if (o.shock && Math.random() < o.shock) for (const t of ents) if (foe(s.owner, t) && inGround(t, x, y, o.r || 65)) addStatus(t, 'shock', 4, { src: s.owner }); }
 // 瞬移到主人前方（交感 / 附灵）；按住 ↓ = 脚下
 function smFront(s, arg) { const o = s.owner, feet = arg && arg.feet; s.warp(o.x + o.face * (feet ? 0 : 70), o.y + (feet ? 2 : 0)); s.face = o.face; fxBurst(s.x, s.y, 40, 80, s.sdef.col || '#d8c0ff'); }
 const smCmdArg = p => ({ feet: !!(p.pad && p.pad.dy() > 0) });
 // ---- 下级精灵（在场 30 秒，每种 1 只） ----
 smDef('sm_ador', 'ador', { h: 60, speed: 190, pref: 26, life: 30, tags: ['spirit', 'lesser'], col: '#ff9a50', elem: 'fire',
-  attacks: [{ clip: 'atk1', range: [0, 50], dy: 14, cd: [0.8, 1.2], act: { dur: 0.55, hits: [mH(0.12, 0.18, [0, 46, 16, 0, 60], 0.16, { elem: 'fire', downHit: true, snd: 'fire', knock: 20 }), mH(0.3, 0.36, [0, 46, 16, 0, 60], 0.16, { elem: 'fire', downHit: true, snd: 'fire', knock: 40 })] } }] });
+  attacks: [{ clip: 'atk1', range: [0, 60], dy: 16, cd: [0.8, 1.2], act: { dur: 0.55, hits: [mH(0.12, 0.18, [0, 58, 20, 0, 60], 0.16, { elem: 'fire', downHit: true, snd: 'fire', knock: 20 }), mH(0.3, 0.36, [0, 58, 20, 0, 60], 0.16, { elem: 'fire', downHit: true, snd: 'fire', knock: 40 })] } }] });
 smDef('sm_naias', 'naias', { h: 58, speed: 170, pref: 90, life: 30, tags: ['spirit', 'lesser'], col: '#9fe6ff', aggro: 0.8,
   onSpawn: s => { const o = s.owner; const hh = Math.round(o.hpMax * 0.02); o.hp = Math.min(o.hpMax, o.hp + hh); addNumber(hh, o.x, o.y, o.z, { heal: true }); },
-  attacks: [{ clip: 'atk1', range: [0, 50], dy: 14, cd: [1.2, 1.8], act: { dur: 0.5, hits: [mH(0.14, 0.2, [0, 46, 16, 10, 60], 0.24, { elem: 'ice', snd: 'blunt' })] } },
+  attacks: [{ clip: 'atk1', range: [0, 60], dy: 16, cd: [1.2, 1.8], act: { dur: 0.5, hits: [mH(0.14, 0.2, [0, 58, 20, 10, 60], 0.24, { elem: 'ice', snd: 'blunt' })] } },
     { clip: 'cast', range: [60, 360], dy: 40, cd: [1.6, 2.4], act: { dur: 0.6, events: [evAt(0.3, s => { sfx.ice(); smShot(s, { dmg: 0.26, col: '#bfefff', elem: 'ice', img: 'icespike', hit: { onHit: (a, t) => { if (Math.random() < 0.05) addStatus(t, 'freeze', 1, { src: a.owner }); } } }); })] } }] });
 smDef('sm_stalker', 'stalker', { h: 56, speed: 220, pref: 24, life: 30, tags: ['spirit', 'lesser'], col: '#c79aff', aggro: 1.4,
-  attacks: [{ clip: 'scratch', range: [0, 52], dy: 14, cd: [0.6, 1.0], act: { dur: 0.5, hits: [mH(0.3, 0.36, [0, 48, 16, 0, 60], 0.2, { elem: 'dark', stun: 0.65, downHit: true, snd: 'slash', onHit: (a, t) => { if (Math.random() < 0.1) addStatus(t, 'curse', 4, { src: a.owner }); } })] } }] });
+  attacks: [{ clip: 'scratch', range: [0, 62], dy: 16, cd: [0.6, 1.0], act: { dur: 0.5, hits: [mH(0.3, 0.36, [0, 60, 20, 0, 60], 0.2, { elem: 'dark', stun: 0.65, downHit: true, snd: 'slash', onHit: (a, t) => { if (Math.random() < 0.1) addStatus(t, 'curse', 4, { src: a.owner }); } })] } }] });
 smDef('sm_wisp', 'wisp', { h: 54, speed: 190, pref: 40, life: 30, tags: ['spirit', 'lesser'], col: '#fff38a',
-  attacks: [{ clip: 'atk1', range: [0, 70], dy: 16, cd: [0.9, 1.4], act: { dur: 0.5, events: [evAt(0.18, s => { sfx.zap(); fxSpr('spark', s.x + s.face * 40, s.y + 1, s.z + 50, { w: 40, dur: 0.2 }); })],
-    hits: [mH(0.18, 0.24, [0, 66, 18, 0, 90], 0.22, { elem: 'light', snd: 'crit', onHit: (a, t) => { if (Math.random() < 0.1 && Math.sign(a.x - t.x || 1) !== t.face) addStatus(t, 'stun', 1, { src: a.owner }); } })] } }] });
+  attacks: [{ clip: 'atk1', range: [0, 84], dy: 18, cd: [0.9, 1.4], act: { dur: 0.5, events: [evAt(0.18, s => { sfx.zap(); fxSpr('spark', s.x + s.face * 48, s.y + 1, s.z + 50, { w: 56, dur: 0.2 }); })],
+    hits: [mH(0.18, 0.24, [0, 82, 22, 0, 90], 0.22, { elem: 'light', snd: 'crit', onHit: (a, t) => { if (Math.random() < 0.1 && Math.sign(a.x - t.x || 1) !== t.face) addStatus(t, 'stun', 1, { src: a.owner }); } })] } }] });
 const LESSER = ['sm_ador', 'sm_naias', 'sm_stalker', 'sm_wisp'];
 // ---- 契约兽 ----
 smDef('sm_frit', 'frit', { h: 70, speed: 180, pref: 50, tags: ['contract'], col: '#ff8a4a',
-  attacks: [{ clip: 'bite', range: [0, 56], dy: 14, cd: [1.4, 2.0], w: 2, act: { dur: 0.7, superArmor: true, hits: [mH(0.34, 0.42, [0, 54, 18, 0, 70], 0.45, { elem: 'fire', snd: 'blunt' })] } },
+  attacks: [{ clip: 'bite', range: [0, 68], dy: 16, cd: [1.4, 2.0], w: 2, act: { dur: 0.7, superArmor: true, hits: [mH(0.34, 0.42, [0, 68, 22, 0, 70], 0.45, { elem: 'fire', snd: 'blunt' })] } },
     { clip: 'cast', range: [70, 360], dy: 40, cd: [2.2, 3.2], w: 2, act: { dur: 0.7, events: [evAt(0.35, s => { sfx.hit('fire', false); smShot(s, { dmg: 0.5, col: '#ffb060', elem: 'fire', img: 'fireball', size: 1.2 }); })] } },
-    { clip: 'roar', range: [0, 130], dy: 30, cd: [5, 7], w: 1, act: { dur: 1.1, events: [evAt(0.45, s => { for (let i = 0; i < 3; i++) game.after(i * 0.12, () => { if (s.gone) return; fxSpr('flame', s.x + s.face * (40 + i * 30), s.y, 30, { w: 70, dur: 0.3 });
-      summonArea(s, s.x + s.face * (40 + i * 30), s.y, 40, { dmg: 0.25, stun: 0.3, knock: 30, hs: 0.03, elem: 'fire', type: 'mag' }, { status: Math.random() < 0.1 ? 'burn' : null, sdur: 3, dps: 0.06 }); }); })] } }],
-  cmds: { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'roar', dur: 1.0, superArmor: true, events: [evAt(0.35, e => { sfx.boom(0.6); cam.shake = Math.max(cam.shake, 4); fxShock(e.x, e.y, 150, '#ff9a50');
-    for (let i = 0; i < 5; i++) game.after(i * 0.1, () => { if (!e.gone) summonArea(e, e.x + e.face * 40, e.y, 120, { dmg: 0.4, stun: 0.4, knock: 60, hs: 0.04, elem: 'fire', type: 'mag', downHit: true }, { zMax: 150 }); }); })] }); } } });
+    { clip: 'roar', range: [0, 170], dy: 36, cd: [5, 7], w: 1, act: { dur: 1.1, events: [evAt(0.45, s => { for (let i = 0; i < 3; i++) game.after(i * 0.12, () => { if (s.gone) return; fxSpr('flame', s.x + s.face * (50 + i * 45), s.y, 30, { w: 95, dur: 0.3 });
+      summonArea(s, s.x + s.face * (50 + i * 45), s.y, 55, { dmg: 0.25, stun: 0.3, knock: 30, hs: 0.03, elem: 'fire', type: 'mag' }, { status: Math.random() < 0.1 ? 'burn' : null, sdur: 3, dps: 0.06 }); }); })] } }],
+  cmds: { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'roar', dur: 1.0, superArmor: true, events: [evAt(0.35, e => { sfx.boom(0.6); cam.shake = Math.max(cam.shake, 4); fxShock(e.x + e.face * 50, e.y, 170, '#ff9a50');
+    for (let i = 0; i < 5; i++) game.after(i * 0.1, () => { if (!e.gone) summonArea(e, e.x + e.face * 50, e.y, 170, { dmg: 0.4, stun: 0.4, knock: 60, hs: 0.04, elem: 'fire', type: 'mag', downHit: true }, { zMax: 150 }); }); })] }); } } });
 smDef('sm_sandor', 'sandor', { h: 124, w: 16, d: 13, speed: 150, pref: 50, tags: ['contract'], col: '#b08aff', sa: true,
-  attacks: [{ clip: 'club', range: [0, 80], dy: 18, cd: [1.4, 2.0], w: 2, act: { dur: 0.9, hits: [mH(0.42, 0.5, [0, 80, 24, 0, 120], 0.7, { elem: 'dark', knock: 110, snd: 'slash', heavy: true })], events: [evAt(0.38, s => sfx.swing(true))] } },
-    { clip: 'pounce', range: [60, 200], dy: 20, cd: [4, 6], w: 1, act: { dur: 1.0, move: [[0.35, 0.6, 360]], hits: [mH(0.4, 0.6, [0, 70, 22, 10, 110], 0.8, { elem: 'dark', knock: 160, snd: 'stab' })] } },
+  attacks: [{ clip: 'club', range: [0, 100], dy: 22, cd: [1.4, 2.0], w: 2, act: { dur: 0.9, hits: [mH(0.42, 0.5, [0, 104, 30, 0, 120], 0.7, { elem: 'dark', knock: 110, snd: 'slash', heavy: true })], events: [evAt(0.38, s => sfx.swing(true))] } },
+    { clip: 'pounce', range: [60, 200], dy: 20, cd: [4, 6], w: 1, act: { dur: 1.0, move: [[0.35, 0.6, 360]], hits: [mH(0.4, 0.6, [0, 90, 26, 10, 110], 0.8, { elem: 'dark', knock: 160, snd: 'stab' })] } },
     { clip: 'cast', range: [0, 400], dy: 400, cd: [9, 12], w: 0.6, act: { dur: 0.8, events: [evAt(0.3, s => { fxAura(s, '#b08aff'); s.owner.buffs.sm_guard = { t: 6, taken: -0.05 }; fxAura(s.owner, '#b08aff', 0.5); })] } },
     // 举盾防御：蹲身架盾挡在敌人前面（盾面闪光），架盾时自己和身后的你受到的伤害降低
     { clip: 'chargeW', range: [0, 150], dy: 40, cd: [6, 9], w: 1, act: { dur: 1.3, superArmor: true, update: s => { if (Math.floor(s.actT / 0.22) !== s.guardN) { s.guardN = Math.floor(s.actT / 0.22); fxGuard(s); } },
       events: [evAt(0.05, s => { sfx.hit('blunt', false); s.guardN = -1; const o = s.owner; if (Math.abs(o.x - s.x) < 160) o.buffs.sm_shield = { t: 1.3, taken: -0.1 }; })] } }],
   cmds: { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'chargeW', dur: 0.9, superArmor: true, update: e => { if (e.actT < 0.48 && Math.random() < 0.5) fxCharge(e, '#c79aff'); }, events: [evAt(0.5, e => { sfx.iai(); e.play('club', true);
-    shootProj(e, { img: 'slash', col: '#c79aff', w: 110, speed: 620, life: 0.7, z: 50, bw: 26, bh: 90, pierce: true, hit: { dmg: 1.6 * e.mul, stun: 0.5, knock: 120, hs: 0.06, elem: 'dark', type: 'mag', col: '#c79aff', max: 1 } }); })] }); } } });
+    shootProj(e, { img: 'slash', col: '#c79aff', w: 150, speed: 620, life: 0.8, z: 30, bw: 36, bd: 24, bh: 110, pierce: true, hit: { dmg: 1.6 * e.mul, stun: 0.5, knock: 120, hs: 0.06, elem: 'dark', type: 'mag', col: '#c79aff', max: 1 } }); })] }); } } });
 // 袄索：召出 / 换房间时从你面前的地面钻出（尘土 + 碎石迸开）
 function aukusoEmerge(s) { fxDust(s.x, s.y, 10, 30, '#7a6a4a'); fxSpr('rock', s.x, s.y, 10, { w: 90, dur: 0.4, grow: [0.4, 1.1] }); fxShock(s.x, s.y, 70, '#8adf6a'); sfx.boom(0.3); }
 // 毒虫：放出 3 只毒虫贴地爬向敌人，碰到就中毒
@@ -75,66 +75,66 @@ function aukusoBugs(s) { const t = summonTarget(s); if (!t) return; sfx.magic();
         c.fillStyle = '#23331a'; c.beginPath(); c.ellipse(X, Y, 7, 4.5, 0, 0, TAU); c.fill(); c.fillStyle = '#c8ff70'; c.fillRect(X + pr.face * 5 - 1, Y - 2, 2.5, 2.5); } }); }); }
 smDef('sm_aukuso', 'aukuso', { h: 110, w: 18, d: 14, speed: 0, pref: 0, sight: 480, tags: ['contract'], col: '#8adf6a', enterAt: 'front',
   onSpawn: s => { aukusoEmerge(s); s.room0 = game.room; }, update: s => { if (s.room0 !== game.room) { s.room0 = game.room; aukusoEmerge(s); } },
-  attacks: [{ clip: 'atk1', range: [0, 80], dy: 22, cd: [1.0, 1.5], w: 2, act: { dur: 0.55, hits: [mH(0.2, 0.28, [-10, 80, 24, 0, 100], 0.4, { snd: 'stab', knock: 60 })] } },
+  attacks: [{ clip: 'atk1', range: [0, 100], dy: 26, cd: [1.0, 1.5], w: 2, act: { dur: 0.55, hits: [mH(0.2, 0.28, [-10, 104, 30, 0, 100], 0.4, { snd: 'stab', knock: 60 })] } },
     { clip: 'cast', range: [70, 420], dy: 60, cd: [1.8, 2.6], w: 2, act: { dur: 0.7, events: [evAt(0.35, s => { const t = summonTarget(s); if (!t) return; fxSpr('icespike', t.x, t.y, 0, { w: 50, dur: 0.4, col: '#6a9a4a', grow: [0.3, 1] });
       summonHit(s, t, { dmg: 0.5, launch: 260, knock: 10, stun: 0.4, hs: 0.05, snd: 'stab', type: 'mag' }); })] } },
-    { clip: 'roar', range: [0, 170], dy: 60, cd: [6, 9], w: 1, act: { dur: 1.0, events: [evAt(0.5, s => { fxSpr('poison', s.x + s.face * 60, s.y, 20, { w: 180, dur: 0.8, col: '#8adf6a' });
-      summonArea(s, s.x + s.face * 60, s.y, 110, { dmg: 0.3, stun: 0.3, knock: 20, hs: 0.03, type: 'mag' }, { status: Math.random() < 0.3 ? 'confuse' : 'poison', sdur: 3, dps: 0.05 }); })] } },
+    { clip: 'roar', range: [0, 220], dy: 70, cd: [6, 9], w: 1, act: { dur: 1.0, events: [evAt(0.5, s => { fxSpr('poison', s.x + s.face * 80, s.y, 20, { w: 260, dur: 0.8, col: '#8adf6a' });
+      summonArea(s, s.x + s.face * 80, s.y, 150, { dmg: 0.3, stun: 0.3, knock: 20, hs: 0.03, type: 'mag' }, { status: Math.random() < 0.3 ? 'confuse' : 'poison', sdur: 3, dps: 0.05 }); })] } },
     { clip: 'cast', range: [80, 420], dy: 60, cd: [4, 6], w: 1, act: { dur: 0.8, events: [evAt(0.4, aukusoBugs)] } }],
-  cmds: { special(s) { summonAct(s, { clip: 'cast', dur: 0.8, events: [evAt(0.35, e => { let n = 0; for (const t of ents) if (foe(e.owner, t) && Math.abs(t.x - e.x) < 500 && Math.abs(t.y - e.y) < 120 && n < 12) { n++;
+  cmds: { special(s) { summonAct(s, { clip: 'cast', dur: 0.8, events: [evAt(0.35, e => { let n = 0; for (const t of ents) if (foe(e.owner, t) && Math.abs(t.x - e.x) < 500 && Math.abs(t.y - e.y) < 200 && n < 12) { n++;
     fxSpr('icespike', t.x, t.y, 0, { w: 56, dur: 0.45, col: '#6a9a4a', grow: [0.3, 1] }); summonHit(e, t, { dmg: 1.2, launch: 320, stun: 0.5, hs: 0.06, snd: 'stab', type: 'mag' }); } })] }); } } });
 function luiseMeteor(s, n) {
   const o = s.owner;
   for (let i = 0; i < n; i++) game.after(i * 0.35, () => { const t = nearestFoe(o, 600) || { x: o.x + o.face * 200, y: o.y }; const g = { x: t.x, y: t.y };
-    telegraph({ x: g.x, y: g.y, r: 80, dur: 0.6, kind: 'hex', col: '#ff9a3a', friendly: true, fire: () => { meteorImpact(g, 0.9); fxShock(g.x, g.y, 160, '#ffb060');
-      applyAreaFrom(o, g.x, g.y, 90, { dmg: 2.4 * (s.mul || 1), launch: 380, knock: 120, hs: 0.1, big: 1.5, elem: 'fire', type: 'mag', downHit: true }); } }); });
+    telegraph({ x: g.x, y: g.y, r: 130, dur: 0.6, kind: 'hex', col: '#ff9a3a', friendly: true, fire: () => { meteorImpact(g, 1.2); fxShock(g.x, g.y, 200, '#ffb060');
+      applyAreaFrom(o, g.x, g.y, 140, { dmg: 2.4 * (s.mul || 1), launch: 380, knock: 120, hs: 0.1, big: 1.5, elem: 'fire', type: 'mag', downHit: true }); } }); });
 }
 function applyAreaFrom(owner, x, y, r, h) { for (const t of ents) if (foe(owner, t) && t.invul <= 0 && inGround(t, x, y, r) && t.z < 200 && (t.st !== 'down' || h.downHit)) applyHit(owner, t, { ...h, box: null }, { proj: true, src: { x: x - owner.face * 10, y, z: 0, face: owner.face } }); }
 smDef('sm_luise', 'luise', { h: 112, speed: 160, pref: 120, tags: ['contract'], col: '#ff6a5a',
-  attacks: [{ clip: 'club', range: [0, 70], dy: 18, cd: [1.6, 2.2], w: 1, act: { dur: 0.8, superArmor: true, hits: [mH(0.4, 0.48, [0, 70, 22, 0, 110], 0.5, { knock: 100 })] } },
+  attacks: [{ clip: 'club', range: [0, 88], dy: 22, cd: [1.6, 2.2], w: 1, act: { dur: 0.8, superArmor: true, hits: [mH(0.4, 0.48, [0, 90, 28, 0, 110], 0.5, { knock: 100 })] } },
     { clip: 'cast', range: [60, 380], dy: 50, cd: [1.4, 2.0], w: 3, act: { dur: 0.7, events: [evAt(0.35, s => { const r = Math.random();
       if (r < 0.4) { sfx.ice(); smShot(s, { dmg: 0.35, col: '#bfefff', elem: 'ice', img: 'icespike', speed: 600 }); }
       else if (r < 0.8) { sfx.hit('fire', false); smShot(s, { dmg: 0.5, col: '#ffb060', elem: 'fire', img: 'fireball', size: 1.3 }); }
-      else { const t = summonTarget(s); if (t) { sfx.ice(); fxSpr('icespike', t.x, t.y, 0, { w: 70, dur: 0.5, grow: [0.3, 1] }); summonArea(s, t.x, t.y, 50, { dmg: 0.7, launch: 280, stun: 0.4, hs: 0.05, elem: 'ice', type: 'mag' }, { zMax: 150 }); } } })] } }],
+      else { const t = summonTarget(s); if (t) { sfx.ice(); fxSpr('icespike', t.x, t.y, 0, { w: 95, dur: 0.5, grow: [0.3, 1] }); summonArea(s, t.x, t.y, 70, { dmg: 0.7, launch: 280, stun: 0.4, hs: 0.05, elem: 'ice', type: 'mag' }, { zMax: 150 }); } } })] } }],
   cmds: { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'cast', dur: 0.8, events: [evAt(0.3, e => { sfx.charge(); luiseMeteor(e, 1); })] }); } },
   onEnd: (s, why) => { if (why === 'life' || why === 'dead' || why === 'cmd') luiseMeteor(s, why === 'dead' ? 2 : 1); } });
 // 库鲁塔：复用牛头王的整套美术（缩小一点）
 defSummon('sm_kuruta', { kind: 'follower', bundle: 'tauKing', model: () => summonSprite('tauKing', {}, '#e0a060'), w: 20, d: 15, h: 140, scale: 0.82, speed: 140, runSpeed: 300, pref: 60, sight: 560, life: Infinity, max: 1, col: '#e0a060', tags: ['contract'], ai: smAI,
   onSpawn: s => { s.superArmor = Infinity; fxSigil('hexagram', s.x, s.y, 0, { w: 160, dur: 0.6, ay: 0.5, grow: [0.3, 1] }); cam.shake = Math.max(cam.shake, 3); },
-  attacks: [{ clip: 'axe', range: [0, 100], dy: 22, cd: [1.8, 2.6], w: 2, act: { dur: 1.25, hits: [mH(0.62, 0.72, [-10, 105, 30, 0, 140], 1.2, { knock: 200, heavy: true, hs: 0.08, shake: 2 })], events: [evAt(0.58, s => sfx.swing(true))] } },
-    { clip: 'charge', range: [100, 320], dy: 24, cd: [5, 7], w: 1, act: { dur: 0.9, move: [[0.1, 0.7, 420]], hits: [mH(0.1, 0.7, [0, 60, 26, 0, 130], 0.9, { knock: 220, launch: 260, hs: 0.06 })] } },
-    { clip: 'roar', range: [0, 200], dy: 80, cd: [9, 12], w: 0.8, act: { dur: 1.2, events: [evAt(0.5, s => { sfx.boom(0.6); cam.shake = Math.max(cam.shake, 4); summonArea(s, s.x, s.y, 150, { dmg: 0.4, stun: 0.6, knock: 60, hs: 0.04 }, { status: 'stun', sdur: 1.2 }); })] } }],
+  attacks: [{ clip: 'axe', range: [0, 125], dy: 28, cd: [1.8, 2.6], w: 2, act: { dur: 1.25, hits: [mH(0.62, 0.72, [-10, 132, 36, 0, 140], 1.2, { knock: 200, heavy: true, hs: 0.08, shake: 2 })], events: [evAt(0.58, s => sfx.swing(true))] } },
+    { clip: 'charge', range: [100, 320], dy: 24, cd: [5, 7], w: 1, act: { dur: 0.9, move: [[0.1, 0.7, 420]], hits: [mH(0.1, 0.7, [0, 80, 30, 0, 130], 0.9, { knock: 220, launch: 260, hs: 0.06 })] } },
+    { clip: 'roar', range: [0, 260], dy: 100, cd: [9, 12], w: 0.8, act: { dur: 1.2, events: [evAt(0.5, s => { sfx.boom(0.6); cam.shake = Math.max(cam.shake, 4); fxShock(s.x, s.y, 210, '#ffb060'); summonArea(s, s.x, s.y, 210, { dmg: 0.4, stun: 0.6, knock: 60, hs: 0.04 }, { status: 'stun', sdur: 1.2 }); })] } }],
   cmds: { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'axe', dur: 1.4, superArmor: true, events: [
-    evAt(0.3, e => { sfx.swing(true); for (const t of ents) if (foe(e.owner, t) && Math.abs(t.x - e.x) < 220 && Math.abs(t.y - e.y) < 80 && !t.boss) { t.x = damp(t.x, e.x + e.face * 70, 20, 1 / 60); } summonArea(e, e.x + e.face * 60, e.y, 120, { dmg: 1.2, stun: 0.5, knock: -80, hs: 0.06 }); }),
-    evAt(0.75, e => { sfx.boom(1.0); cam.shake = Math.max(cam.shake, 7); fxShock(e.x + e.face * 70, e.y, 220, '#ffb060'); summonArea(e, e.x + e.face * 70, e.y, 140, { dmg: 2.6, launch: 380, knock: 120, hs: 0.1, big: 1.6, downHit: true }, { zMax: 200 }); })] }); } } });
+    evAt(0.3, e => { sfx.swing(true); for (const t of ents) if (foe(e.owner, t) && Math.abs(t.x - e.x) < 300 && Math.abs(t.y - e.y) < 100 && !t.boss) { t.x = damp(t.x, e.x + e.face * 80, 20, 1 / 60); } summonArea(e, e.x + e.face * 70, e.y, 170, { dmg: 1.2, stun: 0.5, knock: -80, hs: 0.06 }); }),
+    evAt(0.75, e => { sfx.boom(1.0); cam.shake = Math.max(cam.shake, 7); fxShock(e.x + e.face * 90, e.y, 290, '#ffb060'); summonArea(e, e.x + e.face * 90, e.y, 210, { dmg: 2.6, launch: 380, knock: 120, hs: 0.1, big: 1.6, downHit: true }, { zMax: 200 }); })] }); } } });
 // ---- 上级精灵（常驻；附灵 = 二觉被动“蚀月附灵”解锁的再按指令，招式写在 mage_summoner_p1.js） ----
-defSummon('sm_darkfield', { kind: 'field', r: 70, tick: 0.5, life: 3, max: 3, col: '#8a4ab0',
+defSummon('sm_darkfield', { kind: 'field', r: 100, tick: 0.5, life: 3, max: 3, col: '#8a4ab0',
   onTick(s, foes) { for (const t of foes) { summonHit(s, t, { dmg: s.dmg || 0.2, stun: 0.2, knock: 0, hs: 0.02, elem: 'dark', type: 'mag', sure: true }); if (Math.random() < 0.1) addStatus(t, 'blind', 2, { src: s.owner }); } },
-  draw(c, s) { const X = sx(s.x), Y = sy(s.y, 0), k = s.lifeT / s.life, a = k < 0.1 ? k * 10 : k > 0.85 ? (1 - k) / 0.15 : 1; c.save(); c.globalAlpha = 0.55 * a; c.translate(X, Y); c.scale(1, GR); drawSpr(c, fxTint('vortex', '#6a2a9a'), 0, 0, 150, 150, { rot: -game.t * 1.5 }); c.restore(); } });
+  draw(c, s) { const X = sx(s.x), Y = sy(s.y, 0), k = s.lifeT / s.life, a = k < 0.1 ? k * 10 : k > 0.85 ? (1 - k) / 0.15 : 1; c.save(); c.globalAlpha = 0.55 * a; c.translate(X, Y); c.scale(1, GR); drawSpr(c, fxTint('vortex', '#6a2a9a'), 0, 0, 215, 215, { rot: -game.t * 1.5 }); c.restore(); } });
 smDef('sm_merkle', 'merkle', { h: 128, w: 16, speed: 160, pref: 55, tags: ['spirit', 'higher'], col: '#a06adf',
-  attacks: [{ clip: 'club', range: [0, 90], dy: 20, cd: [1.4, 2.0], w: 2, act: { dur: 0.9, hits: [mH(0.42, 0.5, [-10, 95, 26, 0, 120], 0.6, { elem: 'dark', snd: 'slash', knock: 90, onHit: (a, t) => { if (Math.random() < 0.08) addStatus(t, 'blind', 2, { src: a.owner }); } })] } },
-    { clip: 'slam', range: [0, 90], dy: 20, cd: [3, 4.5], w: 1, act: { dur: 1.1, hits: [mH(0.7, 0.8, [0, 95, 28, 0, 120], 0.9, { elem: 'dark', snd: 'slash', down: true, downHit: true })] } },
+  attacks: [{ clip: 'club', range: [0, 112], dy: 26, cd: [1.4, 2.0], w: 2, act: { dur: 0.9, hits: [mH(0.42, 0.5, [-10, 118, 32, 0, 120], 0.6, { elem: 'dark', snd: 'slash', knock: 90, onHit: (a, t) => { if (Math.random() < 0.08) addStatus(t, 'blind', 2, { src: a.owner }); } })] } },
+    { clip: 'slam', range: [0, 112], dy: 26, cd: [3, 4.5], w: 1, act: { dur: 1.1, hits: [mH(0.7, 0.8, [0, 118, 34, 0, 120], 0.9, { elem: 'dark', snd: 'slash', down: true, downHit: true })] } },
     { clip: 'cast', range: [0, 300], dy: 60, cd: [6, 8], w: 1, act: { dur: 0.8, events: [evAt(0.4, s => { const t = summonTarget(s); const f = summon(s.owner, 'sm_darkfield', { x: t ? t.x : s.x + s.face * 80, y: t ? t.y : s.y }); if (f) f.dmg = 0.2 * s.mul; })] } }] });
 smDef('sm_glarelin', 'glarelin', { h: 130, speed: 160, pref: 200, tags: ['spirit', 'higher'], col: '#fff38a',
   attacks: [{ clip: 'cast', range: [80, 420], dy: 80, cd: [1.6, 2.2], w: 3, act: { dur: 0.8, events: [evAt(0.4, s => { const t = summonTarget(s); if (!t) return; sfx.zap(); for (let i = 0; i < 3; i++) game.after(i * 0.08, () => { if (!s.gone) smBolt(s, t.x, t.y, 0.3, { shock: 0.1 }); }); })] } },
-    { clip: 'roar', range: [0, 420], dy: 120, cd: [5, 7], w: 1, act: { dur: 1.0, events: [evAt(0.5, s => { const L = ents.filter(t => foe(s.owner, t) && Math.abs(t.x - s.x) < 450).slice(0, 3); for (const t of L) smBolt(s, t.x, t.y, 0.6, { shock: 0.2 }); })] } }] });
+    { clip: 'roar', range: [0, 420], dy: 120, cd: [5, 7], w: 1, act: { dur: 1.0, events: [evAt(0.5, s => { const L = ents.filter(t => foe(s.owner, t) && Math.abs(t.x - s.x) < 560).slice(0, 3); for (const t of L) smBolt(s, t.x, t.y, 0.6, { shock: 0.2 }); })] } }] });
 smDef('sm_aqueris', 'aqueris', { h: 130, speed: 160, pref: 200, tags: ['spirit', 'higher'], col: '#9fe6ff',
   attacks: [{ clip: 'atk1', range: [60, 420], dy: 50, cd: [1.2, 1.8], w: 3, act: { dur: 0.6, events: [evAt(0.25, s => { sfx.ice(); smShot(s, { dmg: 0.4, col: '#bfefff', elem: 'ice', img: 'icespike', speed: 620 }); })] } },
-    { clip: 'cast', range: [0, 200], dy: 60, cd: [4, 6], w: 1, act: { dur: 0.9, events: [evAt(0.45, s => { fxSpr('frost', s.x + s.face * 90, s.y, 0, { w: 180, dur: 0.6, ay: 0.75 }); summonArea(s, s.x + s.face * 90, s.y, 100, { dmg: 0.7, stun: 0.4, knock: 60, hs: 0.04, elem: 'ice', type: 'mag' }, { zMax: 120 });
-      for (const t of ents) if (foe(s.owner, t) && inGround(t, s.x + s.face * 90, s.y, 100) && Math.random() < 0.1) addStatus(t, 'freeze', 1.2, { src: s.owner }); })] } },
+    { clip: 'cast', range: [0, 200], dy: 60, cd: [4, 6], w: 1, act: { dur: 0.9, events: [evAt(0.45, s => { fxSpr('frost', s.x + s.face * 110, s.y, 0, { w: 260, dur: 0.6, ay: 0.75 }); summonArea(s, s.x + s.face * 110, s.y, 140, { dmg: 0.7, stun: 0.4, knock: 60, hs: 0.04, elem: 'ice', type: 'mag' }, { zMax: 120 });
+      for (const t of ents) if (foe(s.owner, t) && inGround(t, s.x + s.face * 110, s.y, 140) && Math.random() < 0.1) addStatus(t, 'freeze', 1.2, { src: s.owner }); })] } },
     { clip: 'roar', range: [100, 460], dy: 100, cd: [6, 8], w: 1, act: { dur: 0.9, events: [evAt(0.4, s => { for (let i = 0; i < 3; i++) game.after(i * 0.12, () => { if (!s.gone) smShot(s, { dmg: 0.35, col: '#bfefff', elem: 'ice', img: 'icespike', home: true, speed: 420, life: 1.4 }); }); })] } }] });
 smDef('sm_flamehulk', 'flamehulk', { h: 132, w: 16, speed: 170, pref: 45, tags: ['spirit', 'higher'], col: '#ff8a3a',
-  attacks: [{ clip: 'club', range: [0, 85], dy: 20, cd: [1.2, 1.8], w: 2, act: { dur: 0.9, hits: [mH(0.42, 0.5, [0, 85, 24, 0, 120], 0.6, { elem: 'fire', snd: 'fire', knock: 100, onHit: (a, t) => { if (Math.random() < 0.1) addStatus(t, 'burn', 3, { dps: atkOf(a.owner, 'mag') * 0.05, src: a.owner }); } })] } },
-    { clip: 'pounce', range: [60, 300], dy: 24, cd: [4, 6], w: 1, act: { dur: 1.0, events: [evAt(0.5, s => { sfx.hit('fire', false); shootProj(s, { img: 'slash', col: '#ff9a50', w: 100, speed: 560, life: 0.6, z: 50, bw: 24, bh: 80, pierce: true, hit: { dmg: 0.5 * s.mul, stun: 0.4, knock: 60, hs: 0.04, elem: 'fire', type: 'mag', rep: 0.15, max: 2 } }); })] } }] });
+  attacks: [{ clip: 'club', range: [0, 105], dy: 24, cd: [1.2, 1.8], w: 2, act: { dur: 0.9, hits: [mH(0.42, 0.5, [0, 108, 30, 0, 120], 0.6, { elem: 'fire', snd: 'fire', knock: 100, onHit: (a, t) => { if (Math.random() < 0.1) addStatus(t, 'burn', 3, { dps: atkOf(a.owner, 'mag') * 0.05, src: a.owner }); } })] } },
+    { clip: 'pounce', range: [60, 300], dy: 24, cd: [4, 6], w: 1, act: { dur: 1.0, events: [evAt(0.5, s => { sfx.hit('fire', false); shootProj(s, { img: 'slash', col: '#ff9a50', w: 140, speed: 560, life: 0.75, z: 30, bw: 34, bd: 22, bh: 100, pierce: true, hit: { dmg: 0.5 * s.mul, stun: 0.4, knock: 60, hs: 0.04, elem: 'fire', type: 'mag', rep: 0.15, max: 2 } }); })] } }] });
 // ---- 精灵王伊伽贝拉：常驻霸体；附近的己方精灵伤害 +15%，自己每有一只精灵 +15%（最多 +30%）；攻击自动用敌人抗性最低的属性 ----
 const bestElem = (t) => { let best = 'fire', v = 1e9; for (const el of ['fire', 'ice', 'light', 'dark']) { const r = (t && t.res && t.res[el]) || 0; if (r < v) { v = r; best = el; } } return best; };
 smDef('sm_echeverria', 'echeverria', { h: 140, w: 16, speed: 150, pref: 120, sa: true, tags: ['spirit', 'king'], col: '#ffd070',
   update: s => { const L = summonsOf(s.owner, { tag: 'spirit' }).filter(x => x !== s && Math.abs(x.x - s.x) < 400); for (const x of L) x.buffs.king = { t: 0.5, dmg: 0.15 }; s.buffs.kingSelf = { t: 0.5, dmg: Math.min(0.3, L.length * 0.15) }; },
-  attacks: [{ clip: 'atk1', range: [0, 90], dy: 22, cd: [1.2, 1.8], w: 2, act: { dur: 0.6, events: [evAt(0.25, s => { const t = summonTarget(s); if (t) summonHit(s, t, { dmg: 0.7, stun: 0.4, knock: 80, hs: 0.05, elem: bestElem(t), type: 'mag' }); })] } },
-    { clip: 'roar', range: [0, 180], dy: 70, cd: [4, 6], w: 1, act: { dur: 1.0, events: [evAt(0.45, s => { fxShock(s.x, s.y, 200, '#ffd070'); summonArea(s, s.x, s.y, 150, { dmg: 0.8, stun: 0.5, knock: 140, hs: 0.05, type: 'mag', radial: true }); })] } },
-    { clip: 'cast', range: [60, 420], dy: 100, cd: [6, 8], w: 1, act: { dur: 1.2, events: [evAt(0.4, s => { for (let i = 0; i < 7; i++) game.after(i * 0.1, () => { if (s.gone) return; const t = summonTarget(s); const x = (t ? t.x : s.x + s.face * 150) + rnd(-60, 60), y = clamp((t ? t.y : s.y) + rnd(-30, 30), 6, DEPTH - 6); smBolt(s, x, y, 0.3); }); })] } },
-    { clip: 'axe', range: [60, 420], dy: 30, cd: [8, 11], w: 1, act: { dur: 1.2, events: [evAt(0.55, s => { const t = summonTarget(s), el = bestElem(t); sfx.zap(); fxBeam(s.x + s.face * 30, s.y, s.z + 70, 420, s.face, { w: 30, col: ELEM_COL[el], dur: 0.4 });
-      instantHit(s, { box: [10, 430, 26, 30, 110], dmg: 1.4 * s.mul, stun: 0.5, knock: 120, hs: 0.06, elem: el, type: 'mag' }); })] } }] });
+  attacks: [{ clip: 'atk1', range: [0, 110], dy: 26, cd: [1.2, 1.8], w: 2, act: { dur: 0.6, events: [evAt(0.25, s => { const t = summonTarget(s); if (t) summonHit(s, t, { dmg: 0.7, stun: 0.4, knock: 80, hs: 0.05, elem: bestElem(t), type: 'mag' }); })] } },
+    { clip: 'roar', range: [0, 240], dy: 90, cd: [4, 6], w: 1, act: { dur: 1.0, events: [evAt(0.45, s => { fxShock(s.x, s.y, 250, '#ffd070'); summonArea(s, s.x, s.y, 210, { dmg: 0.8, stun: 0.5, knock: 140, hs: 0.05, type: 'mag', radial: true }); })] } },
+    { clip: 'cast', range: [60, 420], dy: 100, cd: [6, 8], w: 1, act: { dur: 1.2, events: [evAt(0.4, s => { for (let i = 0; i < 7; i++) game.after(i * 0.1, () => { if (s.gone) return; const t = summonTarget(s); const x = (t ? t.x : s.x + s.face * 150) + rnd(-90, 90), y = clamp((t ? t.y : s.y) + rnd(-40, 40), 6, DEPTH - 6); smBolt(s, x, y, 0.3); }); })] } },
+    { clip: 'axe', range: [60, 540], dy: 36, cd: [8, 11], w: 1, act: { dur: 1.2, events: [evAt(0.55, s => { const t = summonTarget(s), el = bestElem(t); sfx.zap(); fxBeam(s.x + s.face * 30, s.y, s.z + 70, 560, s.face, { w: 42, col: ELEM_COL[el], dur: 0.4 });
+      instantHit(s, { box: [10, 570, 36, 10, 130], dmg: 1.4 * s.mul, stun: 0.5, knock: 120, hs: 0.06, elem: el, type: 'mag' }); })] } }] });
 // ---- 技能 ----
 const smSummonAct = (key, lv, extra = {}) => ({ name: key, clip: 'smSummon', dur: 0.5, cancelFrom: 0.36, noCounter: true, ...extra,
   events: [evAt(0.22, e => { sfx.magic(); summon(e, key, { lv, mul: smMul(e, lv) }); })] });
@@ -163,14 +163,14 @@ defSkill('sm_frit', { name: '契约召唤：弗利特', cls: 'mage', job: SM, lv
   desc: '召唤小火龙弗利特（常驻）：撕咬（霸体）、吐火球、火焰吐息（几率灼烧）。心灵感应 2 级后可以交感：“龙之威压”——瞬移到你前方咆哮，5 段范围火焰伤害。', pow: lv => skillDmg(1.0, 0.1, lv), ai: { kind: 'buff', summon: 'sm_frit' },
   act: (lv) => smSummonAct('sm_frit', lv) });
 defSkill('sm_sacrifice', { name: '精灵献祭', cls: 'mage', job: SM, lvReq: 16, mp: 40, cd: 20, type: 'mag', col: '#e0a0ff', cast: true,
-  desc: '在前方画出魔法阵，引爆阵内的下级精灵，各按属性造成爆炸（火：灼烧 / 冰：冰刺 / 暗：诅咒 / 光：落雷）。按住技能键时，先把全图的下级精灵传送到阵里再引爆。', pow: lv => skillDmg(2.0, 0.2, lv) * 4, ai: { kind: 'aoe', r: [40, 260], dy: 60 },
+  desc: '在前方画出魔法阵，引爆阵内的下级精灵，各按属性造成爆炸（火：灼烧 / 冰：冰刺 / 暗：诅咒 / 光：落雷）。按住技能键时，先把全图的下级精灵传送到阵里再引爆。', pow: lv => skillDmg(2.0, 0.2, lv) * 4, ai: { kind: 'aoe', r: [40, 360], dy: 90 },
   act: (lv, p) => ({ name: 'sm_sacrifice', clip: 'smSac', dur: 0.8, cancelFrom: 0.6, noCounter: true, charge: { at: 0.1, max: 0.4, min: 0, dmg: 0, clip: 'smSac' },
-    events: [evAt(0.2, e => { const cx = e.x + e.face * 130, cy = e.y; fxSigil('hexagram', cx, cy, 0, { w: 240, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: '#e0a0ff' });
-      const L = summonsOf(e, { tag: 'lesser' }); if ((e.act.chargeK || 0) > 0.2) L.forEach((s, i) => s.warp(cx + (i - 1.5) * 26, cy + ((i % 2) - 0.5) * 20));
-      for (const s of L) { if (Math.hypot(s.x - cx, (s.y - cy) * 2) > 130) continue; const x = s.x, y = s.y, key = s.skey; dismissOne(s, 'cmd'); fxBurst(x, y, 40, 130, s.sdef.col); sfx.boom(0.5);
+    events: [evAt(0.2, e => { const cx = e.x + e.face * 180, cy = e.y; fxSigil('hexagram', cx, cy, 0, { w: 460, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: '#e0a0ff' });
+      const L = summonsOf(e, { tag: 'lesser' }); if ((e.act.chargeK || 0) > 0.2) L.forEach((s, i) => s.warp(cx + (i - 1.5) * 60, cy + ((i % 2) - 0.5) * 40));
+      for (const s of L) { if (Math.hypot(s.x - cx, (s.y - cy) * 2) > 234) continue; const x = s.x, y = s.y, key = s.skey; dismissOne(s, 'cmd'); fxBurst(x, y, 40, 180, s.sdef.col); fxShock(x, y, 120, s.sdef.col); sfx.boom(0.5);
         const el = { sm_ador: 'fire', sm_naias: 'ice', sm_stalker: 'dark', sm_wisp: 'light' }[key];
-        applyAreaFrom(e, x, y, 80, { dmg: skillDmg(2.0, 0.2, lv), launch: 300, knock: 100, hs: 0.08, elem: el, type: 'mag', downHit: true, big: 1.3 });
-        for (const t of ents) if (foe(e, t) && inGround(t, x, y, 80)) addStatus(t, { fire: 'burn', ice: 'slow', dark: 'curse', light: 'shock' }[el], 4, { src: e, dps: el === 'fire' ? atkOf(e, 'mag') * 0.08 : 0 }); } })] }) });
+        applyAreaFrom(e, x, y, 120, { dmg: skillDmg(2.0, 0.2, lv), launch: 300, knock: 100, hs: 0.08, elem: el, type: 'mag', downHit: true, big: 1.3 });
+        for (const t of ents) if (foe(e, t) && inGround(t, x, y, 120)) addStatus(t, { fire: 'burn', ice: 'slow', dark: 'curse', light: 'shock' }[el], 4, { src: e, dps: el === 'fire' ? atkOf(e, 'mag') * 0.08 : 0 }); } })] }) });
 defSkill('sm_sandor', { name: '契约召唤：黑骑士桑德尔', cls: 'mage', job: SM, lvReq: 17, mp: 45, cd: 10, type: 'mag', elem: 'dark', col: '#6a4a9a', cast: true, recast: smRecast('sm_sandor', 3, 12, 12),
   desc: '召唤黑骑士桑德尔（常驻、霸体）：挥剑、突刺、举盾防御（架盾时身后的你受到的伤害降低），偶尔展开守护光环。心灵感应 3 级后可以交感：蓄力后直线射出剑气。', pow: lv => skillDmg(1.4, 0.14, lv), ai: { kind: 'buff', summon: 'sm_sandor' },
   act: (lv) => smSummonAct('sm_sandor', lv) });
@@ -207,10 +207,10 @@ defSkill('sm_kuruta', { name: '契约召唤：牛头王库鲁塔', cls: 'mage', 
   desc: '召唤牛头王库鲁塔（常驻、霸体）：横斩、愤怒冲锋、咆哮（眩晕）。放着不管时输出最高。心灵感应 6 级后可以交感：“狂怒”——横扫把敌人拉到一起，再下劈带冲击波。', pow: lv => skillDmg(2.4, 0.24, lv), ai: { kind: 'buff', summon: 'sm_kuruta' },
   act: (lv) => smSummonAct('sm_kuruta', lv) });
 defSkill('sm_bind', { name: '束缚印记', cls: 'mage', job: SM, lvReq: 20, mp: 40, cd: 25, type: 'mag', col: '#8adf6a', cast: true,
-  desc: '向前扔出黏液瓶，爆炸后把范围内的敌人定身 3 秒。', pow: lv => skillDmg(1.5, 0.15, lv), ai: { kind: 'aoe', r: [60, 300], dy: 60 },
+  desc: '向前扔出黏液瓶，爆炸后把范围内的敌人定身 3 秒。', pow: lv => skillDmg(1.5, 0.15, lv), ai: { kind: 'aoe', r: [60, 320], dy: 80 },
   act: (lv) => ({ name: 'sm_bind', clip: 'smThrow', dur: 0.5, cancelFrom: 0.34, events: [evAt(0.18, e => { const at = aimAhead(e, 200, 320); sfx.swing(false);
-    lobProj(e, at.x, at.y, 0.45, { img: 'poison', h: 18, onLand: pr => { sfx.boom(0.4); fxSpr('poison', pr.x, pr.y, 10, { w: 170, dur: 0.6, col: '#8adf6a' });
-      blast(e, pr.x, pr.y, 80, { dmg: skillDmg(1.5, 0.15, lv), stun: 0.3, knock: 10, hs: 0.05, type: 'mag' }, { zMax: 120, status: 'root', sdur: 3 }); } }); })] }) });
+    lobProj(e, at.x, at.y, 0.45, { img: 'poison', h: 18, onLand: pr => { sfx.boom(0.4); fxSpr('poison', pr.x, pr.y, 10, { w: 270, dur: 0.6, col: '#8adf6a' }); fxShock(pr.x, pr.y, 130, '#8adf6a');
+      blast(e, pr.x, pr.y, 130, { dmg: skillDmg(1.5, 0.15, lv), stun: 0.3, knock: 10, hs: 0.05, type: 'mag' }, { zMax: 120, status: 'root', sdur: 3 }); } }); })] }) });
 defSkill('sm_soul', { name: '灵魂支配', cls: 'mage', job: SM, lvReq: 21, passive: true, type: 'mag', col: '#c0a0ff', desc: '【被动·一觉】技能攻击力和施放速度提高。', infoExtra: lv => [['技能攻击力', '+' + pct(0.08 + 0.015 * lv)], ['施放速度', '+' + pct(0.05 + 0.01 * lv)]] });
 // ---- 一觉：契约召唤：征服者卡西利亚斯（第四使徒的分身，剑豪） ----
 // 从劈开的次元裂缝里走出，落地时击倒画面内的全部敌人；召唤过程中本体无敌。在场 200 秒（决斗场 30 秒），霸体、免疫异常。
@@ -234,16 +234,16 @@ function casRift(x, y, dur) {
 // 狱冥天地：剑从天而降插满前方，最后一起爆开（伤害按主人结算：本体离场后剑阵照样生效）
 function casGokumei(o, x, y, mul) {
   const R = game.room, L = [];
-  for (let i = 0; i < 9; i++) L.push({ x: clamp(x + (i - 4) * 46 + rnd(-12, 12), R ? R.x0 + 20 : -1e9, R ? R.x1 - 20 : 1e9), y: clamp(y + rnd(-40, 40), 8, DEPTH - 8), t: 0.1 + i * 0.07 });
+  for (let i = 0; i < 9; i++) L.push({ x: clamp(x + (i - 4) * 70 + rnd(-14, 14), R ? R.x0 + 20 : -1e9, R ? R.x1 - 20 : 1e9), y: clamp(y + rnd(-70, 70), 8, DEPTH - 8), t: 0.1 + i * 0.07 });
   for (const s of L) game.after(s.t, () => {
     addFx({ x: s.x, y: s.y + 0.4, z: 0, dur: 1.4, draw(c) { const k = this.t, fall = Math.min(1, k / 0.18), z = 420 * (1 - fall), X = sx(this.x), Y = sy(this.y, z), a = k > 1.1 ? (1.4 - k) / 0.3 : 1;
       c.save(); c.globalAlpha = a; c.fillStyle = '#dfe6f2'; c.beginPath(); c.moveTo(X - 3, Y - 96); c.lineTo(X + 3, Y - 96); c.lineTo(X + 1, Y - 2); c.lineTo(X, Y + 4); c.lineTo(X - 1, Y - 2); c.fill();
       c.fillStyle = '#c8a060'; c.fillRect(X - 9, Y - 100, 18, 4); c.fillStyle = CAS_COL; c.fillRect(X - 2.5, Y - 124, 5, 24);
       if (fall < 1) { c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5; c.fillStyle = CAS_COL; c.fillRect(X - 2, Y - 96 - 80, 4, 80); } c.restore(); } });
-    game.after(0.18, () => { fxShock(s.x, s.y, 60, CAS_COL); applyAreaFrom(o, s.x, s.y, 50, { dmg: 1.2 * mul, stun: 0.5, knock: 20, hs: 0.04, type: 'mag', col: CAS_COL, downHit: true }); });
+    game.after(0.18, () => { fxShock(s.x, s.y, 80, CAS_COL); applyAreaFrom(o, s.x, s.y, 70, { dmg: 1.2 * mul, stun: 0.5, knock: 20, hs: 0.04, type: 'mag', col: CAS_COL, downHit: true }); });
   });
-  game.after(1.2, () => { if (!o || o.dead) return; sfx.boom(1.2); cam.shake = Math.max(cam.shake, 9); fxShock(x, y, 260, CAS_COL); fxBurst(x, y, 60, 300, CAS_COL);
-    applyAreaFrom(o, x, y, 230, { dmg: 5 * mul, launch: 420, knock: 160, hs: 0.12, big: 1.8, type: 'mag', col: CAS_COL, downHit: true }); });
+  game.after(1.2, () => { if (!o || o.dead) return; sfx.boom(1.2); cam.shake = Math.max(cam.shake, 9); fxShock(x, y, 360, CAS_COL); fxBurst(x, y, 60, 400, CAS_COL);
+    applyAreaFrom(o, x, y, 360, { dmg: 5 * mul, launch: 420, knock: 160, hs: 0.12, big: 1.8, type: 'mag', col: CAS_COL, downHit: true }); });
 }
 defSummon('sm_casillas', { kind: 'follower', name: '征服者卡西利亚斯', bundle: 'casillas', model: () => summonSprite('casillas', {}, CAS_COL, casAnims()), clips: () => summonClipsFor(casAnims()),
   w: 22, d: 16, h: 188, shadowR: 26, speed: 150, runSpeed: 320, pref: 80, sight: 720, life: 200, max: 1, col: CAS_COL, tags: ['awaken'], ai: smAI,
@@ -252,27 +252,27 @@ defSummon('sm_casillas', { kind: 'follower', name: '征服者卡西利亚斯', b
   update: s => { if (!s.goku && s.life - s.lifeT < 1.8 && s.life > 5) { s.goku = true; summonAct(s, { clip: 'casGoku', dur: 1.8, superArmor: true, events: [evAt(0.65, e => { sfx.iai(); casGokumei(e.owner, e.x + e.face * 90, e.y, e.mul); })] }); } },
   onEnd: (s, why) => { if (!s.goku && (why === 'cmd' || why === 'dead' || why === 'replaced')) casGokumei(s.owner, s.x + s.face * 90, s.y, s.mul); },
   attacks: [
-    { clip: 'casFudo', range: [0, 170], dy: 30, cd: [3, 4.5], w: 3, act: { dur: 1.05, superArmor: true, hits: [mH(0.56, 0.64, [-10, 190, 32, 0, 170], 3.0, { knock: 160, stun: 0.6, hs: 0.1, heavy: true, snd: 'slash', shake: 3 })],
-      events: [evAt(0.52, e => { sfx.iai(); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: CAS_COL, a0: -0.6, a1: 0.9, r: 170, w: 26, off: [10, 95], squash: 0.55, dur: 0.26 }); })] } },
+    { clip: 'casFudo', range: [0, 220], dy: 36, cd: [3, 4.5], w: 3, act: { dur: 1.05, superArmor: true, hits: [mH(0.56, 0.64, [-10, 240, 40, 0, 170], 3.0, { knock: 160, stun: 0.6, hs: 0.1, heavy: true, snd: 'slash', shake: 3 })],
+      events: [evAt(0.52, e => { sfx.iai(); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: CAS_COL, a0: -0.6, a1: 0.9, r: 220, w: 30, off: [10, 95], squash: 0.55, dur: 0.26 }); })] } },
     { clip: 'casGale', range: [120, 420], dy: 30, cd: [5, 7], w: 2, act: { dur: 1.0, superArmor: true, move: [[0.16, 0.5, 820]],
-      hits: [mH(0.16, 0.5, [0, 90, 30, 0, 170], 1.0, { knock: 30, stun: 0.5, hs: 0.04, snd: 'slash', rep: 0.08, max: 4 }), mH(0.56, 0.62, [-60, 160, 32, 0, 170], 2.0, { knock: 140, launch: 260, hs: 0.08, snd: 'slash' })],
+      hits: [mH(0.16, 0.5, [0, 90, 30, 0, 170], 1.0, { knock: 30, stun: 0.5, hs: 0.04, snd: 'slash', rep: 0.08, max: 4 }), mH(0.56, 0.62, [-80, 210, 40, 0, 170], 2.0, { knock: 140, launch: 260, hs: 0.08, snd: 'slash' })],
       events: [evAt(0.16, e => { sfx.swing(true); fxAfterimage(e, CAS_COL); }), evAt(0.54, e => { sfx.iai(); fxStreak({ x: e.x - e.face * 300, y: e.y, z: e.z + 90, face: e.face, len: 420, w: 10, col: CAS_COL, dur: 0.24 }); })] } },
-    { clip: 'casZan', range: [0, 180], dy: 60, cd: [7, 10], w: 1.5, act: { dur: 1.3, superArmor: true, hits: [mH(0.28, 0.36, [0, 170, 30, 0, 170], 1.6, { down: true, downHit: true, knock: 60, hs: 0.08, snd: 'slash' })],
+    { clip: 'casZan', range: [0, 230], dy: 80, cd: [7, 10], w: 1.5, act: { dur: 1.3, superArmor: true, hits: [mH(0.28, 0.36, [0, 220, 38, 0, 170], 1.6, { down: true, downHit: true, knock: 60, hs: 0.08, snd: 'slash' })],
       events: [evAt(0.26, e => { sfx.swing(true); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: CAS_COL, a0: -1.6, a1: 0.9, r: 160, w: 22, off: [10, 100], dur: 0.22 }); }),
-        evAt(0.56, e => { sfx.iai(); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: CAS_COL, a0: -3.1, a1: 3.1, r: 190, w: 24, off: [0, 80], squash: 0.45, dur: 0.3 });
-          summonArea(e, e.x, e.y, 200, { dmg: 2.4, launch: 300, knock: 120, hs: 0.1, big: 1.4, type: 'mag', radial: true, col: CAS_COL }, { zMax: 200 }); })] } }],
+        evAt(0.56, e => { sfx.iai(); fxSlash({ x: e.x, y: e.y, z: e.z, face: e.face, col: CAS_COL, a0: -3.1, a1: 3.1, r: 260, w: 28, off: [0, 80], squash: 0.45, dur: 0.3 });
+          summonArea(e, e.x, e.y, 270, { dmg: 2.4, launch: 300, knock: 120, hs: 0.1, big: 1.4, type: 'mag', radial: true, col: CAS_COL }, { zMax: 200 }); })] } }],
   cmds: {
     // 必杀剑·千鬼杀：瞬移到主人前方，拔刀冲斩穿过敌群，身后的剑气再补 5 段，收刀时一起爆开
     thousand(s, arg) { smFront(s); s.face = s.owner.face; const G = hitGroup(), k = (arg && arg.mul) || 1; summonAct(s, { clip: 'casThousand', dur: 1.6, superArmor: true, move: [[0.24, 0.5, 1300]], thousand: true,
-      hits: [mH(0.24, 0.52, [-20, 110, 34, 0, 180], 0, { dmg: 3.0 * s.mul * k, knock: 20, stun: 0.9, hs: 0.06, snd: 'slash', max: 1 })],
+      hits: [mH(0.24, 0.52, [-20, 140, 44, 0, 180], 0, { dmg: 3.0 * s.mul * k, knock: 20, stun: 0.9, hs: 0.06, snd: 'slash', max: 1 })],
       events: [evAt(0.22, e => { sfx.charge(); e.act.x0 = e.x; fxAfterimage(e, CAS_COL); }),
         evAt(0.5, e => { sfx.iai(); cam.shake = Math.max(cam.shake, 6); fxStreak({ x: e.act.x0, y: e.y, z: e.z + 90, face: e.face, len: Math.abs(e.x - e.act.x0) + 60, w: 14, col: CAS_COL, dur: 0.3 }); }),
         ...[0.66, 0.76, 0.86, 0.96, 1.06].map((t, i) => evAt(t, e => { const x = e.act.x0 + (e.x - e.act.x0) * (0.15 + i * 0.18); sfx.swing(i === 4);
-          fxSlash({ x, y: e.y, z: 0, face: i % 2 ? -e.face : e.face, col: CAS_COL, a0: -1.2, a1: 1.2, r: 110, w: 18, off: [0, 80], dur: 0.2 });
+          fxSlash({ x, y: e.y, z: 0, face: i % 2 ? -e.face : e.face, col: CAS_COL, a0: -1.2, a1: 1.2, r: 150, w: 22, off: [0, 80], dur: 0.2 });
           const lo = Math.min(e.x, e.act.x0) - 40, hi = Math.max(e.x, e.act.x0) + 40;   // 剑气补在整条冲斩路径上：路径上的每个敌人都吃满 5 段
-          for (const t of ents) if (foe(e.owner, t) && !t.dead && t.invul <= 0 && t.x + t.w >= lo && t.x - t.w <= hi && Math.abs(t.y - e.y) < 56 && t.z < 220) summonHit(e, t, { dmg: 1.4 * k, stun: 0.6, knock: 10, hs: 0.05, type: 'mag', col: CAS_COL, downHit: true }); })),
-        evAt(1.25, e => { sfx.boom(1.1); cam.shake = Math.max(cam.shake, 10); const cx = (e.x + e.act.x0) / 2; fxShock(cx, e.y, 320, CAS_COL);
-          for (const t of ents) if (foe(e.owner, t) && inGround(t, cx, e.y, Math.abs(e.x - e.act.x0) / 2 + 80) && t.z < 220) summonHit(e, t, { dmg: 5.0 * k, launch: 380, knock: 120, hs: 0.12, big: 1.8, type: 'mag', col: CAS_COL, downHit: true }, { hitGroup: G }); })] }); } } });
+          for (const t of ents) if (foe(e.owner, t) && !t.dead && t.invul <= 0 && t.x + t.w >= lo && t.x - t.w <= hi && Math.abs(t.y - e.y) < 80 && t.z < 220) summonHit(e, t, { dmg: 1.4 * k, stun: 0.6, knock: 10, hs: 0.05, type: 'mag', col: CAS_COL, downHit: true }); })),
+        evAt(1.25, e => { sfx.boom(1.1); cam.shake = Math.max(cam.shake, 10); const cx = (e.x + e.act.x0) / 2; fxShock(cx, e.y, Math.abs(e.x - e.act.x0) / 2 + 150, CAS_COL);
+          for (const t of ents) if (foe(e.owner, t) && inGround(t, cx, e.y, Math.abs(e.x - e.act.x0) / 2 + 150) && t.z < 220) summonHit(e, t, { dmg: 5.0 * k, launch: 380, knock: 120, hs: 0.12, big: 1.8, type: 'mag', col: CAS_COL, downHit: true }, { hitGroup: G }); })] }); } } });
 defSkill('sm_awaken', { name: '契约召唤：征服者卡西利亚斯', cls: 'mage', job: SM, lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'mag', awaken: true, col: CAS_COL,
   desc: '【觉醒】用禁断之术劈开次元，召唤第四使徒的分身“征服者卡西利亚斯”：他从裂缝里走出，落地时击倒画面内的全部敌人。在场 200 秒（决斗场 30 秒），霸体、免疫异常，放着不管时施展不动剑、疾风剑、残心剑；离场时放出“狱冥天地”剑阵。召唤过程中你处于无敌状态。',
   pow: lv => skillDmg(12, 3, lv), ai: { kind: 'awaken', r: [0, 420], dy: 120 }, infoExtra: () => [['在场时间', '200 秒'], ['离场', '狱冥天地（剑阵）']],
@@ -281,18 +281,18 @@ defSkill('sm_awaken', { name: '契约召唤：征服者卡西利亚斯', cls: 'm
       const R = game.room, x = e.x + e.face * 150; e.act.rx = R ? clamp(x, R.x0 + 40, R.x1 - 40) : x; e.act.ry = e.y; },
     events: [evAt(0.95, e => { sfx.charge(); casRift(e.act.rx, e.act.ry, 2.0); cam.shake = Math.max(cam.shake, 4); }),
       evAt(1.25, e => { const s = summon(e, 'sm_casillas', { lv, mul: casMul(e, lv), x: e.act.rx, y: e.act.ry, life: game.pvp ? 30 : 200 }); if (s) { s.face = e.face; summonAct(s, { clip: 'casStep', dur: 0.9, superArmor: true }); } }),
-      evAt(1.7, e => { cam.flash = 0.25; cam.flashCol = '#ffd0e0'; cam.shake = 12; sfx.boom(1.3); fxShock(e.act.rx, e.act.ry, 520, CAS_COL);
+      evAt(1.7, e => { cam.flash = 0.25; cam.flashCol = '#ffd0e0'; cam.shake = 12; sfx.boom(1.3); fxShock(e.act.rx, e.act.ry, 620, CAS_COL); fxShock(e.act.rx, e.act.ry, 420, '#ffd0e0');
         for (const t of ents) if (foe(e, t) && t.invul <= 0 && !t.remove && !t.dead) applyHit(e, t, { dmg: skillDmg(12, 3, lv), down: true, launch: 240, knock: 60, hs: 0.12, big: 1.8, sure: true, downHit: true, type: 'mag', col: CAS_COL, box: null }, { proj: true, src: { x: e.act.rx, y: e.act.ry, z: 0, face: e.face } });
         e.invul = Math.max(e.invul, 0.6); })] }) });
 defSkill('sm_thousand', { name: '必杀剑·千鬼杀', cls: 'mage', job: SM, lvReq: 21, mp: 80, cd: 30, type: 'mag', col: CAS_COL, req: p => summonsOf(p, 'sm_casillas').length > 0 || '卡西利亚斯不在场',
-  desc: '卡西利亚斯在场时才能用：他瞬移到你前方拔刀冲斩，穿过敌群，身后的剑气再补 5 段，收刀时一起爆开。期间你处于无敌状态。', pow: lv => skillDmg(9, 0.9, lv) * 3, ai: { kind: 'burst', r: [0, 360], dy: 60 },
+  desc: '卡西利亚斯在场时才能用：他瞬移到你前方拔刀冲斩，穿过敌群，身后的剑气再补 5 段，收刀时一起爆开。期间你处于无敌状态。', pow: lv => skillDmg(9, 0.9, lv) * 3, ai: { kind: 'burst', r: [0, 440], dy: 80 },
   act: (lv) => ({ name: 'sm_thousand', clip: 'smCmd', dur: 0.5, noCounter: true, invul: true, onStart: e => { const s = summonsOf(e, 'sm_casillas')[0]; if (!s) return; summonCmd(e, 'sm_casillas', 'thousand', { mul: lvMul(lv, 0.1) }); e.invul = Math.max(e.invul, 1.6);
     fxText('千鬼杀', e.x, e.y, e.z + 40, { col: '#ff8090', size: 12, dur: 0.6 }); } }) });
 // 赫德尔的交感（心灵感应 1 级）：瞬移到你前方冲刺 4 连棍
 SKILLS.mg_hodor.recast = smRecast('hodor', 1, 8, 8);
 { const D = SUMMON_DEFS.hodor, a0 = D.ai; D.ai = (s, dt) => { const M = s.owner.summonMode; if (M && M.hold && !M.follow) return smAI(s, dt); if (a0) a0(s, dt); else summonAI(s, dt); }; }
 SUMMON_DEFS.hodor.cmds = { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'club', dur: 1.1, move: [[0.1, 0.6, 260]], superArmor: true,
-  hits: [0.15, 0.3, 0.45, 0.6].map((t0, i) => mH(t0, t0 + 0.08, [0, 64, 22, 0, 90], 0.45 * s.mul, { knock: i === 3 ? 180 : 40, stun: 0.4, heavy: i === 3 })),
+  hits: [0.15, 0.3, 0.45, 0.6].map((t0, i) => mH(t0, t0 + 0.08, [0, 84, 26, 0, 90], 0.45 * s.mul, { knock: i === 3 ? 180 : 40, stun: 0.4, heavy: i === 3 })),
   events: [0.14, 0.29, 0.44, 0.59].map(t => evAt(t, e => sfx.swing(true))) }); } };
 CLASSES.mage.jobs.summoner = { art: 'job/summoner', name: '召唤师', role: '远程 · 召唤', armor: 'cloth', awaken: 'sm_awaken', awakenName: '月之女皇', growth: { int: 1.1, spr: 1.06 },
   desc: '召唤具有元素属性的精灵、以及与之签订契约的怪物协同作战的魔法师。召唤兽常驻在场，伤害按你的魔攻计算；交感能让契约兽瞬移到你身前放专属招。',

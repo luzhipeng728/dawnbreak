@@ -37,7 +37,7 @@ check(lib.badIcon === 0, '每件史诗都有专属图标', lib.badIconList.join(
 /* ---------- 2. 绑定 / 交易 ---------- */
 step('绑定与交易');
 const bind = await ev(() => {
-  const it = makeItem('ep_ss_kanya'); inv.add(it); const before = { t: itemTradable(it), txt: itemBindText(it) };
+  const it = makeItem(G60.succ.ep_ss_kanya || 'ep_ss_kanya'); inv.add(it);   // 坎亚搬到 Lv55 后用它的继承装备 const before = { t: itemTradable(it), txt: itemBindText(it) };
   const w0 = inv.equip.weapon; inv.wear(it); const after = { t: itemTradable(it), txt: itemBindText(it) }; inv.wear(inv.items.find(x => x === w0) || w0);
   const t = makeItem('title_slayer'), tk = makeItem('abyss_ticket'), q = { kind: 'quest', key: 'q_x' };
   return { before, after, title: itemBindText(t), titleTrade: itemTradable(t), ticket: itemTradable(tk), quest: itemTradable(q), normal: itemTradable(makeItem('katana_10_1')) };

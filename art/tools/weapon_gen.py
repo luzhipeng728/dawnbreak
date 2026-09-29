@@ -50,7 +50,7 @@ EPIC_V2 = {   # 重写过的史诗设计（没写的用 avatar_gen.BOLD_EPICS）
     'ep_ss_shura': "Asura's Slaughter, the top abyss short sword: a wide black obsidian blade with a jagged glowing crimson cutting edge, a purple demon eye engraved at the base of the blade "
                    'with thin crimson rune lines running from it along the blade, a black-and-silver guard shaped like two curled demon horns holding a big purple gem, a crimson-wrapped grip and a spiked silver pommel',
     'ep_ls_elegy': 'Elegy of Blood: an ornate black-and-silver hilt wrapped in thorny vines, a big crimson rose blooming where the blade comes out and a short red ribbon hanging from the pommel; '
-                   'a THICK solid blood-red energy blade with a bright pink-white core that curves at the end into a scythe-like hooked tip',
+                   'a THICK solid straight blood-red energy blade with a bright pink-white core and a straight rounded tip (no hook, no curve)',
     'ep_kt_ninedragon': 'Nine Dragons Soul Guard: a deep jade-colored blade with a gold dragon coiling along its back edge, a gold dragon-head tsuba with red gem eyes, '
                         'a jade-and-black wrapped hilt and a gold dragon-claw pommel holding a pearl',
     'ep_rv_python': 'Golden Python .33: a heavy long-barreled gold revolver; a gold python coils around the barrel and its fanged open-mouthed head forms the muzzle, emerald gem eyes, '

@@ -199,13 +199,13 @@ defSkill('g_m3', { name: 'M-3 喷火器', cls: 'gun', lvReq: 10, sp: 20, mp: 40,
       return false; },
     onEnd: e => { e.vx = 0; e.vy = 0; },
     update: e => { const a = e.act, end = a.stopT || 2.1, n = Math.floor(e.actT / 0.08);
-      if (n !== a.k && e.actT > 0.08 && e.actT < end) { a.k = n; if (n % 3 === 0) sfx.flame(); flameJet(e, { range: 250, visual: true }); }
+      if (n !== a.k && e.actT > 0.08 && e.actT < end) { a.k = n; if (n % 3 === 0) sfx.flame(); flameJet(e, { range: 250, visual: true, sc: 1.6 }); }
       const tk = Math.floor(e.actT / 0.16); if (tk !== a.tk && e.actT > 0.1 && e.actT < end) { a.tk = tk;
         instantHit(e, { box: [30, 260, 32, 0, 70], dmg: skillDmg(0.32, 0.032, lv), stun: 0.12 + 0.02 * lv, knock: 20, airLift: 90, hs: 0.015, snd: 'fire', downHit: true, elem: 'fire', col: '#ffb060',
           onHit: (a2, t) => { if (Math.random() < 0.3) addStatus(t, 'burn', 2, { dps: a2.atk * 0.05, src: a2 }); } }); } } }) });
 // 喷火：一小团火焰投射物（低位判定，可打倒地）。visual = 只做表现，伤害由技能自己按固定间隔结算
 function flameJet(e, o) {
-  shootProj(e, { img: 'flame', w: 110, h: 44, speed: o.speed || 520, life: (o.range || 150) / (o.speed || 520), z: o.z ?? 50, dx: 40, bh: 70, bw: 18, pierce: true, drawZ: 0, floor: false,
+  shootProj(e, { img: 'flame', w: 110 * (o.sc || 1), h: 44 * (o.sc || 1), speed: o.speed || 520, life: (o.range || 150) / (o.speed || 520), z: o.z ?? 50, dx: 40, bh: 70, bw: 18, pierce: true, drawZ: 0, floor: false,
     hit: o.visual ? null : { dmg: o.dmg, stun: 0.25, knock: 20, airLift: 90, hs: 0.015, rep: 0.12, snd: 'fire', downHit: true, elem: 'fire', col: '#ffb060', onHit: (a, t) => { if (Math.random() < 0.3) addStatus(t, 'burn', 2, { dps: a.atk * (o.burn || 0.05), src: a }); } },
     update: pr => { pr.z = Math.max(0, pr.z - 60 / 60); } });
 }
@@ -226,7 +226,7 @@ defSkill('g_flash', { name: '刺踢', cls: 'gun', lvReq: 15, sp: 20, mp: 18, cd:
     events: [evAt(0.04, () => sfx.swing(true))] }) });
 defSkill('g_bbq', { name: 'BBQ', cls: 'gun', lvReq: 15, sp: 20, mp: 45, cd: 8, type: 'phys', col: '#c8502a', pre: { g_gatling: 1 },
   desc: '后撩踢把敌人踢起并抓住（霸体 / 格挡中的敌人只会挨一脚），随即架起格林机枪向空中追射 10 发，最后把敌人打飞。需要 M-137 格林机枪 Lv1。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'grab', r: [0, 60], dy: 20 },
-  act: (lv) => ({ name: 'g_bbq', clip: 'kick', dur: 0.5, noCounter: true, superArmor: [0, 0.12],
+  act: (lv) => ({ name: 'g_bbq', clip: 'kick', dur: 0.5, noCounter: true, superArmor: [0, 0.12], invul: [0, 1.7],   // 官方：施放和射击全程无敌
     hits: [HB(0.08, 0.18, [0, 80, 28, 20, 135], skillDmg(1.2, 0.12, lv), { grab: true, launch: 420, knock: 30, hs: 0.08, snd: 'blunt' })],
     onGrab: (e, t) => { const a = e.act; a.gT = e.actT; a.dur = e.actT + 1.3; t.heldClip = 'air';
       a.update = e2 => { const k = e2.actT - a.gT; if (k > 0.25 && !a.fire) { a.fire = true; e2.play('bbq', true); }
@@ -239,8 +239,9 @@ defSkill('g_grenade', { name: 'G-14 手雷', cls: 'gun', lvReq: 15, sp: 20, mp: 
   desc: '投出 G-14 手雷，碰到敌人立刻爆炸，把周围的敌人炸飞。最多装填 3 颗，每 2 秒补 1 颗；两次投掷之间至少隔 3 秒。按住 ↑ 投得更远、按住 ↓ 投得更近。', pow: lv => skillDmg(3.0, 0.3, lv),
   infoExtra: () => [['装填', '3 颗（每 2 秒 1 颗）']], ai: { kind: 'proj', r: [100, 420], dy: 50 },
   act: (lv) => ({ name: 'g_grenade', clip: 'gthrow', dur: 0.55,
+    onStart: e => { if (e.z > 2) e.cool.g_grenade = 0.5; },   // 官方：空中投掷间隔 0.5 秒（地面 3 秒）
     events: [evAt(0.26, e => { sfx.swing(false); const dy = e.pad ? e.pad.dy() : 0, dist = 300 + (dy < 0 ? 120 : dy > 0 ? -120 : 0), at = aimAhead(e, dist, dist + 100), tx = at.t ? at.x : e.x + e.face * dist;
-      const boom = pr => { if (pr.boomed) return; pr.boomed = true; meteorImpact(pr, 0.85); blast(e, pr.x, pr.y, 115, { dmg: skillDmg(3.0, 0.3, lv) * (CLASSES.gun.skillMul ? CLASSES.gun.skillMul(e, 'g_grenade') : 1), launch: 360, knock: 100, hs: 0.08, snd: 'fire', col: '#ffb060', type: 'mag' }); };
+      const boom = pr => { if (pr.boomed) return; pr.boomed = true; meteorImpact(pr, 0.85); blast(e, pr.x, pr.y, 150, { dmg: skillDmg(3.0, 0.3, lv) * (CLASSES.gun.skillMul ? CLASSES.gun.skillMul(e, 'g_grenade') : 1), launch: 360, knock: 100, hs: 0.08, snd: 'fire', col: '#ffb060', type: 'mag' }); };
       lobProj(e, tx, at.t ? at.y : e.y, 0.5, { img: 'grenade', h: 16, onLand: boom,
         update: pr => { if (pr.boomed) return; for (const t of ents) if (foe(e, t) && !t.dead && Math.abs(t.x - pr.x) < t.w + 8 && Math.abs(t.y - pr.y) < 16 && pr.z < t.z + t.hurtH()) { boom(pr); pr.t = pr.life; break; } } }); })] }) });
 CLASSES.gun = { name: '神枪手', hp0: 1650, hpPer: 135, mp0: 800, mpPer: 45, atk0: 470, atkPer: 56, str0: 6, strPer: 2, def0: 260, defPer: 25, crit: 0.1, speed: 172, runSpeed: 305,

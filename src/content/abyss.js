@@ -233,7 +233,9 @@ function abyssLord(dg) {
 // 区域领主本来就由 regionAI 驱动机制；老领主（手写 AI）在这里包一层 control / onDamaged 来驱动
 function abyssLordMechs(b, L) {
   if (!L.mechs.length && !L.cycle.length) return;
-  const own = b.control === regionAI, base = b.control, every = c => rnd(...(c.every || [24, 30]));
+  // 组队主机上 b.control 是 coop 的访问器（读出来是“先选目标再调里面的 AI”的包装）：必须包里面真正的 AI（aiInner），
+  // 包成“包装 → 深渊层 → 包装 → …”会无限递归，第 2 轮领主降临后每帧爆栈、整帧不画（2026-09-29 组队深渊卡死）
+  const ai = b.aiInner || b.control, own = ai === regionAI, base = ai, every = c => rnd(...(c.every || [24, 30]));
   for (const s of L.mechs) if (!msMechActive(b, s.use)) msMechStart(b, s);   // 区域领主自带的同种机制（比如暗杀者的狂暴）不重复加
   const cyc = L.cycle.map(c => ({ ...c, next: every(c) * 0.6 }));
   b.control = (m, dt) => {

@@ -24,11 +24,12 @@ addStyle(`
 .stsets{font-size:.8em;line-height:1.5;background:#0c0a10;border:.1em solid #3a3040;border-radius:.25em;padding:.35em .6em;max-height:7em;overflow:auto}
 `);
 const DOLL_LEFT = ['head', 'top', 'bottom', 'belt', 'shoes'], DOLL_RIGHT = ['weapon', 'title', 'bracelet', 'neck', 'ring'], DOLL_BOTTOM = ['support', 'stone'];
+const DOLL_LABEL = { support: '左槽·辅助', stone: '右槽·魔法石' };   // 官方叫法：辅助装备 = 左槽，魔法石 = 右槽
 const AV_LEFT = ['av_hair', 'av_hat', 'av_face', 'av_chest'], AV_RIGHT = ['av_top', 'av_bottom', 'av_belt', 'av_shoes'];
 function equipSlotEl(slot, win) {
   const it0 = inv.equip[slot], it = it0 && it0.slot === slot ? it0 : null;
   return itemSlot(it, {
-    label: SLOT_NAME[slot], cmp: false, worn: true,
+    label: DOLL_LABEL[slot] || SLOT_NAME[slot], cmp: false, worn: true,
     onRight: () => { if (it && inv.unwear(slot)) { save.write(); itemsRefresh(); } },
     onDbl: () => { if (it && inv.unwear(slot)) { save.write(); itemsRefresh(); } },
     drag: it ? () => ({ type: 'item', item: it, from: 'equip', slot }) : null,

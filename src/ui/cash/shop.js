@@ -224,7 +224,7 @@ function cashFillGrid(grid, el) {
   }
   const list = Object.values(CASH_GOODS).filter(G => G.tab === tab && ITEMS[G.key] && (!G.ltd || CASH_NO_LIMIT || cashLtdPack() === G.pid));
   if (tab === 'avatar') {
-    const subs = [...CASH_ADV_SETS.map(s => [s, CASH_SETS[s].name]), ['weapon', '武器装扮'], ['etc', '其他']];
+    const subs = [...CASH_ADV_SETS.map(s => [s, CASH_SETS[s].name]), ['etc', '其他']];
     const cur = CW.sub.avatar || subs[0][0];
     grid.append(h('div', { class: 'cash-subs' }, subs.map(([id, nm]) => h('span', { class: id === cur ? 'on' : '', onclick: () => { CW.sub.avatar = id; CW.sel = null; sfx.click(); el._render(); } }, nm))));
     for (const G of list.filter(G => G.sub === cur)) add(G);
@@ -248,6 +248,7 @@ function cashFillGrid(grid, el) {
     sec('其他礼包'); for (const G of other) add(G);
     return;
   }
+  if (tab === 'weapon') sec('武器装扮', '不分职业：一件覆盖所有武器类型（拿在手里换成装扮的样子），另加攻击 / 施放速度；也会出现在节日礼包里');
   for (const G of list) add(G);
   if (tab === 'box') grid.append(h('div', { class: 'cash-sec' }, h('small', {}, '每个箱子都公开概率：选中后点“概率公示”。魔盒每开 1 个得 1 个魔盒碎片，碎片可以在兑换商店换好东西。')));
 }

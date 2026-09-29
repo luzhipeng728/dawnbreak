@@ -6,7 +6,7 @@
    奖池里的物品还不存在时（例如装备深化组的增幅保护券还没合并）这一项自动去掉，概率按剩下的归一，概率公示同步
    ===================================================================== */
 /* ---- 商城页签 ---- */
-const CASH_TABS = [['rec', '推荐'], ['avatar', '时装'], ['sky', '天空'], ['pet', '宠物'], ['aura', '光环'], ['use', '消耗品'], ['pack', '礼包'], ['box', '魔盒']];
+const CASH_TABS = [['rec', '推荐'], ['avatar', '时装'], ['weapon', '武器装扮'], ['sky', '天空'], ['pet', '宠物'], ['aura', '光环'], ['use', '消耗品'], ['pack', '礼包'], ['box', '魔盒']];
 /* ---- 商品：pid → { key, n, price, cur, tab, sub?, tag?, limit?: { per: 'day'|'week'|'life', n }, lvl?, whole?（整套时装）, need? } ---- */
 const CASH_GOODS = {};
 function defGoods(pid, def) { CASH_GOODS[pid] = { pid, n: 1, cur: 'cera', ...def }; }
@@ -15,8 +15,8 @@ for (const set of CASH_ADV_SETS) {
   defGoods('set:' + set, { key: avKey(set, 'av_top'), whole: set, price: 11800, tab: 'avatar', sub: set, tag: '整套 9 折', name: `${CASH_SETS[set].name} 整套（8 件）` });
   for (const slot of AV_PIECE_SLOTS) defGoods('av:' + avKey(set, slot), { key: avKey(set, slot), price: CASH_SLOT_PRICE[slot], tab: 'avatar', sub: set });
 }
-defGoods('av_weapon_spring', { key: 'av_weapon_spring', price: 2400, tab: 'avatar', sub: 'weapon' });
-defGoods('av_weapon_summer', { key: 'av_weapon_summer', price: 2400, tab: 'avatar', sub: 'weapon' });
+defGoods('av_weapon_spring', { key: 'av_weapon_spring', price: 2400, tab: 'weapon' });
+defGoods('av_weapon_summer', { key: 'av_weapon_summer', price: 2400, tab: 'weapon' });
 defGoods('tk_avopt', { key: 'tk_avopt', price: 100, tab: 'avatar', sub: 'etc' });
 defGoods('box_avatar', { key: 'box_avatar', price: 900, tab: 'avatar', sub: 'etc', tag: '合成材料' });
 // 天空（天空套本身不直接出售：合成 / 兑换券）

@@ -8,7 +8,7 @@
 // 时装（官方 8 个部位）：没有耐久，不能强化 / 分解；属性按官方（头部 / 帽子 施放速度、脸部 / 胸部 攻击速度、上衣 四维、下装 HP / MP、腰带 回避、鞋 移动速度）
 const AV_SLOTS = ['av_hair', 'av_hat', 'av_face', 'av_chest', 'av_top', 'av_bottom', 'av_belt', 'av_shoes'];
 const SLOTS = ['weapon', 'title', 'top', 'head', 'bottom', 'belt', 'shoes', 'neck', 'bracelet', 'ring', 'support', 'stone', ...AV_SLOTS];
-const SLOT_NAME = { weapon: '武器', title: '称号', top: '上衣', head: '头肩', bottom: '下装', belt: '腰带', shoes: '鞋', neck: '项链', bracelet: '手镯', ring: '戒指', support: '辅助装备', stone: '魔法石',
+const SLOT_NAME = { weapon: '武器', title: '称号', top: '上衣', head: '头肩', bottom: '下装', belt: '腰带', shoes: '鞋', neck: '项链', bracelet: '手镯', ring: '戒指', support: '辅助装备（左槽）', stone: '魔法石（右槽）',
   av_hair: '头部', av_hat: '帽子', av_face: '脸部', av_chest: '胸部', av_top: '上衣', av_bottom: '下装', av_belt: '腰带', av_shoes: '鞋' };
 const ARMOR_SLOTS = ['top', 'head', 'bottom', 'belt', 'shoes'], ACC_SLOTS = ['neck', 'bracelet', 'ring'], SPECIAL_SLOTS = ['support', 'stone'];
 const GRADES = ['最下级', '下级', '中级', '上级', '最上级'];
@@ -69,7 +69,7 @@ const CONSUMABLES = {};   // 旧接口：非装备物品的定义（key → def�
 const GEAR = [];          // 可以随机掉落的装备定义
 const EPICS = [];         // 史诗（旧接口：{ slot, cls, lvl, key, name }）
 const isAvatar = it => !!it && typeof it.slot === 'string' && it.slot.startsWith('av_');
-const TAB_OF = it => it.kind === 'equip' ? (it.slot === 'title' ? 'title' : isAvatar(it) ? 'avatar' : 'equip') : it.kind === 'use' ? 'use' : it.kind === 'quest' ? 'quest' : 'mat';
+const TAB_OF = it => it.kind === 'equip' ? (it.slot === 'title' ? 'title' : isAvatar(it) ? 'avatar' : 'equip') : it.kind === 'use' || (ITEMS[it.key] && ITEMS[it.key].orb) ? 'use' : it.kind === 'quest' ? 'quest' : 'mat';   // 宝珠 / 怪物卡片放消耗品（官方一样），右键就是附魔
 function defineItem(key, def) {
   const D = { key, kind: 'mat', rar: 0, price: 10, ...def };
   const prev = ITEMS[key];   // 重新定义（装备 2.0 的 moveEpic 等）：去掉旧的随机池 / 史诗表条目，不留重复

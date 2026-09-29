@@ -103,7 +103,7 @@ try {
   // AI 对打：会用受身蹲伏（有时多蹲一会儿），进攻方会压起身
   const ai = await page.evaluate(() => {
     const S = { tech: 0, long: 0, meaty: 0, rounds: 0 }; const t0 = window.tryTech; window.tryTech = p => { const r = t0(p); if (r) S.tech++; return r; };
-    for (let n = 0; n < 3; n++) {
+    for (let n = 0; n < 9; n++) {   // 决斗改成一局定胜负后，打 9 场凑够原来 3 场 × 3 局的样本
       duel.start({ a: 'sword', ja: 'blade', b: 'gun', jb: 'ranger', lv: 30, ai: 3, auto: true, theme: 'ruinsDark' });
       for (let i = 0; i < 60 * 60 * 3.6 && duel.state !== 'result'; i++) { step(1 / 60); for (const p of [duel.a, duel.b]) { if (p.techHold) p._hT = (p._hT || 0) + 1 / 60; else if (p._hT) { if (p._hT > 0.4) S.long++; p._hT = 0; } } }
       S.meaty += (duel.a.brain.meaty || 0) + (duel.b.brain.meaty || 0); S.rounds += (duel.roundLog || []).length; duel.roundLog = [];

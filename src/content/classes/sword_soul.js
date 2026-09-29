@@ -11,6 +11,9 @@ const sbJob = p => jobOf(p) === 'soulbender';
 const sbLv = (p, id) => (sbJob(p) ? skLv(p, id) : 0);
 const sbUnseal = p => sbLv(p, 'sb_unseal') > 0;
 const sbR = (p, r) => r * (sbUnseal(p) ? 1.15 : 1);   // 封印解除：阵法范围扩大
+// 封印解除：卡赞、普戾蒙、鬼斩、萨亚、罗刹、卡洛技能等级 +1（只加在已学会的技能上）
+const SB_UNSEAL_LV = new Set(['kazan', 'sb_plemon', 'ghost', 'sb_saya', 'sb_rasha', 'sb_karo']);
+CLASSES.sword.lvBonus = (p, id) => jobOf(p) === 'soulbender' && SB_UNSEAL_LV.has(id) && lvOf(p, 'sb_unseal') > 0 ? 1 : 0;
 // 当前技能决定柔化放阵的落点（官方：身前 100 / 自身 / 身后 100 / 身前 200）
 const SB_FRONT2 = new Set(['sb_awaken', 'sb_purgatory', 'sb_descent', 'sb_awaken2', 'sb_ferry']);
 function sbFieldAt(p) {
@@ -41,7 +44,7 @@ const sbFigure = (img, h, col, steady = 0.3) => (c, s) => {
 /* ---- 召唤物（鬼神）---- */
 defSummon('sb_saya_f', { kind: 'field', tags: ['ghost', 'field'], max: 1, over: 'oldest', life: 5.1, r: 300, tick: 0.5, zMax: 160, type: 'mag', elem: 'ice',
   onSpawn: s => { s.r = sbR(s.owner, 300); sfx.ice(); fxShock(s.x, s.y, s.r * 1.2, SB_ICE); },
-  onTick: (s, L) => { if (L.length) s.flashT = game.t; for (const t of L) { summonHit(s, t, { dmg: skillDmg(0.6, 0.06, s.lv), stun: 0.25, knock: 0, hs: 0.02, col: SB_ICE, elem: 'ice', type: 'mag' }); if (!t.dead && s.owner.sbSayaFreeze !== false && Math.random() < 0.5) addStatus(t, 'freeze', 1.2, { src: s.owner }); }
+  onTick: (s, L) => { if (L.length) s.flashT = game.t; for (const t of L) { summonHit(s, t, { dmg: skillDmg(0.6, 0.06, s.lv), stun: 0.25, knock: 0, hs: 0.02, col: SB_ICE, elem: 'ice', type: 'mag' }); if (!t.dead && s.owner.sbSayaFreeze !== false && Math.random() < 0.5) addStatus(t, 'freeze', Math.min(3, 1.5 + 0.08 * (s.lv - 1)), { src: s.owner }); }
     if (Math.random() < 0.8) fxSpr('icespike', s.x + rnd(-s.r, s.r) * 0.7, s.y + rnd(-s.r, s.r) * 0.25, 0, { h: 50, dur: 0.35, ay: 1, grow: [0.2, 1] }); },
   draw: sbRing(SB_ICE), drawUpright: sbFigure('sb_saya', 150, SB_ICE) });
 defSummon('sb_plemon_f', { kind: 'field', tags: ['ghost', 'field'], max: 1, over: 'oldest', life: 30, r: 300, tick: 0.5, zMax: 200, type: 'mag',
@@ -61,7 +64,7 @@ defSummon('sb_rasha_f', { kind: 'field', tags: ['ghost', 'field'], max: 1, over:
 // 罗刹附身：10 秒内每秒腐蚀伤害，减速、降硬直，交替附加失明 / 诅咒
 defSummon('sb_rasha_on', { kind: 'attach', host: 'target', tags: ['ghost'], max: 60, over: 'oldest', life: 10.5, tick: 1, hits: 10, type: 'mag',
   onTick: (s, h) => { summonHit(s, h, { dmg: skillDmg(0.35, 0.035, s.lv), stun: 0.05, knock: 0, hs: 0, col: '#c06aff', sure: true }); addStatus(h, 'slow', 1.2, { src: s.owner });
-    if (s.hits % 3 === 0) addStatus(h, s.hits % 2 ? 'curse' : 'blind', 2, { src: s.owner }); },
+    if (s.hits % 3 === 0) addStatus(h, s.hits % 2 ? 'curse' : 'blind', 5, { src: s.owner }); },
   draw: (c, s) => { const h = s.host; if (!h || h.dead) return; drawSpr(c, IMG['fx/sb_rasha'] ? 'sb_rasha' : fxTint('ghost', '#c06aff'), sx(h.x + 8), sy(h.y, h.z + h.hurtH() * 0.7), 0, 34, { alpha: 0.75 }); } });
 // 卡洛的冥炎：每秒 1 跳、共 5 跳；鬼影闪命中时一次引爆
 defSummon('sb_karo_burn', { kind: 'attach', host: 'target', tags: ['ghost'], max: 60, over: 'oldest', life: 5.2, tick: 1, hits: 5, type: 'mag',
@@ -72,7 +75,7 @@ function sbKaroDetonate(p, t) { for (const S of summonsOf(p, 'sb_karo_burn').fil
 
 /* ---- 被动 ---- */
 defSkill('sb_unseal', { name: '封印解除', cls: 'sword', job: 'soulbender', lvReq: 15, mp: 0, cd: 0, type: 'mag', passive: true, col: '#9a7aff',
-  desc: '【被动】解开左臂的封印：魔法暴击率、施放速度提高，阵法（萨亚、普戾蒙、罗刹）范围扩大。', infoExtra: lv => [['魔法暴击率', '+' + pct(0.01 + 0.004 * lv)], ['施放速度', '+20%'], ['阵法范围', '+15%']] });
+  desc: '【被动】解开左臂的封印：魔法暴击率、施放速度提高，阵法（萨亚、普戾蒙、罗刹）范围扩大；卡赞、普戾蒙、鬼斩、萨亚、罗刹、卡洛的技能等级 +1。', infoExtra: lv => [['魔法暴击率', '+' + pct(0.01 + 0.004 * lv)], ['施放速度', '+20%'], ['阵法范围', '+15%']] });
 defSkill('sb_darkmoon', { name: '暗月降临', cls: 'sword', job: 'soulbender', lvReq: 15, mp: 0, cd: 0, type: 'mag', passive: true, col: '#6a4ad8',
   desc: '【被动】暗月照临：暗属性强化提高（本作折算为技能伤害提高）。', infoExtra: lv => [['伤害', '+' + pct(0.02 + 0.004 * lv)]] });
 defSkill('sb_dark', { name: '暗之亲和', cls: 'sword', job: 'soulbender', lvReq: 16, maxLv: 1, mp: 0, cd: 0, type: 'mag', passive: true, col: '#5a3ab0',
@@ -87,8 +90,8 @@ defSkill('sb_devour', { name: '噬灵鬼斩', cls: 'sword', job: 'soulbender', l
 /* ---- 残影之凯贾：自身 BUFF。暴击伤害、移速、回避提高；普攻变成 4 连暗属性魔法攻击，跑攻变成凯贾冲刺斩（冲刺开始时短暂无敌，冲刺中可以接鬼影闪）---- */
 defSkill('sb_kaiga', { name: '残影之凯贾', cls: 'sword', job: 'soulbender', lvReq: 16, mp: 30, cd: 5, type: 'mag', buff: true, col: '#8a8aff',
   desc: '【BUFF · 持续时间无限】鬼神凯贾附身：暴击伤害、移动速度提高，身后跟着凯贾的鬼影；开始冲刺（跑动）时 1 秒无敌、身体变得半透明（每 3 秒最多一次）；普攻变为 4 连暗属性魔法攻击，跑动攻击变为凯贾冲刺斩（冲刺开始时短暂无敌，冲刺中可以接鬼影闪）。',
-  ai: { kind: 'buff', core: true }, infoExtra: lv => [['暴击伤害 / 移速', '+' + pct(0.05)]],
-  act: (lv) => ({ name: 'sb_kaiga', clip: 'sbSummon', dur: 0.45, noCounter: true, onStart: e => { e.buffs.sb_kaiga = { t: 9999, critDmg: 0.05, mspd: 0.05, lv }; sfx.buff(); fxAura(e, '#8a8aff', 1); fxAfterimage(e, '#8a8aff'); } }) });
+  ai: { kind: 'buff', core: true }, infoExtra: lv => [['暴击伤害', '+' + pct(0.05)], ['移动速度', '+' + pct(Math.min(0.33, 0.14 + 0.021 * (lv - 1)))], ['回避', '+5%']],
+  act: (lv) => ({ name: 'sb_kaiga', clip: 'sbSummon', dur: 0.45, noCounter: true, onStart: e => { e.buffs.sb_kaiga = { t: 9999, critDmg: 0.05, mspd: Math.min(0.33, 0.14 + 0.021 * (lv - 1)), evade: 0.05, lv }; sfx.buff(); fxAura(e, '#8a8aff', 1); fxAfterimage(e, '#8a8aff'); } }) });
 const sbHit = (t0, t1, box, dmg, o) => HB(t0, t1, box, dmg, { type: 'mag', elem: 'dark', hs: 0.05, ...o });
 const SWORD_ACTS_KAIGA = { ...SWORD_ACTS,
   atk1: { name: 'atk1', dur: 0.32, basic: true, speed: 'aspd', chain: [0.12, 0.32], next: 'atk2', move: [[0.02, 0.08, 110]], type: 'mag',
@@ -144,7 +147,7 @@ CLASSES.sword.passives.push(p => {
 /* ---- 泯灭仪式：清除自己放出的普戾蒙、萨亚、罗刹 ---- */
 defSkill('sb_purge', { name: '泯灭仪式', cls: 'sword', job: 'soulbender', lvReq: 16, maxLv: 1, mp: 5, cd: 1, type: 'mag', buff: true, col: '#6a5a9a',
   desc: '清除自己放出的普戾蒙、萨亚、罗刹之阵。', ai: { kind: 'buff' },
-  act: () => ({ name: 'sb_purge', clip: 'sbSummon', dur: 0.3, noCounter: true, onStart: e => { for (const s of summonsOf(e, { tag: 'field' })) fxBurst(s.x, s.y, 30, 90, SB_COL); dismissSummons(e, { tag: 'field' }, 'cmd'); } }) });
+  act: () => ({ name: 'sb_purge', clip: 'sbSummon', dur: 0.15, noCounter: true, onStart: e => { for (const s of summonsOf(e, { tag: 'field' })) fxBurst(s.x, s.y, 30, 90, SB_COL); dismissSummons(e, { tag: 'field' }, 'cmd'); } }) });
 
 /* ---- 阵法 ---- */
 sbFieldSkill('sb_plemon', 'sb_plemon_f', { name: '侵蚀之普戾蒙', lvReq: 15, mp: 30, cd: 8, col: '#6aff9a',
@@ -159,8 +162,8 @@ sbFieldSkill('sb_rasha', 'sb_rasha_f', { name: '瘟疫之罗刹', lvReq: 19, mp:
 defSkill('sb_whip', { name: '鬼影鞭', cls: 'sword', job: 'soulbender', lvReq: 18, mp: 25, cd: 8, type: 'mag', elem: 'dark', col: '#a06aff',
   desc: '像甩鞭一样挥剑两次，第二下把远处的敌人拉到身前。可以用普攻取消后摇；卡洛附身时附加冥炎。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'poke', r: [0, 300], dy: 30 },
   act: (lv) => ({ name: 'sb_whip', clip: 'sbWhip', dur: 0.62, noCounter: true, chain: [0.36, 0.62], next: 'atk1',
-    hits: [HB(0.1, 0.16, [0, 200, 34, 10, 110], skillDmg(1.8, 0.18, lv), { stun: 0.4, knock: 40, hs: 0.05, col: '#b08aff', onHit: (a, t) => { if (a.buffs.sb_karo) sbKaroBurn(a, t); } }),
-      HB(0.3, 0.38, [20, 320, 38, 0, 120], skillDmg(2.2, 0.22, lv), { stun: 0.6, knock: 20, hs: 0.07, pull: true, col: '#b08aff', onHit: (a, t) => { t.x = a.x + a.face * 60; if (a.buffs.sb_karo) sbKaroBurn(a, t); } })],
+    hits: [HB(0.1, 0.16, [0, 200, 34, 10, 110], skillDmg(1.2, 0.12, lv), { stun: 0.4, knock: 40, hs: 0.05, col: '#b08aff', onHit: (a, t) => { if (a.buffs.sb_karo) sbKaroBurn(a, t); } }),
+      HB(0.3, 0.38, [20, 320, 38, 0, 120], skillDmg(2.8, 0.28, lv), { stun: 0.6, knock: 20, hs: 0.07, pull: true, col: '#b08aff', onHit: (a, t) => { t.x = a.x + a.face * 60; if (a.buffs.sb_karo) sbKaroBurn(a, t); } })],
     events: [evAt(0.08, e => { sfx.swing(true); fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 200, w: 12, col: '#b08aff', dur: 0.16 }); }),
       evAt(0.28, e => { sfx.swing(true); fxStreak({ x: e.x + e.face * 20, y: e.y, z: e.z + 50, face: e.face, len: 310, w: 14, col: '#b08aff', dur: 0.2 }); })] }) });
 
@@ -174,18 +177,18 @@ defSkill('sb_tomb', { name: '死亡墓碑', cls: 'sword', job: 'soulbender', lvR
       if (e.actT > 0.1 && e.actT < 1.1 && a.tk >= 0.11) { a.tk = 0; const x = e.x + e.face * a.off + rnd(-150, 150), y = e.y + rnd(-40, 40);
         const img = IMG['fx/sb_tomb'] ? 'sb_tomb' : 'rock';
         addFx({ x, y: y + 0.4, z: 260, dur: 0.5, vz: -900, update(dt) { this.z = Math.max(0, this.z + this.vz * dt); }, draw(c) { const k = this.t / this.dur; drawSpr(c, img, sx(this.x), sy(this.y, this.z), 0, 60, { ay: 1, add: false, alpha: k > 0.8 ? (1 - k) / 0.2 : 1 }); } });
-        game.after(0.28, () => { if (e.dead) return; sfx.boom(0.3); fxDust(x, y, 3, 10); fxShock(x, y, 58, '#b0a0c0'); blast(e, x, y, 72, { dmg: skillDmg(0.6, 0.06, lv), stun: 0.35, knock: 30, hs: 0.03, type: 'mag', elem: 'dark', col: '#b0a0c0', downHit: true, onHit: (a2, t) => addStatus(t, 'curse', 3, { src: a2 }) }, { zMax: 120 }); }); } } }) });
+        game.after(0.28, () => { if (e.dead) return; sfx.boom(0.3); fxDust(x, y, 3, 10); fxShock(x, y, 58, '#b0a0c0'); blast(e, x, y, 72, { dmg: skillDmg(0.6, 0.06, lv), stun: 0.35, knock: 30, hs: 0.03, type: 'mag', elem: 'dark', col: '#b0a0c0', downHit: true, onHit: (a2, t) => addStatus(t, 'curse', 12, { src: a2 }) }, { zMax: 120 }); }); } } }) });
 
 /* ---- 鬼影闪：向前冲刺斩击，命中的敌人先被定住，随后暗属性爆发并强制倒地；引爆冥炎。二觉前只能在凯贾的冲刺中施放 ---- */
 defSkill('sb_flash', { name: '鬼影闪', cls: 'sword', job: 'soulbender', lvReq: 19, mp: 45, cd: 20, type: 'mag', elem: 'dark', col: '#9a6aff',
   desc: '向前冲刺约 370 像素并斩击，命中的敌人先被短暂定住，随后暗属性爆发并强制倒地；会一次引爆敌人身上的冥炎。只能在残影之凯贾的冲刺斩（凯贾附身时的跑动攻击）中施放；学了御鬼之极后随时可用。', pow: lv => skillDmg(7.0, 0.7, lv), ai: { kind: 'gap', r: [0, 260], dy: 26 },
   req: p => (p.act && p.act.kaigaDash) || sbLv(p, 'sb_mastery') ? true : swordNeed(p, 'sb_kaiga', '凯贾的冲刺', `${swordHowTo(p, 'sb_kaiga')} 开启残影之凯贾，跑动攻击冲刺时再按`),
-  act: (lv) => ({ name: 'sb_flash', clip: 'dragon', dur: 0.9, superArmor: true, noCounter: true, move: [[0, 0.2, 1260]], invul: [0, 0.2],
-    onStart: e => { e.act.victims = []; fxAfterimage(e, '#9a6aff'); sfx.iai(); },
-    hits: [HB(0.02, 0.22, [-30, 78, 36, 0, 120], skillDmg(1.5, 0.15, lv), { stun: 1.0, knock: 0, hs: 0.04, col: '#b08aff', onHit: (a, t) => { if (a.act) a.act.victims.push(t); addStatus(t, 'root', 0.6, { src: a }); } })],
+  act: (lv, p) => { const M = p && sbLv(p, 'sb_mastery') > 0; return { name: 'sb_flash', clip: 'dragon', dur: M ? 0.9 : 1.5, superArmor: true, noCounter: true, move: [[0, 0.2, 1260]], invul: [0, 0.2],   // 官方：没有御鬼之极时后摇约 2 秒、定住 0.3 秒；御鬼之极后后摇大减、定住更久
+    onStart: e => { e.act.victims = []; e.act.hold = M ? 0.55 : 0.32; fxAfterimage(e, '#9a6aff'); sfx.iai(); cam.flash = Math.max(cam.flash || 0, 0.18); cam.flashCol = '#2a1250'; fxText('鬼影闪', e.x, e.y, e.z + 90, { col: '#c8a8ff', size: 14, dur: 0.6 }); },
+    hits: [HB(0.02, 0.22, [-30, 78, 36, 0, 120], skillDmg(1.5, 0.15, lv), { stun: 1.0, knock: 0, hs: 0.04, col: '#b08aff', onHit: (a, t) => { if (a.act) a.act.victims.push(t); addStatus(t, 'root', a.act.hold, { src: a }); } })],
     events: [evAt(0.02, e => fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 420, w: 22, col: '#9a6aff', dur: 0.3 })),
-      evAt(0.6, e => { cam.shake = Math.max(cam.shake, 6); sfx.boom(0.9);
-        for (const t of e.act.victims || []) { if (t.dead) continue; fxBurst(t.x, t.y, t.z + 40, 140, '#9a5aff'); applyHit(e, t, { dmg: skillDmg(5.5, 0.55, lv), down: true, knock: 60, hs: 0.1, big: 1.5, sure: true, type: 'mag', elem: 'dark', col: '#b08aff', downHit: true }, { proj: true }); sbKaroDetonate(e, t); } })] }) });
+      evAt(M ? 0.7 : 0.5, e => { cam.shake = Math.max(cam.shake, 6); sfx.boom(0.9);
+        for (const t of e.act.victims || []) { if (t.dead) continue; fxBurst(t.x, t.y, t.z + 40, 140, '#9a5aff'); applyHit(e, t, { dmg: skillDmg(5.5, 0.55, lv), down: true, knock: 60, hs: 0.1, big: 1.5, sure: true, type: 'mag', elem: 'dark', col: '#b08aff', downHit: true }, { proj: true }); sbKaroDetonate(e, t); } })] }; } });
 
 /* ---- 鬼影剑：狂怒：剑中注入鬼神之力向前下劈，引发爆炸，单段高伤害 ---- */
 defSkill('sb_fury', { name: '鬼影剑：狂怒', cls: 'sword', job: 'soulbender', lvReq: 19, mp: 50, cd: 20, type: 'mag', elem: 'dark', col: '#7a4aff',
@@ -202,26 +205,27 @@ defSkill('sb_karoblade', { name: '冥炎剑', cls: 'sword', job: 'soulbender', l
     onStart: e => { const d = e.pad.dx() * e.face; e.act.step = d > 0 ? 260 : d < 0 ? 60 : 160; },
     events: [0, 1, 2, 3].map(i => evAt(0.08 + i * 0.22, e => { e.play(['dual1', 'dual3', 'dual2', 'dual4'][i], true); e.vx = e.face * e.act.step * 3; sfx.swing(true);
       fxSlashOn(e, { col: '#9a4aff', a0: i % 2 ? 1.0 : -2.4, a1: i % 2 ? -2.4 : 1.0, r: 94, w: 20, off: [10, 56], heavy: i === 3 });
-      game.after(0.06, () => { if (e.dead) return; e.vx = 0; instantHit(e, { box: [-10, 126, 40, 0, 120], dmg: skillDmg(1.5 + i * 0.5, 0.15 + i * 0.05, lv), stun: 0.5, knock: i === 3 ? 240 : 40, launch: i === 3 ? 300 : 0, hs: 0.06, type: 'mag', elem: 'dark', col: '#b08aff',
+      game.after(0.06, () => { if (e.dead) return; e.vx = 0; instantHit(e, { box: [-10, 126, 40, 0, 120], dmg: skillDmg([0.84, 1.23, 2.64, 4.29][i], [0.084, 0.123, 0.264, 0.429][i], lv), stun: 0.5, knock: i === 3 ? 240 : 40, launch: i === 3 ? 300 : 0, hs: 0.06, type: 'mag', elem: 'dark', col: '#b08aff',
         onHit: (a, t) => sbKaroBurn(a, t) }); }); })) }) });
 
 /* ---- 一觉：第7鬼神：怖拉修。沼泽在前方扩大 → 巨口鬼神破土而出（冲击波击倒）→ 合嘴吞噬（主要伤害）；场上每有一只鬼神伤害 +20%（最多 4 只）。施放中无敌 ---- */
 defSkill('sb_awaken', { name: '第7鬼神：怖拉修', cls: 'sword', job: 'soulbender', lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'mag', elem: 'dark', awaken: true, col: '#5a2a9a',
-  desc: '【觉醒】唤出禁断的第 7 鬼神怖拉修：挥剑砸地召出沼泽，沼泽逐渐扩大，巨口鬼神破土而出、张口放出冲击波，随即合嘴吞噬一切。命中的敌人被大幅减速，自身回避率提高 15 秒。场上每有一只鬼神（卡赞、普戾蒙、萨亚、罗刹、凯贾、卡洛），伤害提高 20%（最多 4 只）。施放中无敌。',
+  desc: '【觉醒】唤出禁断的第 7 鬼神怖拉修：挥剑砸地召出沼泽，沼泽逐渐扩大，巨口鬼神破土而出、张口放出冲击波，随即合嘴吞噬一切。命中的敌人被大幅减速，自身回避率提高 15 秒。场上每有一只鬼神（卡赞、普戾蒙、萨亚、罗刹、凯贾、卡洛），伤害提高 20%（最多 3 只，3 级起 4 只）。施放中无敌。',
   pow: lv => skillDmg(24, 6, lv), ai: { kind: 'awaken', r: [0, 420], dy: 90 },
   act: (lv) => ({ name: 'sb_awaken', clip: 'sbSummon', dur: 2.6, superArmor: true, noCounter: true, invul: [0, 2.6],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '第7鬼神：怖拉修', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); const a = e.act; a.cx = e.x + e.face * 200; a.cy = e.y;
-      const n = Math.min(4, summonsOf(e, { tag: 'field' }).length + (e.buffs.kazan || sbLv(e, 'kazan') ? 1 : 0) + (e.buffs.sb_kaiga ? 1 : 0) + (e.buffs.sb_karo ? 1 : 0)); a.m = 1 + 0.2 * n;
+      const n = Math.min(lv >= 3 ? 4 : 3, summonsOf(e, { tag: 'field' }).length + (e.buffs.kazan || sbLv(e, 'kazan') ? 1 : 0) + (e.buffs.sb_kaiga ? 1 : 0) + (e.buffs.sb_karo ? 1 : 0)); a.m = 1 + 0.2 * n;
       a.fx = addFx({ x: a.cx, y: a.cy - 50, z: 0, dur: 2.6, a, draw(c) { const A = this.a, k = this.t, sw = Math.min(1, k / 1.6);
         drawSpr(c, fxTint('darkorb', '#3a1a6a'), sx(A.cx), sy(A.cy, 0), 100 + 520 * sw, 40 + 180 * sw, { alpha: 0.8, add: false });
         if (k > 1.6) { const q = Math.min(1, (k - 1.6) * 3), bite = k > 2.1; drawSpr(c, IMG['fx/sb_brasha'] ? 'sb_brasha' : fxTint('ghost', '#7a3aff'), sx(A.cx), sy(A.cy, 0) + 10, 0, (bite ? 280 : 320) * q, { ay: 1, alpha: Math.min(1, (2.6 - k) * 3), add: !IMG['fx/sb_brasha'] }); } } }); },
     events: [evAt(1.6, e => { const a = e.act; cam.shake = Math.max(cam.shake, 10); sfx.boom(1.2); fxShock(a.cx, a.cy, 400, '#8a5aff');
-        blast(e, a.cx, a.cy, 320, { dmg: skillDmg(6, 1.5, lv) * a.m, stun: 0.8, knock: 60, hs: 0.1, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 260, status: 'slow', sdur: 6 });
+        blast(e, a.cx, a.cy, 320, { dmg: skillDmg(10.2, 2.55, lv) * a.m, stun: 0.8, knock: 60, hs: 0.1, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 260, status: 'slow', sdur: 6 });
         e.buffs.sb_blasha = { t: 15 }; fxAura(e, '#8a5aff', 0.8); }),
       evAt(2.1, e => { const a = e.act; cam.flash = 0.3; cam.flashCol = '#c8a8ff'; cam.shake = 14; sfx.boom(1.4); sfx.iai();
         for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 360) { t.x = lerp(t.x, a.cx, 0.6); t.y = lerp(t.y, a.cy, 0.6); }
-        blast(e, a.cx, a.cy, 340, { dmg: skillDmg(18, 4.5, lv) * a.m, stun: 1.0, knock: 80, hs: 0.2, big: 2.2, critBonus: 0.2, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 320, status: 'slow', sdur: 6 }); })] }) });
+        blast(e, a.cx, a.cy, 340, { dmg: skillDmg(13.8, 3.45, lv) * a.m, stun: 1.0, knock: 80, hs: 0.2, big: 2.2, critBonus: 0.2, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 320, status: 'slow', sdur: 6 }); })] }) });
 // 怖拉修的余威：15 秒内受到攻击时 15% 几率回避（官方：自身回避率提高）
+SWORD_HOOKS.beforeHurt.push((p, a, h) => { if (!sbJob(p) || !p.buffs.sb_kaiga || h.sure || h.grab || Math.random() >= 0.05) return null; fxText('MISS', p.x, p.y, p.z, { col: '#d8d8d8', size: 12, dur: 0.5 }); return { block: true }; });
 SWORD_HOOKS.beforeHurt.push((p, a, h) => { if (!p.buffs.sb_blasha || !sbJob(p) || h.sure || h.grab || Math.random() >= 0.15) return null; fxText('MISS', p.x, p.y, p.z, { col: '#d8d8d8', size: 12, dur: 0.5 }); return { block: true }; });
 
 /* ---- 基础技能的鬼泣强化：鬼斩（噬灵鬼斩：蓄力 + 追加鬼神冲击波）、月光斩（普攻取消后摇 + 满月斩）、卡赞（转职后变被动）---- */
@@ -230,7 +234,7 @@ SWORD_HOOKS.beforeHurt.push((p, a, h) => { if (!p.buffs.sb_blasha || !sbJob(p) |
   G.act = (lv, p) => {
     const a = act0(lv, p); if (!p || !sbJob(p)) return a;
     if (sbLv(p, 'sb_devour')) {
-      a.charge = { at: 0.04, max: 0.15, min: 0, dmg: 0.4, update: e => { if (Math.random() < 0.6) fxCharge(e, SB_COL); }, onRelease: (e, k) => { if (k > 0.95) { e.superArmor = Math.max(e.superArmor, 0.5); e.vx = e.face * 420; fxAfterimage(e, SB_COL); } } };
+      a.charge = { at: 0.04, max: 0.15, min: 0, dmg: 0.4, update: e => { if (Math.random() < 0.6) fxCharge(e, SB_COL); }, onRelease: (e, k) => { if (k > 0.95) { e.superArmor = Math.max(e.superArmor, 1.5); e.vx = e.face * 420; fxAfterimage(e, SB_COL); } } };
       a.follow = () => sbGhostWave(lv, p); a.followWin = [0.3, 0.56];
     }
     return a;
@@ -243,7 +247,7 @@ function sbGhostWave(lv, p) {   // 噬灵鬼斩的追加：最后召唤的鬼神
   const back = p.pad.dx() * p.face < 0;
   return { name: 'sb_ghostwave', clip: 'sbSummon', dur: 0.45, noCounter: true, move: back ? [] : [[0.02, 0.1, 80]],
     events: [evAt(0.1, e => { sfx.boom(0.6); projWave(e, { speed: 520, life: 0.65, h: 125, col, hit: { dmg: skillDmg(2.0, 0.2, lv), knock: 160, launch: 240, hs: 0.06, downHit: true, type: 'mag', elem: k === 'sb_saya_f' ? 'ice' : 'dark',
-      onHit: (a, t) => { if (k === 'sb_saya_f') addStatus(t, 'freeze', 1.5, { src: a }); else if (k === 'sb_plemon_f') addStatus(t, 'sleep', 2, { src: a }); } } }); })] };
+      onHit: (a, t) => { if (Math.random() < 0.9) { if (k === 'sb_saya_f') addStatus(t, 'freeze', 1.9, { src: a }); else if (k === 'sb_plemon_f') addStatus(t, 'sleep', 5, { src: a }); }; } } }); })] };
 }
 {
   const M = SKILLS.moon, act0 = M.act;
@@ -318,12 +322,14 @@ defSkill('sb_crown', { name: '鬼神冠冕', cls: 'sword', job: 'soulbender', lv
 
 /* ---- 鬼斩：炼狱：斩裂地面，冥界之刃从地下升起定住敌人 2 秒，随后刀刃崩碎再斩一次（同一敌人最多 2 段；现版没有爆炸）---- */
 defSkill('sb_purgatory', { name: '鬼斩：炼狱', cls: 'sword', job: 'soulbender', lvReq: 23, mp: 70, cd: 30, type: 'mag', elem: 'dark', col: '#8a3aff',
-  desc: '斩裂前方的地面，6 把冥界之刃从地下升起，刺中的敌人被强制定住 2 秒，随后冥界之刃崩碎再斩一次（同一个敌人最多 2 段）。', pow: lv => skillDmg(14, 1.4, lv), ai: { kind: 'aoe', r: [0, 380], dy: 60 },
+  desc: '斩裂前方的地面（斩击），6 把冥界之刃从地下升起，刺中的敌人被强制定住 2 秒，随后冥界之刃崩碎并爆炸（斩击 → 升剑 → 爆炸，同一个敌人最多命中 3 次）。', pow: lv => skillDmg(14, 1.4, lv), ai: { kind: 'aoe', r: [0, 380], dy: 60 },
   act: (lv) => ({ name: 'sb_purgatory', clip: 'a3slam', dur: 0.9, superArmor: true, noCounter: true,
     events: [evAt(0.3, e => { const x0 = e.x, f = e.face, y = e.y; cam.shake = 8; sfx.boom(1); fxShock(x0 + f * 100, y, 200, '#8a3aff');
-      const L = []; for (let i = 0; i < 6; i++) game.after(i * 0.05, () => { if (e.dead) return; const x = x0 + f * (60 + i * 64); fxSpr('swordrain', x, y, 0, { h: 180, dur: 2.1, ay: 1, col: '#9a4aff', grow: [0.2, 1], rot: Math.PI });
-        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - x) < 46 && Math.abs(t.y - y) < 62 && !L.includes(t)) { L.push(t); addStatus(t, 'root', 2, { src: e }); applyHit(e, t, { dmg: skillDmg(5, 0.5, lv), stun: 0.5, knock: 0, hs: 0.05, sure: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { proj: true }); } });
-      game.after(2.0, () => { if (e.dead) return; cam.shake = Math.max(cam.shake, 9); sfx.boom(1.2); for (const t of L) if (!t.dead) { fxSlashX(t.x, t.y, t.z + 50, 180, '#9a4aff'); fxSpr('swordrain', t.x, t.y, 0, { h: 180, dur: 0.3, ay: 1, col: '#9a4aff', grow: [1, 0.2], rot: Math.PI }); applyHit(e, t, { dmg: skillDmg(9, 0.9, lv), launch: 420, knock: 100, hs: 0.12, big: 1.6, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { proj: true }); } }); })] }) });
+      const L = [];
+      for (const t of ents) if (hittable(e, t) && (t.x - x0) * f > 0 && Math.abs(t.x - x0) < 430 && Math.abs(t.y - y) < 62) applyHit(e, t, { dmg: skillDmg(1.7, 0.17, lv), stun: 0.2, knock: 0, hs: 0.03, sure: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { proj: true });   // 官方第 1 段：斩裂地面的斩击
+      for (let i = 0; i < 6; i++) game.after(i * 0.05, () => { if (e.dead) return; const x = x0 + f * (60 + i * 64); fxSpr('swordrain', x, y, 0, { h: 180, dur: 2.1, ay: 1, col: '#9a4aff', grow: [0.2, 1], rot: Math.PI });
+        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - x) < 46 && Math.abs(t.y - y) < 62 && !L.includes(t)) { L.push(t); addStatus(t, 'root', 2, { src: e }); applyHit(e, t, { dmg: skillDmg(6.6, 0.66, lv), stun: 0.5, knock: 0, hs: 0.05, sure: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { proj: true }); } });
+      game.after(2.0, () => { if (e.dead) return; cam.shake = Math.max(cam.shake, 9); sfx.boom(1.2); for (const t of L) if (!t.dead) { fxSlashX(t.x, t.y, t.z + 50, 180, '#9a4aff'); fxSpr('swordrain', t.x, t.y, 0, { h: 180, dur: 0.3, ay: 1, col: '#9a4aff', grow: [1, 0.2], rot: Math.PI }); fxSpr('explosion', t.x, t.y, 40, { w: 200, dur: 0.4, col: '#8a3aff', grow: [0.4, 1.1] }); applyHit(e, t, { dmg: skillDmg(5.7, 0.57, lv), launch: 420, knock: 100, hs: 0.12, big: 1.6, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { proj: true }); } }); })] }) });
 
 /* ---- 冥祭之沼：身边升起 3 块封印墓碑，强开冥界之门把敌人往中心吸 5 秒；到时间或再按一次，墓碑自爆（按前 / 后方向键移动位置）---- */
 defSummon('sb_swamp_f', { kind: 'field', tags: ['ghost', 'field'], max: 1, over: 'oldest', life: 5, r: 150, zMax: 200, type: 'mag',
@@ -376,26 +382,31 @@ defSkill('sb_awaken2', { name: '王者号令：吉格降临', cls: 'sword', job:
         if (t > 1.5) { const q = Math.min(1, (t - 1.5) * 3), sink = t > 2.6 ? (t - 2.6) * 300 : 0; drawSpr(c, sbImg('sb_jig', 'ghost', '#9a4aff'), sx(A.cx), sy(A.cy, 0) + 10 + sink, 0, 300 * q, { ay: 1, alpha: Math.min(1, (3.2 - t) * 3) }); } } }); },
     update: (e, dt) => { const a = e.act; if (e.actT > 0.95 && e.actT < 2.6) for (const t of ents) if (hittable(e, t) && !t.boss && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 400) { t.x = damp(t.x, a.cx, 1.5, dt); t.y = damp(t.y, a.cy, 1.5, dt); } },
     events: [...[1.0, 1.2, 1.4].map(t => evAt(t, e => { const a = e.act; for (let i = 0; i < 4; i++) fxSpr('ghost', a.cx + rnd(-300, 300), a.cy + rnd(-60, 60), rnd(40, 120), { w: 80, dur: 0.4, col: '#9a4aff' }); sfx.swing(false);
-        blast(e, a.cx, a.cy, 380, { dmg: skillDmg(2, 0.6, lv), stun: 0.4, knock: 0, hs: 0.02, sure: true, type: 'mag', elem: 'dark', col: '#b08aff', onHit: (x, t) => addStatus(t, 'curse', 4, { src: x }) }, { zMax: 300 }); })),
+        blast(e, a.cx, a.cy, 380, { dmg: skillDmg(0.8, 0.24, lv), stun: 0.4, knock: 0, hs: 0.02, sure: true, type: 'mag', elem: 'dark', col: '#b08aff', onHit: (x, t) => addStatus(t, 'curse', 4, { src: x }) }, { zMax: 300 }); })),
       evAt(1.6, e => { const a = e.act; for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 380) addStatus(t, 'root', 1.5, { src: e }); cam.shake = 10; sfx.boom(1.2); fxShock(a.cx, a.cy, 400, '#9a4aff');
-        blast(e, a.cx, a.cy, 380, { dmg: skillDmg(10, 3, lv), stun: 0.8, knock: 0, hs: 0.1, sure: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 320 }); }),
+        blast(e, a.cx, a.cy, 380, { dmg: skillDmg(7.4, 2.2, lv), stun: 0.8, knock: 0, hs: 0.1, sure: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 320 }); }),
+      evAt(2.1, e => { const a = e.act; cam.shake = Math.max(cam.shake, 12); sfx.boom(1.3); fxShock(a.cx, a.cy, 420, '#5a1a8a'); for (let i = 0; i < 5; i++) fxSpr('ghost', a.cx + rnd(-260, 260), a.cy + rnd(-50, 50), rnd(30, 90), { w: 90, dur: 0.5, col: '#5a1a8a' });   // 地狱裂缝：亡者之手涌出
+        blast(e, a.cx, a.cy, 400, { dmg: skillDmg(9.3, 2.8, lv), stun: 0.8, knock: 0, hs: 0.1, sure: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 320 }); }),
       evAt(2.7, e => { const a = e.act; cam.flash = 0.35; cam.flashCol = '#c8a8ff'; cam.shake = 16; sfx.boom(1.5); fxShock(a.cx, a.cy, 460, '#9a4aff'); fxBurst(a.cx, a.cy, 40, 440, '#7a2ab0');
         for (const t of ents) if (hittable(e, t) && Math.hypot(t.x - a.cx, (t.y - a.cy) * 1.4) < 400) {
           const lim = t.boss ? 0 : t.elite ? 0.1 : 0.3;
-          applyHit(e, t, { dmg: skillDmg(18, 5, lv), launch: 520, knock: 160, hs: 0.2, big: 2.2, critBonus: 0.2, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { proj: true });
+          applyHit(e, t, { dmg: skillDmg(14.9, 4.2, lv), launch: 520, knock: 160, hs: 0.2, big: 2.2, critBonus: 0.2, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { proj: true });
           if (!t.dead && lim && t.hp <= t.hpMax * lim) { fxText('处决', t.x, t.y, t.z + 30, { col: '#ff6aff', size: 14 }); applyHit(e, t, { dmg: 1e6, sure: true, hs: 0.1, col: '#ff6aff' }, { proj: true }); } } })] }) });
 
 /* ---- 鬼神剑·黄泉摆渡：挥动卡隆之剑划开通往冥界的裂缝，亡灵涌出前再用剑毁掉裂缝（含 5 段吸魂）---- */
 defSkill('sb_ferry', { name: '鬼神剑·黄泉摆渡', cls: 'sword', job: 'soulbender', lvReq: 29, mp: 120, cd: 60, type: 'mag', elem: 'dark', col: '#5a2a8a',
-  desc: '挥动卡隆之剑，划开通往冥界的空间裂缝（5 段吸魂伤害），在亡灵涌出之前再用剑把裂缝连同敌人一起毁掉。', pow: lv => skillDmg(22, 2.2, lv), ai: { kind: 'burst', r: [0, 400], dy: 60 },
+  desc: '挥动卡隆之剑，内外两道空间斩划开通往冥界的裂缝，掷出卡隆之剑，5 段吸魂伤害，在亡灵涌出之前再用剑把裂缝连同敌人一起毁掉。', pow: lv => skillDmg(22, 2.2, lv), ai: { kind: 'burst', r: [0, 400], dy: 60 },
   act: (lv) => ({ name: 'sb_ferry', clip: 'sbFerry', dur: 1.6, superArmor: true, noCounter: true,
     onStart: e => { const a = e.act; a.cx = e.x + e.face * 190; a.cy = e.y; sfx.charge(); },
     events: [evAt(0.2, e => { const a = e.act; sfx.iai(); cam.shake = 8; fxSlashOn(e, { col: '#7a3aaa', a0: -2.9, a1: 0.6, r: 190, w: 34, off: [10, 60], squash: 0.5, dur: 0.3 });
+        blast(e, a.cx, a.cy, 190, { dmg: skillDmg(4.3, 0.43, lv), stun: 0.5, knock: 0, hs: 0.06, sure: true, type: 'mag', elem: 'dark', col: '#c08aff' }, { zMax: 260 });   // 官方：内侧空间斩
         addFx({ x: a.cx, y: a.cy, z: 70, dur: 1.2, draw(c) { const k = this.t / this.dur, w = k < 0.2 ? k / 0.2 : 1; drawSpr(c, fxTint('slash', '#2a0a3a'), sx(a.cx), sy(a.cy, 70), 400 * w, 0, { add: false, alpha: 0.85 }); drawSpr(c, fxTint('slash', '#b06aff'), sx(a.cx), sy(a.cy, 70), 415 * w, 0, { alpha: 0.7 }); } }); }),
-      ...[0.4, 0.55, 0.7, 0.85, 1.0].map(t => evAt(t, e => { const a = e.act; fxSpr('ghost', a.cx + rnd(-160, 160), a.cy + rnd(-30, 30), 80, { w: 70, dur: 0.3, col: '#b06aff' }); sfx.swing(false);
-        for (const x of ents) if (hittable(e, x) && Math.abs(x.x - a.cx) < 260 && Math.abs(x.y - a.cy) < 80) { x.x = damp(x.x, a.cx, 8, 1 / 60); applyHit(e, x, { dmg: skillDmg(2, 0.2, lv), stun: 0.5, knock: 0, hs: 0.03, sure: true, type: 'mag', elem: 'dark', col: '#c08aff' }, { proj: true }); } })),
+      evAt(0.3, e => { const a = e.act; sfx.iai(); fxSlashOn(e, { col: '#9a5aff', a0: 1.0, a1: -2.6, r: 200, w: 30, off: [10, 60], squash: 0.5, dur: 0.25 }); blast(e, a.cx, a.cy, 300, { dmg: skillDmg(4.3, 0.43, lv), stun: 0.5, knock: 0, hs: 0.06, sure: true, type: 'mag', elem: 'dark', col: '#c08aff' }, { zMax: 260 }); }),   // 外侧空间斩
+      evAt(0.4, e => { const a = e.act; sfx.swing(true); fxStreak({ x: e.x, y: e.y, z: e.z + 60, face: e.face, len: 190, w: 16, col: '#e0c8ff', dur: 0.2 }); blast(e, a.cx, a.cy, 130, { dmg: skillDmg(2.2, 0.22, lv), stun: 0.4, knock: 0, hs: 0.05, sure: true, type: 'mag', elem: 'dark', col: '#e0c8ff' }, { zMax: 260 }); }),   // 掷出卡隆之剑
+      ...[0.55, 0.68, 0.81, 0.94, 1.05].map(t => evAt(t, e => { const a = e.act; fxSpr('ghost', a.cx + rnd(-160, 160), a.cy + rnd(-30, 30), 80, { w: 70, dur: 0.3, col: '#b06aff' }); sfx.swing(false);
+        for (const x of ents) if (hittable(e, x) && Math.abs(x.x - a.cx) < 260 && Math.abs(x.y - a.cy) < 80) { x.x = damp(x.x, a.cx, 8, 1 / 60); applyHit(e, x, { dmg: skillDmg(0.66, 0.066, lv), stun: 0.5, knock: 0, hs: 0.03, sure: true, type: 'mag', elem: 'dark', col: '#c08aff' }, { proj: true }); } })),
       evAt(1.15, e => { const a = e.act; e.play('rk4', true); cam.flash = 0.2; cam.flashCol = '#c8a8ff'; cam.shake = 12; sfx.boom(1.3); fxBurst(a.cx, a.cy, 70, 380, '#9a4aff'); fxShock(a.cx, a.cy, 340, '#9a4aff');
-        blast(e, a.cx, a.cy, 280, { dmg: skillDmg(12, 1.2, lv), launch: 480, knock: 160, hs: 0.14, big: 1.8, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#c08aff' }, { zMax: 260 }); })] }) });
+        blast(e, a.cx, a.cy, 280, { dmg: skillDmg(7.7, 0.77, lv), launch: 480, knock: 160, hs: 0.14, big: 1.8, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#c08aff' }, { zMax: 260 }); })] }) });
 
 /* ---- 黄泉之门：万鬼度灵（三觉）：穿上鬼神铠甲，用卡隆之剑召唤黄泉之门：门升起（8 段）→ 斩开结界 → 冥界亡灵倾泻而出（15 段，全屏）。无敌；与怖拉修共享冷却 ---- */
 defSkill('sb_awaken3', { name: '黄泉之门：万鬼度灵', cls: 'sword', job: 'soulbender', lvReq: 30, maxLv: 3, mp: 250, cd: 135, pvp: 0.45, type: 'mag', elem: 'dark', awaken: true, col: '#4a1a7a',
@@ -406,13 +417,16 @@ defSkill('sb_awaken3', { name: '黄泉之门：万鬼度灵', cls: 'sword', job:
       const a = e.act; a.cx = e.x + e.face * 220; a.cy = e.y;
       addFx({ x: a.cx, y: a.cy - 80, z: 0, dur: 3.6, a, draw(c) { const t = this.t; if (t < 0.9) return; const A = this.a, rise = Math.min(1, (t - 0.9) / 0.9), fade = Math.min(1, (3.6 - t) * 3);
         drawSpr(c, sbImg('sb_gate', 'hexagram', '#6a2aa0'), sx(A.cx), sy(A.cy, 0) + 20, 0, 380 * rise, { ay: 1, alpha: fade, add: !IMG['fx/sb_gate'] }); } }); },
-    events: [...Array.from({ length: 8 }, (_, i) => evAt(1.0 + i * 0.1, e => { const a = e.act; cam.shake = Math.max(cam.shake, 6); if (i % 2) sfx.boom(0.5);
-        blast(e, a.cx, a.cy, 340, { dmg: skillDmg(1.5, 0.4, lv), stun: 0.5, knock: 0, hs: 0.02, sure: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 320 }); })),
-      evAt(1.9, e => { const a = e.act; e.play('sbFerry', true); cam.flash = 0.3; cam.flashCol = '#d8b8ff'; sfx.iai(); fxSlashX(a.cx, a.cy, 120, 320, '#e0c8ff'); }),
+    events: [evAt(0.95, e => { const a = e.act; cam.shake = Math.max(cam.shake, 8); sfx.boom(0.8); fxShock(a.cx, a.cy, 340, '#6a2aa0');   // 官方第 1 段：召唤鬼门
+        blast(e, a.cx, a.cy, 340, { dmg: skillDmg(2.4, 0.65, lv), stun: 0.5, knock: 0, hs: 0.03, sure: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 320 }); }),
+      ...Array.from({ length: 8 }, (_, i) => evAt(1.0 + i * 0.1, e => { const a = e.act; cam.shake = Math.max(cam.shake, 6); if (i % 2) sfx.boom(0.5);
+        blast(e, a.cx, a.cy, 340, { dmg: skillDmg(0.9, 0.24, lv), stun: 0.5, knock: 0, hs: 0.02, sure: true, type: 'mag', elem: 'dark', col: '#b08aff' }, { zMax: 320 }); })),
+      evAt(1.9, e => { const a = e.act; e.play('sbFerry', true); cam.flash = 0.3; cam.flashCol = '#d8b8ff'; sfx.iai(); fxSlashX(a.cx, a.cy, 120, 320, '#e0c8ff');   // 官方：鬼门解除（斩开结界）是伤害段
+        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < WW) applyHit(e, t, { dmg: skillDmg(14.4, 3.9, lv), stun: 0.6, knock: 0, hs: 0.12, big: 1.4, sure: true, type: 'mag', elem: 'dark', col: '#e0c8ff' }, { proj: true }); }),
       ...Array.from({ length: 15 }, (_, i) => evAt(2.05 + i * 0.08, e => { const a = e.act; fxSpr('ghost', cam.x + rnd(60, WW - 60), rnd(20, DEPTH - 20), rnd(40, 160), { w: rnd(60, 110), dur: 0.5, col: i % 3 ? '#9a6aff' : '#6aff9a', flip: Math.random() < 0.5 }); if (i % 3 === 0) sfx.swing(true);
-        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < WW) applyHit(e, t, { dmg: skillDmg(2, 0.55, lv), stun: 0.4, airLift: 120, knock: 0, hs: 0.02, sure: true, type: 'mag', elem: 'dark', col: '#c08aff', downHit: true }, { proj: true }); })),
+        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < WW) applyHit(e, t, { dmg: skillDmg(0.64, 0.17, lv), stun: 0.4, airLift: 120, knock: 0, hs: 0.02, sure: true, type: 'mag', elem: 'dark', col: '#c08aff', downHit: true }, { proj: true }); })),
       evAt(3.3, e => { cam.flash = 0.4; cam.flashCol = '#ffffff'; cam.shake = 16; sfx.boom(1.6);
-        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < WW) applyHit(e, t, { dmg: skillDmg(14, 4, lv), launch: 560, knock: 200, hs: 0.22, big: 2.4, critBonus: 0.2, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#e0c8ff' }, { proj: true }); })] }) });
+        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < WW) applyHit(e, t, { dmg: skillDmg(14.4, 3.9, lv), launch: 560, knock: 200, hs: 0.22, big: 2.4, critBonus: 0.2, sure: true, downHit: true, type: 'mag', elem: 'dark', col: '#e0c8ff' }, { proj: true }); })] }) });
 { const A = SKILLS.sb_awaken, a0 = A.act; A.act = (lv, p) => { const a = a0(lv, p); if (p && p.cool) p.cool.sb_awaken3 = Math.max(p.cool.sb_awaken3 || 0, p.cool.sb_awaken || 0); return a; }; }
 // 恐惧光环（每 2 秒周围减速）、御鬼之极（转职技能命中附加普戾蒙减益）、鬼神冠冕（满月斩失明）
 CLASSES.sword.passives.push(p => {
@@ -420,7 +434,7 @@ CLASSES.sword.passives.push(p => {
   setPassive(p, 'sb_fear', sbLv(p, 'sb_fear') > 0, { dmg: 0.04 + 0.008 * sbLv(p, 'sb_fear') });
   setPassive(p, 'sb_mastery', sbLv(p, 'sb_mastery') > 0, { dmg: 0.1 });
   setPassive(p, 'sb_crown', sbLv(p, 'sb_crown') > 0, { dmg: 0.06 + 0.012 * sbLv(p, 'sb_crown') });
-  if (sbLv(p, 'sb_fear')) { p._sbFear = (p._sbFear ?? 2) - 0.25; if (p._sbFear <= 0) { p._sbFear = 2; for (const t of ents) if (hittable(p, t) && Math.hypot(t.x - p.x, (t.y - p.y) * 1.5) < 160) addStatus(t, 'slow', 1.5, { src: p }); } }
+  if (sbLv(p, 'sb_fear')) { p._sbFear = (p._sbFear ?? 2) - 0.25; if (p._sbFear <= 0) { p._sbFear = 2; for (const t of ents) if (hittable(p, t) && Math.hypot(t.x - p.x, (t.y - p.y) * 1.5) < 290) addStatus(t, 'slow', 2, { src: p }); } }
 });
 SWORD_HOOKS.onHit.push((p, t, h, dmg, act) => { if (!sbJob(p) || t.dead) return; const A = act || p.act, S = A && A.skill && SKILLS[A.skill];
   if (sbLv(p, 'sb_mastery') && S && S.job === 'soulbender') sbDebuff(p, t, sbLv(p, 'sb_plemon') || 1);

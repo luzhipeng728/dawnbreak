@@ -56,11 +56,13 @@ function nitroRecover(p) {
   p.vz = Math.max(p.vz, 300); p.vx *= 0.3; p.airAtk = 0; p.setState('jump'); p.invul = Math.max(p.invul, 0.3);
   fxText('姿态恢复', p.x, p.y, p.z + 20, { col: '#8fd8ff', size: 11 }); nitroFx(p, 'up');
 }
+// 超负荷装填持续耗 MP（官方 1.1 /秒起，按本作 MP 折算约 ×0.24）；MP 耗尽 BUFF 结束
+function sfOverDrain(p, dt) { const b = sfOver(p); if (!b || game.scene === 'town') return; p.mp -= (0.26 + 0.1 * (b.lv - 1)) * dt; if (p.mp <= 0) { p.mp = 0; delete p.buffs.gs_overcharge; fxText('超负荷 MP 耗尽', p.x, p.y, p.z + 20, { col: '#ff8a6a', size: 11 }); } }
 // 每帧（CLASSES.gun.preControl）：落地回满、姿态恢复、地面普攻 C 取消成跳跃、空中 C 上升 / ←→+C 冲刺 / ↓+C 空中后跳、手雷装填加速、空袭战略悬停
 function sfPreControl(p, I, dt) {
   if (p.dead) return false;
   if (p.nitroCd > 0) p.nitroCd -= dt;
-  sfHudFx(p); sfTickGrenades(p, dt); sfTickStandby(p, dt);
+  sfOverDrain(p, dt); sfHudFx(p); sfTickGrenades(p, dt); sfTickStandby(p, dt);
   if (p.z <= 0.01 && p.vz <= 0 && p.st !== 'air' && !standbyOn(p)) { const m = nitroMax(p); if (p.nitro !== m) p.nitro = m; }
   if (!I.buffered('jump')) return false;
   if ((p.st === 'air' || (p.st === 'hit' && p.z > 2)) && !(p.status && (p.status.freeze || p.status.stun || p.status.sleep))) {
@@ -168,7 +170,7 @@ function sfOvercurrent(a, t) {
 /* ---- 转职技能的公共部分：空中施放（耗推进器、短暂悬停、后坐）、兵器研究减冷却 ---- */
 const SF_SHOOT = ['gs_cross', 'gs_buster', 'gs_napalm'];   // 推进器「射击技能攻击力」
 const sfShootMul = p => 1 + (sfLv(p, 'gs_nitro') ? 0.1 + 0.01 * sfLv(p, 'gs_nitro') : 0);
-const sfGrenadeMul = (p, reinforced) => (1 + 0.04 * sfLv(p, 'gs_gmastery')) * (reinforced ? 1.5 : 1);
+const sfGrenadeMul = (p, reinforced) => (1 + 0.1 * sfLv(p, 'gs_gmastery')) * (reinforced ? 1.2 : 1);
 function sfAct(A, o = {}) {
   const s0 = A.onStart;
   A.onStart = e => {
@@ -199,15 +201,15 @@ defSkill('gs_nitro', { name: '单兵推进器', cls: 'gun', job: SF, lvReq: 15, 
   infoExtra: lv => [['每跳空中动作', '7 次'], ['子弹 BUFF 攻击力', '+' + pct(0.02 * lv)], ['射击技能攻击力', '+' + pct(0.1 + 0.01 * lv)]] });
 defSkill('gs_overcharge', { name: '超负荷装填', cls: 'gun', job: SF, lvReq: 15, mp: 30, cd: 5, type: 'indep', buff: true, col: '#e05a3a', cmdNote: '→→+Space（施放时 → 火 / ← 冰 / ↑ 光 / ↓ 无）',
   desc: '【BUFF · 常驻】给子弹装填特殊火药，普攻和技能的攻击力提高。施放时按方向键选择属性：→ 火、← 冰、↑ 光、↓ 无属性；不按就依次轮换。属性决定子弹、特性弹 / 爆裂弹、交叉射击、聚合弹、凝固汽油弹的属性。特性弹、贯穿弹、爆裂弹、交叉射击、聚合弹、凝固汽油弹都要在超负荷装填状态下才能用。',
-  infoExtra: lv => [['普攻 / 技能攻击力', '+' + pct(0.1 + 0.01 * lv)]], ai: { kind: 'buff' },
-  act: (lv, p) => sfAct({ name: 'gs_overcharge', clip: 'sfReload', dur: 0.5, noCounter: true,
+  infoExtra: lv => [['普攻 / 技能攻击力', '+' + pct(0.14 + 0.02 * lv)], ['持续耗 MP', (0.26 + 0.1 * (lv - 1)).toFixed(1) + ' / 秒']], ai: { kind: 'buff' },
+  act: (lv, p) => sfAct({ name: 'gs_overcharge', clip: 'sfReload', dur: 0.25, noCounter: true,
     onStart: e => { e.act.pick = undefined; sfx.charge(); sfPickFx(e); },
-    onInput: (e, I) => { const a = e.act; if (e.actT < 0.45) for (const [k, el] of [['right', 'fire'], ['left', 'ice'], ['up', 'light'], ['down', null]]) if (I.hit(k)) a.pick = el;
+    onInput: (e, I) => { const a = e.act; if (e.actT < 0.18) for (const [k, el] of [['right', 'fire'], ['left', 'ice'], ['up', 'light'], ['down', null]]) if (I.hit(k)) a.pick = el;
       return false; },
-    events: [evAt(0.42, e => { const a = e.act, b0 = sfOver(e), order = SF_ELEM.map(x => x[0]);
+    events: [evAt(0.2, e => { const a = e.act, b0 = sfOver(e), order = SF_ELEM.map(x => x[0]);
       let el = a.pick; if (el === undefined) el = b0 ? order[(order.indexOf(b0.elem) + 1) % order.length] : 'fire';
       if (!isHuman(e) && a.pick === undefined) el = pick(['fire', 'ice', 'light']);
-      e.buffs.gs_overcharge = { t: 1e9, lv, elem: el, dmg: 0.1 + 0.01 * lv, shownT: game.t };
+      e.buffs.gs_overcharge = { t: 1e9, lv, elem: el, dmg: 0.14 + 0.02 * lv, shownT: game.t };
       sfx.buff(); fxAura(e, sfElemCol(el)); fxText(`超负荷 · ${sfElemName(el)}`, e.x, e.y, e.z + 20, { col: sfElemCol(el), size: 12, dur: 1 }); })] }, { keepGrav: false }) });
 // 超负荷装填施放时的属性选择：四个属性标记绕在身边（→ 火 / ← 冰 / ↑ 光 / ↓ 无，按屏幕方向）
 function sfPickFx(e) {
@@ -234,7 +236,7 @@ defSkill('gs_firearm', { name: '兵器研究', cls: 'gun', job: SF, lvReq: 16, p
   desc: '【被动】普攻按独立攻击力结算。装备步枪 / 手弩时，攻击力、攻击速度提高，手雷装填速度 +30%。转职技能（觉醒除外）冷却时间缩短。',
   infoExtra: lv => [['攻击力（步枪 / 手弩）', '+' + pct(0.01 * lv)], ['攻击速度（步枪 / 手弩）', '+' + pct(0.08 + 0.02 * lv)], ['手雷装填速度', '+30%'], ['转职技能冷却', '-' + pct(0.01 * lv)]] });
 defSkill('gs_gmastery', { name: '手雷精通', cls: 'gun', job: SF, lvReq: 16, passive: true, sp: 15, col: '#6a7a3a', pre: { g_grenade: 1 },
-  desc: '【被动】G-14 手雷、G-35L 感电手雷、G-18C 冰冻手雷的攻击力提高。需要 G-14 手雷 Lv1。', infoExtra: lv => [['手雷攻击力', '+' + pct(0.04 * lv)]] });
+  desc: '【被动】G-14 手雷、G-35L 感电手雷、G-18C 冰冻手雷的攻击力提高。需要 G-14 手雷 Lv1。', infoExtra: lv => [['手雷攻击力', '+' + pct(0.1 * lv)]] });
 // M18 阔剑地雷：在前方放置地雷，敌人进入扇形感应区就爆炸（3 段 + 眩晕 2 秒并被推开）；再按技能键手动引爆。02X：改成投掷圆盘，感应范围变成一整圈、推开距离缩短
 defSkill('gs_m18', { name: 'M18 阔剑地雷', cls: 'gun', job: SF, lvReq: 16, mp: 25, cd: 6, type: 'indep', col: '#4a6a3a', airIf: sfCanAir,
   desc: '在前方放置 M18 阔剑地雷。敌人进入前方的扇形感应区就会爆炸（3 段），100% 眩晕 2 秒并被推开。地雷在场时再按一次技能键手动引爆。空中施放时把地雷投到前下方。',
@@ -283,7 +285,7 @@ defSkill('gs_cross', { name: '交叉射击', cls: 'gun', job: SF, lvReq: 17, mp:
 defSkill('gs_g35', { name: 'G-35L 感电手雷', cls: 'gun', job: SF, lvReq: 17, mp: 25, cd: 3, charges: 3, reload: 2.5, type: 'indep', elem: 'light', col: '#d8c83a', airIf: sfCanAir,
   desc: '投出 G-35L 感电手雷，光属性爆炸使范围内的敌人感电 9 秒；命中后自己的暴击率提高 10%（30 秒）。最多装填 3 颗；地面投掷间隔 3 秒（按住 ↑ 投远、↓ 投近），空中 0.5 秒。',
   pow: lv => skillDmg(2.4, 0.24, lv), infoExtra: () => [['装填', '3 颗'], ['感电', '9 秒'], ['命中后暴击率', '+10%（30 秒）']], ai: { kind: 'proj', r: [100, 420], dy: 50 },
-  act: lv => sfAct({ name: 'gs_g35', clip: 'sfThrow', dur: 0.5, noCounter: true, events: [evAt(0.22, e => { if (!sfReinforced(e, 'gs_g35', lv)) sfThrowG35(e, lv); })] }, { recoil: 30 }) });
+  act: lv => sfAct({ name: 'gs_g35', clip: 'sfThrow', dur: 0.5, noCounter: true, events: [evAt(0.22, e => { sfThrowG35(e, lv, sfReinforced(e, 'gs_g35')); })] }, { recoil: 30 }) });
 function sfThrowG35(e, lv, reinforced) {
   sfx.swing(false);
   return sfGrenade(e, { img: 'sf_g35', col: '#ffe060', onBoom: pr => {
@@ -292,7 +294,6 @@ function sfThrowG35(e, lv, reinforced) {
     blast(e, pr.x, pr.y, 115, { dmg, type: 'indep', elem: 'light', launch: 260, knock: 70, hs: 0.06, snd: 'crit', col: '#fff38a', downHit: true,
       onHit: (a, t) => { hit = true; addStatus(t, 'shock', 9, { src: a, hitDmg: atkOf(a, 'indep') * 0.1 }); } }, { zMax: 140 });
     if (hit) { e.buffs.gs_g35 = { t: 30, crit: 0.1 }; }
-    if (reinforced) summon(e, 'gs_magf', { x: pr.x, y: pr.y, lv });
   } });
 }
 // ---- 18 级 ----
@@ -305,21 +306,15 @@ defSkill('gs_burst', { name: '爆裂弹', cls: 'gun', job: SF, lvReq: 18, sp: 10
 defSkill('gs_g18', { name: 'G-18C 冰冻手雷', cls: 'gun', job: SF, lvReq: 18, mp: 30, cd: 4, charges: 3, reload: 3, type: 'indep', elem: 'ice', col: '#5ab8e8', airIf: sfCanAir,
   desc: '投出 G-18C 冰冻手雷，冰属性爆炸，100% 冰冻范围内的敌人 4 秒（领主时间缩短）。最多装填 3 颗；地面投掷间隔 4 秒（按住 ↑ 投远、↓ 投近），空中 0.5 秒。',
   pow: lv => skillDmg(2.6, 0.26, lv), infoExtra: () => [['装填', '3 颗'], ['冰冻', '4 秒（100%）']], ai: { kind: 'proj', r: [100, 420], dy: 50 },
-  act: lv => sfAct({ name: 'gs_g18', clip: 'sfThrow', dur: 0.5, noCounter: true, events: [evAt(0.22, e => { if (!sfReinforced(e, 'gs_g18', lv)) sfThrowG18(e, lv); })] }, { recoil: 30 }) });
+  act: lv => sfAct({ name: 'gs_g18', clip: 'sfThrow', dur: 0.5, noCounter: true, events: [evAt(0.22, e => { sfThrowG18(e, lv, sfReinforced(e, 'gs_g18')); })] }, { recoil: 30 }) });
 function sfThrowG18(e, lv, reinforced) {
   sfx.swing(false);
   return sfGrenade(e, { img: 'sf_g18', col: '#8fe0ff', onBoom: pr => {
     fxSpr('frost', pr.x, pr.y, 20, { w: 280, dur: 0.6, grow: [0.6, 1.1] }); fxShock(pr.x, pr.y, 135, '#bfefff'); sfx.sfFreeze(); cam.shake = Math.max(cam.shake, 3);
     const dmg = skillDmg(2.6, 0.26, lv) * sfGrenadeMul(e, reinforced);
     blast(e, pr.x, pr.y, 115, { dmg, type: 'indep', elem: 'ice', knock: 30, stun: 0.3, hs: 0.05, snd: 'crit', col: '#bfefff', downHit: true, onHit: (a, t) => addStatus(t, 'freeze', 4, { src: a }) }, { zMax: 140 });
-    if (sfLv(e, 'gs_02x') > 0 || reinforced) summon(e, 'gs_mist', { x: pr.x, y: pr.y, lv, life: reinforced ? 2 : 3 });
   } });
 }
-// 02X：冰冻手雷爆炸处留下冰雾 3 秒，敌人累计待满 3 秒 → 特殊冰冻 2 秒（强化 G-18C：冰雾期间多段伤害）
-defSummon('gs_mist', { kind: 'field', life: 3, r: 110, tick: 0.25, zMax: 60, max: 4, keepRoom: false, type: 'indep', elem: 'ice',
-  onTick(s, L) { for (const t of L) { t._sfChill = (t._sfChill || 0) + 0.25; if (t._sfChill >= 3) { t._sfChill = 0; addStatus(t, 'freeze', 2, { src: s.owner }); } else addStatus(t, 'slow', 1, { src: s.owner });
-    if (s.life <= 2) summonHit(s, t, { dmg: skillDmg(0.2, 0.02, s.lv), type: 'indep', elem: 'ice', stun: 0.1, hs: 0.01, downHit: true, col: '#bfefff' }); } },
-  draw(c, s) { const k = s.lifeT / s.life; drawSpr(c, 'frost', sx(s.x), sy(s.y, 0), 230, 0, { ay: 0.7, alpha: 0.35 * (1 - k * k) }); } });
 // ---- 19 级 ----
 defSkill('gs_buster', { name: '聚合弹', cls: 'gun', job: SF, lvReq: 19, mp: 60, cd: 18, type: 'indep', col: '#d8502a', req: sfNeedOver, airIf: sfCanAir,
   desc: '把火药聚合在一发子弹里，向前射出一发贯穿弹（整个动作霸体）：判定窄、射程远（比交叉射击窄、远），一条直线上的敌人全部被贯穿并击退。属性随超负荷装填。空中施放时向斜下方射击。需要超负荷装填。（指令和烟尘弹相同，按千海天规则冷却长的聚合弹生效；烟尘弹仍可以用快捷栏放）',
@@ -433,7 +428,14 @@ defSummon('gs_emp', { kind: 'field', life: 3.2, r: 210, tick: 0.25, zMax: 200, m
     fxSpr('explosion', s.x, s.y, 40, { w: 500, dur: 0.6 }); fxShock(s.x, s.y, 380, '#ffd090'); sfx.boom(1.5); cam.shake = 12; cam.flash = 0.2; cam.flashCol = '#fff0d0';
     summonArea(s, s.x, s.y, 290, { dmg: (s.dmg || 24) * 0.36, type: 'indep', launch: 520, knock: 200, hs: 0.14, big: 2, downHit: true, snd: 'fire', col: '#ffe0a0' }, { zMax: 260 }); },
   draw(c, s) { const X = sx(s.x), Y = sy(s.y, 0);
-    if (s.dropZ <= 0) { c.save(); c.translate(X, Y); c.scale(1, GR); c.rotate(game.t * 2); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.5 + 0.2 * Math.sin(game.t * 18); drawSpr(c, fxTint('rune', '#6ab0ff'), 0, 0, 420, 420, {}); c.restore(); } },
+    if (s.dropZ <= 0) { c.save(); c.translate(X, Y); c.scale(1, GR); c.rotate(game.t * 2); c.globalCompositeOperation = 'lighter';
+      const g = c.createRadialGradient(0, 0, 10, 0, 0, 210); g.addColorStop(0, 'rgba(200,235,255,.55)'); g.addColorStop(0.7, 'rgba(90,160,255,.28)'); g.addColorStop(1, 'rgba(60,120,255,0)');
+      c.fillStyle = g; c.beginPath(); c.arc(0, 0, 210, 0, TAU); c.fill();
+      c.strokeStyle = '#d8f0ff'; c.lineWidth = 2; c.globalAlpha = 0.85;
+      const seed = Math.floor(game.t * 14);
+      for (let i = 0; i < 6; i++) { let a0 = (i / 6) * TAU + seed * 0.9, r = 30; c.beginPath(); c.moveTo(Math.cos(a0) * r, Math.sin(a0) * r);
+        for (let k = 0; k < 6; k++) { r += 28 + ((seed * 7 + i * 13 + k * 5) % 9); a0 += (((seed + i * 3 + k * 7) % 5) - 2) * 0.08; c.lineTo(Math.cos(a0) * r, Math.sin(a0) * r); } c.stroke(); }
+      c.restore(); } },
   drawUpright(c, s) { const X = sx(s.x), Y = sy(s.y, s.dropZ || 0);
     if (IMG['fx/sf_emp']) drawSpr(c, 'sf_emp', X, Y + 4, 0, 54, { ay: 1, add: false });
     else { c.fillStyle = '#3a4a5a'; c.fillRect(X - 16, Y - 30, 32, 30); c.fillStyle = '#8fd0ff'; c.fillRect(X - 12, Y - 26, 24, 5); c.fillStyle = '#c8d8e8'; c.fillRect(X - 3, Y - 44, 6, 14); }
@@ -550,14 +552,14 @@ function sfJet(s, face, i, D) {
 }
 // ---- 29 / 30 级：三觉（重霄·弹药专家）----
 defSkill('gs_02x', { name: '单兵推进器-02X', cls: 'gun', job: SF, lvReq: 29, tier: 3, passive: true, sp: 30, col: '#5ac8ff',
-  desc: '【被动 · 三觉】换装推进器-02X：每跳空中动作次数 +1，普攻和转职技能攻击力提高。M18 阔剑地雷改为投掷圆盘，感应范围变成一整圈（推开距离缩短）；G-18C 冰冻手雷爆炸处留下冰雾 3 秒，在冰雾里累计待满 3 秒的敌人被特殊冰冻 2 秒。',
+  desc: '【被动 · 三觉】换装推进器-02X：每跳空中动作次数 +1，普攻和转职技能攻击力提高。M18 阔剑地雷改为投掷圆盘，感应范围变成一整圈（推开距离缩短）；G-14 / G-35L / G-18C 每投出 2 颗同系列手雷，下一颗强化（伤害 1.2 倍，可存着）。',
   infoExtra: lv => [['每跳空中动作', '+1'], ['普攻 / 转职技能攻击力', '+' + pct(0.2 + 0.02 * (lv - 1))]] });
 defSkill('gs_standby', { name: '空袭战略', cls: 'gun', job: SF, lvReq: 29, tier: 3, mp: 150, cd: 30, type: 'indep', col: '#d8b83a', air: true, cmdNote: '↑↓→→+Z（再按：提前引爆过载部件）',
-  desc: '装上推进器-02X 的机体部件，飞到轰炸高度悬停 2 秒：期间推进器次数不减、空中技能没有后坐、空中射击发数 +12，每种手雷至少留 1 颗；G-14 / G-35L / G-18C 变成强化手雷（共 3 次：G-14 碰地大爆炸、G-35L 留下磁场、G-18C 留下寒气）。再按技能键或时间到了，丢下过载的机体部件引发大爆炸。',
-  pow: lv => skillDmg(9, 0.9, lv), infoExtra: () => [['悬停', '2 秒'], ['强化手雷', '3 次']], ai: { kind: 'buff' },
+  desc: '装上推进器-02X 的机体部件，飞到轰炸高度悬停 4 秒：期间推进器次数不减、空中技能没有后坐，每种手雷至少留 1 颗。再按技能键或时间到了，丢下过载的机体部件引发大爆炸。',
+  pow: lv => skillDmg(9, 0.9, lv), infoExtra: () => [['悬停', '4 秒']], ai: { kind: 'buff' },
   recast: { ok: p => standbyOn(p), cd: 0.3, act: () => ({ name: 'gs_standbyd', clip: 'gbuff', dur: 0.2, noCounter: true, onStart: e => sfStandbyEnd(e) }) },
   act: lv => sfAct({ name: 'gs_standby', clip: 'sfHover', dur: 0.5, superArmor: true, noCounter: true,
-    onStart: e => { e.buffs.gs_standby = { t: 2, lv, throws: 3, dmg: skillDmg(9, 0.9, lv) }; e.act.lowGrav = 0; sfx.buff(); fxAura(e, '#ffd23a', 1.2); nitroFx(e, 'up'); } }, { noNitro: true, keepGrav: true }) });
+    onStart: e => { e.buffs.gs_standby = { t: 4, lv, dmg: skillDmg(9, 0.9, lv) }; e.act.lowGrav = 0; sfx.buff(); fxAura(e, '#ffd23a', 1.2); nitroFx(e, 'up'); } }, { noNitro: true, keepGrav: true }) });
 const SF_HOVER_Z = 150;
 function sfTickStandby(p, dt) {
   const b = p.buffs && p.buffs.gs_standby;
@@ -576,19 +578,14 @@ function sfStandbyFinish(p, b) {
     onEnd: pr => { if (ents.indexOf(p) < 0) return; meteorImpact(pr, 1.7); cam.flash = 0.15; cam.flashCol = '#fff0c0';
       blast(p, pr.x, pr.y, 260, { dmg: b.dmg || 18, type: 'indep', launch: 520, knock: 200, hs: 0.14, big: 2, downHit: true, snd: 'fire', col: '#ffe0a0' }, { zMax: 260 }); } });
 }
-// 空袭战略中的强化手雷（G-14 / G-35L / G-18C 投掷时调用；返回 true = 已经按强化版投出）
-function sfReinforced(e, id, lv) {
-  const b = e.buffs && e.buffs.gs_standby; if (!b || b.throws <= 0) return false; b.throws--;
-  if (id === 'gs_g35') sfThrowG35(e, lv, true);
-  else if (id === 'gs_g18') sfThrowG18(e, lv, true);
-  else { sfx.swing(false); const D = skillDmg(3.0, 0.3, lv) * sfGrenadeMul(e, true); sfGrenade(e, { img: 'grenade', col: '#ffb060', onBoom: pr => sfGrenadeBoom(e, pr.x, pr.y, 'fire', D, 150) }); }
-  fxText('强化', e.x, e.y, e.z + 10, { col: '#ffd23a', size: 10 });
-  return true;
+// 02X 强化手雷（国服 2024 重做）：同系列手雷（G-14 / G-35L / G-18C 各算一系列）投掷 2 次，下一颗强化（伤害 1.2 倍），强化次数可以存着；返回 true = 这一颗是强化版
+function sfReinforced(e, id) {
+  if (!sfLv(e, 'gs_02x')) return false;
+  const M = e._sfEnh = e._sfEnh || {}, q = M[id] = M[id] || { n: 0, r: 0 };
+  if (q.r > 0) { q.r--; fxText('强化', e.x, e.y, e.z + 10, { col: '#ffd23a', size: 10 }); return true; }
+  if (++q.n >= 2) { q.n = 0; q.r = Math.min(q.r + 1, 2); }
+  return false;
 }
-// 强化 G-35L 留下的磁场：2 秒多段光属性伤害
-defSummon('gs_magf', { kind: 'field', life: 2, r: 120, tick: 0.2, zMax: 120, max: 3, keepRoom: false, type: 'indep', elem: 'light',
-  onTick(s, L) { for (const t of L) summonHit(s, t, { dmg: skillDmg(0.3, 0.03, s.lv), type: 'indep', elem: 'light', stun: 0.15, hs: 0.01, downHit: true, col: '#fff38a' }); },
-  draw(c, s) { const X = sx(s.x), Y = sy(s.y, 0); c.save(); c.translate(X, Y); c.scale(1, GR); c.rotate(game.t * 3); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.55; drawSpr(c, fxTint('rune', '#fff38a'), 0, 0, 250, 250, {}); c.restore(); } });
 defSkill('gs_final', { name: '终解·制空霸权', cls: 'gun', job: SF, lvReq: 30, tier: 3, maxLv: 3, mp: 400, cd: 290, pvp: 0.45, type: 'indep', awaken: true, col: '#ffd23a', airIf: sfCanAir,
   desc: '【三次觉醒】装上推进器-02X 和飞翼急速升空，先对前方大范围轰炸，再装上附加部件全武装俯冲突进，边下降边进行最后的轰炸，落地引发大爆炸。全程无敌。空中施放要有推进器次数；空袭战略中施放时，过载部件立刻坠落引爆。',
   pow: lv => skillDmg(90, 20, lv), ai: { kind: 'awaken', r: [0, 700], dy: 140 },
@@ -635,8 +632,7 @@ const sfCutin = (e, n) => IMG['cutin/spitfire' + n] ? { cls: 'spitfire' + n, mod
     if (p.z > 2 && SF_AIR_BASE.includes(id)) { useNitro(p, 1); if (id === 'g_grenade') p.cool[id] = Math.min(p.cool[id] || 0, 0.5); } };
   const shot0 = C.shotMod; C.shotMod = (e, o) => { if (shot0) o = shot0(e, o) || o; return isSf(e) ? sfShotMod(e, o) : o; };
   const mul0 = C.skillMul; C.skillMul = (e, id) => (mul0 ? mul0(e, id) : 1) * (isSf(e) && SF_GRENADES.includes(id) ? sfGrenadeMul(e) : 1);
-  const am0 = C.airMaxOf; C.airMaxOf = p => (am0 ? am0(p) : 1) + (isSf(p) && standbyOn(p) ? 12 : 0);
-  const hit0 = C.onHit; C.onHit = (a, t, h, dmg, act, opt) => { if (hit0) hit0(a, t, h, dmg, act, opt); if (isSf(a) && foe(a, t)) sfOvercurrent(a, t); };
+    const hit0 = C.onHit; C.onHit = (a, t, h, dmg, act, opt) => { if (hit0) hit0(a, t, h, dmg, act, opt); if (isSf(a) && foe(a, t)) sfOvercurrent(a, t); };
   // 被动：空中射击常驻（等级 = 空中射击 + 推进器）、兵器研究、弹药改良、制空掌握、02X
   (C.passives || (C.passives = [])).push(p => {
     const on = isSf(p);
@@ -660,7 +656,7 @@ function sfElemBoost(p, el, v) {
 {
   const S = SKILLS.g_grenade, act0 = S.act;
   S.act = (lv, p) => { const A = act0(lv, p); if (!isSf(p) || !A.events || A.events.length !== 1) return A;
-    const f0 = A.events[0].fn; A.events = [{ ...A.events[0], fn: e => { if (!sfReinforced(e, 'g_grenade', lv)) f0(e); } }];
+    const f0 = A.events[0].fn; A.events = [{ ...A.events[0], fn: e => { if (sfReinforced(e, 'g_grenade')) { sfx.swing(false); const D = skillDmg(3.0, 0.3, lv) * sfGrenadeMul(e, true); sfGrenade(e, { img: 'grenade', col: '#ffb060', onBoom: pr => sfGrenadeBoom(e, pr.x, pr.y, 'fire', D, 115) }); } else f0(e); } }];
     return A; };
 }
 

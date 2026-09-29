@@ -117,7 +117,7 @@ function nearestFoe(e, range = 9999, filter) {
   return best;
 }
 // 以 (x,y) 为圆心的地面范围攻击（z < zMax 的目标）；h.radial = 从中心向外击退
-function blast(e, x, y, r, h, o = {}) { areaHit(e, x, y, r, o.z || 0, { radial: true, ...h }, o); }
+function blast(e, x, y, r, h, o = {}) { r *= rngOf(e); areaHit(e, x, y, r, o.z || 0, { radial: true, ...h }, o); }
 // 直线投射物（带素材）：o = { img, w, h(绘制尺寸), speed, life, z, hit, pierce, col, spin, trail, onEnd, bw, bd, bh(判定尺寸) }
 function shootProj(e, o) {
   const face = o.face || e.face, sp = o.speed ?? 600, img = o.col ? fxTint(o.img, o.col) : IMG['fx/' + o.img];

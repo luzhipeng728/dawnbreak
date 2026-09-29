@@ -83,8 +83,10 @@ const stunMul = (a, t) => clamp(1 + ((a.stagger || 0) + buffVal(a, 'stagger') - 
 const ELEM_COL = { fire: '#ff9a50', ice: '#9fe6ff', light: '#fff38a', dark: '#c79aff' };
 
 /* ---- 命中判定：每帧检查所有激活中的攻击框 ---- */
+// 技能攻击范围倍率（a.rngMul，默认没有 = 1；战斗法师装矛 +20%）：只对带技能 id 的非觉醒技能生效，普攻和觉醒不受影响
+const rngOf = a => a.rngMul && a.act && a.act.skill && !(SKILLS[a.act.skill] || {}).awaken ? a.rngMul : 1;
 function atkBox(a, h, out = {}) {
-  const b = h.box; out.x0 = a.face > 0 ? a.x + b[0] : a.x - b[1]; out.x1 = a.face > 0 ? a.x + b[1] : a.x - b[0];
+  const m = rngOf(a), b = m === 1 ? h.box : [h.box[0] * m, h.box[1] * m, h.box[2] * m, h.box[3], h.box[4]]; out.x0 = a.face > 0 ? a.x + b[0] : a.x - b[1]; out.x1 = a.face > 0 ? a.x + b[1] : a.x - b[0];
   out.y0 = a.y - b[2]; out.y1 = a.y + b[2]; out.z0 = a.z + b[3]; out.z1 = a.z + b[4]; return out;
 }
 function overlaps(B, t) {

@@ -45,7 +45,7 @@ Object.assign(menus, {
               h('div', { class: 'box' }, h('b', {}, tgt.orb ? orbName(tgt) : '当前：未附魔'), tgt.orb ? stTxt(orbStats(tgt)) : null),
               h('div', { class: 'arrow' }, '▶'),
               h('div', { class: 'box' }, h('b', {}, O.name), stTxt(O.orb.st))),
-            tgt.orb ? h('div', { class: 'small', style: 'color:#ffb070' }, '⚠ 附魔会覆盖原来的宝珠，原来的宝珠会消失。') : null,
+            ...(tgt.orb ? [h('div', { class: 'small', style: 'color:#ffb070' }, '⚠ 附魔会覆盖原来的宝珠，原来的宝珠会消失。')] : []),   // append(null) 会显示成文字“null”
             h('button', { class: 'btn big', onclick: () => enchGo(el, tgt, orbs.find(x => x.key === orbKey)) }, '附魔'));
         }
       }
@@ -56,7 +56,7 @@ Object.assign(menus, {
         h('div', { class: 'enchcol' }, h('div', { class: 'enchlbl' }, `可附魔的装备（${targets.length}）`), tg),
         right),
         h('div', { class: 'ihint' }, '每件装备（含称号、时装、宠物）有 1 个附魔槽，附魔必定成功；再附魔会覆盖旧的。怪物卡片由各地下城的怪物掉落（领主掉率最高，深渊派对里翻倍）。')];
-    }, { w: 44, at: 'left' });
+    }, { w: 56, at: 'left' });   // 两列物品格（约 33em）+ 右侧详情（至少 17em）
     el._arg = arg;
     return el;
   },

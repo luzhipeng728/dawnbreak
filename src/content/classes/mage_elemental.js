@@ -89,7 +89,8 @@ defSkill('mg_icewall', { name: '冰墙', cls: 'mage', job: EL, lvReq: 17, mp: 45
     events: [evAt(0.2, e => { sfx.ice(); sfx.boom(0.5); cam.shake = Math.max(cam.shake, 4); const cx = e.x, cy = e.y;
       blast(e, cx, cy, 160, { dmg: skillDmg(3.0, 0.3, lv), launch: 240, knock: 200, hs: 0.08, elem: 'ice', type: 'mag', col: '#bfefff' }, { zMax: 150 });
       const wall = e._icewall = { t: 0, dur: 3, alive: true, fx: [] };
-      for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; wall.fx.push(fxSpr('icewall', cx + Math.cos(a) * 145, cy + Math.sin(a) * 62, 0, { w: 84, dur: 3, ay: 0.9, add: false, grow: [0.3, 1], fadeIn: 0.03 })); }
+      for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; wall.fx.push(fxSpr('icewall', cx + Math.cos(a) * 145, cy + Math.sin(a) * 62, 0, { w: 150, dur: 3, ay: 0.9, add: false, grow: [0.3, 1], fadeIn: 0.03 }));
+        wall.fx.push(fxSpr('icespike', cx + Math.cos(a) * 145, cy + Math.sin(a) * 62 + 1, 0, { h: 150, rot: -Math.PI / 2, dur: 3, ay: 0.5, alpha: 0.55, grow: [0.3, 1], fadeIn: 0.03 })); }   // 官方是一圈高高的蓝白冰柱
       wall.lastT = game.t; game.after(0.01, function tick() { wall.t += 0.1; wall.lastT = game.t; const inside = !e.dead && Math.hypot(e.x - cx, (e.y - cy) * 2.2) < 150;
         if (inside) { e.superArmor = Math.max(e.superArmor, 0.15); e.buffs.mg_icewall = { t: 0.15, taken: -0.3 }; }
         for (const t of ents) if (foe(e, t) && Math.abs(Math.hypot(t.x - cx, (t.y - cy) * 2.2) - 150) < 26) addStatus(t, 'slow', 3, { src: e });
@@ -161,8 +162,9 @@ defSkill('mg_hole', { name: '湮灭黑洞', cls: 'mage', job: EL, lvReq: 19, mp:
         hit: { dmg: skillDmg(0.27, 0.027, lv), stun: 0.35, knock: 0, airLift: 60, hs: 0.02, rep: 0.27, col: '#d0a0ff', elem: el, type: 'mag' },
         update(q, dt) { for (const t of ents) if (foe(e, t) && Math.hypot(t.x - q.x, t.y - q.y) < R && !(t.boss && hasSA(t)) && t.st !== 'held') { t.x = damp(t.x, q.x, pull, dt); t.y = damp(t.y, q.y, pull, dt); } },
         onEnd(q) { q.gone = true; sfx.boom(0.9); cam.shake = Math.max(cam.shake, 6); blast(e, q.x, q.y, 185, { dmg: skillDmg(4.5, 0.45, lv), launch: 400, knock: 160, hs: 0.1, big: 1.6, col: '#e0b0ff', elem: el, type: 'mag', downHit: true }, { zMax: 220 }); fxBurst(q.x, q.y, 40, 300, '#c080ff'); fxShock(q.x, q.y, 185, '#c080ff'); if (rb) for (let i = 0; i < 4; i++) fxShock(q.x, q.y, 220 + i * 40, ELC[i]); },
-        draw(c, q) { const X = sx(q.x), Y = sy(q.y, q.z), k = q.t / q.life, s = Math.min(1, k * 8) * (k > 0.95 ? (1 - k) / 0.05 : 1); c.fillStyle = 'rgba(10,2,20,.92)'; c.beginPath(); c.arc(X, Y, Math.max(0.5, 22 * s), 0, TAU); c.fill();
-          if (rb) for (let i = 0; i < 4; i++) drawSpr(c, fxTint('vortex', ELC[i]), X, Y, (115 + i * 26) * s, (115 + i * 26) * s, { rot: -game.t * (4 + i) + i }); else drawSpr(c, 'vortex', X, Y, 180 * s, 180 * s, { rot: -game.t * 5 }); } }); })] }) });
+        draw(c, q) { const X = sx(q.x), Y = sy(q.y, q.z), k = q.t / q.life, s = Math.min(1, k * 8) * (k > 0.95 ? (1 - k) / 0.05 : 1); const HR = Math.max(0.5, 70 * s), gr = c.createRadialGradient(X, Y, HR * 0.2, X, Y, HR); gr.addColorStop(0, 'rgba(8,2,22,.96)'); gr.addColorStop(0.75, 'rgba(30,8,70,.9)'); gr.addColorStop(1, 'rgba(150,80,255,.85)'); c.fillStyle = gr; c.beginPath(); c.ellipse(X, Y, HR, HR * 0.85, 0, 0, TAU); c.fill();   // 官方是大块深紫黑球体加亮紫边
+          
+          if (rb) for (let i = 0; i < 4; i++) drawSpr(c, fxTint('vortex', ELC[i]), X, Y, (115 + i * 26) * s, (115 + i * 26) * s, { rot: -game.t * (4 + i) + i }); else { drawSpr(c, fxTint('vortex', '#5a20a0'), X, Y, 230 * s, 230 * s, { rot: -game.t * 5, alpha: 0.9 }); const g2 = c.createRadialGradient(X, Y, 2, X, Y, HR * 1.05); g2.addColorStop(0, 'rgba(6,2,16,.97)'); g2.addColorStop(0.7, 'rgba(14,4,36,.85)'); g2.addColorStop(1, 'rgba(14,4,36,0)'); c.fillStyle = g2; c.beginPath(); c.ellipse(X, Y, HR * 1.05, HR * 0.9, 0, 0, TAU); c.fill(); } } }); })] }) });
 // 杰克降临：巨型南瓜斜着砸向前方——先小范围撞击（约两成伤害），落地冲击波大范围爆炸（约八成）；蓄气放大
 defSkill('mg_jackfall', { name: '杰克降临', cls: 'mage', job: EL, lvReq: 20, mp: 60, cd: 45, type: 'mag', elem: 'fire', col: '#e0702a', cast: true,
   desc: '从天空召唤巨型南瓜斜着砸向前方：先是小范围的撞击，落地后冲击波大范围爆炸。每次南瓜的表情都不一样。蓄气（最长 1 秒）让南瓜和爆炸变大。', pow: lv => skillDmg(7.5, 0.75, lv), ai: { kind: 'aoe', r: [80, 320], dy: 60 },

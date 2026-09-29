@@ -43,7 +43,8 @@ function elGateFx(t, col, dur) {
   addFx({ x: t.x, y: t.y + 0.5, z: 0, dur, tg: t,
     draw(c) { const g = this.tg, k = this.t / this.dur, a = k < 0.1 ? k * 10 : k > 0.85 ? (1 - k) / 0.15 : 1; if (!g) return; this.x = g.x; this.y = g.y + 0.5;
       const X = sx(g.x), Y = sy(g.y, g.z + g.h * (g.scale || 1) + 55); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.85 * a;
-      drawSpr(c, fxTint('hexagram', col), X, Y, 64, 22, { ground: true, rot: game.t * 2 }); c.globalAlpha = 0.5 * a; drawSpr(c, fxTint('orb', col), X, Y, 30, 30, {}); c.restore(); } });
+      c.strokeStyle = col; c.lineWidth = 4; c.beginPath(); c.ellipse(X, Y, 24, 38, 0, 0, TAU); c.stroke(); c.lineWidth = 1.5; c.strokeStyle = '#ffffff'; c.beginPath(); c.ellipse(X, Y, 20, 34, 0, 0, TAU); c.stroke();   // 官方的门是头顶竖立的椭圆传送门
+      c.globalAlpha = 0.45 * a; drawSpr(c, fxTint('orb', col), X, Y, 58, 76, {}); drawSpr(c, fxTint('vortex', col), X, Y, 40, 56, { rot: game.t * 3 }); c.restore(); } });
 }
 function elShardDrop(t, col) {
   addFx({ tg: t, x: t.x, y: t.y + 0.6, z: 0, dur: 0.16, draw(c) { const g = this.tg, k = this.t / this.dur, top = g.z + g.h * (g.scale || 1) + 50, z = top - (top - g.z - g.h * 0.5) * k;
@@ -83,8 +84,8 @@ function elCosmosFx(cx, cy, dur, hit, R = 300) {
 // ---- 一觉段 ----
 defSkill('el_curtain', { name: '元素之幕', cls: 'mage', job: EL, tier: 1, lvReq: 23, mp: 60, cd: 30, type: 'mag', elemNote: 'all', col: '#e0a0ff', cast: true,
   desc: '在前方上空展开魔法阵，倾泻彩虹光幕：3 秒 20 段伤害，最后结晶碎裂再打一次大伤害。蓄气（最长 1 秒）扩大范围。放出后马上就能行动。', pow: lv => skillDmg(12, 1.2, lv), ai: { kind: 'aoe', r: [60, 420], dy: 100 },
-  act: (lv, p) => ({ name: 'el_curtain', clip: 'elCurtain', dur: 0.55, cancelFrom: 0.4, noCounter: true, charge: mCharge(p, 1.0, '#e0a0ff', { at: 0.08 }),
-    events: [evAt(0.2, e => { const at = aimAhead(e, 240, 380), r = 240 * (1 + (e.act.chargeK || 0) * 0.3); sfx.magic(); elCurtainFx(at.x, at.y, r, 3.25);
+  act: (lv, p) => ({ name: 'el_curtain', clip: 'elCurtain', dur: 1.5, cancelFrom: 1.3, noCounter: true, charge: mCharge(p, 1.0, '#e0a0ff', { at: 0.08 }),
+    events: [evAt(0.85, e => { const at = aimAhead(e, 240, 380), r = 240 * (1 + (e.act.chargeK || 0) * 0.3); sfx.magic(); elCurtainFx(at.x, at.y, r, 3.25);
       for (let i = 0; i < 20; i++) mgAfter(e, 0.1 + i * 0.15, () => blast(e, at.x, at.y, r, { dmg: skillDmg(0.4, 0.04, lv), stun: 0.25, knock: 0, hs: 0.02, type: 'mag', col: ELC[i % 4], elem: ELEM4[i % 4][0] }, { zMax: 260 }));
       mgAfter(e, 3.2, () => { sfx.ice(); fxBurst(at.x, at.y, 80, r * 1.6, '#e0f0ff'); fxShock(at.x, at.y, r * 1.3, '#e0a0ff');
         blast(e, at.x, at.y, r * 1.2, { dmg: skillDmg(4, 0.4, lv), launch: 240, knock: 80, hs: 0.08, big: 1.3, type: 'mag', col: '#ffffff', downHit: true }, { zMax: 260 }); }); })] }) });
@@ -105,7 +106,7 @@ defSkill('el_rune', { name: '圣灵符文', cls: 'mage', job: EL, tier: 2, lvReq
   act: (lv) => ({ name: 'el_rune', clip: 'elCurtain', dur: 0.6, noCounter: true, onStart: e => { e.buffs.el_rune = { t: 1e9, lv, cspd: 0.1 + 0.01 * lv, crit: 0.05 + 0.005 * lv };
     if (!e.buffs.el_burn) e.buffs.el_burn = { t: 1e9, lv: Math.max(1, skLv(e, 'el_burn')), marks: { fire: 0, ice: 0, light: 0, dark: 0 }, last: null, dmg: 0 };
     elBurnFx(e); sfx.buff(); fxAura(e, '#fff0a0'); elRingFx(e.x, e.y, 90, 0.8, '#fff0a0'); } }) });
-defSkill('el_crystal', { name: '圣灵水晶', cls: 'mage', job: EL, tier: 2, lvReq: 26, mp: 100, cd: 40, type: 'mag', elemNote: 'all', col: '#bfe8ff', cast: true,
+defSkill('el_crystal', { name: '圣灵水晶', cls: 'mage', job: EL, tier: 2, lvReq: 26, mp: 100, cd: 40, shotSpan: 3.8, type: 'mag', elemNote: 'all', col: '#bfe8ff', cast: true,
   desc: '在前方放下魔法阵，水晶约 3 秒内慢慢长大（这段时间没有伤害），长满后一次性大爆炸。放下后马上就能行动。蓄气（最长 1 秒）扩大爆炸范围。', pow: lv => skillDmg(22, 2.2, lv), ai: { kind: 'aoe', r: [60, 420], dy: 120 },
   act: (lv, p) => ({ name: 'el_crystal', clip: 'elCrystal', dur: 0.6, cancelFrom: 0.45, noCounter: true, charge: mCharge(p, 1.0, '#bfe8ff', { at: 0.08 }),
     events: [evAt(0.25, e => { const at = aimAhead(e, 220, 360), r = 270 * (1 + (e.act.chargeK || 0) * 0.3); sfx.magic(); elCrystalFx(at.x, at.y, 3.0, r / 180, r);
@@ -183,3 +184,6 @@ CLASSES.mage.passives.push(p => {
 // 新技能也把属性记给元素点燃；元素奥义：四个招牌技能施放时点亮全部标记
 for (const id of ['el_curtain', 'el_quake', 'el_crystal', 'el_awaken2', 'el_symphony', 'el_awaken3']) { const S = SKILLS[id], el = S.elemNote || S.elem, f = S.act; S.act = (lv, p) => { if (p && p.buffs && p.buffs.el_burn) elNote(p, el); return f(lv, p); }; }
 for (const id of ['mg_thunder', 'mg_icefeast', 'mg_hole', 'mg_jackfall']) { const S = SKILLS[id], f = S.act; S.act = (lv, p) => { if (p && p.buffs && p.buffs.el_burn && hasSkill(p, 'el_arcana')) elNote(p, 'all'); return f(lv, p); }; }
+// 宇宙寂灭和陨星幻灭共享冷却（官方：三觉和一觉 / 二觉中选定的一个共用冷却；本作和一觉配对）：放其中一个，另一个也进入冷却
+{ const pair = (a, b) => { const S = SKILLS[a], f = S.act; S.act = (lv, p) => { const A = f(lv, p), s0 = A.onStart; return { ...A, onStart: e => { if (s0) s0(e); if (!e.ghost) e.cool[b] = Math.max(e.cool[b] || 0, S.cd * (e.cdMul || 1) * (game.pvp && S.pvpCd ? S.pvpCd : 1)); } }; }; };
+  pair('mg_awaken', 'el_awaken3'); pair('el_awaken3', 'mg_awaken'); }

@@ -59,7 +59,7 @@ for (const item of list) {
     await page.keyboard.down('KeyA'); await page.waitForTimeout(40); await page.keyboard.up('KeyA');
     await page.waitForFunction(id => game.player.act && game.player.act.skill === id, id, { timeout: 600 }).catch(() => { });
     const info = await page.evaluate(({ cls }) => { const a = game.player.act; return a ? { skill: a.skill, dur: a.dur || 0.6, clip: a.clip || null, hasClip: !a.clip || !!(CLIPS[cls] && CLIPS[cls][a.clip]) } : null; }, { cls });
-    const dur = Math.min(3.5, Math.max(0.4, info ? info.dur : 0.8)), t0 = await page.evaluate(() => game.t);
+    const span = await page.evaluate(id => (SKILLS[id] && SKILLS[id].shotSpan) || 0, id), dur = Math.min(3.8, Math.max(0.4, span, info ? info.dur : 0.8)), t0 = await page.evaluate(() => game.t);
     const frames = [];
     for (let i = 0; i < N; i++) {
       const at = t0 + dur * (i + 0.5) / N;

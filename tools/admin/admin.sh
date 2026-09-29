@@ -21,6 +21,8 @@ case "$1" in
     left=$3
     while [ "$left" -gt 0 ]; do n=$left; [ $n -gt 10000000 ] && n=10000000; RW mail "$2" $n; left=$((left - n)); done ;;
   item)
+    case "$2$4" in *[!A-Za-z0-9_.@-]*|'') echo "账号或数量不对（账号不能有空格，数量要是数字）：'$2' '$4'"; exit 1 ;; esac
+    case "$4" in *[!0-9]*) echo "数量要是数字：$4"; exit 1 ;; esac
     grep -q "defCashUse('$3'\|defineItem('$3'\|^  $3:" -r src/content || { echo "物品库里没有 $3"; exit 1; }
     RW item "$2" "$3" "$4" "'${5:-物品补给}'" ;;
   maxout)

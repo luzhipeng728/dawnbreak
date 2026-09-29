@@ -77,10 +77,9 @@ function jlResolve(L) {
   const e = jlEnt(L), job = (L.look && L.look.job) || (e && e.kit && e.kit.job) || null;
   if (job !== L.jobId) {
     L.jobId = job; L.J = (job && JOB_LOOKS[job]) || null; L.hist = null;
-    const J = L.J; if (J && J.acc) {   // look 里没带转职配件（AI 对手等）：这里补上
-      if (J.noFace) L.acc = L.acc.filter(a => !a.face);
-      for (const k of J.acc) { const a = AVATAR_ACC[k]; if (a && !L.acc.includes(a)) { L.acc.push(a); if (!IMG['avatar/' + a.img]) loadArtKey('avatar/' + a.img); } }
-    }
+    // look 里没带转职配件（AI 对手等）：这里补上（和时装冲突的头饰不加，同 jobLookAcc）
+    L.acc = jobLookAcc(job, (L.look && L.look.acc) || []).map(k => AVATAR_ACC[k]).filter(Boolean);
+    for (const a of L.acc) if (!IMG['avatar/' + a.img]) loadArtKey('avatar/' + a.img);
   }
   const J = L.J, out = L.jfx || (L.jfx = []); out.length = 0; let w = J && J.wtint;
   if (J && J.states && e && !e.dead) for (const S of J.states) { const lv = S.on(e) || 0; if (lv > 0) { out.push([S.fx, lv]); if (S.fx.wtint) w = S.fx.wtint; } }
@@ -158,6 +157,68 @@ function jlWeapon(c, L, A, im, s) {
   const z = ((L.m.S && L.m.S.res) || 1) / s, r = Math.max(2, Math.min(40, Math.round(3.2 * z / 2) * 2)), H = vanityHalo(im, W.col, r);
   const ox = (A.kind === 'pole' ? -A.tx : -A.gx) - H.p, oy = (A.kind === 'pole' ? -A.ty : -A.gy) - H.p, A0 = c.globalAlpha, pu = 0.8 + 0.2 * Math.sin(jlNow() * 9);
   c.save(); c.globalAlpha = A0 * Math.min(1, 0.55 * W.a) * pu; c.drawImage(H.ring, ox, oy); c.globalCompositeOperation = 'lighter'; c.globalAlpha = A0 * Math.min(1, 0.7 * W.a) * pu; c.drawImage(H.cv, ox, oy); c.restore();
+}
+
+/* ---- 转职发色（JOB_LOOKS[转职].hair）：外观层 over 一开始调用（帧图之后、身前武器 / 头饰之前）----
+   帧图没有单独的头发层，按颜色 + 头部锚点找出头发像素，换成目标发色（保留明暗）后盖回去；每（帧图, 颜色）算一次，缓存裁好的小画布。
+   鬼剑士：银白短发（低饱和、够亮，只在头部附近找，避开眼睛和肤色）；魔法师：淡紫长发（色相 240~305、够亮，帽子 / 法袍是深紫，按亮度分开）。
+   神枪手：棕发和默认报童帽、皮夹克同一种棕色，按颜色分不开 → 不染发，靠头饰区分（JL_HAIR_PICK 里没有 gun）。
+   pick(h 色相 0~360, s, v 0~1, lx, ly 相对头心、按头部转角转正后的帧像素) → 是不是头发；edge：头发边缘往外扩 2 像素（同色系的暗边也一起染，不留浅色毛边） */
+const JL_HAIR_PICK = {
+  sword: { ref: 0.86, pick: (h, s, v, lx, ly) => lx * lx + ly * ly < 3900 && (ly < 22 || (lx < -4 && ly < 36)) && s < 0.3 && v > 0.33 && !(h > 5 && h < 50 && s > 0.1) && (lx - 15) ** 2 + (ly - 21) ** 2 > 60,
+    edge: (h, s, v) => s < 0.3 },
+  mage: { ref: 0.8, pick: (h, s, v, lx, ly) => ly < 150 && h > 240 && h < 305 && s > 0.1 && s < 0.55 && v > 0.665 && !(s > 0.38 && v < 0.72),   // 巫师帽的亮面：s 0.4~0.5、v 0.62~0.66
+    edge: (h, s, v) => h > 230 && h < 320 && s < 0.4 && v > 0.3 },   // 巫师帽 s 0.4 以上：不往帽子上扩
+};
+const JL_HAIR = new Map(), JL_HAIR_MAX = 200;
+function jlHairImg(im, F, H, cls, col) {
+  const k = col + '|' + cls; let M = JL_HAIR.get(im);
+  if (M) { JL_HAIR.delete(im); JL_HAIR.set(im, M); } else {
+    JL_HAIR.set(im, M = new Map());
+    if (JL_HAIR.size > JL_HAIR_MAX) { const k0 = JL_HAIR.keys().next().value; for (const o of JL_HAIR.get(k0).values()) if (o) o.cv.width = o.cv.height = 0; JL_HAIR.delete(k0); }
+  }
+  if (M.has(k)) return M.get(k);
+  const P = JL_HAIR_PICK[cls], W = im.width, Hh = im.height, [c0, x0] = offCanvas(W, Hh); x0.drawImage(im, 0, 0);
+  let d; try { d = x0.getImageData(0, 0, W, Hh); } catch (e) { M.set(k, null); return null; }   // file:// 打开时跨域读不了像素：不染
+  c0.width = c0.height = 0;
+  const p = d.data, n = W * Hh, hs = new Float32Array(n), ss = new Float32Array(n), vs = new Float32Array(n), mk = new Uint8Array(n);
+  const ca = Math.cos(-(H.a || 0)), sa = Math.sin(-(H.a || 0));
+  for (let i = 0; i < n; i++) {
+    if (p[i * 4 + 3] < 60) continue;
+    const R = p[i * 4] / 255, G = p[i * 4 + 1] / 255, B = p[i * 4 + 2] / 255, mx = Math.max(R, G, B), dd = mx - Math.min(R, G, B);
+    let h = !dd ? 0 : mx === R ? ((G - B) / dd) % 6 : mx === G ? (B - R) / dd + 2 : (R - G) / dd + 4; h *= 60; if (h < 0) h += 360;
+    hs[i] = h; ss[i] = mx ? dd / mx : 0; vs[i] = mx;
+    const dx = i % W - H.x, dy = (i / W | 0) - H.y;
+    if (P.pick(h, ss[i], mx, dx * ca - dy * sa, dx * sa + dy * ca)) mk[i] = 1;
+  }
+  const st = [], seen = new Uint8Array(n);   // 零散的小块（帽子上的亮点、衣服高光）不算头发：连通块小于 24 像素的去掉
+  for (let i0 = 0; i0 < n; i0++) {
+    if (mk[i0] !== 1 || seen[i0]) continue;
+    const blob = [i0]; seen[i0] = 1; st.push(i0);
+    while (st.length) { const i = st.pop(), x = i % W; for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < n && mk[j] === 1 && !seen[j]) { seen[j] = 1; blob.push(j); st.push(j); } }
+    if (blob.length < 24) for (const i of blob) mk[i] = 0;
+  }
+  for (let it = 2; it <= 3; it++) for (let i = 0; i < n; i++) {   // 边缘外扩两圈（标记 2、3，只从上一圈扩）
+    if (mk[i] || p[i * 4 + 3] < 60 || !P.edge(hs[i], ss[i], vs[i])) continue;
+    const x = i % W, y = i / W | 0, q = v => v > 0 && v < it;
+    if ((x > 0 && q(mk[i - 1])) || (x < W - 1 && q(mk[i + 1])) || (y > 0 && q(mk[i - W])) || (y < Hh - 1 && q(mk[i + W]))) mk[i] = it;
+  }
+  const [tr, tg, tb] = hexRgb(col); let X0 = W, Y0 = Hh, X1 = -1, Y1 = -1;
+  for (let i = 0; i < n; i++) {
+    if (!mk[i]) { p[i * 4 + 3] = 0; continue; }
+    const x = i % W, y = i / W | 0; if (x < X0) X0 = x; if (x > X1) X1 = x; if (y < Y0) Y0 = y; if (y > Y1) Y1 = y;
+    const l = (0.3 * p[i * 4] + 0.59 * p[i * 4 + 1] + 0.11 * p[i * 4 + 2]) / 255 / P.ref, u = Math.min(1, Math.max(0, (l - 1) * 1.6));
+    p[i * 4] = l <= 1 ? tr * l : tr + (255 - tr) * u; p[i * 4 + 1] = l <= 1 ? tg * l : tg + (255 - tg) * u; p[i * 4 + 2] = l <= 1 ? tb * l : tb + (255 - tb) * u;
+  }
+  if (X1 < 0) { M.set(k, null); return null; }
+  const w = X1 - X0 + 1, h = Y1 - Y0 + 1, [cv, x] = offCanvas(w, h); x.putImageData(d, -X0, -Y0, X0, Y0, w, h);
+  const o = { cv, x: X0, y: Y0 }; M.set(k, o); return o;
+}
+function jlHair(c, L, m, f, F) {
+  const J = L.J, col = J && J.hair; if (!col || !JL_HAIR_PICK[L.cls]) return;
+  let H = F.head; if (!H) { const B = SPR_DATA[L.cls] && SPR_DATA[L.cls].frames[f]; if (!B || !B.head) return; H = { x: B.head.x - B.ax + F.ax, y: B.head.y - B.ay + F.ay, a: B.head.a }; }   // 时装帧没有头部锚点：借原装同名帧的（按脚底锚点对齐）
+  const im = jlFrameIm(L, m, f); if (!im) return;
+  const o = jlHairImg(im, F, H, L.cls, col); if (o) c.drawImage(o.cv, o.x - F.ax, o.y - F.ay);
 }
 
 /* ---- 新组件 ---- */

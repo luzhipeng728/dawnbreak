@@ -255,7 +255,11 @@ function monSkill(spec, D = {}) {
   };
   if (spec.then) { const T = monSkill(spec.then, D), oe = act.onEnd; act.onEnd = (e, broke) => { if (oe) oe(e, broke); if (!broke && !e.dead) (e.msQueue ??= []).push(T); }; }
   const val = (v, dflt) => (typeof v === 'function' ? v(p) : v ?? dflt);
-  return { clip: p.clip || S.clip, range: p.range || val(S.range, [0, 80]), dy: p.dy ?? val(S.dy, 18), cd: p.cd || S.cd, w: p.w ?? 1, cond: msCond({ ...p, ranged }, S), act, ms: spec.use, msId: spec.id };
+  const A = { clip: p.clip || S.clip, range: p.range || val(S.range, [0, 80]), dy: p.dy ?? val(S.dy, 18), cd: p.cd || S.cd, w: p.w ?? 1, cond: msCond({ ...p, ranged }, S), act, ms: spec.use, msId: spec.id };
+  // 编号：这只怪编译出来的每一招（招式表 + 连招的每一步 / 反击 / then）按编译顺序编号（都在定义时编译，每个客户端顺序一样）；
+  // 组队时主机发编号（net/coop.js monAct 的 mi），队员按编号原样重播同一招（判定、事件都一样），不用猜
+  const L = D.msAll ??= []; act.msIdx = L.length; L.push(A);
+  return A;
 }
 // 立即放出一招（连招队列 / 反击 / 调试）
 function msStart(m, A) {
@@ -337,15 +341,18 @@ function msPhaseCheck(m) {
   const P = m.def_.msPhases; let i = m.msPhase || 0;
   while (i + 1 < P.length && m.hp <= m.hpMax * P[i + 1].at) { i++; m.msPhase = i; msEnterPhase(m, i); }
 }
+// 进阶段的无敌咆哮：把附近的人震开。组队时主机的这一招带阶段号（act.msPhase → ma 的 ph），队员那边也调用它，震开的是队员自己（阶段机制只在主机上跑）
+function msPhaseRoar(m, i) {
+  const E = m.def_.msPhases[i].enter || {};
+  if (m.act) m.endAct(); m.invul = Math.max(m.invul, 1.4); m.doAct({ name: 'roar', clip: 'roar', dur: 1.3, superArmor: true, msPhase: i });
+  cam.shake = Math.max(cam.shake, 8); sfx.boom(0.9); fxShock(m.x, m.y, 200, E.col || '#b890ff');
+  for (const t of msFoes(m)) if (Math.abs(t.x - m.x) < 220) applyHit(m, t, { dmg: 0.05, sure: true, knock: 320, stun: 0.3, hs: 0.04 }, { proj: true });
+}
 function msEnterPhase(m, i) {
   const E = m.def_.msPhases[i].enter || {};
   MS_STATS.mech.phase = (MS_STATS.mech.phase || 0) + 1;
   m.msQueue = [];
-  if (E.roar !== false) {   // 无敌咆哮：把玩家震开
-    if (m.act) m.endAct(); m.invul = Math.max(m.invul, 1.4); m.doAct({ name: 'roar', clip: 'roar', dur: 1.3, superArmor: true });
-    cam.shake = Math.max(cam.shake, 8); sfx.boom(0.9); fxShock(m.x, m.y, 200, E.col || '#b890ff');
-    for (const t of msFoes(m)) if (Math.abs(t.x - m.x) < 220) applyHit(m, t, { dmg: 0.05, sure: true, knock: 320, stun: 0.3, hs: 0.04 }, { proj: true });
-  }
+  if (E.roar !== false) msPhaseRoar(m, i);
   if (E.say) { msSay(m, E.say, E.col || '#ffb0ff', 15); toastMsg(E.say, E.col || '#d8b0ff'); }
   if (E.heal) { const h = Math.round(m.hpMax * E.heal); m.hp = Math.min(m.hpMax, m.hp + h); addNumber(h, m.x, m.y, m.z + 40, { heal: true }); }
   if (E.summon) msSummon(m, E.summon.kind, E.summon.n || 2, E.summon.lvlOff ?? -1);

@@ -238,13 +238,14 @@ function abyssLordMechs(b, L) {
   const ai = b.aiInner || b.control, own = ai === regionAI, base = ai, every = c => rnd(...(c.every || [24, 30]));
   for (const s of L.mechs) if (!msMechActive(b, s.use)) msMechStart(b, s);   // 区域领主自带的同种机制（比如暗杀者的狂暴）不重复加
   const cyc = L.cycle.map(c => ({ ...c, next: every(c) * 0.6 }));
-  b.control = (m, dt) => {
+  const ctl = (m, dt) => {
     if (!m.dead && !m.msHidden) {
       if (!own && m.msMechs) msMechUpdate(m, dt);
       for (const c of cyc) if ((c.next -= dt) <= 0 && m.hp <= m.hpMax * (c.at ?? 1) && !msMechActive(m, c.mech.use) && !(m.stun > 0)) { c.next = every(c); if (c.say) msSay(m, c.say, '#ff9ad8', 15); msMechStart(m, c.mech); }
     }
     base(m, dt);
   };
+  ctl.aiBase = base; b.control = ctl;   // 组队：主机按 aiBase 往里找真正的 AI（老领主自带 AI 的表外招式，队员那边用同一个 AI 重播；区域领主的招式按编号 / 阶段号重播）
   if (own) return;
   const od = b.onDamaged;
   b.onDamaged = (t, a, dmg, crit, h) => {

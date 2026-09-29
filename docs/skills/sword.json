@@ -1565,7 +1565,10 @@
     4
    ],
    "launch": true,
-   "cd": 8
+   "cd": 8,
+   "why": {
+    "hits": "学了睥睨万物（三觉被动）后追加一段收尾斩，共 5 段（官方 7.2）"
+   }
   },
   "gb_resonance": {
    "official": "双魂共鸣：BUFF；CD 5s",

@@ -250,7 +250,7 @@ function whipAllies(e, L) {
   if (to.length) partySend('mg_whip', { to }, e);
 }
 partyOn('mg_whip', (me, d) => { if (!Array.isArray(d.to) || typeof coop === 'undefined' || !d.to.includes(coop.me()) || me.dead) return;
-  me.buffs.mg_whipAlly = { t: 20, mspd: 0.1, party: 1 }; if (typeof applyBuffs === 'function') applyBuffs(me); fxAura(me, '#e090ff', 0.5); });
+  me.buffs.mg_whipAlly = { t: 20, mspd: 0.05, party: 1 }; if (typeof applyBuffs === 'function') applyBuffs(me); fxAura(me, '#e090ff', 0.5); });
 function whipDomin(p) { return !!p && typeof jobOf === 'function' && jobOf(p) === 'summoner' && skLv(p, 'sm_domin') > 0; }
 function whipBuffSummons(e, lv) {
   const dom = whipDomin(e), cx = e.x + e.face * (dom ? 155 : 105);
@@ -279,7 +279,7 @@ defSkill('mg_palm', { name: '落花掌', cls: 'mage', lvReq: 15, mp: 20, cd: 3, 
       if (a.chargeDone && !a._mv) { a._mv = true; const k = a.chargeK || 0; a.move = e.pad && e.pad.dx() === -e.face ? [] : [[0.05, 0.13 + k * 0.05, 420 * (1 + k * 0.5)]]; }
       if (a.chargeDone && (a.chargeK || 0) > 0.95 && !a._sa) { a._sa = true; a.superArmor = [a.charge.at, 0.4]; } },
     hits: [HB(0.05, 0.16, [-24, 92, 30, 20, 110], skillDmg(2.4, 0.24, lv), { down: true, downLift: 150, knock: 520, hs: 0.1, snd: 'blunt', shake: 3, big: 1.4, chaser: 'fire',
-      onHit: (a, t) => { fxSpr('petal', t.x, t.y, t.z + 50, { w: 120, dur: 0.5, flip: a.face < 0, grow: [0.5, 1.2] });
+      onHit: (a, t) => { fxBurst(t.x, t.y, t.z + 50, 150, '#ffd860'); fxShock(t.x, t.y, 90, '#fff0a0'); fxAura(a, '#ffd860', 0.4);
         const pr = spawnProj({ owner: a, x: t.x, y: t.y, z: t.z, face: a.face, life: 0.5, w: 20, d: 16, h: 60, pierce: true,
           hit: { dmg: skillDmg(1.2, 0.12, lv), knock: 260, down: true, downLift: 120, hs: 0.06, snd: 'blunt', type: 'phys' }, update(q) { q.x = t.x; q.y = t.y; q.z = t.z; }, draw() { } });
         pr.hitMap.set(t.id, 0); pr.hitMap.set(-t.id, 99); pr.hit.max = 1;
@@ -305,7 +305,7 @@ defSkill('mg_dispel', { noHitCheck: true, name: '驱散魔法', cls: 'mage', lvR
 defSkill('mg_showtime', { name: '魔法秀', cls: 'mage', lvReq: 16, mp: 60, cd: 40, type: 'mag', buff: true, col: '#e05ab0', excl: ['battlemage', 'enchantress'],
   desc: '【BUFF】华丽的魔法表演：20 秒内施放速度提高、蓄气时间缩短，魔法技能的冷却加快（对物理技能、BUFF 技能和觉醒无效）。', ai: { kind: 'buff' },
   infoExtra: lv => [['施放速度', '+' + pct(0.05 + 0.01 * lv)], ['蓄气时间', '-' + pct(0.05 + 0.02 * lv)], ['魔法技能冷却', '-' + pct(Math.min(0.3, 0.02 * lv + 0.03))]],
-  act: (lv) => ({ name: 'mg_showtime', clip: 'showtime', dur: 0.7, noCounter: true,
+  act: (lv) => ({ name: 'mg_showtime', clip: 'showtime', dur: 1.0, noCounter: true,
     onStart: e => { e.buffs.mg_showtime = { t: 20, cspd: 0.05 + 0.01 * lv, chargeCut: 0.05 + 0.02 * lv, showCd: Math.min(0.3, 0.02 * lv + 0.03) }; sfx.buff(); fxAura(e, '#ff9ae0', 1); for (let i = 0; i < 8; i++) fxCharge(e, pick(['#ff9ae0', '#fff38a', '#9fe6ff'])); } }) });
 CLASSES.mage = { name: '魔法师', hp0: 1450, hpPer: 120, mp0: 1100, mpPer: 60, atk0: 500, atkPer: 60, str0: 5, strPer: 1.8, def0: 220, defPer: 22, crit: 0.07, speed: 160, runSpeed: 290,
   desc: '操纵火、冰、光、暗四种元素的魔法师，身板脆弱但 MP 充沛；转职后可以成为元素师或战斗法师。', model: () => buildSwordsman(PAL_MAGE, { weapon: 'staff', hair: 'long', hat: 'wizard', scarf: false, pauldron: false, coatTail: true }),

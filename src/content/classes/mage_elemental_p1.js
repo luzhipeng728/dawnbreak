@@ -147,24 +147,25 @@ function elRageFx(e, len, w, dur) {
     drawSpr(c, fxTint('lightning', '#fff6c0'), X, Y, w * 2.2, len, { rot: face * Math.PI / 2, ay: 1, flip: fl, alpha: a });
     drawSpr(c, 'spark', X, Y, w * 3, 0, { alpha: a }); c.restore(); } });
 }
-defSkill('el_symphony', { name: '光与暗的交响', cls: 'mage', job: EL, tier: 3, lvReq: 29, mp: 150, cd: 50, type: 'mag', elem: 'light', elemNote: 'all', col: '#fff6c0', cast: true,
+defSkill('el_symphony', { name: '光与暗的交响', cls: 'mage', job: EL, tier: 3, lvReq: 29, mp: 150, cd: 60, type: 'mag', elem: 'light', elemNote: 'all', col: '#fff6c0', cast: true,
   desc: '把光与暗强行融合，向前方劈出巨大的横向雷电，约 15 段全属性伤害。蓄气（最长 1.5 秒）让雷电变大。施放中霸体。', pow: lv => skillDmg(26, 2.6, lv), ai: { kind: 'burst', r: [0, 680], dy: 70 },
   act: (lv, p) => ({ name: 'el_symphony', clip: 'elBeam', dur: 2.1, superArmor: true, noCounter: true, charge: mCharge(p, 1.5, '#fff6c0', { at: 0.08, clip: 'elBeam' }),
     update: e => { const a = e.act; if (e.actT < 0.4 || e.actT > 1.9) return; const n = Math.floor((e.actT - 0.4) / 0.1), w = 52 * (1 + (a.chargeK || 0) * 0.2);   // 蓄气：雷电大小 100%～120%
       if (n === a.n || n >= 15) return; a.n = n; if (n % 3 === 0) sfx.zap(); if (n === 0) cam.shake = Math.max(cam.shake, 4);
       if (n % 2 === 0) elRageFx(e, 700, w, 0.2); fxBeam(e.x + e.face * 34, e.y, e.z + 72, 690, e.face, { w: w * 0.9, col: n % 2 ? '#8a4ad0' : '#fff6c0', dur: 0.12 });
       instantHit(e, { box: [20, 710, w, 0, 150], dmg: skillDmg(1.73, 0.17, lv), stun: 0.3, knock: 6, hs: 0.02, type: 'mag', elem: elBest(e), col: n % 2 ? '#c79aff' : '#fff6c0', downHit: true, last: n === 14 }); } }) });
+const COSMOS_HIT = 4.4;   // 行星撞上的时刻（官方整段引导约 6.9 秒：撞击后 7 段余波）
 defSkill('el_awaken3', { name: '宇宙寂灭：冰火之歌', cls: 'mage', job: EL, tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 270, pvp: 0.45, type: 'mag', elemNote: 'all', awaken: true, col: '#ff8a5a',
   desc: '【三次觉醒】把身边的一块大地连同上面的敌人掀进宇宙：燃烧的行星和冰冻的行星从两边撞上来把它粉碎，最后 7 段爆炸余波。范围内的敌人全程被困住。全程无敌。', pow: lv => skillDmg(46, 12, lv), ai: { kind: 'awaken', r: [0, 640], dy: 160 },
-  act: (lv) => ({ name: 'el_awaken3', clip: 'elCosmos', dur: 5.0, superArmor: true, noCounter: true, invul: true,
+  act: (lv) => ({ name: 'el_awaken3', clip: 'elCosmos', dur: 6.9, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.2, name: '宇宙寂灭：冰火之歌', who: cutinWho(e, 3) }; game.timeStop = 1.0; sfx.awaken(); const R = game.room, x = e.x + e.face * 150; e.act.cx = R ? clamp(x, R.x0 + 80, R.x1 - 80) : x; e.act.cy = e.y; },
-    update: e => { const a = e.act; if (e.actT < 1.1 || e.actT > 3.5) return; const n = Math.floor((e.actT - 1.1) / 0.3), lz = elLiftZ(e.actT - 1.05, 3.4 - 1.05);
+    update: e => { const a = e.act; if (e.actT < 1.1 || e.actT > COSMOS_HIT + 0.1) return; const n = Math.floor((e.actT - 1.1) / 0.5), lz = elLiftZ(e.actT - 1.05, COSMOS_HIT - 1.05);
       if (lz > 0) for (const t of ents) if (foe(e, t) && !t.dead && !t.fixed && t.st !== 'held' && inGround(t, a.cx, a.cy, 500) && t.z < lz) { t.z = lz; t.vz = Math.max(0, t.vz); }   // 站在浮起的大地上
-      if (n !== a.n) { a.n = n; blast(e, a.cx, a.cy, 500, { dmg: skillDmg(0.9, 0.25, lv), stun: 0.6, knock: 0, hs: 0.02, type: 'mag', col: n % 2 ? '#9fe6ff' : '#ff9a50', elem: n % 2 ? 'ice' : 'fire', sure: true, downHit: true }, { zMax: 300, status: 'root', sdur: 1.2 }); } },
-    events: [evAt(1.05, e => { const a = e.act; sfx.charge(); cam.shake = Math.max(cam.shake, 5); elCosmosFx(a.cx, a.cy, 3.9, 3.4 - 1.05, 500); elRingFx(a.cx, a.cy, 500, 3.9, '#a080ff'); }),
-      evAt(3.4, e => { const a = e.act; cam.flash = 0.35; cam.flashCol = '#fff0e0'; cam.shake = 16; sfx.boom(1.6); fxShock(a.cx, a.cy, 620, '#ff9a50'); fxShock(a.cx, a.cy, 500, '#9fe6ff'); fxBurst(a.cx, a.cy, 150, 700, '#ffe0c0');
+      if (n !== a.n) { a.n = n; blast(e, a.cx, a.cy, 500, { dmg: skillDmg(0.85, 0.23, lv), stun: 0.6, knock: 0, hs: 0.02, type: 'mag', col: n % 2 ? '#9fe6ff' : '#ff9a50', elem: n % 2 ? 'ice' : 'fire', sure: true, downHit: true }, { zMax: 300, status: 'root', sdur: 1.2 }); } },
+    events: [evAt(1.05, e => { const a = e.act; sfx.charge(); cam.shake = Math.max(cam.shake, 5); elCosmosFx(a.cx, a.cy, COSMOS_HIT + 0.5, COSMOS_HIT - 1.05, 500); elRingFx(a.cx, a.cy, 500, COSMOS_HIT + 0.5, '#a080ff'); }),
+      evAt(COSMOS_HIT, e => { const a = e.act; cam.flash = 0.35; cam.flashCol = '#fff0e0'; cam.shake = 16; sfx.boom(1.6); fxShock(a.cx, a.cy, 620, '#ff9a50'); fxShock(a.cx, a.cy, 500, '#9fe6ff'); fxBurst(a.cx, a.cy, 150, 700, '#ffe0c0');
         blast(e, a.cx, a.cy, 540, { dmg: skillDmg(22, 6, lv), launch: 480, knock: 200, hs: 0.16, big: 2.2, type: 'mag', col: '#ffffff', sure: true, downHit: true }, { zMax: 320 }); }),
-      ...Array.from({ length: 7 }, (_, i) => evAt(3.6 + i * 0.16, e => { const a = e.act, x = a.cx + rnd(-300, 300), y = clamp(a.cy + rnd(-80, 80), 8, DEPTH - 8), [el, col] = ELEM4[i % 2 ? 1 : 0];
+      ...Array.from({ length: 7 }, (_, i) => evAt(COSMOS_HIT + 0.2 + i * 0.36, e => { const a = e.act, x = a.cx + rnd(-300, 300), y = clamp(a.cy + rnd(-80, 80), 8, DEPTH - 8), [el, col] = ELEM4[i % 2 ? 1 : 0];
         sfx.boom(0.6); meteorImpact({ x, y }, 1.0); fxShock(x, y, 190, col); blast(e, x, y, 185, { dmg: skillDmg(2.6, 0.7, lv), launch: 320, knock: 60, hs: 0.05, type: 'mag', elem: el, col, sure: true, downHit: true }, { zMax: 260 }); }))] }) });
 // ---- 登记 ----
 CLASSES.mage.jobs.elemental.skills.push('el_curtain', 'el_quake', 'el_arcana', 'el_rune', 'el_crystal', 'el_gate', 'el_awaken2', 'el_source', 'el_symphony', 'el_awaken3');

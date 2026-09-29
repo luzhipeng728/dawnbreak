@@ -83,13 +83,13 @@ function elFusionVoid(e, lv, sc) {
 }
 // 冰墙：周身冰墙，把敌人推到圈外；敌人穿过冰墙会被减速；站在圈内自己获得霸体和减伤；再按一次技能键撤掉
 defSkill('mg_icewall', { name: '冰墙', cls: 'mage', job: EL, lvReq: 17, mp: 45, cd: 15, type: 'mag', elem: 'ice', col: '#6ab8e8', cast: true,
-  desc: '在自身周围升起一圈冰墙，造成伤害并把敌人推到圈外；冰墙持续 5 秒，敌人穿过时减速 50%。站在圈内时自己获得霸体，受到的伤害降低。再按一次技能键撤掉冰墙。', pow: lv => skillDmg(3.0, 0.3, lv), ai: { kind: 'aoe', r: [0, 160], dy: 70 },
+  desc: '在自身周围升起一圈冰墙，造成伤害并把敌人推到圈外；冰墙持续 3 秒，敌人穿过时减速 50%。站在圈内时自己获得霸体，受到的伤害降低。再按一次技能键撤掉冰墙。', pow: lv => skillDmg(3.0, 0.3, lv), ai: { kind: 'aoe', r: [0, 160], dy: 70 },
   recast: { ok: p => { const w = p._icewall, d = w ? game.t - w.lastT : -1; return !!(w && w.alive && d >= 0 && d < 0.5); }, cd: 0.3, mp: 0, act: () => ({ name: 'mg_icewall', clip: 'wall', dur: 0.2, noCounter: true, onStart: e => { if (e._icewall) e._icewall.dur = 0; } }) },
   act: (lv) => ({ name: 'mg_icewall', clip: 'wall', dur: 0.6, cancelFrom: 0.45, superArmor: true, noCounter: true,
     events: [evAt(0.2, e => { sfx.ice(); sfx.boom(0.5); cam.shake = Math.max(cam.shake, 4); const cx = e.x, cy = e.y;
       blast(e, cx, cy, 160, { dmg: skillDmg(3.0, 0.3, lv), launch: 240, knock: 200, hs: 0.08, elem: 'ice', type: 'mag', col: '#bfefff' }, { zMax: 150 });
-      const wall = e._icewall = { t: 0, dur: 5, alive: true, fx: [] };
-      for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; wall.fx.push(fxSpr('icewall', cx + Math.cos(a) * 145, cy + Math.sin(a) * 62, 0, { w: 84, dur: 5, ay: 0.9, add: false, grow: [0.3, 1], fadeIn: 0.03 })); }
+      const wall = e._icewall = { t: 0, dur: 3, alive: true, fx: [] };
+      for (let i = 0; i < 10; i++) { const a = i / 10 * TAU; wall.fx.push(fxSpr('icewall', cx + Math.cos(a) * 145, cy + Math.sin(a) * 62, 0, { w: 84, dur: 3, ay: 0.9, add: false, grow: [0.3, 1], fadeIn: 0.03 })); }
       wall.lastT = game.t; game.after(0.01, function tick() { wall.t += 0.1; wall.lastT = game.t; const inside = !e.dead && Math.hypot(e.x - cx, (e.y - cy) * 2.2) < 150;
         if (inside) { e.superArmor = Math.max(e.superArmor, 0.15); e.buffs.mg_icewall = { t: 0.15, taken: -0.3 }; }
         for (const t of ents) if (foe(e, t) && Math.abs(Math.hypot(t.x - cx, (t.y - cy) * 2.2) - 150) < 26) addStatus(t, 'slow', 3, { src: e });
@@ -197,13 +197,13 @@ defSkill('mg_awaken', { name: '陨星幻灭', cls: 'mage', job: EL, lvReq: 21, m
       if (!isHuman(e)) { const t = nearestFoe(e, 600); if (t) { mx = Math.sign(t.x - a.cx) * (Math.abs(t.x - a.cx) > 20); my = Math.sign(t.y - a.cy) * (Math.abs(t.y - a.cy) > 10); } }
       a.cx += mx * 180 * d; a.cy = clamp(a.cy + my * 120 * d, 10, DEPTH - 10); a.r = damp(a.r, mx || my ? 220 : 330, 3, d); return true; },
     update: e => { const a = e.act; if (e.actT < 0.95) return;
-      if (e.actT > 3.2 && !a.fin) astralFinale(e, lv);
+      if (e.actT > 3.5 && !a.fin) astralFinale(e, lv);
       addFx({ x: a.cx, y: a.cy - 1, z: 0, dur: 0.02, r: a.r, draw(c) { c.save(); c.translate(sx(this.x), sy(this.y, 0)); c.scale(1, GR); c.rotate(game.t); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.6; const im = IMG['fx/hexagram']; if (im) c.drawImage(im, -this.r, -this.r, this.r * 2, this.r * 2); c.restore(); } });
       if (a.fin) return;
-      const step = a.r < 280 ? 0.06 : 0.1, n = Math.floor((e.actT - 1.0) / step);
-      if (e.actT > 1.0 && n !== a.n) { a.n = n; const [el, col] = ELEM4[n % 4], x = a.cx + rnd(-a.r, a.r) * 0.7, y = clamp(a.cy + rnd(-a.r, a.r) * 0.25, 6, DEPTH - 6);
+      const n = Math.floor((e.actT - 1.0) / 0.06);   // 官方 40 颗、每 0.06 秒一颗（移动时法阵小、落点密，停住时法阵大）
+      if (e.actT > 1.0 && n !== a.n && n < 40) { a.n = n; const [el, col] = ELEM4[n % 4], x = a.cx + rnd(-a.r, a.r) * 0.7, y = clamp(a.cy + rnd(-a.r, a.r) * 0.25, 6, DEPTH - 6);
         addFx({ x, y: y + 2, z: 0, dur: 0.3, col, draw(c) { const k = this.t / this.dur; drawSpr(c, 'elemmeteor', sx(this.x) - 160 * (1 - k), sy(this.y, 0) - 360 * (1 - k), 130, 0, { ax: 0.8, ay: 0.82 }); } });
-        game.after(0.3, () => { meteorImpact({ x, y }, 0.8); blast(e, x, y, 115, { dmg: skillDmg(0.7, 0.2, lv), launch: 300, knock: 60, hs: 0.04, elem: el, type: 'mag', col, downHit: true }, { zMax: 240 }); }); } } }) });
+        game.after(0.3, () => { meteorImpact({ x, y }, 0.8); blast(e, x, y, 115, { dmg: skillDmg(0.55, 0.16, lv), launch: 300, knock: 60, hs: 0.04, elem: el, type: 'mag', col, downHit: true }, { zMax: 240 }); }); } } }) });
 CLASSES.mage.jobs.elemental = { art: 'job/elemental', name: '元素师', role: '远程 · 范围', armor: 'cloth', awaken: 'mg_awaken', awakenName: '大魔导师',
   desc: '把元素的力量发挥到极限的纯魔法师。大多数技能可以蓄气，学会移动施法后能边走边蓄；轮换火、冰、光、暗四种属性点亮元素标记来提高伤害。',
   skills: ['el_memorize', 'el_movecast', 'mg_flame', 'mg_void', 'el_burn', 'mg_icewall', 'mg_vortex', 'el_mastery', 'mg_thunder', 'el_thunderup', 'mg_icefeast', 'mg_hole', 'mg_jackfall', 'el_amplify', 'mg_awaken'] };

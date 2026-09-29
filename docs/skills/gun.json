@@ -89,10 +89,10 @@
     "gm_factory": { "summon": true, "cd": 45, "watch": 12, "src": "N-mechanic#s-2.2.5", "conf": "high", "note": "工厂 5 秒生产最多 6 架拦截机追踪射击" },
     "gm_g0": { "pre": ["gm_g1"], "sa": "full", "cd": 135, "src": "N-mechanic#s-3.1.2 / QQ-2604", "conf": "high", "note": "需要 G 系列；自动锁定，格林 + 导弹 + 激光三重轰炸，打完飞走" },
     "gm_hs12": { "hits": [1, 1], "summon": true, "cd": 30, "src": "N-mechanic#s-3.1.3", "conf": "high", "note": "等离子机器人标记目标后飞去自爆" },
-    "gm_frisbee": { "far": 170, "deep": 60, "hits": [30, 88], "summon": true, "behind": true, "cd": 45, "src": "N-mechanic#s-3.1.4", "conf": "high", "note": "齿轮高速绕身回旋 7 秒，0.16 秒一段（每台最多约 44 段；学了 G-X 主宰者是 2 台）" },
-    "gm_falcon": { "far": 450, "deep": 90, "reach": [450, 450], "presses": [0.6], "launch": true, "summon": true, "src": "N-mechanic#s-3.2.2", "conf": "high", "note": "按一次放出，在场时再按才攻击（随 G 系列形态），每次攻击耗 1 次充能：每 15 秒充 1 次，最多 3 次（本作 cd 0.5 + 次数制，冷却不比）" },
+    "gm_frisbee": { "far": 170, "deep": 60, "hits": [30, 140], "summon": true, "behind": true, "cd": 45, "src": "N-mechanic#s-3.1.4", "conf": "high", "note": "齿轮高速绕身回旋 7 秒，0.16 秒一段（3 个齿轮，每个最多约 44 段；学了 G-X 主宰者是 4 个）" },
+    "gm_falcon": { "far": 450, "deep": 90, "reach": [450, 450], "presses": [0.6], "launch": true, "summon": true, "cd": 13, "src": "N-mechanic#s-3.2.2", "conf": "high", "note": "按一次放出，在场时再按才攻击（随 G 系列形态），每次攻击耗 1 次充能：每 15 秒充 1 次，最多 3 次（放出冷却 13 秒（NamuWiki；DFO wiki 写 15），充能 15 秒一次（两处一致））" },
     "gm_field": { "far": 450, "deep": 90, "reach": [450, 450], "hits": [12, 16], "cd": 50, "src": "N-mechanic#s-3.2.3", "conf": "high", "note": "磁场发生器前进 220 px 展开 1.5 秒共 15 段；发射时后坐" },
-    "gm_bolt": { "far": 450, "deep": 90, "reach": [450, 450], "hits": [10, 30], "cd": 170, "src": "N-mechanic#s-3.2.4 / QQ-2604", "conf": "mid", "note": "天降机甲：回旋炮 → 移动步枪 → 光剑 → 后空翻、部件分离自爆（约 27 段）" },
+    "gm_bolt": { "far": 450, "deep": 90, "reach": [450, 450], "hits": [25, 34], "cd": 170, "src": "N-mechanic#s-3.2.4 / QQ-2604", "conf": "mid", "note": "天降机甲：回旋炮 → 移动步枪 → 光剑 → 后空翻、部件分离自爆。NamuWiki 伤害公式：回旋球 10 段 + 爆炸 1 + 步枪 11 + 刀 1~3 + 刀 4 与自爆各 1 = 27 段（单木桩会额外吃到 6 个部件的分爆，故上限放到 34）" },
     "gm_hyper": { "far": 600, "deep": 90, "cd": 60, "src": "N-mechanic#s-3.3.2", "conf": "mid", "note": "机器人投能量弹，光耀炮引爆" },
     "gm_stardust": { "far": 600, "deep": 90, "pre": ["gm_g1"], "invul": "full", "cd": 270, "src": "N-mechanic#s-3.3.3 / QQ-2604", "conf": "high", "note": "需要 G 系列；机械穹顶激光 8 段 + 爆炸 7 段，穹顶爆炸前一直在施放中，全程无敌" },
 

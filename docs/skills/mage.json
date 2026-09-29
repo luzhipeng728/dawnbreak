@@ -59,7 +59,7 @@
   "el_gate": {"name": "元素之门", "job": "elemental", "src": "https://namu.wiki/w/엘레멘탈마스터(던전앤파이터)/스킬", "conf": "高", "official": "冷却 45s；在最多 20 个敌人头顶各开一扇门，门跟着目标，每 0.2s 落一颗结晶共 10 颗", "cd": 45, "hits": [9,11]},
   "el_awaken2": {"name": "第六元素", "job": "elemental", "src": "https://namu.wiki/w/엘레멘탈마스터(던전앤파이터)/스킬", "conf": "高", "official": "二觉，冷却 170s；所有元素聚到身前一点吸怪，20 段后超大爆炸；原地蓄气期间无敌", "cd": 170, "hits": [20,26], "invul": "full"},
   "el_symphony": {"name": "光与暗的交响", "job": "elemental", "src": "https://namu.wiki/w/엘레멘탈마스터(던전앤파이터)/스킬", "conf": "中", "official": "冷却 60s；光暗融合的大光束约 15 段，原地引导、霸体", "cd": 60, "hits": [12,16], "sa": "full", "reach": [450,450]},
-  "el_awaken3": {"name": "宇宙寂灭：冰火之歌", "job": "elemental", "src": "https://namu.wiki/w/엘레멘탈마스터(던전앤파이터)/스킬", "conf": "高", "official": "三觉，冷却 270s（和选定的一觉 / 二觉共用）；地面被掀进宇宙、冰火行星撞碎，7 段余波；引导约 6.9s，无敌", "cd": 270, "hits": [8,15], "invul": "full", "behind": true},
+  "el_awaken3": {"name": "宇宙寂灭：冰火之歌", "job": "elemental", "src": "https://namu.wiki/w/엘레멘탈마스터(던전앤파이터)/스킬", "conf": "高", "official": "三觉，冷却 290s（和选定的一觉 / 二觉共用）；地面被掀进宇宙、冰火行星撞碎，7 段余波；引导约 6.9s，无敌", "cd": 270, "hits": [8,15], "invul": "full", "behind": true},
 
   "bm_chaser": {"name": "炫纹", "job": "battlemage", "src": "https://dnf.qq.com/cp/a20240321balance/", "conf": "高", "official": "现版：每 7s 生成 1 个（命中也生成），上限 9、存在 30s；命中后按键射出最早的一个，发射冷却 0.5s", "cd": 0.5, "sa": "any"},
   "bm_round": {"name": "圆舞棍", "job": "battlemage", "src": "https://namu.wiki/w/배틀메이지(던전앤파이터)/스킬", "conf": "高", "official": "冷却 4s；刺中前方一个敌人举过头摔到身后，落地冲击波；能抓霸体；摔的过程中无敌", "cd": 4, "grab": true, "down": true, "invul": "part"},
@@ -81,7 +81,7 @@
   "bm_avatar": {"name": "使徒化身", "job": "battlemage", "src": "https://namu.wiki/w/배틀메이지(던전앤파이터)/스킬", "conf": "高", "official": "冷却 170s；变身 40s：常驻霸体、几乎免疫异常、不能被抓", "cd": 170, "hits": [0,0], "sa": "any"},
   "bm_light": {"name": "炫纹之源：太古神光", "job": "battlemage", "src": "https://namu.wiki/w/배틀메이지(던전앤파이터)/스킬", "conf": "高", "official": "冷却 60s；吸收最多 10 个炫纹，向前一记大范围突刺（引导）", "cd": 60, "hits": [1,3], "reach": [300,450]},
   "bm_primal": {"name": "太古化身", "job": "battlemage", "src": "https://namu.wiki/w/배틀메이지(던전앤파이터)/스킬", "conf": "高", "official": "冷却 170s；变身 80s（同使徒化身，数值更高）", "cd": 170, "hits": [0,0], "sa": "any"},
-  "bm_awaken3": {"name": "太古星河·殒灭", "job": "battlemage", "src": "https://namu.wiki/w/배틀메이지(던전앤파이터)/스킬", "conf": "高", "official": "三觉，冷却 270s；5 连斩 → 刺上星河 → 掷矛 → 飞踢踩矛 → 拔矛横扫 → 星河爆炸", "cd": 270, "hits": [8,15], "invul": "full"},
+  "bm_awaken3": {"name": "太古星河·殒灭", "job": "battlemage", "src": "https://namu.wiki/w/배틀메이지(던전앤파이터)/스킬", "conf": "高", "official": "三觉，冷却 290s；5 连斩 → 刺上星河 → 掷矛 → 飞踢踩矛 → 拔矛横扫 → 星河爆炸", "cd": 270, "hits": [8,15], "invul": "full"},
 
   "sm_lesser": {"name": "下级精灵召唤", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "冷却 2s，施放 0.4s；火 / 冰 / 暗 / 光下级精灵各 1 只，在场 30s", "cd": 2, "summon": true, "sa": "none"},
   "sm_wait": {"name": "伺机而动", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "开关：全体召唤兽原地停手", "hits": [0,0], "sa": "any"},
@@ -102,17 +102,17 @@
   "sm_teleport": {"name": "召唤兽传送", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "全图召唤兽瞬移到本体位置", "hits": [0,0], "sa": "any"},
   "sm_kuruta": {"name": "契约召唤：牛头王库鲁塔", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "冷却 10s，常驻霸体；横斩 / 愤怒冲锋 / 咆哮；交感“狂怒”冷却 40s", "cd": 10, "summon": true},
   "sm_bind": {"name": "束缚印记", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "冷却 25s；向前扔黏液瓶，爆炸后控住敌人 3s", "cd": 25, "hits": [1,3], "launch": false},
-  "sm_awaken": {"name": "契约召唤：征服者卡西利亚斯", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "一觉，冷却 135s，在场 200s；从次元裂缝走出，落地全图击倒；召唤过程本体无敌", "cd": 135, "summon": true, "invul": "full", "down": true},
+  "sm_awaken": {"name": "契约召唤：征服者卡西利亚斯", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "一觉，冷却 145s，在场 200s；从次元裂缝走出，落地全图击倒；召唤过程本体无敌", "cd": 145, "summon": true, "invul": "full", "down": true},
   "sm_thousand": {"name": "必杀剑·千鬼杀", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "中", "official": "卡西利亚斯在场才能用：他瞬移到本体前方拔刀冲斩，剑气再补 5 段；期间本体无敌", "hits": [6,12], "invul": "full", "pre": ["sm_awaken"], "minWatch": 3.5, "note": "技能本身 7 段（冲斩 1 + 剑气 5 + 收刀爆开 1）；审计观察 3.5 秒，卡西利亚斯自己也会自动出招，多出的几下是它的普通攻击"},
   "sm_hilun": {"name": "融合精灵海伊伦", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "小体型贴身跟随、不攻击；光环加速、让召唤兽免疫异常", "summon": true, "hits": [0,0]},
   "sm_ring": {"name": "支配之环", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "一键依次召出全部已学召唤兽（卡西利亚斯、拉莫斯除外）", "summon": true},
   "sm_roar": {"name": "咒令：愤怒咆哮", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "中", "official": "需要库鲁塔在场：他跑到本体前方咆哮，斧头快速砸地 4 次 + 最后一记重击", "hits": [4,6], "pre": ["sm_kuruta"], "minWatch": 3.5, "why": {"hits": "咒令本身 6 段不变；09-29 按官方比例放大库鲁塔放养横斩的范围后，咒令结束到观察结束之间它自己追加的一记横斩也会打到木桩（召唤兽放养攻击 +1）"}},
   "sm_blackmoon": {"name": "狂化黑月", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "需要露易丝在场：露易丝暴走 15s，霸体，招式换成蚀枪 / 月之破碎 / 追踪月光", "pre": ["sm_luise"], "sa": "any", "minWatch": 3.5},
   "sm_shadow": {"name": "传说召唤：月蚀之影", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "在前方铺一片“蚀”区域，爆炸 15 次", "hits": [10,15]},
-  "sm_awaken2": {"name": "传说召唤：逆月者拉莫斯", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "二觉，冷却 170s，在场 200s；大体型远古暗黑女战士，除冲刺外常驻霸体", "cd": 170, "summon": true},
+  "sm_awaken2": {"name": "传说召唤：逆月者拉莫斯", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "二觉，冷却 180s，在场 200s；大体型远古暗黑女战士，除冲刺外常驻霸体", "cd": 180, "summon": true},
   "sm_lamoseclipse": {"name": "咒令：逆月之蚀", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "需要拉莫斯在场：拉莫斯化成“蚀”退回月亮，再砸下来啃咬范围内的敌人", "hits": [1,8], "pre": ["sm_awaken2"], "minWatch": 3.5},
   "sm_supreme": {"name": "至高精灵王", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "需要伊伽贝拉在场：多束超高密度激光，最后和本体一起引爆", "hits": [3,20], "pre": ["sm_echeverria"], "minWatch": 3.5},
-  "sm_awaken3": {"name": "魔月·德拉里昂", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "三觉，冷却 270s；逆召唤敌人到月面，德拉里昂喷蚀之波涛再吞掉月亮；期间无敌", "cd": 270, "invul": "full", "hits": [5,20], "behind": true},
+  "sm_awaken3": {"name": "魔月·德拉里昂", "job": "summoner", "src": "https://namu.wiki/w/소환사(던전앤파이터)/스킬", "conf": "高", "official": "三觉，冷却 290s；逆召唤敌人到月面，德拉里昂喷蚀之波涛再吞掉月亮；期间无敌", "cd": 290, "invul": "full", "hits": [5,20], "behind": true},
 
   "wt_broom": {"name": "扫把掌握", "job": "witch", "src": "https://namu.wiki/w/마도학자(던전앤파이터)/스킬", "conf": "高", "official": "被动开关：扫把飞行（空中 6 连击 / 2 次冲刺 / 2 次缓降）", "sa": "any"},
   "wt_book": {"name": "远古魔法书", "job": "witch", "src": "https://namu.wiki/w/마도학자(던전앤파이터)/스킬", "conf": "高", "official": "永久 BUFF：普攻和技能攻击提高", "hits": [0,0], "sa": "any"},
@@ -136,7 +136,7 @@
   "wt_lollipop": {"name": "超级棒棒糖", "job": "witch", "src": "https://namu.wiki/w/마도학자(던전앤파이터)/스킬", "conf": "高", "official": "冷却 45s，地面 / 空中；巨型棒棒糖砸下（倒地），每命中一个敌人生成一个糖果人偶、砸死的再加一个（领主变大号人偶），追敌自爆", "cd": 45, "down": true, "summon": true, "set": {"wtForce": "great"}},
   "wt_awaken2": {"name": "乌洛波洛斯之环", "job": "witch", "src": "https://namu.wiki/w/마도학자(던전앤파이터)/스킬", "conf": "高", "official": "二觉，冷却 170s；衔尾蛇环形载具持续 7s，方向键移动、把敌人拖到中心抓住，连按转得更快，助手放四色火花，再按提前结束，结束爆炸", "cd": 170, "hits": [15,60], "invul": "full", "watch": 10, "set": {"wtForce": "great"}},
   "wt_trickjack": {"name": "糖果大作战：捣蛋杰克", "job": "witch", "src": "https://namu.wiki/w/마도학자(던전앤파이터)/스킬", "conf": "中", "official": "巨型南瓜助手跟在身后，朝前方喷岩浆（多段）；再按转向", "summon": true, "hits": [5,40], "set": {"wtForce": "great"}},
-  "wt_awaken3": {"name": "糖果大作战：精怪乐园", "job": "witch", "src": "https://namu.wiki/w/마도학자(던전앤파이터)/스킬", "conf": "中", "official": "三觉，冷却 270s；过山车横穿全屏往四处喷熔岩（8 段），冲上高空再脱轨砸地，4 段彩色爆炸", "cd": 270, "invul": "full", "behind": true, "set": {"wtForce": "great"}},
+  "wt_awaken3": {"name": "糖果大作战：精怪乐园", "job": "witch", "src": "https://namu.wiki/w/마도학자(던전앤파이터)/스킬", "conf": "中", "official": "三觉，冷却 290s；过山车横穿全屏往四处喷熔岩（8 段），冲上高空再脱轨砸地，4 段彩色爆炸", "cd": 270, "invul": "full", "behind": true, "set": {"wtForce": "great"}},
 
   "en_rosevine": {"name": "玫瑰藤蔓", "job": "enchantress", "src": "https://namu.wiki/w/마법사(던전앤파이터)/여자/공통스킬", "conf": "高", "official": "冷却 5s；荆棘藤贴地向前爬，X 轴距离长，多段伤害，每段小幅击退；不浮空", "cd": 5, "hits": [3,12], "launch": false, "down": false, "reach": [300,450]},
   "en_mend": {"name": "细心缝补", "job": "enchantress", "src": "https://namu.wiki/w/인챈트리스(던전앤파이터)/스킬", "conf": "中", "official": "冷却 8s；给坏坏兔缝针：全队回血并解除异常，之后每 0.5s 再回 3 次；施放中霸体", "cd": 8, "hits": [0,0], "sa": "full"},
@@ -163,6 +163,6 @@
   "en_roarbear": {"name": "咆哮吧！疯疯熊", "job": "enchantress", "src": "https://namu.wiki/w/인챈트리스(던전앤파이터)/스킬", "conf": "高", "official": "冷却 45s；巨熊向前喷诅咒吐息 24 段；地面 5s 诅咒地带不造成伤害，走进来的队友禁忌诅咒 / 偏爱持续时间 +45s", "cd": 45, "hits": [20,26], "reach": [300,450], "set": {"enStage": null}},
   "en_awaken2": {"name": "欢迎光临人偶之森", "job": "enchantress", "src": "https://namu.wiki/w/인챈트리스(던전앤파이터)/스킬", "conf": "高", "official": "二觉，冷却 170s；超巨型疯疯熊全图扫激光再挥两次手臂，共 7 段，持续 7s，主角无敌；人偶剧场中施放时剧场持续到放完", "cd": 170, "hits": [7,7], "invul": "full", "behind": true, "set": {"enStage": null}},
   "en_lovecage": {"name": "挚爱囚笼", "job": "enchantress", "src": "https://namu.wiki/w/인챈트리스(던전앤파이터)/스킬", "conf": "高", "official": "冷却 60s；荆棘鸟笼强控，结束时收缩把敌人聚到中心；再按技能键立即收缩", "cd": 60, "hits": [3,15], "set": {"enStage": null}},
-  "en_awaken3": {"name": "终幕！人偶剧场", "job": "enchantress", "src": "https://namu.wiki/w/인챈트리스(던전앤파이터)/스킬", "conf": "高", "official": "三觉，冷却 270s（和选定的觉醒共用）；长篇（变身 41s）/ 短篇（20s，暗火多段 + 火焰终结 + 巨熊攻击）舞台；再按技能键立即谢幕", "cd": 270, "invul": "full", "summon": true, "set": {"enStage": null}}
+  "en_awaken3": {"name": "终幕！人偶剧场", "job": "enchantress", "src": "https://namu.wiki/w/인챈트리스(던전앤파이터)/스킬", "conf": "高", "official": "三觉，冷却 290s（和选定的觉醒共用）；长篇（变身 41s）/ 短篇（20s，暗火多段 + 火焰终结 + 巨熊攻击）舞台；再按技能键立即谢幕", "cd": 270, "invul": "full", "summon": true, "set": {"enStage": null}}
  }
 }

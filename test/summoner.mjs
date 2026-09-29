@@ -50,10 +50,11 @@ const R = await page.evaluate(() => {
   // 一觉：卡西利亚斯出场击倒全部敌人（包括身后的）、放养会出手；千鬼杀；解除时落下狱冥天地
   for (const e of ents) if (e.team === 'e') e.remove = true; run(1);
   p.x = 400; p.y = 100; p.face = 1; const m2 = dummy(); m2.x = 700; m2.y = 100; const m3 = dummy(); m3.x = 150; m3.y = 130;
-  const h3 = m3.hp; p.setState('idle'); p.act = null; p.cool = {}; castSkill(p, 'sm_awaken', false, 's0'); let inv = true;
+  p.hp = p.hpMax; const h3 = m3.hp, hpBefore = p.hp; p.setState('idle'); p.act = null; p.cool = {}; castSkill(p, 'sm_awaken', false, 's0'); let inv = true;
   for (let i = 0; i < 200; i++) { run(1); if (p.act && p.act.name === 'sm_awaken' && !(p.invul > 0 || p.act.invul)) inv = false; }
   const cas = summonsOf(p, 'sm_casillas')[0];
   out.awaken = { cas: !!cas, behind: h3 > m3.hp, inv, sprite: !!(cas && cas.model && cas.model.S) };
+  out.awaken.hpCost = +((hpBefore - p.hp) / p.hpMax).toFixed(3);
   const h2 = m2.hp; run(360); out.awaken.fights = h2 > m2.hp;
   p.setState('idle'); p.act = null; p.cool = {}; const h2b = m2.hp; castSkill(p, 'sm_thousand', false, 's0'); run(2); out.thousand = { act: cas && cas.act && cas.act.name, pinv: p.invul > 0 }; run(110); out.thousand.dealt = h2b > m2.hp;
   m2.remove = true; const m4 = dummy(); if (cas) { m4.x = cas.x + cas.face * 90; m4.y = cas.y; } const h4 = m4.hp; p.setState('idle'); p.act = null; p.cool = {}; castSkill(p, 'sm_dismiss', false, 's0'); run(160);
@@ -65,6 +66,12 @@ const R = await page.evaluate(() => {
   cast('sm_ring'); run(60); out.p1.ring = summonsOf(p).filter(s => s.kind === 'follower').length;
   cast('sm_awaken2'); for (let i = 0; i < 150; i++) run(1); const lam = summonsOf(p, 'sm_lamos')[0]; out.p1.lamos = !!lam; out.p1.lamSprite = !!(lam && lam.model && lam.model.S);
   const h5 = m5.hp; cast('sm_lamoseclipse'); run(150); out.p1.eclipse = h5 > m5.hp;
+  // 现版改动：桑德尔守护光环常驻给你减伤；受身蹲伏时海伊伦让召唤兽无敌；决斗场里精灵瞬移 / 死亡爆炸
+  dismissSummons(p); run(2); p.x = 400; p.y = 100; cast('sm_sandor'); run(40); out.guard = p.buffs.sm_guard ? p.buffs.sm_guard.taken : 0;
+  cast('sm_hilun'); run(30); cast('sm_frit'); run(30); p.techHold = true; run(30); const fri = summonsOf(p, 'sm_frit')[0]; out.techInv = !!(fri && fri.invul > 0.5); p.techHold = false;
+  dismissSummons(p); run(2); game.pvp = true; cast('sm_lesser'); cast('sm_aqueris'); const wi = summonsOf(p, 'sm_wisp')[0], aq = summonsOf(p, 'sm_aqueris')[0];
+  out.pvpHp = !!(wi && wi.hp > 0 && wi.invul === 0); if (wi) { wi.warp(500, 100); wi.onHurt({ x: 300, y: 100, face: 1 }, {}); out.wispBlink = Math.abs(wi.x - 240) < 5; }
+  const dm = dummy(); dm.x = aq.x; dm.y = aq.y; const hq = dm.hp; dismissOne(aq, 'dead'); run(5); out.deathBlast = hq > dm.hp; game.pvp = false;
   return out;
 });
 const o = R;
@@ -83,6 +90,9 @@ report('一觉：卡西利亚斯出场、落地击倒身后的敌人、召唤过
 report('千鬼杀：卡西利亚斯放专属招、本体无敌、打出伤害', o.thousand.act === 'casThousand' && o.thousand.pinv && o.thousand.dealt, o.thousand);
 report('狱冥天地：解除时剑阵落下打出伤害', o.gokumei.gone && o.gokumei.dealt, o.gokumei);
 report('P1：海伊伦 / 支配之环 / 拉莫斯 / 逆月之蚀', o.p1.hilun === 1 && o.p1.hbuff && o.p1.ring >= 14 && o.p1.lamos && o.p1.lamSprite && o.p1.eclipse, o.p1);
+report('桑德尔：守护光环常驻减伤；卡西利亚斯召唤消耗 HP', o.guard < 0 && o.awaken.hpCost >= 0.03 && o.awaken.hpCost <= 0.11, { guard: o.guard, hpCost: o.awaken.hpCost });
+report('海伊伦：受身蹲伏时召唤兽无敌', o.techInv, o.techInv);
+report('决斗场：召唤兽有 HP、雷沃斯被打后瞬移到攻击者背后、上级精灵死亡爆炸', o.pvpHp && o.wispBlink && o.deathBlast, { hp: o.pvpHp, blink: o.wispBlink, blast: o.deathBlast });
 const errs = logs.filter(l => /error|Error/.test(l)); report('无报错', errs.length === 0, errs.slice(0, 3));
 await browser.close();
 console.log(fail ? `${fail} 项失败` : '全部通过'); process.exit(fail ? 1 : 0);

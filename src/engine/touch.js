@@ -75,6 +75,12 @@ const touch = {
       }
       this.btns.push({ id, el: b, ang, r, d }); el.appendChild(b);
     }
+    // ---- 状态键：没放进技能栏的 Buff（方向 + 空格那类）/ 受击技能，一点就放（手机上按不了组合键）----
+    this.buffBtns = [0, 1, 2, 3].map(i => {
+      const b = face(h('div', { class: 'tbtn sk tbuff', 'data-id': 'buff' + i }));
+      bind(b, 'buffcol', () => { if (b._id) this.castQ = b._id; }, null);
+      el.appendChild(b); return b;
+    });
     // ---- 左上一列：菜单 / 药水 ----
     this.col = [['菜单', '', () => uiKey('menu')], ['物品', '', () => uiKey('inv')], ['技能', '', () => uiKey('skills')], ['任务', '', () => uiKey('quests')], ['HP', 'pot hp', ...keyOf('i0')], ['MP', 'pot mp', ...keyOf('i1')]]
       .map(([t, cls, down, up]) => { const b = bind(h('div', { class: 'tbtn tcol ' + cls }, t), null, down, up); el.appendChild(b); return b; });
@@ -159,6 +165,8 @@ const touch = {
       const [ox, oy] = pos[id] || [0, 0], a = ang * Math.PI / 180, cx = 16 - Math.cos(a) * r + ox, cy = 17 + Math.sin(a) * r + oy;
       Object.assign(el.style, { width: d * U + 'px', height: d * U + 'px', bottom: sf.bottom + (cy - d / 2) * U + 'px', [side]: sf[side] + (cx - d / 2) * U + 'px', [other]: '' });
     }
+    const [bx, by] = pos.buffcol || [0, 0];
+    this.buffBtns.forEach((b, i) => { const d = 7.5, cx = 4 + bx, cy = 64 + i * 8.2 + by; Object.assign(b.style, { width: d * U + 'px', height: d * U + 'px', bottom: sf.bottom + (cy - d / 2) * U + 'px', [side]: sf[side] + (cx - d / 2) * U + 'px', [other]: '' }); });
     this.col.forEach((b, i) => Object.assign(b.style, { width: 8 * U + 'px', height: 8 * U + 'px', top: sf.top + (2.5 + i * 9.4 + (i >= 4 ? 2.5 : 0)) * U + 'px', [other]: sf[other] + 1.5 * U + 'px', [side]: '' }));
     this.zone.classList.toggle('swap', sw);
     const st = stage.getBoundingClientRect(), colR = sw ? 0 : sf.left + 9.5 * U;   // hud.js 的左上角状态条避开这一列按钮（逻辑坐标）
@@ -189,6 +197,7 @@ const touch = {
     const hide = !this.editing && (game.scene === 'title' || !game.player || menus.stack.length > 0);
     if (hide !== this.hid) { this.hid = hide; this.el.classList.toggle('hidden', hide); if (hide) this.releaseAll(); }
     for (let i = this.pulses.length - 1; i >= 0; i--) { const q = this.pulses[i]; if (--q.n <= 0) { if (!this.held.has(q.a)) delete input.virt[q.a]; this.pulses.splice(i, 1); } }
+    if (this.castQ) { const id = this.castQ; this.castQ = null; if (!this.editing && !hide && game.player) castSkill(game.player, id, true); }
     if (this.editing || hide) return;
     const s = this.stick, want = {};
     if (s) { if (s.dx > 0.38) want.right = 1; if (s.dx < -0.38) want.left = 1; if (s.dy > 0.45) want.down = 1; if (s.dy < -0.45) want.up = 1; }
@@ -207,6 +216,8 @@ const touch = {
     const bar = game.skillBar, aw = [];
     bar.forEach((id, i) => { if (id && SKILLS[id] && SKILLS[id].awaken) aw.push(i); });
     aw.sort((a, b) => tierOf(SKILLS[bar[b]]) - tierOf(SKILLS[bar[a]]) || a - b); this.awSlots = aw.slice(0, 2);
+    const ids = touchBuffSkills(p, bar);
+    this.buffBtns.forEach((b, i) => { const id = ids[i] || null; this.face(b, id, p); b.classList.toggle('hidden', !id && !this.editing); });
     for (const b of this.skillBtns) {
       const s = b._slot(); this.face(b, s == null ? null : bar[s], p);
       if (b.classList.contains('aw')) b.classList.toggle('hidden', s == null && !this.editing);
@@ -226,3 +237,15 @@ const touch = {
     if (b._st !== st) { if (b._st) b.classList.remove(b._st); if (st) b.classList.add(st); b._st = st; }
   },
 };
+
+// 状态键里放哪些技能：学会了、当前转职能用、不是被动 / 觉醒、没在技能栏里的 Buff 类（方向 + 空格、S.buff）和受击技能（S.whenHit），按学习等级排，最多 4 个
+function touchBuffSkills(p, bar) {
+  const C = CLASSES[p.cls], on = new Set(bar.filter(Boolean)), out = [], seen = new Set();
+  const cand = [...(C.cmds || []).filter(c => c[2] === 'buff').map(c => c[1]), ...Object.keys(SKILLS).filter(id => SKILLS[id].cls === p.cls && (SKILLS[id].buff || SKILLS[id].whenHit))];
+  for (const id of cand) {
+    const S = SKILLS[id]; if (!S || seen.has(id)) continue; seen.add(id);
+    if (S.passive || S.awaken || on.has(id) || (S.job && S.job !== game.job) || !(skillLvOf(p, id) > 0) || !(S.act || S.instant)) continue;
+    out.push(id);
+  }
+  return out.sort((a, b) => (SKILLS[a].lvReq || 0) - (SKILLS[b].lvReq || 0)).slice(0, 4);
+}

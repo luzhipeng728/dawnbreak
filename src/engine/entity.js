@@ -106,7 +106,7 @@ class Ent {
           if (C.clip) { this.play(a.clip || a.name, true); this.animT = C.at; }
           if (C.onRelease) C.onRelease(this, a.chargeK);
         }
-      } else this.actT += dt * spd;
+      } else { this.actT += dt * spd; if (a.recMul && this.actT > a.counterEnd) this.actT += dt * spd * (1 / a.recMul - 1); }   // recMul：最后一个判定结束后的后摇按 recMul 倍时长（暴走 0.5 = 后摇减半）
       if (this.act === a) {
         if (a.move) for (const m of a.move) if (this.actT >= m[0] && this.actT < m[1]) { this.vx = m[2] * this.face * spd; if (m[3] !== undefined) this.vz = m[3]; if (m[4] !== undefined) this.vy = m[4]; }
         if (a.update) a.update(this, dt);

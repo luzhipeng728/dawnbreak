@@ -137,7 +137,7 @@ function applyHit(a, t, h, opt = {}) {
   const pvp = isPvp(a, t);
   // ---- 命中 / 回避 ----
   if (!h.sure && !h.grab) {
-    const miss = clamp((t.evade || 0) - (a.hitRate || 0), 0, 0.6);
+    const miss = clamp((t.evade || 0) + buffVal(t, 'evade') - (a.hitRate || 0), 0, 0.6);
     if (miss > 0 && Math.random() < miss) { fxText('MISS', t.x, t.y, t.z, { col: '#d8d8d8', size: 12, dur: 0.5 }); return false; }
   }
   const counter = !h.noCounterBonus && isCounter(t);

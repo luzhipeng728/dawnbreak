@@ -28,7 +28,10 @@ const SWORD_ACTS_BZ = { ...SWORD_ACTS,
 };
 // 狂暴之力中：连突刺、跳攻、跑攻、空之连刃变为独立攻击
 for (const k of ['dash', 'dash2', 'jatk', 'jatk2', 'jatk3']) SWORD_ACTS_BZ[k] = { ...SWORD_ACTS[k], type: 'indep' };
-SWORD_ACT_PICK.push(p => jobOf(p) === 'berserker' && bzFrenzy(p) ? SWORD_ACTS_BZ : null);
+// 暴走：狂暴普攻后摇减半（recMul 0.5，引擎在最后一个判定结束后按倍率缩短动作）
+const SWORD_ACTS_BZR = { ...SWORD_ACTS_BZ };
+for (const k of ['atk1', 'atk2', 'atk3', 'atk4']) SWORD_ACTS_BZR[k] = { ...SWORD_ACTS_BZ[k], recMul: 0.5 };
+SWORD_ACT_PICK.push(p => jobOf(p) === 'berserker' && bzFrenzy(p) ? (p.buffs.rampage ? SWORD_ACTS_BZR : SWORD_ACTS_BZ) : null);
 
 /* ---- 被动 ---- */
 defSkill('bz_vigor', { name: '血气旺盛', cls: 'sword', job: 'berserker', lvReq: 15, maxLv: 1, mp: 0, cd: 0, type: 'indep', passive: true, col: '#b01020',
@@ -36,8 +39,8 @@ defSkill('bz_vigor', { name: '血气旺盛', cls: 'sword', job: 'berserker', lvR
 defSkill('bz_madness', { name: '狂暴血气', cls: 'sword', job: 'berserker', lvReq: 15, maxLv: 1, mp: 0, cd: 0, type: 'indep', passive: true, col: '#d0303a',
   desc: '【被动】狂暴之力状态下，普攻只在第 1、2 刀之间循环（不再出第 3、4 刀），适合持续乱砍。' });
 defSkill('bloodwake', { name: '力量唤醒', cls: 'sword', job: 'berserker', lvReq: 15, mp: 0, cd: 0, type: 'indep', passive: true, col: '#a01020',
-  desc: '【被动】技能攻击力、攻击速度、移动速度提高；HP 低于 70% / 60% / 50% 时分三档额外提高攻击速度和移动速度。',
-  infoExtra: lv => [['技能攻击力', '+' + pct(0.03 + 0.006 * lv)], ['攻速 / 移速', `+${pct(0.03)}，低血每档再 +${pct(0.04)}`]] });
+  desc: '【被动】技能攻击力、攻击速度、移动速度提高；HP 低于 70% / 60% / 50% 时分三档额外提高攻击速度、移动速度和回避率。',
+  infoExtra: lv => [['技能攻击力', '+' + pct(0.03 + 0.006 * lv)], ['攻速 / 移速', `+${pct(0.03)}，低血每档再 +${pct(0.04)}`], ['回避率', '低血每档 +4%']] });
 
 // 狂暴之力 / 暴走的全身血焰、血色双刀、红眼、鬼手滴血：转职外观（content/avatar/job_looks.js 的 berserker，渲染 models/job_fx.js）
 /* ---- 狂暴之力：开关 BUFF（再按一次解除）。施放时和之后每 10 秒扣固定 HP（扣到 1 也不会自动关）；
@@ -49,7 +52,7 @@ defSkill('frenzy', { name: '狂暴之力', cls: 'sword', job: 'berserker', lvReq
   act: (lv) => ({ name: 'frenzy', clip: 'roar', dur: 0.5, noCounter: true, superArmor: true,
     onStart: e => {
       if (toggleBuff(e, 'frenzy', 9999, { atk: 0.1 + 0.01 * lv, stagger: 100, lv, hl: '#ff3040' })) { const [c0] = frenzyCost(lv); e.hp = Math.max(1, e.hp - c0); e.buffs.frenzy.tick = 10;
-        sfx.buff(); sfx.boom(0.5); fxAura(e, '#ff2a3a', 1.2); fxBurst(e.x, e.y, e.z + 60, 160, '#ff3040'); fxText('狂暴之力 开启', e.x, e.y, e.z + 20, { col: '#ff6a6a', size: 13 });
+        sfx.buff(); sfx.boom(0.5); fxAura(e, '#ff2a3a', 1.2); fxBurst(e.x, e.y, e.z + 60, 110, '#ff5a2a'); fxText('狂暴之力 开启', e.x, e.y, e.z + 20, { col: '#ff6a6a', size: 13 });
         const F = isHuman(e) && save.data && (save.data.flags ??= {}); if (F && !F.tip_frenzy) { F.tip_frenzy = true; toastMsg(`狂暴之力开启：普攻变二刀流，狂气斩 / 暴怒狂斩 / 嗜魂封魔斩 / 爆发之刃 / 崩山裂地斩可以用了；开启期间每 10 秒消耗 HP。再按一次（${swordHowTo(e, 'frenzy')}）关闭。`, '#ff8a8a', 'log'); } }
       else fxText('狂暴之力 关闭', e.x, e.y, e.z + 20, { col: '#cccccc', size: 12 });
       if (!(e.st === 'act' && e.act && e.act.basic)) e.acts = swordActs(e);
@@ -75,7 +78,7 @@ function bzScratch(lv, p, n) {
 /* ---- 暴走：持续时间无限。技能攻击力、攻速、移速、僵直大幅提高；代价是防御下降（受到的伤害 +10%）；
    爆发之刃、嗜魂封魔斩、崩山裂地斩冷却 −20%；十字刃、崩山击、狂暴普攻僵直更大、后摇更短 ---- */
 defSkill('rampage', { name: '暴走', cls: 'sword', job: 'berserker', lvReq: 17, mp: 40, cd: 5, type: 'indep', buff: true, col: '#d02a2a',
-  desc: '【BUFF · 持续时间无限】攻击力、攻击速度、移动速度、僵直大幅提高，但防御下降（受到的伤害增加 10%）。爆发之刃、嗜魂封魔斩、崩山裂地斩冷却减少 20%；十字刃、崩山击、狂暴之力普攻的僵直更大、后摇更短。',
+  desc: '【BUFF · 持续时间无限】攻击力、攻击速度、移动速度、僵直大幅提高，但防御下降（受到的伤害增加 10%）。爆发之刃、嗜魂封魔斩、崩山裂地斩冷却减少 20%；十字刃、崩山击、狂暴之力普攻的僵直更大、后摇减半；免疫异常状态。',
   ai: { kind: 'buff' }, infoExtra: lv => [['攻击力', '+' + pct(0.08 + 0.01 * lv)], ['攻速 / 移速', '+' + pct(0.1 + 0.005 * lv)]],
   act: (lv) => ({ name: 'rampage', clip: 'roar', dur: 0.5, noCounter: true, superArmor: true,
     onStart: e => { e.buffs.rampage = { t: 9999, atk: 0.08 + 0.01 * lv, aspd: 0.1 + 0.005 * lv, mspd: 0.1 + 0.005 * lv, stagger: 150, taken: 0.1 }; sfx.buff(); fxAura(e, '#ff5a3a', 1); } }) });
@@ -134,7 +137,7 @@ defSkill('bz_twister', { name: '嗜魂封魔斩', cls: 'sword', job: 'berserker'
   desc: '【狂暴之力中】举剑卷起血色旋风，把前方的敌人快速吸到身前，再用血剑强力上斩把它们击飞。抓不动的敌人不受吸引。', pow: lv => skillDmg(7.5, 0.75, lv), ai: { kind: 'aoe', r: [0, 330], dy: 50 },
   act: (lv) => ({ name: 'bz_twister', clip: 'twister', dur: 1.2, superArmor: true, noCounter: true,
     update: (e, dt) => { if (e.actT < 0.7) { const cx = e.x + e.face * 70; for (const t of ents) if (hittable(e, t) && !t.boss && (t.x - e.x) * e.face > -40 && Math.abs(t.x - e.x) < 380 && Math.abs(t.y - e.y) < 90) { t.x = damp(t.x, cx, 6, dt); t.y = damp(t.y, e.y, 6, dt); }
-      if (Math.random() < 0.5) fxSpr('vortex', e.x + e.face * 90, e.y, e.z + 60, { w: 210, dur: 0.25, alpha: 0.5, col: '#ff3a4a' }); } },
+      if (Math.random() < 0.5) addFx({ x: e.x + e.face * 90, y: e.y + 1, z: e.z + 60, dur: 0.25, draw(c) { drawSpr(c, tintImg('fx/vortex', 78, 1, 1), sx(this.x), sy(this.y, this.z), 210, 0, { rot: this.t * 8, alpha: 0.55 }); } }); } },
     hits: [HB(0.1, 0.7, [-10, 150, 44, 0, 130], skillDmg(0.4, 0.04, lv), { rep: 0.1, stun: 0.3, knock: 0, hs: 0.02, col: '#ff5a5a' })],
     events: [evAt(0.05, e => sfx.charge()), evAt(0.75, e => { e.play('bladeW', true); sfx.swing(true); sfx.iai(); cam.shake = Math.max(cam.shake, 6);
       fxSlashOn(e, { col: '#ff3040', a0: 1.4, a1: -1.9, r: 120, w: 26, off: [10, 50], heavy: true }); fxSpr('bloodwave', e.x + e.face * 80, e.y, 0, { h: 200, dur: 0.4, ay: 1, flip: e.face < 0 });
@@ -179,6 +182,7 @@ SWORD_HOOKS.beforeHurt.push((p, a, h) => {
   if (B.shield) { fxSpr('bloodpillar', p.x, p.y, 0, { h: 90, dur: 0.2, ay: 1, alpha: 0.5 }); return { block: true }; }   // 血盾：吸收全部伤害
   return { minHp: Math.ceil(p.hpMax * 0.5) };
 });
+SWORD_HOOKS.beforeHurt.push(p => (p.buffs.rampage && jobOf(p) === 'berserker' ? { noStatus: true } : null));   // 暴走：异常抗性 +200（几乎免疫异常状态）
 SWORD_HOOKS.onHurt.push(p => {
   const B = p.buffs.bz_surge; if (!B || B.shield || jobOf(p) !== 'berserker' || p.hp > Math.ceil(p.hpMax * 0.5)) return;
   B.shield = true; B.t = 3; p.superArmor = Math.max(p.superArmor, 0.3); sfx.boom(0.6); fxAura(p, '#ff2a3a', 1.2); fxText('血盾', p.x, p.y, p.z + 24, { col: '#ff4a5a', size: 13 });
@@ -197,7 +201,7 @@ CLASSES.sword.passives.push(p => {
   if (F && jobOf(p) === 'berserker') { F.tick = (F.tick ?? 10) - 0.25; if (F.tick <= 0) { F.tick = 10; const c = frenzyCost(F.lv || 1)[1]; p.hp = Math.max(1, p.hp - c); } p.slashCol = '#ff5a5a'; }
   else p.slashCol = CLASSES.sword.slashCol || '#8fd8ff';
   const lv = jobOf(p) === 'berserker' ? skLv(p, 'bloodwake') : 0, f = p.hp / p.hpMax, st = !lv ? 0 : f <= 0.5 ? 3 : f <= 0.6 ? 2 : f <= 0.7 ? 1 : 0;
-  setPassive(p, 'bloodwake', lv > 0, { dmg: 0.03 + 0.006 * lv, aspd: 0.03 + 0.04 * st, mspd: 0.03 + 0.04 * st });
+  setPassive(p, 'bloodwake', lv > 0, { dmg: 0.03 + 0.006 * lv, aspd: 0.03 + 0.04 * st, mspd: 0.03 + 0.04 * st, evade: 0.04 * st });
 });
 // 命中：狂暴普攻 / 转职技能 / 崩山击 / 十字刃附带出血（血气旺盛）；狂暴中击杀出血的敌人回 HP；钝器普攻几率眩晕（原作钝器特性）
 SWORD_HOOKS.onHit.push((p, t, h, dmg, act) => {
@@ -332,7 +336,7 @@ defSkill('bz_boom', { name: '浴血之怒', cls: 'sword', job: 'berserker', lvRe
   act: (lv) => ({ name: 'bz_boom', clip: 'outrage', dur: 0.9, superArmor: true, noCounter: true,
     onStart: e => { e.hp = Math.max(1, e.hp - Math.round(e.hp * 0.01)); sfx.charge(); },
     update: e => { e.vx = e.vy = 0; },
-    events: [evAt(0.3, e => { cam.shake = 13; cam.flash = 0.2; cam.flashCol = '#ff5a5a'; sfx.boom(1.4); fxShock(e.x, e.y, 400, '#ff2030'); fxBurst(e.x, e.y, 50, 420, '#ff2a3a');
+    events: [evAt(0.3, e => { cam.shake = 13; cam.flash = 0.08; cam.flashCol = '#ff2a2a'; sfx.boom(1.4); fxShock(e.x, e.y, 400, '#ff2030'); fxBurst(e.x, e.y, 50, 420, '#ff2a3a');
       for (let i = 0; i < 10; i++) { const a = i * TAU / 10; fxSpr('bloodpillar', e.x + Math.cos(a) * 240, e.y + Math.sin(a) * 80, 0, { h: 240, dur: 0.5, ay: 1, grow: [0.3, 1.05] }); }
       blast(e, e.x, e.y, 300, { dmg: skillDmg(14, 1.4, lv), launch: 520, knock: 180, hs: 0.16, big: 2, col: '#ff5a5a', downHit: true, radial: true }, { zMax: 260, ...bzBleedArea(e) }); })] }) });
 
@@ -381,22 +385,33 @@ defSkill('bz_awaken2', { name: '血魔·弑天', cls: 'sword', job: 'berserker',
 
 /* ---- 血魔极道：灭世（三觉）：压制卡赞暴走、血气凝成铠甲 → 追踪最强的敌人连斩 5 次 → 砸进地面插入血剑 → 拔剑喷发血气。无敌 ---- */
 defSkill('bz_awaken3', { name: '血魔极道：灭世', cls: 'sword', job: 'berserker', lvReq: 30, maxLv: 3, mp: 250, cd: 135, pvp: 0.45, type: 'indep', awaken: true, col: '#ff0010',
-  desc: '【三觉】压制卡赞的暴走，血气凝成铠甲覆盖全身：追踪最强的敌人连斩 5 次（会跟着目标移动），随后砸进地面插入血剑，拔剑时血气喷发波及周围所有敌人。全程无敌。与魔狱血刹共享冷却。',
+  desc: '【三觉 · 约 6 秒】压制卡赞的暴走，血气一圈圈涌上来凝成铠甲覆盖全身：追踪最强的敌人连斩 5 次（会跟着目标移动），随后跃起把血剑砸进地面，拔剑时血气喷发波及周围所有敌人。全程无敌。与魔狱血刹共享冷却。',
   pow: lv => skillDmg(48, 12, lv), ai: { kind: 'awaken', r: [0, 400], dy: 90 },
-  act: (lv) => ({ name: 'bz_awaken3', clip: 'roar', dur: 3.4, superArmor: true, noCounter: true, invul: [0, 3.4],
+  act: (lv) => ({ name: 'bz_awaken3', clip: 'roar', dur: 4.6, superArmor: true, noCounter: true, invul: [0, 4.6],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '血魔极道：灭世', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.cool.bz_awaken = Math.max(e.cool.bz_awaken || 0, e.cool.bz_awaken3 || 0); },
     update: e => { if (e.actT > 0.9) { e.drawOpts = { glow: 0.8 }; if (Math.random() < 0.4) fxCharge(e, '#ff2030', 1); } },
-    onEnd: e => { e.drawOpts = {}; },
-    events: [evAt(0.9, e => { fxAura(e, '#ff1020', 1.5); fxBurst(e.x, e.y, e.z + 60, 220, '#ff2030'); sfx.boom(0.8); }),
-      ...[0, 1, 2, 3, 4].map(i => evAt(1.1 + i * 0.22, e => { const val = t => (t.boss ? 2e12 : t.elite ? 1e12 : 0) + t.hp, L = ents.filter(t => hittable(e, t) && Math.abs(t.x - e.x) < 700);
+    onEnd: e => { e.drawOpts = {}; if (e.buffs) delete e.buffs.bz_armor; },
+    events: [
+      // 0.9~1.6：压制卡赞的暴走，血气一圈圈涌上来凝成铠甲（血铠外观走 job_looks 的 bz_armor 状态）
+      evAt(0.9, e => { e.buffs.bz_armor = { t: 9999 }; fxAura(e, '#ff1020', 1.5); fxBurst(e.x, e.y, e.z + 60, 220, '#ff2030'); sfx.boom(0.8); }),
+      ...[0, 1, 2].map(i => evAt(1.0 + i * 0.15, e => { fxShock(e.x, e.y, 120 + i * 60, '#ff2030'); fxBurst(e.x, e.y, e.z + 30 + i * 30, 90 + i * 30, '#ff3040'); sfx.charge(); })),
+      evAt(1.4, e => { cam.shake = Math.max(cam.shake, 6); sfx.boom(1); fxSpr('bloodpillar', e.x, e.y, 0, { h: 200, dur: 0.5, ay: 1, grow: [0.4, 1] }); }),
+      // 1.5~3.0：锁定最强的敌人，五连斩（每 0.36 秒一斩）
+      ...[0, 1, 2, 3, 4].map(i => evAt(1.5 + i * 0.36, e => { const val = t => (t.boss ? 2e12 : t.elite ? 1e12 : 0) + t.hp, L = ents.filter(t => hittable(e, t) && Math.abs(t.x - e.x) < 700);
         const t = L.sort((a, b) => val(b) - val(a))[0]; if (t) { const side = i % 2 ? 1 : -1; e.x = t.x - side * 60; e.y = t.y; e.face = side; }
         e.play(['dual1', 'dual3', 'dual2', 'dual4', 'bladeW'][i], true); fxAfterimage(e, '#ff2030'); sfx.iai(); cam.shake = Math.max(cam.shake, 7);
         fxSlashOn(e, { col: '#ff2030', a0: i % 2 ? 1.0 : -2.6, a1: i % 2 ? -2.6 : 1.0, r: 130, w: 28, off: [10, 56], heavy: true });
         instantHit(e, { box: [-40, 180, 50, 0, 180], dmg: skillDmg(5, 1.3, lv), stun: 1.0, knock: 10, hs: 0.1, big: 1.8, sure: true, col: '#ff5a5a', downHit: true }); })),
-      evAt(2.35, e => { e.play('bzAwk', true); e.animT = 1.72; cam.shake = 14; sfx.boom(1.4); fxShock(e.x, e.y, 260, '#ff2030'); fxSpr(bzImg('bz_bloodsword', 'swordrain', '#ff3040'), e.x + e.face * 60, e.y, 0, { h: 260, dur: 0.9, ay: 1, grow: [1.3, 1] }); }),
-      evAt(2.85, e => { cam.flash = 0.4; cam.flashCol = '#ff3030'; cam.shake = 18; sfx.boom(1.6); sfx.iai(); fxBurst(e.x, e.y, 60, 420, '#ff1020');
+      // 3.1~3.8：跃起，把血剑砸进地面（插剑）
+      evAt(3.1, e => { e.play('bzAwk', true); e.animT = 0; e.vz = 520; e.z = Math.max(e.z, 1); sfx.jump(); fxSpr('bloodpillar', e.x, e.y, 0, { h: 200, dur: 0.4, ay: 1, alpha: 0.7 }); }),
+      evAt(3.5, e => { e.vz = -1300; e.animT = 1.72; }),
+      evAt(3.72, e => { e.z = 0; e.vz = 0; e.play('bzAwk', true); e.animT = 1.72; cam.shake = 14; sfx.boom(1.4); fxShock(e.x, e.y, 260, '#ff2030'); fxDust(e.x, e.y, 12, 44, '#6a1a1a');
+        fxSpr(bzImg('bz_bloodsword', 'swordrain', '#ff3040'), e.x + e.face * 60, e.y, 0, { h: 260, dur: 1.2, ay: 1, grow: [1.3, 1] }); }),
+      // 4.2：拔剑，血气喷发波及周围所有敌人
+      evAt(4.2, e => { cam.flash = 0.4; cam.flashCol = '#ff3030'; cam.shake = 18; sfx.boom(1.6); sfx.iai(); fxBurst(e.x, e.y, 60, 420, '#ff1020'); fxShock(e.x, e.y, 520, '#ff2030');
         for (let i = 0; i < 12; i++) fxSpr('bloodpillar', e.x + rnd(-320, 320), e.y + rnd(-50, 50), 0, { h: 280, dur: 0.7, ay: 1, grow: [0.3, 1.05] });
-        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < WW * 0.6) applyHit(e, t, { dmg: skillDmg(26, 7, lv), launch: 560, knock: 200, hs: 0.24, big: 2.4, critBonus: 0.3, sure: true, downHit: true, col: '#ff5a5a' }, { proj: true }); })] }) });
+        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - e.x) < WW * 0.6) applyHit(e, t, { dmg: skillDmg(26, 7, lv), launch: 560, knock: 200, hs: 0.24, big: 2.4, critBonus: 0.3, sure: true, downHit: true, col: '#ff5a5a' }, { proj: true }); }),
+      evAt(4.3, e => { if (e.buffs) delete e.buffs.bz_armor; fxAura(e, '#ff2030', 0.8); })] }) });
 { const A = SKILLS.bz_awaken, a0 = A.act; A.act = (lv, p) => { const a = a0(lv, p); if (p && p.cool) p.cool.bz_awaken3 = Math.max(p.cool.bz_awaken3 || 0, p.cool.bz_awaken || 0); return a; }; }
 // 血剑还在背上时放三觉：用三觉代替魔狱血刹的收尾（官方：两者共享冷却，三觉可以替代血剑劈下）；背上的血剑被拔出来用掉
 swordAwk3Finish('bz_awaken3', p => summonsOf(p, 'bz_bloodsword').length > 0, e => dismissSummons(e, 'bz_bloodsword', 'cmd'));
@@ -436,5 +451,7 @@ function swordFinalize() {
   }
 }
 // 官方可用普攻取消后摇：十字刃（狂战士）、三觉
-swordAtkCancel('cross', 0.3, 'berserker'); swordAtkCancel('bz_awaken3', 3.0);
+swordAtkCancel('cross', 0.3, 'berserker'); swordAtkCancel('bz_awaken3', 4.3);
+// 暴走：崩山击、十字刃后摇减半
+for (const id of ['slam', 'cross']) { const S = SKILLS[id], a0 = S.act; S.act = (lv, p) => { const a = a0(lv, p); if (a && p && jobOf(p) === 'berserker' && p.buffs.rampage) a.recMul = 0.5; return a; }; }
 swordFinalize();

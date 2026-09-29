@@ -82,6 +82,7 @@ const JOB_LOOKS = {
     states: [
       { id: 'burn', name: '狂暴之力（+ 暴走）', on: e => e.buffs ? (e.buffs.frenzy ? 1 : 0) + (e.buffs.rampage ? 1 : 0) : 0, demo: jlDemo('frenzy'), fx: { burn: { col: '#ff2a2a', n: 8, h: 34 } } },
       { id: 'frenzy', name: '狂暴之力（血色双刀）', on: jlBuff('frenzy'), demo: jlDemo('frenzy'), fx: { wtint: '#ff2030' } },
+      { id: 'armor', name: '血魔极道：灭世（血铠）', on: jlBuff('bz_armor'), demo: jlDemo('bz_armor'), fx: { aura: { col: '#ff1020', a: 0.85, haze: 0.5, tint: 0.4, r: 3, pulse: 6 }, burn: { col: '#ff1a1a', n: 14, h: 44 }, wtint: { col: '#ff1020', a: 0.9 } } },
     ],
   },
   // 阿修罗：X 形眼罩下透出波动之光、脚下一圈圈扩散的波动；杀意波动（无尽波动）= 大范围波动 + 全身蓝紫波动之焰；波动刻印 = 身边绕着波动印（几个印就几颗）

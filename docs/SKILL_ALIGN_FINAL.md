@@ -22,3 +22,8 @@
 - 代码注释只放行尾或单独一行（行中间的 `//` 吞过好几次代码）。
 - 提交用 Conventional Commits，结尾写 “Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>”。
 - 汇报约 8 行中文：提交号、检查 / 改动了多少技能、改动最大的 5 个（改前 → 改后）、没对上的和原因、连拍图路径。汇报完就停。
+
+## 补充（主线程，2026-09-30）：不能只凭文字说“没有不一致”
+- wiki.dfo.world 的 WebFetch 常返回 403：改用 `curl -sL -A "Mozilla/5.0" <URL>`，或镜像 wiki.dfo-world.com、en.namu.wiki、灰机 wiki（dnfcn.huijiwiki.com）、dnf.qq.com。
+- 技能页里有 YouTube 演示视频 ID：截图 https://i.ytimg.com/vi/<id>/hq1.jpg、hq2.jpg、hq3.jpg（3 个瞬间），本机有 ffmpeg（/opt/homebrew/bin/ffmpeg）。把官方帧和我们 skillshots 的帧并排看，比较特效的形状 / 大小 / 颜色 / 节奏。
+- 汇报里必须写清每个技能是拿什么比的（文字 / 视频帧）；“没发现不一致”不算完成，除非逐个技能都有比对依据。

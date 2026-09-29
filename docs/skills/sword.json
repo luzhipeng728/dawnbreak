@@ -1502,7 +1502,7 @@
    "cd": 6
   },
   "gb_chain": {
-   "official": "鬼连击（剑术）：快速向前 3 连斩；学了鬼连击：极再召出灵魂刀追加一记上挑（共 4 段）；CD 5s",
+   "official": "鬼连击（剑术）：快速向前 3 连斩；学了鬼连击：极再召出灵魂刀追加 3 段交叉上斩（wiki 极页 “Upward Cross Slash x3”，共 6 段）；CD 5s",
    "src": "https://wiki.dfo.world/view/Phantom_Slash",
    "en": "Phantom Slash",
    "conf": "高",
@@ -1688,8 +1688,8 @@
    "conf": "高",
    "summon": true,
    "hits": [
-    4,
-    12
+    3,
+    3
    ],
    "cd": 40
   },
@@ -1736,7 +1736,7 @@
    "en": "Spectral Genocide",
    "conf": "高",
    "hits": [
-    10,
+    18,
     20
    ],
    "cd": 290,

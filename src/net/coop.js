@@ -249,7 +249,8 @@ const coop = {
   // 队员打中了怪（队员客户端算好的伤害和受击反应）→ 主机扣血、做受击反应
   remoteHit(uid, r) {
     const m = this.puppets.get(r.id), g = this.mates.get(uid);
-    if (!m || m.dead || !g || !ents.includes(m)) { const S = this.stats; S.hitDrop = S.hitDrop || {}; const k = !m ? 'none' : m.dead ? 'dead' : !g ? 'nomate' : 'gone'; S.hitDrop[k] = (S.hitDrop[k] || 0) + 1; return; }
+    // 主机上长期无敌的机关（路障 / 召唤柱 / 罪恶之眼 / 深渊门锁，invul = 1e9）：队员那边的傀儡看着能打，伤害不算
+    if (!m || m.dead || !g || !ents.includes(m) || m.invul > 5) { const S = this.stats; S.hitDrop = S.hitDrop || {}; const k = !m ? 'none' : m.dead ? 'dead' : !g ? 'nomate' : m.invul > 5 ? 'invul' : 'gone'; S.hitDrop[k] = (S.hitDrop[k] || 0) + 1; return; }
     const em = typeof msElemMulFor === 'function' && m.msMul && m.msMul.element ? msElemMulFor(m, g) / m.msMul.element : 1;   // 属性法阵：按队员自己站的位置算（m.msMul.element 是主机本人的）
     const h = coopCleanHit(r.h), tm = clamp(+r.tm || 1, 0.05, 20), dmg = clamp(Math.round((+r.dmg || 0) * coopTakenMul(m) * em / tm), 1, 5e7); this.stats.remoteHits++;
     m.hp -= dmg; m.lastDmg = dmg; m.lastHitBy = g;

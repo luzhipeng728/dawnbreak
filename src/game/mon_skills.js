@@ -30,6 +30,11 @@ function msArea(e, x, y, r, p, r0 = 0) {
 // 组队同步（net/coop_mech.js 接管 msNet）：主机上机制启动 / 结束 / 关键时刻（一轮落石、护盾惩罚、破招、属性切换……）调 msNetEv，
 // 队员那边按各机制的 mirror 重放同样的预警、文字和攻击（打的是队员自己，谁挨打谁结算）；结果（护盾破没破、水晶、无敌解除）只认主机
 let msNet = null, msNetSrc = null, msNetEnt = () => null;   // msNetSrc：正在跑哪个机制的攻击（队员统计“被机制打中”用）；msNetEnt(nid)：队员这边按编号找傀儡
+// 一次性事件的队员重放（领主钩子以外的：房间机关的自爆、倒计时……）：主机 msNetEv(怪, null, 'hook', { h: 名字, … })，队员调 MS_MIRROR[名字](傀儡, d)
+const MS_MIRROR = {};
+// 跟着领主画的常驻特效（护盾泡泡、属性光圈、连线）：组队队员那边领主藏起来再出来时傀儡是重建的，按编号找现在的傀儡
+const msLive = m => (m && m.puppet && m.nid && msNetEnt(m.nid)) || m;
+const msShown = e => !e.remove && ents.includes(e);   // 藏起来（主机 msHide / 队员那边傀儡已移除）的时候不画
 const msNetEv = (m, st, ev, d) => { if (msNet && m && m.nid && !m.puppet) msNet(m, st, ev, d); };
 const msSelf = () => game.realPlayer || game.player;   // 本机玩家（组队主机跑怪物 AI 时 game.player 临时换成了 AI 的目标，见 net/coop.js hostMonster）
 // 真实伤害（按最大 HP 的比例）：安全区机制没站对位置时用
@@ -459,7 +464,7 @@ defineBossMech('shield', { defaults: { hp: 0.06, hits: 0, dur: 0, punish: 'heal'
   hud(c, m, st, x, y, w) { msBar(c, x, y, w, st.hp / st.max, st.p.col, '护盾'); return 16; } });
 function msShieldFx(m, st, p) {
   if (p.say) msSay(m, p.say, p.col, 14);
-  addFx({ x: m.x, y: m.y + 0.5, z: 0, dur: 1e9, st, draw(c) { if (this.st.done || m.dead) { this.t = this.dur; return; } const H = m.h * (m.scale || 1), X = sx(m.x), Y = sy(m.y, m.z), k = this.st.hp / this.st.max;
+  addFx({ x: m.x, y: m.y + 0.5, z: 0, dur: 1e9, st, update() { const e = msLive(m); this.x = e.x; this.y = e.y + 0.5; }, draw(c) { const e = msLive(m); if (this.st.done || e.dead) { this.t = this.dur; return; } if (!msShown(e)) return; const H = e.h * (e.scale || 1), X = sx(e.x), Y = sy(e.y, e.z), k = this.st.hp / this.st.max;
     c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.18 + 0.2 * k; c.fillStyle = p.col; c.beginPath(); c.ellipse(X, Y - H * 0.5, H * 0.5, H * 0.66, 0, 0, TAU); c.fill(); c.globalAlpha = 0.6; c.strokeStyle = p.col; c.lineWidth = 2; c.stroke(); c.restore(); } });
 }
 function msShieldPunish(m, p) { if (p.punish === 'heal') msSay(m, '护盾吸收完毕，回复了体力', p.col); else skyNova(m, 200, 1.2, p.col, { dmg: 1.6 }); }
@@ -489,7 +494,7 @@ function msSafezoneFx(m, st, p) {
       c.globalCompositeOperation = 'lighter';
       const circ = (x, y, r) => { const X = sx(x), Y = sy(y, 0); c.fillStyle = shade(p.safeCol, 0, 0.35); c.beginPath(); c.ellipse(X, Y, r, r * GR, 0, 0, TAU); c.fill(); c.strokeStyle = p.safeCol; c.lineWidth = 3; c.stroke(); };
       if (p.mode === 'zone') for (const z of this.st.zones) circ(z.x, z.y, p.r);
-      else if (p.mode === 'near') circ(m.x, m.y, p.r);
+      else if (p.mode === 'near') { const e = msLive(m); circ(e.x, e.y, p.r); }
       c.restore();
       uiTextWorld(c, `${Math.max(0, this.dur - this.t).toFixed(1)}`, WW / 2, 120, p.safeCol);
     } });
@@ -589,10 +594,10 @@ function msElemGood(m, st, p) { st.good = msElemOk(st, p, msSelf()); (m.msMul ??
 // 某个玩家打这只怪时的属性倍率（组队主机按队员影子的位置算队员的命中）；没有属性切换机制时是 1
 function msElemMulFor(m, pl) { const st = m.msMechs && m.msMechs.find(s => s.id === 'element' && !s.done); return st ? (msElemOk(st, st.p, pl) ? 1 : st.p.mul) : 1; }
 function msElemFx(m, st, p) {
-    addFx({ x: 0, y: -1, z: 0, dur: 1e9, st, draw(c) { if (this.st.done || m.dead) { this.t = this.dur; return; }
+    addFx({ x: 0, y: -1, z: 0, dur: 1e9, st, draw(c) { const e = msLive(m); if (this.st.done || e.dead) { this.t = this.dur; return; }
       c.save(); c.globalCompositeOperation = 'lighter';
       for (const z of this.st.zones) { const X = sx(z.x), Y = sy(z.y, 0), col = MS_ELEM_COL[z.md] || '#ffffff'; c.globalAlpha = 0.22; c.fillStyle = col; c.beginPath(); c.ellipse(X, Y, p.r, p.r * GR, 0, 0, TAU); c.fill(); c.globalAlpha = 0.8; c.strokeStyle = col; c.lineWidth = 2; c.stroke(); }
-      const col = MS_ELEM_COL[p.modes[this.st.mode]], H = m.h * (m.scale || 1); c.globalAlpha = 0.35 + 0.15 * Math.sin(game.t * 6); c.strokeStyle = col; c.lineWidth = 3; c.beginPath(); c.ellipse(sx(m.x), sy(m.y, m.z) - H * 0.5, H * 0.45, H * 0.62, 0, 0, TAU); c.stroke();
+      const col = MS_ELEM_COL[p.modes[this.st.mode]], H = e.h * (e.scale || 1); c.globalAlpha = 0.35 + 0.15 * Math.sin(game.t * 6); c.strokeStyle = col; c.lineWidth = 3; if (msShown(e)) { c.beginPath(); c.ellipse(sx(e.x), sy(e.y, e.z) - H * 0.5, H * 0.45, H * 0.62, 0, 0, TAU); c.stroke(); }
       c.restore(); } });
 }
 const ELEM_NAME_MS = { light: '光', dark: '暗', fire: '火', ice: '冰' };
@@ -620,8 +625,8 @@ defineBossMech('tether', { defaults: { kind: '', mode: 'guard', mul: 0.35, share
   hud(c, m, st, x, y) { const p = st.p; uiText(p.mode === 'guard' ? `${st.pt.name}在守护：伤害 ×${p.mul}，先打倒${st.pt.name}` : p.mode === 'share' ? `伤害分担给${st.pt.name}` : `把${m.name}和${st.pt.name}分开`, x, y + 14, { size: 15, color: '#ffc8d8', sw: 3 }); return 18; } });
 function msTetherFx(m, st, p) {
   if (p.say) toastMsg(p.say, p.col);
-  addFx({ x: 0, y: -1, z: 0, dur: 1e9, st, draw(c) { const pt = this.st.pt; if (this.st.done || m.dead || !pt || pt.dead) { this.t = this.dur; return; }
-    const a = [sx(m.x), sy(m.y, m.z + m.h * 0.6)], b = [sx(pt.x), sy(pt.y, pt.z + pt.h * 0.6)], wob = Math.sin(game.t * 9) * 6;
+  addFx({ x: 0, y: -1, z: 0, dur: 1e9, st, draw(c) { const pt = this.st.pt, e = msLive(m); if (this.st.done || e.dead || !pt || pt.dead) { this.t = this.dur; return; } if (!msShown(e)) return;
+    const a = [sx(e.x), sy(e.y, e.z + e.h * 0.6)], b = [sx(pt.x), sy(pt.y, pt.z + pt.h * 0.6)], wob = Math.sin(game.t * 9) * 6;
     c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = p.col; c.globalAlpha = 0.7; c.lineWidth = 3; c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 30 + wob, b[0], b[1]); c.stroke(); c.restore(); } });
 }
 // 领主血条下面的机制提示（包一层 HUD.drawTarget，不改 ui/hud.js）

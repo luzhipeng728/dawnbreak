@@ -5,6 +5,8 @@
      破招槽 / 护盾值这类 HUD 数值变了才发（最快 200ms 一次）；队员重连时随 sync 补发还在进行的机制
    - 队员：按各机制的 mirror 重放同样的预警、文字、攻击（打的是队员自己，谁挨打谁结算）；
      结果（护盾破没破、水晶 / 小怪打完没有、无敌解除、属性切换）只认主机。本地的傀儡不启动机制（msMechStart 里挡掉）
+   - 领主钩子（REGION_HOOKS）/ 房间机关的一次性事件：{ k: 'mech', id, e: 'hook', d: { h, … } } → 队员调 REGION_HOOKS[钩子].mirror[h] 或 MS_MIRROR[h]；
+     钩子的本地计时（凝视、钻地、保护模式倒计时）每步调 mirror.tick
    ===================================================================== */
 COOP_RELIABLE.add('mech');
 Object.assign(coop, { mechs: new Map(), mechLast: new Map(), mechU: 0, mechStT: 0 });   // mechLast：最后一次见到的傀儡（领主藏起来以后傀儡会被移除，机制的攻击照样要有出手的人）
@@ -59,7 +61,7 @@ function coopMechTag(g, id) {
 function coopMechRecv(d) {
   if (d.e === 'all') { coopMechClear(); for (const o of d.l || []) coopMechRecv(o); return; }
   if (d.e === 'hook') {
-    const m = coop.puppets.get(d.id), D = d.d || {}, H = m && m.def_ && m.def_.hook && REGION_HOOKS[m.def_.hook], fn = H && H.mirror && H.mirror[D.h]; if (!fn || m.dead) return;
+    const m = coop.puppets.get(d.id), D = d.d || {}, H = m && m.def_ && m.def_.hook && REGION_HOOKS[m.def_.hook], fn = (H && H.mirror && H.mirror[D.h]) || MS_MIRROR[D.h]; if (!fn || !m || m.dead) return;
     const tgE = D.tg === coop.me() ? game.player : coop.mates.get(D.tg) || game.player, n0 = groundFx.length, s0 = msNetSrc; msNetSrc = 'hook:' + D.h;
     try { fn(m, { ...D, tgE }); } catch (e) { console.error('领主钩子镜像出错', D.h, e); } finally { msNetSrc = s0; }
     for (let i = n0; i < groundFx.length; i++) coopMechTag(groundFx[i], 'hook:' + D.h);
@@ -88,6 +90,15 @@ function coopMechTick(dt) {
     if (m && m.msMul) { let mul = 1; for (const k in m.msMul) mul *= m.msMul[k]; m.dmgTakenMul = mul; }
   }
 }
+// 队员：领主钩子的本地计时（REGION_HOOKS[名字].mirror.tick：凝视 / 钻地 / 保护模式倒计时给 HUD，凝视到点按自己的朝向判定自己）
+function coopHookTick(dt) {
+  for (const m of coop.puppets.values()) {
+    if (m.dead || !m.boss || !m.def_ || !m.def_.hook) continue;
+    const H = REGION_HOOKS[m.def_.hook], fn = H && H.mirror && H.mirror.tick; if (!fn) continue;
+    const s0 = msNetSrc; msNetSrc = 'hook:' + m.def_.hook;
+    try { fn(m, dt); } catch (e) { console.error('领主钩子镜像出错', m.def_.hook, e); } finally { msNetSrc = s0; }
+  }
+}
 // 接线：收消息、每步推进、换房间 / 击杀 / 结束时清理、傀儡重建时接回镜像、重连补发
 const _cmRelay = coop.onRelay;
 coop.onRelay = function (from, d) {
@@ -97,7 +108,7 @@ coop.onRelay = function (from, d) {
 const _cmTick = coop.tick;
 coop.tick = function () { _cmTick.call(this); if (this.role === 'host' && this.state === 'play' && net.connected) coopMechState(); };
 const _cmGround = updateGroundFx;
-updateGroundFx = function (dt) { _cmGround(dt); if (coop.role === 'guest' && coop.state === 'play' && coop.mechs.size) coopMechTick(dt); };
+updateGroundFx = function (dt) { _cmGround(dt); if (coop.role === 'guest' && coop.state === 'play') { if (coop.mechs.size) coopMechTick(dt); coopHookTick(dt); } };
 // 击杀：清掉这只怪的机制镜像；带死亡爆炸特性的怪（区域怪 onDeath: 'explode'，比如爆裂暗影）在傀儡的位置也炸一次（打的是自己）
 const _cmKill = coop.onKill;
 coop.onKill = function (d) {

@@ -88,6 +88,7 @@
 | 看玩家页面的逐帧报错（带堆栈，game.js `frameErr` 同一个错误每个页面报一次） | `sh tools/admin/admin.sh errs [条数]`；页面里查 `frameErrs` |
 | 转职头部总览（3 个基础职业 + 15 个转职：站立 / 跑动 / 攻击 / 时装，发色 + 头饰，约 30 秒） | `node test/jobvisuals.mjs heads`（`HEADS=blade,ranger` 只出几排）→ `test/shots/jobvisuals/heads.jpg`；头饰出图 `python3 art/tools/job_head_art.py gen <id> -j 3` → `prep`（docs/JOB_VISUALS.md §5） |
 | 组队深渊回归（2 页面满级狂战士 + 冷却 ×0.34，三种领主，测报错 / 没画出来的帧 / 卡死；HN/HA/HG 队员受击对照：逐招对比主机出招和队员重播、领主机制启动 / 地面预警两边一一对应（< 0.3 秒）、队员被普通怪 / 深渊领主 / 普通区域领主（GT-9600、虫王）和机制攻击打中） | `node test/mp_abyss.mjs [A,B,C,HN,HA,HG]`（全部约 4 分钟） |
+| 组队领主自定义机制（REGION_HOOKS / 房间机关：牛头械王落雷·罪恶之眼·保护模式、希洛克凝视 + 藏起来后护盾泡泡、伊凡房自爆·路障；钩子事件和地面预警两边一一对应 < 0.3 秒、队员被打中，约 2 分钟） | `node test/mp_bosses.mjs [MK,SR,RM]` |
 | 动作手感体检（走 / 跑 / 普攻逐步指标：帧停留、身体跳动、脚底打滑、相机甩动；`--pace` 测各种刷新率下的帧节奏） | `WEB=1 node test/animfeel.mjs <职业[:转职]> <名> [--pace] [--town] [--look=套装]`（约 6 秒）；改前 `B-<名>` / 改后 `A-<名>` 各跑一次后 `python3 test/animfeel_compare.py <名>` 出对比图（docs/ANIMATION.md） |
 
 改完存档让玩家**刷新页面**，弹“存档冲突”时选**使用云端存档**。
@@ -109,6 +110,8 @@
 - 批量跑运维命令：本机 shell 是 **zsh，不会按空格拆 `$a`**（`set -- $a` 得到的是一整个参数），参数会错位（2026-09-29 发满级券时物品 key 变成了数量）。批量就一条条写全参数，或用 `${=a}`；admin.sh / remote.js 已加参数校验。发完用只读查询核对 mail 表。
 
 - **组队主机上怪物的 `m.control` 是访问器**（net/coop.js hostMonster）：读出来是“选目标 + 调原 AI”的包装。要在原 AI 外面再包一层就读 `m.aiInner`；读 `m.control` 包进去 = 无限递归（2026-09-29 组队深渊第 2 轮领主降临后每帧爆栈、整帧不画，画面停在紫色闪光、地面告警特效堆到 5000+ 个发白）。单机测不出来，要用 `test/mp_abyss.mjs`。
+
+- **组队时领主钩子 / 房间脚本只在主机上跑**（2026-09-29）：写新的领主自定义机制（REGION_HOOKS）或房间机关时，凡是预警、打人、挡人的部分都要给队员一份：一次性事件 `msNetEv(怪, null, 'hook', { h, … })` + 钩子的 `mirror[h]`（或 `MS_MIRROR[h]`），本地计时写 `mirror.tick`，房间里持续的写 `guest` / `guestDraw`（docs/NETWORK.md）。跟着领主画的常驻特效用 `msLive(m)`：队员那边领主藏起来超过 1.5 秒傀儡会重建，直接闭包 `m` 会画在旧位置。测 `node test/mp_bosses.mjs`。
 
 - **生图参考图别走 `sheets.upload` 的旧缓存**（2026-09-29 转职头饰）：缓存里的 hyprlab 地址会过期（生图 404），多线程同时写 `art/src/avatar/.upload_cache.json` 还会把 JSON 写坏（后面的脚本全部读档失败）。新脚本直接传 `'local:' + 本地路径`（gpt-image 路由自己按各家的方式传图），见 `art/tools/job_head_art.py` 的 `run`。
 - **测 NPC 对话别无脑按 Esc**：Esc 只在不是最后一页时“跳到最后一页”，只有一页的对话（很多交付台词只有一句）按 Esc 会直接关窗口。先看 `npcUI.page < npcUI.pages.length - 1`。

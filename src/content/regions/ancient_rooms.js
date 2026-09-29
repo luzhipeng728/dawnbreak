@@ -6,7 +6,8 @@
    悲鸣洞穴（虫穴）：R0 丛林僵尸 | R1 法布罗（紫色法阵里打不到，队长活着队员回血，队长死了队员逃散）
      | R2 魔剑阿波菲斯（盗墓者挖出魔剑，20 秒内没打掉它，盗墓者回满血狂暴）| R3 骷髅凯恩（跟着人走的光阵）
      | R4 戮蛊幼虫（两个法阵保护，幼虫互相吞噬、吃两只变成成虫）| R5 虫王戮蛊（钻地破土的旋风、进食阶段：幼虫爬到洞口就被吃掉回血）
-   只在单机 / 主机上跑（组队的队员由主机同步）。ANC.stats 是测试读的计数。
+   只在单机 / 主机上跑（组队的队员由主机同步）；队员这边：领主钩子 / 自爆 / 倒计时走 mirror（REGION_HOOKS.*.mirror、MS_MIRROR，net/coop_mech.js），
+   路障挡路 / 减伤连线走房间的 guest / guestDraw。ANC.stats 是测试读的计数。
    ===================================================================== */
 const ANC = { rooms: {}, stats: {} };
 const ancStat = (k, n = 1) => { ANC.stats[k] = (ANC.stats[k] || 0) + n; };
@@ -75,8 +76,14 @@ MON.mechKing.summons.push('bmEye');   // 罪恶之眼的精灵随领主一起加
 
 /* ---------------- 房间脚本：第一次进房间时把默认刷的怪换成这个房间自己的配置，之后每帧跑 update ---------------- */
 bus.on('roomEnter', e => {
-  const S = ANC.rooms[e.id], dg = game.dungeon; if (!S || !dg || ancGuest()) return;
+  const S = ANC.rooms[e.id], dg = game.dungeon; if (!S || !dg) return;
   const sc = S[e.room.gx]; if (!sc) return;
+  if (ancGuest()) {   // 组队队员：房间脚本只在主机上跑；这边只跑和自己有关的部分（提示、sc.guest 每帧 / sc.guestDraw 画），一次性事件走 MS_MIRROR
+    if (sc.say) game.after(0.6, () => toastMsg(sc.say, '#ffd8a0'));
+    if (sc.guest || sc.guestDraw) addFx({ x: 0, y: -1, z: 0, dur: 1e9, update() { if (game.dungeon !== dg || dg.room !== e.room) { this.t = this.dur; return; } if (sc.guest) sc.guest(dg); },
+      draw(c) { if (sc.guestDraw && game.dungeon === dg && dg.room === e.room) sc.guestDraw(c, dg); } });
+    return;
+  }
   for (let i = ents.length - 1; i >= 0; i--) { const m = ents[i]; if (m.team === 'e' && !m.boss) ents.splice(i, 1); }
   dg.waves = [];
   const R = dg.ancRoom = { t: 0, W: game.room.x1, gx: e.room.gx, name: sc.name };
@@ -155,7 +162,8 @@ ANC.rooms.bilmark = {
       for (const v of R.ivans) {
         if (!ancAlive(v) || v.ancBoom) continue;
         v.ancFuse -= dt;
-        if (v.ancFuse <= 0) { v.ancBoom = true; ancStat('ivanBoom'); ancSay(v, '嘿嘿嘿……', '#ff6a3a'); msExplodeAt(v, v.x, v.y, { r: 95, windup: 0.55, dmg: 1.5, suicide: true, col: '#ff5a2a' }, v); }
+        if (v.ancFuse <= 4 && !v.ancFuseNet) { v.ancFuseNet = true; msNetEv(v, null, 'hook', { h: 'ancFuse', t: +v.ancFuse.toFixed(2) }); }   // 组队：队员那边也显示最后 4 秒的倒计时
+        if (v.ancFuse <= 0) { v.ancBoom = true; ancStat('ivanBoom'); ancBoom(v, 'ivan'); }
       }
       // 12 只都没了 → 柱子熄灭，路障炸开，伊凡上校冲出来
       if (!R.open && R.summoned >= R.quota && !R.ivans.some(ancAlive)) {
@@ -171,20 +179,18 @@ ANC.rooms.bilmark = {
       const C = R.col;
       if (ancAlive(C) && !C.ancRed && C.hp < C.hpMax * 0.35) {
         C.ancRed = true; C.ancFuse = 6; C.speed *= 1.6; C.superArmor = 99; ancStat('colonelRed');
-        ancSay(C, '一起上天吧！！', '#ff3a2a', 16); toastMsg('伊凡上校开始倒计时自爆——快打倒他，或者跑远 / 跳起来！', '#ff6a4a'); fxAura(C, '#ff2a1a', 1.2);
+        ancColonelRed(C); msNetEv(C, null, 'hook', { h: 'ancRed', t: C.ancFuse });
       }
       if (ancAlive(C) && C.ancRed) {
         C.superArmor = Math.max(C.superArmor, 1); C.ancFuse -= dt;
-        if (C.ancFuse <= 0 && !C.ancBoom) { C.ancBoom = true; ancStat('colonelBoom'); msExplodeAt(C, C.x, C.y, { r: 170, windup: 0.4, dmg: 2.4, suicide: true, col: '#ff2a1a' }, C); cam.shake = 16; }
+        if (C.ancFuse <= 0 && !C.ancBoom) { C.ancBoom = true; ancStat('colonelBoom'); ancBoom(C, 'colonel'); }
       }
     },
     draw(c, dg, R) {
-      for (const v of [...R.ivans, R.col]) if (ancAlive(v) && (v.ancFuse ?? 99) < 4 && !v.ancBoom) {
-        const X = sx(v.x), Y = sy(v.y, v.z + v.h * (v.scale || 1) + 30), n = Math.ceil(v.ancFuse);
-        c.save(); c.font = '900 22px "Arial Black",sans-serif'; c.textAlign = 'center'; c.lineWidth = 5; c.strokeStyle = '#1a0806'; c.strokeText(n, X, Y); c.fillStyle = Math.floor(game.t * 8) % 2 ? '#ff3a2a' : '#ffe070'; c.fillText(n, X, Y); c.restore();
-      }
+      for (const v of [...R.ivans, R.col]) if (ancAlive(v) && (v.ancFuse ?? 99) < 4 && !v.ancBoom) ancFuseDraw(c, v, v.ancFuse);
       if (!R.open) uiTextWorld(c, `疯狂伊凡 ${R.summoned - R.ivans.filter(ancAlive).length}/${R.quota}`, WW / 2, 92, '#ffc080');
-    } },
+    },
+    guest() { const b = ents.find(e => e.kind === 'bmBarricade' && ancAlive(e)), p = game.player; if (b && p && p.x > b.x - 40) { p.x = b.x - 40; p.vx = Math.min(0, p.vx); } } },   // 组队队员：路障同样挡住自己
   2: { name: '牛头统帅', say: '两根柱子在召唤幼小牛头，柱子还在，牛头统帅受到的伤害大减——先拆柱子！',
     start(dg, R) {
       const W = R.W;
@@ -202,13 +208,8 @@ ANC.rooms.bilmark = {
       const up = R.pillars.filter(ancAlive).length;
       if (ancAlive(R.cmd)) R.cmd.dmgTakenMul = up ? (up === 2 ? 0.3 : 0.6) : 1;
     },
-    draw(c, dg, R) {
-      if (!ancAlive(R.cmd)) return;
-      for (const p of R.pillars) if (ancAlive(p)) {   // 柱子 → 统帅的连线（减伤的来源）
-        c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#ffd060'; c.globalAlpha = 0.5 + 0.2 * Math.sin(game.t * 6); c.lineWidth = 3;
-        c.beginPath(); c.moveTo(sx(p.x), sy(p.y, 110)); c.lineTo(sx(R.cmd.x), sy(R.cmd.y, 80)); c.stroke(); c.restore();
-      }
-    } },
+    draw(c, dg, R) { ancLinkDraw(c, R.pillars, R.cmd); },
+    guestDraw(c) { ancLinkDraw(c, ents.filter(e => e.kind === 'bmPillarB'), ents.find(e => e.kind === 'tauCommander' && ancAlive(e))); } },   // 组队队员：同样画出减伤连线
   3: { name: '倔强的哈尼克', say: '倔强的哈尼克和一群善变猫妖。它血量低了就再也打不退了。',
     start(dg, R) {
       R.boss = ancSpawn('hanik', R.W * 0.66, DEPTH / 2, { elite: true, lvl: dg.def.lvl[1] + 1, drop: true });
@@ -254,26 +255,39 @@ REGION_HOOKS.mechKing = {
         const c = spawnMonster('tauCommander', o.x, o.y, { lvl: m.lvl - 1, elite: true, drop: true, ...skyMul() }); o.remove = true; st.objs.push(c);
         fxShock(o.x, o.y, 120, '#ffb060'); ancStat('robotMorph');
       }
-      if (left.length) toastMsg('机器人变成了牛头统帅！', '#ff8a4a');
+      if (left.length) { toastMsg('机器人变成了牛头统帅！', '#ff8a4a'); msNetEv(m, null, 'hook', { h: 'morph' }); }
     }
   },
   onPhase(m, i) {
     if (i < 1) return;
-    ancStat('protectMode'); cam.flash = 0.3; cam.flashCol = '#8ad8ff'; sfx.boom(1.3);
-    toastMsg('保护模式启动！全屏吼叫——跳起来能躲；15 秒内打掉机器人！', '#8ad8ff');
-    for (const t of ancFoes()) { if (t.z > 12) { fxText('躲开了吼叫', t.x, t.y, t.z + 60, { col: '#c8f0ff', size: 12 }); ancStat('roarDodge'); continue; } addStatus(t, 'stun', 1.6, { src: m, force: true }); ancStat('roarStun'); }
+    ancStat('protectMode'); mechKingRoar(m, ancFoes());
+    msNetEv(m, null, 'hook', { h: 'roar' });
   },
   hud(c, m, x, y) {
     const st = (m.msMechs || []).find(s => s.id === 'invuln' && !s.done); if (!st) return;
     const left = st.objs.filter(ancAlive).length;
     uiText(st.ancMorph ? `保护模式 · 还剩 ${left} 个` : `保护模式 · 机器人 ${left} 个 · ${Math.max(0, st.ancT ?? 15).toFixed(0)} 秒后变成牛头统帅`, x + 790, y + 14, { size: 15, align: 'right', color: '#8ad8ff', sw: 3 });
   },
+  mirror: {   // 组队队员（net/coop_mech.js）：落雷 / 罪恶之眼按主机发来的位置和朝向放同样的预警，保护模式的吼叫也在这边吼一次；打的都是队员自己
+    lanes(m, d) { mechKingLanes(m, d.x, d.f); },
+    eyes(m, d) { msSay(m, '罪恶之眼！', '#ffe070', 14); for (const [x, y] of d.l || []) telegraph({ x, y, r: 40, dur: 1.1, col: '#ffe070' }); },
+    eyeL(m, d) { mechKingEyeLaser(m, d.x, d.y, d.f, msNetEnt(d.s)); },
+    roar(m) { mechKingRoar(m, [msSelf()]); },
+    morph(m) { toastMsg('机器人变成了牛头统帅！', '#ff8a4a'); const st = (m.msMechs || []).find(s => s.id === 'invuln' && !s.done); if (st) st.ancMorph = true; },
+    tick(m) { const st = (m.msMechs || []).find(s => s.id === 'invuln' && !s.done); m.botSkip = !!st; if (st) st.ancT = Math.max(0, 15 - st.t); } },   // 保护模式倒计时（HUD）按镜像的已进行时间算
 };
-function mechKingLanes(m) {
+// 保护模式的全屏吼叫：跳起来能躲；who = 组队队员那边只有自己
+function mechKingRoar(m, who) {
+  cam.flash = 0.3; cam.flashCol = '#8ad8ff'; sfx.boom(1.3);
+  toastMsg('保护模式启动！全屏吼叫——跳起来能躲；15 秒内打掉机器人！', '#8ad8ff');
+  for (const t of who) { if (t.ghost) continue; if (t.z > 12) { fxText('躲开了吼叫', t.x, t.y, t.z + 60, { col: '#c8f0ff', size: 12 }); ancStat('roarDodge'); continue; } addStatus(t, 'stun', 1.6, { src: m, force: true }); ancStat('roarStun'); }   // 队友的影子由队友自己判定
+}
+function mechKingLanes(m, x0 = m.x, face = m.face) {
   if (m.dead || m.msHidden) return;
   ancStat('lanes'); msSay(m, '雷电——别站在它前面！', '#fff38a', 15);
+  msNetEv(m, null, 'hook', { h: 'lanes', x: Math.round(x0), f: face });
   for (const k of [0.18, 0.5, 0.82]) {
-    telegraph({ kind: 'line', x: m.x, y: DEPTH * k, len: 760, face: m.face, hw: 22, dur: 1.1, col: '#fff38a', fire: g => {
+    telegraph({ kind: 'line', x: x0, y: DEPTH * k, len: 760, face, hw: 22, dur: 1.1, col: '#fff38a', fire: g => {
       if (m.dead) return;
       for (let i = 1; i <= 5; i++) lightningStrike({ x: g.x + g.face * i * 140, y: g.y });
       for (const t of ancFoes()) {
@@ -287,18 +301,52 @@ function mechKingLanes(m) {
 function mechKingEyes(m) {
   const p = game.player; if (!p) return;
   ancStat('eyes'); msSay(m, '罪恶之眼！', '#ffe070', 14);
-  for (const s of [-1, 1]) {
-    const x = clamp(p.x + s * rnd(110, 220), 80, game.room.x1 - 80), y = rnd(24, DEPTH - 24);
+  const L = [-1, 1].map(s => [Math.round(clamp(p.x + s * rnd(110, 220), 80, game.room.x1 - 80)), Math.round(rnd(24, DEPTH - 24))]);
+  msNetEv(m, null, 'hook', { h: 'eyes', l: L });
+  for (const [x, y] of L) {
     telegraph({ x, y, r: 40, dur: 1.1, col: '#ffe070', fire: () => {
       if (m.dead || game.dungeon == null) return;
       const eye = spawnMonster('bmEye', x, y, { lvl: m.lvl }); eye.invul = 1e9; eye.botSkip = true; eye.z = 50; eye.face = p.x >= x ? 1 : -1;
-      telegraph({ kind: 'line', x, y, len: 900, face: eye.face, hw: 16, dur: 0.9, col: '#ffe070', fire: g => {
-        eye.remove = true; if (m.dead) return;
-        addFx({ x, y: y + 1, z: 0, dur: 0.35, face: g.face, draw(c) { const k = this.t / this.dur, X = sx(this.x), Y = sy(this.y, 50); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - k; c.fillStyle = '#fff4b0'; c.fillRect(Math.min(X, X + 900 * this.face), Y - 7, 900, 14); c.fillStyle = '#ffe070'; c.fillRect(Math.min(X, X + 900 * this.face), Y - 16, 900, 32 * (1 - k)); c.restore(); } });
-        for (const t of ancFoes()) { const dx = (t.x - x) * g.face; if (Math.abs(t.y - y) <= g.hw + 8 && dx >= -8 && dx <= g.len && t.invul <= 0) { applyHit(m, t, { dmg: 1.1, sure: true, knock: 60, stun: 0.3, hs: 0.04 }, { proj: true }); ancStat('eyeHit'); } }
-        ancStat('eyeLaser');
-      } });
+      mechKingEyeLaser(m, x, y, eye.face, eye);
+      msNetEv(m, null, 'hook', { h: 'eyeL', x, y, f: eye.face, s: eye.nid || 0 });   // 组队：眼睛（傀儡）先同步过去，激光的朝向以主机为准
     } });
+  }
+}
+// 罪恶之眼的激光：0.9 秒的细线预警后射出一道横穿场地的光束；eye = 眼睛（射完消失，队员那边是它的傀儡）
+function mechKingEyeLaser(m, x, y, face, eye) {
+  telegraph({ kind: 'line', x, y, len: 900, face, hw: 16, dur: 0.9, col: '#ffe070', fire: g => {
+    if (eye) eye.remove = true; if (m.dead) return;
+    addFx({ x, y: y + 1, z: 0, dur: 0.35, face: g.face, draw(c) { const k = this.t / this.dur, X = sx(this.x), Y = sy(this.y, 50); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 1 - k; c.fillStyle = '#fff4b0'; c.fillRect(Math.min(X, X + 900 * this.face), Y - 7, 900, 14); c.fillStyle = '#ffe070'; c.fillRect(Math.min(X, X + 900 * this.face), Y - 16, 900, 32 * (1 - k)); c.restore(); } });
+    for (const t of ancFoes()) { const dx = (t.x - x) * g.face; if (Math.abs(t.y - y) <= g.hw + 8 && dx >= -8 && dx <= g.len && t.invul <= 0) { applyHit(m, t, { dmg: 1.1, sure: true, knock: 60, stun: 0.3, hs: 0.04 }, { proj: true }); ancStat('eyeHit'); } }
+    ancStat('eyeLaser');
+  } });
+}
+
+// 比尔马克：伊凡 / 伊凡上校自爆（跟着自己走的预警，落下时自己也死）；组队队员那边放同样的预警，炸的是自己，自爆的死亡以主机的击杀为准
+const ANC_BOOM = { ivan: { r: 95, windup: 0.55, dmg: 1.5, col: '#ff5a2a' }, colonel: { r: 170, windup: 0.4, dmg: 2.4, col: '#ff2a1a' } };
+function ancBoom(v, k, guest) {
+  if (k === 'ivan') ancSay(v, '嘿嘿嘿……', '#ff6a3a');
+  msExplodeAt(v, v.x, v.y, { ...ANC_BOOM[k], suicide: !guest }, v);
+  if (k === 'colonel') cam.shake = 16;
+  msNetEv(v, null, 'hook', { h: 'ancBoom', k });
+}
+function ancColonelRed(C) { ancSay(C, '一起上天吧！！', '#ff3a2a', 16); toastMsg('伊凡上校开始倒计时自爆——快打倒他，或者跑远 / 跳起来！', '#ff6a4a'); fxAura(C, '#ff2a1a', 1.2); }
+function ancFuseDraw(c, v, left) {
+  const X = sx(v.x), Y = sy(v.y, v.z + v.h * (v.scale || 1) + 30), n = Math.ceil(left);
+  c.save(); c.font = '900 22px "Arial Black",sans-serif'; c.textAlign = 'center'; c.lineWidth = 5; c.strokeStyle = '#1a0806'; c.strokeText(n, X, Y); c.fillStyle = Math.floor(game.t * 8) % 2 ? '#ff3a2a' : '#ffe070'; c.fillText(n, X, Y); c.restore();
+}
+// 组队队员：主机发来剩余秒数，这边自己倒数（最后 4 秒显示），跟着傀儡画
+function ancFuseFx(v, t) { addFx({ x: 0, y: -1, z: 0, dur: t, draw(c) { const e = msLive(v), left = this.dur - this.t; if (ancAlive(e) && left < 4) ancFuseDraw(c, e, left); } }); }
+Object.assign(MS_MIRROR, {
+  ancBoom: (v, d) => ancBoom(v, d.k, true),
+  ancFuse: (v, d) => ancFuseFx(v, d.t),
+  ancRed: (v, d) => { ancColonelRed(v); ancFuseFx(v, d.t); },
+});
+function ancLinkDraw(c, pillars, cmd) {   // 统帅房：柱子 → 统帅的连线（减伤的来源）
+  if (!ancAlive(cmd)) return;
+  for (const p of pillars) if (ancAlive(p)) {
+    c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = '#ffd060'; c.globalAlpha = 0.5 + 0.2 * Math.sin(game.t * 6); c.lineWidth = 3;
+    c.beginPath(); c.moveTo(sx(p.x), sy(p.y, 110)); c.lineTo(sx(cmd.x), sy(cmd.y, 80)); c.stroke(); c.restore();
   }
 }
 
@@ -392,14 +440,15 @@ REGION_HOOKS.bugKing = {
   },
   hud(c, m, x, y) { const A = m.anc; if (A && !A.dig && !msMechActive(m, 'invuln')) uiText(`钻地 ${Math.max(0, A.burrow).toFixed(0)}s`, x + 790, y + 14, { size: 15, align: 'right', color: '#d8b0ff', sw: 3 }); },
   mirror: {   // 组队队员（net/coop_mech.js）：主机钻地时，这边的傀儡也钻下去，预警跟着同一个目标
-    burrow(m, d) { fxBurst(m.x, m.y, 60, 200, '#6a3aaa'); sfx.boom(0.6); m.remove = true; if (m.anc) { m.anc.dig = true; m.anc.burrow = 17; } bugKingDig(m, d.tgE, () => { if (m.anc) m.anc.dig = false; }); } },
+    burrow(m, d) { fxBurst(m.x, m.y, 60, 200, '#6a3aaa'); sfx.boom(0.6); m.remove = true; if (m.anc) { m.anc.dig = true; m.anc.burrow = d.n ?? 17; } bugKingDig(m, d.tgE, () => { if (m.anc) m.anc.dig = false; }); },
+    tick(m, dt) { const A = m.anc; if (A && !A.dig && !msMechActive(m, 'invuln')) A.burrow = Math.max(0, A.burrow - dt); } },   // 下次钻地的倒计时（HUD）
 };
 function bugKingBurrow(m) {
   const A = m.anc, p = game.player; if (!p) return;
   A.dig = true; A.burrow = rnd(16, 20); ancStat('burrow');
   msHide(m, true);
   bugKingDig(m, p, g => { A.dig = false; if (m.dead) return; msHide(m, false); m.x = clamp(g.x, 80, game.room.x1 - 80); m.y = clamp(g.y, 20, DEPTH - 20); m.z = 0; });
-  msNetEv(m, null, 'hook', { h: 'burrow', tgE: p });   // 组队：队员那边放同样的预警（跟着同一个目标），三圈冲击打的是队员自己
+  msNetEv(m, null, 'hook', { h: 'burrow', tgE: p, n: +A.burrow.toFixed(1) });   // 组队：队员那边放同样的预警（跟着同一个目标），三圈冲击打的是队员自己
 }
 // 钻地的预警和破土冲击：预警跟着目标走，2.2 秒后在那里破土 + 两圈往外扩（跑远或者跳起来）；land(g) 由主机把领主摆到破土的位置
 function bugKingDig(m, p, land) {

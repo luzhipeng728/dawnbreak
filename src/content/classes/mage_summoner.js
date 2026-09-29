@@ -7,12 +7,18 @@
    地下城里召唤兽不会被攻击；伤害按你的魔攻实时结算
    ===================================================================== */
 const SM = 'summoner';
+const SM_PVP_HURT = true;
 const smMul = (p, lv) => lvMul(lv, 0.1);
 // 召唤兽定义的小工具：spr = 美术目录（art/final/spr/<id>），fly = 浮空（切帧时已经抬高）
 function smDef(key, spr, o) {
   return defSummon(key, { kind: 'follower', bundle: spr, model: () => summonSprite(spr, o.tint || {}, o.col), w: o.w || 12, d: o.d || 11, h: o.h || 80, speed: o.speed ?? 170, runSpeed: o.runSpeed || 330, pref: o.pref ?? 40,
     sight: o.sight || 560, aggro: o.aggro || 1, life: o.life ?? Infinity, max: o.max ?? 1, col: o.col, tags: o.tags || [], enterAt: o.enterAt, attacks: o.attacks || [], cmds: o.cmds || {}, ai: smAI,
-    onSpawn: s => { if (o.sa) s.superArmor = Infinity; if (o.scale) s.scale = o.scale; fxSigil('hexagram', s.x, s.y, 0, { w: 90 + (o.h || 80) * 0.4, dur: 0.6, ay: 0.5, grow: [0.3, 1], col: o.col }); fxBurst(s.x, s.y, 40, 90, o.col || '#d8c0ff'); if (o.onSpawn) o.onSpawn(s); },
+    onSpawn: s => { if (o.sa) s.superArmor = Infinity; if (o.scale) s.scale = o.scale;
+      // 官方：召唤时脚下先铺开一个比人大得多的双层法阵（外圈慢转、内圈反转），约 1 秒后淡出；下级精灵 / 阿奎利斯 / 伊伽贝拉是黄绿色，桑德尔 / 格雷林 / 默克尔等是橙色
+      const W = 150 + (o.h || 80) * 1.2; const rc = o.ring || '#ff9a3a'; fxSigil('hexagram', s.x, s.y, 0, { w: W, dur: 1.0, ay: 0.5, grow: [0.4, 1], col: rc }); fxSigil('rune', s.x, s.y, 0, { w: W * 0.62, dur: 1.0, grow: [0.4, 1], spin: -2.4, alpha: 0.8, col: rc }); fxBurst(s.x, s.y, 40, 90, o.col || '#d8c0ff');
+      // 决斗场里召唤兽有自己的 HP（官方：竞技场单独设定 HP / 防御），地下城里怪物打不到它们
+      if (SM_PVP_HURT && game.pvp && !o.noHurt) { s.invul = 0; s.hp = s.hpMax = Math.max(1, Math.round(s.owner.hpMax * (o.hpK || 6))); s.superArmor = Infinity; s.def = s.owner.def; s.mdef = s.owner.mdef; if (o.onHurt) s.onHurt = (a, h) => o.onHurt(s, a, h); }
+      if (o.onSpawn) o.onSpawn(s); },
     onEnd: (s, why) => { if (why === 'dead' && o.deathBlast) o.deathBlast(s); if (o.onEnd) o.onEnd(s, why); }, update: o.update });
 }
 // 上级精灵被打倒时的死亡爆炸（官方：阿奎利斯冰冻 / 默克尔致盲 / 赫瑞克灼烧 / 格雷林感电）
@@ -36,15 +42,17 @@ function smBolt(s, x, y, dmg, o = {}) { lightningStrike({ x, y }); fxShock(x, y,
 function smFront(s, arg) { const o = s.owner, feet = arg && arg.feet; s.warp(o.x + o.face * (feet ? 0 : 70), o.y + (feet ? 2 : 0)); s.face = o.face; fxBurst(s.x, s.y, 40, 80, s.sdef.col || '#d8c0ff'); }
 const smCmdArg = p => ({ feet: !!(p.pad && p.pad.dy() > 0) });
 // ---- 下级精灵（在场 30 秒，每种 1 只） ----
-smDef('sm_ador', 'ador', { h: 60, speed: 190, pref: 26, life: 30, tags: ['spirit', 'lesser'], col: '#ff9a50', elem: 'fire',
+smDef('sm_ador', 'ador', { ring: '#9ad84a', h: 60, speed: 190, pref: 26, life: 30, tags: ['spirit', 'lesser'], col: '#ff9a50', elem: 'fire',
   attacks: [{ clip: 'atk1', range: [0, 60], dy: 16, cd: [1, 1.2], act: { dur: 0.55, hits: [mH(0.12, 0.18, [0, 58, 20, 0, 60], 0.16, { elem: 'fire', downHit: true, snd: 'fire', knock: 20 }), mH(0.3, 0.36, [0, 58, 20, 0, 60], 0.16, { elem: 'fire', downHit: true, snd: 'fire', knock: 40 })] } }] });
-smDef('sm_naias', 'naias', { h: 58, speed: 170, pref: 90, life: 30, tags: ['spirit', 'lesser'], col: '#9fe6ff', aggro: 0.8,
+smDef('sm_naias', 'naias', { ring: '#9ad84a', h: 58, speed: 170, pref: 90, life: 30, tags: ['spirit', 'lesser'], col: '#9fe6ff', aggro: 0.8,
   onSpawn: s => { const o = s.owner; const hh = Math.round(o.hpMax * 0.02); o.hp = Math.min(o.hpMax, o.hp + hh); addNumber(hh, o.x, o.y, o.z, { heal: true }); },
   attacks: [{ clip: 'atk1', range: [0, 60], dy: 16, cd: [1, 1.2], act: { dur: 0.5, hits: [mH(0.14, 0.2, [0, 58, 20, 10, 60], 0.24, { elem: 'ice', snd: 'blunt' })] } },
     { clip: 'cast', range: [60, 360], dy: 40, cd: [1.5, 1.8], act: { dur: 0.6, events: [evAt(0.3, s => { sfx.ice(); smShot(s, { dmg: 0.26, col: '#bfefff', elem: 'ice', img: 'icespike', hit: { onHit: (a, t) => { if (Math.random() < 0.05) addStatus(t, 'freeze', 1, { src: a.owner }); } } }); })] } }] });
-smDef('sm_stalker', 'stalker', { h: 56, speed: 220, pref: 24, life: 30, tags: ['spirit', 'lesser'], col: '#c79aff', aggro: 1.4,
+smDef('sm_stalker', 'stalker', { ring: '#9ad84a', h: 56, speed: 220, pref: 24, life: 30, tags: ['spirit', 'lesser'], col: '#c79aff', aggro: 1.4,
   attacks: [{ clip: 'scratch', range: [0, 62], dy: 16, cd: [1, 1.2], act: { dur: 0.5, hits: [mH(0.3, 0.36, [0, 60, 20, 0, 60], 0.2, { elem: 'dark', stun: 0.65, downHit: true, snd: 'slash', onHit: (a, t) => { if (Math.random() < 0.1) addStatus(t, 'curse', 4, { src: a.owner }); } })] } }] });
-smDef('sm_wisp', 'wisp', { h: 54, speed: 190, pref: 40, life: 30, tags: ['spirit', 'lesser'], col: '#fff38a',
+smDef('sm_wisp', 'wisp', { ring: '#9ad84a', h: 54, speed: 190, pref: 40, life: 30, tags: ['spirit', 'lesser'], col: '#fff38a', hpK: 3,
+  // 官方：被打后会瞬移到攻击者背后（间隔 3 秒）
+  onHurt: (s, a) => { if (!a || game.t < (s.blinkT || 0)) return; s.blinkT = game.t + 3; fxBurst(s.x, s.y, 30, 60, '#fff38a'); s.warp(a.x - (a.face || 1) * 60, a.y); s.face = a.face || s.face; fxBurst(s.x, s.y, 30, 60, '#fff38a'); },
   attacks: [{ clip: 'atk1', range: [0, 84], dy: 18, cd: [1, 1.2], act: { dur: 0.5, events: [evAt(0.18, s => { sfx.zap(); fxSpr('spark', s.x + s.face * 48, s.y + 1, s.z + 50, { w: 56, dur: 0.2 }); })],
     hits: [mH(0.18, 0.24, [0, 82, 22, 0, 90], 0.22, { elem: 'light', snd: 'crit', onHit: (a, t) => { if (Math.random() < 0.1 && Math.sign(a.x - t.x || 1) !== t.face) addStatus(t, 'stun', 1, { src: a.owner }); } })] } }] });
 const LESSER = ['sm_ador', 'sm_naias', 'sm_stalker', 'sm_wisp'];
@@ -56,10 +64,12 @@ smDef('sm_frit', 'frit', { h: 70, speed: 180, pref: 50, tags: ['contract'], col:
       summonArea(s, s.x + s.face * (50 + i * 45), s.y, 55, { dmg: 0.25, stun: 0.3, knock: 30, hs: 0.03, elem: 'fire', type: 'mag' }, { status: Math.random() < 0.1 ? 'burn' : null, sdur: 3, dps: 0.06 }); }); })] } }],
   cmds: { special(s, arg) { smFront(s, arg); summonAct(s, { clip: 'roar', dur: 1.0, superArmor: true, events: [evAt(0.35, e => { sfx.boom(0.6); cam.shake = Math.max(cam.shake, 4); fxShock(e.x + e.face * 50, e.y, 170, '#ff9a50');
     for (let i = 0; i < 5; i++) game.after(i * 0.1, () => { if (!e.gone) summonArea(e, e.x + e.face * 50, e.y, 170, { dmg: 0.4, stun: 0.4, knock: 60, hs: 0.04, elem: 'fire', type: 'mag', downHit: true }, { zMax: 150 }); }); })] }); } } });
+// 桑德尔的守护光环：韩服 2023-08 改版后不再有时间限制、加魔法防御、范围加大（同时删掉了回血 / 抗异常两招）——在场期间我方队员（含你）在范围内一直受到伤害减免
 smDef('sm_sandor', 'sandor', { h: 124, w: 16, d: 13, speed: 150, pref: 50, tags: ['contract'], col: '#b08aff', sa: true,
+  update: s => { s.guardT = (s.guardT || 0) - 1 / 60; for (const a of ents) if (a.team === s.owner.team && !a.summon && !a.dead && a.buffs && Math.abs(a.x - s.x) < 520 && Math.abs(a.y - s.y) < 260) a.buffs.sm_guard = { t: 0.5, taken: -0.08 };
+    if (s.guardT <= 0) { s.guardT = 1.6; fxSigil('hexagram', s.x, s.y, 0, { w: 200, dur: 1.2, ay: 0.5, grow: [0.5, 1.4], alpha: 0.5, col: '#ffb060' }); } },
   attacks: [{ clip: 'club', range: [0, 100], dy: 22, cd: [1, 1.2], w: 2, act: { dur: 0.9, hits: [mH(0.42, 0.5, [0, 104, 30, 0, 120], 0.7, { elem: 'dark', knock: 110, snd: 'slash', heavy: true })], events: [evAt(0.38, s => sfx.swing(true))] } },
     { clip: 'pounce', range: [60, 200], dy: 20, cd: [1.5, 1.8], w: 1, act: { dur: 1.0, move: [[0.35, 0.6, 360]], hits: [mH(0.4, 0.6, [0, 90, 26, 10, 110], 0.8, { elem: 'dark', knock: 160, snd: 'stab' })] } },
-    { clip: 'cast', range: [0, 400], dy: 400, cd: [40, 44], w: 0.6, act: { dur: 0.8, events: [evAt(0.3, s => { fxAura(s, '#b08aff'); s.owner.buffs.sm_guard = { t: 6, taken: -0.05 }; fxAura(s.owner, '#b08aff', 0.5); })] } },
     // 举盾防御：蹲身架盾挡在敌人前面（盾面闪光），架盾时自己和身后的你受到的伤害降低
     { clip: 'chargeW', range: [0, 150], dy: 40, cd: [6, 9], w: 1, act: { dur: 1.3, superArmor: true, update: s => { if (Math.floor(s.actT / 0.22) !== s.guardN) { s.guardN = Math.floor(s.actT / 0.22); fxGuard(s); } },
       events: [evAt(0.05, s => { sfx.hit('blunt', false); s.guardN = -1; const o = s.owner; if (Math.abs(o.x - s.x) < 160) o.buffs.sm_shield = { t: 1.3, taken: -0.1 }; })] } }],
@@ -121,11 +131,14 @@ smDef('sm_merkle', 'merkle', { h: 128, w: 16, speed: 160, pref: 55, life: 200, t
   attacks: [{ clip: 'club', range: [0, 112], dy: 26, cd: [1, 1.2], w: 2, act: { dur: 0.9, hits: [mH(0.42, 0.5, [-10, 118, 32, 0, 120], 0.6, { elem: 'dark', snd: 'slash', knock: 90, onHit: (a, t) => { if (Math.random() < 0.08) addStatus(t, 'blind', 2, { src: a.owner }); } })] } },
     { clip: 'slam', range: [0, 112], dy: 26, cd: [1.5, 1.8], w: 1, act: { dur: 1.1, hits: [mH(0.7, 0.8, [0, 118, 34, 0, 120], 0.9, { elem: 'dark', snd: 'slash', down: true, downHit: true })] } },
     { clip: 'cast', range: [0, 300], dy: 60, cd: [3, 3.6], w: 1, act: { dur: 0.8, events: [evAt(0.4, s => { const t = summonTarget(s); const f = summon(s.owner, 'sm_darkfield', { x: t ? t.x : s.x + s.face * 80, y: t ? t.y : s.y }); if (f) f.dmg = 0.2 * s.mul; })] } }] });
+// 格雷林（韩服 2023-08 改版后的现版）：发射闪电 2 段、闪电五连发改为 3 道、闪电盾删除并改为“闪电针”（一段时间内提高发射闪电和三连闪电的攻击力）
 smDef('sm_glarelin', 'glarelin', { h: 130, speed: 160, pref: 200, life: 200, tags: ['spirit', 'higher'], col: '#fff38a', deathBlast: smDeath('light', 'shock', '#fff38a', 4),
-  attacks: [{ clip: 'cast', range: [80, 420], dy: 80, cd: [1, 1.2], w: 3, act: { dur: 0.8, events: [evAt(0.4, s => { const t = summonTarget(s); if (!t) return; sfx.zap(); for (let i = 0; i < 3; i++) game.after(i * 0.08, () => { if (!s.gone) smBolt(s, t.x, t.y, 0.3, { shock: 0.1 }); }); })] } },
-    // 五连落雷（冷却 2s）：在面前排成一条横线依次劈下
-    { clip: 'roar', range: [0, 420], dy: 120, cd: [2, 2.4], w: 1, act: { dur: 1.0, events: [evAt(0.5, s => { sfx.zap(); const t = summonTarget(s), y = t ? t.y : s.y, f = t ? Math.sign(t.x - s.x) || s.face : s.face; for (let i = 0; i < 5; i++) game.after(i * 0.07, () => { if (!s.gone) smBolt(s, s.x + f * (90 + i * 60), y, 0.3, { shock: 0.1 }); }); })] } }] });
-smDef('sm_aqueris', 'aqueris', { h: 130, speed: 160, pref: 200, life: 200, tags: ['spirit', 'higher'], col: '#9fe6ff', deathBlast: smDeath('ice', 'freeze', '#9fe6ff', 1.5),
+  attacks: [{ clip: 'cast', range: [80, 420], dy: 80, cd: [1, 1.2], w: 3, act: { dur: 0.8, events: [evAt(0.4, s => { const t = summonTarget(s); if (!t) return; sfx.zap(); for (let i = 0; i < 2; i++) game.after(i * 0.1, () => { if (!s.gone) smBolt(s, t.x, t.y, 0.45, { shock: 0.1 }); }); })] } },
+    // 三连落雷（冷却 2s）：在面前排成一条横线依次劈下
+    { clip: 'roar', range: [0, 420], dy: 120, cd: [2, 2.4], w: 1, act: { dur: 1.0, events: [evAt(0.5, s => { sfx.zap(); const t = summonTarget(s), y = t ? t.y : s.y, f = t ? Math.sign(t.x - s.x) || s.face : s.face; for (let i = 0; i < 3; i++) game.after(i * 0.09, () => { if (!s.gone) smBolt(s, s.x + f * (100 + i * 80), y, 0.5, { shock: 0.1 }); }); })] } },
+    // 闪电针：自己身上聚起电光，10 秒内闪电类攻击 +40%（官方冷却未公开，按 20 秒）
+    { clip: 'cast', range: [0, 420], dy: 400, cd: [20, 22], w: 0.8, cond: s => !(s.buffs.needle && s.buffs.needle.t > 0), act: { dur: 0.7, events: [evAt(0.3, s => { sfx.zap(); s.buffs.needle = { t: 10, dmg: 0.4 }; fxAura(s, '#fff38a'); fxSpr('spark', s.x, s.y + 1, s.z + 70, { w: 90, dur: 0.4 }); })] } }] });
+smDef('sm_aqueris', 'aqueris', { ring: '#9ad84a', h: 130, speed: 160, pref: 200, life: 200, tags: ['spirit', 'higher'], col: '#9fe6ff', deathBlast: smDeath('ice', 'freeze', '#9fe6ff', 1.5),
   attacks: [{ clip: 'atk1', range: [60, 420], dy: 50, cd: [1, 1.2], w: 3, act: { dur: 0.6, events: [evAt(0.25, s => { sfx.ice(); smShot(s, { dmg: 0.4, col: '#bfefff', elem: 'ice', img: 'icespike', speed: 620 }); })] } },
     { clip: 'cast', range: [0, 200], dy: 60, cd: [2, 2.4], w: 1, act: { dur: 0.9, events: [evAt(0.45, s => { fxSpr('frost', s.x + s.face * 110, s.y, 0, { w: 260, dur: 0.6, ay: 0.75 }); summonArea(s, s.x + s.face * 110, s.y, 140, { dmg: 0.7, stun: 0.4, knock: 60, hs: 0.04, elem: 'ice', type: 'mag' }, { zMax: 120 });
       for (const t of ents) if (foe(s.owner, t) && inGround(t, s.x + s.face * 110, s.y, 140) && Math.random() < 0.1) addStatus(t, 'freeze', 1.2, { src: s.owner }); })] } },
@@ -135,7 +148,7 @@ smDef('sm_flamehulk', 'flamehulk', { h: 132, w: 16, speed: 170, pref: 45, life: 
     { clip: 'pounce', range: [60, 300], dy: 24, cd: [1.5, 1.8], w: 1, act: { dur: 1.0, events: [evAt(0.5, s => { sfx.hit('fire', false); shootProj(s, { img: 'slash', col: '#ff9a50', w: 140, speed: 560, life: 0.75, z: 30, bw: 34, bd: 22, bh: 100, pierce: true, hit: { dmg: 0.5 * s.mul, stun: 0.4, knock: 60, hs: 0.04, elem: 'fire', type: 'mag', rep: 0.15, max: 2 } }); })] } }] });
 // ---- 精灵王伊伽贝拉：常驻霸体；附近的己方精灵伤害 +15%，自己每有一只精灵 +15%（最多 +30%）；攻击自动用敌人抗性最低的属性 ----
 const bestElem = (t) => { let best = 'fire', v = 1e9; for (const el of ['fire', 'ice', 'light', 'dark']) { const r = (t && t.res && t.res[el]) || 0; if (r < v) { v = r; best = el; } } return best; };
-smDef('sm_echeverria', 'echeverria', { h: 140, w: 16, speed: 150, pref: 120, life: 200, sa: true, tags: ['spirit', 'king'], col: '#ffd070',
+smDef('sm_echeverria', 'echeverria', { ring: '#9ad84a', h: 140, w: 16, speed: 150, pref: 120, life: 200, sa: true, tags: ['spirit', 'king'], col: '#ffd070',
   update: s => { const L = summonsOf(s.owner, { tag: 'spirit' }).filter(x => x !== s && Math.abs(x.x - s.x) < 400); for (const x of L) x.buffs.king = { t: 0.5, dmg: 0.15 }; s.buffs.kingSelf = { t: 0.5, dmg: Math.min(0.3, L.length * 0.15) }; },
   attacks: [{ clip: 'atk1', range: [0, 110], dy: 26, cd: [0.6, 0.8], w: 2, act: { dur: 0.6, events: [evAt(0.25, s => { const t = summonTarget(s); if (t) summonHit(s, t, { dmg: 0.7, stun: 0.4, knock: 80, hs: 0.05, elem: bestElem(t), type: 'mag' }); })] } },
     // 音波（冷却 3.1s）：射出一道很长的新月形冲击波，击退沿途的敌人
@@ -236,6 +249,8 @@ function casRift(x, y, dur) {
   addFx({ x, y: y - 3, z: 0, dur, draw(c) {
     const k = this.t / this.dur, o = k < 0.12 ? k / 0.12 : k > 0.8 ? (1 - k) / 0.2 : 1, H = 250 * Math.min(1, o * 1.2), W = 36 * o * (0.85 + 0.15 * Math.sin(game.t * 22)), X = sx(this.x), Y = sy(this.y, 0) - 8;
     if (H < 2) return;
+    // 官方：裂缝处升起一根紫色光柱直通画面顶端，底部一圈暗紫色的地面漩涡
+    c.save(); c.globalCompositeOperation = 'lighter'; { const pw = 70 * o * (0.9 + 0.1 * Math.sin(game.t * 17)), g = c.createLinearGradient(0, 0, 0, Y); g.addColorStop(0, 'rgba(176,96,255,0.05)'); g.addColorStop(0.7, 'rgba(176,96,255,0.45)'); g.addColorStop(1, 'rgba(230,170,255,0.75)'); c.fillStyle = g; c.fillRect(X - pw / 2, 0, pw, Y); c.globalAlpha = 0.5 * o; c.fillStyle = '#ffffff'; c.fillRect(X - pw / 6, 0, pw / 3, Y); } c.restore();
     c.save(); c.fillStyle = '#12061e'; c.beginPath(); c.ellipse(X, Y - H / 2, W, H / 2, 0, 0, TAU); c.fill();
     c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.9; c.strokeStyle = '#b060ff'; c.lineWidth = 4; c.stroke();
     c.globalAlpha = 0.6; c.strokeStyle = CAS_COL; c.lineWidth = 2; c.beginPath(); c.ellipse(X, Y - H / 2, W * 1.4 + 4, H / 2 + 6, 0, 0, TAU); c.stroke(); c.restore(); } });
@@ -287,6 +302,8 @@ defSkill('sm_awaken', { name: '契约召唤：征服者卡西利亚斯', cls: 'm
   pow: lv => skillDmg(12, 3, lv), ai: { kind: 'awaken', r: [0, 420], dy: 120 }, infoExtra: () => [['在场时间', '200 秒'], ['离场', '狱冥天地（剑阵）']],
   act: (lv) => ({ name: 'sm_awaken', clip: 'smAwk', dur: 2.0, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '征服者卡西利亚斯', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); dismissSummons(e, 'sm_casillas', 'replaced');
+      // 官方：召唤要消耗最大 HP（1 级 10%，随等级降到 5%；不会因此死亡）
+      { const cost = Math.min(Math.round(e.hpMax * Math.max(0.05, 0.11 - 0.01 * lv)), Math.max(0, e.hp - 1)); if (cost > 0) { e.hp -= cost; addNumber(cost, e.x, e.y, e.z + 40, { player: true }); } }
       const R = game.room, x = e.x + e.face * 150; e.act.rx = R ? clamp(x, R.x0 + 40, R.x1 - 40) : x; e.act.ry = e.y; },
     events: [evAt(0.95, e => { sfx.charge(); casRift(e.act.rx, e.act.ry, 2.0); cam.shake = Math.max(cam.shake, 4); }),
       evAt(1.25, e => { const s = summon(e, 'sm_casillas', { lv, mul: casMul(e, lv), x: e.act.rx, y: e.act.ry, life: game.pvp ? 30 : 200 }); if (s) { s.face = e.face; summonAct(s, { clip: 'casStep', dur: 0.9, superArmor: true }); } }),

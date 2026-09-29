@@ -156,6 +156,8 @@ defineRegionQuests('<区域 id>', { chapter: '<篇名> · 支线', scene: '<城�
 
 ## 4. 领主机制库（`mechs` / `enter.mechs` / `{ use: 'mech' }`）
 
+加新机制时组队也要一起写（net/coop_mech.js，见 docs/NETWORK.md「领主机制同步」）：随机出来的东西放进 `net(m, st, p)`（启动时发给队员），关键时刻调 `msNetEv(m, st, '事件', 数据)`，HUD 数值写 `netState(st)`；`mirror: { start, ev, update, end }` 在队员那边放同样的预警和攻击（只判定 `msSelf()`），不做结算。打玩家的循环要跳过队友影子（`t.ghost`）。
+
 | 机制 | 作用 | 参数（默认值） |
 |---|---|---|
 | `groggy` | 破招槽：每次命中扣 `hit`，每 1% 最大 HP 的伤害扣 `dmg/100`；扣空 → 眩晕 `dur` 秒、受到的伤害 ×`mul`，然后回满。血条下有槽 | `max 100, hit 0.6, dmg 300, dur 7, mul 1.5` |

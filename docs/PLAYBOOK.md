@@ -87,7 +87,7 @@
 | 数据库备份 | `ssh cc 'sudo /opt/dawnbreak-server/backup.sh'`（每天 04:17 也会自动备份） |
 | 看玩家页面的逐帧报错（带堆栈，game.js `frameErr` 同一个错误每个页面报一次） | `sh tools/admin/admin.sh errs [条数]`；页面里查 `frameErrs` |
 | 转职头部总览（3 个基础职业 + 15 个转职：站立 / 跑动 / 攻击 / 时装，发色 + 头饰，约 30 秒） | `node test/jobvisuals.mjs heads`（`HEADS=blade,ranger` 只出几排）→ `test/shots/jobvisuals/heads.jpg`；头饰出图 `python3 art/tools/job_head_art.py gen <id> -j 3` → `prep`（docs/JOB_VISUALS.md §5） |
-| 组队深渊回归（2 页面满级狂战士 + 冷却 ×0.34，三种领主，测报错 / 没画出来的帧 / 卡死；HN/HA/HG 队员受击对照：逐招对比主机出招和队员重播、队员被普通怪 / 深渊领主 / 普通区域领主打中的次数） | `node test/mp_abyss.mjs [A,B,C,HN,HA,HG]`（全部约 4 分钟） |
+| 组队深渊回归（2 页面满级狂战士 + 冷却 ×0.34，三种领主，测报错 / 没画出来的帧 / 卡死；HN/HA/HG 队员受击对照：逐招对比主机出招和队员重播、领主机制启动 / 地面预警两边一一对应（< 0.3 秒）、队员被普通怪 / 深渊领主 / 普通区域领主（GT-9600、虫王）和机制攻击打中） | `node test/mp_abyss.mjs [A,B,C,HN,HA,HG]`（全部约 4 分钟） |
 | 动作手感体检（走 / 跑 / 普攻逐步指标：帧停留、身体跳动、脚底打滑、相机甩动；`--pace` 测各种刷新率下的帧节奏） | `WEB=1 node test/animfeel.mjs <职业[:转职]> <名> [--pace] [--town] [--look=套装]`（约 6 秒）；改前 `B-<名>` / 改后 `A-<名>` 各跑一次后 `python3 test/animfeel_compare.py <名>` 出对比图（docs/ANIMATION.md） |
 
 改完存档让玩家**刷新页面**，弹“存档冲突”时选**使用云端存档**。

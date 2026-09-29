@@ -27,9 +27,14 @@ function msArea(e, x, y, r, p, r0 = 0) {
   const fake = { x: x - e.face * 10, y, z: 0, face: e.face }, zMax = p.jump ? 12 : 40;
   for (const t of msFoes(e)) if (t.invul <= 0 && inGround(t, x, y, r) && !(r0 && inGround(t, x, y, r0 - t.w)) && t.z < zMax && t.st !== 'down') applyHit(e, t, { ...msHit(p), box: null }, { proj: true, src: fake });
 }
+// 组队同步（net/coop_mech.js 接管 msNet）：主机上机制启动 / 结束 / 关键时刻（一轮落石、护盾惩罚、破招、属性切换……）调 msNetEv，
+// 队员那边按各机制的 mirror 重放同样的预警、文字和攻击（打的是队员自己，谁挨打谁结算）；结果（护盾破没破、水晶、无敌解除）只认主机
+let msNet = null, msNetSrc = null, msNetEnt = () => null;   // msNetSrc：正在跑哪个机制的攻击（队员统计“被机制打中”用）；msNetEnt(nid)：队员这边按编号找傀儡
+const msNetEv = (m, st, ev, d) => { if (msNet && m && m.nid && !m.puppet) msNet(m, st, ev, d); };
+const msSelf = () => game.realPlayer || game.player;   // 本机玩家（组队主机跑怪物 AI 时 game.player 临时换成了 AI 的目标，见 net/coop.js hostMonster）
 // 真实伤害（按最大 HP 的比例）：安全区机制没站对位置时用
 function msTrueHit(m, t, frac) {
-  if (t.dead || t.invul > 0) return;
+  if (t.dead || t.invul > 0 || t.ghost) return;   // 队友的影子：由队友自己的客户端结算
   const d = Math.max(1, Math.round(t.hpMax * frac)); t.hp -= d; addNumber(d, t.x, t.y, t.z, { player: t.team === 'p' }); cam.shake = Math.max(cam.shake, 7);
   if (t.team === 'p' && !t.summon) game.onPlayerHurt(t, d, m);
   if (t.hp <= 0) { t.hp = 0; killEnt(t, m, {}); return; }
@@ -285,13 +290,15 @@ const MS_ARCH = {
   swarm: { pref: 44, speed: 150 },
   boss: { pref: 110, speed: 95 },
 };
+// 死亡爆炸（特性 onDeath: 'explode'）的参数；组队队员那边收到击杀时也按它在傀儡的位置放一次（net/coop_mech.js）
+function msDeathExplode(D) { const T = D.msTraits || {}; return T.onDeath === 'explode' ? { r: 90, windup: 0.7, dmg: 1.3, elem: D.elem, ...T.explode, suicide: false } : null; }
 function msOnSpawn(m, o) {
   const D = m.def_, T = D.msTraits || {};
   m.control = D.msObj ? msObjAI : regionAI; m.msHome = m.x; m.elem = D.elem;
   if (D.hardness) m.hardness = D.hardness;
   if (D.elem) m.res = { [D.elem]: 40 };
   if (T.immune) m.statusImmune = Object.fromEntries(T.immune.map(k => [k, 1]));
-  if (T.onDeath === 'explode') { const p = { r: 90, windup: 0.7, dmg: 1.3, elem: D.elem, ...T.explode, suicide: false }; m.onDeath = () => msExplodeAt(m, m.x, m.y, p, null); }
+  const X = msDeathExplode(D); if (X) m.onDeath = () => msExplodeAt(m, m.x, m.y, X, null);
   if (T.regen) m.msRegen = { rate: 0.006, delay: 4, ...T.regen, last: game.t, tick: 0 };
   if (D.msObj) { m.noLoot = true; return; }
   if (o.boss && D.boss_) {
@@ -307,7 +314,7 @@ function msOnDamaged(m, a, dmg, crit, h) {
   if (m.msShieldHp > 0) { const take = Math.min(m.msShieldHp, dmg); m.msShieldHp -= take; m.hp += take; }
   if (m.msGuard && !m.msGuard.fired && m.act && m.act.msGuard) { m.msGuard.fired = true; m.msCounterNow = true; }
   if (T.reflect && a && a.team === 'p' && h && h.box && !a.dead) { const r = Math.round(dmg * T.reflect); if (r > 0 && a.hp > r) { a.hp -= r; addNumber(r, a.x, a.y, a.z, { player: true }); } }
-  if (m.msMechs) for (const st of m.msMechs) { const M = BOSS_MECHS[st.id]; if (!st.done && M.onHit) M.onHit(m, st, dmg, a, h); }
+  if (m.msMechs) for (const st of m.msMechs) { const M = BOSS_MECHS[st.id]; if (!st.done && !st.mirror && M.onHit) M.onHit(m, st, dmg, a, h); }   // 镜像（组队队员）：结果以主机为准
   if (m.msMul && m.msMul.invuln === 0) { m.hp = Math.min(m.hpMax, m.hp + dmg); if (!(m.msInvulTxt > game.t)) { m.msInvulTxt = game.t + 0.8; fxText('无敌', m.x, m.y, m.z + 40, { col: '#c8c8ff', size: 12 }); } }
   const H = D.hook && REGION_HOOKS[D.hook]; if (H && H.onHit && m.boss) H.onHit(m, dmg, a, h);
 }
@@ -365,14 +372,16 @@ const BOSS_MECHS = {};
 function defineBossMech(id, def) { BOSS_MECHS[id] = { id, defaults: {}, ...def }; }
 function msMechStart(m, spec) {
   const M = BOSS_MECHS[spec.use]; if (!M) throw new Error(`领主机制库里没有 ${spec.use}`);
+  if (m.puppet) return { id: spec.use, p: { ...M.defaults, ...spec }, t: 0, done: true, ended: true };   // 组队队员的傀儡：机制以主机为准（net/coop_mech.js 镜像过来），本地不启动
   const st = { id: spec.use, p: { ...M.defaults, ...spec }, t: 0, done: false };
   (m.msMechs ??= []).push(st); m.msMul ??= {};
   MS_STATS.mech[spec.use] = (MS_STATS.mech[spec.use] || 0) + 1;
   if (M.start) M.start(m, st, st.p);
+  msNetEv(m, st, 'start', M.net ? M.net(m, st, st.p) : null);
   return st;
 }
 const msMechActive = (m, id) => !!(m.msMechs && m.msMechs.some(s => s.id === id && !s.done));
-function msMechEnd(m, st) { if (st.ended) return; st.done = st.ended = true; const M = BOSS_MECHS[st.id]; if (M.end) M.end(m, st, st.p); }
+function msMechEnd(m, st) { if (st.ended) return; st.done = st.ended = true; const M = BOSS_MECHS[st.id]; if (M.end) M.end(m, st, st.p); msNetEv(m, st, 'end', { b: st.broken ? 1 : 0, r: st.revealed ? 1 : 0 }); }
 function msMechUpdate(m, dt) {
   for (const st of m.msMechs) { if (st.done) { msMechEnd(m, st); continue; } st.t += dt; const M = BOSS_MECHS[st.id]; if (M.update) M.update(m, st, st.p, dt); if (st.done) msMechEnd(m, st); }
   m.msMechs = m.msMechs.filter(s => !s.ended);
@@ -393,15 +402,21 @@ function msHide(m, on) {
 defineBossMech('groggy', { defaults: { max: 100, hit: 0.6, dmg: 300, dur: 7, mul: 1.5, col: '#ffb030' },
   start(m, st, p) { st.g = p.max; st.stun = 0; },
   onHit(m, st, dmg) { if (st.stun > 0) return; st.g -= st.p.hit + dmg / m.hpMax * st.p.dmg; if (st.g <= 0) msGroggyBreak(m, st); },
-  update(m, st, p, dt) { if (st.stun <= 0) return; st.stun -= dt; m.stun = Math.max(m.stun || 0, Math.min(0.3, st.stun)); if (m.st !== 'hit' && m.st !== 'air' && m.st !== 'down') m.setState('hit'); if (st.stun <= 0) { st.g = p.max; delete m.msMul.groggy; msSay(m, '破招结束', '#ffd8a0', 12); } },
+  update(m, st, p, dt) { if (st.stun <= 0) return; st.stun -= dt; m.stun = Math.max(m.stun || 0, Math.min(0.3, st.stun)); if (m.st !== 'hit' && m.st !== 'air' && m.st !== 'down') m.setState('hit'); if (st.stun <= 0) { st.g = p.max; delete m.msMul.groggy; msSay(m, '破招结束', '#ffd8a0', 12); msNetEv(m, st, 'ge'); } },
+  netState: st => ({ g: Math.round(st.g) }),
+  mirror: {
+    start(m, st, p) { st.g = p.max; st.stun = 0; },
+    ev(m, st, p, e) { if (e === 'gb') { st.g = 0; st.stun = p.dur; if (m) msGroggyFx(m); } else if (e === 'ge') { st.stun = 0; st.g = p.max; if (m) msSay(m, '破招结束', '#ffd8a0', 12); } },
+    update(m, st, p, dt) { if (st.stun > 0) st.stun = Math.max(0.01, st.stun - dt); } },
   hud(c, m, st, x, y, w) { msBar(c, x, y, w, st.stun > 0 ? st.stun / st.p.dur : st.g / st.p.max, st.stun > 0 ? '#ff6a3a' : st.p.col, st.stun > 0 ? `破招！${st.stun.toFixed(1)}s` : '破招槽'); return 16; } });
 function msGroggyBreak(m, st) {
   st = st || (m.msMechs || []).find(s => s.id === 'groggy' && !s.done); if (!st || st.stun > 0) return;
   st.g = 0; st.stun = st.p.dur; m.msMul.groggy = st.p.mul; m.msQueue = [];
   if (m.act) m.endAct(); m.superArmor = 0; m.setState('hit'); m.stun = 0.3;
-  fxText('破招！', m.x, m.y, m.z + m.h * (m.scale || 1) + 20, { col: '#ffb030', size: 22, dur: 1.6 }); cam.shake = Math.max(cam.shake, 10); cam.flash = 0.15; cam.flashCol = '#ffe0a0'; sfx.boom(1);
+  msGroggyFx(m); msNetEv(m, st, 'gb');
   MS_STATS.mech.groggyBreak = (MS_STATS.mech.groggyBreak || 0) + 1;
 }
+function msGroggyFx(m) { fxText('破招！', m.x, m.y, m.z + m.h * (m.scale || 1) + 20, { col: '#ffb030', size: 22, dur: 1.6 }); cam.shake = Math.max(cam.shake, 10); cam.flash = 0.15; cam.flashCol = '#ffe0a0'; sfx.boom(1); }
 // 无敌阶段：until = crystals 击破 n 个水晶 | adds 打倒 n 只 kind | survive 撑过 survive 秒 | hook 由自定义钩子结束（m.msInvulDone = true）
 // hide：领主离开场地（打水晶 / 小怪时默认 true，否则留在原地，伤害 ×0）
 defineBossMech('invuln', { defaults: { until: 'crystals', n: 4, kind: 'msCrystal', name: '', hpFrac: 0.025, survive: 12, hide: null, say: '', col: '#b890ff' },
@@ -423,24 +438,50 @@ defineBossMech('invuln', { defaults: { until: 'crystals', n: 4, kind: 'msCrystal
     if (ok) st.done = true;
   },
   end(m, st, p) { delete m.msMul.invuln; m.msInvulDone = false; msHide(m, false); MS_STATS.mech.invulnEnd = (MS_STATS.mech.invulnEnd || 0) + 1; fxText('无敌解除！', m.x, m.y, m.z + 80, { col: '#ffe070', size: 16, dur: 1.4 }); },
+  net: (m, st) => ({ o: st.objs.map(o => o.nid || 0) }),
+  mirror: {   // 队员：水晶 / 小怪是主机刷的（照常同步成傀儡），领主藏起来由快照决定；这里只管提示和 HUD
+    start(m, st, p, d) { st.oids = d.o || []; st.objs = []; if (p.say) toastMsg(p.say, p.col); if (m && !(p.hide ?? p.until !== 'survive')) (m.msMul ??= {}).invuln = 0; else if (m) fxBurst(m.x, m.y, 60, 200, '#6a3aaa'); },
+    update(m, st) { st.objs = st.oids.map(id => { const o = msNetEnt(id); return { dead: !o || o.dead || o.remove }; }); },
+    end(m) { if (!m) return; if (m.msMul) delete m.msMul.invuln; fxText('无敌解除！', m.x, m.y, m.z + 80, { col: '#ffe070', size: 16, dur: 1.4 }); } },
   hud(c, m, st, x, y) { const p = st.p, left = st.objs.filter(o => !o.dead && !o.remove).length; uiText(p.until === 'survive' ? `无敌 · 撑过 ${Math.max(0, p.survive - st.t).toFixed(0)} 秒` : p.until === 'hook' ? '无敌' : `无敌 · 击破${p.name || MON[p.kind].name} ${p.n - left}/${p.n}`, x, y + 14, { size: 16, color: '#d8c8ff', sw: 3 }); return 18; } });
 // 可破护盾：护盾值 hp×最大 HP（或 hits 次命中）挡住全部伤害；dur 秒内没打破 → punish（heal 回血 | nova 大范围冲击）；onBreak: 'groggy' 打破后直接破招
 defineBossMech('shield', { defaults: { hp: 0.06, hits: 0, dur: 0, punish: 'heal', onBreak: '', col: '#7ae0c8', say: '' },
-  start(m, st, p) {
-    st.hp = st.max = p.hits || Math.round(m.hpMax * p.hp); if (p.say) msSay(m, p.say, p.col, 14);
-    addFx({ x: m.x, y: m.y + 0.5, z: 0, dur: 1e9, st, draw(c) { if (this.st.done || m.dead) { this.t = this.dur; return; } const H = m.h * (m.scale || 1), X = sx(m.x), Y = sy(m.y, m.z), k = this.st.hp / this.st.max;
-      c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.18 + 0.2 * k; c.fillStyle = p.col; c.beginPath(); c.ellipse(X, Y - H * 0.5, H * 0.5, H * 0.66, 0, 0, TAU); c.fill(); c.globalAlpha = 0.6; c.strokeStyle = p.col; c.lineWidth = 2; c.stroke(); c.restore(); } });
-  },
+  start(m, st, p) { st.hp = st.max = p.hits || Math.round(m.hpMax * p.hp); msShieldFx(m, st, p); },
   onHit(m, st, dmg) { const take = st.p.hits ? 1 : Math.min(st.hp, dmg); st.hp -= take; m.hp = Math.min(m.hpMax, m.hp + (st.p.hits ? dmg : take)); if (st.hp <= 0) { st.done = true; st.broken = true; } },
-  update(m, st, p) { if (p.dur && st.t > p.dur && !st.done) { st.done = true; if (p.punish === 'heal') { const h = Math.round(m.hpMax * 0.05); m.hp = Math.min(m.hpMax, m.hp + h); addNumber(h, m.x, m.y, m.z + 40, { heal: true }); msSay(m, '护盾吸收完毕，回复了体力', p.col); } else skyNova(m, 200, 1.2, p.col, { dmg: 1.6 }); } },
-  end(m, st, p) { if (!st.broken) return; fxText('护盾破碎！', m.x, m.y, m.z + 90, { col: p.col, size: 18, dur: 1.4 }); fxBurst(m.x, m.y, 60, 200, p.col); sfx.boom(0.7); if (p.onBreak === 'groggy') msGroggyBreak(m); },
+  update(m, st, p) { if (p.dur && st.t > p.dur && !st.done) { st.done = true; if (p.punish === 'heal') { const h = Math.round(m.hpMax * 0.05); m.hp = Math.min(m.hpMax, m.hp + h); addNumber(h, m.x, m.y, m.z + 40, { heal: true }); } msShieldPunish(m, p); msNetEv(m, st, 'pn'); } },
+  end(m, st, p) { if (!st.broken) return; msShieldBreakFx(m, p); if (p.onBreak === 'groggy') msGroggyBreak(m); },
+  net: (m, st) => ({ max: st.max }),
+  netState: st => ({ hp: Math.round(st.hp) }),
+  mirror: {
+    start(m, st, p, d) { st.hp = st.max = d.max || 1; if (m) msShieldFx(m, st, p); },
+    ev(m, st, p, e) { if (e === 'pn' && m) msShieldPunish(m, p); },
+    end(m, st, p, d) { if (d.b && m) msShieldBreakFx(m, p); } },
   hud(c, m, st, x, y, w) { msBar(c, x, y, w, st.hp / st.max, st.p.col, '护盾'); return 16; } });
+function msShieldFx(m, st, p) {
+  if (p.say) msSay(m, p.say, p.col, 14);
+  addFx({ x: m.x, y: m.y + 0.5, z: 0, dur: 1e9, st, draw(c) { if (this.st.done || m.dead) { this.t = this.dur; return; } const H = m.h * (m.scale || 1), X = sx(m.x), Y = sy(m.y, m.z), k = this.st.hp / this.st.max;
+    c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.18 + 0.2 * k; c.fillStyle = p.col; c.beginPath(); c.ellipse(X, Y - H * 0.5, H * 0.5, H * 0.66, 0, 0, TAU); c.fill(); c.globalAlpha = 0.6; c.strokeStyle = p.col; c.lineWidth = 2; c.stroke(); c.restore(); } });
+}
+function msShieldPunish(m, p) { if (p.punish === 'heal') msSay(m, '护盾吸收完毕，回复了体力', p.col); else skyNova(m, 200, 1.2, p.col, { dmg: 1.6 }); }
+function msShieldBreakFx(m, p) { fxText('护盾破碎！', m.x, m.y, m.z + 90, { col: p.col, size: 18, dur: 1.4 }); fxBurst(m.x, m.y, 60, 200, p.col); sfx.boom(0.7); }
 // 安全区：windup 秒后全屏重击（frac × 最大 HP 的真实伤害），只有站进安全区才没事
 // mode = zone 光圈（n 个，半径 r）| near 贴近领主 | far 远离领主；safeCol 光圈颜色
 defineBossMech('safezone', { defaults: { windup: 3.2, n: 2, r: 70, frac: 0.45, mode: 'zone', col: '#a070ff', safeCol: '#e8f4ff', say: '站进光圈！' },
   start(m, st, p) {
     const W = msRoomW(); st.zones = [];
     if (p.mode === 'zone') for (let i = 0; i < p.n; i++) st.zones.push({ x: clamp(W * (0.2 + 0.6 * (i + rnd(0.2, 0.8)) / p.n), 90, W - 90), y: rnd(DEPTH * 0.3, DEPTH * 0.7) });
+    msSafezoneFx(m, st, p);
+  },
+  update(m, st, p) {
+    if (st.t < p.windup) return;
+    st.done = true; msSafezoneFire(m, st, p, ents.filter(t => t.team === 'p' && !t.dead && !t.remove && !t.ghost));
+  },
+  net: (m, st) => ({ z: st.zones.map(z => [Math.round(z.x), Math.round(z.y)]) }),
+  mirror: {   // 队员：同样的光圈和倒计时，到点只判定自己（主机先到点结束的话，收到结束时补一次）
+    start(m, st, p, d) { st.zones = (d.z || []).map(([x, y]) => ({ x, y })); if (m) msSafezoneFx(m, st, p); },
+    update(m, st, p) { if (!st.fired && st.t >= p.windup) { st.fired = true; if (m) msSafezoneFire(m, st, p, [msSelf()]); } },
+    end(m, st, p) { if (!st.fired) { st.fired = true; if (m) msSafezoneFire(m, st, p, [msSelf()]); } } } });
+function msSafezoneFx(m, st, p) {
     toastMsg(p.say, p.safeCol); msSay(m, p.say, p.safeCol, 16); sfx.buff();
     addFx({ x: 0, y: -1, z: 0, dur: p.windup, st, draw(c) {
       const k = this.t / this.dur, Y0 = sy(0, 0), Y1 = sy(DEPTH, 0), blink = Math.floor(this.t * (4 + k * 10)) % 2;
@@ -452,24 +493,22 @@ defineBossMech('safezone', { defaults: { windup: 3.2, n: 2, r: 70, frac: 0.45, m
       c.restore();
       uiTextWorld(c, `${Math.max(0, this.dur - this.t).toFixed(1)}`, WW / 2, 120, p.safeCol);
     } });
-  },
-  update(m, st, p) {
-    if (st.t < p.windup) return;
-    st.done = true; cam.flash = 0.2; cam.flashCol = p.col; sfx.boom(1.2);
-    for (const t of ents) {
-      if (t.team !== 'p' || t.dead || t.remove) continue;
+}
+function msSafezoneFire(m, st, p, who) {
+    cam.flash = 0.2; cam.flashCol = p.col; sfx.boom(1.2);
+    for (const t of who) {
+      if (!t || t.dead || t.remove) continue;
       const safe = p.mode === 'zone' ? st.zones.some(z => inGround(t, z.x, z.y, p.r)) : p.mode === 'near' ? inGround(t, m.x, m.y, p.r) : !inGround(t, m.x, m.y, p.r);
       if (safe) { fxText('安全', t.x, t.y, t.z + 60, { col: p.safeCol, size: 12 }); MS_STATS.mech.safe = (MS_STATS.mech.safe || 0) + 1; }
       else msTrueHit(m, t, p.frac);
     }
-  } });
+}
 function uiTextWorld(c, txt, x, y, col) { c.save(); c.font = '900 30px "Arial Black",sans-serif'; c.textAlign = 'center'; c.lineWidth = 6; c.strokeStyle = '#140a1a'; c.strokeText(txt, x, y); c.fillStyle = col; c.fillText(txt, x, y); c.restore(); }
 // 场地危害：kind = fire 地火（每 every 秒在目标附近 n 处）| debris 落石（全场随机 n 处）| shrink 场地缩小（两侧暗区每秒 4% 伤害，最窄 minW）；dur = 0 一直持续
 defineBossMech('hazard', { defaults: { kind: 'fire', every: 4, n: 2, r: 50, dmg: 1.0, dur: 0, windup: 1.1, minW: 560, speed: 22, col: '#ff7a3a' },
   start(m, st, p) {
     st.cd = 1.5;
-    if (p.kind === 'shrink') { st.cx = msRoomW() / 2; st.w = msRoomW(); st.tick = 0; addFx({ x: 0, y: -1, z: 0, dur: 1e9, st, draw(c) { if (this.st.done || m.dead) { this.t = this.dur; return; } const s = this.st, Y0 = sy(0, 0) - 8, Y1 = sy(DEPTH, 0) + 8, a = sx(s.cx - s.w / 2), b = sx(s.cx + s.w / 2);
-      c.save(); c.globalAlpha = 0.45; c.fillStyle = '#1a0a24'; c.fillRect(-10, Y0, a + 10, Y1 - Y0); c.fillRect(b, Y0, WW - b + 10, Y1 - Y0); c.globalAlpha = 0.9; c.fillStyle = p.col; c.fillRect(a - 2, Y0, 3, Y1 - Y0); c.fillRect(b - 1, Y0, 3, Y1 - Y0); c.restore(); } }); }
+    if (p.kind === 'shrink') { st.cx = msRoomW() / 2; st.w = msRoomW(); st.tick = 0; msShrinkFx(m, st, p); }
   },
   update(m, st, p, dt) {
     if (p.dur && st.t > p.dur) { st.done = true; return; }
@@ -480,48 +519,82 @@ defineBossMech('hazard', { defaults: { kind: 'fire', every: 4, n: 2, r: 50, dmg:
     }
     st.cd -= dt; if (st.cd > 0) return; st.cd = p.every;
     const pl = game.player, W = msRoomW(); if (!pl) return;
-    for (let i = 0; i < p.n; i++) {
-      const x = p.kind === 'debris' ? rnd(60, W - 60) : clamp(pl.x + rnd(-150, 150), 40, W - 40), y = p.kind === 'debris' ? rnd(10, DEPTH - 10) : clamp(pl.y + rnd(-50, 50), 8, DEPTH - 8);
-      telegraph({ x, y, r: p.r, dur: p.windup, kind: p.kind === 'debris' ? 'hex' : 'circle', col: p.col, fire: g => { if (m.dead) return; if (p.kind === 'debris') meteorImpact(g, 0.45); else { fxShock(g.x, g.y, p.r, p.col); fxBurst(g.x, g.y, 20, 90, p.col); } msArea(m, g.x, g.y, p.r, { dmg: p.dmg, status: p.kind === 'fire' ? 'burn' : null, down: p.kind === 'debris' }); } });
-    }
+    const L = [];
+    for (let i = 0; i < p.n; i++) L.push([Math.round(p.kind === 'debris' ? rnd(60, W - 60) : clamp(pl.x + rnd(-150, 150), 40, W - 40)), Math.round(p.kind === 'debris' ? rnd(10, DEPTH - 10) : clamp(pl.y + rnd(-50, 50), 8, DEPTH - 8))]);
+    msHazardVolley(m, p, L); msNetEv(m, st, 'v', { l: L });
   },
+  net: (m, st) => st.cx !== undefined ? { cx: st.cx, w: st.w } : null,
+  mirror: {   // 队员：落石 / 地火按主机发来的位置放同样的预警（打的是自己）；场地缩小在本地按同样的速度缩、自己判定暗区
+    start(m, st, p, d) { if (p.kind === 'shrink' && d) { st.cx = d.cx; st.w = d.w; st.tick = 0; if (m) msShrinkFx(m, st, p); } },
+    ev(m, st, p, e, d) { if (e === 'v' && m) msHazardVolley(m, p, d.l || []); },
+    update(m, st, p, dt) {
+      if (p.kind !== 'shrink' || st.w === undefined) return;
+      st.w = Math.max(p.minW, st.w - p.speed * dt); st.tick -= dt; if (st.tick > 0) return; st.tick = 1;
+      const t = msSelf(); if (m && t && !t.dead && Math.abs(t.x - st.cx) > st.w / 2) msTrueHit(m, t, 0.04);
+    } },
   hud(c, m, st, x, y) { if (st.p.kind !== 'shrink') return 0; uiText('场地正在缩小', x, y + 14, { size: 15, color: '#ffb08a', sw: 3 }); return 18; } });
+function msHazardVolley(m, p, L) {
+  for (const [x, y] of L) telegraph({ x, y, r: p.r, dur: p.windup, kind: p.kind === 'debris' ? 'hex' : 'circle', col: p.col, fire: g => { if (m.dead) return; if (p.kind === 'debris') meteorImpact(g, 0.45); else { fxShock(g.x, g.y, p.r, p.col); fxBurst(g.x, g.y, 20, 90, p.col); } msArea(m, g.x, g.y, p.r, { dmg: p.dmg, status: p.kind === 'fire' ? 'burn' : null, down: p.kind === 'debris' }); } });
+}
+function msShrinkFx(m, st, p) {
+  addFx({ x: 0, y: -1, z: 0, dur: 1e9, st, draw(c) { if (this.st.done || m.dead) { this.t = this.dur; return; } const s = this.st, Y0 = sy(0, 0) - 8, Y1 = sy(DEPTH, 0) + 8, a = sx(s.cx - s.w / 2), b = sx(s.cx + s.w / 2);
+    c.save(); c.globalAlpha = 0.45; c.fillStyle = '#1a0a24'; c.fillRect(-10, Y0, a + 10, Y1 - Y0); c.fillRect(b, Y0, WW - b + 10, Y1 - Y0); c.globalAlpha = 0.9; c.fillStyle = p.col; c.fillRect(a - 2, Y0, 3, Y1 - Y0); c.fillRect(b - 1, Y0, 3, Y1 - Y0); c.restore(); } });
+}
 // 狂暴计时（DPS 检查）：t 秒没打倒 → 攻击 ×atk、移速 ×speed、出招间隔 ×0.6
 defineBossMech('enrage', { defaults: { t: 180, atk: 1.8, speed: 1.3, say: '狂暴了！' },
-  update(m, st, p) { if (st.fired || st.t < p.t) return; st.fired = true; m.atk = Math.round(m.atk * p.atk); m.speed *= p.speed; m.msCdMul = 0.6; msSay(m, p.say, '#ff4a3a', 18); toastMsg(`${m.name}${p.say}`, '#ff6a4a'); fxAura(m, '#ff3a2a', 1.2); sfx.boom(1); },
+  update(m, st, p) { if (st.fired || st.t < p.t) return; st.fired = true; m.atk = Math.round(m.atk * p.atk); m.speed *= p.speed; m.msCdMul = 0.6; msEnrageFx(m, p); msNetEv(m, st, 'f'); },
+  mirror: { ev(m, st, p, e) { if (e === 'f') { st.fired = true; if (m) msEnrageFx(m, p); } } },   // 攻击力变了会随生成信息重发（net/coop.js snapshot）
   hud(c, m, st, x, y) { const left = st.p.t - st.t; uiText(st.fired ? '狂暴中' : `狂暴倒计时 ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`, x + 790, y + 14, { size: 15, align: 'right', color: st.fired || left < 30 ? '#ff6a4a' : '#e8d8c8', sw: 3 }); return 0; } });
+function msEnrageFx(m, p) { msSay(m, p.say, '#ff4a3a', 18); toastMsg(`${m.name}${p.say}`, '#ff6a4a'); fxAura(m, '#ff3a2a', 1.2); sfx.boom(1); }
 // 分身：召出 n 个暗影（kind 默认 <领主 id>Shade），领主混在里面换位置；打暗影会被惩罚（punish: nova 爆炸 | heal 领主回血），打中本体分身就散了
 defineBossMech('clones', { defaults: { n: 3, hp: 0.015, dur: 14, punish: 'nova', dmg: 1.2, r: 110, kind: '', say: '' },
   start(m, st, p) {
     const kind = p.kind || m.kind + 'Shade', W = msRoomW(), slots = [];
     for (let i = 0; i <= p.n; i++) slots.push({ x: clamp(W * (0.15 + 0.7 * i / p.n) + rnd(-40, 40), 80, W - 80), y: rnd(30, DEPTH - 30) });
     const me = Math.floor(Math.random() * slots.length);
+    st.from = [Math.round(m.x), Math.round(m.y)];
     fxBurst(m.x, m.y, 60, 200, '#6a3aaa'); if (m.act) m.endAct(); m.x = slots[me].x; m.y = slots[me].y; fxBurst(m.x, m.y, 60, 140, '#6a3aaa');
     st.shades = slots.filter((s, i) => i !== me).map(s => { const o = spawnMonster(kind, s.x, s.y, { lvl: m.lvl, ...skyMul() }); o.hp = o.hpMax = Math.max(1, Math.round(m.hpMax * p.hp)); o.noLoot = true; o.msCloneOf = m; o.face = m.face;
-      o.onDeath = () => { if (st.done) return; if (p.punish === 'heal') { const h = Math.round(m.hpMax * 0.03); m.hp = Math.min(m.hpMax, m.hp + h); addNumber(h, m.x, m.y, m.z + 40, { heal: true }); fxText('打错了！', o.x, o.y, o.z + 60, { col: '#ff8a8a', size: 14 }); } else msExplodeAt(o, o.x, o.y, { r: p.r, windup: 0.5, dmg: p.dmg, elem: 'dark', col: '#a070ff' }, null); MS_STATS.mech.clonePunish = (MS_STATS.mech.clonePunish || 0) + 1; };
+      o.onDeath = () => { if (st.done) return; if (p.punish === 'heal') { const h = Math.round(m.hpMax * 0.03); m.hp = Math.min(m.hpMax, m.hp + h); addNumber(h, m.x, m.y, m.z + 40, { heal: true }); } msClonePunish(o, p, o.x, o.y); msNetEv(m, st, 'px', { x: Math.round(o.x), y: Math.round(o.y), s: o.nid || 0 }); MS_STATS.mech.clonePunish = (MS_STATS.mech.clonePunish || 0) + 1; };
       return o; });
     if (p.say) toastMsg(p.say, '#d0b0ff');
   },
   onHit(m, st) { st.revealed = true; },
   update(m, st, p) { if (st.revealed || st.t > p.dur || st.shades.every(o => o.dead)) st.done = true; },
-  end(m, st) { for (const o of st.shades) if (!o.dead && !o.remove) { fxBurst(o.x, o.y, 50, 110, '#6a3aaa'); o.remove = true; } if (st.revealed) fxText('找到本体了！', m.x, m.y, m.z + 90, { col: '#ffe070', size: 15 }); } });
+  end(m, st) { for (const o of st.shades) if (!o.dead && !o.remove) { fxBurst(o.x, o.y, 50, 110, '#6a3aaa'); o.remove = true; } if (st.revealed) fxText('找到本体了！', m.x, m.y, m.z + 90, { col: '#ffe070', size: 15 }); },
+  net: (m, st) => ({ a: st.from, b: [Math.round(m.x), Math.round(m.y)], sh: st.shades.map(o => o.nid || 0) }),
+  mirror: {   // 队员：暗影是主机刷的（同步成傀儡）；打错暗影的惩罚爆炸按主机发来的位置放，打的是自己
+    start(m, st, p, d) { if (d.a) fxBurst(d.a[0], d.a[1], 60, 200, '#6a3aaa'); if (d.b) fxBurst(d.b[0], d.b[1], 60, 140, '#6a3aaa'); st.sh = d.sh || []; if (p.say) toastMsg(p.say, '#d0b0ff'); },
+    ev(m, st, p, e, d) { if (e === 'px') { const o = msNetEnt(d.s) || m; if (o) msClonePunish(o, p, d.x, d.y); } },
+    end(m, st, p, d) { for (const id of st.sh || []) { const o = msNetEnt(id); if (o && !o.dead && !o.remove) { fxBurst(o.x, o.y, 50, 110, '#6a3aaa'); o.remove = true; } } if (d.r && m) fxText('找到本体了！', m.x, m.y, m.z + 90, { col: '#ffe070', size: 15 }); } } });
+function msClonePunish(o, p, x, y) { if (p.punish === 'heal') fxText('打错了！', x, y, 60, { col: '#ff8a8a', size: 14 }); else msExplodeAt(o, x, y, { r: p.r, windup: 0.5, dmg: p.dmg, elem: 'dark', col: '#a070ff' }, null); }
 // 属性切换：领主在 modes 之间轮换（每 every 秒）；场上有对应颜色的两个法阵，站在“相克”颜色的法阵里打才有全额伤害，否则 ×mul（亮破暗，暗破亮）
 defineBossMech('element', { defaults: { modes: ['light', 'dark'], every: 12, mul: 0.35, r: 95, say: '' },
-  start(m, st, p) {
-    const W = msRoomW(); st.mode = 0; st.next = p.every; st.zones = p.modes.map((md, i) => ({ md, x: W * (i ? 0.72 : 0.28), y: DEPTH / 2 }));
+  start(m, st, p) { msElemInit(st, p); msElemFx(m, st, p); },
+  update(m, st, p, dt) {
+    st.next -= dt; if (st.next <= 0) { st.next = p.every; st.mode = (st.mode + 1) % p.modes.length; msElemSay(m, st, p); msNetEv(m, st, 'md', { i: st.mode }); }
+    msElemGood(m, st, p);
+  },
+  end(m) { delete m.msMul.element; },
+  mirror: {   // 队员：法阵、属性切换（以主机为准）照常显示；站没站对按自己算（伤害倍率主机按队员的位置另算，见 net/coop.js remoteHit）
+    start(m, st, p) { msElemInit(st, p); if (m) msElemFx(m, st, p); },
+    ev(m, st, p, e, d) { if (e === 'md') { st.mode = d.i | 0; st.next = p.every; if (m) msElemSay(m, st, p); } },
+    update(m, st, p) { if (m) msElemGood(m, st, p); },
+    end(m) { if (m && m.msMul) delete m.msMul.element; } },
+  hud(c, m, st, x, y) { const cur = st.p.modes[st.mode], want = st.p.modes.find(md => md !== cur); uiText(`${ELEM_NAME_MS[cur]}属性 · 站进${ELEM_NAME_MS[want]}之阵攻击${st.good ? '（有效）' : `（伤害 ×${st.p.mul}）`}`, x, y + 14, { size: 15, color: st.good ? '#ffe8a0' : '#c8b8e8', sw: 3 }); return 18; } });
+function msElemInit(st, p) { const W = msRoomW(); st.mode = 0; st.next = p.every; st.zones = p.modes.map((md, i) => ({ md, x: W * (i ? 0.72 : 0.28), y: DEPTH / 2 })); }
+function msElemSay(m, st, p) { msSay(m, `${m.name}变成了${ELEM_NAME_MS[p.modes[st.mode]] || p.modes[st.mode]}属性！`, MS_ELEM_COL[p.modes[st.mode]], 14); }
+const msElemOk = (st, p, pl) => { const cur = p.modes[st.mode], z = pl && st.zones.find(z => inGround(pl, z.x, z.y, p.r)); return !!(z && z.md !== cur); };
+function msElemGood(m, st, p) { st.good = msElemOk(st, p, msSelf()); (m.msMul ??= {}).element = st.good ? 1 : p.mul; }
+// 某个玩家打这只怪时的属性倍率（组队主机按队员影子的位置算队员的命中）；没有属性切换机制时是 1
+function msElemMulFor(m, pl) { const st = m.msMechs && m.msMechs.find(s => s.id === 'element' && !s.done); return st ? (msElemOk(st, st.p, pl) ? 1 : st.p.mul) : 1; }
+function msElemFx(m, st, p) {
     addFx({ x: 0, y: -1, z: 0, dur: 1e9, st, draw(c) { if (this.st.done || m.dead) { this.t = this.dur; return; }
       c.save(); c.globalCompositeOperation = 'lighter';
       for (const z of this.st.zones) { const X = sx(z.x), Y = sy(z.y, 0), col = MS_ELEM_COL[z.md] || '#ffffff'; c.globalAlpha = 0.22; c.fillStyle = col; c.beginPath(); c.ellipse(X, Y, p.r, p.r * GR, 0, 0, TAU); c.fill(); c.globalAlpha = 0.8; c.strokeStyle = col; c.lineWidth = 2; c.stroke(); }
       const col = MS_ELEM_COL[p.modes[this.st.mode]], H = m.h * (m.scale || 1); c.globalAlpha = 0.35 + 0.15 * Math.sin(game.t * 6); c.strokeStyle = col; c.lineWidth = 3; c.beginPath(); c.ellipse(sx(m.x), sy(m.y, m.z) - H * 0.5, H * 0.45, H * 0.62, 0, 0, TAU); c.stroke();
       c.restore(); } });
-  },
-  update(m, st, p, dt) {
-    st.next -= dt; if (st.next <= 0) { st.next = p.every; st.mode = (st.mode + 1) % p.modes.length; msSay(m, `${m.name}变成了${ELEM_NAME_MS[p.modes[st.mode]] || p.modes[st.mode]}属性！`, MS_ELEM_COL[p.modes[st.mode]], 14); }
-    const pl = game.player, cur = p.modes[st.mode], z = pl && st.zones.find(z => inGround(pl, z.x, z.y, p.r));
-    st.good = !!(z && z.md !== cur); m.msMul.element = st.good ? 1 : p.mul;
-  },
-  end(m) { delete m.msMul.element; },
-  hud(c, m, st, x, y) { const cur = st.p.modes[st.mode], want = st.p.modes.find(md => md !== cur); uiText(`${ELEM_NAME_MS[cur]}属性 · 站进${ELEM_NAME_MS[want]}之阵攻击${st.good ? '（有效）' : `（伤害 ×${st.p.mul}）`}`, x, y + 14, { size: 15, color: st.good ? '#ffe8a0' : '#c8b8e8', sw: 3 }); return 18; } });
+}
 const ELEM_NAME_MS = { light: '光', dark: '暗', fire: '火', ice: '冰' };
 // 连线：召出搭档 kind（hp × 领主最大 HP），两者之间有连线
 // mode = guard 搭档活着时领主受到的伤害 ×mul | share 领主受到的伤害分 share 给搭档 | close 两者距离小于 dist 时每秒各回 1% HP
@@ -531,11 +604,13 @@ defineBossMech('tether', { defaults: { kind: '', mode: 'guard', mul: 0.35, share
     const W = msRoomW(), pt = spawnMonster(p.kind, m.x < W / 2 ? W - 170 : 170, clamp(m.y + 50, 20, DEPTH - 20), { lvl: m.lvl, drop: true, ...skyMul() });
     pt.hp = pt.hpMax = Math.round(m.hpMax * p.hp); pt.noLoot = true; st.pt = pt; st.tick = 0;
     if (p.mode === 'guard') m.msMul.tether = p.mul;
-    if (p.say) toastMsg(p.say, p.col);
-    addFx({ x: 0, y: -1, z: 0, dur: 1e9, st, draw(c) { if (this.st.done || m.dead || pt.dead) { this.t = this.dur; return; }
-      const a = [sx(m.x), sy(m.y, m.z + m.h * 0.6)], b = [sx(pt.x), sy(pt.y, pt.z + pt.h * 0.6)], wob = Math.sin(game.t * 9) * 6;
-      c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = p.col; c.globalAlpha = 0.7; c.lineWidth = 3; c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 30 + wob, b[0], b[1]); c.stroke(); c.restore(); } });
+    msTetherFx(m, st, p);
   },
+  net: (m, st) => ({ pt: st.pt.nid || 0 }),
+  mirror: {   // 队员：搭档是主机刷的（同步成傀儡），这里画连线、HUD 提示
+    start(m, st, p, d) { st.ptId = d.pt; st.pt = msNetEnt(d.pt) || { name: MON[p.kind] ? MON[p.kind].name : '', dead: false, remove: false, x: 0, y: 0, z: 0, h: 80 }; if (!m) return; if (p.mode === 'guard') (m.msMul ??= {}).tether = p.mul; msTetherFx(m, st, p); },
+    update(m, st) { const o = msNetEnt(st.ptId); if (o) st.pt = o; },
+    end(m, st, p) { if (!m) return; if (m.msMul) delete m.msMul.tether; fxText('连线断开了！', m.x, m.y, m.z + 90, { col: p.col, size: 16, dur: 1.4 }); } },
   onHit(m, st, dmg) { if (st.p.mode !== 'share' || st.pt.dead) return; const s = Math.round(dmg * st.p.share); m.hp = Math.min(m.hpMax, m.hp + s); st.pt.hp = Math.max(1, st.pt.hp - s); },
   update(m, st, p, dt) {
     if (st.pt.dead || st.pt.remove) { st.done = true; return; }
@@ -543,6 +618,12 @@ defineBossMech('tether', { defaults: { kind: '', mode: 'guard', mul: 0.35, share
   },
   end(m, st, p) { delete m.msMul.tether; fxText('连线断开了！', m.x, m.y, m.z + 90, { col: p.col, size: 16, dur: 1.4 }); if (p.onBreak === 'groggy' && st.pt.dead) msGroggyBreak(m); },
   hud(c, m, st, x, y) { const p = st.p; uiText(p.mode === 'guard' ? `${st.pt.name}在守护：伤害 ×${p.mul}，先打倒${st.pt.name}` : p.mode === 'share' ? `伤害分担给${st.pt.name}` : `把${m.name}和${st.pt.name}分开`, x, y + 14, { size: 15, color: '#ffc8d8', sw: 3 }); return 18; } });
+function msTetherFx(m, st, p) {
+  if (p.say) toastMsg(p.say, p.col);
+  addFx({ x: 0, y: -1, z: 0, dur: 1e9, st, draw(c) { const pt = this.st.pt; if (this.st.done || m.dead || !pt || pt.dead) { this.t = this.dur; return; }
+    const a = [sx(m.x), sy(m.y, m.z + m.h * 0.6)], b = [sx(pt.x), sy(pt.y, pt.z + pt.h * 0.6)], wob = Math.sin(game.t * 9) * 6;
+    c.save(); c.globalCompositeOperation = 'lighter'; c.strokeStyle = p.col; c.globalAlpha = 0.7; c.lineWidth = 3; c.beginPath(); c.moveTo(a[0], a[1]); c.quadraticCurveTo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 30 + wob, b[0], b[1]); c.stroke(); c.restore(); } });
+}
 // 领主血条下面的机制提示（包一层 HUD.drawTarget，不改 ui/hud.js）
 function msBar(c, x, y, w, k, col, label) {
   c.fillStyle = 'rgba(10,8,12,.8)'; c.fillRect(x - 2, y + 2, w + 4, 12); c.fillStyle = '#2a2024'; c.fillRect(x, y + 4, w, 8);

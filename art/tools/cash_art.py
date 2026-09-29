@@ -96,6 +96,7 @@ ICONS = {
              ('orb_av1', 'a glowing light-blue orb with a small wing inside'), ('orb_av2', 'a glowing pink orb with a ribbon bow inside'),
              ('orb_pet1', 'a glowing lavender orb with a paw print inside'), ('orb_pet_supreme', 'a radiant golden orb with a winged paw print inside'),
              ('tk_lotto', 'a golden lottery ticket with a sunrise emblem'), ('tk_avopt', 'a light blue ticket with a clothes hanger and circular arrows emblem')],
+    'tickets_lv': [('tk_maxlv', "a radiant gold-and-purple level-up ticket with a big bold golden upward arrow and the bold text 'Lv.60'")],
     'tickets': [('tk_enh7', "a blue enhancement ticket with a sword emblem and a big bold '+7'"), ('tk_enh10', "a golden enhancement ticket with a sword emblem and a big bold '+10'"),
                 ('tk_amp7', "a red amplification ticket with a glowing red crystal and a big bold '+7'"), ('tk_amp10', "a crimson and gold amplification ticket with a glowing red crystal and a big bold '+10'"),
                 ('tk_avatar', 'a pink ticket with a cute dress emblem'), ('tk_sky', 'a radiant sky-blue and gold ticket with an angel wings emblem'),
@@ -202,7 +203,7 @@ def cut_icons(prev):
         p = os.path.join(SRC, 'icons', f'{s}.png')
         if not os.path.exists(p): print('缺少', s); continue
         im = remove_bg(Image.open(p)); arr, lab, boxes = blobs(im, 12)
-        H, W = arr.shape[:2]; cols = 4; rows = (len(items) + cols - 1) // cols
+        H, W = arr.shape[:2]; cols = min(4, len(items)); rows = (len(items) + cols - 1) // cols   # 不满 4 个的小表按实际个数分列
         cells = {}
         for b in boxes:
             cy, cx = (b[0] + b[1]) / 2, (b[2] + b[3]) / 2

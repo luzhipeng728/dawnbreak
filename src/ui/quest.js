@@ -83,7 +83,8 @@ function drawQuestTracker(c) {
   if (dg && dg.state !== 'play') return;
   const ids = d.questTrack.filter(id => d.quests[id] && QUESTS[id]).slice(0, dg ? 4 : QUEST_TRACK_MAX);
   const hint = !dg && questNextMain();
-  if (!ids.length && !hint) { questUI.trackRect = null; return; }
+  const extra = dg ? [] : questList(q => q.type !== 'main' && !q.story && questState(q.id) === 'avail').slice(0, 3);   // 城镇里：可接的每日 / 支线（没接的不在 questTrack 里，以前只能进任务日志看）
+  if (!ids.length && !hint && !extra.length) { questUI.trackRect = null; return; }
   const W = 420, x1 = 1900, x0 = x1 - W, y0 = dg ? 330 + hudComboDy() : (typeof townTrackerTop === 'function' ? townTrackerTop() : 128), font = '"PingFang SC","Microsoft YaHei",sans-serif';
   // 先量高度
   const rows = [];
@@ -93,6 +94,7 @@ function drawQuestTracker(c) {
     if (ready) rows.push({ q, txt: q.to ? `找 ${qNpcName(q.to)} 交付` : '目标达成', ok: true, turnIn: true });
     else q.goals.forEach((g, i) => { const v = goalVal(q, rec, i); rows.push({ q, txt: goalText(g), val: goalProgText(q, rec, i), ok: v >= g.n, icon: g.type === 'collect' && g.key && IMG['icon/' + (g.icon || g.key)] }); });
   }
+  for (const q of extra) { rows.push({ q, head: true }); rows.push({ q, txt: `可接取：去找 ${qNpcWhere(q.npc)}`, hintRow: true }); }
   if (hint) { rows.push({ q: hint, head: true, hint: true }); rows.push({ q: hint, txt: hint.lvl > game.lvl ? `Lv.${hint.lvl} 后可接取` : `去找 ${qNpcWhere(hint.npc)} 接取`, hintRow: true }); }
   const H = 40 + rows.reduce((s, r) => s + (r.head ? 36 : 28), 0) + 6;
   questUI.trackRect = { x: x0 - 30, y: y0, w: W + 30, h: H };

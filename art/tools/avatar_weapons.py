@@ -26,7 +26,7 @@ SIZE = {'shortsword': 72, 'katana': 100, 'club': 70, 'greatsword': 112, 'lightsa
         'revolver': 40, 'autopistol': 38, 'rifle': 70, 'handcannon': 52, 'bowgun': 50,
         'spear': 95, 'pole': 85, 'rod': 50, 'staff': 88, 'broom': 88}   # 长杆（握点在图里 35% 处）：全长 ≈ size / 0.65，画的时候再按占位棍截短
 # 拿在手里再放大（v2 武器重做：原来 1 倍画面里短剑只有 75 像素，改了设计也看不出来）
-HAND = {'shortsword': 1.35, 'katana': 1.35, 'lightsaber': 1.25, 'greatsword': 1.15, 'club': 1.2,
+HAND = {'shortsword': 1.35, 'katana': 1.35, 'lightsaber': 1.25, 'greatsword': 1.25, 'club': 1.2,
         'revolver': 1.6, 'autopistol': 1.6, 'rifle': 1.2, 'handcannon': 1.25, 'bowgun': 1.25,   # 小手枪 1 倍下原来只有 40 像素，放得最多
         'staff': 1.2, 'rod': 1.3, 'broom': 1.15, 'pole': 1.1, 'spear': 1.1}
 # 握法：grip = 握点在握柄上（剑、枪、魔杖）；tip = 长杆按杖头对齐（魔法师的长武器，握在杆子中段哪里都行）
@@ -43,7 +43,7 @@ EP_TYPE = {'ep_shortsword': 'shortsword', 'ep_katana': 'katana', 'ep_katana2': '
 TIER_MUL = {2: 1.02, 3: 1.06, 4: 1.14}   # 普通武器的品级外观 <类型>_r2/r3/r4：稀有 / 神器 / 传说，一级比一级长（传说长 10~15%）
 EPIC_MUL = {'greatsword': 1.12, 'revolver': 1.15, 'autopistol': 1.15, 'handcannon': 1.1, 'bowgun': 1.1, 'rod': 1.1}   # 史诗默认比普通武器长 5%；巨剑更夸张，小枪 / 魔杖放大一点才看得清
 WIDE = {'katana': 1.2, 'lightsaber': 1.15, 'greatsword': 1.1}   # 史诗 / 品级外观只加宽不加长：太刀、光剑在游戏里别细成一根线
-WIDE_V2 = {'katana': 1.25}   # v2 图：太刀刀身画得细，1 倍下像一根线，加宽 25%
+WIDE_V2 = {'katana': 1.25, 'greatsword': 1.25}   # v2 图：太刀刀身画得细，1 倍下像一根线，加宽 25%；巨剑要够厚重（用户：不够霸气），也加宽 25%
 def tier_type(key):
     t, _, r = key.rpartition('_r')
     return t if t in SIZE and r in ('2', '3', '4') else None

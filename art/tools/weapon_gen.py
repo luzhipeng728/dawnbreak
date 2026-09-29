@@ -43,6 +43,10 @@ TIER = {   # 稀有 / 神器 / 传说：同一家族，剪影一级比一级大�
        'guard / head / body, gold and bright orange with a big faceted amber gem, flowing gold filigree and glowing orange rune lines painted on it',
 }
 EPIC_V2 = {   # 重写过的史诗设计（没写的用 avatar_gen.BOLD_EPICS）
+    'ep_gs_evildragon': 'Evil Dragon Demon Sword: a straight jagged purple-black blade with bone-white spikes along both edges and glowing violet rune lines down the center, ending in a straight sharp point; '
+                        'the crossguard is a black dragon skull with one red gem eye and small bone horns, a dark purple wrapped grip and a spiked black pommel',
+    'ep_gs_conqueror': 'Wing of the Conqueror: a straight broad bronze-gold blade with feather-shaped serrations along both edges like two folded golden wings, glowing gold runes down the center, '
+                       'ending in a straight sharp point; a crimson-and-gold eagle-head crossguard with a red gem, a red wrapped grip and a gold pommel',
     'ep_ss_shura': "Asura's Slaughter, the top abyss short sword: a wide black obsidian blade with a jagged glowing crimson cutting edge, a purple demon eye engraved at the base of the blade "
                    'with thin crimson rune lines running from it along the blade, a black-and-silver guard shaped like two curled demon horns holding a big purple gem, a crimson-wrapped grip and a spiked silver pommel',
     'ep_ls_elegy': 'Elegy of Blood: an ornate black-and-silver hilt wrapped in thorny vines, a big crimson rose blooming where the blade comes out and a short red ribbon hanging from the pommel; '
@@ -57,10 +61,17 @@ EPIC_V2 = {   # 重写过的史诗设计（没写的用 avatar_gen.BOLD_EPICS）
                   'flowing silver ribbons tied below the head',
 }
 THICK = {   # 第一批出图时这两类刀身画得太细（巨剑像普通长剑、太刀像一根线），1 倍下看不清
-    'greatsword': 'IMPORTANT: the blade is a huge heavy slab, its width is about one quarter of the whole weapon length, much wider than the grip is long; not a normal longsword.',
+    'greatsword': 'IMPORTANT: a GIANT heavy two-handed greatsword, never a normal longsword: the blade is a huge thick slab about one quarter as wide as the whole weapon is long, much wider than the grip is long. '
+                  'The blade runs perfectly STRAIGHT along the center line and ends in a straight sharp point (or a squared chisel tip) centered on that line; '
+                  'absolutely NO hook, no curved, curled, bent, forked or scythe-like tip, the point never turns up or down. Decorative spikes or serrations may run along the edges but the outline stays straight and roughly symmetric.',
     'katana': 'IMPORTANT: the blade is clearly wide and thick for a katana (its width is about one ninth of the whole weapon length), never a thin line.',
 }
-APOPHIS =G.WEAPON_SHEETS['x_apophis_sword'][0][2].split('Design: ', 1)[1]   # 主线程审过的阿波菲斯剪影
+APOPHIS = ('Apophis the cursed demon sword, THE SHOWPIECE and the most menacing, domineering greatsword of all. '   # 按官方立绘的要素重写（2026-09-29）：紫色直刃、蓝色眼宝石、骷髅护手 + 两对角、三骷髅柄头，没有弯钩
+           'A huge, wide, perfectly straight double-edged blade of deep glossy violet-purple with bright silver bevelled cutting edges, widest near the guard and tapering in long straight lines '
+           'to a sharp point on the center line. Near the base of the blade a pair of sharp crescent-shaped flanges juts out from both edges. '
+           'At the base of the blade sits a big glowing sapphire-blue gem shaped like a slit demon eye, set in an ornate magenta-red tribal frame, with a thin glowing red line running from the eye '
+           'down the middle of the blade and engraved silver tribal patterns beside it. The crossguard is a grinning bone-white skull with two pairs of curved demon horns sweeping back toward the grip: '
+           'big red ridged horns on the outside and smaller teal-blue horns inside. A long dark leather-wrapped grip, and a pommel made of a cluster of three small carved skulls')
 
 STYLE = ('Premium 2D game weapon art for a cute chibi (Q-style) action RPG in the style of Dungeon Fighter Online weapon avatars. '
          'Draw exactly ONE weapon, alone, lying perfectly HORIZONTAL in strict side view (flat profile, not diagonal, no perspective), '

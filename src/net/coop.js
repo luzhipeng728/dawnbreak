@@ -153,7 +153,7 @@ const coop = {
       const onCleared0 = dg.onCleared.bind(dg);
       dg.onCleared = function (silent) { onCleared0(silent); if (!silent) C.send({ k: 'clear', rk: C.rk() }); };
       const onKill0 = dg.onKill.bind(dg);
-      dg.onKill = function (t, a) { if (t.nid) C.send({ k: 'kill', id: t.nid, a: a && a.uid ? a.uid : a === game.player ? C.me() : 0, ld: Math.round(t.lastDmg || 0) }); onKill0(t, a); };
+      dg.onKill = function (t, a) { if (t.nid) C.flushSpawns(); if (t.nid) C.send({ k: 'kill', id: t.nid, a: a && a.uid ? a.uid : a === game.player ? C.me() : 0, ld: Math.round(t.lastDmg || 0) }); onKill0(t, a); };
     } else {
       dg.go = dir => { if (!this.doorAsk || performance.now() - this.doorAsk > 800) { this.doorAsk = performance.now(); this.send({ k: 'door', dir }); } };
     }
@@ -284,7 +284,7 @@ const coop = {
     if (this.dmgQ.length) { d.d = this.dmgQ; this.dmgQ = []; }
     this.send(d);
   },
-  flushSpawns() { if (!this.spawnQ.length) return; this.send({ k: 'spawn', rk: this.rk(), l: this.spawnQ }); this.spawnQ = []; },
+  flushSpawns() { if (!this.spawnQ.length) return; this.send({ k: 'spawn', rk: this.rk(), l: this.spawnQ }); this.spawnQ = []; },   // 击杀前也先调一次：刚生成就被秒的怪，生成信息必须先于击杀事件到达
   /* ---------------- 队员：怪物傀儡 ---------------- */
   onSpawn(d, replay) {
     for (const s of d.l) {

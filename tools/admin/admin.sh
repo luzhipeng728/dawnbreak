@@ -3,6 +3,7 @@
 #   sh tools/admin/admin.sh users                                   列出所有账号 / 角色 / 点券
 #   sh tools/admin/admin.sh cera <账号> <点券>                        发点券邮件（大于 1000 万会自动拆成多封）
 #   sh tools/admin/admin.sh item <账号> <物品key> <数量> [标题]         发物品邮件（key 见 src/content，例 tk_enh10 = +10 强化券）
+#   sh tools/admin/admin.sh items <账号> <key@强化,…（最多 5 件）> [标题]  一封邮件发多件装备
 #   sh tools/admin/admin.sh maxout <账号> [职业=转职,...] [额外点券]    角色全部满级 / 任务全完成 / 三觉 / 技能学满 / 最强装备 +12
 #       例：sh tools/admin/admin.sh maxout luzhipeng sword=soulbender 99999999
 #   sh tools/admin/admin.sh maxout <账号> '' <点券> '职业:转职:等级:max|normal:名字,...'   新建角色（只处理新建的）
@@ -25,6 +26,10 @@ case "$1" in
     case "$4" in *[!0-9]*) echo "数量要是数字：$4"; exit 1 ;; esac
     grep -q "defCashUse('$3'\|defineItem('$3'\|^  $3:" -r src/content || { echo "物品库里没有 $3"; exit 1; }
     RW item "$2" "$3" "$4" "'${5:-物品补给}'" ;;
+  items)
+    case "$2" in *[!A-Za-z0-9_.@-]*|'') echo "账号不对：'$2'"; exit 1 ;; esac
+    [ -n "$FORCE" ] || for k in $(echo "$3" | tr ',' ' '); do k=${k%@*}; grep -rqE "'$k'|\"$k\"|$k:" src/content || { echo "源码里搜不到 $k（套装部件等拼出来的 key 先在游戏里确认存在，再加 FORCE=1）"; exit 1; }; done
+    RW items "$2" "$3" "'${4:-装备补给}'" ;;
   maxout)
     R dump "$2" > "$W/cloud.json"
     node build.mjs | tail -1
@@ -33,6 +38,6 @@ case "$1" in
     scp -q "$W/maxed.json" $HOST:/tmp/dnf-maxed.json
     RW put "$2" /tmp/dnf-maxed.json maxout
     ssh $HOST 'rm -f /tmp/dnf-maxed.json' ;;
-  *) sed -n 2,9p "$0"; exit 1 ;;
+  *) sed -n 2,10p "$0"; exit 1 ;;
 esac
 ssh $HOST 'rm -f /tmp/dnf-remote.js'

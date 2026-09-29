@@ -4,6 +4,7 @@
 //   node remote.js <db> dump <账号>                    打印 { updated_at, data }（云存档）
 //   node remote.js <db> mail <账号> <点券> [标题]       发管理员邮件（点券，单封上限 1000 万）
 //   node remote.js <db> item <账号> <物品key> <数量> [标题]  发管理员邮件（物品，按物品库 key，领取时生成；数量 1~9999）
+//   node remote.js <db> items <账号> <key@强化,key@强化,…> [标题]  一封邮件发多件装备（最多 5 件，强化 0~16）
 //   node remote.js <db> put <账号> <json 文件> <why>    写回云存档（角色必须和下载时一致，否则拒绝）
 const { DatabaseSync } = require('node:sqlite'); const fs = require('fs'); const crypto = require('crypto');
 const [db0, cmd, a1, a2, a3] = process.argv.slice(2);
@@ -28,6 +29,12 @@ if (cmd === 'users') {
   const r = db.prepare('INSERT INTO mail (to_id, from_id, from_name, kind, title, body, gold, cera, items, created, expires, rid) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
     .run(u.id, null, '管理员', 'gm', process.argv[7] || '物品补给', '管理员发放的物品，领取后放进背包。祝游戏愉快！', 0, 0, JSON.stringify([{ key: a2, n }]), t, t + 30 * 86400000, null);
   console.log(`已发邮件 #${Number(r.lastInsertRowid)} → ${u.name}，物品 ${a2} ×${n}`);
+} else if (cmd === 'items') {
+  const u = user(a1), t = Date.now(), list = String(a2 || '').split(',').filter(Boolean).map(x => { const [key, e] = x.split('@'); return { key, n: 1, opt: { enh: Math.min(16, Math.max(0, +e || 0)) } }; });
+  if (!list.length || list.length > 5 || list.some(x => !/^[a-z][a-z0-9_]{0,59}$/.test(x.key))) { console.error('参数不对（1~5 件，key@强化 用逗号隔开）：' + a2); process.exit(1); }
+  const r = db.prepare('INSERT INTO mail (to_id, from_id, from_name, kind, title, body, gold, cera, items, created, expires, rid) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+    .run(u.id, null, '管理员', 'gm', a3 || '装备补给', '管理员发放的装备，领取后放进背包。祝游戏愉快！', 0, 0, JSON.stringify(list), t, t + 30 * 86400000, null);
+  console.log(`已发邮件 #${Number(r.lastInsertRowid)} → ${u.name}，${list.map(x => x.key + '+' + x.opt.enh).join('、')}`);
 } else if (cmd === 'put') {
   const u = user(a1), next = JSON.parse(fs.readFileSync(a2, 'utf8'));
   const cur = db.prepare('SELECT data, updated_at FROM saves WHERE user_id = ?').get(u.id), old = JSON.parse(cur.data);

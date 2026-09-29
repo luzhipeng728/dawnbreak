@@ -85,7 +85,7 @@ function classBase4(cls, L, job) {
 // 身上装备的属性合计（耐久为 0 的装备不算），含强化、特效词条、精通、套装、称号
 function equipTotals(cls = game.player ? game.player.cls : 'sword', job = game.job) {
   inv.ensure();
-  const t = {}, add = (k, v) => { if (v) t[k] = (t[k] || 0) + v; };
+  const t = {}, add = (k, v) => { if (v) { t[k] = (t[k] || 0) + v; if (k === 'cdr') t.cdrMul = (t.cdrMul ?? 1) * (1 - v); } };   // 冷却减少按官方乘算叠加：可以一直往下减，但不会到 0
   const mastery = masteryOf(cls, job), sets = {};
   let masteryN = 0;
   for (const s of SLOTS) {
@@ -150,7 +150,7 @@ function recalcStats(p) {
   p.hardness = g('hardness') + (WT.hardness || 0); p.stagger = g('stagger') + (WT.stagger || 0);
   p.atkElem = WT.elem || eq.atkElem || null;
   p.dmgUp = g('dmgUp'); p.dmgTaken = 1 - Math.min(0.5, g('dmgReduce'));
-  p.cdMul = PVE_CD_BASE * (1 - Math.min(0.4, g('cdr'))); p.mpRegen = 1 + g('mpRegen');   // 刷图冷却基准 ×0.6（官方配装后的冷却手感，用户反馈 CD 太长）；决斗在 duel.js 里另外定
+  p.cdMul = PVE_CD_BASE * Math.max(0.05, eq.cdrMul ?? 1); p.mpRegen = 1 + g('mpRegen');   // 刷图冷却基准 ×0.6（官方配装后的冷却手感）；冷却减少各来源相乘、不设上限（用户要求），最低保底 5% 防止 0 冷却；决斗在 duel.js 里另外定
   p.killHeal = g('killHeal'); p.killMp = g('killMp'); p.goldUp = g('goldUp'); p.expUp = g('expUp');
   p.mastery = E.mastery; p.masteryN = E.masteryN; p.sets = E.sets; p.gearProcs = gearProcList(E);   // 装备特效（game/gear_fx.js）
   // 冒险失败后的虚弱：攻击 / 防御 / HP 上限 -25%

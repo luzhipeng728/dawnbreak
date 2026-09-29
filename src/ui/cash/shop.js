@@ -380,7 +380,7 @@ Object.assign(menus, {
         const nb = [100, 200, 500].filter(v => v <= left);
         out.push(h('div', { class: 'csrc' },
           h('div', { class: 'h' }, '每天'), h('span', {}, `通关评价（SSS ${E.rank.SSS} / SS ${E.rank.SS} / S ${E.rank.S} / A ${E.rank.A} / B ${E.rank.B}，难度越高越多）`), h('b', {}, `${T.rank}/${E.rankCap}`), pct(T.rank, E.rankCap),
-          h('span', {}, `完成每日任务（每个 ${E.daily}）`), h('b', {}, `今天 ${T.daily} 个`),
+          h('span', {}, `完成每日任务（每个 ${E.daily}，每天最多 ${E.dailyMax} 个）`), h('b', {}, `今天 ${T.daily}/${E.dailyMax}`),
           h('span', {}, `金币兑换（${E.exch.rate} 金币 = 1 点券）`), h('b', {}, `${T.exch}/${E.exch.cap}`), pct(T.exch, E.exch.cap),
           h('div', { class: 'row', style: 'grid-column:1/-1;gap:.3em;flex-wrap:wrap' }, h('span', { class: 'igold' }, `${fmtNum(game.gold)} G`), ...(nb.length ? nb : left > 0 ? [left] : []).map(v => h('button', { class: 'btn sm', onclick: () => { const r = cashExchGold(v); if (r.err) { toastMsg(r.err, '#ff6a6a'); sfx.error(); } el._render(); } }, `兑换 ${v} 点券（${fmtNum(v * E.exch.rate)} G）`)), left <= 0 ? h('span', { class: 'dim small' }, '今天的兑换额度用完了') : null),
           h('div', { class: 'h' }, '一次性'), h('span', {}, `升级（新等级 × ${E.lvl}）`), h('b', {}, `下一级 +${(game.lvl + 1) * E.lvl}`),

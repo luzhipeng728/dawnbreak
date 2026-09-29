@@ -12,7 +12,7 @@ const r = await page.evaluate(() => {
   const rankEv = (dist, diff) => Object.entries(dist).reduce((s, [k, p]) => s + (E.rank[k] || 0) * p, 0) * (1 + diff * 0.25);
   // 玩家模型：每天地下城次数（疲劳 156 / 约 7 个房间 ≈ 20 次）、难度、评价分布、每日任务个数、金币兑换
   const P = {
-    serious: { runs: 20, diff: 1, dist: { SSS: 0.15, SS: 0.35, S: 0.4, A: 0.1 }, daily: dailies.length, exch: E.exch.cap },
+    serious: { runs: 20, diff: 1, dist: { SSS: 0.15, SS: 0.35, S: 0.4, A: 0.1 }, daily: Math.min(dailies.length, E.dailyMax), exch: E.exch.cap },
     casual: { runs: 6, diff: 0, dist: { S: 0.3, A: 0.5, B: 0.2 }, daily: 2, exch: 0 },
   };
   const day = {};

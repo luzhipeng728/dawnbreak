@@ -4,7 +4,7 @@
 //   mechs    领主机制库：破招、无敌阶段（水晶 / 撑过）、护盾、安全区、场地危害、狂暴、分身、属性切换、连线、自定义钩子、阶段切换
 //   monsters 区域的每个怪物 / 领主：有逐帧精灵、会出手、每招都能放、能打死
 //   scenes   每个场景能进、背景加载、出口能走通（含从已有世界接进来的入口）
-//   quest    主线任务链从头做到尾
+//   quest    主线任务链从头做到尾，然后做本区域的支线 / 制霸链 / 每日（content/quests/regions.js）
 //   abyss    深渊派对（spec.abyss）：所有深渊的数据、进图扣票、封印之门 → 配置的几波 → 深渊领主（机制 / 循环机制）→ 保底 → 深渊宝藏翻牌
 //   bot      机器人以区域等级（Lv30 全身 +12 史诗）通关每个地下城，统计用时 / 被击 / 死亡（BOT=abyss_<id>:sword 也能跑深渊；GEAR=base 只穿稀有装备、GEAR=rare 同级稀有 +7、GEAR=epic 同级最好的一套史诗 +7（ENH 改强化）、LV=等级，用来和老区域对照难度）
 // 默认全跑；环境变量 SPEED（默认 3）、BOT=地下城:职业,...（覆盖机器人的分配）。截图在 test/shots/region_<id>/
@@ -24,7 +24,7 @@ const wait = ms => page.waitForTimeout(ms);
 const simWait = s => wait(Math.round(s * 1000 / speed) + 60);
 
 await open('test&mute&mon=msLab');
-const R = await page.evaluate(id => { const R = REGIONS[id]; if (!R) return null; return { monsters: R.monsters, bosses: R.bosses, dungeons: R.dungeons, scenes: R.scenes, quests: R.quests, entry: R.spec.entry, lvl: R.spec.lvl, lvlMax: R.spec.lvlMax ?? R.spec.lvl,
+const R = await page.evaluate(id => { const R = REGIONS[id]; if (!R) return null; return { monsters: R.monsters, bosses: R.bosses, dungeons: R.dungeons, scenes: R.scenes, quests: R.quests, extra: [...(R.sides || []), ...(R.tour || []), ...(R.dailies || [])], entry: R.spec.entry, lvl: R.spec.lvl, lvlMax: R.spec.lvlMax ?? R.spec.lvl,
   shades: Object.keys(MON).filter(k => MON[k].region === id && MON[k].msShadeOf) }; }, id);
 if (!R) { console.log(`✗ 没有区域 ${id}（src/content/regions/${id}.js 有没有加进 src/ORDER？）`); process.exit(1); }
 const ALL = [...R.monsters, ...R.bosses, ...R.shades];
@@ -325,6 +325,31 @@ if (parts.includes('quest')) {
   }, { id, R });
   console.table(res.rows);
   for (const r of res.rows) check(r.done, `任务 ${r.q} ${r.name} 没有完成（${r.before} → ${r.accepted}，ready=${r.ready}）`);
+  // 支线 / 制霸链 / 每日（content/quests/regions.js）：主线做完以后逐个接取 → 模拟目标 → 交付；区域外的前置（深渊资格任务）直接记为完成
+  if (R.extra.length) {
+    const ex = await page.evaluate(async ({ R }) => {
+      const d = save.data, mine = new Set([...R.quests, ...R.extra]), rows = [];
+      for (const q of R.extra) for (const p of QUESTS[q].pre) if (!mine.has(p)) d.questDone[p] = Date.now();
+      game.lvl = Math.max(game.lvl, ...R.extra.map(q => QUESTS[q].lvl));
+      for (const q of R.extra) {
+        const Q = QUESTS[q], s0 = questState(q); questAccept(q); const s1 = questState(q);
+        Q.goals.forEach((g, i) => {
+          const dg = [].concat(g.dungeon || R.dungeons[0])[0];
+          if (g.type === 'talk') bus.emit('npcTalk', { id: g.npc });
+          else if (g.type === 'clear') for (let k = 0; k < g.n; k++) bus.emit('dungeonClear', { id: dg === 'any' ? R.dungeons[0] : dg, diff: g.diff || 0, rank: 'S', time: 100, hurt: 0, maxCombo: 10 });
+          else if (g.type === 'kill') for (let k = 0; k < g.n; k++) bus.emit('kill', { kind: [].concat(g.kind || 'x')[0], boss: !!g.boss, elite: !!g.elite, dungeon: dg, lvl: R.lvl, x: 0, y: 0 });
+          else if (g.type === 'collect') questProgress(q, i, g.n);
+          else if (g.type === 'item') inv.add(makeItem(g.key, g.n));
+        });
+        await new Promise(r => setTimeout(r, 300));
+        const ready = questReady(q), g0 = game.gold; if (ready) questComplete(q);
+        rows.push({ q, type: Q.type, name: Q.name, npc: Q.npc, before: s0, accepted: s1, ready, done: !!d.questDone[q], gold: game.gold - g0 });
+      }
+      return rows;
+    }, { R });
+    console.table(ex);
+    for (const r of ex) check(r.done && r.gold > 0 && r.before === 'avail', `${r.type} ${r.q} ${r.name} 没有做完（${r.before} → ${r.accepted}，ready=${r.ready}，金币 +${r.gold}）`);
+  }
 }
 
 /* ---------------- 8. 深渊派对（spec.abyss 块，content/abyss.js）---------------- */

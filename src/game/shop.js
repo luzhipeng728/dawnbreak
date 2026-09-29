@@ -295,7 +295,7 @@ bus.on('dungeonClear', e => {
   const base = CASH_EARN.rank[e.rank] || 0;
   if (base) { const r = Math.min(Math.round(base * (1 + (e.diff || 0) * 0.25)), CASH_EARN.rankCap - S.today.rank); if (r > 0) { S.today.rank += r; addCera(r, `通关评价 ${e.rank}`); } }
 });
-bus.on('questDone', e => { const Q = typeof QUESTS !== 'undefined' && QUESTS[e.id]; if (!Q || Q.type !== 'daily' || !save.data) return; cashData().today.daily++; addCera(CASH_EARN.daily, `每日任务：${Q.name}`); });
+bus.on('questDone', e => { const Q = typeof QUESTS !== 'undefined' && QUESTS[e.id]; if (!Q || Q.type !== 'daily' || !save.data) return; const T = cashData().today; if (T.daily >= CASH_EARN.dailyMax) return; T.daily++; addCera(CASH_EARN.daily, `每日任务：${Q.name}`); });
 bus.on('kill', () => cashStat('kill', 1));
 bus.on('enhance', e => { if (e.ok) cashStat('enh', e.lvl, true); });
 bus.on('pickup', e => { if (e.item && e.item.rar >= 5 && e.item.kind === 'equip') cashStat('epic', 1, true); });

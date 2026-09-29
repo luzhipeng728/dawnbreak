@@ -37,7 +37,7 @@ await page.waitForFunction(() => window.__READY, null, { timeout: 30000 }); awai
 
 step('任务数量');
 const cnt = await ev(() => Object.values(QUESTS).reduce((m, q) => (m[q.type] = (m[q.type] || 0) + 1, m), {}));
-check(cnt.main >= 15, `主线 ${cnt.main} 个（≥15）`); check(cnt.side >= 15, `支线 ${cnt.side} 个（≥15）`); check(cnt.daily >= 3 && cnt.daily <= 5, `每日 ${cnt.daily} 个（3~5）`); check(cnt.job >= 3, `转职 ${cnt.job} 个`); check(cnt.hidden >= 2, `隐藏 ${cnt.hidden} 个`);
+check(cnt.main >= 15, `主线 ${cnt.main} 个（≥15）`); check(cnt.side >= 15, `支线 ${cnt.side} 个（≥15）`); check(cnt.daily >= 15, `每日 ${cnt.daily} 个（≥15：老区域 5 个 + 31~60 每个区域 1~2 个）`); check(cnt.job >= 3, `转职 ${cnt.job} 个`); check(cnt.hidden >= 2, `隐藏 ${cnt.hidden} 个`);
 const bad = await ev(() => { const B = []; for (const q of Object.values(QUESTS)) { if (q.cond && !q.cond()) continue; for (const p of q.pre) if (!QUESTS[p]) B.push(`${q.id} 前置 ${p} 不存在`); for (const n of [q.npc, q.to]) if (!NPCS[n]) B.push(`${q.id} NPC ${n}`); for (const g of q.goals) { if (g.type === 'talk' && !NPCS[g.npc]) B.push(`${q.id} 对话 NPC ${g.npc}`); if (g.dungeon && g.dungeon !== 'any') for (const d of [].concat(g.dungeon)) if (!DUNGEONS[d]) B.push(`${q.id} 地下城 ${d}`); for (const k of [].concat(g.kind || [], g.from || [])) if (!MON[k]) B.push(`${q.id} 怪物 ${k}`); if (g.type === 'reach' && !SCENES[g.scene]) B.push(`${q.id} 场景 ${g.scene}`); } } return B; });
 check(bad.length === 0, '任务数据引用的 NPC / 地下城 / 怪物 / 场景 / 前置都存在', bad.slice(0, 5).join('；'));
 

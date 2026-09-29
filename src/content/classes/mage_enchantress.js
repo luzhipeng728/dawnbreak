@@ -741,7 +741,7 @@ defSkill('en_lovecage', { name: '挚爱囚笼', cls: 'mage', job: EN, tier: 3, l
   recast: { ok: p => summonsOf(p, 'en_cage').some(s => s.life - s.lifeT > 0.5), instant: true, cd: 0.3, mp: 0, act: (lv, p) => { for (const s of summonsOf(p, 'en_cage')) s.life = Math.min(s.life, s.lifeT + 0.5); } }, pow: lv => skillDmg(0.9, 0.09, lv) * 10 + skillDmg(12, 1.2, lv), ai: { kind: 'burst', r: [60, 360], dy: 80 },
   act: (lv) => ({ name: 'en_lovecage', clip: 'enCmd', dur: 0.8, noCounter: true, events: [evAt(0.25, e => { sfx.magic(); const at = aimAhead(e, 200, 360, 90); summon(e, 'en_cage', { x: at.t ? at.x : e.x + e.face * 200, y: at.t ? at.y : e.y, lv }); })] }) });
 // 二觉：欢迎光临人偶之森 —— 当前空间变成人偶之森，超巨型疯疯熊扫激光、再挥两次手臂（共 7 段，7 秒，期间无敌）
-defSkill('en_awaken2', { name: '欢迎光临人偶之森', cls: 'mage', job: EN, tier: 2, lvReq: 27, maxLv: 3, mp: 400, cd: 180, pvp: 0.4, type: 'indep', elem: 'dark', awaken: true, col: '#5a2a6a',
+defSkill('en_awaken2', { name: '欢迎光临人偶之森', cls: 'mage', job: EN, tier: 2, lvReq: 27, maxLv: 3, mp: 400, cd: 170, pvp: 0.4, type: 'indep', elem: 'dark', awaken: true, col: '#5a2a6a',
   desc: '【二觉】把当前空间变成人偶之森：超巨型疯疯熊从森林深处升起，张嘴喷出的诅咒光束来回扫过全屏（5 段），再抡起巨臂砸两次（2 段），共 7 段。持续 7 秒，期间你无敌。在人偶剧场中施放时剧场会一直持续到放完，画面变成巨熊撑破舞台。', pow: lv => skillDmg(9, 2.2, lv) * 7, ai: { kind: 'awaken', r: [0, 500], dy: 150 },
   act: (lv, p) => ({ name: 'en_awaken2', clip: p && p.enStage ? 'bRoar' : 'enHug', dur: 7, invul: true, superArmor: true, noCounter: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '欢迎光临人偶之森', who: enCutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); if (e.enStage) enCurtain(e, 1.4, true); enForest(e, 7); },

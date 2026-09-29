@@ -62,7 +62,8 @@ defSkill('gb_chainex', { name: '鬼连击：极', cls: 'sword', job: 'ghostblade
 defSkill('gb_resonance', { name: '双魂共鸣', cls: 'sword', job: 'ghostblade', lvReq: 18, mp: 30, cd: 5, type: 'phys', buff: true, col: '#6aa8ff',
   desc: '【BUFF · 持续时间无限】本体与幻鬼的灵魂共鸣：普攻、鬼斩、三段刃和转职技能的攻击力提高。施放时霸体，后摇较长。', ai: { kind: 'buff', core: true },
   infoExtra: lv => [['攻击力', '+' + pct(0.2 + 0.02 * lv)]],
-  act: (lv) => ({ name: 'gb_resonance', clip: 'focus', dur: 0.8, superArmor: true, noCounter: true, onStart: e => { e.buffs.gb_resonance = { t: 9999, dmg: 0.2 + 0.02 * lv }; sfx.buff(); fxAura(e, GB_COL, 1.2); gbPhantomDo(e, lv, { name: 'pRes', clip: 'pSeal', dur: 0.6 }, { x: e.x - e.face * 40, y: e.y, linger: 0.2 }); } }) });
+  act: (lv) => ({ name: 'gb_resonance', clip: 'focus', dur: 0.8, superArmor: true, noCounter: true, onStart: e => { const v = 0.2 + 0.02 * lv;   // 官方：只加成普攻、鬼斩、三段刃和转职技能，通用技能不加
+    e.buffs.gb_resonance = { t: 9999, get dmg() { const a = e.act, id = a && a.skill; return !a || a.basic || a.gbStep || !id || id === 'ghost' || id === 'triple' || (SKILLS[id] && SKILLS[id].job === 'ghostblade') ? v : 0; } }; sfx.buff(); fxAura(e, GB_COL, 1.2); gbPhantomDo(e, lv, { name: 'pRes', clip: 'pSeal', dur: 0.6 }, { x: e.x - e.face * 40, y: e.y, linger: 0.2 }); } }) });
 
 /* ---- 鬼人化：普攻 4 段、跑攻 2 段、后跳中空中斩 ---- */
 const SWORD_ACTS_GB = { ...SWORD_ACTS,
@@ -82,7 +83,7 @@ SWORD_ACT_PICK.push(p => gbJob(p) && gbLv(p, 'gb_ghostman') ? SWORD_ACTS_GB : nu
 
 /* ---- 鬼步：进入准备姿势（霸体，最多 3 秒）。按 X / Z 瞬间向前闪过（穿过敌人，路径上 3 段伤害）；按剑术技能 = 换成该技能的收尾，伤害打在路径上的所有敌人；C 取消 ---- */
 const GB_STEP = 330;
-function gbPath(p, x0, x1, fn) { const lo = Math.min(x0, x1) - 20, hi = Math.max(x0, x1) + 20; for (const t of ents) if (hittable(p, t) && t.x >= lo && t.x <= hi && Math.abs(t.y - p.y) < 52 && t.z < 140 && (t.st !== 'down')) fn(t); }
+function gbPath(p, x0, x1, fn) { const lo = Math.min(x0, x1) - 20, hi = Math.max(x0, x1) + 20; for (const t of ents) if (hittable(p, t) && t.x >= lo && t.x <= hi && Math.abs(t.y - p.y) < (gbLv(p, 'gb_bloom') > 0 ? 65 : 52) && t.z < 140 && (t.st !== 'down')) fn(t); }
 function gbDash(e, dist) {   // 肉眼不可见的速度前冲：直接位移，残影 + 刀光
   const R = game.room, x0 = e.x, x1 = R ? clamp(e.x + e.face * dist, R.x0 + e.w, R.x1 - e.w) : e.x + e.face * dist;
   fxAfterimage(e, GB_COL); fxStreak({ x: x0, y: e.y, z: e.z + 58, face: e.face, len: Math.abs(x1 - x0) + 40, w: 16, col: GB_COL, dur: 0.25 }); sfx.iai();
@@ -129,13 +130,13 @@ defSkill('gb_retrace', { name: '幻鬼步', cls: 'sword', job: 'ghostblade', lvR
 defSkill('gb_chain', { name: '鬼连击', cls: 'sword', job: 'ghostblade', lvReq: 15, mp: 20, cd: 5, type: 'phys', col: '#7ab8ff',
   desc: '快速向前连斩 3 次。学了鬼连击：极，最后召出第二把蓝色灵魂刀追加一记强力上挑，把敌人挑上空中。【剑术】可以接在鬼步后面。', pow: lv => skillDmg(3.3, 0.33, lv), ai: { kind: 'gap', r: [0, 180], dy: 30 },
   act: (lv, p) => {
-    if (gbStepMode(p)) return gbStepFinish(lv, p, { id: 'gb_chain', pow: l => skillDmg(3.3, 0.33, l) * (gbLv(p, 'gb_chainex') ? 1.6 : 1), clip: 'rk3' });
-    const ex = gbLv(p, 'gb_chainex') > 0, T = ex ? 0.85 : 0.6;
+    if (gbStepMode(p)) return gbStepFinish(lv, p, { id: 'gb_chain', pow: l => skillDmg(3.3, 0.33, l) * (gbLv(p, 'gb_chainex') ? 1.8 : 1), clip: 'rk3' });
+    const ex = gbLv(p, 'gb_chainex') > 0, T = ex ? 0.95 : 0.6;
     return { name: 'gb_chain', clip: 'rk1', dur: T, noCounter: true,
       events: [0, 1, 2].map(i => evAt(0.02 + i * 0.14, e => { e.play(['rk1', 'rk2', 'rk1'][i], true); e.vx = e.face * 380; sfx.swing(true); fxSlashOn(e, { col: GB_COL, a0: i % 2 ? 0.8 : -2.4, a1: i % 2 ? -2.4 : 0.8, r: 82, w: 16, off: [10, 56] });
-        game.after(0.05, () => { if (e.dead) return; e.vx = 0; instantHit(e, { box: [-10, 104, 36, 10, 110], dmg: skillDmg(1.1, 0.11, lv), stun: 0.4, knock: i === 2 ? 150 : 40, hs: 0.05 }); }); })).concat(ex ? [evAt(0.5, e => {   // 鬼连击：极 —— 第二把灵魂刀的一记上挑
-        e.play('rk3', true); sfx.swing(true); fxSlashOn(e, { col: '#4ab0ff', a0: 1.4, a1: -2.0, r: 100, w: 24, off: [10, 50], heavy: true }); fxSlashOn(e, { col: '#9fe0ff', a0: 1.1, a1: -1.7, r: 80, w: 14, off: [16, 46] });
-        instantHit(e, { box: [-10, 116, 40, 0, 160], dmg: skillDmg(2.1, 0.21, lv), launch: 460, airLift: 300, knock: 20, hs: 0.08, shake: 3, big: 1.4, col: '#6ac0ff' }); })] : []) };
+        game.after(0.05, () => { if (e.dead) return; e.vx = 0; instantHit(e, { box: [-10, 104, 36, 10, 110], dmg: skillDmg(1.1, 0.11, lv), stun: 0.4, knock: i === 2 ? 150 : 40, hs: 0.05 }); }); })).concat(ex ? [0, 1, 2].map(i => evAt(0.5 + i * 0.13, e => {   // 鬼连击：极 —— 第二把灵魂刀的 3 段交叉上斩（官方 x3）
+        e.play(i % 2 ? 'rk1' : 'rk3', true); sfx.swing(true); fxSlashOn(e, { col: '#4ab0ff', a0: i % 2 ? 2.0 : 1.4, a1: i % 2 ? -1.4 : -2.0, r: 100, w: 22, off: [10, 50], heavy: i === 2 }); fxSlashOn(e, { col: '#9fe0ff', a0: i % 2 ? 1.1 : 1.7, a1: i % 2 ? -1.7 : -1.1, r: 80, w: 14, off: [16, 46] });
+        instantHit(e, { box: [-10, 116, 40, 0, 160], dmg: skillDmg(0.9, 0.09, lv), stun: 0.4, launch: i === 2 ? 460 : 0, airLift: i === 2 ? 300 : 0, knock: i === 2 ? 20 : 5, hs: 0.06, shake: i === 2 ? 3 : 0, big: i === 2 ? 1.4 : 1, col: '#6ac0ff' }); })) : []) };
   } });
 defSkill('gb_fang', { name: '鬼连牙', cls: 'sword', job: 'ghostblade', lvReq: 17, mp: 30, cd: 8, type: 'phys', col: '#6aa0ff',
   desc: '聚魂强力突刺：硬直很大，把前方的敌人拉到剑尖前（能推动霸体的敌人，浮空和倒地的敌人会被强制拉起）。【剑术】接在鬼步后面时变为大范围拉怪。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'poke', r: [0, 240], dy: 34 },
@@ -187,10 +188,13 @@ gbGhostSkill('gb_issen', { name: '幻鬼：一闪', lvReq: 16, mp: 20, cd: 6, co
     events: [evAt(0.01, s => { fxStreak({ x: s.x, y: s.y, z: s.z + 58, face: s.face, len: 450, w: 16, col: GB_COL, dur: 0.3 }); sfx.iai(); })] }, { x: p.x, y: p.y }) });
 gbGhostSkill('gb_rend', { name: '幻鬼：连击', lvReq: 17, mp: 25, cd: 8, col: '#7ab8ff',
   desc: '幻鬼在身前现身，原地快速连斩 4 次，最后一击把敌人挑上空中。', pow: lv => skillDmg(4.0, 0.4, lv), ai: { kind: 'launch', r: [0, 150], dy: 30 },
-  phantom: (lv, p) => gbPhantomDo(p, lv, { name: 'pRend', clip: 'pRend', dur: 0.62, noCounter: true,
-    hits: [HB(0.02, 0.36, [-10, 100, 36, 10, 120], skillDmg(0.93, 0.093, lv), { rep: 0.12, max: 3, stun: 0.4, knock: 10, hs: 0.04, col: GB_COL }),
-      HB(0.44, 0.52, [-10, 106, 38, 0, 140], skillDmg(1.2, 0.12, lv), { launch: 460, knock: 40, hs: 0.08, col: GB_COL })],
-    events: [0.02, 0.14, 0.26, 0.44].map((t, i) => evAt(t, s => { fxSlash({ x: s.x, y: s.y, z: s.z, face: s.face, col: GB_COL, a0: i % 2 ? 0.8 : -2.4, a1: i % 2 ? -2.4 : 0.8, r: 78, w: 14, off: [10, 56] }); sfx.swing(i === 3); })) }, { x: p.x + p.face * 70, y: p.y }) });
+  phantom: (lv, p) => { const sc = gbLv(p, 'gb_scorn') > 0, R = sc ? 1.15 : 1, T = sc ? 1 / 1.15 : 1;   // 睥睨万物：范围 +15%、速度 +15%、追加一段收尾斩
+    const hits = [HB(0.02 * T, 0.36 * T, [-10, 100 * R, 36 * R, 10, 120], skillDmg(0.93, 0.093, lv), { rep: 0.12 * T, max: 3, stun: 0.4, knock: 10, hs: 0.04, col: GB_COL }),
+      HB(0.44 * T, 0.52 * T, [-10, 106 * R, 38 * R, 0, 140], skillDmg(1.2, 0.12, lv), { launch: 460, knock: 40, hs: 0.08, col: GB_COL })];
+    const ts = [0.02, 0.14, 0.26, 0.44].map(t => t * T);
+    if (sc) { hits.push(HB(0.6 * T, 0.68 * T, [-10, 112 * R, 40 * R, 0, 150], skillDmg(1.2, 0.12, lv), { launch: 300, knock: 80, hs: 0.1, col: '#dff0ff' })); ts.push(0.6 * T); }
+    return gbPhantomDo(p, lv, { name: 'pRend', clip: 'pRend', dur: (sc ? 0.8 : 0.62) * T, noCounter: true, hits,
+      events: ts.map((t, i) => evAt(t, s => { fxSlash({ x: s.x, y: s.y, z: s.z, face: s.face, col: i > 3 ? '#dff0ff' : GB_COL, a0: i % 2 ? 0.8 : -2.4, a1: i % 2 ? -2.4 : 0.8, r: 78 * R, w: 14, off: [10, 56] }); sfx.swing(i >= 3); })) }, { x: p.x + p.face * 70, y: p.y }); } });
 gbGhostSkill('gb_kaiten', { name: '幻鬼：回天', lvReq: 19, mp: 45, cd: 20, col: '#5aa0f0',
   desc: '幻鬼边前进边旋转，大幅斩击 2 次，纵深范围很大。', pow: lv => skillDmg(6.0, 0.6, lv), ai: { kind: 'aoe', r: [0, 300], dy: 80 },
   phantom: (lv, p) => gbPhantomDo(p, lv, { name: 'pKaiten', clip: 'pSpin', dur: 0.9, noCounter: true, move: [[0, 0.8, 300]],
@@ -283,7 +287,7 @@ gbGhostSkill('gb_shinpu', { name: '幻鬼：大回天', lvReq: 26, mp: 80, cd: 4
   desc: '幻鬼高速旋转着向前推进，多段攻击，把命中的敌人都拉到同一条横线上（方便后续连段）。', pow: lv => skillDmg(16, 1.6, lv), ai: { kind: 'aoe', r: [0, 420], dy: 80 },
   phantom: (lv, p) => gbPhantomDo(p, lv, { name: 'pShinpu', clip: 'pSpin', dur: 1.1, noCounter: true, move: [[0, 1.0, 400]],
     update: s => { for (const t of ents) if (hittable(p, t) && !t.boss && Math.abs(t.x - s.x) < 120 && Math.abs(t.y - s.y) < 90) { t.y = damp(t.y, s.y, 8, 1 / 60); t.x = damp(t.x, s.x + s.face * 30, 4, 1 / 60); } },
-    hits: [HB(0.05, 1.0, [-100, 120, 84, 0, 140], skillDmg(2.2, 0.22, lv), { rep: 0.14, max: 7, stun: 0.5, knock: 20, hs: 0.03, col: GB_COL })],
+    hits: [HB(0.05, 1.0, [-100, 120, 84, 0, 140], skillDmg(5.1, 0.51, lv), { rep: 0.3, max: 3, stun: 0.5, knock: 20, hs: 0.05, col: GB_COL })],
     events: Array.from({ length: 7 }, (_, i) => evAt(0.05 + i * 0.14, s => { fxSlash({ x: s.x, y: s.y, z: s.z, face: s.face, col: GB_COL, a0: -3.1, a1: 3.1, r: 128, w: 22, off: [0, 50], squash: 0.5, dur: 0.2 }); if (i % 2 === 0) sfx.swing(true); })) }, { x: p.x + p.face * 30, y: p.y }) });
 
 /* ---- 裂魂乱舞：连斩 3 次 → 与灵魂刀合体大回旋 1 次 → 终结（共 5 段）；按住 ← 原地施放；接在鬼步后面瞬间出手 ---- */
@@ -339,20 +343,21 @@ defSkill('gb_awaken2', { name: '鬼隐·夜奈落', cls: 'sword', job: 'ghostbla
 defSkill('gb_awaken3', { name: '灭魂极影剑·止煞', cls: 'sword', job: 'ghostblade', lvReq: 30, maxLv: 3, mp: 250, cd: 135, pvp: 0.45, type: 'phys', awaken: true, col: '#6ab0ff',
   desc: '【三觉】用剑割开鬼手的掌心，打开“灵魂世界”：本体与幻鬼在其中高速移动、互相比剑，被卷入的敌人受到多段伤害；最后两人交汇，斩开灵魂世界和敌人，大爆发收尾。全程无敌。与冥夜鬼天杀共享冷却。',
   pow: lv => skillDmg(48, 12, lv), ai: { kind: 'awaken', r: [0, 400], dy: 90 },
-  act: (lv) => ({ name: 'gb_awaken3', clip: 'hakuu', dur: 4.0, superArmor: true, noCounter: true, invul: [0, 4.0],
+  act: (lv) => ({ name: 'gb_awaken3', clip: 'hakuu', dur: 4.6, superArmor: true, noCounter: true, invul: [0, 4.6],
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '灭魂极影剑·止煞', who: cutinWho(e) }; game.timeStop = 0.9; sfx.awaken(); e.cool.gb_awaken = Math.max(e.cool.gb_awaken || 0, e.cool.gb_awaken3 || 0);
       const a = e.act; a.cx = e.x + e.face * 180; a.cy = e.y;
-      addFx({ x: a.cx, y: -10, z: 0, dur: 4.0, draw(c) { const k = this.t, al = Math.min(1, (k - 0.9) * 3) * Math.min(1, (4 - k) * 3); if (al <= 0) return; c.save(); c.globalAlpha = 0.68 * al; c.fillStyle = '#030818'; c.fillRect(0, 0, WW, WH); c.restore();
+      addFx({ x: a.cx, y: -10, z: 0, dur: 4.6, draw(c) { const k = this.t, al = Math.min(1, (k - 0.9) * 3) * Math.min(1, (4.6 - k) * 3); if (al <= 0) return; c.save(); c.globalAlpha = 0.68 * al; c.fillStyle = '#030818'; c.fillRect(0, 0, WW, WH); c.restore();
         drawSpr(c, fxTint('rune', '#4a8aff'), sx(a.cx), sy(a.cy, 0), 620, 220, { ground: true, rot: k * 0.6, alpha: 0.5 * al }); } });
-      gbPhantomDo(e, lv, { name: 'pAwk3', clip: 'pSpin', dur: 2.9 }, { x: a.cx + e.face * 120, y: a.cy, face: -e.face, linger: 0.2 }); },
-    events: [...Array.from({ length: 12 }, (_, i) => evAt(1.0 + i * 0.16, e => { const a = e.act, s = gbPhantom(e), side = i % 2 ? 1 : -1;
+      gbPhantomDo(e, lv, { name: 'pAwk3', clip: 'pSpin', dur: 3.5 }, { x: a.cx + e.face * 120, y: a.cy, face: -e.face, linger: 0.2 }); },
+    events: [...Array.from({ length: 15 }, (_, i) => evAt(1.0 + i * 0.16, e => { const a = e.act, s = gbPhantom(e), side = i % 2 ? 1 : -1;
         e.x = a.cx + side * rnd(60, 140); e.y = clamp(a.cy + rnd(-30, 30), 6, DEPTH - 6); e.face = -side; e.play(i % 2 ? 'rk2' : 'rk1', true); fxAfterimage(e, GB_COL);
         if (s) { s.warp(a.cx - side * rnd(60, 140), clamp(a.cy + rnd(-30, 30), 6, DEPTH - 6)); s.face = side; }
         fxSlashX(a.cx + rnd(-60, 60), a.cy + rnd(-20, 20), rnd(40, 110), rnd(140, 200), i % 2 ? '#9fd8ff' : '#6aa8ff'); if (i % 2) sfx.iai(); else sfx.swing(true);
-        blast(e, a.cx, a.cy, 300, { dmg: skillDmg(2.2, 0.55, lv), stun: 0.6, airLift: 100, knock: 0, hs: 0.03, sure: true, downHit: true, col: '#bfe8ff' }, { zMax: 360 }); })),
-      evAt(3.1, e => { const a = e.act; e.x = a.cx - e.face * 60; e.play('iaiSpin', true); cam.flash = 0.45; cam.flashCol = '#eaf6ff'; cam.shake = 18; sfx.boom(1.6); sfx.iai();
-        fxSpr('crossx', a.cx, a.cy, 80, { w: 420, dur: 0.7, grow: [0.4, 1.1], col: '#dff0ff' }); fxBurst(a.cx, a.cy, 60, 420, '#9fd8ff');
-        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - a.cx) < WW * 0.55) applyHit(e, t, { dmg: skillDmg(20, 5.5, lv), launch: 560, knock: 220, hs: 0.24, big: 2.4, critBonus: 0.3, sure: true, downHit: true, col: '#ffffff' }, { proj: true }); })] }) });
+        blast(e, a.cx, a.cy, 300, { dmg: skillDmg(1.8, 0.44, lv), stun: 0.6, airLift: 100, knock: 0, hs: 0.03, sure: true, downHit: true, col: '#bfe8ff' }, { zMax: 360 }); })),
+      ...[0, 1, 2].map(i => evAt(3.7 + i * 0.15, e => { const a = e.act;
+        if (i === 0) { e.x = a.cx - e.face * 60; e.play('iaiSpin', true); fxSpr('crossx', a.cx, a.cy, 80, { w: 420, dur: 0.7, grow: [0.4, 1.1], col: '#dff0ff' }); }
+        cam.flash = 0.2 + i * 0.12; cam.flashCol = '#eaf6ff'; cam.shake = 12 + i * 3; sfx.boom(1.2 + i * 0.2); sfx.iai(); if (i === 2) fxBurst(a.cx, a.cy, 60, 420, '#9fd8ff'); else fxShock(a.cx, a.cy, 260 + i * 60, GB_COL);
+        for (const t of ents) if (hittable(e, t) && Math.abs(t.x - a.cx) < WW * 0.55) applyHit(e, t, { dmg: skillDmg([5, 5, 10][i], [1.4, 1.4, 2.7][i], lv), launch: i === 2 ? 560 : 0, airLift: i < 2 ? 80 : 0, knock: i === 2 ? 220 : 0, hs: 0.16 + i * 0.04, big: 2 + i * 0.2, critBonus: i === 2 ? 0.3 : 0, sure: true, downHit: true, col: '#ffffff' }, { proj: true }); }))] }) });
 { const A = SKILLS.gb_awaken, a0 = A.act; A.act = (lv, p) => { const a = a0(lv, p); if (p && p.cool) p.cool.gb_awaken3 = Math.max(p.cool.gb_awaken3 || 0, p.cool.gb_awaken || 0); return a; }; }
 // 鬼咲：普攻 / 跑攻 / 后跳中也能叠加幻鬼技能；站立被击时也能用幻鬼技能和幻鬼步；三段刃、鬼步冷却 −1 秒。睥睨万物：浮空 / 倒地时也能用幻鬼步（7 秒冷却）
 {

@@ -35,7 +35,7 @@ HAND = {'shortsword': 1.35, 'katana': 1.35, 'lightsaber': 1.25, 'greatsword': 1.
         'staff': 1.2, 'rod': 1.3, 'broom': 1.15, 'pole': 1.1, 'spear': 1.1}
 SIZE.update({t: 20 for t in FIGHTER_W}); HAND.update({t: 1.0 for t in FIGHTER_W})   # 拳上武器不按 SIZE：大小按拳头高度（FIST_H）/ 全长（TONFA_LEN）定
 FIST_H = {'knuckle': 31, 'boxing': 38, 'claw': 29}   # 画出来的拳头高（帧像素；原装空拳约 26）：手套 / 拳套 / 爪盖住拳头要比空拳大一圈
-LEN = {'tonfa': 70, 'gauntlet': 82}   # 东方棍 / 臂铠按全长（帧像素；拳头约 26 + 前臂约 40，臂铠的护臂太长会伸到腰上）
+LEN = {'tonfa': 70, 'gauntlet': 74}   # 东方棍 / 臂铠按全长（帧像素；拳头约 26 + 前臂约 40，臂铠的护臂太长会伸到腰上）
 COVER = {'glove', 'claw'}   # 盖住拳头画（avatar.js cover）；东方棍握在拳里（盖回握拳像素）
 # 握法：grip = 握点在握柄上（剑、枪、魔杖）；tip = 长杆按杖头对齐（魔法师的长武器，握在杆子中段哪里都行）
 KIND = {'shortsword': 'blade', 'katana': 'blade', 'greatsword': 'blade', 'lightsaber': 'saber', 'club': 'club',
@@ -237,7 +237,7 @@ def main():
             data[key] = {'w': sm.width, 'h': sm.height, 'gx': round(gx * k, 1), 'gy': round(gy * k, 1), 'tx': round(tx * k, 1), 'ty': round(gy * k, 1),
                          'size': round(size, 1), 'kind': kind, 'type': wt}
             if wt in SINGLE: data[key]['dual'] = 0
-            if kind in COVER: data[key]['cover'] = 1
+            if kind in COVER: data[key]['cover'] = 1; data[key]['fh'] = round(fist_h(sub, gx) * ky / OVER, 1)   # 画出来的拳头高（帧像素）：运行时按这一帧的拳头大小再放大（avatar.js avFists）
             tiles.append((key, sm, data[key]))
             ic = os.path.join(HERE, 'final', 'icon', f'item_{key}.webp')
             if key.startswith('ep_') and (not os.path.exists(ic) or key in ICON_FROM_ART): epic_icon(sub, kind, ic)

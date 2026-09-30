@@ -13,7 +13,7 @@
    性能：每帧只多 1 次 drawImage + 变换（身前武器再多 1 次握拳小图）；换装 / 首次用到某帧时才分配对象。
    ===================================================================== */
 const AVATAR_CLS = { sword: 1, gun: 1, mage: 1, fighter: 1, pmsuit: 1 };   // pmsuit：协战师的战斗服（地下城里整套换帧），只用来挂转职外观（帧里没有武器轨迹 / 头部锚点）
-const AV_FIST_R = 13;   // 格斗家拳头半径（帧像素；原装空拳约 26 × 26）：远侧拳的拳上武器按这一圈裁
+const AV_FIST_R = 13;   // 格斗家拳头半径（帧像素；原装空拳约 26 × 26）：读不了像素时远侧拳的拳上武器按这一圈裁
 const AVATAR_SIG_SLOTS = ['weapon', 'av_weapon', 'av_top', 'av_bottom', 'av_chest', 'av_belt', 'av_shoes', 'av_hat', 'av_hair', 'av_face'];   // 这些部位换了就重算外观
 class AvatarLayer {
   constructor(m) {
@@ -56,9 +56,17 @@ class AvatarLayer {
     this.acc = (look.acc || []).map(k => AVATAR_ACC[k]).filter(Boolean); this.jobId = undefined;   // 转职外观下一帧重新确定（models/job_fx.js）
     for (const a of this.acc) if (!IMG['avatar/' + a.img]) loadArtKey('avatar/' + a.img);
   }
-  // 钩子：换帧来源（时装）
+  // 钩子：换帧来源（时装）；格斗家戴拳上武器（A.cover）时换成把拳头抹掉的那张（avFists），fit = 每只拳头的位置 / 大小（手套按它套上去）
   frame(m, f) {
     this.sync();
+    const r = this.frame0(m, f); this.fr = r;
+    if (!this.A || !this.A.cover || !this.wim) return r;
+    const F = r ? r.F : m.S.frames[f], im = r ? r.im : m.img[f];
+    if (!F || !im || !(F.wpn || F.wpn2)) return r;
+    const o = avFists(im, F); if (!o) return r;
+    return (this.fr = { F, im: o.im, fit: o.fit });
+  }
+  frame0(m, f) {
     const r = this.alt[f]; if (r !== undefined && !(r && r.dead)) return r;   // dead：拼好的画布被全局缓存挤掉了，重新拼
     if (this.parts) { const c = avatarMix(m, this.cls, f, this.parts); if (c) return (this.alt[f] = c); if (c === undefined) return null; }   // undefined = 素材还没加载完，下次再拼
     if (!this.S2) return (this.alt[f] = null);
@@ -68,7 +76,7 @@ class AvatarLayer {
   // 钩子：帧之前（身后的武器、后脑的发饰）
   under(c, m, f, F) {
     jlUnder(c, this, m, f, F);   // 转职外观：身后的鬼影 / 残影 / 血焰 / 小鬼神；无敌半透明（models/job_fx.js）
-    const w = F.wpn, w2 = F.wpn2, back = x => x && (!x.front || x.side === 'f');   // 格斗家远侧拳（side 'f'）的武器先整个画在身后
+    const cover = this.A && this.A.cover, w = F.wpn, w2 = F.wpn2, back = x => x && (!x.front || (x.side === 'f' && !cover));   // 格斗家远侧拳（side 'f'）握着的武器（东方棍）画在身后；盖拳的在 over 里按拳头露出来的地方画
     if (back(w2) && this.dual()) this.weapon(c, w2, F);
     if (back(w)) this.weapon(c, w, F);
     if (F.head && this.acc.length) this.accessories(c, F, true, f);
@@ -77,33 +85,43 @@ class AvatarLayer {
   // 钩子：帧之后（身前的武器 + 握拳、头部配件）
   over(c, m, f, F) {
     jlHair(c, this, m, f, F);   // 转职发色：紧贴在帧图上面（身前武器 / 头饰之前，models/job_fx.js）
-    const w = F.wpn, w2 = F.wpn2;
+    const w = F.wpn, w2 = F.wpn2, far = x => x && x.side === 'f';
+    if (w2 && w2.front && this.dual() && far(w2)) this.front(c, m, f, F, w2, 1);   // 远侧拳先画：近侧拳（最前面）的手套压在它上面
     if (w && w.front) this.front(c, m, f, F, w, 0);
-    if (w2 && w2.front && this.dual()) this.front(c, m, f, F, w2, 1);
+    if (w2 && w2.front && this.dual() && !far(w2)) this.front(c, m, f, F, w2, 1);
     if (F.head && this.acc.length) this.accessories(c, F, false, f);
     if (this.glow && this.glow.trail) vanityTrail(c, this, F, f);
     jlOver(c, this, m, f, F);   // 转职外观：鬼手 / 红眼 / 身前的火舌和鬼火
   }
   dual() { return !!this.A && this.A.dual !== 0; }   // 双枪帧的副手：长枪 / 手炮 / 手弩不画（副手空着）
-  /* 身前的武器：握在手里的（剑、枪、东方棍）画完把握拳像素盖回去（做出“握住”）；
-     拳上武器（A.cover：手套 / 拳套 / 爪 / 臂铠）整个盖在拳头上，不盖回握拳。
-     格斗家远侧拳（side 'f'）的武器在 under 里已经整个画在身后：握着的（东方棍）拳头本来就在前面；
-     盖拳的只在拳头露出来的地方（握拳轮廓 / 拳心一圈，AV_FIST_R）再盖一遍，身体挡在远侧拳前面的部分照样挡着（docs/FIGHTER_ART_SAMPLES.md §4.3） */
+  /* 身前的武器：握在手里的（剑、枪、东方棍）画完把握拳像素盖回去（做出“握住”）；格斗家远侧拳握着的在 under 里画在身后。
+     拳上武器（A.cover：手套 / 拳套 / 爪 / 臂铠）：身体帧里的拳头已经抹掉（frame → avFists），手套按这一帧拳头的位置 / 大小套上去（fit）；
+     远侧拳（side 'f'）的手套只画在远侧拳原来露出来的像素上（fit.mask）—— 头、身体、近侧手臂挡在它前面的地方照样挡着（docs/CLASS_PLAN_FIGHTER.md §4.5） */
   front(c, m, f, F, w, i) {
     const cover = this.A && this.A.cover;
-    if (w.side === 'f') { if (cover && this.wim) this.fistClip(c, F, w, () => this.weapon(c, w, F)); return; }
-    this.weapon(c, w, F);
-    if (w.hand && this.wim && !cover) this.hand(c, m, f, F, w, i);
+    if (!cover) { if (w.side === 'f') return; this.weapon(c, w, F); if (w.hand && this.wim) this.hand(c, m, f, F, w, i); return; }
+    const fit = this.fr && this.fr.fit ? this.fr.fit[w === F.wpn ? 'wpn' : 'wpn2'] : undefined;
+    if (w.side !== 'f') return this.weapon(c, w, F, fit || undefined);   // 近侧拳没找到露出来的拳头：照锚点画
+    if (fit === null) return;   // 远侧拳这一帧其实被挡住了（没找到露出来的拳头）
+    if (fit) this.masked(c, F, w, fit); else if (this.wim) this.fistClip(c, F, w, () => this.weapon(c, w, F));   // 读不了像素（file:// 跨域）：按拳心一圈裁
+  }
+  // 远侧拳的手套：先画到临时画布（3 倍精度），只留远侧拳露出来的那些像素，再贴回去
+  masked(c, F, w, fit) {
+    const M = fit.mask, Q = 3, [cv, x] = avScratch(M.w * Q, M.h * Q);
+    x.setTransform(Q, 0, 0, Q, (F.ax - M.x0) * Q, (F.ay - M.y0) * Q); this.weapon(x, w, F, fit);
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = 'destination-in'; x.drawImage(M.cv, 0, 0, M.w * Q, M.h * Q); x.globalCompositeOperation = 'source-over';
+    c.drawImage(cv, 0, 0, M.w * Q, M.h * Q, M.x0 - F.ax, M.y0 - F.ay, M.w, M.h);
   }
   fistClip(c, F, w, draw) {
     let r = AV_FIST_R;
     if (w.hand) for (const P of w.hand) for (let j = 0; j < P.length; j += 2) r = Math.max(r, Math.hypot(P[j] - w.gx, P[j + 1] - w.gy) + 1.5);
     c.save(); c.beginPath(); c.arc(w.gx - F.ax, w.gy - F.ay, Math.min(r, AV_FIST_R * 1.35), 0, TAU); c.clip(); draw(); c.restore();
   }
-  weapon(c, w, F) {
+  weapon(c, w, F, fit) {
     const A = this.A, im = this.wim; if (!A || !im) return;
-    const s = A.size / (A.tx - A.gx), fy = Math.cos(w.ang) < -0.05 ? -s : s;   // 朝左时上下翻转，武器的“上面”保持朝上
-    c.save(); c.translate(w.gx - F.ax, w.gy - F.ay); c.rotate(w.ang);
+    const kf = fit && A.fh && A.type !== 'gauntlet' ? clamp(fit.h * 1.05 / A.fh, 1, 1.15) : 1, ang = fit ? fit.ang : w.ang;   // 拳上武器顺着前臂的方向；拳头比手套大的帧稍微放大一点（拳头已经抹掉，不用硬盖满；臂铠带着整条护臂，放大会伸到腰上）
+    const s = A.size / (A.tx - A.gx) * kf, fy = Math.cos(ang) < -0.05 ? -s : s;   // 朝左时上下翻转，武器的“上面”保持朝上
+    c.save(); if (fit) c.translate(fit.cx - F.ax, fit.cy - F.ay); else c.translate(w.gx - F.ax, w.gy - F.ay); c.rotate(ang);
     const pole = A.kind === 'pole';
     if (pole) c.translate(w.len, 0);   // 长杆：杖头对准棍子的尖端
     c.scale(s, fy);
@@ -136,6 +154,108 @@ class AvatarLayer {
       const k = AVATAR_ACC_SCALE * (P[3] || 1); c.scale(k, k); c.drawImage(im, -im.width / 2, -im.height / 2); c.restore();
     }
   }
+}
+/* ---- 格斗家拳上武器（cover）：这一帧露出来的拳头 ----
+   绑带和皮肤颜色分不开（色相 15~40°、饱和度 0.1~0.4，实测），所以按几何 + 连通来找：
+   ① “浅色、暖、不鲜艳”的像素（1 = 绑带 / 皮肤，2 = 中等亮度的指节线 / 阴影）；脸（头部锚点转正后的一个框，嘴和下巴也在里面）不算；
+   ② 腐蚀一圈再从拳头锚点附近往外长（断开一像素宽的桥：拳头贴着脸 / 另一只手臂的地方不会连过去），半径 AV_ARM_R 以内，再长回两圈 → 拳头 + 前臂；
+      近侧拳先找，远侧拳不能用近侧已经占了的像素（远侧拳在近侧手臂后面时只剩真正露出来的部分）；
+   ③ 拳头 = 离锚点 AV_FIST_R2 以内的那部分；前臂方向 = 手腕那一截（从拳头外扩几像素跨过描边、在拳心外一圈里按浅色像素长）的质心 → 拳头质心（找不到就用占位棒的方向）；
+      fit = 拳心（沿前臂方向：最前面往回半个拳头高）+ 拳头高 h + 方向 ang（手套按它套上去、至少比拳头大一圈）；
+   ④ 身体帧里把拳头（+ 外面一圈描边）抹掉、用周围的像素补上（手套盖不全的地方不会再露出一只绑带拳头）；前臂留着（缠着绑带的前臂伸进手套口）；
+   ⑤ 远侧拳：遮罩 = 这只手露出来的像素（拳头 + 前臂 + 一圈描边）+ 空白处，手套只画在这里面 —— 头、身体、近侧手臂挡着的地方照样挡着，伸到身体外面的照画。
+   每张帧图算一次（WeakMap，原装 / 时装 / 混搭拼帧都一样）；读不了像素（file:// 跨域）返回 null（退回按拳心一圈裁）。 */
+const AV_FISTS = new WeakMap(), AV_FIST_R2 = 17, AV_ARM_R = 32;
+let AV_SCRATCH = null;
+function avScratch(w, h) {
+  if (!AV_SCRATCH || AV_SCRATCH[0].width < w || AV_SCRATCH[0].height < h) AV_SCRATCH = offCanvas(Math.max(w, AV_SCRATCH ? AV_SCRATCH[0].width : 0), Math.max(h, AV_SCRATCH ? AV_SCRATCH[0].height : 0));
+  AV_SCRATCH[1].setTransform(1, 0, 0, 1, 0, 0); AV_SCRATCH[1].clearRect(0, 0, w, h); return AV_SCRATCH;
+}
+function avFists(im, F) {
+  let o = AV_FISTS.get(im); if (o !== undefined) return o;
+  try { o = avFistsCalc(im, F); } catch (e) { o = null; }
+  AV_FISTS.set(im, o); return o;
+}
+function avFistsCalc(im, F) {
+  const W = im.width, H = im.height, [c0, x0] = offCanvas(W, H); x0.drawImage(im, 0, 0);
+  const d = x0.getImageData(0, 0, W, H), p = d.data, n = W * H, L = new Uint8Array(n), E = new Uint8Array(n), er = new Uint8Array(n), taken = new Uint8Array(n), hd = F.head, fit = {};
+  const ha = hd ? -(hd.a || 0) : 0, hc = Math.cos(ha), hs = Math.sin(ha);
+  const face = (x, y) => { if (!hd) return false; const dx = x - hd.x, dy = y - hd.y, lx = dx * hc - dy * hs, ly = dx * hs + dy * hc; return lx > -14 && lx < 38 && ly > -4 && ly < 44; };
+  for (let i = 0; i < n; i++) {
+    if (p[i * 4 + 3] < 128) continue;
+    const r = p[i * 4], g = p[i * 4 + 1], b = p[i * 4 + 2], mx = Math.max(r, g, b), sat = mx ? (mx - Math.min(r, g, b)) / mx : 0;
+    if (r < b) continue;
+    if (mx >= 140 && sat < 0.45) L[i] = 1; else if (mx >= 95 && sat < 0.65) L[i] = 2;
+  }
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x; E[i] = L[i] === 1 && L[i - 1] === 1 && L[i + 1] === 1 && L[i - W] === 1 && L[i + W] === 1 ? 1 : 0; }
+  const keys = ['wpn', 'wpn2'].filter(k => F[k]).sort((a, b) => (F[a].side === 'f') - (F[b].side === 'f'));   // 近侧拳先找
+  for (const key of keys) {
+    const w = F[key], gx = w.gx, gy = w.gy, R = AV_ARM_R, X0 = Math.max(0, Math.floor(gx - R - 3)), X1 = Math.min(W - 1, Math.ceil(gx + R + 3)), Y0 = Math.max(0, Math.floor(gy - R - 3)), Y1 = Math.min(H - 1, Math.ceil(gy + R + 3));
+    const o = F[key === 'wpn' ? 'wpn2' : 'wpn'], mine = o ? (x, y) => (x - gx) ** 2 + (y - gy) ** 2 <= (x - o.gx) ** 2 + (y - o.gy) ** 2 + 30 : () => true;   // 两只拳挨在一起：按离哪个锚点近分开
+    const ok = (x, y) => (x - gx) ** 2 + (y - gy) ** 2 <= R * R && !taken[y * W + x] && !face(x, y) && mine(x, y);
+    let m = new Uint8Array(n); const st = [];
+    for (let y = Y0; y <= Y1; y++) for (let x = X0; x <= X1; x++) { const i = y * W + x; if (E[i] && (x - gx) ** 2 + (y - gy) ** 2 <= 64 && ok(x, y)) { m[i] = 1; st.push(i); } }
+    while (st.length) {
+      const i = st.pop(), x = i % W, y = (i - x) / W;
+      for (const [j, xx, yy] of [[i - 1, x - 1, y], [i + 1, x + 1, y], [i - W, x, y - 1], [i + W, x, y + 1]]) if (xx >= 0 && xx < W && yy >= 0 && yy < H && !m[j] && E[j] && ok(xx, yy)) { m[j] = 1; st.push(j); }
+    }
+    for (let k = 0; k < 2; k++) {   // 长回腐蚀掉的两圈（只在浅色像素里）
+      const g = m.slice();
+      for (let y = Y0; y <= Y1; y++) for (let x = X0; x <= X1; x++) { const i = y * W + x; if (m[i] || !L[i] || !ok(x, y)) continue; if ((x > 0 && m[i - 1]) || (x < W - 1 && m[i + 1]) || (y > 0 && m[i - W]) || (y < H - 1 && m[i + W])) g[i] = 1; }
+      m = g;
+    }
+    let fn = 0, fx = 0, fy = 0;
+    const R1 = AV_FIST_R2 * AV_FIST_R2;
+    for (let y = Y0; y <= Y1; y++) for (let x = X0; x <= X1; x++) { const i = y * W + x; if (m[i] && (x - gx) ** 2 + (y - gy) ** 2 <= R1) { fn++; fx += x; fy += y; } }
+    if (fn < 24) { fit[key] = null; continue; }   // 拳头被挡住了（只露出一点点）
+    fx /= fn; fy /= fn;
+    // 前臂方向：从拳头（外扩 3 像素，跨过拳头和手腕之间的描边）往外，在拳心外 AV_FIST_R2 - 4 ~ + 10 这一圈里按浅色像素长（手腕那一截），质心 → 拳心
+    const RA0 = (AV_FIST_R2 - 4) ** 2, RA1 = (AV_FIST_R2 + 10) ** 2, inA = (x, y) => { const d2 = (x - fx) ** 2 + (y - fy) ** 2; return d2 > RA0 && d2 <= RA1 && !taken[y * W + x] && !face(x, y) && mine(x, y); };
+    const A = new Uint8Array(n), sa = [];
+    for (let y = Y0; y <= Y1; y++) for (let x = X0; x <= X1; x++) {
+      const i = y * W + x; if (!L[i] || !inA(x, y)) continue;
+      let near = false; for (let dy = -3; dy <= 3 && !near; dy++) for (let dx = -3; dx <= 3; dx++) { const j = i + dy * W + dx; if (j >= 0 && j < n && m[j] && (x + dx - gx) ** 2 + (y + dy - gy) ** 2 <= R1) { near = true; break; } }
+      if (near) { A[i] = 1; sa.push(i); }
+    }
+    while (sa.length) { const i = sa.pop(), x = i % W, y = (i - x) / W; for (const [j, xx, yy] of [[i - 1, x - 1, y], [i + 1, x + 1, y], [i - W, x, y - 1], [i + W, x, y + 1]]) if (xx >= 0 && xx < W && yy >= 0 && yy < H && !A[j] && L[j] && inA(xx, yy)) { A[j] = 1; sa.push(j); } }
+    let an = 0, axs = 0, ays = 0; for (let y = Y0; y <= Y1; y++) for (let x = X0; x <= X1; x++) if (A[y * W + x]) { an++; axs += x; ays += y; }
+    let ux = Math.cos(w.ang), uy = Math.sin(w.ang);
+    if (an >= 25) { const vx = fx - axs / an, vy = fy - ays / an, l = Math.hypot(vx, vy); if (l > 3) { ux = vx / l; uy = vy / l; } }
+    const T = [], N = [], R3 = (AV_FIST_R2 + 4) ** 2;
+    for (let y = Y0; y <= Y1; y++) for (let x = X0; x <= X1; x++) { if (!m[y * W + x]) continue; const dx = x - gx, dy = y - gy; if (dx * dx + dy * dy > R3) continue; T.push(dx * ux + dy * uy); N.push(-dx * uy + dy * ux); }
+    const q = (A, k) => A[Math.min(A.length - 1, Math.floor(A.length * k))], TS = T.slice().sort((a, b) => a - b), front = q(TS, 0.96);
+    const NS = N.filter((v, j) => T[j] > front - 24).sort((a, b) => a - b), nlo = q(NS, 0.04), nhi = q(NS, 0.96), h = nhi - nlo + 2, tc = front - h / 2, nc = (nlo + nhi) / 2;
+    const f = { cx: gx + ux * tc - uy * nc, cy: gy + uy * tc + ux * nc, h, ang: Math.atan2(uy, ux) };
+    // 抹掉拳头（锚点 AV_FIST_R2 + 2 以内）+ 一圈描边
+    const RE = (AV_FIST_R2 + 2) ** 2, far = w.side === 'f', edge = (x, y, i) => m[i] || (x > 0 && m[i - 1]) || (x < W - 1 && m[i + 1]) || (y > 0 && m[i - W]) || (y < H - 1 && m[i + W]);
+    for (let y = Y0; y <= Y1; y++) for (let x = X0; x <= X1; x++) {
+      const i = y * W + x; if (p[i * 4 + 3] < 20 || !edge(x, y, i)) continue;
+      if (m[i]) taken[i] = 1;
+      if ((x - gx) ** 2 + (y - gy) ** 2 <= RE) er[i] = 1;
+    }
+    // 远侧拳的遮罩：这只手露出来的像素（+ 一圈描边）和空白处（手套伸到身体外面的部分照画）；身体、头、近侧手臂上不画（它们挡在远侧拳前面）
+    if (far) {
+      const RM = 100, MX0 = Math.max(0, Math.floor(gx - RM)), MX1 = Math.min(W - 1, Math.ceil(gx + RM)), MY0 = Math.max(0, Math.floor(gy - RM)), MY1 = Math.min(H - 1, Math.ceil(gy + RM)), mw = MX1 - MX0 + 1, mh = MY1 - MY0 + 1, md = new Uint8ClampedArray(mw * mh * 4);
+      for (let y = MY0; y <= MY1; y++) for (let x = MX0; x <= MX1; x++) { const i = y * W + x; if (p[i * 4 + 3] < 40 || edge(x, y, i)) md[((y - MY0) * mw + x - MX0) * 4 + 3] = 255; }
+      const [mc, mx] = offCanvas(mw, mh); mx.putImageData(new ImageData(md, mw, mh), 0, 0); f.mask = { cv: mc, x0: MX0, y0: MY0, w: mw, h: mh };
+    }
+    fit[key] = f;
+  }
+  // 抹掉拳头：一圈一圈用外面已知的像素（含透明）的平均补进去
+  let todo = []; for (let i = 0; i < n; i++) if (er[i]) todo.push(i);
+  for (let pass = 0; todo.length && pass < 40; pass++) {
+    const next = [], fill = [];
+    for (const i of todo) {
+      const x = i % W; let r = 0, g = 0, b = 0, a = 0, k = 0;
+      for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < n && !er[j]) { const aj = p[j * 4 + 3]; r += p[j * 4] * aj; g += p[j * 4 + 1] * aj; b += p[j * 4 + 2] * aj; a += aj; k++; }
+      if (!k) { next.push(i); continue; }
+      fill.push([i, a ? r / a : 0, a ? g / a : 0, a ? b / a : 0, a / k]);
+    }
+    for (const [i, r, g, b, a] of fill) { p[i * 4] = r; p[i * 4 + 1] = g; p[i * 4 + 2] = b; p[i * 4 + 3] = a; er[i] = 0; }
+    todo = next;
+  }
+  x0.putImageData(d, 0, 0);
+  return { im: c0, fit };
 }
 /* ---- 混搭拼帧：按原装帧的分割线（F.cut：腰线 + 脚踝线，垂直于身体轴）把上身 / 下身 / 脚三段拼成一张，接缝处羽化 FEATHER 像素 ----
    只在第一次用到（帧 × 搭配）时拼一次，缓存成一张画布（全局 LRU，最多 MIX_MAX 张），之后每帧还是一次 drawImage。

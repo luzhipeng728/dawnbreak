@@ -4,6 +4,7 @@
   fighter_looks_art.py sheets [套装/表,...] [-j 2]  时装动作表（原装 4×4 表带绿棒 + 时装参考）→ art/src/avatar/sets/<套装>/fighter_<表>.png
   fighter_looks_art.py frames [套装,...] [--only 表]  切帧 → art/final/spr/fighter@<套装>/ + spr.json
   fighter_looks_art.py review [套装,...]           审图：每套一行（原装 / 时装同名帧并排）→ art/work/fighter_b2/costume_<套装>.jpg
+  fighter_looks_art.py anchors [套装,...]          原装锚点改了之后，把时装帧的锚点按原装重新平移过来（不重切图）
 表：move / combo / walkreact / base2 / base3 / jobs（walkreact = 原装 walk 表的走路格 + react 表的受击格拼成一张，省一次生图）。
 切帧：复用 avatar_frames.process_sheet（抠绿棒、补色、白色衣物和白底口袋分开）+ fighter_art 的 4×4 切格；
   缩放 = 原装同名帧“原表像素 → 帧像素”的倍数（B1 第二遍按头归一过，这里照抄，所以时装帧和原装一样大）；
@@ -167,6 +168,20 @@ def cmd_frames(sets, only):
         low = [f'{f}({v})' for f, v in rep if v < 0.6]
         print(f'fighter@{sid}: {len(meta["frames"])} 帧；和原装轮廓重合度 < 0.6：{" ".join(low) or "无"}')
 
+def cmd_anchors(sets):
+    """原装锚点改了（补拳头锚点等）之后：时装帧的锚点按原装重新平移过来（不重切图）"""
+    bmeta = json.load(open(os.path.join(SPR, 'fighter', 'spr.json')))['frames']
+    for sid in sets:
+        mp = os.path.join(SPR, f'fighter@{sid}', 'spr.json')
+        if not os.path.exists(mp): continue
+        meta = json.load(open(mp)); n = 0
+        for f, C in meta['frames'].items():
+            B = bmeta.get(f)
+            if not B: continue
+            for k in ('wpn', 'wpn2', 'head', 'cut'): C.pop(k, None)
+            C.update(_shift(B, C['ax'] - B['ax'], C['ay'] - B['ay'])); n += 1
+        json.dump(meta, open(mp, 'w'), indent=1); print(f'  fighter@{sid}: {n} 帧锚点跟原装同步')
+
 def cmd_review(sets):
     """每套：原装 / 时装同名帧并排（每张表挑 4 帧），加一行 6 套 idle"""
     os.makedirs(WORK, exist_ok=True); font = ImageFont.truetype('/System/Library/Fonts/STHeiti Medium.ttc', 14)
@@ -202,6 +217,7 @@ def main():
         return cmd_sheets(items, a.force, a.j)
     if a.cmd == 'frames': return cmd_frames(names or SETS, [t for t in a.only.split(',') if t])
     if a.cmd == 'review': return cmd_review(names or SETS)
+    if a.cmd == 'anchors': return cmd_anchors(names or SETS)
     if a.cmd == 'composite': return print(composite())
     if a.cmd == 'scale': return print(len(base_scale()))
     sys.exit('cmd: ref | sheets | frames | review | composite | scale')

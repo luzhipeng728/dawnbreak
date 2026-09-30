@@ -2,6 +2,7 @@
 """格斗家（男）缺的拳头锚点（B2，拳上武器 cover 用）：原装帧里只有一只拳有锚点、另一只拳其实露在外面（走路护在下巴前的后手、跑步往后甩的手、刺拳的后手…）
   fighter_fists.py find [帧,...]      按绑带颜色找另一只拳 → 预览 art/work/fighter_b2/fists_find.jpg（人工看，挑对的写进 ACCEPT）
   fighter_fists.py apply              把 ACCEPT 里的帧写进 art/final/spr/fighter/spr.json（side = 缺的那一侧，auto: 3，没有握拳轮廓，远侧拳按拳心一圈裁）
+  fighter_fists.py hints              把 HINTS 里的提示点吸到绑带色的拳头质心上，写成另一只拳的锚点（auto: 4）
 做法：绑带色（fighter_art.BANDAGE）去掉已有拳头一圈、头一圈、腰线以下（绑腿）→ 连通块 → 离肩膀最远的那一截 = 拳头（质心 = 握点），
   块的质心 → 拳头 = 前臂方向。ACCEPT 里可以写 (dx, dy) 微调握点。时装帧的锚点从原装平移（fighter_looks_art.py frames 重跑）。
 """
@@ -63,6 +64,32 @@ def cmd_find(names):
     os.makedirs(WORK, exist_ok=True); out.save(os.path.join(WORK, 'fists_find.jpg'), quality=84); print(os.path.join(WORK, 'fists_find.jpg'))
     return res
 
+HINTS = {   # 帧 → 另一只拳的大概位置（帧像素，逐帧放大 4 倍看过：护在胸前 / 往后甩、露在外面的那只拳；B2 手套“双手”修复，2026-09-30）
+    'f_axe1': (77, 104), 'f_flykick': (90, 86), 'f_low1': (70, 105), 'f_low2': (65, 105), 'f_mid1': (69, 102), 'f_high1': (87, 106), 'fs_kneekick': (65, 87),
+    'run5': (45, 112), 'run8': (32, 105), 'tech': (90, 111),
+}
+
+def snap(a, x, y, r=11):
+    """提示点附近的绑带色像素质心（迭代两次）"""
+    h, s, v = hsv(a); H, W = a.shape[:2]; yy, xx = np.mgrid[0:H, 0:W]
+    m0 = (a[..., 3] > 128) & (v >= 0.55) & (s < 0.45) & (a[..., 0].astype(int) >= a[..., 2].astype(int))
+    for _ in range(2):
+        m = m0 & ((xx - x) ** 2 + (yy - y) ** 2 <= r * r)
+        if m.sum() < 20: return None
+        x, y = float(xx[m].mean()), float(yy[m].mean())
+    return x, y
+
+def cmd_hints():
+    p = os.path.join(SPR, 'spr.json'); meta = json.load(open(p)); n = 0
+    for f, (hx, hy) in HINTS.items():
+        F = meta['frames'][f]; have = [F[k] for k in ('wpn', 'wpn2') if k in F]
+        if len(have) != 1: continue
+        a = np.array(Image.open(os.path.join(SPR, f + '.webp')).convert('RGBA')); c = snap(a, hx, hy)
+        if not c: print('  没找到', f); continue
+        w0 = have[0]; side = 'f' if w0.get('side') == 'n' else 'n'
+        F['wpn2' if 'wpn' in F else 'wpn'] = {'gx': round(c[0], 1), 'gy': round(c[1], 1), 'ang': w0['ang'], 'len': 24.0, 'bk': 0.0, 'front': 1, 'side': side, 'auto': 4}; n += 1
+    json.dump(meta, open(p, 'w'), indent=1); print(f'按提示点补了 {n} 只拳头锚点（auto: 4；方向运行时按前臂重算）')
+
 def cmd_apply():
     p = os.path.join(SPR, 'spr.json'); meta = json.load(open(p)); n = 0
     for f, fix in ACCEPT.items():
@@ -77,4 +104,5 @@ if __name__ == '__main__':
     cmd = sys.argv[1] if len(sys.argv) > 1 else 'find'; names = [x for x in (sys.argv[2] if len(sys.argv) > 2 else '').split(',') if x]
     if cmd == 'find': cmd_find(names)
     elif cmd == 'apply': cmd_apply()
-    else: sys.exit('cmd: find | apply')
+    elif cmd == 'hints': cmd_hints()
+    else: sys.exit('cmd: find | apply | hints')

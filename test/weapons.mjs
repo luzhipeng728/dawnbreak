@@ -99,15 +99,16 @@ if (process.argv[2] === 'town') {
     const bad = [];
     for (const k of [...keys, ...skinKeys]) {
       const A = WEAPON_IMG[k], im = IMG['weapon/' + k]; if (!A || !im) continue;
-      const base = WEAPON_IMG[A.type], ratio = A.size / base.size;
-      if (!skinKeys.includes(k) && (ratio < 0.99 || ratio > 1.5)) bad.push(`${k} 长度 ×${ratio.toFixed(2)}`);
+      const base = WEAPON_IMG[A.type], ratio = A.size / base.size, fist = ['glove', 'claw', 'tonfa'].includes(A.kind);   // 格斗家拳上武器：握点 = 拳心（手套在右端），大小按拳头高 / 全长定，不按“品级越高越长”
+      if (!skinKeys.includes(k) && !fist && (ratio < 0.99 || ratio > 1.5)) bad.push(`${k} 长度 ×${ratio.toFixed(2)}`);
       if (Math.abs(im.width - A.w) > 1 || Math.abs(im.height - A.h) > 1) bad.push(`${k} 图片尺寸和数据不符`);
       const cv = document.createElement('canvas'); cv.width = A.w; cv.height = A.h; const c = cv.getContext('2d'); c.drawImage(im, 0, 0);
       const a = c.getImageData(0, 0, A.w, A.h).data, al = (x, y) => x < 0 || y < 0 || x >= A.w || y >= A.h ? 0 : a[(y * A.w + x) * 4 + 3];
       const near = (px, py, r) => { for (let y = Math.round(py) - r; y <= Math.round(py) + r; y++) for (let x = Math.round(px) - r; x <= Math.round(px) + r; x++) if (al(x, y) > 100) return true; return false; };
       if (A.kind === 'pole') { if (!near(A.tx - 4, A.ty, 6) && !near(A.tx - A.w * 0.06, A.ty, Math.round(A.h * 0.25))) bad.push(`${k} 杖头不在尖端`); }   // 月牙这类开口朝右的杖头：尖端那一行是空的，放宽到杖头附近
       else if (!near(A.gx, A.gy, 3)) bad.push(`${k} 握点 (${A.gx},${A.gy}) 不在武器上`);
-      if (A.tx - A.gx < A.w * 0.4) bad.push(`${k} 握点太靠右`);
+      if (!fist && A.tx - A.gx < A.w * 0.4) bad.push(`${k} 握点太靠右`);
+      if (fist && (A.gx < A.w * 0.15 || A.tx - A.gx < 6)) bad.push(`${k} 拳心位置不对`);
     }
     // 拿在手里：握点画到帧的握点上，握点附近一定有武器像素（武器贴着手）
     const hand = [];

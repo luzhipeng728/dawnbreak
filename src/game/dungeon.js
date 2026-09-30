@@ -96,7 +96,7 @@ class Dungeon {
     if (!room.cleared) this.spawnRoom(room, W, first); else this.onCleared(true);
     this.doorsOpen = room.cleared;
     if (first) bus.emit('roomEnter', { id: this.def.id, room, type: room.type });
-    if (room.type === 'boss' && !room.cleared) { music.play(this.def.bossBgm || 'boss'); toastMsg(`领主房 · ${MON[this.def.boss.kind].name}`, '#ff6a4a'); }
+    if (room.type === 'boss' && !room.cleared) { music.play(bossTrack(this.def)); toastMsg(`领主房 · ${MON[this.def.boss.kind].name}`, '#ff6a4a'); }
   }
   spawnRoom(room, W, first) {
     if (this.guest) { this.waves = []; return; }   // 组队的队员：怪物由队长那边生成后同步过来

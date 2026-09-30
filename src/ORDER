@@ -141,8 +141,11 @@ game/mon_skills.js
 # 领主差异化 P0（docs/BOSS_SPEC.md）：技能库第二批（leap cone lanes mark plant pool pull、冲刺变体）+ 特性钩子；要在 region.js 前面（样品怪 msLab 放全部技能）
 game/mon_skills_ext.js
 game/region.js
+content/regions/darkelf_bosses.js
 content/regions/darkelf.js
+content/regions/snow_bosses.js
 content/regions/snow.js
+content/regions/gent_bosses.js
 content/regions/gent.js
 content/regions/ancient.js
 content/regions/ancient_rooms.js
@@ -153,6 +156,7 @@ content/regions/siroco_bosses.js
 content/regions/siroco.js
 # 装备深化：深渊派对（深渊地下城、深渊柱与两轮派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
 content/abyss.js
+content/music_bosses.js
 content/items/gear60_apply.js
 # 31~60 区域的每日 / 支线 / 区域制霸链 + 里程碑（defineRegionQuests，game/region.js）：要在 content/abyss.js 后面（用到深渊地下城和资格任务）
 content/quests/regions.js

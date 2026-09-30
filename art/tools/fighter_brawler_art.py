@@ -17,48 +17,52 @@ import combatgen as C
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GI = os.path.expanduser('~/.claude/skills/gpt-image/scripts/gpt_image.py')
+# 每个图标：(技能 id, 主体, 底色)。风格照现有的明亮 Q 版图标（散打 fs_icons_a / 神枪手 gskills_a 当参考图传进去）：主体简单、轮廓粗、底色是单一鲜艳色 + 中心放射光
 ICONS = [
-    ('fb_poisonres', 'a purple poison droplet in front of a green round shield'),
-    ('fb_overstrain', 'a clenched fist wreathed in dark purple and crimson forbidden energy with glowing veins'),
-    ('fb_heavy', 'a heavy steel chest plate armor with big rivets'),
-    ('fb_autoload', 'a leather bandolier pouch loaded with small poison bottles, needles and a brick, with a circular reload arrow around it'),
-    ('fb_strong', 'a hand gripping a glowing gold-charged poison bottle crackling with power sparks'),
-    ('fb_poison', 'a corked purple glass poison bottle flying and splashing purple poison'),
-    ('fb_backstreet', 'two thrown bricks crossing in the air in front of a dark back alley brick wall, red aura'),
-    ('fb_hook', 'a roundhouse kick hitting a burst of orange fire explosion'),
-    ('fb_pocket', 'a patched denim back pocket with a small fire bomb and a poison bottle peeking out'),
-    ('fb_claw', 'a steel claw weapon with three curved blades over the knuckles'),
-    ('fb_needle', 'three thin silver needles with red tips flying diagonally with speed lines'),
-    ('fb_brick', 'a red clay brick shattering into sharp fragments'),
-    ('fb_mount', 'a fist punching straight down at the ground with a yellow impact burst, a knocked-down silhouette under it'),
-    ('fb_taunt', 'a smirking face with one hand beckoning come here, red anger marks around'),
-    ('fb_tackle', 'a low sliding kick kicking up a big cloud of sand'),
-    ('fb_net', 'a thrown rope net spreading wide open in the air'),
-    ('fb_vulcan', 'a giant fist smashing the ground releasing blue and white shockwave rings'),
-    ('fb_mine', 'a spiked green poison mine bursting into a plume of pink and purple poison gas'),
-    ('fb_lariat', 'a heavy iron chain with a hook swinging in a full circle, small red blood drops'),
-    ('fb_thousand', 'many ghostly hands fanned out like a thousand-armed statue, each throwing a bottle, needle or brick'),
-    ('fb_awaken', 'a huge iron chain hook dragging across cracked burning ground under a giant falling boulder'),
-    ('fb_barrel', 'a wooden barrel bursting open with green and purple toxic goo'),
-    ('fb_chain', 'long iron chains whirling wildly in a vortex with crimson accents'),
-    ('fb_rulebreak', 'a torn rule book with broken chains and a sly grin, purple glow'),
-    ('fb_chaindrive', 'an iron chain stabbed into the ground spinning and flinging rocks upward'),
-    ('fb_cavein', 'a stone ceiling collapsing with many rocks falling down'),
-    ('fb_awaken2', 'an iron pipe studded with spiked poison mines smashing down into a huge pink and orange explosion'),
-    ('fb_picaresque', 'a sinister grinning white mask with a poison bottle and a fire bottle crossed behind it'),
-    ('fb_roadtohell', 'a red explosive oil drum rolling forward with flames bursting behind it'),
-    ('fb_awaken3', 'purple chains converging above a dark night alley into a massive bomb made of building rubble'),
+    ('fb_poisonres', 'a cute purple poison droplet with a skull face bouncing off a round green shield', 'bright green'),
+    ('fb_overstrain', 'a clenched fist bursting with swirling purple and red energy', 'magenta'),
+    ('fb_heavy', 'a shiny silver chest plate armor with gold rivets', 'royal blue'),
+    ('fb_autoload', 'a brown leather pouch stuffed with little purple bottles and a red brick, a circular orange reload arrow around it', 'orange'),
+    ('fb_strong', 'a hand holding up a glowing purple poison bottle with golden sparkles', 'golden yellow'),
+    ('fb_poison', 'a round purple glass poison bottle with a cork flying and splashing purple drops', 'violet'),
+    ('fb_backstreet', 'two red bricks flying and crossing each other with white motion lines', 'crimson red'),
+    ('fb_hook', 'a kicking foot in a black shoe hitting a big orange fire explosion', 'orange red'),
+    ('fb_pocket', 'a blue jeans back pocket with a small black fire bomb with a lit fuse and a purple bottle peeking out', 'teal'),
+    ('fb_claw', 'a fist wearing a shiny steel claw with three curved blades', 'deep blue'),
+    ('fb_needle', 'three thin silver needles with red tips flying diagonally with speed lines', 'red'),
+    ('fb_brick', 'a red brick breaking into chunky pieces with a yellow impact star', 'amber orange'),
+    ('fb_mount', 'a big fist punching straight down with a yellow impact burst', 'yellow orange'),
+    ('fb_taunt', 'a cheeky grinning face beckoning come here with one hand, red anger marks', 'hot pink'),
+    ('fb_tackle', 'a low sliding kick kicking up a big cloud of tan sand', 'sandy yellow'),
+    ('fb_net', 'a tan rope net spreading wide open in the air', 'sky blue'),
+    ('fb_vulcan', 'a giant fist smashing the ground releasing glowing blue and white shockwave rings', 'blue'),
+    ('fb_mine', 'a round spiked green mine bursting into a puffy cloud of pink and purple gas', 'purple'),
+    ('fb_lariat', 'a silver chain with a hook swinging in a full circle with a white motion ring', 'dark red'),
+    ('fb_thousand', 'many golden hands fanned out in a circle like a thousand-armed statue, each holding a bottle, needle or brick', 'gold'),
+    ('fb_awaken', 'a giant chain hook and a huge boulder crashing onto the ground with flames', 'fiery orange'),
+    ('fb_barrel', 'a wooden barrel bursting open with bright green and purple goo', 'lime green'),
+    ('fb_chain', 'silver chains whirling in a big swirl with small red sparks', 'crimson'),
+    ('fb_rulebreak', 'a rule book torn in half with a broken chain and a sly grin symbol', 'purple'),
+    ('fb_chaindrive', 'a silver chain stabbed into the ground spinning and flinging rocks up', 'brown orange'),
+    ('fb_cavein', 'many rocks falling from a cracked ceiling with a yellow shockwave below', 'sandy orange'),
+    ('fb_awaken2', 'an iron pipe covered in little spiked mines smashing down into a big pink and orange explosion', 'hot pink'),
+    ('fb_picaresque', 'a grinning white mask with a purple poison bottle and an orange fire bottle crossed behind it', 'dark violet'),
+    ('fb_roadtohell', 'a red explosive barrel rolling forward with flames bursting out', 'red orange'),
+    ('fb_awaken3', 'glowing purple chains wrapping a giant round bomb made of rubble above a night street', 'indigo'),
 ]
 SHEETS = {'fb_icons_a': ICONS[:12], 'fb_icons_b': ICONS[12:24], 'fb_icons_c': ICONS[24:]}
-C.ICON_SHEETS = SHEETS   # iconcut 走 icons.py --combat（读 combatgen.ICON_SHEETS）
+C.ICON_SHEETS = {k: [(n, d) for n, d, _ in v] for k, v in SHEETS.items()}   # iconcut 走 icons.py --combat（读 combatgen.ICON_SHEETS）
+ICON_REFS = [os.path.join(C.OUT, 'icons', 'fs_icons_a.png'), os.path.join(C.OUT, 'icons', 'gskills_a.png')]   # 画风参考：散打 / 神枪手的图标表
+ICON_LOOK = ('bright glossy cute Q-style mobile game skill icons exactly like the reference sheets: simple bold chunky shapes, thick dark outlines, smooth cel shading, '
+             'very saturated vivid colors, each icon a rounded square tile with a thick dark border and ONE vivid background color with a bright radial glow behind the subject; '
+             'NOT realistic, NOT gritty, no fine texture, no dark muddy colors')
 
 
 def icon_prompt(items):
     cols = 4 if len(items) % 4 == 0 else 3
-    return (f'A sprite sheet of {len(items)} separate game skill icons arranged in a grid of {cols} columns and {len(items) // cols} rows on a plain pure white background, '
-            f'evenly spaced with generous white gaps between icons, no icon touching another, {C.ICON_STYLE}. '
-            'Theme: a dirty-fighting street brawler who throws poison bottles, needles, bricks and nets and swings iron chains; gritty colors (purple poison, rust red, iron grey, fire orange). '
-            'In reading order (left to right, top to bottom): ' + '; '.join(f'({i + 1}) {t}' for i, (_, t) in enumerate(items)) + '. No text, no numbers, no labels.')
+    return (f'Using the same icon art style as the reference sheets (but NEW subjects), draw a sprite sheet of {len(items)} separate game skill icons arranged in a grid of {cols} columns and {len(items) // cols} rows '
+            f'on a plain pure white background, evenly spaced with generous white gaps, no icon touching another. Style: {ICON_LOOK}. '
+            'In reading order (left to right, top to bottom): ' + '; '.join(f'({i + 1}) {t}, {bg} background' for i, (_, t, bg) in enumerate(items)) + '. No text, no numbers, no labels.')
 
 
 # 男格斗家的造型（B1 定稿 art/src/fighter_ref.png：棕色刺猬头、红色无袖中式上衣 + 黑色镶边和腰带、黑色灯笼裤、手脚缠绷带）；街霸特征 = 脸上的创可贴、爪
@@ -96,16 +100,19 @@ def run(job):
     if os.path.exists(out): return f'skip {os.path.basename(out)}'
     os.makedirs(os.path.dirname(out), exist_ok=True)
     t = time.time()
-    cmd = ['python3', GI, 'edit' if job.get('ref') else 'gen', job['prompt'], '-o', out, '-s', job['size'], '-q', 'high'] + (['-i', job['ref']] if job.get('ref') else []) + (['-m', job['model']] if job.get('model') else [])
+    refs = job.get('refs') or ([job['ref']] if job.get('ref') else [])
+    cmd = ['python3', GI, 'edit' if refs else 'gen', job['prompt'], '-o', out, '-s', job['size'], '-q', 'high'] + [x for r in refs for x in ('-i', r)] + (['-m', job['model']] if job.get('model') else [])
     r = subprocess.run(cmd, capture_output=True, text=True)
     return f'ok   {os.path.basename(out)}  {time.time() - t:.0f}s' if r.returncode == 0 and os.path.exists(out) else f'FAIL {os.path.basename(out)}: {(r.stderr or r.stdout)[-300:]}'
 
 
-def prep(src, dst, size):
+def prep(src, dst, size, holes=False):
     from prep import remove_bg
     from PIL import Image
     if not os.path.exists(src): print('missing', src); return
-    im = remove_bg(Image.open(src)).resize(size, Image.LANCZOS); os.makedirs(os.path.dirname(dst), exist_ok=True)
+    im = remove_bg(Image.open(src))
+    if holes: from sky_art import clear_holes; im = clear_holes(im, thr=238, min_area=3000)   # 锁链 / 爆炸围住的白底（面积门槛 3000，脸上的创可贴不会被挖掉）
+    im = im.resize(size, Image.LANCZOS); os.makedirs(os.path.dirname(dst), exist_ok=True)
     im.save(dst, 'WEBP', quality=82, method=6); print(os.path.basename(dst), os.path.getsize(dst) // 1024, 'KB')
 
 
@@ -113,7 +120,7 @@ if __name__ == '__main__':
     a = sys.argv[1:] or ['help']; ph = a[0]; only = a[a.index('--only') + 1] if '--only' in a else ''
     if ph == 'icons':
         for n, items in SHEETS.items():
-            if n.startswith(only): print(run({'out': os.path.join(C.OUT, 'icons', f'{n}.png'), 'prompt': icon_prompt(items), 'size': '2048x1536' if len(items) == 12 else '1536x1024'}), flush=True)
+            if n.startswith(only): print(run({'out': os.path.join(C.OUT, 'icons', f'{n}.png'), 'prompt': icon_prompt(items), 'refs': [r for r in ICON_REFS if os.path.exists(r)], 'size': '2048x2048' if len(items) == 12 else '1536x1024'}), flush=True)
     elif ph == 'iconcut':
         import icons; sys.argv = ['icons.py', '--combat', '--only', only or 'fb_icons']; icons.main()
     elif ph == 'cutin':
@@ -121,7 +128,7 @@ if __name__ == '__main__':
             if not only or os.path.basename(j['out'])[:-4] == only: print(run(j), flush=True)
     elif ph == 'cutinprep':
         for j in CUTIN:
-            if not only or j == only: prep(os.path.join(C.OUT, 'cutin', f'{j}.png'), os.path.join(HERE, 'final', 'cutin', f'{j}.webp'), (720, 480))
+            if not only or j == only: prep(os.path.join(C.OUT, 'cutin', f'{j}.png'), os.path.join(HERE, 'final', 'cutin', f'{j}.webp'), (720, 480), holes=True)
     elif ph == 'job':
         for j in job_jobs(): print(run(j), flush=True)
     elif ph == 'jobprep':

@@ -1,5 +1,5 @@
 // 街霸（男格斗家转职 brawler，B6）机制测试：node test/brawler.mjs [load,throws,status,grab,chain,awaken,shots]（默认除 shots 以外全部，约 1 分钟）
-//   load    页面加载无报错、30 个技能都定义了、指令表 / 动画片段 / 觉醒登记
+//   load    页面加载无报错、30 个技能都定义了、指令表 / 动画片段 / 觉醒登记、图标 / 觉醒插图 / 转职立绘都在
 //   throws  4 种投掷物装填：每投耗 1、再投间隔、用完进入装填冷却后自动装满（扣 MP）；强化投掷多耗（毒瓶 2 / 砖块 3 / 毒针 4 / 罗网 2）、
 //           后街战术一次扔两个（耗 2，罗网除外）、强化投掷优先；千手奥义加装填数；诡诈之道：从毒雷取消接投掷不耗投掷物且霸体
 //   status  异常：毒瓶中毒、毒针出血、罗网强制硬直 + 束缚；按异常个数加伤（擒月炎 3 个异常 ≈ 1.6 倍）；挑衅光环 / 伤害加深；剧毒抵抗
@@ -34,18 +34,21 @@ await page.evaluate(() => {
 
 // ---------------- load ----------------
 if (MODES.includes('load')) {
+  await page.evaluate(() => typeof loadBundles === 'function' ? loadBundles(['job']) : null);   // 转职立绘是分包按需加载的
   const R = await page.evaluate(() => {
     const J = CLASSES.fighter.jobs.brawler, ids = FIGHTER_IDS.brawler;
     const cmdIds = CLASSES.fighter.cmds.map(c => c[1]).filter(id => id.startsWith('fb_'));
     const actives = J.skills.filter(id => SKILLS[id] && !SKILLS[id].passive);
     return { n: J.skills.length, missing: ids.filter(id => !J.skills.includes(id) || !SKILLS[id]), noCmd: actives.filter(id => !cmdIds.includes(id)), awk: [J.awaken, J.awaken2, J.awaken3].map(id => !!(SKILLS[id] && SKILLS[id].awaken)),
       ready: J.ready, dmg: J.dmgType, armor: J.armor, anims: Object.keys(J.anims || {}).length, clips: Object.keys(J.anims || {}).filter(k => !CLIPS.fighter[k]),
+      noIcon: J.skills.filter(id => !IMG['icon/' + id]), art: ['cutin/brawler', 'cutin/brawler2', 'cutin/brawler3', 'job/brawler'].filter(k => !IMG[k]),
       mag: J.skills.filter(id => SKILLS[id] && SKILLS[id].type !== 'mag'), txt: J.skills.filter(id => !SKILLS[id].desc || SKILLS[id].desc.length < 20), cmdTxt: SKILLS.fb_strong.cmdTxt, auto: J.auto, learned: J.auto.every(id => game.skillLv[id] > 0) };
   });
   report('30 个技能都定义了且都在转职技能表里', R.n === 30 && !R.missing.length, { n: R.n, missing: R.missing });
   report('主动技能都有指令（强化投掷 ←→+C）', !R.noCmd.length && R.cmdTxt === '指令：←→+C', { noCmd: R.noCmd, cmd: R.cmdTxt });
   report('一 / 二 / 三觉登记、ready 仍为 false、魔法 / 重甲', R.awk.every(Boolean) && R.ready === false && R.dmg === 'mag' && R.armor === 'heavy', R);
   report('动作片段都有矢量占位', R.anims >= 10 && !R.clips.length, { anims: R.anims, clips: R.clips });
+  report('美术：30 个技能图标、三张觉醒插图、转职立绘都在', !R.noIcon.length && !R.art.length, { noIcon: R.noIcon, art: R.art });
   report('技能都是魔法、都有说明；转职自动学会 4 个被动', !R.mag.length && !R.txt.length && R.learned, { mag: R.mag, txt: R.txt, auto: R.auto });
 }
 

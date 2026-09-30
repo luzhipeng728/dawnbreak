@@ -70,7 +70,7 @@
 - B3（基础）：抛沙 `f_sand` 只有街霸能在普攻中取消使用（官方）——规则在 B3 的技能定义里；后街战术的两连撒已经在街霸的 onCast 钩子里做了，不依赖 f_sand 的实现细节（复制它的 hits / events）。
 - B1（帧）：本转职用到的精灵帧名 `fb_throw1/2`（上手投掷）、`fb_fan1/2`（侧手甩投）、`fb_mount1/2`（骑乘捶打）、`fb_slide`（滑铲）、`fb_chain1/2`（挥锁链）、`fb_taunt`（挑衅）；其余复用 `f_low2 / f_high2 / f_mid1/2 / f_grab / f_lift / f_smash / f_slam / f_palm1/2 / f_focus / f_spin1 / f_crouch`。没出帧时 `fAnim` 兜底（`J.anims` 写成 getter，等 content/sprites.js 加载后求值）。
 - B9：`docs/skills/fighter.json` 的 brawler 规格 + `skillaudit --compare`、`PVP_JOB.brawler`、AI（`ai.kind` 已按 poke / grab / proj / aoe / burst / buff / awaken 标好）。
-- 美术：样图 2 张（图标表 fb_icons_a → 已切 12 个 `icon/fb_*.webp`；一觉插图 → `cutin/brawler.webp`，参考 B1 的 fighter_ref.png）待主线程审（总览 `test/shots/brawler/review_samples.jpg`）；图标比现有图标偏暗（提示词里的 “gritty colors”），要统一就删掉那句再出后两张；通过后 `python3 art/tools/fighter_brawler_art.py icons` / `cutin` / `job` 出齐（还剩 5 次：图标表 b / c、二觉 / 三觉插图、转职立绘），再 `iconcut` / `cutinprep` / `jobprep`。
+- 美术（`art/tools/fighter_brawler_art.py`）：30 个图标（3 张表，散打 fs_icons_a / 神枪手 gskills_a 的图标表当画风参考图传进去；第一版图标偏写实偏暗被主线程打回，去掉 “gritty”、改成每个图标一个鲜艳底色后重出）、觉醒插图 `cutin/brawler{,2,3}`（参考 B1 的 fighter_ref.png）、转职立绘 `job/brawler`。审图：`python3 art/tools/fighter_brawler_cmp.py <输出.jpg> <散打的 icon 目录>` 出 fb 与 fs 图标的对照总览。
 
 ## 坑（下次写转职注意）
 - 职业文件比 `content/sprites.js` 早加载：`J.anims` 里要用 `fAnim / sprHas` 兜底就写成 getter（sprites.js 并入时才求值），直接调用会让整页加载失败。
@@ -79,3 +79,5 @@
 - `castSkill` 失败（冷却中 / 装填中）也返回 true（给技能栏闪字用），测试里要看状态变化，不能看返回值。
 - 觉醒开头有 `game.timeStop`（这期间实体不更新，动作的 invul 窗口还没生效）：要全程无敌就在 onStart 里直接给 `e.invul`。
 - 所有文件拼进同一个作用域：顶层名字一律带本转职前缀（`fb* / FB_*`）。
+- 带参考图的生图（edits）只认固定尺寸：1024² / 1536x1024 / 1024x1536 / 2048² / 2048x1152 / 3840x2160（2048x1536 直接 400）。12 个图标的表用 2048²、6 个用 1536x1024。
+- 图标画风：只写文字风格词容易画成写实暗色；把现有职业的图标表当参考图传进去 + 每个图标写一个鲜艳底色，一次就对上。

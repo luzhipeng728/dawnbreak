@@ -53,6 +53,7 @@ content/classes/fighter_nen.js
 content/classes/fighter_striker.js
 content/classes/fighter_brawler.js
 content/classes/fighter_grappler.js
+content/classes/fighter_grappler_p1.js
 engine/touch.js
 game/drops.js
 game/progress.js

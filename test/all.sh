@@ -43,6 +43,8 @@ run fighter   node test/fighter.mjs   # 格斗家 B0：存档安全（未知 / �
 # 格斗家 B8：风振的转职任务链、四个转职各自的转职任务线、一觉剧情、一 / 二 / 三觉；没开放时老职业看不到
 run fquests   node test/fighter_quests.mjs
 run striker   node test/striker.mjs   # 散打（B5）：柔化肌肉 / 霸体护甲 / 烈焰焚步 / 双重施放 / 强袭拳·闪步 / 锁定最强敌人 / 范围 + 游戏内截图
+run fgrappler node test/fighter_grappler.mjs   # 柔道家（B7）：登记、28 个技能逐个能放
+run grappler  node test/grappler.mjs   # 柔道家机制：抓轰炮 / 暴力抓取 / 滑行 / 连环 / 二觉预约 / 领主不卡死
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs

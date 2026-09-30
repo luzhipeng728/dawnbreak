@@ -40,6 +40,8 @@ run paramedic node test/paramedic.mjs
 run enchant   node test/enchantress.mjs
 run witch     node test/witch.mjs
 run fighter   node test/fighter.mjs   # 格斗家 B0：存档安全（未知 / 没开放职业的角色不丢）、id 预留、武器手感、开放开关、?fighter=1 建角色进地下城
+run fighter_nen node test/fighter_nenmaster.mjs   # 气功师（B4）：29 个技能登记 + 23 个主动技能逐个放 / 命中 / MP / 冷却
+run nenmaster node test/nenmaster.mjs   # 气功师机制：念气珠、龙虎啸换普攻、风雷能量 + HUD、念气罩（联机同步）、蓄念炮、幻影爆碎、三个觉醒
 # 格斗家 B8：风振的转职任务链、四个转职各自的转职任务线、一觉剧情、一 / 二 / 三觉；没开放时老职业看不到
 run fquests   node test/fighter_quests.mjs
 run striker   node test/striker.mjs   # 散打（B5）：柔化肌肉 / 霸体护甲 / 烈焰焚步 / 双重施放 / 强袭拳·闪步 / 锁定最强敌人 / 范围 + 游戏内截图

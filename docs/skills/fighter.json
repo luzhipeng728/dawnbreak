@@ -711,6 +711,354 @@
    "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 3.3.3 / DFO(wiki.dfo.world 技能页)",
    "conf": "mid",
    "official": "←↑→↓+Z；瞬移到附近最强的敌人身边全力连打（约 7 拳）+ 回旋踢 + “灭火”终结拳；判定比特效大得多；施放约 6 s"
+  },
+  "fn_tattoo": {
+   "name": "念气流转",
+   "en": "Nen Tattoo",
+   "src": "https://wiki.dfo.world/view/Nen_Tattoo",
+   "conf": "高",
+   "official": "↑↑+Space、冷却 5s、施放 0.4s；永久 BUFF：魔法武器攻击 / 光强 / 攻速施放提高，体力下降（namu：HP -(50+5n)）",
+   "cd": 5,
+   "dur": [
+    0.3,
+    0.5
+   ],
+   "job": "nenmaster"
+  },
+  "fn_cannon": {
+   "name": "蓄念炮",
+   "en": "Nen Cannon",
+   "src": "https://wiki.dfo.world/view/Nen_Cannon",
+   "conf": "高",
+   "official": "按住念气波蓄力：体积 / 攻击 / 感电率 / 射程大幅提升，100% 穿透，打中没有霸体的敌人必定击倒；冷却 6.5s（namu 现版，蓄力开始时就开始冷却）；禅意·万象后施放即满蓄",
+   "cd": 6.5,
+   "hits": [
+    1,
+    2
+   ],
+   "down": true,
+   "reach": [
+    300,
+    450
+   ],
+   "why": {
+    "reach": "满级角色学了禅意·万象 = 必满蓄，量到的是满蓄的射程"
+   },
+   "job": "nenmaster"
+  },
+  "fn_spiral": {
+   "name": "念气环绕",
+   "en": "Spiral Nen",
+   "src": "https://wiki.dfo.world/view/Spiral_Nen",
+   "conf": "高",
+   "official": "←↓→+Space、冷却 4.2s、施放 0.5s；每 0.1s 生成 1 颗念气珠（最多 5 颗）绕身旋转，碰到敌人造成伤害（不硬直），每颗加物防，持续耗 MP，再按关闭；进地下城自动开启",
+   "cd": 4.2,
+   "sa": "none",
+   "job": "nenmaster"
+  },
+  "fn_legstrike": {
+   "name": "雷霆踏",
+   "en": "Lightning Leg Strike",
+   "src": "https://wiki.dfo.world/view/Lightning_Leg_Strike",
+   "conf": "高",
+   "official": "→+Z、冷却 7s（namu）；腿上聚雷向前约 30px 下劈，落雷追加光属性伤害，感电 100%（8s）；可在普攻中取消",
+   "cd": 7,
+   "hits": [
+    2,
+    2
+   ],
+   "dx": [
+    20,
+    45
+   ],
+   "reach": [
+    70,
+    170
+   ],
+   "job": "nenmaster"
+  },
+  "fn_blast": {
+   "name": "幻影爆碎",
+   "en": "Doppelganger Blast",
+   "src": "https://wiki.dfo.world/view/Doppelganger_Blast",
+   "conf": "高",
+   "official": "←→→+Space、冷却 12s（和分身共用）；分身碰到敌人就光属性爆炸（分身数 = 分身等级）；600px 内再按：分身变成念气球飞回合体爆炸；普攻中可以用",
+   "cd": 12,
+   "hits": [
+    1,
+    3
+   ],
+   "job": "nenmaster"
+  },
+  "fn_guard": {
+   "name": "念气罩",
+   "en": "Nen Guard",
+   "src": "https://wiki.dfo.world/view/Nen_Guard",
+   "conf": "高",
+   "official": "←→+Space、冷却 10s（namu，1 级满级）、施放 0.4s；原地半径 165.5+7.5n px 的罩持续 1.9s，罩里的自己和队友全部无敌；罩不跟人走",
+   "cd": 10,
+   "summon": true,
+   "invul": "full",
+   "hits": [
+    0,
+    0
+   ],
+   "why": {
+    "summon": "罩用召唤框架的 field（fn_guardzone）实现，队友那边收到 partyCast 各自生成"
+   },
+   "job": "nenmaster"
+  },
+  "fn_press": {
+   "name": "念气环绕：袭",
+   "en": "Spiral Nen Press",
+   "src": "https://wiki.dfo.world/view/Spiral_Nen_Press",
+   "conf": "高",
+   "official": "↑↓+Space、冷却 4.5s；把强化的念气珠射向前方敌人（X600 / Y1000 范围），绕着敌人转 2s 再飞回；三觉后改为追到敌人身边爆炸；前方没有敌人不能放",
+   "cd": 4.5,
+   "hits": [
+    3,
+    24
+   ],
+   "why": {
+    "hits": "满级角色学了禅意·万象：每颗念气珠追到身边直接爆炸（3 颗 = 3 段）；没学时每颗绕 2 秒打 8 段"
+   },
+   "job": "nenmaster"
+  },
+  "fn_nencannon2": {
+   "name": "雷霆念炮",
+   "en": "Thunder Nen Cannon（뇌전포，2022）",
+   "src": "https://m.namu.moe/w/넨마스터/남자/스킬",
+   "conf": "中",
+   "official": "2022 新技能、冷却 7s；聚气后向前轰出 4 段并感电 100%（3s）；轰出时把贴身、没有霸体的敌人推开；指令查不到（本作 ↑↓+Z）",
+   "cd": 7,
+   "hits": [
+    4,
+    5
+   ],
+   "reach": [
+    300,
+    300
+   ],
+   "why": {
+    "hits": "推开贴身敌人的那一下做成 5% 伤害的 1 段（官方只写推开）"
+   },
+   "job": "nenmaster"
+  },
+  "fn_stone": {
+   "name": "念气环绕：御",
+   "en": "Spiral Nen: Stone",
+   "src": "https://wiki.dfo.world/view/Spiral_Nen:_Stone",
+   "conf": "高",
+   "official": "↓↑+Space、冷却 40s、1 级满级；80s 内念气珠旋转半径变大、转速变快、攻击力改变",
+   "cd": 40,
+   "job": "nenmaster"
+  },
+  "fn_tiger": {
+   "name": "念兽·龙虎啸",
+   "en": "Tiger Flash",
+   "src": "https://wiki.dfo.world/view/Tiger_Flash",
+   "conf": "高",
+   "official": "→↓→+Space、冷却 5s、施放 1s、不能取消；永久 BUFF：普攻 5 段魔法（160~240%）、跑攻 262%、跳攻 349%，最后一段 / 跑攻 / 跳攻感电 7s；移速 +15%、受到的伤害 -10%；进地下城自动施放",
+   "cd": 5,
+   "dur": [
+    0.9,
+    1.1
+   ],
+   "sa": "any",
+   "job": "nenmaster"
+  },
+  "fn_roar": {
+   "name": "狮子吼",
+   "en": "Lion's Roar",
+   "src": "https://wiki.dfo.world/view/Lion%27s_Roar",
+   "conf": "高",
+   "official": "↓↑+Z、冷却 17s、施放 0.3s；前方 X 轴很长、Y 轴窄的狮吼，1 段伤害 + 眩晕（98%）；风雷啸开启时霸体",
+   "cd": 17,
+   "hits": [
+    1,
+    1
+   ],
+   "reach": [
+    450,
+    450
+   ],
+   "behind": false,
+   "job": "nenmaster"
+  },
+  "fn_thunderdrop": {
+   "name": "雷虎天降",
+   "en": "Thunder Tiger Drop（천뢰호각，2022）",
+   "src": "https://m.namu.moe/w/넨마스터/남자/스킬",
+   "conf": "中",
+   "official": "2022 新技能、冷却 17s；腿上念气聚成念兽形状、用雷霆踏的动作下劈，大爆炸 + 残留念气共 8 段，感电 100%（4s）；指令查不到（本作 ↑↑+Z）",
+   "cd": 17,
+   "hits": [
+    8,
+    10
+   ],
+   "launch": true,
+   "why": {
+    "hits": "爆炸 1 段 + 残留念气 8 段 = 9 段（namu 写 8 段，没说是否含爆炸）"
+   },
+   "job": "nenmaster"
+  },
+  "fn_field": {
+   "name": "螺旋念气场",
+   "en": "Energy Shield",
+   "src": "https://wiki.dfo.world/view/Energy_Shield",
+   "conf": "高",
+   "official": "←↓→+Z、冷却 20s、施放 0.3s；身边圆形念气场 14 段（namu）+ 感电 100%，身后也打得到；风雷啸开启时霸体",
+   "cd": 20,
+   "hits": [
+    14,
+    14
+   ],
+   "behind": true,
+   "job": "nenmaster"
+  },
+  "fn_haitai": {
+   "name": "念兽：猛虎震地",
+   "en": "Haitai Summon",
+   "src": "https://wiki.dfo.world/view/Haitai_Summon",
+   "conf": "高",
+   "official": "↑→→+Z、冷却 45s、全程霸体；从掌中放出獬豸形念兽向前扑，飞行中 4 段 + 落地爆炸；可强制中断普攻",
+   "cd": 45,
+   "hits": [
+    5,
+    5
+   ],
+   "sa": "full",
+   "reach": [
+    300,
+    450
+   ],
+   "job": "nenmaster"
+  },
+  "fn_awaken": {
+   "name": "念兽：审判之金雷虎",
+   "en": "Lion of Suju",
+   "src": "https://wiki.dfo.world/view/Lion_of_Suju",
+   "conf": "高",
+   "official": "↑↑↓↓+Z、冷却 135s（namu）；召唤金雷虎骑上去，方向键控制，跳 3 次：身体 6 段 + 落地冲击波 3 段 + 最后爆炸 1 段；开始霸体、骑乘无敌",
+   "cd": 135,
+   "hits": [
+    10,
+    10
+   ],
+   "invul": "part",
+   "sa": "part",
+   "job": "nenmaster"
+  },
+  "fn_spear": {
+   "name": "念之战矛",
+   "en": "Nen Spear",
+   "src": "https://wiki.dfo.world/view/Nen_Spear",
+   "conf": "高",
+   "official": "→←↓→+Z、冷却 30s、施放时霸体；念气长矛刺前方，钉住约 2s（霸体也有效），感电，之后爆炸：刺 1 段 + 爆炸 1 段",
+   "cd": 30,
+   "hits": [
+    2,
+    2
+   ],
+   "sa": "full",
+   "job": "nenmaster"
+  },
+  "fn_pillar": {
+   "name": "冲云念气场",
+   "en": "Electric Energy Sphere",
+   "src": "https://wiki.dfo.world/view/Electric_Energy_Sphere",
+   "conf": "高",
+   "official": "←→↑→+Z、冷却 50s、施放 0.7s（霸体）；念气结晶砸地升起光柱 6 段 + 感电，挑空；施放前可沿 X 轴调位置；风雷啸开启时吸怪",
+   "cd": 50,
+   "hits": [
+    6,
+    6
+   ],
+   "launch": true,
+   "sa": "full",
+   "job": "nenmaster"
+  },
+  "fn_windstorm": {
+   "name": "风雷啸",
+   "en": "Windstorm Spiral Power",
+   "src": "https://wiki.dfo.world/view/Windstorm_Spiral_Power",
+   "conf": "高",
+   "official": "←↓→+Space（与念气环绕同指令）、冷却 1s、无动作；能量 ≥500 开启，再按关闭，归零自动关闭；大技能附加螺旋球（70%）、狮子吼 / 螺旋念气场 / 奔雷螺旋击霸体",
+   "cd": 1,
+   "job": "nenmaster"
+  },
+  "fn_blade": {
+   "name": "奔雷螺旋击",
+   "en": "Overlord Spiral Blade",
+   "src": "https://wiki.dfo.world/view/Overlord_Spiral_Blade",
+   "conf": "高",
+   "official": "→←→+Z、冷却 42s；雷刃刺进一个敌人注入 1.5s 后引爆（注入时没有伤害，判定窄）；风雷啸开启时霸体、按住每 0.1s 耗 8 能量延长最多 2.5s",
+   "cd": 42,
+   "hits": [
+    1,
+    1
+   ],
+   "job": "nenmaster"
+  },
+  "fn_moon": {
+   "name": "月辉念气破",
+   "en": "Moonlight Land",
+   "src": "https://wiki.dfo.world/view/Moonlight_Land",
+   "conf": "高",
+   "official": "↓→→+Z、冷却 45s；大范围洒出月光念气 10 段（1s）；全部命中回复最多 70% 风雷能量",
+   "cd": 45,
+   "hits": [
+    10,
+    10
+   ],
+   "behind": true,
+   "job": "nenmaster"
+  },
+  "fn_awaken2": {
+   "name": "月华万象",
+   "en": "Resplendent Form",
+   "src": "https://wiki.dfo.world/view/Resplendent_Form",
+   "conf": "高",
+   "official": "↑↓→→+Z、冷却 170s（namu）；巨大球体收缩吸怪，连按增加段数（满连 11 段雷光 + 1 次爆炸），之后 10s 风雷能量保持全满（风雷啸自动开）",
+   "cd": 170,
+   "hits": [
+    6,
+    12
+   ],
+   "invul": "full",
+   "why": {
+    "invul": "官方没写无敌（写了“吸怪时不能移动”）；本作觉醒技能统一全程无敌"
+   },
+   "job": "nenmaster"
+  },
+  "fn_tigerblast": {
+   "name": "禅语·形灭",
+   "en": "Tiger Blast",
+   "src": "https://wiki.dfo.world/view/Tiger_Blast",
+   "conf": "高",
+   "official": "↑↓→→+Z（与月华万象同指令）、冷却 60s、霸体（非无敌）；螺旋念气珠大范围旋转 10 段，最后化成狂虎形状爆炸",
+   "cd": 60,
+   "hits": [
+    11,
+    11
+   ],
+   "sa": "full",
+   "invul": "none",
+   "job": "nenmaster"
+  },
+  "fn_awaken3": {
+   "name": "禅意·归一",
+   "en": "Celestial Annihilation",
+   "src": "https://wiki.dfo.world/view/Celestial_Annihilation",
+   "conf": "高",
+   "official": "←↑→↓+Z、冷却 270s（namu）、全程无敌；10 颗念气珠 → 升空盘腿结印 → 光轮：多段 6 段 + 最后大爆炸",
+   "cd": 270,
+   "hits": [
+    7,
+    7
+   ],
+   "invul": "full",
+   "job": "nenmaster"
   }
  }
 }

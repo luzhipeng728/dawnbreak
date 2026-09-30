@@ -380,3 +380,7 @@ flowchart LR
 - 17173-FUSE — https://newgame.17173.com/content/08192020/141937598.shtml （余烬融合系统、紫英花瓣 / 堇青石）
 - QQ-MIST — https://dnf.qq.com/webplat/info/news_version3/119/495/498/m21449/202406/954050.shtml （雾神攻坚战 7 月 4 日上线、12 人 3 队）
 - 本仓库：`docs/BOSS_PLAN.md`（R5、原语、D1 四门对调）、`docs/NETWORK.md`（组队 / 房间 / 重启恢复）、`server/core/room.js`、`server/core/party.js`、`src/net/coop.js`（`enterDungeon` 包装、`COOP_HP`）、`src/content/regions/siroco.js`、`docs/GEAR_PLAN_60.md`（T1~T3、攻坚 0.3%）
+
+## 7. 主线程定稿（2026-10-01，用户授权主线程做全部决定）
+- §6 的 13 项全部按建议：先做希洛克攻坚战（D1）；单人可刷（引导模式，D2）；最终战两人合流同房（D3）；v1 支持 1~2 人（D4）；AI 队友放 v2（D5）；每周 2 次、每天 1 次（D6）；不要门票（D7）；奖励做融合装备（D8）；服务端权威（D10）；惩罚比官方轻（D12）；其余按文档建议。
+- 分块按用户“少开子智能体”：RA1 服务端 + 规则核心；RA2 客户端流程 + 情况板；RA3 希洛克团本内容 + 奖励（原 RA3 + RA4）；美术交给已有的领主美术队列（原 RA5），不单开。RA3 等 P0-E（已合并）和 R5 合并后开。

@@ -223,7 +223,7 @@ mechs: [{ use: 'protect', kind: 'charlieHeart', lives: 5, at: 0.15, threat: 'toy
 
 ### 3.1 物件怪（蛋 / 心脏 / 掩体 / 图腾）
 怪物 spec 写 `obj: { shape, col, h, cover?, botSkip? }` 就是不动、不出手、程序画的物件（不用出图，也不进 `R.monsters`，不查精灵）：
-`shape`: `egg | heart | block | dummy | totem | pillar | bomb`；`cover: true` = mark cover 认它当掩体；`botSkip: true` = 机器人不打它。
+`shape`（也可以写 `kind`）: `egg | crystal | heart | cover（= block 砖堆）| totem | pillar | dummy | bomb | barrel`，都是带明暗的程序画：受损越多裂纹越多，plant 的引信快到时裂缝透光、脉动加快；`cover: true` = mark cover 认它当掩体；`botSkip: true` = 机器人不打它。
 ```js
 skasaEgg: { name: '冰龙之卵', tier: 'swarm', size: [18, 12, 64], obj: { shape: 'egg', col: '#cfeeff', h: 64 } },
 brickPile: { name: '砖堆', size: [30, 14, 90], obj: { shape: 'block', col: '#9a8a7a', h: 90, cover: true }, traits: { hitHp: 20 } },
@@ -267,6 +267,7 @@ skasa_nest: { ..., bossTheme: 'snNestBoss', bossProps: [{ kind: 'bones', x: 0.2,
 | `msMechStart(m, spec)` / `msMechEnd(m, st)` | 启动 / 结束一个机制 |
 | `MS_EVENTS` | 数组，每条 `{ t 游戏秒, T 毫秒, ev, kind, nid, ... }`；`ev`: `cast`（id 技能名、sid 招式 id）\| `tele`（k 类型、r 半径）\| `mech`（id）\| `end`（id、res）\| `solve` / `fail`（id、why）\| `hurt`（dmg、src 机制、me 本机）\| `phase`（i）。最多 3000 条 |
 | `BOSS_MECHS[id].test.solve(m, st, p, BH)` | 新机制（stagger form stance duo gauntlet arena protect facing）自带的解法，test/boss.mjs 的 mechs 部分会用 |
+| `msBotThreat(p)` / `msBotTarget(p)` | 机器人（game/bot.js）用：新原语怎么躲（出扇形、去安全道、等着跳、进内圈、跳砸锁定后跑、进安全区、找冷格、凝视转身、被吸往外走、标记一直走 / 躲掩体、出毒区）和先打谁（引信在走的物件 > 冲着保护目标的小怪 > 读条的领主）；新原语要让机器人会躲，就在预警上写 `track / jump / r0 / cone`，或在这里加一条 |
 | `MS_STATS` | `cast[技能]`、`mech[机制]`、`mech[<机制>Solve / Fail]`、`plantBroken plantFuse poolIgnite wallStun backBreak onGetup grabBreak substitute duoDown facingHit facingSafe` |
 
 测试：`node test/boss.mjs <地下城> [data,phases,skills,mechs,bot,coop]`（P0-T 的通用领主测试，逐招 / 逐机制 / 逐阶段 + 总览图）、`node test/boss_prims.mjs`（每个原语的挨打 / 生路 / 解开 / 失败）、`node test/region.mjs <区域> skills,mechs`（样品怪放全部技能、新机制跑一遍）、`node test/skasa_s1.mjs`（S1 总览图 + 实机 40 秒）、`node test/mp_bossprims.mjs`（组队同步）。

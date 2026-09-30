@@ -14,30 +14,69 @@ const msActIdx = e => (e.act ? e.act.msIdx : undefined);
 const msPlayers = () => ents.filter(t => t.team === 'p' && !t.dead && !t.remove && !t.summon && (t.fighter || t.ghost || t === game.player));
 
 /* ================= 物件怪（技能 / 机制刷出来的可破坏物件）：没有动作表，程序画 ================= */
+// 形状 shape（或 kind）：egg 蛋 | crystal 水晶 | heart 心脏 | cover / block 掩体（砖堆）| totem 图腾 | pillar 柱子 | dummy 替身草人 | bomb 炸弹 | barrel 油桶
+// 物件的状态画在模型上：受损（血量）越多裂纹越多；引信（plant 的 msFuseT / msFuseMax）快到时裂缝里透光、脉动加快
 class MsObjModel {
-  constructor(shape, col, h) { this.shape = shape; this.col = col; this.h = h; this.skel = { map: {} }; }
+  constructor(shape, col, h) { this.shape = shape; this.col = col; this.h = h; this.skel = { map: {} }; this.seed = Math.floor(Math.random() * 1e6); }
+  state() { const e = this.ent, dmg = e && e.hpMax ? 1 - clamp(e.hp / e.hpMax, 0, 1) : 0, fuse = e && e.msFuseMax ? clamp(e.msFuseT / e.msFuseMax, 0, 1) : 0; return { dmg, fuse, k: Math.max(dmg, fuse) }; }
   draw(c, pose, t = 0) {
-    const h = this.h, col = this.col, dk = shade(col, -0.35, 1), lt = shade(col, 0.35, 0.95);
-    c.save(); c.lineWidth = 3; c.strokeStyle = '#140c18';
-    if (this.shape === 'egg') {
-      c.fillStyle = col; c.beginPath(); c.ellipse(0, -h * 0.45, h * 0.3, h * 0.46, 0, 0, TAU); c.fill(); c.stroke();
-      c.fillStyle = lt; c.beginPath(); c.ellipse(-h * 0.1, -h * 0.62, h * 0.07, h * 0.13, -0.4, 0, TAU); c.fill();
-      c.strokeStyle = dk; c.lineWidth = 2; c.beginPath(); c.moveTo(-h * 0.2, -h * 0.35); c.lineTo(-h * 0.05, -h * 0.28); c.lineTo(h * 0.08, -h * 0.4); c.lineTo(h * 0.22, -h * 0.32); c.stroke();
-    } else if (this.shape === 'heart') {
-      const b = Math.sin(t * 5) * 0.05 + 1; c.scale(b, b); c.fillStyle = col; c.beginPath(); c.moveTo(0, -h * 0.15); c.bezierCurveTo(h * 0.5, -h * 0.55, h * 0.25, -h * 0.95, 0, -h * 0.7); c.bezierCurveTo(-h * 0.25, -h * 0.95, -h * 0.5, -h * 0.55, 0, -h * 0.15); c.fill(); c.stroke();
-      c.fillStyle = lt; c.beginPath(); c.ellipse(-h * 0.14, -h * 0.66, h * 0.06, h * 0.1, -0.5, 0, TAU); c.fill();
-    } else if (this.shape === 'block') {
-      c.fillStyle = dk; c.fillRect(-h * 0.4, -h * 0.7, h * 0.8, h * 0.7); c.strokeRect(-h * 0.4, -h * 0.7, h * 0.8, h * 0.7); c.fillStyle = col; c.fillRect(-h * 0.4, -h * 0.7, h * 0.8, h * 0.16);
-    } else if (this.shape === 'dummy') {
-      c.fillStyle = '#c8a86a'; c.fillRect(-4, -h * 0.9, 8, h * 0.9); c.fillRect(-h * 0.35, -h * 0.72, h * 0.7, 8); c.beginPath(); c.arc(0, -h * 0.9, h * 0.16, 0, TAU); c.fill(); c.stroke();
-      c.fillStyle = col; c.fillRect(-h * 0.2, -h * 0.66, h * 0.4, h * 0.34);
-    } else if (this.shape === 'totem' || this.shape === 'pillar') {
-      c.fillStyle = dk; c.fillRect(-h * 0.14, -h, h * 0.28, h); c.strokeRect(-h * 0.14, -h, h * 0.28, h);
-      c.fillStyle = col; for (let i = 0; i < 3; i++) c.fillRect(-h * 0.14, -h * (0.9 - i * 0.3), h * 0.28, h * 0.08);
-      c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.3 + 0.2 * Math.sin(t * 4); c.fillStyle = col; c.beginPath(); c.arc(0, -h * 0.85, h * 0.18, 0, TAU); c.fill();
+    const h = this.h, col = this.col, S = this.state(), R = mulberry(this.seed), dk = shade(col, -0.45, 1), lt = shade(col, 0.45, 1);
+    const pulse = S.fuse > 0.6 ? 0.5 + 0.5 * Math.sin(t * (6 + S.fuse * 14)) : 0;
+    const grad = (x0, y0, r0, x1, y1, r1, a, b, cc) => { const g = c.createRadialGradient(x0, y0, r0, x1, y1, r1); g.addColorStop(0, a); g.addColorStop(0.55, b); g.addColorStop(1, cc); return g; };
+    const cracks = (cx, cy, rx, ry, n) => { c.save(); c.strokeStyle = shade(col, -0.7, 0.9); c.lineWidth = 1.6; for (let i = 0; i < n; i++) { let x = cx + (R() - 0.5) * rx, y = cy + (R() - 0.5) * ry; c.beginPath(); c.moveTo(x, y); for (let k = 0; k < 4; k++) { x += (R() - 0.5) * rx * 0.5; y += (R() - 0.3) * ry * 0.35; c.lineTo(x, y); } c.stroke(); } c.restore(); };
+    const glow = (x, y, r, a) => { if (a <= 0) return; c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = a; c.fillStyle = grad(x, y, 0, x, y, r, '#ffffff', lt, 'rgba(0,0,0,0)'); c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); c.restore(); };
+    c.save(); c.lineJoin = 'round'; c.strokeStyle = '#140c18'; c.lineWidth = 3;
+    const sh = this.shape;
+    if (sh === 'egg') {
+      const sq = 1 + pulse * 0.03, w = h * 0.34 * sq, hh = h * 0.46 / sq, cy = -h * 0.5;
+      c.fillStyle = shade(col, -0.6, 0.9); c.beginPath(); c.ellipse(0, -2, w * 1.25, 7, 0, 0, TAU); c.fill();   // 蛋窝：一圈碎冰 / 碎石
+      for (let i = 0; i < 7; i++) { const x = (i - 3) * w * 0.36; c.fillStyle = shade(col, -0.1 - R() * 0.3, 1); c.beginPath(); c.moveTo(x - 6, -2); c.lineTo(x + (R() - 0.5) * 4, -10 - R() * 10); c.lineTo(x + 6, -2); c.closePath(); c.fill(); c.stroke(); }
+      const egg = () => { c.beginPath(); c.moveTo(0, cy - hh); c.bezierCurveTo(w * 0.7, cy - hh, w, cy - hh * 0.25, w, cy + hh * 0.25); c.bezierCurveTo(w, cy + hh * 0.8, w * 0.55, cy + hh, 0, cy + hh); c.bezierCurveTo(-w * 0.55, cy + hh, -w, cy + hh * 0.8, -w, cy + hh * 0.25); c.bezierCurveTo(-w, cy - hh * 0.25, -w * 0.7, cy - hh, 0, cy - hh); c.closePath(); };
+      c.fillStyle = grad(-w * 0.35, cy - hh * 0.35, 2, w * 0.1, cy + hh * 0.2, hh * 1.25, lt, col, dk); egg(); c.fill(); c.stroke();
+      c.save(); egg(); c.clip(); c.fillStyle = shade(col, -0.5, 0.55); for (let i = 0; i < 9; i++) { const a = R() * TAU, rr = 0.2 + R() * 0.75; c.beginPath(); c.ellipse(Math.cos(a) * w * rr, cy + Math.sin(a) * hh * rr, 2.5 + R() * 4, 2 + R() * 2.5, a, 0, TAU); c.fill(); }
+      c.strokeStyle = shade(col, -0.3, 0.5); c.lineWidth = 2; c.beginPath(); c.ellipse(0, cy + hh * 0.15, w * 1.05, hh * 0.18, 0, 0.1, Math.PI - 0.1); c.stroke(); c.restore();   // 一道花纹带
+      c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.ellipse(-w * 0.38, cy - hh * 0.45, w * 0.16, hh * 0.22, -0.5, 0, TAU); c.fill();
+      cracks(0, cy - hh * 0.1, w * 1.4, hh * 1.2, Math.round(S.k * 5));
+      glow(0, cy, w * (1.2 + pulse * 0.5), S.fuse > 0.6 ? 0.25 + pulse * 0.35 : 0);
+    } else if (sh === 'crystal') {
+      const b = Math.sin(t * 2.4) * 3; c.translate(0, b); glow(0, -h * 0.5, h * 0.55, 0.25 + 0.1 * Math.sin(t * 4) + pulse * 0.3);
+      const w = h * 0.32, P = [[0, -h], [w, -h * 0.62], [w * 0.62, -h * 0.06], [-w * 0.62, -h * 0.06], [-w, -h * 0.62]];
+      c.fillStyle = grad(-w * 0.3, -h * 0.7, 2, 0, -h * 0.5, h * 0.6, lt, col, dk); c.beginPath(); P.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y))); c.closePath(); c.fill(); c.stroke();
+      c.strokeStyle = shade(col, 0.5, 0.7); c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, -h); c.lineTo(0, -h * 0.06); c.moveTo(-w, -h * 0.62); c.lineTo(w * 0.1, -h * 0.5); c.lineTo(w, -h * 0.62); c.stroke();
+      cracks(0, -h * 0.5, w * 1.2, h * 0.6, Math.round(S.k * 4));
+    } else if (sh === 'heart') {
+      const b = 1 + Math.sin(t * (4 + S.k * 6)) * 0.05 + pulse * 0.04; c.translate(0, -h * 0.45); c.scale(b, b);
+      glow(0, 0, h * 0.62, 0.2 + 0.12 * Math.sin(t * 4));
+      c.fillStyle = grad(-h * 0.14, -h * 0.18, 2, 0, 0, h * 0.5, lt, col, dk); c.beginPath(); c.moveTo(0, h * 0.34); c.bezierCurveTo(h * 0.55, -h * 0.02, h * 0.3, -h * 0.5, 0, -h * 0.24); c.bezierCurveTo(-h * 0.3, -h * 0.5, -h * 0.55, -h * 0.02, 0, h * 0.34); c.fill(); c.stroke();
+      c.strokeStyle = shade(col, -0.5, 0.6); c.lineWidth = 2; c.beginPath(); c.moveTo(-h * 0.05, -h * 0.2); c.quadraticCurveTo(-h * 0.2, 0, -h * 0.08, h * 0.2); c.moveTo(h * 0.06, -h * 0.18); c.quadraticCurveTo(h * 0.18, h * 0.02, h * 0.04, h * 0.16); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.6)'; c.beginPath(); c.ellipse(-h * 0.2, -h * 0.2, h * 0.06, h * 0.1, -0.6, 0, TAU); c.fill();
+      cracks(0, 0, h * 0.5, h * 0.5, Math.round(S.dmg * 4));
+    } else if (sh === 'cover' || sh === 'block') {
+      const w = h * 0.5, rows = 4, rh = h * 0.8 / rows;
+      for (let r = 0; r < rows; r++) { const y = -(r + 1) * rh, off = r % 2 ? rh * 0.8 : 0, ww = w * (1 - r * 0.08);
+        for (let x = -ww - off; x < ww; x += rh * 1.6) { const x0 = Math.max(-ww, x), x1 = Math.min(ww, x + rh * 1.6); if (x1 - x0 < 4) continue; c.fillStyle = shade(col, (R() - 0.5) * 0.25 - r * 0.04, 1); c.fillRect(x0, y, x1 - x0, rh); c.strokeRect(x0, y, x1 - x0, rh); c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(x0 + 2, y + 2, x1 - x0 - 4, 3); } }
+      cracks(0, -h * 0.4, w * 1.6, h * 0.6, Math.round(S.dmg * 5));
+    } else if (sh === 'totem' || sh === 'pillar') {
+      const w = h * 0.15; c.fillStyle = grad(-w * 0.5, -h * 0.6, 2, 0, -h * 0.5, h * 0.7, lt, shade(col, -0.2, 1), dk); c.fillRect(-w, -h, w * 2, h); c.strokeRect(-w, -h, w * 2, h);
+      if (sh === 'totem') { for (let i = 0; i < 3; i++) { const y = -h * (0.88 - i * 0.3); c.fillStyle = dk; c.fillRect(-w * 1.25, y, w * 2.5, h * 0.05); c.fillStyle = '#140c18'; c.fillRect(-w * 0.55, y + h * 0.08, w * 0.35, h * 0.05); c.fillRect(w * 0.2, y + h * 0.08, w * 0.35, h * 0.05); c.fillRect(-w * 0.4, y + h * 0.17, w * 0.8, h * 0.04); }
+        glow(0, -h * 0.9, h * 0.22, 0.35 + 0.25 * Math.sin(t * 4) + pulse * 0.3); }
+      else { c.fillStyle = col; c.fillRect(-w * 1.3, -h - 8, w * 2.6, 10); c.fillRect(-w * 1.3, -10, w * 2.6, 10); }
+      cracks(0, -h * 0.5, w * 2, h, Math.round(S.dmg * 4));
+    } else if (sh === 'dummy') {
+      c.fillStyle = '#8a6a44'; c.fillRect(-4, -h * 0.95, 8, h * 0.95); c.strokeRect(-4, -h * 0.95, 8, h * 0.95);
+      c.fillStyle = '#d8b878'; c.beginPath(); c.ellipse(0, -h * 0.55, h * 0.2, h * 0.24, 0, 0, TAU); c.fill(); c.stroke(); c.fillRect(-h * 0.38, -h * 0.72, h * 0.76, 9); c.strokeRect(-h * 0.38, -h * 0.72, h * 0.76, 9);
+      c.beginPath(); c.arc(0, -h * 0.9, h * 0.13, 0, TAU); c.fill(); c.stroke(); c.fillStyle = col; c.fillRect(-h * 0.2, -h * 0.64, h * 0.4, h * 0.2);
+      c.strokeStyle = '#6a4a2a'; c.lineWidth = 1; for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(-h * 0.16 + i * h * 0.06, -h * 0.4); c.lineTo(-h * 0.18 + i * h * 0.065, -h * 0.3); c.stroke(); }
+    } else if (sh === 'barrel') {
+      const w = h * 0.3; c.fillStyle = grad(-w * 0.4, -h * 0.6, 2, 0, -h * 0.45, h * 0.6, lt, col, dk); c.beginPath(); c.ellipse(0, -h * 0.45, w, h * 0.45, 0, 0, TAU); c.fill(); c.stroke();
+      c.strokeStyle = '#3a2a1a'; c.lineWidth = 3; for (const y of [-h * 0.75, -h * 0.15]) { c.beginPath(); c.ellipse(0, y, w * 0.92, 4, 0, 0, TAU); c.stroke(); }
+      glow(0, -h * 0.45, w * 1.5, pulse * 0.4);
     } else {   // bomb
-      c.fillStyle = dk; c.beginPath(); c.arc(0, -h * 0.4, h * 0.38, 0, TAU); c.fill(); c.stroke(); c.fillStyle = col; c.fillRect(-3, -h * 0.9, 6, h * 0.14);
-      c.globalCompositeOperation = 'lighter'; c.fillStyle = Math.floor(t * 6) % 2 ? '#fff4a0' : col; c.beginPath(); c.arc(0, -h * 0.94, 5, 0, TAU); c.fill();
+      const r = h * 0.36; c.fillStyle = grad(-r * 0.4, -h * 0.5, 2, 0, -h * 0.4, r * 1.2, '#8a8a9a', '#3a3a48', '#101018'); c.beginPath(); c.arc(0, -h * 0.4, r, 0, TAU); c.fill(); c.stroke();
+      c.fillStyle = '#5a5a68'; c.fillRect(-r * 0.3, -h * 0.4 - r - 6, r * 0.6, 8); c.strokeStyle = '#c8a06a'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -h * 0.4 - r - 6); c.quadraticCurveTo(r * 0.5, -h * 0.4 - r - 18, r * 0.2, -h * 0.4 - r - 24); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(-r * 0.4, -h * 0.4 - r * 0.4, r * 0.18, r * 0.12, -0.6, 0, TAU); c.fill();
+      glow(r * 0.2, -h * 0.4 - r - 24, 10 + pulse * 8, Math.floor(t * 12) % 2 ? 0.9 : 0.5);
+      glow(0, -h * 0.4, r * 1.3, pulse * 0.35);
     }
     c.restore();
   }
@@ -46,12 +85,12 @@ class MsObjModel {
 function msObjDef(name, o = {}) {
   const h = o.h || 60;
   return { name, lvl: 30, hp: 1000, atk: 1, def: 200, w: o.w || 16, d: 12, h, weight: 99, speed: 0, exp: 0, gold: [0, 0], shadowR: o.w || 16, pref: 0, clips: BEAST_CLIPS, noGrab: true, attacks: [], msObj: true, customModel: true,
-    botSkip: !!o.botSkip, model: () => new MsObjModel(o.shape || 'bomb', o.col || '#ffb070', h), onSpawn: msOnSpawn, onDamaged: msOnDamaged, msTraits: o.traits || {} };
+    botSkip: !!o.botSkip, model: () => new MsObjModel(o.shape || o.kind || 'bomb', o.col || '#ffb070', h), onSpawn: (m, so) => { if (m.model instanceof MsObjModel) m.model.ent = m; msOnSpawn(m, so); }, onDamaged: msOnDamaged, msTraits: o.traits || {} };
 }
 Object.assign(MON, {
   msPlant: msObjDef('定时炸弹', { shape: 'bomb', col: '#ff8a4a', h: 56 }),
   msHeart: msObjDef('心脏', { shape: 'heart', col: '#ff6a8a', h: 70, botSkip: true }),
-  msCover: msObjDef('掩体', { shape: 'block', col: '#8a8a9a', h: 90, w: 30, botSkip: true }),
+  msCover: msObjDef('掩体', { shape: 'cover', col: '#8a8a9a', h: 90, w: 30, botSkip: true }),
   msDecoy: msObjDef('替身草人', { shape: 'dummy', col: '#6a4a3a', h: 90 }),
   msTotem: msObjDef('图腾', { shape: 'totem', col: '#8ad8ff', h: 110 }),
 });
@@ -83,7 +122,7 @@ defineMonSkill('leap', { clip: 'pounce', sa: true, desc: '跳砸 / 升空追踪�
 // 地面圈：跟着目标（每个客户端跟自己这边的那个实体），锁定后停住；落地由预警的 fire 结算（两边各判自己）
 function msLeapTrack(e, p, tg) {
   const T = p.crouch + p.up + p.track + p.fall, R = p.ring ? p.ring[1] : p.r;
-  const g = telegraph({ x: tg ? tg.x : e.x, y: tg ? tg.y : e.y, r: R, dur: T, col: p.col, fire: g => msLeapImpact(e, p, g) });
+  const g = telegraph({ x: tg ? tg.x : e.x, y: tg ? tg.y : e.y, r: R, dur: T, col: p.col, jump: !!p.jump, r0: p.ring ? p.ring[0] : 0, track: true, fire: g => msLeapImpact(e, p, g) });   // track：还在跟人，机器人先别跑（锁定后再躲）
   e.msLeap = { g, locked: false, tg };
   if (p.ring) g.draw = (c, g) => { const X = sx(g.x), Y = sy(g.y, 0); c.save(); c.globalAlpha = 0.8; c.strokeStyle = '#ffffff'; c.lineWidth = 2; c.setLineDash([6, 5]); c.beginPath(); c.ellipse(X, Y, p.ring[0], p.ring[0] * GR, 0, 0, TAU); c.stroke(); c.restore(); };
   msTicker(dt => { const L = e.msLeap; if (!L || L.g !== g || L.locked || !tg || tg.dead || !groundFx.includes(g)) return true; g.x = damp(g.x, tg.x, 4, dt); g.y = damp(g.y, tg.y, 4, dt); return false; });
@@ -91,7 +130,7 @@ function msLeapTrack(e, p, tg) {
 }
 function msLeapLock(e, p, x, y) {
   const L = e.msLeap; if (!L || L.locked) return; L.locked = true;
-  if (x !== undefined) { L.g.x = x; L.g.y = y; }
+  L.g.track = false; if (x !== undefined) { L.g.x = x; L.g.y = y; }
   if (!e.puppet) { e.x = L.g.x; e.y = L.g.y; msNetEv(e, null, 'hook', { h: 'msLeap', mi: e.msLeapI, s: 'l', x: Math.round(L.g.x), y: Math.round(L.g.y) }); }
   sfx.charge();
 }
@@ -110,7 +149,7 @@ MS_MIRROR.msLeap = (m, d) => {
 defineMonSkill('cone', { clip: 'cast', sa: true, desc: '扇形吐息 / 喷射', defaults: { ang: 70, len: 260, dur: 1.2, tick: 0.2, windup: 0.9, dmg: 0.35, sweep: 0, jump: false, col: '#bfe6ff', knock: 40, stun: 0.25 },
   range: p => [0, p.len * 0.8], dy: p => Math.max(24, p.len * Math.sin(p.ang * D2R / 2) * GR * 0.8), cd: [7, 9],
   act: p => ({ dur: p.windup + p.dur + 0.3,
-    onStart: e => { const C = e.msCone = { x: e.x, y: e.y, face: e.face, tick: 0, got: new Set(), on: false }; C.g = telegraph({ x: e.x, y: e.y, r: 0, R: p.len, kind: 'cone', dur: p.windup, col: msCol(p), draw: (c, g) => msConeDraw(c, C, p, g.t / g.dur, false) }); },
+    onStart: e => { const C = e.msCone = { x: e.x, y: e.y, face: e.face, tick: 0, got: new Set(), on: false }; C.p = p; C.g = telegraph({ x: e.x, y: e.y, r: 0, R: p.len, kind: 'cone', dur: p.windup, col: msCol(p), cone: C, draw: (c, g) => msConeDraw(c, C, p, g.t / g.dur, false) }); },
     update: (e, dt) => {
       const C = e.msCone; e.vx = e.vy = 0; if (!C || e.actT < p.windup || e.actT > p.windup + p.dur) return;
       if (!C.on) { C.on = true; sfx.boom(0.6); cam.shake = Math.max(cam.shake, 4); C.fx = addFx({ x: C.x, y: C.y + 1, z: 0, dur: p.dur, add: true, draw(c) { msConeDraw(c, C, p, this.t / this.dur, true); } }); }
@@ -199,12 +238,13 @@ function msMarkRun(e, p, tg) {
   if (!tg) return; const col = msCol(p), K = msPunishK();
   const txt = { burst: '标记：离队友远一点！', share: '标记：和队友站在一起分摊！', move: '标记：不要停下！', cover: '被瞄准了：躲到掩体后面！' }[p.mode];
   if (tg === msSelf()) toastMsg(p.say || txt, col);
+  if (p.mode === 'move') tg.msMarkMove = game.t + p.delay + p.dur; else if (p.mode === 'cover') tg.msMarkCover = { until: game.t + p.delay, e };   // 给机器人看（game/bot.js → msBotThreat）
   addFx({ x: tg.x, y: tg.y + 3, z: 0, dur: p.delay + (p.mode === 'move' ? p.dur : 0), update() { this.x = tg.x; this.y = tg.y + 3; },
     draw(c) { const X = sx(tg.x), Y = sy(tg.y, tg.z + tg.h + 34), left = p.delay - this.t;
       c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.6 + 0.3 * Math.sin(game.t * 12); c.strokeStyle = col; c.lineWidth = 3; c.beginPath(); c.arc(X, Y, 15, 0, TAU); c.stroke(); c.restore();
       uiTextWorld(c, left > 0 ? left.toFixed(1) : p.mode === 'move' ? '动！' : '!', X, Y + 10, col); } });
   if (p.mode === 'burst' || p.mode === 'share') {
-    const g = telegraph({ x: tg.x, y: tg.y, r: p.r, dur: p.delay, col, fire: g => {
+    const g = telegraph({ x: tg.x, y: tg.y, r: p.r, dur: p.delay, col, track: true, fire: g => {
       if (e.dead) return; fxShock(g.x, g.y, p.r * 1.1, col); sfx.boom(0.8); cam.shake = Math.max(cam.shake, 6);
       const share = p.mode === 'share' ? Math.max(1, msPlayers().filter(t => inGround(t, g.x, g.y, p.r)).length) : 1;
       if (share > 1) fxText(`分摊 ×${share}`, g.x, g.y, 90, { col, size: 16 });
@@ -264,7 +304,7 @@ function msPlantRun(e, p, mi) {
     return false; });
 }
 function msPlantFx(e, p, L, root) {
-  for (const o of L) { o.msFuseT = 0; msHeadBar(o, () => 1 - o.msFuseT / p.fuse, p.col, p.label || '', () => !o.dead && !o.remove && o.msFuseT < p.fuse); }   // 引信：主机的计时器推进 msFuseT；队员这边的头顶条本地走
+  for (const o of L) { o.msFuseT = 0; o.msFuseMax = p.fuse; msHeadBar(o, () => 1 - o.msFuseT / p.fuse, p.col, p.label || '', () => !o.dead && !o.remove && o.msFuseT < p.fuse); }   // 引信：主机的计时器推进 msFuseT；队员这边的头顶条本地走
   if (root && root === msSelf()) { addStatus(root, 'root', p.fuse, { src: e, force: true }); toastMsg('被定住了——打掉身边的物件！', p.col); }
   if (p.say) msSay(e, p.say, p.col, 14);
 }
@@ -352,7 +392,7 @@ defineMonSkill('pull', { clip: 'roar', sa: true, desc: '吸 / 推', defaults: { 
   range: p => [0, p.r * 0.8], dy: p => p.r * GR, cd: [10, 14],
   act: p => { const [mode, to] = String(p.mode).split(':');
     return { dur: p.windup + p.dur + 0.2,
-      onStart: e => { e.msPull = { hit: false, x: e.x, y: e.y }; telegraph({ x: e.x, y: e.y, r: 0, R: p.r, kind: 'pull', dur: p.windup, col: msCol(p), draw: (c, g) => msPullDraw(c, e.msPull || g, p, mode, g.t / g.dur) }); },
+      onStart: e => { e.msPull = { hit: false, x: e.x, y: e.y, p, mode, to: to || p.to }; telegraph({ x: e.x, y: e.y, r: 0, R: p.r, kind: 'pull', dur: p.windup, col: msCol(p), draw: (c, g) => msPullDraw(c, e.msPull || g, p, mode, g.t / g.dur) }); },
       update: (e, dt) => {
         const S = e.msPull; e.vx = e.vy = 0; if (!S || e.actT < p.windup) return;
         if (!S.hit) { S.hit = true; sfx.boom(0.8); cam.shake = Math.max(cam.shake, 6); fxShock(S.x, S.y, p.r, msCol(p)); S.fx = addFx({ x: S.x, y: S.y + 1, z: 0, dur: p.dur, add: true, draw(c) { msPullDraw(c, S, p, mode, 0, this.t); } });
@@ -393,6 +433,7 @@ function msDashPlus(p) {
         segs.push({ t0: T, t1: T + t, dir, wall: Math.abs(x1 - wall) < 2 }); T += t; x = x1; dir = -dir;
       }
       e.msDash = { segs, T1: T, go: false, spinT: 0 }; e.act.dur = T + (p.carry ? 0.9 : 0.45); e.act.hits[0].t1 = T;
+      (e.act.events ??= []).push({ t: T, done: false, fn: e2 => msDashArrive(e2, p, segs[segs.length - 1]) });   // 冲到头：顶墙连打 + 扔出去 / 撞墙自晕（在动作里做，抓着的人不会被 endAct 提前放掉）
       const len0 = segs.length > 1 ? (e.face > 0 ? W - 30 - e.x : e.x - 30) : Math.abs(segs[0].t1 - segs[0].t0) * p.speed;
       e.msDash.g = telegraph({ x: segs.length > 1 ? 20 : e.x, y: e.y, kind: 'line', len: segs.length > 1 ? W - 40 : len0 * e.face, face: 1, hw: p.hw, dur: segs.length > 1 ? T : p.windup, col: msCol(p) });
     },
@@ -408,11 +449,14 @@ function msDashPlus(p) {
     },
     onEnd: (e, broke) => {
       const D = e.msDash; e.vx = 0; e.drawFlip = false; e.msDash = null; if (D && D.g) killTele(D.g);
-      if (broke || !D || e.dead) { if (e.grabbed) dropGrab(e); return; }
-      const last = D.segs[D.segs.length - 1];
-      if (p.carry && e.grabbed) { const t = e.grabbed; for (let i = 0; i < 3; i++) game.after(0.12 * i, () => { if (!t.dead && t.heldBy === e) { applyHit(e, t, { dmg: (p.dmg ?? 1.2) * 0.35, sure: true, stun: 0.2, knock: 0, hs: 0.06, snd: 'blunt', shake: 5 }, { proj: true }); fxShock(t.x, t.y, 50, msCol(p)); } }); game.after(0.4, () => { if (e.grabbed === t) throwGrab(e, { dmg: p.dmg ?? 1.2, launch: 300, knock: 260, down: true, snd: 'blunt', shake: 6 }); }); }
-      if (p.wallStun && last.wall) { cam.shake = Math.max(cam.shake, 8); sfx.boom(0.9); fxText('撞墙了！', e.x, e.y, e.z + e.h * (e.scale || 1) + 10, { col: '#ffd23a', size: 18, dur: 1.2 }); if (!e.puppet) addStatus(e, 'stun', p.wallStun, { force: true }); MS_STATS.mech.wallStun = (MS_STATS.mech.wallStun || 0) + 1; }
+      if (e.grabbed) dropGrab(e);
     } };
+}
+
+function msDashArrive(e, p, last) {
+  e.vx = 0; if (e.dead) return;
+  if (p.carry && e.grabbed) { const t = e.grabbed; for (let i = 0; i < 3; i++) game.after(0.12 * i, () => { if (!t.dead && t.heldBy === e) { applyHit(e, t, { dmg: (p.dmg ?? 1.2) * 0.35, sure: true, stun: 0.2, knock: 0, hs: 0.06, snd: 'blunt', shake: 5 }, { proj: true }); fxShock(t.x, t.y, 50, msCol(p)); } }); game.after(0.4, () => { if (e.grabbed === t) throwGrab(e, { dmg: p.dmg ?? 1.2, launch: 300, knock: 260, down: true, snd: 'blunt', shake: 6 }); }); }
+  if (p.wallStun && last.wall) { cam.shake = Math.max(cam.shake, 8); sfx.boom(0.9); fxText('撞墙了！', e.x, e.y, e.z + e.h * (e.scale || 1) + 10, { col: '#ffd23a', size: 18, dur: 1.2 }); if (!e.puppet) game.after(p.carry ? 0.5 : 0, () => { if (!e.dead) addStatus(e, 'stun', p.wallStun, { force: true }); }); MS_STATS.mech.wallStun = (MS_STATS.mech.wallStun || 0) + 1; }
 }
 
 /* ================= 特性（MS_TRAIT_HOOKS，game/mon_skills.js 在出场 / 受伤 / 每帧 / 起身时调用） ================= */
@@ -507,3 +551,75 @@ MS_TRAIT_HOOKS.trail = {
   } };
 // 定义时预编译特性里的招式（region.js / defineBossKit 调用）
 function msTraitPrecompile(D) { const T = D.msTraits || {}; for (const k in T) { const H = MS_TRAIT_HOOKS[k]; if (H && H.precompile && T[k] && typeof T[k] === 'object') H.precompile(D, T[k]); } }
+
+/* ================= 机器人（game/bot.js、test/boss.mjs bot）：新原语怎么躲、先打谁 =================
+   msBotThreat(p) → null（没事）| { x, y } 走过去（跑）| { jump } 现在跳 | { face } 转成这个朝向、别动 | { stay } 原地打（安全区 / 等着跳）；why = 原因（统计用）
+   普通圆形预警（没有 jump / r0 / track 的）还是 bot.js 原来的躲法，老领主的机器人表现不变 */
+function msBotThreat(p) {
+  const W = msRoomW(), E = ents.filter(e => e.team === 'e' && !e.dead && !e.remove);
+  const away = (cx, cy, r) => { const dx = p.x - cx || (p.x < W / 2 ? 1 : -1), dy = (p.y - cy) / GR, d = Math.hypot(dx, dy) || 1, k = r + p.w + 36; let x = cx + dx / d * k, y = cy + dy / d * k * GR;
+    if (x < 30 || x > W - 30) { x = clamp(x, 30, W - 30); y = cy + (dy >= 0 ? 1 : -1) * (k * GR + 12); if (y < 6 || y > DEPTH - 6) y = cy - (dy >= 0 ? 1 : -1) * (k * GR + 12); }
+    return { x: clamp(x, 30, W - 30), y: clamp(y, 6, DEPTH - 6) }; };
+  // 机制：安全区站进去、凝视转向、地砖找冷格
+  for (const m of E) for (const st of m.msMechs || []) {
+    if (st.done) continue; const P = st.p;
+    if (st.id === 'safezone' && st.t < P.windup) {
+      if (P.mode === 'zone' && st.zones && st.zones.length) { const z = st.zones.reduce((a, b) => (Math.abs(a.x - p.x) + Math.abs(a.y - p.y) < Math.abs(b.x - p.x) + Math.abs(b.y - p.y) ? a : b)); return inGround(p, z.x, z.y, Math.max(4, P.r - p.w - 10)) ? { stay: true, why: 'safezone' } : { x: z.x, y: z.y, why: 'safezone' }; }
+      if (P.mode === 'near') return inGround(p, m.x, m.y, Math.max(4, P.r - p.w - 10)) ? { stay: true, why: 'safezone' } : { x: m.x, y: m.y, why: 'safezone' };
+      if (P.mode === 'far' && inGround(p, m.x, m.y, P.r + 20)) return { ...away(m.x, m.y, P.r), why: 'safezone' };
+    }
+    if (st.id === 'facing' && P.windup - st.t < 0.5) { const s = Math.sign(m.x - p.x) || 1; return { face: P.mode === 'away' ? -s : s, why: 'facing' }; }
+    if (st.id === 'arena' && P.kind === 'tiles' && st.mask) { const w = W / P.cols, i = clamp(Math.floor(p.x / w), 0, P.cols - 1); if (st.mask[i]) { let j = -1, bd = 1e9; st.mask.forEach((v, k) => { if (!v && Math.abs(k - i) < bd) { bd = Math.abs(k - i); j = k; } }); if (j >= 0) return { x: (j + 0.5) * w, y: p.y, why: 'tiles' }; } }
+  }
+  // 标记：move 一直走、cover 躲到掩体后面
+  if (p.msMarkMove > game.t) { const d = p.msBotDir || 1; p.msBotDir = (d > 0 && p.x > W - 140) || (d < 0 && p.x < 140) ? -d : d; return { x: p.x + p.msBotDir * 160, y: p.y, why: 'markMove' }; }
+  if (p.msMarkCover && p.msMarkCover.until > game.t) {
+    const src = p.msMarkCover.e, C = E.filter(o => o.kind === 'msCover' || (o.def_ && o.def_.msCover)).sort((a, b) => Math.abs(a.x - p.x) - Math.abs(b.x - p.x))[0];
+    if (C && src) { const x = clamp(C.x + (Math.sign(C.x - src.x) || 1) * (C.w + p.w + 14), 30, W - 30); return Math.abs(p.x - x) > 10 || Math.abs(p.y - C.y) > 8 ? { x, y: C.y, why: 'cover' } : { stay: true, why: 'cover' }; }
+  }
+  // 正在喷的扇形、吸人
+  for (const m of E) {
+    const C = m.msCone; if (C && C.on && C.p && msInCone(C, msConeAng(C, C.p, m.actT - C.p.windup), C.p, p)) return msBotConeOut(p, C);
+    const S = m.msPull; if (S && S.hit && S.p && S.mode !== 'out' && inGround(p, S.x, S.y, S.p.r)) { const T = S.mode === 'toward' ? ents.find(o => !o.dead && o.kind === S.to) : null; return { ...away(T ? T.x : S.x, T ? T.y : S.y, S.p.r * 0.5), why: 'pull' }; }
+  }
+  // 地面预警：扇形、直线 / 分道、能跳的圈、双环（进内圈）
+  for (const g of groundFx) {
+    if (g.friendly || g.track) continue;
+    if (g.cone) { if (msInCone(g.cone, 0, g.cone.p, p)) return msBotConeOut(p, g.cone); continue; }
+    if (g.kind === 'line') {
+      if (!msBotInLine(p, g)) continue;
+      const y = msBotFreeY(p); if (y !== null) return { x: p.x, y, why: 'line' };
+      const x0 = Math.min(g.x, g.x + g.len * g.face), x1 = Math.max(g.x, g.x + g.len * g.face); return { x: p.x - x0 < x1 - p.x ? x0 - p.w - 24 : x1 + p.w + 24, y: p.y, why: 'line' };
+    }
+    if (!g.fire || !(g.r > 0) || !(g.jump || g.r0) || !inGround(p, g.x, g.y, g.r + 8)) continue;
+    if (g.r0) { if (inGround(p, g.x, g.y, Math.max(2, g.r0 - p.w - 10))) continue; if (g.r0 > p.w + 20) return { x: g.x, y: g.y, why: 'ring' }; }
+    if (g.jump) return g.dur - g.t < 0.3 ? { jump: true, why: 'jump' } : { stay: true, why: 'jump' };
+  }
+  // 伤害类残留区：走出去（油 / 冰 / 减速只减速，不躲）
+  for (const P of MS_POOLS) if ((P.zone === 'poison' || P.zone === 'fire' || P.zone === 'blind') && inGround(p, P.x, P.y, P.r)) return { ...away(P.x, P.y, P.r), why: 'pool' };
+  return null;
+}
+const msBotInLine = (p, g) => { const x0 = Math.min(g.x, g.x + g.len * g.face), x1 = Math.max(g.x, g.x + g.len * g.face); return p.x + p.w >= x0 && p.x - p.w <= x1 && Math.abs(p.y - g.y) <= Math.max(g.hw || 10, 16) + p.w * 0.6; };
+// 所有直线预警之外、离自己最近的纵深（没有就返回 null）
+function msBotFreeY(p) {
+  const L = groundFx.filter(g => g.kind === 'line' && !g.friendly); let best = null, bd = 1e9;
+  for (let y = 6; y <= DEPTH - 6; y += 4) { if (L.some(g => msBotInLine({ x: p.x, y, w: p.w }, g))) continue; const d = Math.abs(y - p.y); if (d < bd) { bd = d; best = y; } }
+  return best;
+}
+// 出扇形：纵深方向走出去（够得着的一边），不行就绕到领主背后
+function msBotConeOut(p, C) {
+  const P = C.p, u = Math.abs(p.x - C.x), half = P.ang * D2R / 2 + 0.12, need = u * Math.tan(Math.min(1.4, half)) * GR + p.w + 18, s0 = Math.sign(p.y - C.y) || 1;
+  for (const s of [s0, -s0]) { const y = C.y + s * need; if (y > 6 && y < DEPTH - 6) return { x: p.x, y, why: 'cone' }; }
+  return { x: clamp(C.x - C.face * 90, 30, msRoomW() - 30), y: C.y, why: 'cone' };
+}
+// 先打谁：引信在走的物件（蛋 / 炸弹）> 冲着保护目标去的小怪 > 正在读条（stagger）的领主；都没有返回 null（bot.js 按原来的就近 + 领主优先）
+function msBotTarget(p) {
+  let best = null, bd = 1e9;
+  for (const e of ents) {
+    if (e.team !== 'e' || e.dead || e.remove || e.botSkip) continue;
+    const src = e.status && e.status.taunt && e.status.taunt.src;
+    const pri = e.msFuseT !== undefined && e.msFuseMax ? 420 : src && src.msProtect ? 320 : e.act && e.act.msHold ? 260 : 0; if (!pri) continue;
+    const d = Math.abs(e.x - p.x) + Math.abs(e.y - p.y) * 2 - pri; if (d < bd) { bd = d; best = e; }
+  }
+  return best;
+}

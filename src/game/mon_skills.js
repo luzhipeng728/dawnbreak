@@ -131,7 +131,7 @@ function msAoe(e, p) {
   if (p.shape === 'circle' || p.shape === 'ring') {
     for (let i = 0; i < p.n; i++) {
       const x = i ? ax + rnd(-p.scatter, p.scatter) : ax, y = clamp(i ? ay + rnd(-50, 50) : ay, 8, DEPTH - 8);
-      const g = telegraph({ x, y, r: p.r, dur: p.windup, col, follow: !i && p.follow && p.at === 'target' ? pl : p.at === 'self' ? e : null, fire: g => { if (e.dead) return; boom(g.x, g.y, p.r); msArea(e, g.x, g.y, p.r, p, p.shape === 'ring' ? p.r0 : 0); if (p.linger && typeof msPoolAt === 'function') msPoolAt(e, g.x, g.y, { ...MON_SKILLS.pool.defaults, ...p, zone: p.zone || 'poison' }); } });   // linger：落地后留下残留区（pool）
+      const g = telegraph({ x, y, r: p.r, dur: p.windup, col, jump: !!p.jump, r0: p.shape === 'ring' ? p.r0 : 0, follow: !i && p.follow && p.at === 'target' ? pl : p.at === 'self' ? e : null, fire: g => { if (e.dead) return; boom(g.x, g.y, p.r); msArea(e, g.x, g.y, p.r, p, p.shape === 'ring' ? p.r0 : 0); if (p.linger && typeof msPoolAt === 'function') msPoolAt(e, g.x, g.y, { ...MON_SKILLS.pool.defaults, ...p, zone: p.zone || 'poison' }); } });   // linger：落地后留下残留区（pool）
       if (p.shape === 'ring') addFx({ x, y: y + 0.4, z: 0, dur: p.windup, g, draw(c) {   // 内圈安全区：白色描边
         const X = sx(this.g.x), Y = sy(this.g.y, 0); c.save(); c.globalAlpha = 0.8; c.strokeStyle = '#ffffff'; c.lineWidth = 2; c.setLineDash([6, 5]); c.beginPath(); c.ellipse(X, Y, p.r0, p.r0 * GR, 0, 0, TAU); c.stroke(); c.restore(); } });
     }

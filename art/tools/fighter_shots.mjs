@@ -1,9 +1,40 @@
 // 格斗家（男）原装帧的游戏内连拍（docs/FIGHTER_ART_SAMPLES.md）：测试房间 ?fighter=1，左边站一个鬼剑士，两人喂同一套输入（站立 / 双击跑 / 普攻 4 段 / 跳 + 空中踢），比比例和节奏。
 // 停掉 rAF，逐个 60Hz 逻辑步驱动，从世界画布（RS 倍分辨率）裁图，每格标出两人当前画的帧名。先 node build.mjs --offline。
-//   node art/tools/fighter_shots.mjs [输出目录，默认 art/work/fighter_samples]   → engine_{idle,run,combo,jump}.jpg
+//   node art/tools/fighter_shots.mjs [输出目录，默认 art/work/fighter_samples]   → engine_{idle,run,combo,jump,clips}.jpg
+//   node art/tools/fighter_shots.mjs --town [输出目录]   城镇（赫顿玛尔）里走路：格斗家 / 鬼剑士各开一个页面、同一个位置同一套输入，每 5 步（走路 12fps 一帧）截一格（1 倍像素）
+//                                                      → <输出目录>/.town/{f,s}<i>.png，再 python3 art/tools/fighter_art.py town <前缀> 拼成 1 倍 / 4 倍对比图
 import { launch, URL_BASE } from '../../test/lib.mjs';
 import fs from 'fs';
-const out = process.argv[2] || new URL('../work/fighter_samples', import.meta.url).pathname; fs.mkdirSync(out, { recursive: true });
+const TOWN = process.argv.includes('--town'), argv = process.argv.slice(2).filter(a => a !== '--town');
+const out = argv[0] || new URL('../work/fighter_samples', import.meta.url).pathname; fs.mkdirSync(out, { recursive: true });
+if (TOWN) {
+  const shoot = async cls => {
+    const { browser, page, logs } = await launch({ width: 1280, height: 720 });
+    await page.goto(`${URL_BASE}?town&mute&cls=${cls}&fighter=1`); await page.waitForFunction(() => window.__READY, null, { timeout: 180000 });
+    const urls = await page.evaluate(async () => {
+      if (game.scene === 'town') { await enterScene('hendon_myre', { x: 1100, y: 110, face: 1 }); await new Promise(r => setTimeout(r, 300)); }
+      window.requestAnimationFrame = () => 0; await new Promise(r => setTimeout(r, 150));
+      if (typeof menus !== 'undefined') for (const k of ['help', 'title']) if (menus.isOpen && menus.isOpen(k)) menus.close(k);
+      const p = game.player; p.x = 1100; p.y = 110; p.face = 1; const L = [];
+      const st = (held) => { input.virt = {}; for (const k of held) input.virt[k] = 1; step(1 / 60); renderWorld(); };
+      for (let i = 0; i < 20; i++) st([]);
+      for (let i = 0; i < 80; i++) {
+        st(['right']);
+        if (i >= 40 && i % 5 === 0) {
+          const X = sx(p.x), Y = sy(p.y, 0), cw = 110, ch = 150, [cv, x] = offCanvas(cw, ch);
+          x.drawImage(wcan, (X - 55) * RS, (Y - 136) * RS, cw * RS, ch * RS, 0, 0, cw, ch); L.push(cv.toDataURL('image/png'));
+        }
+      }
+      return L;
+    });
+    const errs = logs.filter(l => l.type === 'pageerror'); await browser.close(); return { urls, errs: errs.length };
+  };
+  const F = await shoot('fighter'), S = await shoot('sword');
+  const tmp = `${out}/.town`; fs.mkdirSync(tmp, { recursive: true });
+  [['f', F.urls], ['s', S.urls]].forEach(([k, L]) => L.forEach((u, i) => fs.writeFileSync(`${tmp}/${k}${i}.png`, Buffer.from(u.split(',')[1], 'base64'))));
+  console.log(JSON.stringify({ fighter: F.urls.length, sword: S.urls.length, errors: F.errs + S.errs, tmp }));
+  process.exit(0);
+}
 const { browser, page, logs } = await launch({ width: 1280, height: 720 });
 await page.goto(`${URL_BASE}?test&mute&cls=fighter&fighter=1&mobs=0`); await page.waitForFunction(() => window.__READY, null, { timeout: 180000 });
 const info = await page.evaluate(async () => {

@@ -58,21 +58,21 @@
    ]
   },
   "fighter": {
-   "walk": 0.165,
+   "walk": 0.187,
    "run": 0.11,
-   "all": 0.811,
+   "all": 0.807,
    "top": [
     [
      "bounce",
-     0.811
+     0.807
     ],
     [
      "tumble",
-     0.782
+     0.778
     ],
     [
      "air",
-     0.769
+     0.766
     ]
    ]
   }
@@ -103,8 +103,8 @@
    6.529
   ],
   "fighter_walk": [
-   0.137,
-   7.605
+   0.087,
+   2.191
   ],
   "fighter_react": [
    0.119,
@@ -217,12 +217,10 @@
   "missing_frames": [],
   "head": 91,
   "cut": 90,
-  "two_fists": 46,
-  "one_fist": 44,
-  "no_fist": [
-   "fs_elbow"
-  ],
-  "auto": 16,
+  "two_fists": 59,
+  "one_fist": 32,
+  "no_fist": [],
+  "auto": 26,
   "outside": []
  }
 }

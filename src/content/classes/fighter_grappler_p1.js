@@ -235,7 +235,7 @@ defSkill('fg_awaken2', { name: '一字传承·极义震天破', cls: 'fighter', 
     return { name: 'fg_awaken2', clip: air ? 'fgDive' : 'fgStomp', dur: 5, superArmor: true, invul: true, noCounter: true, P,
       onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '一字传承·极义震天破', who: cutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); if (air) e.vz = -1400; else e.act.t0 = 0; },
       onLand: e => { const a = e.act; if (a.t0 === undefined) { a.t0 = e.actT; } e.vz = 0;
-        if (a.stage === 'jump' && a.dive) { a.onLand = null; a.stage = 'end'; e.vx = 0; const G = grabsOf(e).slice(); dropGrab(e); fgQtFinish(e, a, G[0] || a.tgt); e.play('fgStomp', true); a.dur = e.actT + 0.7; } },
+        if (a.stage === 'jump' && a.dive) { a.onLand = null; a.stage = 'end'; e.vx = 0; const G = grabsOf(e).slice(); dropGrab(e); fgQtFinish(e, a, G[0] || a.tgt); e.play(G.length ? 'fgPile' : 'fgStomp', true); a.dur = e.actT + 0.7; } },
       onInput: (e, I) => { const a = e.act; if (a.stage !== 'rocks') return false; if (I.buffered('attack')) { while (I.consume('attack')); a.mash = game.t; } return false; },
       hold: (e, t, i) => { const a = e.act; if (a.stage === 'toss') { t.x = e.x + e.face * 30; t.z = Math.min(170, t.z + 12); t.y = e.y + 0.5; } else fgHoldAt(e, t, i, 20, e.z + 30); t.face = -e.face; },
       update: e => { const a = e.act; if (a.t0 === undefined) return; const k = e.actT - a.t0, m = fgMul(e);

@@ -314,6 +314,14 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 - **手机**（`engine/touch.js`，docs/MOBILE.md）：格斗家的指令在触屏上都有按法（空中 C = 空中再点跳跃、蹲伏 / 前踢 / 鹰踏点技能键、蹲着点攻击 = 肩撞 / 点跳跃 = 起身、跑攻中点攻击 = 疾风追击）；状态键最多 5 个、真正的 Buff 排前面（气功师 5 个 Buff 都放得下，第 5 个在最上面一格的里侧）；气功师风雷能量条在触屏上挪到 BUFF 行下面（原来压住 BUFF 倒计时）。
 - **测试**：`node test/fighter_pvp.mjs`（决斗表、AI 用得出各转职全部主动技能 + 招牌技能、抓取公平，约 10 秒）、`node test/mp_fighter.mjs`（组队，约 1 分钟）、`node test/mobile_fighter.mjs [shots]`（手机，约 30 秒）、`node test/fighter_launch.mjs`（上线整条流程，约 40 秒）、`node test/pvp_balance.mjs 20 all`（循环赛默认带 `?fighter=1`；`TUNE_ONLY=fighter` 只调格斗家的数）、`server/test/arena.mjs`（AI 池）。
 
+### 4.7 B2 已交付（2026-09-30，外观；审图 `test/shots/fighter_looks/*.jpg`，`node test/fighter_looks.mjs [shots] [live]`）
+- **转职动作片段**：4 个转职 53 个片段全部解析到真帧，B1 的 25 个专属帧全部接上（fnStab = fn_thrust1→2、fsMid = fs_kneekick→f_mid2、fsPunch = fs_dashpunch、新 fsRush = fs_rush1/2（焚火逐日拳的连打左右交替）、fsDive = fs_divepunch、fbFan = fb_sidethrow、fbMount = fb_pound1→2、fgFlip = fg_backflip、新 fgPile = fg_piledrive（裂石破天 / 极义震天破抓着人砸地落地）、fnUp = f_focus→fb_chain1）；其余片段本来就是共用姿势（掌推 / 结印 / 下劈 / 抓 / 旋风腿…），列表见测试输出。
+- **转职外观**：`JOB_LOOKS` 4 条（JOB_VISUALS.md 阶段 C）；新字段 `outfit` = 原装马甲换成道服颜色（job_fx.js `JL_OUTFIT_PICK.fighter`，只染原装帧）；头饰 4 件（job_head_art.py：念珠 / 红头带 / 创可贴 / 白头带）。
+- **拳上武器**（avatar.js）：`WEAPON_IMG[k].cover` = 手套 / 拳套 / 爪 / 臂铠整个盖在拳头上（不盖回握拳）；东方棍照剑的握法（盖回握拳像素）。帧里 `side: 'f'` 的远侧拳：武器先整个画在身后，盖拳的再在拳心一圈（`AV_FIST_R` 13，有握拳轮廓时按轮廓大小）上盖一遍 —— 身体挡在远侧拳前面的照样挡着。没有锚点的拳头 = 空拳（多半被身体挡住）；`art/tools/fighter_fists.py` 按绑带颜色补了 14 只露在外面的拳（走路 8 帧的后手、跑 3 帧往后甩的手、刺拳的后手、肘击；`auto: 3`，逐帧看过）。
+- **武器图**：5 类 × 普通 / r2 / r3 / r4 + 6 款武器装扮 = 50 张（`art/tools/fighter_weapons_art.py`：一张表一组 —— 类型家族 4 行、装扮 5 行，共 11 次生图 → 切成 weapons2/<key>.png → `avatar_weapons.py`，新握法 glove / claw / tonfa，大小按拳头高 `FIST_H` / 全长 `LEN`）；图标 `item_w_<类型>` / 流沙 `item_sand_<类型>` / `w_fighter` 从武器图做（`fighter_weapons_art.py icons`，不生图）。具名史诗（`ep_kn/bx/cl/tf/ga_*`，`EP2_CODE` 已登记）是 B8 二期。
+- **时装**：6 套 × 91 帧（`art/tools/fighter_looks_art.py ref / sheets / frames`：时装参考 6 张（原装立绘 + 鬼剑士同套参考）+ 每套 6 张 4×4 表（walk 表的走路格和 react 表的受击格拼成一张 walkreact，省 6 次）；缩放照抄原装同名帧的倍数（B1 第二遍按头归一过），位置按轮廓对齐原装，锚点从原装平移）；时装配件（帽子 / 发饰 / 眼镜）写了 `pos.fighter / fighter@`；路人 `CROWD_CLS` 加格斗家（开放后才上街，马甲换色 3 种，`only` 支持跨 0° 的色相区间）。
+- **生图**：57 次（头饰 4、武器 11、时装参考 6 + 时装表 36），0 失败。
+
 ---
 
 ## 5. 风险与要主线程拍板的决定
@@ -355,7 +363,7 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 ### 6.2 还没做 / 要主线程拍板（按上线影响排）
 | # | 缺口 | 影响 | 归属 |
 |---|---|---|---|
-| G1 | **外观**：4 个转职的 `JOB_LOOKS`（发色 / 头饰）、6 套时装帧 `spr/fighter@*`、5 类武器图 / 图标（`art/final/weapon` 里还没有）、城镇路人 | 选角 / 城镇里 4 个转职长得一样；穿时装只显示原装；拿武器看不到武器 | B2（进行中） |
+| G1 | ~~外观~~：B2 已合并（转职动作 / 外观 / 头饰、拳上武器 50 张、6 套时装、路人，§4.7）；上线前主线程看一眼 `test/shots/fighter_looks/*.jpg` | — | B2（已交付） |
 | G2 | 具名史诗武器（`epics60_w_fighter.js` 还是空壳） | 格斗家刷不到本职业具名史诗武器（通用史诗 / 普通—传说能用） | B8 二期 |
 | G3 | skillaudit 规格：街霸 20 个、柔道家 19 个技能没写规格（`docs/skills/fighter.json`）；气功师 `fn_blast` 段数 1 项不一致（规格 [1,3]，实测 6；原因没查，B9 没动这部分代码）；`all.sh` 还没有格斗家的 `skillaudit --compare` 行 | 数值没和官方逐项对照 | B6 / B7 / B4 |
 | G4 | 街霸的决斗专属规则（罗网强化只拉倒地 / 空中、伏虎霸王拳只抓倒地、砖块对罗网目标眩晕减半）没做 | 现在靠 B9 的通用上限（hold 1 秒、束缚 3 秒、持续伤害吃 PvP 系数）+ PVP_JOB 0.45 压住，胜率在区间内 | B6（可选） |

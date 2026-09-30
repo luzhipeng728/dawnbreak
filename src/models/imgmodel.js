@@ -43,6 +43,7 @@ function tintImg(key, deg = 0, b = 1, s = 1, only = null) {
     if (only) {   // 计算色相，不在区间内的像素原样保留
       const mx = Math.max(R, G, B), mn = Math.min(R, G, B), d2 = mx - mn; if (d2 < 18) continue;
       let h = mx === R ? ((G - B) / d2) % 6 : mx === G ? (B - R) / d2 + 2 : (R - G) / d2 + 4; h *= 60; if (h < 0) h += 360;
+      if (only[1] > 360 && h < only[1] - 360) h += 360;   // 区间跨 0°（格斗家的暗红马甲）：[335, 372]
       if (h < only[0] || h > only[1]) continue;
     }
     if (deg) { const r2 = R * m[0] + G * m[1] + B * m[2], g2 = R * m[3] + G * m[4] + B * m[5], b2 = R * m[6] + G * m[7] + B * m[8]; R = r2; G = g2; B = b2; }

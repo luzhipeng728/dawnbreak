@@ -113,11 +113,11 @@ const r1 = await page.evaluate(() => {
   const missing = all.filter(j => !JOB_LOOKS[j]);
   const bad = Object.keys(JOB_LOOKS).filter(j => { const L = __jv.look(j, {}); return L.job !== j || (JOB_LOOKS[j].acc || []).some(k => !L.acc.includes(k) || !AVATAR_ACC[k]); });
   const noState = Object.keys(JOB_LOOKS).filter(j => !(JOB_LOOKS[j].states || []).some(S => S.demo));
-  game.job = null; return { own: own.job, other: other.job, asura: asura.acc, stranger: stranger.job, bad, missing, noState, n: Object.keys(JOB_LOOKS).length, all: all.length };
+  game.job = null; return { own: own.job, other: other.job, asura: asura.acc, stranger: stranger.job, bad, missing, noState, n: all.filter(j => JOB_LOOKS[j]).length, all: all.length, stray: Object.keys(JOB_LOOKS).filter(j => !Object.values(CLASSES).some(C => C.jobs && C.jobs[j])) };   // 没开放的转职（格斗家 ready:false）可以先有条目
 });
 ok(r1.own === 'soulbender' && r1.other === 'berserker' && r1.stranger === null, '自己 / 存档角色的 look.job 正确，没有主人的装备不带转职', JSON.stringify([r1.own, r1.other, r1.stranger]));
 ok(r1.asura.includes('job_asura_eyes'), '阿修罗的眼罩在 look.acc 里', JSON.stringify(r1.asura));
-ok(!r1.missing.length && !r1.bad.length && r1.n === r1.all, `${r1.all} 个转职都有外观条目、都能解析`, JSON.stringify([r1.missing, r1.bad]));
+ok(!r1.missing.length && !r1.bad.length && r1.n === r1.all && !r1.stray.length, `${r1.all} 个转职都有外观条目、都能解析`, JSON.stringify([r1.missing, r1.bad, r1.stray]));
 ok(!r1.noState.length, '每个转职都至少有一个状态特效（带 demo）', JSON.stringify(r1.noState));
 
 console.log('1b. 头部（发色 + 头饰）');
@@ -170,7 +170,7 @@ const r2 = await page.evaluate(async () => {
   __jv.clear(); const p = game.player, [cv, c] = offCanvas(400, 400), bad = [], drawn = [];
   const draw = g => { c.setTransform(1, 0, 0, 1, 200, 330); c.globalAlpha = 1; g.model.draw(c, g.pose, game.t, NO_OPTS); return g.model.av; };
   const has = (g, fx) => (draw(g).jfx || []).some(([x]) => x === fx);
-  for (const job of Object.keys(JOB_LOOKS)) {
+  for (const job of Object.keys(JOB_LOOKS).filter(j => openClasses().some(c => CLASSES[c].jobs[j]))) {   // 已开放的转职（格斗家的 4 条在 test/fighter_looks.mjs）
     const g = await __jv.spawn(job, {}, p.x + 80, p.y); game.paused = true; __jv.step(2);
     const L = draw(g); if (L.jobId !== job || !L.J) bad.push(job + ':没解析出转职');
     for (const S of JOB_LOOKS[job].states || []) {

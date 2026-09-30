@@ -51,6 +51,7 @@ run brawler   node test/brawler.mjs   # 格斗家 B6 街霸：投掷物装填 / 
 run fbrawler  node test/fighter_brawler.mjs
 run fpvp      node test/fighter_pvp.mjs   # 格斗家 B9：决斗表登记、AI 用得出各转职全部主动技能（霹雳旋踢 / 空中技）、抓取公平（抓取保护 / 强制硬直 ≤1 秒）
 run flaunch   node test/fighter_launch.mjs   # 格斗家上线整条流程：建 4 个转职、3 个转职打通地下城、决斗、存档往返（没开放时原样保留）、选角显示
+run flooks    node test/fighter_looks.mjs   # 格斗家外观（B2）：转职动作片段、转职外观 / 头饰 / 道服色、拳上武器 50 张 + 图标、6 套时装、配件、路人
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs

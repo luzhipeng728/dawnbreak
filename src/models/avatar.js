@@ -13,6 +13,7 @@
    性能：每帧只多 1 次 drawImage + 变换（身前武器再多 1 次握拳小图）；换装 / 首次用到某帧时才分配对象。
    ===================================================================== */
 const AVATAR_CLS = { sword: 1, gun: 1, mage: 1, fighter: 1, pmsuit: 1 };   // pmsuit：协战师的战斗服（地下城里整套换帧），只用来挂转职外观（帧里没有武器轨迹 / 头部锚点）
+const AV_FIST_R = 13;   // 格斗家拳头半径（帧像素；原装空拳约 26 × 26）：远侧拳的拳上武器按这一圈裁
 const AVATAR_SIG_SLOTS = ['weapon', 'av_weapon', 'av_top', 'av_bottom', 'av_chest', 'av_belt', 'av_shoes', 'av_hat', 'av_hair', 'av_face'];   // 这些部位换了就重算外观
 class AvatarLayer {
   constructor(m) {
@@ -67,9 +68,9 @@ class AvatarLayer {
   // 钩子：帧之前（身后的武器、后脑的发饰）
   under(c, m, f, F) {
     jlUnder(c, this, m, f, F);   // 转职外观：身后的鬼影 / 残影 / 血焰 / 小鬼神；无敌半透明（models/job_fx.js）
-    const w = F.wpn, w2 = F.wpn2;
-    if (w2 && !w2.front && this.dual()) this.weapon(c, w2, F);
-    if (w && !w.front) this.weapon(c, w, F);
+    const w = F.wpn, w2 = F.wpn2, back = x => x && (!x.front || x.side === 'f');   // 格斗家远侧拳（side 'f'）的武器先整个画在身后
+    if (back(w2) && this.dual()) this.weapon(c, w2, F);
+    if (back(w)) this.weapon(c, w, F);
     if (F.head && this.acc.length) this.accessories(c, F, true, f);
     if (this.glow && this.glow.ground) vanityGround(c, this);
   }
@@ -77,13 +78,28 @@ class AvatarLayer {
   over(c, m, f, F) {
     jlHair(c, this, m, f, F);   // 转职发色：紧贴在帧图上面（身前武器 / 头饰之前，models/job_fx.js）
     const w = F.wpn, w2 = F.wpn2;
-    if (w && w.front) { this.weapon(c, w, F); if (w.hand && this.wim) this.hand(c, m, f, F, w, 0); }
-    if (w2 && w2.front && this.dual()) { this.weapon(c, w2, F); if (w2.hand && this.wim) this.hand(c, m, f, F, w2, 1); }
+    if (w && w.front) this.front(c, m, f, F, w, 0);
+    if (w2 && w2.front && this.dual()) this.front(c, m, f, F, w2, 1);
     if (F.head && this.acc.length) this.accessories(c, F, false, f);
     if (this.glow && this.glow.trail) vanityTrail(c, this, F, f);
     jlOver(c, this, m, f, F);   // 转职外观：鬼手 / 红眼 / 身前的火舌和鬼火
   }
   dual() { return !!this.A && this.A.dual !== 0; }   // 双枪帧的副手：长枪 / 手炮 / 手弩不画（副手空着）
+  /* 身前的武器：握在手里的（剑、枪、东方棍）画完把握拳像素盖回去（做出“握住”）；
+     拳上武器（A.cover：手套 / 拳套 / 爪 / 臂铠）整个盖在拳头上，不盖回握拳。
+     格斗家远侧拳（side 'f'）的武器在 under 里已经整个画在身后：握着的（东方棍）拳头本来就在前面；
+     盖拳的只在拳头露出来的地方（握拳轮廓 / 拳心一圈，AV_FIST_R）再盖一遍，身体挡在远侧拳前面的部分照样挡着（docs/FIGHTER_ART_SAMPLES.md §4.3） */
+  front(c, m, f, F, w, i) {
+    const cover = this.A && this.A.cover;
+    if (w.side === 'f') { if (cover && this.wim) this.fistClip(c, F, w, () => this.weapon(c, w, F)); return; }
+    this.weapon(c, w, F);
+    if (w.hand && this.wim && !cover) this.hand(c, m, f, F, w, i);
+  }
+  fistClip(c, F, w, draw) {
+    let r = AV_FIST_R;
+    if (w.hand) for (const P of w.hand) for (let j = 0; j < P.length; j += 2) r = Math.max(r, Math.hypot(P[j] - w.gx, P[j + 1] - w.gy) + 1.5);
+    c.save(); c.beginPath(); c.arc(w.gx - F.ax, w.gy - F.ay, Math.min(r, AV_FIST_R * 1.35), 0, TAU); c.clip(); draw(); c.restore();
+  }
   weapon(c, w, F) {
     const A = this.A, im = this.wim; if (!A || !im) return;
     const s = A.size / (A.tx - A.gx), fy = Math.cos(w.ang) < -0.05 ? -s : s;   // 朝左时上下翻转，武器的“上面”保持朝上

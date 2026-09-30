@@ -10,7 +10,7 @@
      滑行抓取 冲刺中放 膝击 / 抛投 / 浮空凌云踢 / 地狱风火轮 / 武莲华 / 黑震旋风：先滑过去（上下键调纵深），滑的途中碰到就抓
      连环抓取 野蛮冲撞 / 彗星冲击命中后可以取消接抓取技能，接上的那一下伤害提高
      二觉预约 浮空凌云踢 / 疾波猛坠 / 裂石破天 / 死亡旋律 / 疾风闪电 / 黑震流·殒灭 施放中按二觉（或三觉）：先把本技能剩下的终结伤害打完，再接觉醒（act.fgFin）
-   动作片段（J.anims）：柔道家专用帧名前缀 fg_（B1 出帧：fg_scissor 空中剪刀腿夹、fg_swing1/2 抡人旋转、fg_press 身体压下、fg_flip 后空翻、fg_plant 倒插地面），
+   动作片段（J.anims）：柔道家专用帧名前缀 fg_（B1 出帧：fg_scissor 空中剪刀腿夹、fg_swing1/2 抡人旋转、fg_press 身体压下、fg_backflip 后空翻、fg_piledrive 倒插落地 = fgPile），
      没出帧时依次用格斗家共用帧（f_grab / f_lift / f_slam …，B1）、通用帧兜底；矢量占位模型用下面的 POSE.fg*。
    ===================================================================== */
 const GJ = 'grappler';
@@ -175,7 +175,7 @@ Object.assign(CLIPS.fighter, {
 const fgHas = f => typeof SPR_DATA !== 'undefined' && !!(SPR_DATA.fighter && SPR_DATA.fighter.frames && SPR_DATA.fighter.frames[f]);
 const fgTl = (...L) => L.find(tl => fgHas(tl[0][0])) || L[L.length - 1];
 const FG_ANIMS = {
-  fgGrab: fgTl([['fg_grab', 0]], [['f_grab', 0]], [['idle', 0]]),
+  fgGrab: fgTl([['f_grab', 0]], [['idle', 0]]),
   fgKnee: fgTl([['f_grab', 0], ['f_knee', 0.06]], [['idle', 0]]),
   fgLift: fgTl([['f_lift', 0]], [['charge', 0]]),
   fgSlam: fgTl([['f_slam', 0]], [['tech', 0]]),
@@ -186,11 +186,12 @@ const FG_ANIMS = {
   fgSpin: fgHas('f_spin1') ? { fps: 16, frames: ['f_spin1', 'f_spin2'] } : [['idle', 0]],
   fgShoulder: fgTl([['f_shoulder1', 0], ['f_shoulder2', 0.05]], [['run3', 0]]),
   fgCrouch: fgTl([['f_crouch', 0]], [['charge', 0]]),
-  fgFlip: fgTl([['fg_flip', 0]], [['roll', 0]]),
+  fgFlip: fgTl([['fg_backflip', 0]], [['roll', 0]]),
   fgDive: fgTl([['f_dive', 0]], [['jump3', 0]]),
   fgPress: fgTl([['fg_press', 0]], [['f_dive', 0]], [['jump3', 0]]),
   fgScissor: fgTl([['fg_scissor', 0]], [['f_jkick2', 0]], [['jump2', 0]]),
   fgStomp: fgTl([['f_stomp', 0]], [['jump5', 0]]),
+  fgPile: fgTl([['fg_piledrive', 0]], [['f_stomp', 0]], [['jump5', 0]]),
   fgFocus: fgTl([['f_focus', 0]], [['charge', 0]]),
   fgSwing: fgHas('fg_swing1') ? { fps: 12, frames: ['fg_swing1', 'fg_swing2'] } : fgTl([['f_lift', 0]], [['charge', 0]]),
 };
@@ -476,7 +477,7 @@ defSkill('fg_cannonspike', { name: '裂石破天', cls: 'fighter', job: GJ, lvRe
   act: (lv, p) => {
     const P = skillDmg(9.5, 0.95, lv);
     const land = (e, a) => { a.fgFinDone = true; const G = grabsOf(e).slice(), m = a.dmgMul || 1, x = G.length ? G[0].x : e.x + e.face * 30;
-      e.play('fgStomp', true);
+      e.play(G.length ? 'fgPile' : 'fgStomp', true);
       for (const t of G) throwGrab(e, { dmg: P * 0.66, spike: 600, down: true, bounce: 0.35, knock: 30, hs: 0.12, big: 2, shake: 8, snd: 'blunt', col: FG_COL.fire });
       if (a.miss) fgHitT(e, a.miss, { dmg: P * 0.93, throwHit: true, knock: 120, stun: 0.6, hs: 0.1, big: 1.8, col: FG_COL.fire }, m);
       fxSpr('flame', x, e.y, 10, { w: 220, dur: 0.5, col: FG_COL.fire, grow: [0.5, 1.2] });

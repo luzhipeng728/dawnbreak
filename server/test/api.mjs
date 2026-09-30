@@ -38,12 +38,11 @@ const has = (c, pred, ms) => c.wait(pred, ms).then(() => true, () => false);
 
 try {
   // ---- 注册 / 登录 ----
-  ok((await api('POST', '/api/register', { user: 'alice', pass: 'secret1', invite: 'WRONG' })).status === 400, '邀请码错误被拒绝');
-  ok((await api('POST', '/api/register', { user: 'a', pass: 'secret1', invite: 'TESTCODE' })).status === 400, '用户名太短被拒绝');
-  const ra = await api('POST', '/api/register', { user: 'alice', pass: 'secret1', invite: 'TESTCODE' });
+  ok((await api('POST', '/api/register', { user: 'a', pass: 'secret1' })).status === 400, '用户名太短被拒绝（不需要邀请码）');
+  const ra = await api('POST', '/api/register', { user: 'alice', pass: 'secret1' });
   ok(ra.status === 200 && ra.data.token && ra.data.user.admin === true, '注册 alice（管理员）');
-  ok((await api('POST', '/api/register', { user: 'ALICE', pass: 'secret1', invite: 'TESTCODE' })).status === 409, '用户名不区分大小写查重');
-  const rb = await api('POST', '/api/register', { user: 'bob', pass: 'secret2', invite: 'TESTCODE' });
+  ok((await api('POST', '/api/register', { user: 'ALICE', pass: 'secret1' })).status === 409, '用户名不区分大小写查重');
+  const rb = await api('POST', '/api/register', { user: 'bob', pass: 'secret2' });
   ok(rb.status === 200 && rb.data.user.admin === false, '注册 bob');
   ok((await api('POST', '/api/login', { user: 'bob', pass: 'nope' })).status === 401, '密码错误被拒绝');
   const lb = await api('POST', '/api/login', { user: 'Bob', pass: 'secret2' });
@@ -51,10 +50,8 @@ try {
   const A = ra.data.token, B = lb.data.token;
   ok((await api('GET', '/api/me', null, A)).data.user.name === 'alice', 'me');
   ok((await api('GET', '/api/me', null, 'bogus-token-123456789012345')).status === 401, '无效 token 401');
-  // 管理员邀请码
-  const inv = app.ctx.mods.account.createInvite(1, '测试');
-  ok((await api('POST', '/api/register', { user: 'carol', pass: 'secret3', invite: inv.toLowerCase() })).status === 200, '一次性邀请码注册（不区分大小写）');
-  ok((await api('POST', '/api/register', { user: 'dave', pass: 'secret3', invite: inv })).status === 400, '一次性邀请码不能再用');
+  // 开放注册：不带邀请码也能注册
+  ok((await api('POST', '/api/register', { user: 'carol', pass: 'secret3' })).status === 200, '不需要邀请码就能注册');
   // ---- 云存档 ----
   const s0 = await api('GET', '/api/saves', null, A);
   ok(s0.data.updatedAt === 0 && s0.data.data === null, '新账号云存档为空');

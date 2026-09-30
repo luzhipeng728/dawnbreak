@@ -83,7 +83,7 @@ async function uiAuth(page, url, mode, fields) {
   if (!authInfo.ok) console.log(`  （${btn} ${fields[0]} 没有成功：${JSON.stringify(authInfo)}）`);
   return authInfo.ok;
 }
-export const uiRegister = (page, url, user, pass = 'secret123', invite = 'NETTEST') => uiAuth(page, url, 'register', [user, pass, pass, invite]);
+export const uiRegister = (page, url, user, pass = 'secret123') => uiAuth(page, url, 'register', [user, pass, pass]);
 export const uiLogin = (page, url, user, pass = 'secret123') => uiAuth(page, url, 'login', [user, pass]);
 // 创建角色并进城（真实界面流程）
 export async function uiCreateChar(page, clsIndex = 0, name) {

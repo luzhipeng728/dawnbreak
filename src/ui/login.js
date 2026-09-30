@@ -57,18 +57,18 @@ Object.assign(menus, {
   w_login(mode = 'login') {
     const reg = mode === 'register';
     const f = (ph, type = 'text', max = 16) => { const i = h('input', { class: 'txt', type, placeholder: ph, maxlength: max, autocomplete: type === 'password' ? (reg ? 'new-password' : 'current-password') : 'username', spellcheck: 'false' }); i.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); submit(); } else if (e.key === 'Escape') { e.preventDefault(); this.close('login'); } }); return i; };
-    const user = f('用户名（2~16 个汉字 / 字母 / 数字）'), pass = f('密码（至少 6 位）', 'password', 64), pass2 = reg ? f('再输一遍密码', 'password', 64) : null, invite = reg ? f('邀请码（找房主要）', 'text', 40) : null;
+    const user = f('用户名（2~16 个汉字 / 字母 / 数字）'), pass = f('密码（至少 6 位）', 'password', 64), pass2 = reg ? f('再输一遍密码', 'password', 64) : null;
     const msg = h('div', { class: 'askerr' }), btn = h('button', { class: 'btn big', onclick: () => submit() }, reg ? '注册并登录' : '登录');
     try { const last = localStorage.getItem('dawnbreak_lastuser'); if (last && !reg) user.value = last; } catch (e) { /* */ }
     let busy = false;
     const submit = async () => {
       if (busy) return;
       const u = user.value.trim(), p = pass.value;
-      const e = loginUserErr(u) || (reg ? loginPassErr(p) : (!p ? '请输入密码' : null)) || (reg && p !== pass2.value ? '两次输入的密码不一样' : null) || (reg && !invite.value.trim() ? '请输入邀请码' : null);
+      const e = loginUserErr(u) || (reg ? loginPassErr(p) : (!p ? '请输入密码' : null)) || (reg && p !== pass2.value ? '两次输入的密码不一样' : null);
       if (e) { msg.textContent = e; sfx.error(); return; }
       busy = true; btn.classList.add('off'); msg.style.color = '#bfe8ff'; msg.textContent = reg ? '正在注册…' : '正在登录…';
       try {
-        const r = await net.api('POST', reg ? '/api/register' : '/api/login', reg ? { user: u, pass: p, invite: invite.value.trim() } : { user: u, pass: p });
+        const r = await net.api('POST', reg ? '/api/register' : '/api/login', reg ? { user: u, pass: p } : { user: u, pass: p });
         try { localStorage.setItem('dawnbreak_lastuser', u); } catch (e2) { /* */ }
         msg.textContent = '正在读取云存档…';
         await account.onLogin(r);
@@ -81,7 +81,7 @@ Object.assign(menus, {
       }
     };
     const swap = h('div', { class: 'small dim', style: 'text-align:center' }, reg ? '已经有账号了？' : '还没有账号？', h('a', { href: '#', class: 'gold', onclick: ev => { ev.preventDefault(); this.close('login'); this.show('login', reg ? 'login' : 'register'); } }, reg ? '去登录' : '注册一个'));
-    const body = h('div', { class: 'col loginbd' }, user, pass, pass2, invite, msg, btn, swap,
+    const body = h('div', { class: 'col loginbd' }, user, pass, pass2, msg, btn, swap,
       h('div', { class: 'small dim' }, '密码经过加密保存；登录状态保持 30 天。'));
     const el = this.win(reg ? '注册账号' : '登录', body, { w: 24, block: true, drag: false });
     el._onConfirm = submit;

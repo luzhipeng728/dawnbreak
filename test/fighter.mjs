@@ -92,7 +92,7 @@ if (MODES.includes('ids')) {
     const I = FIGHTER_IDS, all = [...I.base, ...I.jobs.flatMap(j => I[j])];
     const pre = { base: 'f_', ...Object.fromEntries(I.jobs.map(j => [j, I.prefix[j]])) };
     const badPre = Object.entries({ base: I.base, ...Object.fromEntries(I.jobs.map(j => [j, I[j]])) }).flatMap(([k, L]) => L.filter(id => !id.startsWith(pre[k])));
-    const otherPre = Object.keys(SKILLS).filter(id => /^f[nsbg]?_/.test(id));   // 现有技能里没人占用这些前缀（B3~B7 之后会有自己的）
+    const otherPre = Object.keys(SKILLS).filter(id => /^f[nsbg]?_/.test(id) && !(SKILLS[id].cls === 'fighter' && all.includes(id)));   // 格斗家前缀只能是格斗家自己的预留 id（B3~B7 实装的不算占用）
     const C = CLASSES.fighter, J = C.jobs;
     const jobs = Object.fromEntries(Object.entries(J).map(([k, v]) => [k, { ready: v.ready, armor: v.armor, dmg: v.dmgType || 'phys', skills: v.skills.length }]));
     const wt = Object.keys(WTYPES).filter(k => WTYPES[k].cls === 'fighter');

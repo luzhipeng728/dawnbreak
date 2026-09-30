@@ -48,14 +48,15 @@ const FS_ANIMS = {
   fsElbow: fsTl([['fs_elbow', 0]], fsTl([['f_shoulder1', 0], ['f_shoulder2', 0.05]], [['run3', 0]])),
   fsPush: fsTl([['f_shoulder1', 0], ['f_shoulder2', 0.05]], [['run3', 0]]),
   fsLow: fsTl([['f_low1', 0], ['f_low2', 0.1]], [['idle', 0]]),
-  fsMid: fsTl([['fs_knee', 0]], fsTl([['f_mid1', 0], ['f_mid2', 0.18]], [['idle', 0]])),
-  fsPunch: fsTl([['fs_punch1', 0], ['fs_punch2', 0.06]], fsTl([['f_jab1', 0], ['f_jab2', 0.06]], [['idle', 0]])),
+  fsMid: fsTl([['fs_kneekick', 0], ['f_mid2', 0.18]], fsTl([['f_mid1', 0], ['f_mid2', 0.18]], [['idle', 0]])),
+  fsPunch: fsTl([['fs_dashpunch', 0]], fsTl([['f_jab1', 0], ['f_jab2', 0.06]], [['idle', 0]])),
+  fsRush: fsTl([['fs_rush1', 0], ['fs_rush2', 0.1]], fsTl([['f_jab1', 0], ['f_jab2', 0.1]], [['idle', 0]])),
   fsCharge: fsTl([['fs_cannon1', 0]], fsTl([['f_focus', 0]], [['charge', 0]])),
   fsFly: fsTl([['f_flykick', 0]], [['jump2', 0]]),
   fsSpin: fsTl([['f_spin1', 0]], null) ? { fps: 16, frames: ['f_spin1', 'f_spin2'] } : [['idle', 0]],
   fsUp: fsTl([['f_high1', 0], ['f_high2', 0.06]], [['idle', 0]]),
   fsStomp: fsTl([['f_axe1', 0], ['f_axe2', 0.2]], fsTl([['f_stomp', 0]], [['jump3', 0]])),
-  fsDive: fsTl([['fs_dive', 0]], fsTl([['f_dive', 0]], [['jump3', 0]])),
+  fsDive: fsTl([['fs_divepunch', 0]], fsTl([['f_dive', 0]], [['jump3', 0]])),
   fsBuff: fsTl([['f_focus', 0]], [['charge', 0]]),
 };
 
@@ -516,7 +517,7 @@ defSkill('fs_awaken3', { name: '焚火逐日拳', cls: 'fighter', job: FS, tier:
       a.cx = e.x + e.face * 90; a.cy = e.y; a.feet = fsFlameRing(e, 2.4, FS_FIRE, 40); },
     update: e => { const a = e.act, t = e.actT, T = skillDmg(44, 12, lv), P = 0.06, hit = (d, o) => areaHit(e, a.cx, a.cy, 330, 0, { dmg: T * d, stun: 0.6, knock: 0, airLift: 60, hs: 0.05, sure: true, downHit: true, snd: 'fire', col: '#ffb070', ...o }, { zMax: 220 });
       const k = Math.floor((t - 0.35) / 0.2);
-      if (t > 0.35 && k !== a.k && k < 7) { a.k = k; e.play('fsPunch', true); e.animT = 0.06; sfx.swing(k % 2 === 1); cam.shake = Math.max(cam.shake, 6); fxText(k % 2 ? '啊啦!' : '欧拉!', e.x, e.y, e.z + 40, { col: '#ffc080', size: 11, dur: 0.3 });
+      if (t > 0.35 && k !== a.k && k < 7) { a.k = k; e.play('fsRush', true); e.animT = k % 2 ? 0.1 : 0; sfx.swing(k % 2 === 1); cam.shake = Math.max(cam.shake, 6); fxText(k % 2 ? '啊啦!' : '欧拉!', e.x, e.y, e.z + 40, { col: '#ffc080', size: 11, dur: 0.3 });
         fxBurst(a.cx + rnd(-30, 30), a.cy, 60 + rnd(-20, 30), 200, '#ff8a3a'); fxSpr('explosion', a.cx + rnd(-40, 40), a.cy, 50 + rnd(0, 40), { w: 150, dur: 0.35, grow: [0.5, 1.1] });
         for (const o of ents) if (hittable(e, o) && Math.abs(o.x - a.cx) < 480 && Math.abs(o.y - a.cy) < 170 && o.z < 220) fsPull(o, a.cx, a.cy, 0.35);
         hit(P); }

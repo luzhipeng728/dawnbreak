@@ -49,6 +49,7 @@ run fgrappler node test/fighter_grappler.mjs   # 柔道家（B7）：登记、28
 run grappler  node test/grappler.mjs   # 柔道家机制：抓轰炮 / 暴力抓取 / 滑行 / 连环 / 二觉预约 / 领主不卡死
 run brawler   node test/brawler.mjs   # 格斗家 B6 街霸：投掷物装填 / 强化投掷 / 两连投 / 异常加伤 / 抓取 / 锁链 / 三个觉醒
 run fbrawler  node test/fighter_brawler.mjs
+run flooks    node test/fighter_looks.mjs   # 格斗家外观（B2）：转职动作片段、转职外观 / 头饰 / 道服色、拳上武器 50 张 + 图标、6 套时装、配件、路人
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs

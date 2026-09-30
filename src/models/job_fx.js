@@ -170,15 +170,21 @@ const JL_HAIR_PICK = {
   mage: { ref: 0.8, pick: (h, s, v, lx, ly) => ly < 150 && h > 240 && h < 305 && s > 0.1 && s < 0.55 && v > 0.665 && !(s > 0.38 && v < 0.72),   // 巫师帽的亮面：s 0.4~0.5、v 0.62~0.66
     edge: (h, s, v) => h > 230 && h < 320 && s < 0.4 && v > 0.3 },   // 巫师帽 s 0.4 以上：不往帽子上扩
 };
+/* 格斗家：原装的无袖功夫马甲（暗红，色相 340~12°、饱和度高）按转职换成道服颜色（JOB_LOOKS[转职].outfit，保留明暗）；
+   头部一圈（嘴、舌头）不找，金色盘扣 / 黑边 / 黑裤子 / 肤色 / 棕发按色相、饱和度排除；只染原装帧（穿时装、混搭的帧不染） */
+const JL_OUTFIT_PICK = {
+  fighter: { ref: 0.42, pick: (h, s, v, lx, ly) => ly > 0 && lx * lx + ly * ly > 1600 && (h > 338 || h < 12) && s > 0.42 && v > 0.14 && !(h > 3 && h < 12 && s < 0.6 && v < 0.4),   // 深棕头发：色相 5~11、饱和度 0.44~0.57、亮度 0.22~0.36（实测），和马甲的暗部分开
+    edge: (h, s, v) => (h > 330 || h < 20) && s > 0.25 && !(h > 3 && h < 20 && s < 0.6 && v < 0.4) },
+};
 const JL_HAIR = new Map(), JL_HAIR_MAX = 200;
-function jlHairImg(im, F, H, cls, col) {
-  const k = col + '|' + cls; let M = JL_HAIR.get(im);
+function jlHairImg(im, F, H, cls, col, P = JL_HAIR_PICK[cls]) {
+  const k = col + '|' + cls + (P === JL_HAIR_PICK[cls] ? '' : '|o'); let M = JL_HAIR.get(im);
   if (M) { JL_HAIR.delete(im); JL_HAIR.set(im, M); } else {
     JL_HAIR.set(im, M = new Map());
     if (JL_HAIR.size > JL_HAIR_MAX) { const k0 = JL_HAIR.keys().next().value; for (const o of JL_HAIR.get(k0).values()) if (o) o.cv.width = o.cv.height = 0; JL_HAIR.delete(k0); }
   }
   if (M.has(k)) return M.get(k);
-  const P = JL_HAIR_PICK[cls], W = im.width, Hh = im.height, [c0, x0] = offCanvas(W, Hh); x0.drawImage(im, 0, 0);
+  const W = im.width, Hh = im.height, [c0, x0] = offCanvas(W, Hh); x0.drawImage(im, 0, 0);
   let d; try { d = x0.getImageData(0, 0, W, Hh); } catch (e) { M.set(k, null); return null; }   // file:// 打开时跨域读不了像素：不染
   c0.width = c0.height = 0;
   const p = d.data, n = W * Hh, hs = new Float32Array(n), ss = new Float32Array(n), vs = new Float32Array(n), mk = new Uint8Array(n);
@@ -215,7 +221,9 @@ function jlHairImg(im, F, H, cls, col) {
   const o = { cv, x: X0, y: Y0 }; M.set(k, o); return o;
 }
 function jlHair(c, L, m, f, F) {
-  const J = L.J, col = J && J.hair; if (!col || !JL_HAIR_PICK[L.cls]) return;
+  const J = L.J, oc = J && J.outfit, OP = JL_OUTFIT_PICK[L.cls];
+  if (oc && OP && !L.alt[f] && F.head) { const im = m.img[f], o = im && jlHairImg(im, F, F.head, L.cls, oc, OP); if (o) c.drawImage(o.cv, o.x - F.ax, o.y - F.ay); }   // 转职道服色（只染原装帧）
+  const col = J && J.hair; if (!col || !JL_HAIR_PICK[L.cls]) return;
   let H = F.head; if (!H) { const B = SPR_DATA[L.cls] && SPR_DATA[L.cls].frames[f]; if (!B || !B.head) return; H = { x: B.head.x - B.ax + F.ax, y: B.head.y - B.ay + F.ay, a: B.head.a }; }   // 时装帧没有头部锚点：借原装同名帧的（按脚底锚点对齐）
   const im = jlFrameIm(L, m, f); if (!im) return;
   const o = jlHairImg(im, F, H, L.cls, col); if (o) c.drawImage(o.cv, o.x - F.ax, o.y - F.ay);

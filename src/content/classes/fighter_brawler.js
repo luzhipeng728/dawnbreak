@@ -273,9 +273,9 @@ Object.assign(CLIPS.fighter, {
 });
 // 写成 getter：fAnim / sprHas 在 content/sprites.js 里定义（比本文件晚加载），sprites.js 并入 J.anims（Object.assign）时才求值
 const FB_ANIMS = {
-  get fbThrow() { return fAnim([['fb_throw1', 0], ['fb_throw2', 0.1]], fAnim([['f_palm1', 0]])); }, get fbFan() { return fAnim([['fb_fan1', 0], ['fb_fan2', 0.1]], fAnim([['f_palm2', 0]])); },
+  get fbThrow() { return fAnim([['fb_throw1', 0], ['fb_throw2', 0.1]], fAnim([['f_palm1', 0]])); }, get fbFan() { return fAnim([['fb_sidethrow', 0]], fAnim([['f_palm2', 0]])); },
   get fbHook() { return fAnim([['f_low2', 0], ['f_high2', 0.18], ['f_mid2', 0.42]]); }, get fbGrab() { return fAnim([['f_grab', 0]]); },
-  get fbMount() { return sprHas('fighter', 'fb_mount1') ? { fps: 10, frames: ['fb_mount1', 'fb_mount2'] } : fAnim([['f_smash', 0]]); },
+  get fbMount() { return fAnim([['fb_pound1', 0], ['fb_pound2', 0.06]], fAnim([['f_smash', 0]])); },
   get fbSlide() { return fAnim([['fb_slide', 0]], fAnim([['f_crouch', 0]])); }, get fbSwing() { return sprHas('fighter', 'fb_chain1') ? { fps: 12, frames: ['fb_chain1', 'fb_chain2'] } : fAnim([['f_spin1', 0]]); },
   get fbTaunt() { return fAnim([['fb_taunt', 0]], fAnim([['f_focus', 0]])); }, get fbLift() { return fAnim([['f_lift', 0]]); }, get fbSlam() { return fAnim([['f_smash', 0]], fAnim([['f_slam', 0]])); },
   get fbKick() { return fAnim([['f_mid1', 0], ['f_mid2', 0.08]]); },

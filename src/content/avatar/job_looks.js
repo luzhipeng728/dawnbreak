@@ -5,6 +5,7 @@
    字段（全部可选；组件参数的详细说明在 job_fx.js 各组件函数的注释里）：
      col     这个转职的代表色（总览图 / 说明用）
      hair    发色（整头头发换成这个颜色、保留明暗；只有鬼剑士 / 魔法师能分出头发，见 job_fx.js 的 jlHair）
+     outfit  原装衣服换色（格斗家：暗红马甲换成转职的道服颜色、保留明暗；只染原装帧，穿时装 / 混搭不染，见 job_fx.js 的 JL_OUTFIT_PICK）
      acc     头部配件 key（AVATAR_ACC，按头部锚点叠加；和时装冲突的按 clash 让给时装，见下面的转职头饰）；noFace: 1 = 戴着它时不画时装眼镜
      常驻组件（城镇里也有）：
        arm     副手（鬼手）火舌，锚点 F.oh（art/tools/avatar_hands.py，目前只有鬼剑士）：{ col, h, n, a, motes, drip }
@@ -47,12 +48,34 @@ Object.assign(AVATAR_ACC, {
   job_summoner_horns: { img: 'job_summoner_horns', clash: ['hat'], pos: { mage: [0, 36, 0, 0.9], 'mage@': [2, 4, 0, 0.9] } },
   job_witch_glasses: { img: 'job_witch_glasses', face: 1, clash: ['face'], pos: { mage: [17, 40, 0, 0.78], 'mage@': [20, 8, 0, 0.78] } },
   job_enchantress_bow: { img: 'job_enchantress_bow', clash: ['hair'], pos: { mage: [-30, 40, 0, 1], 'mage@': [-32, 14, 0, 1] } },
+  // 格斗家（头心 = 头部中心，眼睛约在 [23, 22]，下巴约在头心下 42；不戴帽子，原装 / 时装同一个头）
+  job_nenmaster_beads: { img: 'job_nenmaster_beads', pos: { fighter: [0, 56, -0.1, 0.52], 'fighter@': [0, 56, -0.1, 0.52] } },
+  job_striker_band: { img: 'job_striker_band', clash: ['hat'], pos: { fighter: [-6, 0, -0.12, 1], 'fighter@': [-6, 0, -0.12, 1] } },
+  job_brawler_plaster: { img: 'job_brawler_plaster', face: 1, pos: { fighter: [22, 32, 0.3, 0.7], 'fighter@': [22, 32, 0.3, 0.7] } },
+  job_grappler_band: { img: 'job_grappler_band', clash: ['hat'], pos: { fighter: [-4, 2, -0.12, 0.95], 'fighter@': [-4, 2, -0.12, 0.95] } },
 });
 const jlBuff = id => e => e.buffs && e.buffs[id] ? 1 : 0;              // 有这个 BUFF → 强度 1
 const jlDemo = (id, o = {}) => e => { e.buffs[id] = { t: 9999, ...o }; };
 const JL_SF_COL = { fire: '#ff6a2a', ice: '#6ad8ff', light: '#ffe45a' };   // 弹药专家超负荷装填的属性色（无属性 = 白）
 const jlSfCol = e => (e && e.buffs && e.buffs.gs_overcharge && JL_SF_COL[e.buffs.gs_overcharge.elem]) || '#f4f4ff';
 
+// 街霸：腰上挂一圈铁链 + 一瓶毒药、近侧手腕缠着一截铁链（程序画，fighter_brawler.js 的 fbDrawChain / fbDrawBottle；坐标 = 帧像素，1 帧像素 = 1 / 1.8 游戏像素）
+function jlBrawlerGear(c, L, F, f, back, e) {
+  if (back || typeof fbDrawChain !== 'function') return;
+  const t = jlNow(), sw = Math.sin(t * 2.2 + (L.seed || 0)) * 3, cut = F.cut;
+  if (cut) {
+    const wx = cut.wx - F.ax, wy = cut.wy - F.ay + 4;
+    fbDrawChain(c, wx - 18, wy - 2, wx + 4, wy + 2, { s: 1.5, sag: 16 + sw * 0.5 });
+    fbDrawChain(c, wx + 4, wy + 2, wx + 2 + sw, wy + 26, { s: 1.5 });
+    fbDrawBottle(c, wx + 14, wy + 12, 0.25 + sw * 0.03, '#a45ae0', 1.5);
+  }
+  const w = F.wpn && F.wpn.side !== 'f' ? F.wpn : F.wpn2 && F.wpn2.side === 'n' ? F.wpn2 : null;
+  if (w) {
+    const ca = Math.cos(w.ang), sa = Math.sin(w.ang), x = w.gx - F.ax - ca * 17, y = w.gy - F.ay - sa * 17;
+    fbDrawChain(c, x - sa * 7, y + ca * 7, x + sa * 7, y - ca * 7, { s: 1.4 });
+    fbDrawChain(c, x, y, x - ca * 6 + sw, y + 24, { s: 1.4 });
+  }
+}
 const JOB_LOOKS = {
   /* ================= 鬼剑士 ================= */
   // 剑魂：武器精通 —— 刀身一圈淡青剑气、身后悬着两把光剑；破极兵刃 = 五把光剑绕身 + 刀身白光 + 青色剑气
@@ -169,6 +192,39 @@ const JOB_LOOKS = {
     motes: { img: 'bubble', col: ['#5ad8a0', '#ff8ac8', '#5ab8ff'], n: 5, h: 4.4, rise: 26, life: 1.8, y0: 0.45, a: 1 },
     states: [{ id: 'book', name: '远古魔法书', on: jlBuff('wt_book'), demo: jlDemo('wt_book'),
       fx: { ring: { img: 'rune', col: '#ff7ac0', r: 30, spin: 0.7, a: 1, upright: 1 }, motes: { img: 'spark', col: '#ffc0e8', n: 7, h: 8, rise: 30 }, aura: { col: '#ff8ac8', a: 0.25, haze: 0.15 } } }],
+  },
+  /* ================= 格斗家（男，B2）：原装的无袖马甲按转职换色（outfit，只染原装帧，穿时装不染）+ 头饰 ================= */
+  // 气功师：青绿色道袍（马甲染青）+ 脖子上一串念珠、身边两颗金色念气珠；念兽·龙虎啸 = 金色电光 + 气场；风雷啸 = 更大的金雷气场
+  nenmaster: {
+    col: '#f0c040', outfit: '#1f8a7c', acc: ['job_nenmaster_beads'],
+    orbit: { img: 'dot', col: '#ffd24a', n: 2, h: 3.4, rx: 22, ry: 6, y: 0.55, spd: 1.1 },
+    motes: { img: 'dot', col: '#ffe890', n: 3, h: 1.6, rise: 24, life: 1.4, a: 0.8 },
+    states: [
+      { id: 'tiger', name: '念兽·龙虎啸', on: jlBuff('fn_tiger'), demo: jlDemo('fn_tiger'), fx: { arcs: { col: '#ffd84a', n: 2 }, aura: { col: '#ffc83a', a: 0.28 } } },
+      { id: 'storm', name: '风雷啸', on: jlBuff('fn_windstorm'), demo: jlDemo('fn_windstorm'), fx: { arcs: { col: '#fff0a0', n: 4 }, aura: { col: '#ffd84a', a: 0.45, haze: 0.3 }, orbit: { img: 'dot', col: '#ffe070', n: 5, h: 4.4, rx: 30, ry: 8, y: 0.5, spd: 2.2 } } },
+    ],
+  },
+  // 散打：白色道服（马甲染白）+ 红头带（长飘带）、脚边零星火星；烈焰焚步 = 全身火焰；霸体护甲 = 金色气场
+  striker: {
+    col: '#ff5a2a', outfit: '#f2eee4', acc: ['job_striker_band'],
+    motes: { img: 'dot', col: '#ff8a3a', n: 3, h: 1.8, rise: 18, life: 0.9, y0: 0.06, a: 0.9 },
+    states: [
+      { id: 'burn', name: '烈焰焚步', on: jlBuff('fs_awaken'), demo: jlDemo('fs_awaken'), fx: { burn: { col: '#ff6a1a', n: 8, h: 30 }, motes: { img: 'dot', col: '#ffb040', n: 7, h: 2.2, rise: 34, life: 1 } } },
+      { id: 'armor', name: '霸体护甲', on: jlBuff('fs_sa'), demo: jlDemo('fs_sa'), fx: { aura: { col: '#ffc83a', a: 0.35, haze: 0.2 } } },
+    ],
+  },
+  // 街霸：原装红马甲（官方同款）+ 鼻梁创可贴、腰上铁链 + 毒药瓶、手腕缠铁链；强化投掷 = 紫色毒气；挑衅 = 红色气场
+  brawler: {
+    col: '#a45ae0', acc: ['job_brawler_plaster'], draw: jlBrawlerGear,
+    states: [
+      { id: 'strong', name: '强化投掷', on: jlBuff('fb_strong'), demo: jlDemo('fb_strong'), fx: { motes: { img: 'bubble', col: ['#a45ae0', '#9ad05a'], n: 4, h: 3.4, rise: 24, life: 1.4, y0: 0.5 }, aura: { col: '#a45ae0', a: 0.25 } } },
+      { id: 'taunt', name: '挑衅', on: jlBuff('fb_taunt'), demo: jlDemo('fb_taunt'), fx: { aura: { col: '#ff4a3a', a: 0.3 } } },
+    ],
+  },
+  // 柔道家：藏青色柔道服（马甲染藏青）+ 白头带（短结）；暴力抓取 = 蓝白冲击气场 + 电光
+  grappler: {
+    col: '#4a6ad8', outfit: '#26386e', acc: ['job_grappler_band'],
+    states: [{ id: 'overgrab', name: '暴力抓取', on: jlBuff('fg_overgrab'), demo: jlDemo('fg_overgrab'), fx: { aura: { col: '#8ac8ff', a: 0.35, haze: 0.2 }, arcs: { col: '#cfe6ff', n: 2 } } }],
   },
   // 小魔女：手上用红线吊着疯疯熊人偶；禁忌诅咒 = 脚下暗红诅咒法阵 + 暗紫气场 + 飘落的蔷薇
   enchantress: {

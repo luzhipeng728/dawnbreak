@@ -33,6 +33,12 @@ HEADS = {
     'summoner_horns': ('mage', 'summoner', 50, f'one curled ram horn (dark purple with glowing violet runes and a gold tip) that grows from the side of the head and curls around the ear, {SIDE}; a single horn only, spiral shape'),
     'witch_glasses': ('mage', 'witch', 44, f'a pair of big round glasses with thick gold frames and a thin gold chain hanging from the temple, {SIDE}: one big round lens rim in front (right) and one thin temple arm going back to the left'),
     'enchantress_bow': ('mage', 'enchantress', 54, f'a big gothic lolita ribbon bow hair ornament in black and crimson with lace edges and one red rose in the knot, two ribbon tails hanging down, {SIDE}, worn at the back of the head'),
+    # 格斗家（B2）：气功师念珠（挂在脖子上）、散打红头带（长飘带）、街霸鼻梁创可贴、柔道家白头带（短结）
+    'nenmaster_beads': ('fighter', 'nenmaster', 58, f'a buddhist prayer-bead necklace (mala) of big round polished dark-brown wooden beads with one larger golden bead and a small golden tassel hanging at the front, {SIDE}: '
+                        'seen from the side as worn around the neck, the loop of beads forms a flat oval tilted down toward the front (right), the tassel hangs from the lowest point at the right'),
+    'striker_band': ('fighter', 'striker', 88, f'a bright red cloth martial-arts headband (hachimaki) {BAND}, plain red with a slightly darker red edge, with a knot at the back (left end) and two VERY long red tails flowing and fluttering far to the left'),
+    'brawler_plaster': ('fighter', 'brawler', 18, f'a small beige adhesive bandage plaster: two short crossed strips with rounded ends and tiny dotted holes, {SIDE}, as stuck on the nose bridge / cheek; one small flat piece only'),
+    'grappler_band': ('fighter', 'grappler', 84, f'a plain white cloth headband (hachimaki) {BAND}, with a thin navy-blue edge line and a small tight knot at the back (left end) with two SHORT stiff white tails pointing back to the left'),
 }
 
 def jobs(ids):

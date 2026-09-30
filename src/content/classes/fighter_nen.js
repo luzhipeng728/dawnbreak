@@ -156,7 +156,7 @@ const FN_ANIMS = {
   fnPalm: fnTl([['f_palm1', 0]], [['idle', 0]]), fnPalm2: fnTl([['f_palm2', 0]], fnTl([['f_palm1', 0]], [['idle', 0]])),
   fnSeal: fnTl([['f_seal', 0]], [['charge', 0]]), fnFocus: fnTl([['f_focus', 0]], [['charge', 0]]), fnAxe: fnTl([['f_axe1', 0], ['f_axe2', 0.1]], [['idle', 0]]),
   fnMed: fnTl([['fn_meditate', 0]], fnTl([['f_seal', 0]], [['charge', 0]])), fnRide: fnTl([['fn_ride', 0]], [['jump3', 0]]),
-  fnStab: fnTl([['fn_stab', 0]], fnTl([['f_palm1', 0]], [['idle', 0]])), fnUp: fnTl([['fn_up', 0]], fnTl([['f_focus', 0]], [['charge', 0]])),
+  fnStab: fnTl([['fn_thrust1', 0], ['fn_thrust2', 0.08]], fnTl([['f_palm1', 0]], [['idle', 0]])), fnUp: fnTl([['f_focus', 0], ['fb_chain1', 0.1]], fnTl([['f_focus', 0]], [['charge', 0]])),
 };
 
 /* ---- 风雷能量（风雷引 fn_absorb；namu 2026-07 现版：[命中获得, 风雷啸开启时施放消耗]）---- */

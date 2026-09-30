@@ -298,7 +298,6 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 - **没开放时不生效**：37 个任务全是 `cls: 'fighter'`；老职业角色（包括做完所有前置的 Lv30）看不到、NPC 身上也没有；`J.ready:false` 时转职窗口接不到。
 - **测试**：`node test/fighter_quests.mjs [inert,data,chain]`（quick.sh g5 / all.sh）。`test/fighter.mjs smoke` 看风振转职窗口前先把 `q_job_fighter_final` 记成已完成（有了转职试炼之后 `jobAvailable` 要它）。
 - **文档**：PLAYER_GUIDE（选职业、导师表、转职表 + 四条任务线、一觉剧情）、dnf_reference §6.2 改成男格斗、SKILLS_OFFICIAL_common §8、SKILLS_OFFICIAL_fighter §8.4、PLAYBOOK。JOB_VISUALS §5（B2）、PVP（B9）、GEAR（二期）留给各自的块。
-||||||| f48af6e
 ### 4.4 B3 已交付（2026-09-30，基础职业；逐技能对照 docs/skills/fighter_base_final.md）
 - **技能**：15 个基础技能全部实装（`f_` id 同预留表），指令 / 冷却（namu 现版）/ MP（DFO Lv1）按官方；规格 `docs/skills/fighter.json` 13 个主动技能，`skillaudit --compare` 不一致 0。
 - **给转职用的接口**：`fNenShot(e, lv, { sc, pierce, dmg, life, speed, hit })`（蓄念炮）；`fighterActsFor(F)` 生成的普攻表里有 `fchain1~4`（疾风追击的追加击），`FIGHTER_ACT_PICK` 换普攻时 `{ ...fighterActsFor(F), atk1: … }` 别丢了它们；`fRing(e, x, y, r, t => hit | null, { skip, zMax })` 圆形范围打击；`fKick(t, o)` 踢腿弧光；`SKILLS.f_knee.act` 可以包一层做柔道家的强化膝击（↑ 跳起 / ↓ 摔地）；蹲伏动作 `links: ['fs_pusher']` 已留好散打铁山靠。
@@ -306,6 +305,14 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 - **引擎**（player.js 两处）：noForce 函数；`downJumpCmd`——以 ↓ 结尾的 C 指令（蹲伏 ↓↓+C）优先于后跳 ↓+C。
 - **美术**：图标 16 个一张表（`art/tools/fighter_base_art.py icons / iconcut`，1 次生图），特效全部复用 fx；人物动作用矢量占位片段（CLIPS.fighter 补了 highkick / hammer / grab / knee / spinkick / stomp / dive / palm / palm2 / seal / focus / quake），B1 出帧后按 SPR_ANIMS.fighter 自动换。
 - **测试**：`node test/fighter.mjs base`（技能放得出 / 打得中 / 冷却 / MP、14 条指令、抓取、疾风追击、取消例外、各技能机制）；`node test/skillshots.mjs fighter` 连拍 `test/shots/skills/fighter-base.jpg`。
+
+### 4.5 B2 已交付（2026-09-30，外观；审图 `test/shots/fighter_looks/*.jpg`，`node test/fighter_looks.mjs [shots] [live]`）
+- **转职动作片段**：4 个转职 53 个片段全部解析到真帧，B1 的 25 个专属帧全部接上（fnStab = fn_thrust1→2、fsMid = fs_kneekick→f_mid2、fsPunch = fs_dashpunch、新 fsRush = fs_rush1/2（焚火逐日拳的连打左右交替）、fsDive = fs_divepunch、fbFan = fb_sidethrow、fbMount = fb_pound1→2、fgFlip = fg_backflip、新 fgPile = fg_piledrive（裂石破天 / 极义震天破抓着人砸地落地）、fnUp = f_focus→fb_chain1）；其余片段本来就是共用姿势（掌推 / 结印 / 下劈 / 抓 / 旋风腿…），列表见测试输出。
+- **转职外观**：`JOB_LOOKS` 4 条（JOB_VISUALS.md 阶段 C）；新字段 `outfit` = 原装马甲换成道服颜色（job_fx.js `JL_OUTFIT_PICK.fighter`，只染原装帧）；头饰 4 件（job_head_art.py：念珠 / 红头带 / 创可贴 / 白头带）。
+- **拳上武器**（avatar.js）：`WEAPON_IMG[k].cover` = 手套 / 拳套 / 爪 / 臂铠整个盖在拳头上（不盖回握拳）；东方棍照剑的握法（盖回握拳像素）。帧里 `side: 'f'` 的远侧拳：武器先整个画在身后，盖拳的再在拳心一圈（`AV_FIST_R` 13，有握拳轮廓时按轮廓大小）上盖一遍 —— 身体挡在远侧拳前面的照样挡着。没有锚点的拳头 = 空拳（多半被身体挡住）；`art/tools/fighter_fists.py` 按绑带颜色补了 14 只露在外面的拳（走路 8 帧的后手、跑 3 帧往后甩的手、刺拳的后手、肘击；`auto: 3`，逐帧看过）。
+- **武器图**：5 类 × 普通 / r2 / r3 / r4 + 6 款武器装扮 = 50 张（`art/tools/fighter_weapons_art.py`：一张表一组 —— 类型家族 4 行、装扮 5 行，共 11 次生图 → 切成 weapons2/<key>.png → `avatar_weapons.py`，新握法 glove / claw / tonfa，大小按拳头高 `FIST_H` / 全长 `LEN`）；图标 `item_w_<类型>` / 流沙 `item_sand_<类型>` / `w_fighter` 从武器图做（`fighter_weapons_art.py icons`，不生图）。具名史诗（`ep_kn/bx/cl/tf/ga_*`，`EP2_CODE` 已登记）是 B8 二期。
+- **时装**：6 套 × 91 帧（`art/tools/fighter_looks_art.py ref / sheets / frames`：时装参考 6 张（原装立绘 + 鬼剑士同套参考）+ 每套 6 张 4×4 表（walk 表的走路格和 react 表的受击格拼成一张 walkreact，省 6 次）；缩放照抄原装同名帧的倍数（B1 第二遍按头归一过），位置按轮廓对齐原装，锚点从原装平移）；时装配件（帽子 / 发饰 / 眼镜）写了 `pos.fighter / fighter@`；路人 `CROWD_CLS` 加格斗家（开放后才上街，马甲换色 3 种，`only` 支持跨 0° 的色相区间）。
+- **生图**：57 次（头饰 4、武器 11、时装参考 6 + 时装表 36），0 失败。
 
 ---
 

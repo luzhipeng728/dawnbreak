@@ -211,12 +211,14 @@ const CROWD_NAMES = ['夜雨·剑魂', '小鱼干', '奶妈别跑', '月下独�
   '林纳斯的锤子', '粉色小枪手', '元素少女', '剑圣预备役', '回家吃饭', '洛兰小霸王', '格拉卡钉子户', '不吃香菜', '疲劳又空了', '强化+12', '赛丽亚的粉丝', '牛头王克星',
   '星落', '南风知我意', '一只喵', '柠檬汽水', '闪避大师', '暴击不要停', '白给少年', '炫纹发射器', '左轮信仰', '冰霜法师', '人偶师', '晨曦'];
 const CROWD_GUILDS = ['破晓', '赫顿夜话', '洛兰互助会', '西海岸渔夫', '', '', '', ''];
-const CROWD_CLS = ['sword', 'gun', 'mage'];
+const CROWD_CLS = ['sword', 'gun', 'mage', 'fighter'];
+const crowdCls = () => CROWD_CLS.filter(c => typeof clsOpen !== 'function' || clsOpen(c));   // 没开放的职业（格斗家 ready:false）不上街
 // 路人的“时装”：只对衣服的主色相区间换色（鬼剑士的藏青外套、神枪手的蓝领巾、魔法师的紫裙），和玩家本人区分开
 const CROWD_LOOKS = {
   sword: [{}, { hue: 140, only: [195, 255] }, { hue: -95, only: [195, 255] }, { sat: 0.12, bright: 1.5, only: [195, 255] }],
   gun: [{}, { hue: 150, only: [190, 250] }, { hue: -100, only: [190, 250] }],
   mage: [{}, { hue: -100, only: [250, 320] }, { hue: 70, only: [250, 320] }, { hue: 150, only: [250, 320] }],
+  fighter: [{}, { hue: 175, only: [335, 372] }, { hue: -135, only: [335, 372] }, { hue: 110, sat: 0.9, only: [335, 372] }],   // 暗红马甲（色相跨 0°）→ 青 / 蓝 / 绿
 };
 const crowdFrames = cls => [`spr/${cls}/idle`, ...Array.from({ length: 8 }, (_, i) => `spr/${cls}/walk${i + 1}`), ...Array.from({ length: 8 }, (_, i) => `spr/${cls}/run${i + 1}`)];
 class Passerby {
@@ -294,7 +296,7 @@ function crowdSize(S) { return S.crowd ?? (S.interior ? 0 : S.kind === 'field' ?
 function spawnCrowd(S) {
   const n = crowdSize(S); if (!n) return;
   const W0 = world;
-  loadArtKeys(CROWD_CLS.flatMap(crowdFrames)).then(() => {
+  loadArtKeys(crowdCls().flatMap(crowdFrames)).then(() => {
     if (world !== W0) return;
     const used = new Set();
     for (let i = 0; i < n; i++) { const w = makePasserby(S, used, (i + 0.5) / n); if (w) world.crowd.push(w); }
@@ -302,7 +304,7 @@ function spawnCrowd(S) {
 }
 // slot：开场时均匀撒在场景里的位置（0~1）；不传 = 从出口 / 地下城门里走出来
 function makePasserby(S, used, slot) {
-  const have = CROWD_CLS.filter(c => SPR_DATA[c] && IMG[`spr/${c}/idle`]); if (!have.length) return null;
+  const have = crowdCls().filter(c => SPR_DATA[c] && IMG[`spr/${c}/idle`]); if (!have.length) return null;
   const cnt = c => world.crowd.filter(w => w.cls === c).length, least = Math.min(...have.map(cnt)), cls = pick(have.filter(c => cnt(c) === least));   // 三个职业轮着来
   let name = pick(CROWD_NAMES); for (let k = 0; k < 6 && used.has(name); k++) name = pick(CROWD_NAMES); used.add(name);
   const looks = CROWD_LOOKS[cls].filter((l, i) => i || !game.player || game.player.cls !== cls);

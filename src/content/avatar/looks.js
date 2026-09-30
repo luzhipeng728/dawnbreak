@@ -32,27 +32,27 @@ const AVATAR_SETS = {
 //   pos[职业 / 职业@ / 职业@套装] = [dx, dy, 转角, 缩放]：配件图中心相对头部锚点的位置（帧像素，站姿朝右时）。
 //   穿整套时装时依次找 职业@套装 → 职业@（任意时装：时装都摘了职业默认的帽子，头部锚点和原装不同）→ 职业；face：脸部配件（脸被挡住的帧不画）
 const AVATAR_ACC = {
-  av_hat_festival: { img: 'festival_hat', pos: { sword: [8, -34, -0.1, 0.72], gun: [8, -34, -0.1, 0.72], mage: [8, -34, -0.1, 0.72] } },
-  av_hair_festival: { img: 'festival_hair', pos: { sword: [-36, 16, 0.25, 0.5], gun: [-36, 16, 0.25, 0.5], mage: [-36, 16, 0.25, 0.5] } },
-  av_face_festival: { img: 'festival_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66] } },
+  av_hat_festival: { img: 'festival_hat', pos: { sword: [8, -34, -0.1, 0.72], gun: [8, -34, -0.1, 0.72], mage: [8, -34, -0.1, 0.72], fighter: [8, -34, -0.1, 0.72], 'fighter@': [8, -34, -0.1, 0.72] } },
+  av_hair_festival: { img: 'festival_hair', pos: { sword: [-36, 16, 0.25, 0.5], gun: [-36, 16, 0.25, 0.5], mage: [-36, 16, 0.25, 0.5], fighter: [-36, 16, 0.25, 0.5], 'fighter@': [-36, 16, 0.25, 0.5] } },
+  av_face_festival: { img: 'festival_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66], fighter: [15, 25, 0, 0.66], 'fighter@': [15, 25, 0, 0.66] } },
   // 春节「锦鲤贺岁」（商城组设计）：醒狮头帽、红绒球流苏发簪、金框红片圆墨镜
-  av_hat_spring: { img: 'spring_hat', pos: { sword: [4, -36, -0.1, 0.56], gun: [4, -36, -0.1, 0.56], mage: [4, -36, -0.1, 0.56] } },
-  av_hair_spring: { img: 'spring_hair', pos: { sword: [-36, 10, 0, 0.7], gun: [-36, 10, 0, 0.7], mage: [-36, 10, 0, 0.7] } },
+  av_hat_spring: { img: 'spring_hat', pos: { sword: [4, -36, -0.1, 0.56], gun: [4, -36, -0.1, 0.56], mage: [4, -36, -0.1, 0.56], fighter: [4, -36, -0.1, 0.56], 'fighter@': [4, -36, -0.1, 0.56] } },
+  av_hair_spring: { img: 'spring_hair', pos: { sword: [-36, 10, 0, 0.7], gun: [-36, 10, 0, 0.7], mage: [-36, 10, 0, 0.7], fighter: [-36, 10, 0, 0.7], 'fighter@': [-36, 10, 0, 0.7] } },
   // 天空套一「天穹圣翼」：悬浮天使光环（两侧小金翼）、白羽发饰；脸部无配件
-  av_hat_sky1: { img: 'sky1_hat', pos: { sword: [4, -50, -0.08, 0.72], gun: [4, -50, -0.08, 0.72], mage: [4, -50, -0.08, 0.72] } },
-  av_hair_sky1: { img: 'sky1_hair', pos: { sword: [-32, -2, 0, 0.7], gun: [-32, -2, 0, 0.7], mage: [-32, -2, 0, 0.7] } },
+  av_hat_sky1: { img: 'sky1_hat', pos: { sword: [4, -50, -0.08, 0.72], gun: [4, -50, -0.08, 0.72], mage: [4, -50, -0.08, 0.72], fighter: [4, -50, -0.08, 0.72], 'fighter@': [4, -50, -0.08, 0.72] } },
+  av_hair_sky1: { img: 'sky1_hair', pos: { sword: [-32, -2, 0, 0.7], gun: [-32, -2, 0, 0.7], mage: [-32, -2, 0, 0.7], fighter: [-32, -2, 0, 0.7], 'fighter@': [-32, -2, 0, 0.7] } },
   // 夏日「晴空海滩」：宽檐草帽（蓝丝带）、扶桑花发夹、粉色心形墨镜
-  av_hat_summer: { img: 'summer_hat', pos: { sword: [4, -24, 0.2, 0.62], gun: [4, -24, 0.2, 0.62], mage: [4, -24, 0.2, 0.62] } },
-  av_hair_summer: { img: 'summer_hair', pos: { sword: [-30, 6, 0, 0.75], gun: [-30, 6, 0, 0.75], mage: [-30, 6, 0, 0.75] } },
-  av_face_summer: { img: 'summer_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66] } },
+  av_hat_summer: { img: 'summer_hat', pos: { sword: [4, -24, 0.2, 0.62], gun: [4, -24, 0.2, 0.62], mage: [4, -24, 0.2, 0.62], fighter: [4, -24, 0.2, 0.62], 'fighter@': [4, -24, 0.2, 0.62] } },
+  av_hair_summer: { img: 'summer_hair', pos: { sword: [-30, 6, 0, 0.75], gun: [-30, 6, 0, 0.75], mage: [-30, 6, 0, 0.75], fighter: [-30, 6, 0, 0.75], 'fighter@': [-30, 6, 0, 0.75] } },
+  av_face_summer: { img: 'summer_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66], fighter: [15, 25, 0, 0.66], 'fighter@': [15, 25, 0, 0.66] } },
   // 天空套二「炎龙之魂」：一对黑红龙角、火焰发饰；脸部无配件
-  av_hat_sky2: { img: 'sky2_hat', pos: { sword: [2, -36, -0.1, 0.62], gun: [2, -36, -0.1, 0.62], mage: [2, -36, -0.1, 0.62] } },
-  av_hair_sky2: { img: 'sky2_hair', pos: { sword: [-30, 0, 0, 0.75], gun: [-30, 0, 0, 0.75], mage: [-30, 0, 0, 0.75] } },
+  av_hat_sky2: { img: 'sky2_hat', pos: { sword: [2, -36, -0.1, 0.62], gun: [2, -36, -0.1, 0.62], mage: [2, -36, -0.1, 0.62], fighter: [2, -36, -0.1, 0.62], 'fighter@': [2, -36, -0.1, 0.62] } },
+  av_hair_sky2: { img: 'sky2_hair', pos: { sword: [-30, 0, 0, 0.75], gun: [-30, 0, 0, 0.75], mage: [-30, 0, 0, 0.75], fighter: [-30, 0, 0, 0.75], 'fighter@': [-30, 0, 0, 0.75] } },
   // 学院「星辉学院」：藏青贝雷帽（金色校徽）、红格纹蝴蝶结、黑框方形眼镜
-  av_hat_academy: { img: 'academy_hat', pos: { sword: [0, -30, -0.12, 0.66], gun: [0, -30, -0.12, 0.66], mage: [0, -30, -0.12, 0.66] } },
-  av_hair_academy: { img: 'academy_hair', pos: { sword: [-32, 14, 0, 0.6], gun: [-32, 14, 0, 0.6], mage: [-32, 14, 0, 0.6] } },
-  av_face_academy: { img: 'academy_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66] } },
-  av_face_spring: { img: 'spring_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66] } },
+  av_hat_academy: { img: 'academy_hat', pos: { sword: [0, -30, -0.12, 0.66], gun: [0, -30, -0.12, 0.66], mage: [0, -30, -0.12, 0.66], fighter: [0, -30, -0.12, 0.66], 'fighter@': [0, -30, -0.12, 0.66] } },
+  av_hair_academy: { img: 'academy_hair', pos: { sword: [-32, 14, 0, 0.6], gun: [-32, 14, 0, 0.6], mage: [-32, 14, 0, 0.6], fighter: [-32, 14, 0, 0.6], 'fighter@': [-32, 14, 0, 0.6] } },
+  av_face_academy: { img: 'academy_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66], fighter: [15, 25, 0, 0.66], 'fighter@': [15, 25, 0, 0.66] } },
+  av_face_spring: { img: 'spring_face', face: 1, pos: { sword: [9, 25, 0, 0.66], gun: [21, 14, 0, 0.66], 'gun@': [24, 9, 0, 0.66], mage: [18, 38, 0, 0.66], 'mage@': [21, 6, 0, 0.66], fighter: [15, 25, 0, 0.66], 'fighter@': [15, 25, 0, 0.66] } },
 };
 const AVATAR_ACC_SCALE = 0.8;   // 配件图比游戏里画的大 1.25 倍（art/tools/avatar_acc.py）
 /* 外观规则（写给玩家看的说明也用这一段）：

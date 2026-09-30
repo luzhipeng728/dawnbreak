@@ -243,6 +243,7 @@ defineRegionQuests('<区域 id>', { chapter: '<篇名> · 支线', scene: '<城�
 - 页面报错、强制放不出来、机制解不开、阶段进不去、机器人打不倒 = 失败；`--strict` 再按 BOSS_PLAN §4.5 验收（招牌 ≥2、预警 0.9~1.6 秒、用时在带内、0 死亡、被击上限、每个阶段 / 机制一场里都触发过），不过的算失败（不带时只提醒）。
 - 输出：`test/shots/boss/<地下城>.jpg` 总览图（每招 / 每个机制 / 每个阶段一格，红底 = 有问题），`<地下城>.json` 数据（各部分分开写）；`node test/boss.mjs table` 把所有 json 拼成基线表。
 - P0 合进来以后自动用上 `monForceSkill(m, id 或 spec)`、`bossPhaseSet(m, i)`、`MS_EVENTS`（有就记进每招 / coop 的对比里）。
+- 什么都不写 = 快速样本（`graca,skasa_nest data,phases,skills,mechs`，约 40 秒）；全量一定写 `all`。整个测试 nice 10 跑；`all` / 区域 / 超过 3 个图 / `bot` / `coop` 会先拿全局测试锁（`$TMPDIR/dawnbreak-tests.lock`，和 quick.sh、`test/affected.mjs` 同一把，别的套件在跑就排队；在它们里面跑时不重复拿）。电脑忙的时候全量只跑一个进程，别再分几份并行。
 
 查重：`node tools/boss_inventory.mjs [--baseline] [--no-write]` 从代码重新生成 `docs/boss_inventory.json`（人工整理的官方对照 / 目标原样保留），报：机制组合完全相同、招式相似度 ≥ 0.7、共用底图没写 `variantOf`（或换色体型差 < 15%）、招牌 < 2（报错，退出 1；`--baseline` 只报告）。
 

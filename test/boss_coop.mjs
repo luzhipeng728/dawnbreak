@@ -141,3 +141,10 @@ export async function runCoop(DGS, { OUT, readJ, strict = process.argv.includes(
   await close(); await srv.stop();
   return result().fails - f0;
 }
+
+// 单独跑（test/affected.mjs 改了本文件时）：node test/boss_coop.mjs [地下城,...]，默认只对照格拉卡一个图（约 1 分钟）
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const { spawnSync } = await import('node:child_process');
+  const r = spawnSync(process.execPath, [new URL('./boss.mjs', import.meta.url).pathname, process.argv[2] || 'graca', 'coop'], { stdio: 'inherit' });
+  process.exit(r.status ?? 1);
+}

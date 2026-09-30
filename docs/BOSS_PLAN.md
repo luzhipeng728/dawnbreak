@@ -499,7 +499,7 @@ defineBossKit('tauKing', { mechs: [{ use: 'groggy', max: 80 }],
 6. **每个阶段、每个机制在一场里至少触发一次**（`MS_STATS`）；领主能打死；机器人能按机制打（物件标了 `botSkip`）。`--strict` 时机器人那一场逐项查。
 
 ### 4.5.1 基线（P0-T，2026-09-30，`e294c1d` 上的现有 59 个领主）
-怎么重跑：`BOTCLS=all node test/boss.mjs all`（分三个进程并行约 55 分钟；只跑 `data,phases,skills,mechs` 约 20 分钟），再 `node test/boss.mjs table` 出下表；总览图 `test/shots/boss/<图>.jpg`；查重 `node tools/boss_inventory.mjs --baseline`。
+怎么重跑：`BOTCLS=all node test/boss.mjs all`（这次基线是分三个进程并行跑的，约 55 分钟；用户要求电脑忙时只开一个进程，单进程约 2.5 小时，会自动拿全局测试锁排队；只跑 `data,phases,skills,mechs` 约 20 分钟），再 `node test/boss.mjs table` 出下表；总览图 `test/shots/boss/<图>.jpg`；查重 `node tools/boss_inventory.mjs --baseline`。
 
 **结论**
 - 用时（4 个职业平均）：普通 51 个中位 21 秒（P10 14、P25 17、P75 28、P90 38）；攻坚 8 个中位 41 秒（P25 36、P75 42）。最快：幽暗密林 牛头巨兽 6 秒、幽暗密林深处 暗咒猫妖 12 秒，第二脊椎 / 洛兰 / 冰霜幽暗密林 / 树精丛林 14 秒；最慢：希洛克（无形棺柩 118、痛苦之门 114、知性之门 76、法则之门 75 秒），其次是攻坚 GT-9600 42、艾丽丝 43 和远古两张 41 秒。

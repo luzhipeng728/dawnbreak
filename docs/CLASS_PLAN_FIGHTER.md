@@ -344,9 +344,9 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 
 ---
 
-## 6. 上线清单（launch checklist，B9 2026-09-30；开关由主线程决定，B9 没有改 `ready`）
+## 6. 上线清单（launch checklist，B9 2026-09-30；主线程已在 27fea3a 开放 `ready:true`，B9 没有改开关）
 
-开放 = 删掉 `CLASSES.fighter.ready: false` 和 4 个转职各自的 `ready: false`（fighter.js / fighter_nen / _striker / _brawler / _grappler.js）。**服务端（server/modules/arena.js 的 AI 池）要先于或和客户端一起部署**：老服务端不认 `pool`，照旧抽 18 种（不会出错，只是排不到格斗家 AI）。
+开放 = 删掉 `CLASSES.fighter.ready: false` 和 4 个转职各自的 `ready: false`（已做）。**服务端（server/modules/arena.js 的 AI 池）要先于或和客户端一起部署**：老服务端不认 `pool`，照旧抽 18 种（不会出错，只是排不到格斗家 AI）。
 
 ### 6.1 已验证（`?fighter=1`，测试见 §4.6）
 | 项 | 结果 | 测试 |

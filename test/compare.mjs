@@ -12,7 +12,8 @@ for (const cls of (await openLists()).classes) {   // 已开放的职业（读 C
     testLoadout(10);
     const other = cls === 'sword' ? 'gun' : 'sword';
     // 高品级的随机武器可能是别的职业的（和官方一样会掉别职业装备），测试用的武器只取本职业能用的
-    const mk = (slot, lvl, rar, c) => { for (let i = 0; i < 80; i++) { const it = makeEquip(slot, lvl, rar, c); if (slot !== 'weapon' || !it.cls || it.cls === c) return it; } return makeEquip(slot, lvl, rar, c); };
+    // 本职业的武器还要当前转职能装（格斗家的拳套只有散打能装）
+    const mk = (slot, lvl, rar, c) => { for (let i = 0; i < 80; i++) { const it = makeEquip(slot, lvl, rar, c); if (slot !== 'weapon' || !it.cls || (it.cls === c && (c !== cls || inv.canWear(it, true) === true))) return it; } return makeEquip(slot, lvl, rar, c); };
     const better = mk('weapon', 14, 4, cls), worse = mk('weapon', 1, 0, cls), otherW = mk('weapon', 10, 3, other); otherW.cls = other;   // 随机名品可能不带职业，这里固定成别的职业
     const topBetter = mk('top', 15, 4), topWorse = mk('top', 1, 0), broken = mk('weapon', 20, 4, cls); broken.durMax = broken.durMax || 30; broken.dur = 0;
     inv.items = [better, worse, otherW, topBetter, topWorse, broken];

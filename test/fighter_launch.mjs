@@ -2,8 +2,8 @@
 //   1) 选角界面建一个格斗家（真实点按钮），再用存档接口建另外 3 个；每个都升到 30 级 → 做完转职试炼 → doJobChange 转成 4 个方向之一 → 学技能 / 三次觉醒
 //   2) 三个不同转职（气功师 / 街霸 / 柔道家）用机器人各打通一次地下城
 //   3) 散打用自己的技能栏打一局决斗场（对手 AI，公正决斗）
-//   4) 存档往返：刷新后 4 个角色的职业 / 转职 / 等级 / 技能 / 技能栏原样；不带 ?fighter=1（没开放）时角色原样保留、选角显示“需要更新”、写回存档不丢不改
-//   5) 选角界面：4 张格斗家卡片显示转职名；新建角色里格斗家卡片（没开放时显示“即将开放”）
+//   4) 存档往返：刷新后 4 个角色的职业 / 转职 / 等级 / 技能 / 技能栏原样；没开放的版本（模拟 ready:false）读到格斗家角色原样保留、选角显示“需要更新”、写回存档不丢不改
+//   5) 选角界面：4 张格斗家卡片显示转职名；新建角色里格斗家卡片（没开放时显示“即将开放”）；现版不带 ?fighter=1 也能选
 // 用法：node test/fighter_launch.mjs [地下城=lorien]（约 1~2 分钟；截图 test/shots/fighter_launch/）
 import fs from 'node:fs';
 import { launch, URL_BASE } from './lib.mjs';
@@ -80,8 +80,9 @@ try {
   await open(); const A = await pick();
   ok(A.length === 4 && A.every((s, i) => JSON.parse(s).job === JOBS[i] && JSON.parse(s).lvl === 30), '刷新后：4 个格斗家的转职 / 等级都在', A.map(s => JSON.parse(s).job));
   const raw0 = await page.evaluate(() => localStorage.getItem(save.key));
-  await open(''); const B = await page.evaluate(() => { save.loadAll(); return { n: save.chars.length, open: save.chars.map(c => charOpen(c)), ready: clsOpen('fighter') }; });
-  ok(B.n === 4 && B.open.every(v => !v) && !B.ready, '不带 ?fighter=1（格斗家没开放）：角色原样保留，但不能进（charOpen = false）', B);
+  // 模拟上线前的老页面（格斗家 ready:false；现在已经开放了，这一段用来确认“没开放的版本读到格斗家角色”不丢不改）
+  await open(''); const B = await page.evaluate(() => { window.__closeFighter = () => { CLASSES.fighter.ready = false; for (const J of Object.values(CLASSES.fighter.jobs)) J.ready = false; }; __closeFighter(); save.loadAll(); return { n: save.chars.length, open: save.chars.map(c => charOpen(c)), ready: clsOpen('fighter') }; });
+  ok(B.n === 4 && B.open.every(v => !v) && !B.ready, '没开放的版本（模拟 ready:false）：角色原样保留，但不能进（charOpen = false）', B);
   await page.evaluate(() => { while (menus.stack.length) menus.close(menus.stack[menus.stack.length - 1]); menus.open('charselect'); });
   await until(() => document.querySelectorAll('#charsel .cslot.off').length === 4, null, 8000);
   const csOff = await page.evaluate(() => [...document.querySelectorAll('#charsel .cslot.off .job')].map(e => e.textContent));
@@ -95,6 +96,8 @@ try {
   const raw1 = await page.evaluate(() => localStorage.getItem(save.key));
   const strip = r => { const o = JSON.parse(r); return JSON.stringify(o.chars.map(c => ({ cls: c.cls, job: c.job, lvl: c.lvl, name: c.name, skillBar: c.skillBar, skillLv: c.skillLv, flags: c.flags, equip: c.inv && c.inv.equip }))); };
   ok(strip(raw1) === strip(raw0), '没开放的版本写回存档：格斗家角色的数据一个字不改');
+  await open(''); const live = await page.evaluate(() => { save.loadAll(); return { open: clsOpen('fighter'), chars: save.chars.map(c => charOpen(c)) }; });
+  ok(live.open && live.chars.every(Boolean), '现版（ready:true，不带 ?fighter=1）：格斗家开放、4 个角色都能进', live);
   await open(); const C = await pick();
   ok(JSON.stringify(C) === JSON.stringify(A), '再打开 ?fighter=1：和写回前完全一样（职业 / 转职 / 等级 / 技能 / 技能栏 / 觉醒）');
   // ---- 5) 选角界面（开放时）----

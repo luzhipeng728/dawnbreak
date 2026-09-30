@@ -67,6 +67,7 @@ const RULES = [
   [/^src\/net\/(account|net|social|town)\.js$|^server\/(core|lib|index)/, [srvT('api'), nodeT('net_account')]],
   [/^server\/modules\/(mail|social|gm|auction)\.js$/, [srvT('api')]],
   [/^src\/game\/raid_core\.js$|^server\/modules\/raid\.js$|^server\/core\/party\.js$|^tools\/item_catalog\.mjs$/, [srvT('raid')]],
+  [/^src\/(net|ui)\/raid\.js$|^src\/game\/raid_core\.js$|^server\/modules\/raid\.js$|^src\/net\/coop\.js$/, [nodeT('raid_ui'), nodeT('mp_raid')]],
   [/^server\/(modules\/admin|admin\/)|^src\/ui\/social\/gm\.js$/, [srvT('admin'), nodeT('admin_console')]],
   [/^src\/game\/(mon_skills|mon_skills_ext|region)\.js$|^src\/content\/regions\/siroco/, [T('region_siroco', 'test/region.mjs', 'siroco', 'data,skills,mechs')]],
   [/^src\/content\/abyss\.js$/, [T('region_abyss', 'test/region.mjs', 'siroco', 'abyss'), T('mp_abyss', 'test/mp_abyss.mjs', 'A')]],

@@ -434,9 +434,11 @@ function repairAll(verbose, list = repairList()) {
    失败：+3~+9 失败降 1 级；武器 +10 失败降为 +7、+11 失败降为 +8、+12 以上失败破碎；防具 / 首饰 / 特殊装备 +10 以上失败破碎
    强化保护券：本来会破碎时装备不碎，但强化等级归零（券被消耗）
    加成：武器 → 攻击力、防具 → 物理防御、首饰 → 魔法防御、特殊装备 → 四维 */
-const ENH_MAX = 16;
+const ENH_MAX = Infinity;   // 2026-10-01 用户：强化 / 增幅不设上限，越高越强，各凭本事（+16 以后成功率继续下降，最低 1%）
 const ENH_RATE = [1, 1, 1, 0.95, 0.9, 0.8, 0.75, 0.621, 0.537, 0.414, 0.339, 0.28, 0.207, 0.173, 0.136, 0.101];
-const enhBonus = e => e <= 0 ? 0 : [0, 0.03, 0.06, 0.1, 0.14, 0.19, 0.25, 0.32, 0.4, 0.5, 0.62, 0.8, 1.0, 1.25, 1.55, 1.9, 2.3][Math.min(ENH_MAX, e)];
+const ENH_BONUS = [0, 0.03, 0.06, 0.1, 0.14, 0.19, 0.25, 0.32, 0.4, 0.5, 0.62, 0.8, 1.0, 1.25, 1.55, 1.9, 2.3];
+const enhBonus = e => e <= 0 ? 0 : e < ENH_BONUS.length ? ENH_BONUS[e] : 2.3 * Math.pow(1.18, e - 16);   // +16 以后每级 ×1.18
+const enhRate = e => e < ENH_RATE.length ? ENH_RATE[e] : Math.max(0.01, 0.101 * Math.pow(0.85, e - 15));   // 冲 +N+1 的成功率
 const canEnhance = it => it && it.kind === 'equip' && it.slot !== 'title' && !isAvatar(it) && !it.dim && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);   // 带异次元属性（增幅）的装备不能再强化（game/gear.js）
 const enhCost = it => ({ gold: Math.round((it.lvl * 24 + 60) * Math.pow(1.42, it.enh) * (1 + it.rar * 0.3)), crystal: Math.max(1, Math.round((it.lvl + 4) * 0.35 * Math.pow(1.25, it.enh))) });
 // 失败后的结果：{ lvl（失败后的强化等级）, broken }
@@ -468,7 +470,7 @@ function tryEnhance(it, useGuard, rnd01 = Math.random()) {
   game.gold -= cost.gold; inv.take('crystal', cost.crystal);
   const from = it.enh;
   let res;
-  if (rnd01 < ENH_RATE[it.enh]) { it.enh++; res = { ok: true, from, lvl: it.enh }; }
+  if (rnd01 < enhRate(it.enh)) { it.enh++; res = { ok: true, from, lvl: it.enh }; }
   else {
     const f = enhFailResult(it);
     if (f.broken && useGuard && inv.take('guard', 1)) { it.enh = 0; res = { ok: false, from, lvl: 0, guard: true }; }

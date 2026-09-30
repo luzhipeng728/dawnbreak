@@ -1,6 +1,6 @@
 {
  "generatedFrom": "tools/boss_inventory.mjs（vm 里跑 src/）",
- "generatedAt": "2026-09-30T15:39:48.991Z",
+ "generatedAt": "2026-09-30T17:25:10.146Z",
  "regenerate": "node tools/boss_inventory.mjs",
  "summary": {
   "dungeons": 69,
@@ -82,52 +82,55 @@
    ]
   },
   "regionBossSkillUse": {
-   "aoe": 34,
    "swipe": 33,
-   "summon": 24,
-   "rain": 23,
+   "aoe": 32,
+   "summon": 22,
+   "rain": 20,
    "dash": 18,
    "shot": 15,
-   "blink": 14,
-   "seq": 11,
-   "laser": 9,
+   "blink": 13,
+   "seq": 10,
+   "laser": 8,
    "guard": 4,
    "buff": 3,
    "grab": 3,
-   "explode": 1
+   "mark": 3,
+   "cone": 2,
+   "plant": 1,
+   "pull": 1,
+   "lanes": 1,
+   "explode": 1,
+   "pool": 1
   },
   "regionBossMechUse": {
    "groggy": 37,
-   "hazard": 16,
-   "safezone": 15,
-   "invuln": 13,
+   "hazard": 14,
+   "safezone": 14,
    "enrage": 12,
-   "shield": 8,
+   "invuln": 10,
    "clones": 8,
+   "shield": 7,
    "tether": 4,
-   "element": 3
+   "element": 3,
+   "form": 2,
+   "stagger": 2,
+   "stance": 2,
+   "arena": 1
   },
   "identicalMechSets": {
    "groggy+hazard": [
     "shallow_haunt",
     "lik_well",
-    "gent_outskirts",
-    "gent_east",
     "sea_pirates"
    ],
    "groggy+invuln": [
     "spider_cave",
-    "fallen_bandits",
     "bilmark",
     "wailing_cave"
    ],
    "groggy+safezone": [
     "darkelf_tomb",
     "white_ruins"
-   ],
-   "enrage+groggy+hazard+invuln+safezone": [
-    "neipera",
-    "skasa_nest"
    ],
    "groggy+shield": [
     "frozen_heart",
@@ -160,63 +163,13 @@
    ],
    [
     "neipera",
-    "skasa_nest",
-    0.82
-   ],
-   [
-    "fallen_bandits",
-    "plague_source",
-    0.78
-   ],
-   [
-    "neipera",
     "grand_fire",
-    0.73
-   ],
-   [
-    "skasa_nest",
-    "grand_fire",
-    0.73
-   ],
-   [
-    "hamelin",
-    "iris_raid",
-    0.73
-   ],
-   [
-    "gent_outskirts",
-    "kartel_origin",
     0.73
    ],
    [
     "kartel_origin",
     "wit_gate",
     0.73
-   ],
-   [
-    "darkelf_tomb",
-    "skasa_nest",
-    0.7
-   ],
-   [
-    "fallen_bandits",
-    "grand_fire",
-    0.7
-   ],
-   [
-    "gent_outskirts",
-    "sea_pirates",
-    0.7
-   ],
-   [
-    "gent_south",
-    "plague_source",
-    0.7
-   ],
-   [
-    "gent_south",
-    "old_winter",
-    0.7
    ],
    [
     "grand_fire",
@@ -269,12 +222,12 @@
    "white_ruins": 0,
    "bwanga_dojo": 0,
    "ice_palace": 0,
-   "skasa_nest": 0,
-   "fallen_bandits": 0,
-   "hamelin": 0,
-   "gent_outskirts": 0,
-   "gent_east": 0,
-   "gent_south": 0,
+   "skasa_nest": 6,
+   "fallen_bandits": 4,
+   "hamelin": 2,
+   "gent_outskirts": 3,
+   "gent_east": 3,
+   "gent_south": 3,
    "bilmark": 1,
    "wailing_cave": 1,
    "sea_pirates": 0,
@@ -332,12 +285,6 @@
    "white_ruins（塞斯奇）招牌 0 个 < 2",
    "bwanga_dojo（布万加）招牌 0 个 < 2",
    "ice_palace（冰雪女王洛丝）招牌 0 个 < 2",
-   "skasa_nest（冰龙斯卡萨）招牌 0 个 < 2",
-   "fallen_bandits（犬使魔震）招牌 0 个 < 2",
-   "hamelin（魔笛使者皮特）招牌 0 个 < 2",
-   "gent_outskirts（纵火犯本汀克）招牌 0 个 < 2",
-   "gent_east（机动队长苏雷德）招牌 0 个 < 2",
-   "gent_south（GT-9600）招牌 0 个 < 2",
    "bilmark（牛头械王）招牌 1 个 < 2：hook:mechKing",
    "wailing_cave（虫王戮蛊）招牌 1 个 < 2：hook:bugKing",
    "sea_pirates（黑鳞莫贝尼）招牌 0 个 < 2",
@@ -358,28 +305,17 @@
    "siroco_coffin（潜行者 希洛克）招牌 1 个 < 2：hook:siroco"
   ],
   "warns": [
-   "机制组合完全相同（groggy+hazard）：shallow_haunt、lik_well、gent_outskirts、gent_east、sea_pirates",
-   "机制组合完全相同（groggy+invuln）：spider_cave、fallen_bandits、bilmark、wailing_cave",
+   "机制组合完全相同（groggy+hazard）：shallow_haunt、lik_well、sea_pirates",
+   "机制组合完全相同（groggy+invuln）：spider_cave、bilmark、wailing_cave",
    "机制组合完全相同（groggy+safezone）：darkelf_tomb、white_ruins",
-   "机制组合完全相同（enrage+groggy+hazard+invuln+safezone）：neipera、skasa_nest",
    "机制组合完全相同（groggy+shield）：frozen_heart、law_gate",
    "机制组合完全相同（groggy+hazard+shield）：west_line、secret_zone",
    "机制组合完全相同（groggy+invuln+safezone）：plague_source、holy_war",
    "招式相似度 0.88 ≥ 0.7：lava_cave ↔ lik_well",
    "招式相似度 0.88 ≥ 0.7：plague_source ↔ holy_war",
    "招式相似度 0.86 ≥ 0.7：frozen_heart ↔ law_gate",
-   "招式相似度 0.82 ≥ 0.7：neipera ↔ skasa_nest",
-   "招式相似度 0.78 ≥ 0.7：fallen_bandits ↔ plague_source",
    "招式相似度 0.73 ≥ 0.7：neipera ↔ grand_fire",
-   "招式相似度 0.73 ≥ 0.7：skasa_nest ↔ grand_fire",
-   "招式相似度 0.73 ≥ 0.7：hamelin ↔ iris_raid",
-   "招式相似度 0.73 ≥ 0.7：gent_outskirts ↔ kartel_origin",
    "招式相似度 0.73 ≥ 0.7：kartel_origin ↔ wit_gate",
-   "招式相似度 0.7 ≥ 0.7：darkelf_tomb ↔ skasa_nest",
-   "招式相似度 0.7 ≥ 0.7：fallen_bandits ↔ grand_fire",
-   "招式相似度 0.7 ≥ 0.7：gent_outskirts ↔ sea_pirates",
-   "招式相似度 0.7 ≥ 0.7：gent_south ↔ plague_source",
-   "招式相似度 0.7 ≥ 0.7：gent_south ↔ old_winter",
    "招式相似度 0.7 ≥ 0.7：grand_fire ↔ plague_source",
    "底图 tau 和 tauSoldier（精英） 共用，dark_woods（tauBeast）没写 variantOf",
    "底图 catKing 和 venom_ruins 共用，dark_woods_deep（catCurse）没写 variantOf",
@@ -389,7 +325,6 @@
    "底图 snBantu 和 avalancheRabina（精英） 共用，ridge（ruug）没写 variantOf",
    "底图 snYeti 和 frostApe（精英） 共用，white_ruins（seski）没写 variantOf",
    "底图 snSkasa 和 skasa_nest 共用，old_winter（youngSkasa）没写 variantOf",
-   "底图 nmDogman 和 dogmanHado（精英） 共用，fallen_bandits（mozhen）没写 variantOf",
    "底图 wcKain 和 kain（精英） 共用，old_wail（kainPast）没写 variantOf"
   ]
  },
@@ -3714,8 +3649,6 @@
    "dup": {
     "sameMechSet": [
      "lik_well",
-     "gent_outskirts",
-     "gent_east",
      "sea_pirates"
     ],
     "sameSkillSet": [],
@@ -3892,19 +3825,18 @@
    },
    "dup": {
     "sameMechSet": [
-     "fallen_bandits",
      "bilmark",
      "wailing_cave"
     ],
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "fallen_bandits",
+      "plague_source",
       0.67
      ],
      [
-      "plague_source",
-      0.67
+      "frozen_heart",
+      0.63
      ]
     ]
    }
@@ -4067,16 +3999,14 @@
     "sameMechSet": [
      "white_ruins"
     ],
-    "sameSkillSet": [
-     "skasa_nest"
-    ],
+    "sameSkillSet": [],
     "mostSimilar": [
      [
-      "skasa_nest",
-      0.7
+      "heis",
+      0.67
      ],
      [
-      "heis",
+      "plague_source",
       0.67
      ]
     ]
@@ -4430,11 +4360,11 @@
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "gent_south",
-      0.64
+      "west_line",
+      0.55
      ],
      [
-      "west_line",
+      "old_winter",
       0.55
      ]
     ]
@@ -4779,21 +4709,19 @@
     "rename": null
    },
    "dup": {
-    "sameMechSet": [
-     "skasa_nest"
-    ],
+    "sameMechSet": [],
     "sameSkillSet": [
      "wailing_cave",
      "law_gate"
     ],
     "mostSimilar": [
      [
-      "skasa_nest",
-      0.82
-     ],
-     [
       "grand_fire",
       0.73
+     ],
+     [
+      "plague_source",
+      0.64
      ]
     ]
    }
@@ -5126,8 +5054,6 @@
    "dup": {
     "sameMechSet": [
      "shallow_haunt",
-     "gent_outskirts",
-     "gent_east",
      "sea_pirates"
     ],
     "sameSkillSet": [
@@ -5862,9 +5788,9 @@
     "elem": "ice",
     "tier": "raid",
     "summons": [
-     "hex",
+     "skasaEgg",
      "babySkasa",
-     "debris",
+     "hex",
      "shrink"
     ],
     "attacks": [],
@@ -5874,30 +5800,31 @@
       "enterMechs": [],
       "summon": null,
       "skills": [
+       "aoe/circle@sigA",
        "swipe",
-       "laser",
-       "rain/hex",
-       "summon:babySkasa"
+       "cone@sigB",
+       "pull",
+       "plant"
       ]
      },
      {
       "at": 0.7,
       "enterMechs": [
-       "invuln"
+       "stagger"
       ],
       "summon": null,
       "skills": [
-       "aoe/circle"
+       "mech:stagger"
       ]
      },
      {
       "at": 0.45,
       "enterMechs": [
-       "hazard"
+       "form"
       ],
       "summon": null,
       "skills": [
-       "mech:safezone"
+       "mech:form"
       ]
      },
      {
@@ -5916,44 +5843,71 @@
     ],
     "skillUses": [
      "aoe",
-     "laser",
-     "rain",
-     "summon",
+     "cone",
+     "plant",
+     "pull",
      "swipe"
     ],
     "mechSet": [
      "enrage",
+     "form",
      "groggy",
      "hazard",
-     "invuln",
-     "safezone"
+     "stagger"
     ],
-    "moves": 6,
-    "sig": [],
+    "moves": 8,
+    "sig": [
+     {
+      "name": "前爪拍地——跳起来！",
+      "why": "clip:sigA"
+     },
+     {
+      "name": "极寒龙息——绕到侧面！",
+      "why": "clip:sigB"
+     },
+     {
+      "name": "吹气！",
+      "why": "pull"
+     },
+     {
+      "name": "斯卡萨产下了龙蛋——在孵化前打碎！",
+      "why": "plant"
+     },
+     {
+      "name": "绝对零度龙息蓄力中——打断它！",
+      "why": "stagger"
+     },
+     {
+      "name": "斯卡萨飞上了天空——躲开冰雨！",
+      "why": "form"
+     }
+    ],
     "tokens": [
      "m:enrage",
+     "m:form",
      "m:groggy",
      "m:hazard",
-     "m:invuln",
-     "m:safezone",
+     "m:stagger",
      "s:aoe",
-     "s:laser",
-     "s:rain",
-     "s:summon",
-     "s:swipe"
+     "s:cone",
+     "s:plant",
+     "s:pull",
+     "s:swipe",
+     "x:前爪拍地——跳起来！",
+     "x:极寒龙息——绕到侧面！"
     ],
     "windups": [
      {
-      "skill": "laser",
-      "windup": 1.2
+      "skill": "aoe/circle@sigA",
+      "windup": 1
      },
      {
-      "skill": "rain/hex",
-      "windup": 1.1
+      "skill": "cone@sigB",
+      "windup": 1
      },
      {
-      "skill": "aoe/circle",
-      "windup": 1.4
+      "skill": "pull",
+      "windup": 0.9
      }
     ],
     "artSharedWith": [
@@ -6013,20 +5967,16 @@
     "rename": null
    },
    "dup": {
-    "sameMechSet": [
-     "neipera"
-    ],
-    "sameSkillSet": [
-     "darkelf_tomb"
-    ],
+    "sameMechSet": [],
+    "sameSkillSet": [],
     "mostSimilar": [
      [
-      "neipera",
-      0.82
+      "grand_fire",
+      0.31
      ],
      [
-      "grand_fire",
-      0.73
+      "neipera",
+      0.29
      ]
     ]
    }
@@ -6047,7 +5997,7 @@
    "abyss": false,
    "boss": {
     "kind": "mozhen",
-    "name": "犬使魔震",
+    "name": "犬使摩震",
     "lvl": 46,
     "engine": "region-spec",
     "region": "gent",
@@ -6060,7 +6010,7 @@
       "bright": 0.7
      }
     },
-    "variantOf": null,
+    "variantOf": "dogmanHado",
     "scale": 1.3,
     "h": 130,
     "visualH": 169,
@@ -6068,9 +6018,9 @@
     "elem": "dark",
     "tier": null,
     "summons": [
+     "runner",
      "quakeHound",
-     "enrage",
-     "hex"
+     "enrage"
     ],
     "attacks": [],
     "phases": [
@@ -6081,19 +6031,20 @@
       "skills": [
        "swipe",
        "dash",
+       "swipe",
+       "lanes@sigA",
        "aoe/ring",
        "summon:quakeHound"
       ]
      },
      {
       "at": 0.5,
-      "enterMechs": [
-       "invuln"
-      ],
+      "enterMechs": [],
       "summon": null,
       "skills": [
        "buff",
-       "rain/hex"
+       "mark@sigB",
+       "mech:stagger"
       ]
      }
     ],
@@ -6105,38 +6056,68 @@
      "aoe",
      "buff",
      "dash",
-     "rain",
+     "lanes",
+     "mark",
      "summon",
      "swipe"
     ],
     "mechSet": [
      "groggy",
-     "invuln"
+     "stagger"
     ],
-    "moves": 6,
-    "sig": [],
+    "moves": 9,
+    "sig": [
+     {
+      "name": "猎犬群突击——找空道！",
+      "why": "clip:sigA"
+     },
+     {
+      "name": "獠牙标记——离开队友！",
+      "why": "clip:sigB"
+     },
+     {
+      "name": "摩震蓄力了——打断它！",
+      "why": "stagger"
+     },
+     {
+      "name": "trait.substitute",
+      "why": "trait"
+     }
+    ],
     "tokens": [
      "m:groggy",
-     "m:invuln",
+     "m:stagger",
      "s:aoe",
      "s:buff",
      "s:dash",
-     "s:rain",
+     "s:lanes",
+     "s:mark",
      "s:summon",
-     "s:swipe"
+     "s:swipe",
+     "t:substitute",
+     "x:猎犬群突击——找空道！",
+     "x:獠牙标记——离开队友！"
     ],
     "windups": [
      {
+      "skill": "swipe",
+      "windup": 0.9
+     },
+     {
       "skill": "dash",
-      "windup": 0.6
+      "windup": 0.9
+     },
+     {
+      "skill": "swipe",
+      "windup": 0.9
+     },
+     {
+      "skill": "lanes@sigA",
+      "windup": 1.1
      },
      {
       "skill": "aoe/ring",
       "windup": 1.2
-     },
-     {
-      "skill": "rain/hex",
-      "windup": 1.1
      }
     ],
     "artSharedWith": [
@@ -6195,20 +6176,16 @@
     "rename": "犬使魔震 → 犬使摩震"
    },
    "dup": {
-    "sameMechSet": [
-     "spider_cave",
-     "bilmark",
-     "wailing_cave"
-    ],
+    "sameMechSet": [],
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "plague_source",
-      0.78
+      "shallow_haunt",
+      0.36
      ],
      [
-      "grand_fire",
-      0.7
+      "spider_cave",
+      0.36
      ]
     ]
    }
@@ -6247,7 +6224,7 @@
     "tier": null,
     "summons": [
      "giantRat",
-     "maneater",
+     "runner",
      "piperShade"
     ],
     "attacks": [],
@@ -6258,16 +6235,14 @@
       "summon": null,
       "skills": [
        "shot/homing",
-       "summon:giantRat",
-       "aoe/ring",
-       "blink"
+       "mark@sigB",
+       "blink",
+       "mech:stance"
       ]
      },
      {
       "at": 0.6,
-      "enterMechs": [
-       "invuln"
-      ],
+      "enterMechs": [],
       "summon": null,
       "skills": [
        "mech:clones"
@@ -6287,35 +6262,38 @@
      "groggy"
     ],
     "skillUses": [
-     "aoe",
      "blink",
-     "shot",
-     "summon"
+     "mark",
+     "shot"
     ],
     "mechSet": [
      "clones",
      "enrage",
      "groggy",
-     "invuln"
+     "stance"
     ],
-    "moves": 5,
-    "sig": [],
+    "moves": 9,
+    "sig": [
+     {
+      "name": "倒数攻击——散开！",
+      "why": "clip:sigB"
+     },
+     {
+      "name": "stance",
+      "why": "stance"
+     }
+    ],
     "tokens": [
      "m:clones",
      "m:enrage",
      "m:groggy",
-     "m:invuln",
-     "s:aoe",
+     "m:stance",
      "s:blink",
+     "s:mark",
      "s:shot",
-     "s:summon"
+     "x:倒数攻击——散开！"
     ],
-    "windups": [
-     {
-      "skill": "aoe/ring",
-      "windup": 1.1
-     }
-    ],
+    "windups": [],
     "artSharedWith": []
    },
    "elite": [
@@ -6379,12 +6357,12 @@
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "iris_raid",
-      0.73
+      "wit_gate",
+      0.42
      ],
      [
-      "wit_gate",
-      0.55
+      "iris_raid",
+      0.36
      ]
     ]
    }
@@ -6422,8 +6400,7 @@
     "elem": "fire",
     "tier": null,
     "summons": [
-     "hex",
-     "fire"
+     "tiles"
     ],
     "attacks": [],
     "phases": [
@@ -6432,16 +6409,17 @@
       "enterMechs": [],
       "summon": null,
       "skills": [
-       "shot/arc",
        "aoe/circle",
-       "seq[blink,rain/hex]",
+       "pool",
+       "cone@sigB",
+       "shot/arc",
        "swipe"
       ]
      },
      {
       "at": 0.5,
       "enterMechs": [
-       "hazard"
+       "arena"
       ],
       "summon": null,
       "skills": [
@@ -6455,38 +6433,58 @@
     ],
     "skillUses": [
      "aoe",
-     "blink",
+     "cone",
      "explode",
-     "rain",
-     "seq",
+     "pool",
      "shot",
      "swipe"
     ],
     "mechSet": [
-     "groggy",
-     "hazard"
+     "arena",
+     "groggy"
     ],
-    "moves": 5,
-    "sig": [],
+    "moves": 6,
+    "sig": [
+     {
+      "name": "泼油！",
+      "why": "pool"
+     },
+     {
+      "name": "喷火器——绕到侧面！",
+      "why": "clip:sigB"
+     },
+     {
+      "name": "arena",
+      "why": "arena"
+     }
+    ],
     "tokens": [
+     "m:arena",
      "m:groggy",
-     "m:hazard",
      "s:aoe",
-     "s:blink",
+     "s:cone",
      "s:explode",
-     "s:rain",
-     "s:seq",
+     "s:pool",
      "s:shot",
-     "s:swipe"
+     "s:swipe",
+     "x:喷火器——绕到侧面！"
     ],
     "windups": [
      {
       "skill": "aoe/circle",
-      "windup": 1.3
+      "windup": 1.1
      },
      {
-      "skill": "rain/hex",
-      "windup": 1.2
+      "skill": "pool",
+      "windup": 1
+     },
+     {
+      "skill": "cone@sigB",
+      "windup": 1
+     },
+     {
+      "skill": "swipe",
+      "windup": 0.9
      },
      {
       "skill": "explode",
@@ -6546,21 +6544,16 @@
     "rename": null
    },
    "dup": {
-    "sameMechSet": [
-     "shallow_haunt",
-     "lik_well",
-     "gent_east",
-     "sea_pirates"
-    ],
+    "sameMechSet": [],
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "kartel_origin",
-      0.73
+      "frozen_heart",
+      0.36
      ],
      [
-      "sea_pirates",
-      0.7
+      "shallow_haunt",
+      0.33
      ]
     ]
    }
@@ -6599,7 +6592,6 @@
     "tier": null,
     "summons": [
      "hex",
-     "debris",
      "rx78"
     ],
     "attacks": [],
@@ -6609,21 +6601,20 @@
       "enterMechs": [],
       "summon": null,
       "skills": [
-       "dash",
+       "dash.spin@sigA",
        "aoe/circle",
        "laser",
-       "rain/hex"
+       "rain/hex",
+       "mech:form"
       ]
      },
      {
       "at": 0.55,
-      "enterMechs": [
-       "hazard"
-      ],
+      "enterMechs": [],
       "summon": null,
       "skills": [
        "summon:rx78",
-       "seq[blink,dash,dash]"
+       "seq[blink,dash.spin,dash]"
       ]
      }
     ],
@@ -6641,30 +6632,45 @@
      "summon"
     ],
     "mechSet": [
-     "groggy",
-     "hazard"
+     "form",
+     "groggy"
     ],
-    "moves": 6,
-    "sig": [],
+    "moves": 8,
+    "sig": [
+     {
+      "name": "旋转摩托——红线上别站！",
+      "why": "clip:sigA"
+     },
+     {
+      "name": "dash.spin",
+      "why": "dash.spin"
+     },
+     {
+      "name": "苏雷德竖起了前轮——留意脚下的圈！",
+      "why": "form"
+     }
+    ],
     "tokens": [
+     "m:form",
      "m:groggy",
-     "m:hazard",
      "s:aoe",
      "s:blink",
      "s:dash",
+     "s:dash.spin",
      "s:laser",
      "s:rain",
      "s:seq",
-     "s:summon"
+     "s:summon",
+     "x:旋转摩托——红线上别站！"
     ],
     "windups": [
      {
-      "skill": "dash",
-      "windup": 0.7
+      "skill": "dash.spin@sigA",
+      "windup": 1
      },
      {
       "skill": "aoe/circle",
-      "windup": 0.6
+      "windup": 0.9
      },
      {
       "skill": "laser",
@@ -6672,15 +6678,15 @@
      },
      {
       "skill": "rain/hex",
-      "windup": 1.1
+      "windup": 1.2
+     },
+     {
+      "skill": "dash.spin",
+      "windup": 0.9
      },
      {
       "skill": "dash",
-      "windup": 0.5
-     },
-     {
-      "skill": "dash",
-      "windup": 0.4
+      "windup": 0.9
      }
     ],
     "artSharedWith": [
@@ -6738,21 +6744,16 @@
     "rename": null
    },
    "dup": {
-    "sameMechSet": [
-     "shallow_haunt",
-     "lik_well",
-     "gent_outskirts",
-     "sea_pirates"
-    ],
+    "sameMechSet": [],
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "kartel_origin",
-      0.58
+      "arden",
+      0.44
      ],
      [
-      "old_wail",
-      0.58
+      "kartel_origin",
+      0.4
      ]
     ]
    }
@@ -6803,17 +6804,16 @@
        "dash",
        "rain/hex",
        "swipe",
-       "mech:shield"
+       "mark@sigA",
+       "mech:stance"
       ]
      },
      {
       "at": 0.65,
-      "enterMechs": [
-       "shield"
-      ],
+      "enterMechs": [],
       "summon": null,
       "skills": [
-       "aoe/circle"
+       "mark@sigB"
       ]
      },
      {
@@ -6834,8 +6834,8 @@
      "enrage"
     ],
     "skillUses": [
-     "aoe",
      "dash",
+     "mark",
      "rain",
      "summon",
      "swipe"
@@ -6844,25 +6844,40 @@
      "enrage",
      "groggy",
      "safezone",
-     "shield"
+     "stance"
     ],
-    "moves": 7,
-    "sig": [],
+    "moves": 8,
+    "sig": [
+     {
+      "name": "量子爆弹锁定——跑开！",
+      "why": "clip:sigA"
+     },
+     {
+      "name": "聚合量子爆弹——靠在一起平摊！",
+      "why": "clip:sigB"
+     },
+     {
+      "name": "stance",
+      "why": "stance"
+     }
+    ],
     "tokens": [
      "m:enrage",
      "m:groggy",
      "m:safezone",
-     "m:shield",
-     "s:aoe",
+     "m:stance",
      "s:dash",
+     "s:mark",
      "s:rain",
      "s:summon",
-     "s:swipe"
+     "s:swipe",
+     "x:聚合量子爆弹——靠在一起平摊！",
+     "x:量子爆弹锁定——跑开！"
     ],
     "windups": [
      {
       "skill": "dash",
-      "windup": 0.8
+      "windup": 0.9
      },
      {
       "skill": "rain/hex",
@@ -6870,11 +6885,7 @@
      },
      {
       "skill": "swipe",
-      "windup": 0.7
-     },
-     {
-      "skill": "aoe/circle",
-      "windup": 1.3
+      "windup": 0.9
      }
     ],
     "artSharedWith": [
@@ -6927,18 +6938,15 @@
    },
    "dup": {
     "sameMechSet": [],
-    "sameSkillSet": [
-     "grand_fire",
-     "plague_source"
-    ],
+    "sameSkillSet": [],
     "mostSimilar": [
      [
       "plague_source",
-      0.7
+      0.46
      ],
      [
-      "old_winter",
-      0.7
+      "arden",
+      0.44
      ]
     ]
    }
@@ -7117,7 +7125,6 @@
    "dup": {
     "sameMechSet": [
      "spider_cave",
-     "fallen_bandits",
      "wailing_cave"
     ],
     "sameSkillSet": [
@@ -7130,7 +7137,7 @@
       0.67
      ],
      [
-      "fallen_bandits",
+      "plague_source",
       0.6
      ]
     ]
@@ -7303,7 +7310,6 @@
    "dup": {
     "sameMechSet": [
      "spider_cave",
-     "fallen_bandits",
      "bilmark"
     ],
     "sameSkillSet": [
@@ -7496,19 +7502,17 @@
    "dup": {
     "sameMechSet": [
      "shallow_haunt",
-     "lik_well",
-     "gent_outskirts",
-     "gent_east"
+     "lik_well"
     ],
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "gent_outskirts",
-      0.7
-     ],
-     [
       "shallow_haunt",
       0.67
+     ],
+     [
+      "kartel_origin",
+      0.64
      ]
     ]
    }
@@ -8061,11 +8065,11 @@
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "gent_south",
-      0.62
+      "king_ruins",
+      0.5
      ],
      [
-      "king_ruins",
+      "bwanga_dojo",
       0.5
      ]
     ]
@@ -8242,7 +8246,6 @@
    "dup": {
     "sameMechSet": [],
     "sameSkillSet": [
-     "gent_south",
      "plague_source"
     ],
     "mostSimilar": [
@@ -8251,8 +8254,8 @@
       0.73
      ],
      [
-      "skasa_nest",
-      0.73
+      "plague_source",
+      0.7
      ]
     ]
    }
@@ -8431,7 +8434,6 @@
      "holy_war"
     ],
     "sameSkillSet": [
-     "gent_south",
      "grand_fire"
     ],
     "mostSimilar": [
@@ -8440,8 +8442,8 @@
       0.88
      ],
      [
-      "fallen_bandits",
-      0.78
+      "grand_fire",
+      0.7
      ]
     ]
    }
@@ -8620,12 +8622,12 @@
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "gent_outskirts",
+      "wit_gate",
       0.73
      ],
      [
-      "wit_gate",
-      0.73
+      "sea_pirates",
+      0.64
      ]
     ]
    }
@@ -8812,7 +8814,7 @@
       0.88
      ],
      [
-      "fallen_bandits",
+      "bilmark",
       0.67
      ]
     ]
@@ -9383,12 +9385,12 @@
     ],
     "mostSimilar": [
      [
-      "gent_south",
-      0.7
-     ],
-     [
       "holy_war",
       0.67
+     ],
+     [
+      "west_line",
+      0.6
      ]
     ]
    }
@@ -9569,12 +9571,12 @@
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "hamelin",
-      0.73
-     ],
-     [
       "neipera",
       0.62
+     ],
+     [
+      "siroco_coffin",
+      0.59
      ]
     ]
    }
@@ -9739,7 +9741,7 @@
       0.86
      ],
      [
-      "gent_south",
+      "wailing_cave",
       0.6
      ]
     ]
@@ -11023,7 +11025,7 @@
     "tier": null,
     "summons": [
      "giantRat",
-     "maneater",
+     "runner",
      "piperShade"
     ],
     "attacks": [],
@@ -11034,16 +11036,14 @@
       "summon": null,
       "skills": [
        "shot/homing",
-       "summon:giantRat",
-       "aoe/ring",
-       "blink"
+       "mark@sigB",
+       "blink",
+       "mech:stance"
       ]
      },
      {
       "at": 0.6,
-      "enterMechs": [
-       "invuln"
-      ],
+      "enterMechs": [],
       "summon": null,
       "skills": [
        "mech:clones"
@@ -11063,35 +11063,38 @@
      "groggy"
     ],
     "skillUses": [
-     "aoe",
      "blink",
-     "shot",
-     "summon"
+     "mark",
+     "shot"
     ],
     "mechSet": [
      "clones",
      "enrage",
      "groggy",
-     "invuln"
+     "stance"
     ],
-    "moves": 5,
-    "sig": [],
+    "moves": 9,
+    "sig": [
+     {
+      "name": "倒数攻击——散开！",
+      "why": "clip:sigB"
+     },
+     {
+      "name": "stance",
+      "why": "stance"
+     }
+    ],
     "tokens": [
      "m:clones",
      "m:enrage",
      "m:groggy",
-     "m:invuln",
-     "s:aoe",
+     "m:stance",
      "s:blink",
+     "s:mark",
      "s:shot",
-     "s:summon"
+     "x:倒数攻击——散开！"
     ],
-    "windups": [
-     {
-      "skill": "aoe/ring",
-      "windup": 1.1
-     }
-    ],
+    "windups": [],
     "artSharedWith": []
    },
    "elite": [
@@ -11132,12 +11135,12 @@
     "sameSkillSet": [],
     "mostSimilar": [
      [
-      "iris_raid",
-      0.73
+      "wit_gate",
+      0.42
      ],
      [
-      "wit_gate",
-      0.55
+      "iris_raid",
+      0.36
      ]
     ]
    }
@@ -11624,7 +11627,7 @@
       0.86
      ],
      [
-      "gent_south",
+      "wailing_cave",
       0.6
      ]
     ]

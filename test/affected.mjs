@@ -67,6 +67,7 @@ const RULES = [
   [/^server\/(modules\/admin|admin\/)|^src\/ui\/social\/gm\.js$/, [srvT('admin'), nodeT('admin_console')]],
   [/^src\/game\/(mon_skills|mon_skills_ext|region)\.js$|^src\/content\/regions\/siroco/, [T('region_siroco', 'test/region.mjs', 'siroco', 'data,skills,mechs')]],
   [/^src\/content\/abyss\.js$/, [T('region_abyss', 'test/region.mjs', 'siroco', 'abyss'), T('mp_abyss', 'test/mp_abyss.mjs', 'A')]],
+  [/^src\/(content\/music_bosses|engine\/music)\.js$/, [nodeT('music_bosses')]],
   [/^src\/(content\/avatar|models)\//, [nodeT('avatar'), nodeT('jobvisuals')]],
   [/^art\/final\/spr\/fighter|^src\/content\/avatar\/.*fighter|^art\/tools\/fighter/, [nodeT('fighter_looks')]],
   [/^art\/final\/weapon\/|^src\/content\/avatar\/weapon_art\.js$/, [nodeT('weapons')]],

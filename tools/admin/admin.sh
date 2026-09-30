@@ -9,6 +9,7 @@
 #   sh tools/admin/admin.sh maxout <账号> '' <点券> '职业:转职:等级:max|normal:名字,...'   新建角色（只处理新建的）
 #       例：sh tools/admin/admin.sh maxout luzhipeng '' 999999 'sword:berserker:30:max:血狱狂战,sword:berserker:20:normal:狂战练级'
 #       做完让玩家刷新页面；弹“存档冲突”时选“使用云端存档”
+#   sh tools/admin/admin.sh amp <账号> <角色名> <等级 1~16> [红字 str|int|vit|spr]   角色身上装备全部增幅到 +N（含同级强化加成 + 红字），耐久补满
 #   sh tools/admin/admin.sh errs [条数]                              客户端逐帧出错上报（带堆栈，最新的在前）
 set -e
 cd "$(dirname "$0")/../.."
@@ -40,6 +41,14 @@ case "$1" in
     scp -q "$W/maxed.json" $HOST:/tmp/dnf-maxed.json
     RW put "$2" /tmp/dnf-maxed.json maxout
     ssh $HOST 'rm -f /tmp/dnf-maxed.json' ;;
-  *) sed -n 2,10p "$0"; exit 1 ;;
+  amp)
+    case "$2" in *[!A-Za-z0-9_.@-]*|'') echo "账号不对：'$2'"; exit 1 ;; esac
+    R dump "$2" > "$W/cloud.json"
+    node tools/admin/amp.mjs "$W" "$3" "$4" "$5" || exit 1
+    node build.mjs | tail -1; node tools/admin/verify_save.mjs "$W" | tail -2
+    scp -q "$W/maxed.json" $HOST:/tmp/dnf-maxed.json
+    RW put "$2" /tmp/dnf-maxed.json amp
+    ssh $HOST 'rm -f /tmp/dnf-maxed.json' ;;
+  *) sed -n 2,11p "$0"; exit 1 ;;
 esac
 ssh $HOST 'rm -f /tmp/dnf-remote.js'

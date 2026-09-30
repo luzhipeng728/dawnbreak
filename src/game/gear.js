@@ -42,11 +42,11 @@ bus.on('equip', e => { const it = e && e.item; if (it && itemBind(it) === 'equip
    本作：Lv15 以上、稀有品级以上的装备带有异界气息。 */
 const DIM_STATS = ['str', 'int', 'vit', 'spr'];
 const DIM_NAME = { str: '异次元力量', int: '异次元智力', vit: '异次元体力', spr: '异次元精神' };
-const AMP_MAX = 15;
+const AMP_MAX = 16;   // 和强化上限 ENH_MAX 一致
 // 到 +1 ~ +15 的成功率（下标 = 当前等级；官方公示：+1~+4 必定成功，+5 80%、+6 70%、+7 60%、+8 70%、+9 60%、+10 50%、+11 40%、+12 30%、+13 起 20%）
-const AMP_RATE = [1, 1, 1, 1, 0.8, 0.7, 0.6, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.2, 0.2];
+const AMP_RATE = [1, 1, 1, 1, 0.8, 0.7, 0.6, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.2, 0.2, 0.15];
 // 红字 = round((1 + 装备等级 × 0.09) × 品级系数 × AMP_MUL[等级])；官方：+6 和 +10 之后涨幅明显变大，红 10 → 红 11 约涨 70%
-const AMP_MUL = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 2.0, 2.4, 2.8, 3.2, 3.6, 6.1, 7.6, 9.2, 11, 13];
+const AMP_MUL = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 2.0, 2.4, 2.8, 3.2, 3.6, 6.1, 7.6, 9.2, 11, 13, 15.5];
 const AMP_RAR = [0.7, 0.8, 0.9, 1, 1.1, 1.25];
 const canAmplify = it => !!it && it.kind === 'equip' && SLOTS.includes(it.slot) && it.slot !== 'title' && !isAvatar(it) && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);
 const hasOtherworld = it => canAmplify(it) && (it.lvl || 1) >= 15 && (it.rar || 0) >= 2;

@@ -48,7 +48,7 @@ const R = await page.evaluate(({ JOB, EXPECT }) => {
   return { reg: !!J, ready: J.ready, armor: J.armor, dmg: J.dmgType || 'phys', n: J.skills.length, stray, undef, missing, noCmd, noDesc, badClip, per,
     anims: Object.keys(J.anims || {}).filter(k => !SPR_ANIMS.fighter[k]), auto: J.auto };
 }, { JOB, EXPECT });
-report('转职登记（精通 cloth、伤害 mag、ready:false）', R.reg && R.armor === 'cloth' && R.dmg === 'mag' && R.ready === false, { ready: R.ready, armor: R.armor, dmg: R.dmg });
+report('转职登记（精通 cloth、伤害 mag、已开放）', R.reg && R.armor === 'cloth' && R.dmg === 'mag' && R.ready === true, { ready: R.ready, armor: R.armor, dmg: R.dmg });
 report(`技能 id = 预留表 FIGHTER_IDS.${JOB}（${R.n} 个，都有定义）`, !R.stray.length && !R.undef.length && !R.missing.length && R.n === 29, { stray: R.stray, undef: R.undef, missing: R.missing });
 report('主动技能都有指令文字、技能说明；动画片段都登记进 SPR_ANIMS.fighter；转职自动学会念气感知 / 光之亲和', !R.noCmd.length && !R.noDesc.length && !R.anims.length && !R.badClip.length && R.auto.join() === 'fn_sense,fn_lightaff',
   { noCmd: R.noCmd, noDesc: R.noDesc, anims: R.anims, badClip: R.badClip });

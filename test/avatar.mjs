@@ -174,8 +174,9 @@ for (const cls of (await openLists()).classes) {
   const types = await page.evaluate(cls => Object.keys(WEAPON_IMG).filter(k => k === WEAPON_IMG[k].type && WTYPES[k].cls === cls), cls);
   const seen = {};
   for (const t of types) {
+    const job0 = await page.evaluate(t => { const j = game.job; if (WTYPES[t].jobs) game.job = WTYPES[t].jobs[0]; return j; }, t);   // 转职专用武器（拳套只给散打）：先切到能用的转职，看完外观再切回来
     const err = await page.evaluate(([EQ, t, cls]) => (0, eval)(EQ)([{ slot: 'weapon', wtype: t, lvl: 10, cls, rar: 2 }]   /* 固定稀有品级：不指定时可能随机出史诗（史诗有专属外观 ep_*） */), [`(${EQUIP})`, t, cls]);
-    const L = await look(); seen[t] = L.hash;
+    const L = await look(); seen[t] = L.hash; await page.evaluate(j => { game.job = j; }, job0);
     ok(!err && L.wpn === t + '_r2', `装备稀有${t} → 手里的武器图 ${L.wpn}（稀有品级外观）${err ? ' ' + err : ''}`);
   }
   ok(new Set(Object.values(seen)).size === types.length, `${types.length} 种武器外观互不相同`);
@@ -200,7 +201,7 @@ for (const cls of (await openLists()).classes) {
     L = await look(); ok(L.set === 'festival' && L.hash === worn, '刷新后外观不变', JSON.stringify({ set: L.set, S2: !!L.S2, same: L.hash === worn, acc: L.acc, wpn: L.wpn }));
     await page.evaluate(() => { inv.unwear('av_top'); });
     L = await look(); ok(L.parts && !L.parts.up && L.parts.low === 'festival' && L.parts.feet === 'festival' && L.hash !== worn, '脱下上衣 → 上身换回默认造型，下身、鞋仍是庆典（混搭）', JSON.stringify({ set: L.set, parts: L.parts }));
-    ok(cls === 'sword' ? L.acc.length === 3 : L.acc.length === 1, cls === 'sword' ? '帽子 / 发饰 / 眼镜仍然戴着' : '默认造型自带帽子：上身不是时装时只剩眼镜');
+    ok(['sword', 'fighter'].includes(cls) ? L.acc.length === 3 : L.acc.length === 1, ['sword', 'fighter'].includes(cls) ? '帽子 / 发饰 / 眼镜仍然戴着' : '默认造型自带帽子：上身不是时装时只剩眼镜');
     await page.evaluate(() => { for (const s of ['av_bottom', 'av_shoes', 'av_hat', 'av_hair']) inv.unwear(s); });
     L = await look(); ok(!L.set && !L.parts && L.acc.length === 1, '只剩眼镜（眼镜没有身体帧）→ 身体换回原样，眼镜仍然戴着', JSON.stringify({ set: L.set, acc: L.acc }));
   }

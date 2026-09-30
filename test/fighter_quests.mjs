@@ -53,6 +53,7 @@ async function npcQuest(npc, qname, btn) {
 if (MODES.includes('inert')) {
   await page.goto(`${URL_BASE}?town&cls=sword&mute&notype`); await ready(page); await wait(400); await closeAll(); await install();
   const R = await ev(() => {
+    CLASSES.fighter.ready = false; for (const J of Object.values(CLASSES.fighter.jobs)) J.ready = false;   // 模拟没开放（上线前的老页面）
     const ids = FQ.ids(), d = save.data;
     game.lvl = 30; for (const id of ['q_job_kill', 'q_job_fighter_final', 'q_awaken_fighter_1', 'q_hidden_dark']) d.questDone[id] = 1;
     const visible = ids.filter(id => !d.questDone[id] && questState(id) !== 'locked');

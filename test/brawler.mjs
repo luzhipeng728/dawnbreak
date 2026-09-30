@@ -46,7 +46,7 @@ if (MODES.includes('load')) {
   });
   report('30 个技能都定义了且都在转职技能表里', R.n === 30 && !R.missing.length, { n: R.n, missing: R.missing });
   report('主动技能都有指令（强化投掷 ←→+C）', !R.noCmd.length && R.cmdTxt === '指令：←→+C', { noCmd: R.noCmd, cmd: R.cmdTxt });
-  report('一 / 二 / 三觉登记、ready 仍为 false、魔法 / 重甲', R.awk.every(Boolean) && R.ready === false && R.dmg === 'mag' && R.armor === 'heavy', R);
+  report('一 / 二 / 三觉登记、已开放、魔法 / 重甲', R.awk.every(Boolean) && R.ready === true && R.dmg === 'mag' && R.armor === 'heavy', R);
   report('动作片段都有矢量占位', R.anims >= 10 && !R.clips.length, { anims: R.anims, clips: R.clips });
   report('美术：30 个技能图标、三张觉醒插图、转职立绘都在', !R.noIcon.length && !R.art.length, { noIcon: R.noIcon, art: R.art });
   report('技能都是魔法、都有说明；转职自动学会 4 个被动', !R.mag.length && !R.txt.length && R.learned, { mag: R.mag, txt: R.txt, auto: R.auto });

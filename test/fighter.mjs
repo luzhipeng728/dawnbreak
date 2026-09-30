@@ -54,6 +54,7 @@ if (MODES.includes('save')) {
   await page.evaluate(p => { save.live = false; const d = JSON.parse(localStorage.getItem(save.key)); d.chars[4] = p; localStorage.setItem(save.key, JSON.stringify(d)); }, priest);   // 换掉第 5 个角色（角色位上限 6）   // 先停写（离开页面时的自动存档会把注入的角色盖掉）
   await page.goto(`${URL_BASE}?mute`); await ready(page);
   const stale = await page.evaluate(async priest => {
+    CLASSES.fighter.ready = false;   // 模拟上线前的老页面（格斗家 ready:false）
     const before = JSON.parse(localStorage.getItem(save.key)), fB = before.chars.find(c => c.cls === 'fighter');
     save.loadAll(); const n = save.chars.length, fi = save.chars.findIndex(c => c.cls === 'fighter'), pi = save.chars.findIndex(c => c.cls === 'priest');
     const rawKept = JSON.stringify(save.chars[fi]) === JSON.stringify(fB) && JSON.stringify(save.chars[pi]) === JSON.stringify(priest);
@@ -105,7 +106,7 @@ if (MODES.includes('ids')) {
       feng: { job: NPCS.fengzhen.services.includes('job'), jobFor: NPCS.fengzhen.jobFor }, duel: !!DUEL_BASE.fighter, av: !!AVATAR_CLS.fighter };
   });
   report('技能 id 预留 130 个（15 / 29 / 28 / 30 / 28）、不重复、前缀对、没被占用', R.n === 130 && R.uniq === 130 && R.counts.join() === '15,29,28,30,28' && !R.badPre.length && !R.otherPre.length, { counts: R.counts, badPre: R.badPre, taken: R.otherPre });
-  report('转职登记：4 个都 ready:false，精通 布 / 轻 / 重 / 轻，气功 / 街霸魔法', R.ready === false && Object.values(R.jobs).every(j => j.ready === false) && R.jobs.nenmaster.armor === 'cloth' && R.jobs.striker.armor === 'light' && R.jobs.brawler.armor === 'heavy' && R.jobs.grappler.armor === 'light'
+  report('转职登记：职业和 4 个转职都已开放（ready:true），精通 布 / 轻 / 重 / 轻，气功 / 街霸魔法', R.ready === true && Object.values(R.jobs).every(j => j.ready === true) && R.jobs.nenmaster.armor === 'cloth' && R.jobs.striker.armor === 'light' && R.jobs.brawler.armor === 'heavy' && R.jobs.grappler.armor === 'light'
     && R.jobs.nenmaster.dmg === 'mag' && R.jobs.brawler.dmg === 'mag' && R.jobs.striker.dmg === 'phys' && R.jobs.grappler.dmg === 'phys' && !R.clash.length, { jobs: R.jobs, clash: R.clash });
   report('武器 5 类（拳套只给散打）、初始手套、力量 7、导师风振、决斗 / 外观登记', R.wt.join() === 'knuckle,boxing,claw,tonfa,gauntlet' && R.boxJobs.join() === 'striker' && R.start === 'knuckle' && R.base4 === 7 && R.mentor === 'fengzhen' && R.feng.job && R.feng.jobFor === 'fighter' && R.duel && R.av, { wt: R.wt, box: R.boxJobs, start: R.start, str: R.base4, mentor: R.mentor, feng: R.feng, duel: R.duel, av: R.av });
   report('动画契约：片段齐全、职业帧一律 f_（转职 fn_ / fs_ / fb_ / fg_）前缀、占位骨骼片段在', R.anims >= 40 && !R.badFrames.length && R.clips, { anims: R.anims, bad: R.badFrames });
@@ -152,6 +153,8 @@ if (MODES.includes('switch')) {
   const { browser, page, logs } = await launch({ width: 1280, height: 720 });
   await page.goto(`${URL_BASE}?mute`); await ready(page);
   const off = await page.evaluate(async () => {
+    const J0 = Object.fromEntries(Object.entries(CLASSES.fighter.jobs).map(([k, J]) => [k, J.ready])), C0 = CLASSES.fighter.ready;   // 模拟没开放（上线前）：先全部关掉，测完复原
+    CLASSES.fighter.ready = false; for (const J of Object.values(CLASSES.fighter.jobs)) J.ready = false;
     menus.open('newgame'); await new Promise(r => setTimeout(r, 200));
     const card = document.querySelector('#newgame .clscard[data-cls="fighter"]');
     const out = { open: clsOpen('fighter'), classes: openClasses(), card: !!card, off: card && card.classList.contains('off'), txt: card && card.textContent, sel: menus.ngCls, jobs: jobsOf('fighter'), duel: openClasses().includes('fighter') };
@@ -162,11 +165,15 @@ if (MODES.includes('switch')) {
     out.swordJobs = jobsOf('sword') === CLASSES.sword.jobs;   // 老职业：原样返回同一个对象
     out.drop = Array.from({ length: 300 }, () => rollEquip({ slot: 'weapon', lvl: 20, cls: 'sword' })).filter(it => it && it.cls === 'fighter').length;
     out.shop = SHOPS.linus.tabs[0].goods(20).filter(k => ITEMS[k].cls === 'fighter').length;
+    CLASSES.fighter.ready = C0; for (const k in J0) CLASSES.fighter.jobs[k].ready = J0[k];
+    menus.open('newgame'); await new Promise(r => setTimeout(r, 200));
+    const c2 = document.querySelector('#newgame .clscard[data-cls="fighter"]'); out.live = { open: clsOpen('fighter'), off: c2 && c2.classList.contains('off'), jobs: Object.keys(jobsOf('fighter') || {}) }; menus.close('newgame');
     return out;
   });
   report('没开放：选角“即将开放”、点不了、不进随机决斗、转职窗口没有方向', !off.open && off.card && off.off && off.txt.includes('即将开放') && off.sel !== 'fighter' && off.selAfter !== 'fighter' && off.jobs === null && !off.duel && !off.classes.includes('fighter'), off);
   report('J.ready：职业开放后转职逐个开放；老职业不受影响', off.jobsClassOnly === null && off.jobsOne.join() === 'grappler' && off.swordJobs, { classOnly: off.jobsClassOnly, one: off.jobsOne, sword: off.swordJobs });
   report('没开放职业的武器不掉落、不上架', off.drop === 0 && off.shop === 0, { drop: off.drop, shop: off.shop });
+  report('现版已开放：选角能选格斗家、4 个转职都在', off.live.open && !off.live.off && off.live.jobs.length === 4, off.live);
   await page.goto(`${URL_BASE}?mute&fighter=1`); await ready(page);
   const on = await page.evaluate(async () => {
     menus.open('newgame'); await new Promise(r => setTimeout(r, 200));

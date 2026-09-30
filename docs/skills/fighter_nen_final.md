@@ -54,6 +54,8 @@
 - 念兽：借用万年雪山雪虎（`spr/snTiger`）的逐帧图，蓝白转金色 + 罩一层金色（缓存），正常混合画半透明身体 + 叠加发光；分包没加载好时画程序剪影。以后有专门的念兽素材放 `fx/fn_beast_<kind>` 自动替换。
 - 动画：新片段 `fnPalm / fnPalm2 / fnSeal / fnFocus / fnMed（打坐）/ fnRide（骑乘）/ fnStab（雷刃刺入）/ fnUp / fnAxe` 写在 `J.anims`（帧名 `fn_meditate / fn_ride / fn_stab / fn_up`，B1 出帧前兜底到格斗家通用帧 `f_palm1 / f_seal / f_focus / f_axe*`），矢量占位模型的骨骼片段也写了。
 
-## 美术（本块预算约 10 次生图）
-- 已出样图 2 张（等主线程审）：图标表 `fn_icons_a`（12 个）、一觉插图 `cutin/nenmaster`（骑金狮）；已切进 `art/final/icon/fn_*`（12 个）和 `art/final/cutin/nenmaster.webp`。原图和总览：主仓库 `art/src/nenmaster/`（`contact.png`）。
-- 审过后再出 5 张：`python3 art/tools/fighter_nen_art.py icons`（fn_icons_b 12 个、fn_icons_c 6 个）→ `cutin`（nenmaster2 / nenmaster3）→ `job`（转职立绘）→ `prep`。B1 的 `art/src/fighter_ref.png` 出来以后脚本自动改用它当参考（现在用男鬼剑士立绘当画风参考，人物按“红头带 + 白色练功服 + 红手套”描述）。
+## 美术（本块预算约 10 次生图，用了 8 次）
+- 图标 29 个 + 转职图标 1 个（`art/final/icon/fn_*`、`nenmaster`）：3 张表 fn_icons_a / b / c；a 表是样图（主线程审过）。布甲精通的图标画成了红边白衣，`prep` 里把红色转成长袍的青绿色（没重新生图）。
+- 觉醒插图 `cutin/nenmaster{,2,3}`、转职立绘 `job/nenmaster`：参考图 = B1 的 `art/src/fighter_ref.png`（同一张脸、棕色刺猬头）；主线程审图意见 → 气功师不戴红头带、不穿散打的白色练功服，改成**青绿 / 米白气功长袍 + 金边 + 念珠**，一觉保留金狮。第一版一觉插图（红头带）留在主仓库 `art/src/nenmaster/cutin/nenmaster.bak.png`。
+- 审图总览：主仓库 `art/src/nenmaster/contact.png`；实机截图 `test/shots/nenmaster/contact.jpg`（含三觉插图 `cutin3.png`）。
+- 命令：`python3 art/tools/fighter_nen_art.py icons | cutin | job | prep | contact`（已有的原图自动跳过，`--force` 重出）。

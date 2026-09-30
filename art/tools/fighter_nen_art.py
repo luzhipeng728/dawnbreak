@@ -7,6 +7,7 @@
   fighter_nen_art.py prep                           切图 → art/final
   fighter_nen_art.py contact                        审图总览（一张）→ art/src/nenmaster/contact.png
 样图流程（PLAYBOOK §1.4）：先 icons --only fn_icons_a + cutin --only nenmaster 两张给主线程审，过了再出其余 5 张（fn_icons_b / c、nenmaster2 / 3、job）。
+主线程审图意见：图标过；插图人物不能和散打一样（红头带 + 白色练功服）→ 气功师改成青绿 / 米白气功长袍 + 金边 + 念珠，不戴头带（FIGHTER）。
 念兽（金雷虎 / 獬豸 / 虎头）不生图：运行时借用雪虎精灵帧换成金色（src/content/classes/fighter_nen.js fnBeast）。
 """
 import os, sys, argparse, importlib.util
@@ -54,14 +55,17 @@ ICONS = {
                    ('fn_absorb', 'a curved golden gauge meter filling up with swirling golden lightning'),
                    ('nenmaster', 'a golden fist emblem with a spiral nen orb symbol, a golden medal')],
 }
-FIGHTER = ('a young male martial artist in cute chibi style: short spiky black hair, a red headband, an off-white martial-arts jacket with red trim and a red sash, '
-           'dark navy trousers, brown boots, red fingerless gloves, athletic build')
+# 气功师的造型（主线程 2026-09-30 定：和散打的红头带 + 白色练功服区分开）：同一张脸和棕色刺猬头（B1 的 fighter_ref.png），不戴头带；
+# 青绿 / 米白的飘逸气功长袍 + 金边，念珠和念气珠饰品；念兽（金狮）保留
+FIGHTER = ('the same young male martial artist as the reference (same face, same brown spiky hair, same cute chibi proportions), NO headband, '
+           'now dressed as a Nen Master qigong monk: a flowing teal and cream qigong robe with gold trim and wide sleeves, a gold sash, loose cream trousers, cloth shoes, '
+           'a string of large wooden prayer beads around his neck, small golden nen orbs floating near his hands')
 CUTIN = {   # 觉醒插图：nenmaster = 一觉 狂虎帝、nenmaster2 = 二觉 念皇、nenmaster3 = 三觉 归元·气功师
-    'nenmaster': 'riding a huge golden thunder lion made of glowing nen energy that leaps forward, one fist raised, golden lightning crackling everywhere, fierce shout',
+    'nenmaster': 'riding a huge golden thunder lion made of glowing nen energy that leaps forward, one palm raised with a glowing golden nen orb, golden lightning crackling everywhere, fierce shout, robe sleeves and sash flowing in the wind',
     'nenmaster2': 'both palms thrust forward, a giant radiant golden-white energy sphere collapsing in front of him with lightning, calm but fierce eyes, glowing golden aura',
     'nenmaster3': 'floating cross-legged in meditation with a mudra hand seal, a giant golden halo wheel of light behind him, ten golden nen orbs circling, serene closed eyes',
 }
-JOB = (f'Draw a full-body standing portrait for a class selection screen of {FIGHTER}, in the same cute chibi art style as the reference (thick outlines, hand-painted): '
+JOB = (f'Draw a full-body standing portrait for a class selection screen of {FIGHTER}, in the same cute chibi art style as the reference (thick outlines, hand-painted, same head and body proportions): '
        'a Nen Master: confident martial-arts stance facing slightly to the right, one palm forward holding a glowing golden energy ball, five small golden energy orbs orbiting around him, '
        'faint golden lightning around his fists. Plain pure white background, no text.')
 REF = os.path.join(SRC, 'fighter_ref.png') if os.path.exists(os.path.join(SRC, 'fighter_ref.png')) else os.path.join(SRC, 'sword_ref.png')
@@ -99,8 +103,8 @@ def cmd_cutin(a):
         if a.only and k not in a.only.split(','): continue
         out = os.path.join(OUT, 'cutin', f'{k}.png')
         if os.path.exists(out) and not a.force: print('skip', k); continue
-        post(f'Using the cute chibi art style of the reference character (thick outlines, big head, hand-painted, same rendering), draw {FIGHTER} — a DIFFERENT character from the reference, '
-             f'NO sword. A dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Colors: golden yellow, white and warm orange glow (no green, no magenta). Plain pure white background, no text.',
+        post(f'Using the reference character (same face, brown spiky hair and cute chibi art style: thick outlines, big head, hand-painted), draw {FIGHTER}. '
+             f'Change only the outfit as described (no red clothes, no bandages, no headband). A dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Colors: teal, cream and gold outfit; golden yellow, white and warm orange glow effects (no magenta). Plain pure white background, no text.',
              [REF], out, '1536x1024')
 
 
@@ -108,6 +112,20 @@ def cmd_job(a):
     out = os.path.join(OUT, 'job_nenmaster.png')
     if os.path.exists(out) and not a.force: print('skip job'); return
     post(JOB, [REF], out, '1024x1536')
+
+
+def recolor_red(im, hue):
+    """把饱和的红色像素（色相 < 20° 或 > 340°）转到指定色相，明度 / 饱和度不变"""
+    import colorsys
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, al = px[x, y]
+            if not al: continue
+            h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+            if s > 0.35 and (h < 20 / 360 or h > 340 / 360):
+                r2, g2, b2 = colorsys.hsv_to_rgb(hue / 360, s * 0.85, v); px[x, y] = (round(r2 * 255), round(g2 * 255), round(b2 * 255), al)
+    return im
 
 
 def cmd_prep(a):
@@ -133,7 +151,9 @@ def cmd_prep(a):
         for (y0, y1, x0, x1, c), (name, _) in zip(order, items):
             crop = arr[y0:y1, x0:x1].copy(); crop[..., 3] = np.where(lab[y0:y1, x0:x1] == c, crop[..., 3], 0)
             ic = Image.fromarray(crop, 'RGBA'); s = max(ic.size); sq = Image.new('RGBA', (s, s), (0, 0, 0, 0)); sq.paste(ic, ((s - ic.width) // 2, (s - ic.height) // 2))
-            sq.resize((104, 104), Image.LANCZOS).save(os.path.join(fin, 'icon', f'{name}.webp'), 'WEBP', quality=84, method=6)
+            ic = sq.resize((104, 104), Image.LANCZOS)
+            if name == 'fn_cloth': ic = recolor_red(ic, 175)   # 布甲精通图标画成了红边白衣（散打的配色）→ 红色部分转成气功师长袍的青绿色，不重新生图
+            ic.save(os.path.join(fin, 'icon', f'{name}.webp'), 'WEBP', quality=84, method=6)
     p = os.path.join(OUT, 'job_nenmaster.png')
     if os.path.exists(p):
         im = remove_bg(Image.open(p)); im = im.crop(im.getchannel('A').getbbox()); k = 720 / im.height

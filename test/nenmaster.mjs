@@ -104,10 +104,13 @@ if (want.has('cannon')) {
     const bigProj = projs.filter(q => q.owner === p).map(q => ({ w: Math.round(q.w), pierce: q.pierce })), fullCd = +(p.cool.fn_cannon + 74 / 60).toFixed(2); NT.run(60); NT.unwatch();
     const tgts = new Set(NT.hits.filter(h => h.sk === 'fn_cannon').map(h => h.id)).size;
     NT.reset(); game.skillLv.fn_nature = 5; castSkill(p, 'fn_cannon', true, 'cmd'); NT.run(9); const natProj = projs.filter(q => q.owner === p).map(q => ({ w: Math.round(q.w), pierce: q.pierce })); game.skillLv.fn_nature = 0;
-    return { tapProj, tapCd, bigProj, tgts, fullCd, natProj, cdMul: +(p.cdMul || 1).toFixed(3) };
+    // B3 的念气波 / 分身在的时候：气功师技能栏上的原技能 morph 成蓄念炮 / 幻影爆碎
+    NT.reset(); const morph = []; for (const [id, want] of [['f_nenshot', 'fn_cannon'], ['f_clone', 'fn_blast']]) { if (!SKILLS[id]) continue; NT.reset(); castSkill(p, id); morph.push((p.act && p.act.skill) === want); NT.run(30); }
+    return { tapProj, tapCd, bigProj, tgts, fullCd, natProj, morph, cdMul: +(p.cdMul || 1).toFixed(3) };
   });
   report('蓄念炮：点按 = 念气波（不穿透、冷却 2.5 秒）', R.tapProj.length === 1 && !R.tapProj[0].pierce && Math.abs(R.tapCd - 2.5 * R.cdMul) < 0.15, R);
   report('蓄念炮：按住蓄满 = 大念气团（穿透打到 2 个、冷却 6.5 秒）；禅意·万象：点按也满蓄', R.bigProj.length === 1 && R.bigProj[0].pierce && R.bigProj[0].w > 20 && R.tgts === 2 && Math.abs(R.fullCd - 6.5 * R.cdMul) < 0.15 && R.natProj.length === 1 && R.natProj[0].pierce, R);
+  report('B3 的念气波 / 分身 → 气功师放出来是蓄念炮 / 幻影爆碎（morph）', R.morph.every(Boolean), R.morph);
 }
 if (want.has('blast')) {
   const R = await page.evaluate(() => {
@@ -176,17 +179,18 @@ if (want.has('shots')) {
     ['awaken2', () => { NT.reset(); NT.dummy(260); NT.dummy(330, { dy: 40 }); castSkill(game.player, "fn_awaken2"); }, 1.9, null],
     ['tigerblast', () => { NT.reset(); NT.dummy(190); castSkill(game.player, "fn_tigerblast"); }, 1.0, null],
     ['awaken3', () => { NT.reset(); NT.dummy(160); castSkill(game.player, "fn_awaken3"); }, 2.5, null],
+    ['cutin3', () => { NT.reset(); NT.dummy(160); castSkill(game.player, "fn_awaken3"); }, 0.35, 'cutin'],
     ['gauge', () => { NT.reset({ _fnE: 760 }); game.player.cool = {}; castSkill(game.player, "fn_spiral"); castSkill(game.player, "fn_windstorm"); }, 0.8, 'hud'],
   ];
   const files = [];
   for (const [name, code, wait, mode] of SHOTS) {
     await page.evaluate(() => { game.paused = true; }); await page.evaluate(code); await page.evaluate(() => { game.paused = false; });
     const t0 = await page.evaluate(() => game.t);
-    await page.waitForFunction(at => game.t >= at && !(game.timeStop > 0), t0 + wait, { timeout: 10000 }).catch(() => { });
+    await page.waitForFunction(([at, cut]) => game.t >= at && (cut || !(game.timeStop > 0)), [t0 + wait, mode === 'cutin'], { timeout: 10000 }).catch(() => { });
     await page.evaluate(() => { game.paused = true; });
     const pos = await page.evaluate(() => { const p = game.player; return { x: (p.x - cam.x) * 1280 / 960, y: (FLOOR_Y + p.y - p.z) * 720 / 540 }; });
     const f = `${dir}/${name}.png`;
-    const clip = mode === 'hud' ? { x: 0, y: 0, width: 1280, height: 720 } : { x: Math.max(0, Math.min(1280 - 640, pos.x - 200)), y: Math.max(0, Math.min(720 - 400, pos.y - (mode === 'ride' ? 240 : 300))), width: 640, height: 400 };
+    const clip = mode === 'hud' || mode === 'cutin' ? { x: 0, y: 0, width: 1280, height: 720 } : { x: Math.max(0, Math.min(1280 - 640, pos.x - 200)), y: Math.max(0, Math.min(720 - 400, pos.y - (mode === 'ride' ? 240 : 300))), width: 640, height: 400 };
     await page.screenshot({ path: f, clip }); files.push(f);
     await page.evaluate(() => { game.paused = false; });
     await page.waitForTimeout(200);

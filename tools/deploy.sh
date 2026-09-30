@@ -22,6 +22,7 @@ web() {
 server() {
   ssh cc 'sudo /opt/dawnbreak-server/backup.sh'
   rsync -az --delete --exclude node_modules --exclude data --exclude test server/ cc:/tmp/dawnbreak-server-src/
+  rsync -az src/game/raid_core.js cc:/tmp/dawnbreak-server-src/lib/raid_core.js   # 团本规则核心：浏览器和服务端共用同一个文件（server/modules/raid.js 用 node:vm 加载）
   ssh cc 'NODE_MIRROR=https://npmmirror.com/mirrors/node sh /tmp/dawnbreak-server-src/deploy/install.sh /tmp/dawnbreak-server-src 2>&1 | tail -2'
   curl -s https://dnf.cc.l-hate.com/api/health; echo
 }

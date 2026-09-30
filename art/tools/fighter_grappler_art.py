@@ -9,9 +9,9 @@
   fighter_grappler_art.py cutinprep                        → art/final/cutin/grappler{,2,3}.webp（720×480）
   fighter_grappler_art.py job / jobprep                    转职立绘 → art/final/job/grappler.webp
 
-角色设计还没定稿（B1 的 fighter_ref.png 没出）：插图 / 立绘先拿鬼剑士立绘当“画风参考”，人物按占位配色（fighter.js PAL_FIGHTER）文字描述；
-B1 定稿后把 REF 换成 fighter_ref.png、删掉旧原图重跑 cutin / job 即可。
-样图顺序（先审再批量）：icons --only fg_icons_a → cutin --only grappler.png；过审后 icons（b 表）→ cutin（2、3）→ job。
+角色设计还没定稿（B1 的 fighter_ref.png 没出）：立绘先拿鬼剑士立绘当“画风参考”、人物按 WHO 文字描述（和散打的红头带白道服区分开），插图再拿立绘当人物参考；
+B1 定稿后把 STYLE_REF 换成 fighter_ref.png、旧原图改名 .bak 重跑 job / cutin 即可。
+样图顺序（先审再批量）：icons --only fg_icons_a → cutin --only grappler.png；过审后 icons（b 表）→ job（立绘，定造型）→ cutin（拿立绘当人物参考，一觉插图也按新造型重出）。
 生图约定：串行，同时最多 1 个请求；已存在的输出跳过；纯绿 #00FF00 / 品红 #FF00FF 是切图标记色，不能用。
 """
 import os, sys
@@ -52,10 +52,12 @@ ICONS_B = [
 ]
 C.ICON_SHEETS = {'fg_icons_a': ICONS_A, 'fg_icons_b': ICONS_B}
 
-# 人物（占位设计，和 fighter.js 的 PAL_FIGHTER 一致）
-WHO = ('a cute chibi young male martial artist (grappler / judo master): short spiky dark brown hair, a red headband with long tails, '
-       'an off-white martial arts gi top with red trim and a red belt, dark navy pants, heavy steel forearm gauntlets with red straps, bare determined face')
+# 人物（和散打区分：散打 = 红头带 + 白道服 + 红拳套；柔道家 = 不戴头带、深藏青 / 白两色柔道服 + 黑腰带 + 钢臂铠 / 缠手，同样的棕色刺猬头）
+WHO = ('a cute chibi young male judo grappler: short spiky brown hair with NO headband and nothing on the head, '
+       'a two-tone judo gi (dark navy blue jacket with white lapels and white trim, white pants) tied with a black belt, '
+       'heavy steel forearm gauntlets over dark cloth hand wraps, bare determined face')
 STYLE_REF = os.path.join(C.SRC, 'sword_ref.png')   # 只借画风（Q 版比例、粗描边、上色），人物按 WHO 画
+JOB_PNG = os.path.join(C.SRC, 'quests', 'job_grappler.png')   # 转职立绘先出，之后的觉醒插图拿它当人物参考（同一套造型）
 CUTIN = {
     'grappler': 'Rhythmic Assault: swinging one arm to whip up a roaring gust of wind that sucks in flying rocks and dust, the other gauntlet fist clenched, fierce shout',
     'grappler2': 'Quaking Tiger: stomping the ground so hard it shatters into boulders, a glowing orange tiger-shaped aura roaring behind him, gauntlets raised',
@@ -66,13 +68,15 @@ JOB_PROMPT = (f'Draw {WHO}. Full-body standing portrait for a class selection sc
               'a steady grappling stance with both gauntleted hands open and ready to grab, confident smile. Plain pure white background, no text, no effects.')
 
 def cutin_jobs():
-    return [{'out': os.path.join(C.OUT, 'cutin', f'{j}.png'), 'refs': [STYLE_REF], 'size': '1536x1024',
-             'prompt': (f'Draw {WHO}, in the same cute chibi art style as the reference image (big head, bold dark outlines, clean cel shading, bright saturated colors) '
-                        f'but a completely different character. A dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Plain pure white background, no text.')}
+    refs = [JOB_PNG, STYLE_REF] if os.path.exists(JOB_PNG) else [STYLE_REF]
+    who = ('the exact chibi character from the first reference image (same face, same spiky brown hair with no headband, same dark navy and white judo gi with black belt, same steel gauntlets; '
+           'same cute art style)') if len(refs) > 1 else f'{WHO}, in the same cute chibi art style as the reference image (big head, bold dark outlines, clean cel shading, bright saturated colors) but a completely different character'
+    return [{'out': os.path.join(C.OUT, 'cutin', f'{j}.png'), 'refs': refs, 'size': '1536x1024',
+             'prompt': f'Draw {who}. A dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Plain pure white background, no text.'}
             for j, d in CUTIN.items()]
 
 def job_jobs():
-    return [{'out': os.path.join(C.SRC, 'quests', 'job_grappler.png'), 'refs': [STYLE_REF], 'size': '1024x1536', 'prompt': JOB_PROMPT}]
+    return [{'out': JOB_PNG, 'refs': [STYLE_REF], 'size': '1024x1536', 'prompt': JOB_PROMPT}]
 
 def run_ref(job):   # 参考图直接传本地文件（不走 sheets.upload 的旧上传缓存，PLAYBOOK §4）
     out = job['out']

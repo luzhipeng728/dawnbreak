@@ -61,9 +61,10 @@
 - 紫白（浮空凌云踢）、橙火（裂石破天 / 风火轮 / 死亡旋律 / 疾风闪电 / 两个大觉醒）、紫灰旋风（黑震旋风）按视频配色；vortex / tornado 两个素材没有登记基础色相，本转职用自己的 `fgTint` 换色（不改全局 FX_BASE_HUE，别的职业不受影响）。
 - 人物动作：`J.anims` 的 fg* 片段，精灵帧依次找 柔道家专用帧（fg_scissor / fg_swing1·2 / fg_press / fg_flip / fg_plant，B1 出）→ 格斗家共用帧（f_grab / f_lift / f_slam …）→ 通用帧；矢量占位用 `POSE.fg*`。
 
-## 美术（生图 2 次样图，待审）
-- 样 1：技能图标表 A（16 个：抓轰炮 ~ 地狱风火轮）→ `art/final/icon/fg_*.webp`；样 2：一觉插图 `art/final/cutin/grappler.webp`（B1 的人物设计还没定稿，先用鬼剑士立绘当画风参考 + 占位配色的文字描述）。
-- 过审后还有 4 次：`python3 art/tools/fighter_grappler_art.py icons` → `iconcut`（图标表 B 12 个）、`cutin` → `cutinprep`（二觉 / 三觉插图）、`job` → `jobprep`（转职立绘）。B1 定稿后把 `STYLE_REF` 换成 fighter_ref.png 重跑插图 / 立绘。
+## 美术（生图 7 次）
+- 图标 28 个（2 张表：`fg_icons_a` 16 个 + `fg_icons_b` 12 个）→ `art/final/icon/fg_*.webp`；觉醒插图 `art/final/cutin/grappler{,2,3}.webp`；转职立绘 `art/final/job/grappler.webp`。总览：`test/shots/grappler/art_final_review.jpg`。
+- 造型和散打（红头带 + 白道服 + 红拳套）区分开：不戴头带、深藏青 / 白两色柔道服 + 黑腰带 + 钢臂铠 / 缠手、棕色刺猬头。先出立绘定造型，三张插图拿立绘当人物参考（一觉样图带红头带，已按新造型重出，旧原图留作 `grappler.headband.bak.png`）。
+- 命令：`python3 art/tools/fighter_grappler_art.py icons | iconcut | job | jobprep | cutin | cutinprep`。B1 人物定稿后把 `STYLE_REF` 换成 fighter_ref.png，旧原图改名 .bak 重跑 job / cutin。
 
 ## 领主 / 决斗场
 - 领主：所有 18 个主动技能对领主（霸体、抓不住）放完都能回到可行动、都打得到、不残留抓取（`test/grappler.mjs boss`）。抓不住的回退：抓轰炮（清单里的 7 个）/ 无情摔击的硬直冲过去 / 死亡旋律、黑震旋风、疾风闪电、二觉、三觉照样打到。

@@ -40,6 +40,7 @@ run paramedic node test/paramedic.mjs
 run enchant   node test/enchantress.mjs
 run witch     node test/witch.mjs
 run fighter   node test/fighter.mjs   # 格斗家 B0：存档安全（未知 / 没开放职业的角色不丢）、id 预留、武器手感、开放开关、?fighter=1 建角色进地下城
+run striker   node test/striker.mjs   # 散打（B5）：柔化肌肉 / 霸体护甲 / 烈焰焚步 / 双重施放 / 强袭拳·闪步 / 锁定最强敌人 / 范围 + 游戏内截图
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs

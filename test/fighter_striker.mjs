@@ -1,7 +1,6 @@
-// 格斗家转职测试：散打（striker）—— B0 生成的模板，B5 接着写（docs/CLASS_PLAN_FIGHTER.md §4）。node test/fighter_striker.mjs
-// 现在查：转职登记（精通 / 伤害类型）、技能 id 都在 FIGHTER_IDS.striker 里且都有定义、主动技能逐个对着木桩能放出来、不报错。
-// B5：在下面“转职专属”一节加本转职的机制测试（柔化肌肉次数 + 增伤（FIGHTER_HOOKS.cancelHook / softCommit）/ 霸体护甲 / 烈焰焚步双重施放 / 拳套专属）；做完把这个文件加进 test/quick.sh 的 g2 和 test/all.sh，
-//     开放时（J.ready 去掉）再加进 all.sh 的 classes / skillaudit 行（`fighter:striker`）
+// 格斗家转职测试：散打（striker，B5）。node test/fighter_striker.mjs（约 10 秒；quick.sh g2）
+// 查：转职登记（精通 / 伤害类型）、技能 id 都在 FIGHTER_IDS.striker 里且都有定义、主动技能逐个对着木桩能放出来、柔化肌肉 / 焚步双重施放 / 拳套的快速检查、不报错。
+// 完整机制 + 游戏内截图：node test/striker.mjs（all.sh）；开放时（J.ready 去掉）再加进 all.sh 的 classes / skillaudit 行（`fighter:striker`）
 import { launch, URL_BASE } from './lib.mjs';
 const JOB = 'striker';
 let fail = 0;
@@ -29,7 +28,22 @@ const R = await page.evaluate(JOB => {
 report('转职登记（精通 light、伤害 phys）', R.reg && R.armor === 'light' && R.dmg === 'phys', { ready: R.ready, armor: R.armor, dmg: R.dmg });
 report(`技能 id 都在预留表 FIGHTER_IDS.${JOB} 里、都有定义（${R.n} 个）`, !R.stray.length && !R.undef.length, { stray: R.stray, undef: R.undef });
 report('主动技能逐个对着木桩能放出来', !R.bad.length, R.bad);
-// ---------------- 转职专属（B5 往这里加）----------------
+// ---------------- 转职专属（B5；完整的机制测试和截图在 test/striker.mjs）----------------
+const X = await page.evaluate(() => {
+  const p = game.player, run = n => { for (let i = 0; i < n; i++) step(1 / 60); }, o = {};
+  const reset = () => { for (const e of ents) if (e.team === 'e') e.remove = true; run(1); Object.assign(p, { z: 0, vz: 0, vx: 0, cool: {}, mp: 1e6, mpMax: 1e6, buffs: {} }); p.act = null; p.setState('idle'); p._fsm = null; };
+  // 柔化肌肉：肘击中接铁山靠，扣 1 次
+  reset(); castSkill(p, 'fs_elbow'); run(8); const n0 = fsShiftOf(p).n; o.shift = canCancelInto(p, 'fs_pusher') && castSkill(p, 'fs_pusher') && p.act.skill === 'fs_pusher' && fsShiftOf(p).n === n0 - 1;
+  // 双重施放只能在烈焰焚步中放；焚步是变身 BUFF
+  reset(); castSkill(p, 'fs_dual'); o.dualNo = !p.buffs.fs_dual;
+  castSkill(p, 'fs_awaken'); for (let i = 0; i < 200 && !p.buffs.fs_awaken; i++) run(1); run(60); o.awk = !!p.buffs.fs_awaken;
+  const b = p.buffs; p.act = null; p.setState('idle'); p.cool = {}; castSkill(p, 'fs_dual'); o.dualYes = !!b.fs_dual;
+  // 拳套：散打能装，自动学会拳套掌握 / 散打轻甲专精
+  o.box = inv.canWear(makeItem('boxing_1_0'), true); o.auto = game.skillLv.fs_glove > 0 && game.skillLv.fs_light > 0;
+  return o;
+});
+report('柔化肌肉：武术技能之间强制中断扣 1 次', X.shift, X);
+report('烈焰焚步（变身 BUFF）中才能双重施放；拳套能装、拳套掌握自动学会', X.dualNo && X.awk && X.dualYes && X.box && X.auto, X);
 
 const errs = logs.filter(l => l.type === 'pageerror' || l.type === 'error'); report('无报错', errs.length === 0, errs.slice(0, 3));
 await browser.close();

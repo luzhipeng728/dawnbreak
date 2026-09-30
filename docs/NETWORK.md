@@ -16,13 +16,13 @@
 
 ## 账号与云存档（服务端组负责）
 - **注册 / 登录**：
-  - 用户名加密码，密码用 scrypt 哈希。注册需要邀请码，邀请码是服务端环境变量 `DNF_INVITE`，防止陌生人注册。
+  - 用户名加密码，密码用 scrypt 哈希。开放注册，不需要邀请码（每个 IP 每小时限注册 30 次）。
   - 会话用随机 token（存数据库，30 天有效），客户端存在 localStorage，请求时放在 `Authorization: Bearer`。
 - **接口**：
 
   | 接口 | 作用 |
   |---|---|
-  | `POST /api/register {user, pass, invite}` | 注册 |
+  | `POST /api/register {user, pass}` | 注册 |
   | `POST /api/login {user, pass}` | 登录，返回 `{token, user}` |
   | `POST /api/logout` | 登出 |
   | `GET /api/me` | 当前用户 |

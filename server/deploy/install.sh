@@ -5,7 +5,7 @@
 # 做的事：
 #   1. 没有便携版 Node 22 就下载到 /opt/dawnbreak-server/runtime（系统 Node 18 不动）
 #   2. 同步代码到 /opt/dawnbreak-server/app（不碰 data 目录和 .env），npm ci 装依赖（只有 ws）
-#   3. 建系统用户 dawnbreak、数据目录，首次安装时生成 .env 模板（需要手动改邀请码和管理员）
+#   3. 建系统用户 dawnbreak、数据目录，首次安装时生成 .env 模板（需要手动改管理员）
 #   4. 安装 / 重启 systemd 服务，检查 /api/health
 set -eu
 SRC=${1:?用法：sh install.sh <server 目录>}
@@ -34,7 +34,7 @@ cd "$BASE/app" && PATH="$BASE/runtime/bin:$PATH" npm ci --omit=dev --no-audit --
 
 if [ ! -f "$BASE/dawnbreak.env" ]; then
   cp "$SRC/deploy/dawnbreak.env.example" "$BASE/dawnbreak.env"
-  echo "!!! 已生成 $BASE/dawnbreak.env，请先改好 DNF_INVITE / DNF_ADMIN 再重启服务"
+  echo "!!! 已生成 $BASE/dawnbreak.env，请先改好 DNF_ADMIN 再重启服务"
 fi
 chmod 600 "$BASE/dawnbreak.env"
 chown -R dawnbreak:dawnbreak "$BASE/data" "$BASE/app" "$BASE/dawnbreak.env"

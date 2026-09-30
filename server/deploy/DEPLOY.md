@@ -13,7 +13,7 @@
 | `/opt/dawnbreak-server/runtime/` | 便携版 Node 22 |
 | `/opt/dawnbreak-server/app/` | 服务端代码（`server/` 目录的内容） |
 | `/opt/dawnbreak-server/data/` | SQLite 数据库（**要备份的只有这个目录**） |
-| `/opt/dawnbreak-server/dawnbreak.env` | 配置：邀请码、管理员（权限 600） |
+| `/opt/dawnbreak-server/dawnbreak.env` | 配置：管理员（权限 600） |
 
 ## 第一次部署
 1. 把仓库的 `server/` 目录传到服务器，例如 `/tmp/dawnbreak/server`（不需要 `node_modules`）。
@@ -21,8 +21,8 @@
    - 国内下载 Node 慢的话：`sudo NODE_MIRROR=https://npmmirror.com/mirrors/node sh …/install.sh …`
    - npm 源慢的话先 `export npm_config_registry=https://registry.npmmirror.com`。
 3. 编辑 `/opt/dawnbreak-server/dawnbreak.env`：
-   - `DNF_INVITE`：注册邀请码（发给朋友）；
-   - `DNF_ADMIN`：房主的用户名（用邀请码注册这个名字后就是管理员）。
+   - 注册不需要邀请码；
+   - `DNF_ADMIN`：房主的用户名（注册这个名字后就是管理员）。
    
    然后执行 `sudo systemctl restart dawnbreak-server`。
 4. Caddy：把 `deploy/Caddyfile.snippet` 里的 `@dnfnet` / `handle` 段加进 dnf.cc.l-hate.com 的站点块（放在 file_server 之前）。reload 前先按 cc 服务器的说明加载 relay-proxy.env，然后执行 `caddy reload`。

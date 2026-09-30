@@ -129,7 +129,9 @@ game/mon_skills.js
 # 领主差异化 P0（docs/BOSS_SPEC.md）：技能库第二批（leap cone lanes mark plant pool pull、冲刺变体）+ 特性钩子；要在 region.js 前面（样品怪 msLab 放全部技能）
 game/mon_skills_ext.js
 game/region.js
+content/regions/darkelf_bosses.js
 content/regions/darkelf.js
+content/regions/snow_bosses.js
 content/regions/snow.js
 content/regions/gent.js
 content/regions/ancient.js

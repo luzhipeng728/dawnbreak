@@ -5,7 +5,8 @@
      不看距离、跨房间（队友在别的房间也生效）；收到的一方作用在它自己的 game.player 上。服务端 relay 不过滤 d.k，不用改服务端
    - 队友出招会在它的“影子”上重放（coop.onMateAct）：影子上的 partyCast 直接忽略，避免重复生效 / 来回转发
    - AI / 决斗格斗者（不是 game.player 也不是影子）：只作用在它自己身上
-   - 内置 kind：buff / shield / heal / cleanse / revive；职业自己的 kind 用前缀（协战师 pm_、小魔女 en_）
+   - 内置 kind：buff / shield / heal / cleanse / revive；职业自己的 kind 用前缀（协战师 pm_、小魔女 en_）；buff / shield / heal 带 d.to = 只给这一个队员（partyForMe）
+   - BUFF 上的 hot（每秒回复最大 HP 的比例，engine/entity.js tickHot）/ life（免死一次，lifeSave）也走 buff 同步
    - 保护罩 = BUFF 上的 absorb 点数（可叠加，总量不超过最大 HP × cap）。engine/combat.js 的 applyHit 调 absorbHit 先扣护盾；
      没有那一行时用 t.onDamaged 兜底回补 HP（在死亡判定之前）
    ===================================================================== */
@@ -42,7 +43,7 @@ if (typeof net !== 'undefined' && !partyRecv.on) { partyRecv.on = true; net.on('
 
 /* ---- 数值清洗（网络来的数据）---- */
 const PARTY_BUFF_KEYS = { t: [0, 900], atk: [-0.5, 3], aspd: [-0.5, 1], cspd: [-0.5, 1], mspd: [-0.5, 1], crit: [-0.5, 1], critDmg: [-1, 3], dmg: [-0.5, 3], taken: [-0.9, 1],
-  hpPct: [0, 2], mpPct: [0, 2], stagger: [-500, 2000], mpr: [0, 5], lv: [0, 99], n: [0, 99], sa: [0, 1], inv: [0, 1], absorb: [0, 1e9] };
+  hpPct: [0, 2], mpPct: [0, 2], stagger: [-500, 2000], mpr: [0, 5], lv: [0, 99], n: [0, 99], sa: [0, 1], inv: [0, 1], absorb: [0, 1e9], hot: [0, 0.5], life: [0, 1] };
 function partyCleanBuff(b) {
   const o = {}; if (!b || typeof b !== 'object') return o;
   for (const k in PARTY_BUFF_KEYS) if (typeof b[k] === 'number' && isFinite(b[k])) o[k] = clamp(b[k], PARTY_BUFF_KEYS[k][0], PARTY_BUFF_KEYS[k][1]);
@@ -51,10 +52,19 @@ function partyCleanBuff(b) {
   return o;
 }
 const partyIdOk = id => typeof id === 'string' && /^[a-z0-9_]{1,32}$/.test(id);
+// 单体施放（圣职者 缓慢愈合 / 圣骑士的单体 BUFF、护盾、免死）：d.to = 目标的账号 uid（partyMyUid()；单机 / 没登录 = 0），收到的一方不是目标就忽略；
+// AI / 决斗格斗者（不是 game.player）直接作用在施放者自己身上，不看 to
+function partyMyUid() { return typeof net !== 'undefined' && net.user ? net.user.id : 0; }
+function partyForMe(me, d) { return d.to === undefined || d.to === null || me !== game.player || String(d.to) === String(partyMyUid()); }
+// 施放者身边 r 以内 HP 比例最低的队伍成员（含自己）→ { t, to }（to = partyCast 的目标 uid）
+function partyPick(src, r = Infinity) {
+  let best = null; for (const t of partyOf(src, r)) if (!best || t.hp / Math.max(1, t.hpMax) < best.hp / Math.max(1, best.hpMax)) best = t;
+  best = best || src; return { t: best, to: best === game.player || best === src ? partyMyUid() : best.uid };
+}
 
 /* ---- 内置：BUFF（按 id 覆盖 = 刷新）---- */
 partyOn('buff', (me, d) => {
-  if (!partyIdOk(d.id) || me.dead) return;
+  if (!partyIdOk(d.id) || me.dead || !partyForMe(me, d)) return;
   const b = partyCleanBuff(d.b); if (!(b.t > 0)) return;
   me.buffs[d.id] = { ...b, party: 1 };
   if (typeof applyBuffs === 'function') applyBuffs(me);
@@ -63,13 +73,13 @@ partyOn('buff', (me, d) => {
 });
 /* ---- 内置：保护罩（可叠加的吸伤护盾）：{ id, pct 吸收量 = 自己最大 HP × pct | v 数值, t 秒, cap 总量上限 = 最大 HP × cap（默认 0.5）} ---- */
 partyOn('shield', (me, d) => {
-  if (!partyIdOk(d.id) || me.dead) return;
+  if (!partyIdOk(d.id) || me.dead || !partyForMe(me, d)) return;
   const v = d.pct ? me.hpMax * clamp(+d.pct, 0, 2) : clamp(+d.v || 0, 0, 1e9), t = clamp(+d.t || 0, 0, 120), cap = clamp(+d.cap || 0.5, 0.05, 2); if (!(v > 0) || !(t > 0)) return;
   addAbsorb(me, d.id, v, t, cap);
 });
 /* ---- 内置：回复 { pct 最大 HP 比例 | v 数值, mp: 最大 MP 比例 } ---- */
 partyOn('heal', (me, d) => {
-  if (me.dead) return;
+  if (me.dead || !partyForMe(me, d)) return;
   const v = d.pct ? me.hpMax * clamp(+d.pct, 0, 1) : clamp(+d.v || 0, 0, 1e9);
   if (v > 0) { me.hp = Math.min(me.hpMax, me.hp + v); if (typeof addNumber === 'function') addNumber(Math.round(v), me.x, me.y, me.z, { col: '#7aff8a' }); }
   if (d.mp) me.mp = Math.min(me.mpMax, me.mp + me.mpMax * clamp(+d.mp, 0, 1));

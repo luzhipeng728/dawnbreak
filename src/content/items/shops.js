@@ -25,6 +25,9 @@ defineShop('kiri', { name: '凯丽的枪械', greet: '天界的枪械技术，�
 // 格斗家武器（风振，赫顿玛尔中央广场）：格斗家开放后风振才挂出商店（content/world/towns.js）
 defineShop('fengzhen', { name: '风振的拳脚铺', greet: '拳脚的家伙，要趁手才行。', tabs: [
   { name: '格斗家武器', goods: gearGoods({ slots: ['weapon'], wtypes: CLASS_WTYPES('fighter'), rars: [0, 1, 2] }) }] });
+// 圣职者武器（歌兰蒂斯，赫顿玛尔市政街 · 大圣堂）：圣职者开放后歌兰蒂斯才挂出商店（content/world/towns.js）
+defineShop('grandis', { name: '大圣堂的巨兵库', greet: '愿神的光辉，寄宿在你的巨兵之上。', tabs: [
+  { name: '圣职者武器', goods: gearGoods({ slots: ['weapon'], wtypes: CLASS_WTYPES('priest'), rars: [0, 1, 2] }) }] });
 defineShop('lorian', { name: '罗莉安的魔法用品', markup: 1.1, greet: '魔法师的东西，这里都有。', tabs: [
   { name: '魔法师武器', goods: gearGoods({ slots: ['weapon'], wtypes: CLASS_WTYPES('mage'), rars: [0, 1, 2] }) },
   { name: '首饰', goods: gearGoods({ slots: ACC_SLOTS, rars: [1, 2] }) },

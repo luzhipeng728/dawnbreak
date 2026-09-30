@@ -261,6 +261,7 @@ function airRecover(t) {
   fxText('受身', t.x, t.y, t.z + 30, { col: '#9fe8ff', size: 11 }); fxAura(t, '#9fe8ff', 0.5);
 }
 function killEnt(t, a, h) {
+  if (t.fighter && !t.dead && !t.ghost && lifeSave(t)) return;   // 免死 BUFF（life）：不死、回复一部分 HP
   t.interrupt(); if (t.heldBy) { ungrab(t.heldBy, t); t.heldBy = null; } t.thrown = null;
   t.dead = true; t.setState('dead'); t.deadT = 0; t.act = null;
   t.vz = Math.max(t.vz, t.z > 2 ? 120 : 260); t.vx = (a ? a.face : -t.face) * 120; t.z = Math.max(t.z, 1);

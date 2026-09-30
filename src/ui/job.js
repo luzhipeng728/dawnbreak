@@ -7,9 +7,9 @@
    - 执行：game.job = id → bus.emit('jobChange', { job }) → onJobChange(p, job)（若定义）→ save.write()，然后播放转职演出
    ===================================================================== */
 const JOB_LVL = 15;
-const JOB_MENTOR = { sword: 'gsd', gun: 'kiri', mage: 'sharan', fighter: 'fengzhen' };
+const JOB_MENTOR = { sword: 'gsd', gun: 'kiri', mage: 'sharan', fighter: 'fengzhen', priest: 'grandis' };
 // 这个职业现在能选的转职（J.ready === false 的不显示，开发测试 ?fighter=1 强制开放，见 content/classes/common.js jobOpen）；一个都没有 = null
-const jobsOf = cls => { const J = CLASSES[cls] && CLASSES[cls].jobs; if (!J) return null; const ids = Object.keys(J).filter(j => jobOpen(J[j])); if (!ids.length) return null; if (ids.length === Object.keys(J).length) return J; const o = {}; for (const j of ids) o[j] = J[j]; return o; };
+const jobsOf = cls => { const J = CLASSES[cls] && CLASSES[cls].jobs; if (!J) return null; const ids = Object.keys(J).filter(j => jobOpen(J[j], cls)); if (!ids.length) return null; if (ids.length === Object.keys(J).length) return J; const o = {}; for (const j of ids) o[j] = J[j]; return o; };
 const jobTrialDone = cls => !QUESTS['q_job_' + cls + '_final'] || questDone('q_job_' + cls + '_final');
 // 这个方向的专属转职任务（J.trial）做完没有（任务没定义 = 没有这道门槛）
 const jobTrialOk = J => !J || ((J.direct || jobTrialDone(qPlayerCls())) && (!J.trial || !QUESTS[J.trial] || questDone(J.trial)));

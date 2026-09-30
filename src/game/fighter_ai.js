@@ -150,7 +150,7 @@ class FighterBrain {
   }
   move(o, dx, dy, adx, ady, dir) {
     const p = this.p, P = p.pad; if (!p.free) return;
-    const fr = p.cls === 'fighter' ? aiFRange(p) : 0, ranged = fr ? fr > 100 : p.cls !== 'sword' && !(p.cls === 'mage' && jobOf(p) === 'battlemage');
+    const fr = p.cls === 'fighter' ? aiFRange(p) : 0, ranged = fr ? fr > 100 : p.cls !== 'sword' && p.cls !== 'priest' && !(p.cls === 'mage' && jobOf(p) === 'battlemage');   // 圣职者：巨兵近战（转职的立回距离由圣职者决斗块细调）
     let want = fr || (ranged ? 200 : 62); if (o.st === 'down' || o.st === 'getup') want = fr ? (ranged ? 150 : 70) : ranged ? 160 : 110;
     if (this.yWob <= 0 || Math.random() < 0.01) this.yWob = rnd(-1, 1) * (ranged ? 30 : 8);
     const gx = o.x - dir * want, gy = clamp(o.y + (adx > 150 ? this.yWob : 0), 8, DEPTH - 8), ex = gx - p.x, ey = gy - p.y;

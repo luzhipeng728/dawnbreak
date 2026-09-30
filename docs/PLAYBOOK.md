@@ -120,6 +120,8 @@
 - **生图参考图别走 `sheets.upload` 的旧缓存**（2026-09-29 转职头饰）：缓存里的 hyprlab 地址会过期（生图 404），多线程同时写 `art/src/avatar/.upload_cache.json` 还会把 JSON 写坏（后面的脚本全部读档失败）。新脚本直接传 `'local:' + 本地路径`（gpt-image 路由自己按各家的方式传图），见 `art/tools/job_head_art.py` 的 `run`。
 - **转职专属任务线的两个坑**（2026-09-30 格斗家 B8）：① 任务奖励里的 `unlock: '<地下城>'` 只是奖励列表里显示一行字，隐藏地下城的门只认 `DUNGEONS[id].unlock.quest`（弹药专家第 1 步就是这样，门并没有开）——任务要用隐藏地下城，就在描述 / 进行中台词里写清先做哪个任务；② 给职业加了 `JOB_CHAINS.<职业>` 之后 `jobAvailable` 要先做完 `q_job_<职业>_final`，测试里直接看导师转职按钮 / 转职窗口的要先把它记成已完成。
 - **测 NPC 对话别无脑按 Esc**：Esc 只在不是最后一页时“跳到最后一页”，只有一页的对话（很多交付台词只有一句）按 Esc 会直接关窗口。先看 `npcUI.page < npcUI.pages.length - 1`。
+- **新职业的开发开关按职业分**（2026-10-01 圣职者）：`?<职业>=1` / `?dev=a,b` 只开放那个职业（`DEV_OPEN` 是 Set）；以前 `?fighter=1` 会把所有 ready:false 的职业一起打开，test/fighter.mjs 拿 `priest` 当“未知职业”样本就会被带开。体检工具（skillaudit / skillshots）网址自动带 `&<职业>=1`。
+- **`fxTint` 只对登记了 `FX_BASE_HUE` 的素材换色**：`heal` / `pillar` 没登记，传 `col` 不会变色（绿光柱还是绿的）；近白色（饱和度 < 0.22）才会去饱和变白。要换色先看 FX_BASE_HUE，别改它（会连带改掉别的职业已经用着的样子）。
 - **给全局函数加参数要查包装层**：`itemTipOne` 被 game/vanity.js 包了一层（`one0(it, cur, head)`），新加的参数会被吞掉；`equipTotals` / `recalcStats` 也分别被公会、决斗包过。改签名前先 `grep -rn "= 函数名\|函数名 = "`。
 - **图标表切出来只剩碎片 + 一条横线**：生图偶尔在表的上下边缘画一条深色边框线（2026-09-29 `cdr60_sand_leather`），切图时它连成横跨三格的连通块，把中间格的物品挤掉。先查 `mn < 110` 占满一行的边缘行，把原图（`art/src/gear/`，先留 `.bak.png`）上下各 4 行涂白再 `cut`，不用重生成。
 - **画的时候位置是插值过的**（game.js `lerpIn / lerpOut`，docs/ANIMATION.md）：renderWorld / ui.draw 期间实体、投射物、城镇路人的 x / y / z 和 cam.x 是两个逻辑步之间的插值，画完立刻换回。绘制代码别写这些字段（会被换回去）；新加会移动、又不在 ents / projs / world.crowd 里的东西，要在 `snapPrev` / `lerpIn` 里补上，否则在高刷屏上会和角色差一步。

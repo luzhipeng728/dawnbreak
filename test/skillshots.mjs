@@ -22,7 +22,7 @@ for (const item of list) {
   const [cls, job] = item.split(':'), tag = `${cls}-${job || 'base'}`;
   const dir = `${out}/${tag}`; fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
   const { browser, page, logs } = await launch({ width: 1280, height: 720 });
-  await page.goto(`${URL_BASE}?test&mute&cls=${cls}&mobs=0`); await page.waitForFunction(() => window.__READY);
+  await page.goto(`${URL_BASE}?test&mute&cls=${cls}&${cls}=1&mobs=0`);   // &<职业>=1：还没开放的职业（ready:false）也能测 await page.waitForFunction(() => window.__READY);
   const ids = await page.evaluate(({ cls, job }) => {
     const p = game.player; game.job = job || null; Object.assign((save.data.flags ??= {}), { awaken: true, awaken2: true, awaken3: true });
     if (typeof onJobChange === 'function' && job) try { onJobChange(p, job); } catch (e) { /* 部分转职没有这个钩子 */ }

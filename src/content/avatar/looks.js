@@ -101,7 +101,8 @@ function lookFromEquip(cls, eq, prefer, job) {
     if (slot !== 'av_face' && AVATAR_HAT_CLS[cls] && !upCostume) continue;   // 默认上身自带帽子：上身换成时装后才显示帽子 / 发饰
     acc.push(it.key);
   }
-  return { wpn: weaponArtOf(eq.weapon, cls, eq.av_weapon), set, parts, acc: jobLookAcc(job, acc), glow: vanityGlowOf(eq.weapon), job: job || null };   // glow：强化 / 增幅光效（game/vanity.js）
+  const W = eq.weapon && typeof ITEMS !== 'undefined' && ITEMS[eq.weapon.key], pal = W && W.pal && !eq.av_weapon ? W.pal : null;   // 格斗家具名史诗的配色（手臂层按它换色，avatar.js avArmTint）
+  return { wpn: weaponArtOf(eq.weapon, cls, eq.av_weapon), set, parts, acc: jobLookAcc(job, acc), glow: vanityGlowOf(eq.weapon), job: job || null, pal };   // glow：强化 / 增幅光效（game/vanity.js）
 }
 // 职业默认外观（选角立绘、路人、决斗场对手等没有装备信息的模型）
 function defaultLook(cls) {

@@ -37,7 +37,7 @@ class AvatarLayer {
   apply(look) {
     this.look = look; this.glow = vanityGlowRow(look.glow);   // 强化 / 增幅光效（game/vanity.js）
     this.A = look.wpn && WEAPON_IMG[look.wpn] || null; this.wim = this.A ? IMG['weapon/' + look.wpn] : null;
-    this.arm = this.A && SPR_DATA['farm_' + this.A.type] ? 'farm_' + this.A.type : null; this.armV = this.arm ? avArmVariant(look.wpn, this.A.type) : null;   // 格斗家：按帧重画的手臂层（没有就退回贴武器图）
+    this.arm = this.A && SPR_DATA['farm_' + this.A.type] ? 'farm_' + this.A.type : null; this.armV = this.arm ? (look.pal ? 'pal' : avArmVariant(look.wpn, this.A.type)) : null;   // 格斗家：按帧重画的手臂层（没有就退回贴武器图）
     if (this.arm && !IMG[`spr/${this.arm}/idle`] && !AV_ARM_LOAD[this.arm]) AV_ARM_LOAD[this.arm] = loadBundles(['spr:' + this.arm]);   // 换上武器就开始加载
     if (this.A && !this.wim) { const k = 'weapon/' + look.wpn; loadArtKey(k).then(() => { if (this.look === look) this.wim = IMG[k] || null; }); }
     const sk = look.set ? `${this.cls}@${look.set}` : null;
@@ -76,7 +76,7 @@ class AvatarLayer {
     const O = SPR_DATA[k].frames[f], im = O && IMG[`spr/${k}/${f}`];
     if (!O) return null;
     if (!im) { if (!AV_ARM_LOAD[k]) AV_ARM_LOAD[k] = loadBundles(['spr:' + k]); return null; }
-    return { O, im: this.armV ? avArmTint(im, this.armV, this.look.wpn, f, O) : im };
+    return { O, im: this.armV ? avArmTint(im, this.armV, this.look.wpn, f, O, this.look.pal) : im };
   }
   armDraw(c, ov, f) {
     const { O } = ov, src = this.fr && this.fr.src, B = SPR_DATA.fighter.frames[f], bim = IMG['spr/fighter/' + f];
@@ -256,14 +256,15 @@ function avArtCols(key) {
   const m = C.slice(Math.floor(C.length * 0.35), Math.ceil(C.length * 0.75)), avg = j => m.reduce((t, c) => t + c[j], 0) / m.length;
   return (a.cols = [[avg(1), avg(2), avg(3)], G[3] > 10 ? [G[0] / G[3], G[1] / G[3], G[2] / G[3]] : [220, 220, 225]]);
 }
-function avArmTint(im, v, key, f, O) {
+function avArmTint(im, v, key, f, O, pal) {
   let M = AV_ARM_TC.get(im); if (!M) AV_ARM_TC.set(im, M = new Map());
-  const ck = v + '|' + key; let o = M.get(ck); if (o) return o;
+  const ck = v + '|' + key + (pal ? `|${pal.main}|${pal.trim}|${pal.glow}` : ''); let o = M.get(ck); if (o) return o;
+  const PC = pal ? [hexRgb(pal.main), hexRgb(pal.trim || pal.main), hexRgb(pal.glow || pal.trim || pal.main)] : null;   // 具名史诗：主色 / 镶边 / 光（epics60_w_fighter.js 的 pal）
   const A = key && WEAPON_IMG[key], proj = !!(A && A.kind !== 'tonfa' && A.fh && f && O);
   if (proj && !IMG['weapon/' + key]) { if (typeof loadArtKey === 'function') loadArtKey('weapon/' + key); }
   const W = im.width, H = im.height, [cv, x] = offCanvas(W, H); x.drawImage(im, 0, 0);
   let d; try { d = x.getImageData(0, 0, W, H); } catch (e) { M.set(ck, im); return im; }
-  const AC = proj && IMG['weapon/' + key] ? avArtCols(key) : null, [m1, m2] = AC || AV_ARM_TINT[v].map(hexRgb);
+  const AC = PC ? [PC[0], PC[1]] : proj && IMG['weapon/' + key] ? avArtCols(key) : null, [m1, m2] = AC || AV_ARM_TINT[v].map(hexRgb);
   const p = d.data, n = p.length / 4, cls = new Uint8Array(n), lum = new Float32Array(n), L = [];
   for (let i = 0; i < n; i++) {   // 1 = 有颜色的材质（换主色），2 = 金属 / 白（往辅色靠），0 = 不动
     const q = i * 4; if (p[q + 3] < 10) continue;
@@ -271,7 +272,7 @@ function avArmTint(im, v, key, f, O) {
     let h = 0; if (mx > mn) { h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4; h *= 60; if (h < 0) h += 360; }
     lum[i] = 0.3 * r + 0.59 * g + 0.11 * b;
     if (mx < 60 || (mx >= 140 && sat >= 0.07 && sat < 0.45 && r >= b && h > 8 && h < 48)) continue;   // 描边 / 绑带皮肤不动
-    if (sat >= 0.25) { cls[i] = 1; L.push(lum[i]); } else if (mx >= 90) cls[i] = 2;
+    if (sat >= 0.25) { cls[i] = 1; L.push(lum[i]); } else if (mx >= 55) cls[i] = 2;   // 发暗的钢（臂铠）也算材质：只有最深的描边（< 55）不动
   }
   L.sort((a, b) => a - b); const med = Math.max(20, L.length ? L[L.length >> 1] : 100);   // 主材质的中间亮度 → 对到主色（明暗按比例）
   for (let i = 0; i < n; i++) {
@@ -317,6 +318,12 @@ function avArmTint(im, v, key, f, O) {
       h.P.forEach((i, j) => {
         const a4 = at(gx + (T[j] - tc) * k2, gy + (N[j] - nc) * k2 * fy); if (a4 < 0) return;   // 落在武器图外面：保留换色（主色取自这一款武器图）
         const sh = Math.pow(Math.min(1.35, Math.max(0.55, Ls[j] / lm)), 0.8), q = i * 4;
+        if (PC) {   // 具名史诗：花纹（翅膀 / 宝石 / 镶边的明暗）取自品级外观，颜色换成这件史诗的配色
+          const r = art.d[a4], g = art.d[a4 + 1], b = art.d[a4 + 2], mx = Math.max(r, g, b), sat = mx ? (mx - Math.min(r, g, b)) / mx : 0, l = 0.6 + 0.4 * (0.3 * r + 0.59 * g + 0.11 * b) / 160;   // 花纹的明暗减半（传说外观的熔岩纹很碎，换色后会花）
+          const C = sat > 0.45 && mx > 225 ? PC[2] : sat >= 0.3 ? PC[0] : PC[1];
+          for (let c = 0; c < 3; c++) p[q + c] = Math.min(255, C[c] * Math.min(1.5, l) * sh);
+          return;
+        }
         for (let c = 0; c < 3; c++) p[q + c] = Math.min(255, art.d[a4 + c] * sh);
       });
     }

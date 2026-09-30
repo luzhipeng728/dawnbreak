@@ -162,7 +162,7 @@ ok(!r3.cover.length, '手套 / 拳套 / 爪 / 臂铠盖住拳头（cover），�
 ok(!r3.noIcon.length, '图标：item_w_<类型> ×5、流沙 item_sand_<类型> ×5、w_fighter', JSON.stringify(r3.noIcon));
 ok(r3.drawn.every(([, n]) => n > 100), '每类武器都画在手上（站姿和空手相比变了的像素）', JSON.stringify(r3.drawn));
 ok(r3.shop === 5, `风振的格斗家武器货架有 ${r3.shop} 类`);
-ok(r3.arm.every(([, n]) => n >= 16) && r3.arm.some(([t, n]) => t === 'boxing' && n >= 85) && r3.armUsed, '拳上武器有按帧重画的手臂层（拳套 91 帧齐；其余类型没做完的帧退回贴武器图），站立帧用上了', JSON.stringify([r3.arm, r3.armUsed]));
+ok(r3.arm.every(([, n]) => n >= 85) && r3.armUsed, '5 类拳上武器都有按帧重画的手臂层（≥ 85 / 91 帧），站立帧用上了', JSON.stringify([r3.arm, r3.armUsed]));
 ok(r3.tint === 5, `品级 / 装扮给手臂层换色（5 种外观 = ${r3.tint} 张不同的图）`);
 
 console.log('4. 时装 / 配件 / 路人');

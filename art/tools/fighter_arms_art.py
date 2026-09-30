@@ -108,6 +108,8 @@ def cmd_cut(t, sheets):
     mp = os.path.join(od, 'cut.json'); old = json.load(open(mp)) if os.path.exists(mp) else {}; old.update(rep); json.dump(old, open(mp, 'w'), indent=1)
     low = [f'{f}({r["iou"]})' for f, r in rep.items() if r['iou'] < 0.7]; print('  和原装轮廓重合度 < 0.7：', ' '.join(low) or '无')
 
+GLOVE_SCALE = {'knuckle': 1.15}   # 手套类型的手套放大倍数（拳套本来就大、臂铠 / 爪 / 东方棍不放大）
+
 def dil(m, r=1):
     o = m.copy()
     for _ in range(r):
@@ -172,6 +174,26 @@ def arm_layer(f, B, b, w, C, t):
     hm = hand_mask(B, b)   # 原装的手整只换掉：这些像素一律用重画的图（重画图这里是空白 = 手本来就不在这了，运行时这里的原装手被 avFists 抹掉）
     m |= dil(hm, 1) & (wb[..., 3] > 0) & ~white
     out = wb.copy(); out[..., 3] = np.where(m, wb[..., 3], 0)
+    # 去白边：贴着透明的浅色像素（重画图去白底留下的一圈、半透明的浅色）去掉，两遍
+    for _ in range(2):
+        a_ = out[..., 3] > 0; edge = a_ & ~ero(a_, 1); c3 = out[..., :3].astype(int); mxc = c3.max(-1); satc = np.where(mxc > 0, (mxc - c3.min(-1)) / np.maximum(mxc, 1), 0)
+        fr = edge & (((mxc >= 200) & (satc < 0.2)) | ((out[..., 3] < 200) & (mxc >= 150)))
+        out[..., 3] = np.where(fr, 0, out[..., 3])
+    k = GLOVE_SCALE.get(t)
+    if k:   # 手套画得和拳头一样大，1 倍下显小：每只手的手套（离锚点 20 以内的非皮肤像素）绕自己的中心放大一点，叠在原来的上面
+        rgb2 = out[..., :3].astype(int); mx2 = rgb2.max(-1); s2 = np.where(mx2 > 0, (mx2 - rgb2.min(-1)) / np.maximum(mx2, 1), 0)
+        hue2 = np.degrees(np.arctan2(np.sqrt(3) * (rgb2[..., 1] - rgb2[..., 2]), 2 * rgb2[..., 0] - rgb2[..., 1] - rgb2[..., 2])) % 360
+        skin2 = (mx2 >= 140) & (s2 >= 0.07) & (s2 < 0.45) & (rgb2[..., 0] >= rgb2[..., 2]) & (hue2 > 8) & (hue2 < 48)
+        big = out.copy(); big[..., 3] = 0; Hh, Ww = out.shape[:2]
+        for a2 in anchors:
+            g = (out[..., 3] > 0) & ~skin2 & ((xs - a2['gx']) ** 2 + (ys - a2['gy']) ** 2 <= 400)
+            if g.sum() < 30: continue
+            yy, xx = np.where(g); cx, cy = xx.mean(), yy.mean(); x0, x1, y0, y1 = xx.min(), xx.max() + 1, yy.min(), yy.max() + 1
+            crop = out[y0:y1, x0:x1].copy(); crop[..., 3] = np.where(g[y0:y1, x0:x1], crop[..., 3], 0)
+            im = Image.fromarray(crop, 'RGBA'); w2, h2 = max(1, round(im.width * k)), max(1, round(im.height * k)); im = im.resize((w2, h2), Image.LANCZOS)
+            px, py = round(cx - (cx - x0) * k), round(cy - (cy - y0) * k)
+            layer = Image.new('RGBA', (Ww, Hh)); layer.paste(im, (px, py)); big = np.array(Image.alpha_composite(Image.fromarray(big, 'RGBA'), layer))
+        out = np.array(Image.alpha_composite(Image.fromarray(out, 'RGBA'), Image.fromarray(big, 'RGBA')))
     return out
 
 def cmd_layer(t):

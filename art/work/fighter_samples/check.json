@@ -1,0 +1,228 @@
+{
+ "flicker": {
+  "sword": {
+   "walk": 0.143,
+   "run": 0.075,
+   "all": 0.893,
+   "top": [
+    [
+     "down",
+     0.893
+    ],
+    [
+     "backslash",
+     0.71
+    ],
+    [
+     "tumble",
+     0.602
+    ]
+   ]
+  },
+  "gun": {
+   "walk": 0.166,
+   "run": 0.206,
+   "all": 0.775,
+   "top": [
+    [
+     "tumble",
+     0.775
+    ],
+    [
+     "roll",
+     0.67
+    ],
+    [
+     "armor1",
+     0.579
+    ]
+   ]
+  },
+  "mage": {
+   "walk": 0.1,
+   "run": 0.162,
+   "all": 0.603,
+   "top": [
+    [
+     "tumble",
+     0.603
+    ],
+    [
+     "dash1",
+     0.505
+    ],
+    [
+     "air",
+     0.502
+    ]
+   ]
+  },
+  "fighter": {
+   "walk": 0.165,
+   "run": 0.11,
+   "all": 0.811,
+   "top": [
+    [
+     "bounce",
+     0.811
+    ],
+    [
+     "tumble",
+     0.782
+    ],
+    [
+     "air",
+     0.769
+    ]
+   ]
+  }
+ },
+ "sheet": {
+  "sword_walk": [
+   0.115,
+   3.563
+  ],
+  "sword_run": [
+   0.069,
+   2.937
+  ],
+  "sword_combo": [
+   0.095,
+   4.058
+  ],
+  "sword_jump": [
+   0.149,
+   5.809
+  ],
+  "fighter_move": [
+   0.126,
+   7.167
+  ],
+  "fighter_combo": [
+   0.113,
+   6.529
+  ],
+  "fighter_walk": [
+   0.137,
+   7.605
+  ],
+  "fighter_react": [
+   0.119,
+   10.131
+  ],
+  "fighter_base2": [
+   0.124,
+   4.51
+  ],
+  "fighter_base3": [
+   0.103,
+   4.397
+  ],
+  "fighter_jobs": [
+   0.171,
+   6.544
+  ]
+ },
+ "scale": {
+  "sword": {
+   "frames": 121,
+   "trusted": 74,
+   "median_dev": 0.02,
+   "over12": []
+  },
+  "gun": {
+   "frames": 129,
+   "trusted": 82,
+   "median_dev": 0.04,
+   "over12": [
+    [
+     "getup",
+     1.12
+    ],
+    [
+     "hit1",
+     1.12
+    ],
+    [
+     "jump3",
+     1.12
+    ],
+    [
+     "mPoint",
+     1.12
+    ],
+    [
+     "mSet1",
+     1.18
+    ],
+    [
+     "ptDown",
+     0.86
+    ],
+    [
+     "sfHover",
+     0.86
+    ],
+    [
+     "sfLand",
+     1.12
+    ],
+    [
+     "shoot2",
+     1.12
+    ],
+    [
+     "shootUp1",
+     1.14
+    ],
+    [
+     "shootUp2",
+     1.14
+    ]
+   ]
+  },
+  "mage": {
+   "frames": 153,
+   "trusted": 87,
+   "median_dev": 0.04,
+   "over12": [
+    [
+     "m3_2",
+     1.14
+    ],
+    [
+     "whip",
+     1.14
+    ]
+   ]
+  },
+  "fighter": {
+   "frames": 91,
+   "trusted": 89,
+   "median_dev": 0.02,
+   "over12": [
+    [
+     "bounce",
+     0.86
+    ],
+    [
+     "fg_press",
+     0.82
+    ]
+   ]
+  }
+ },
+ "anchors": {
+  "frames": 91,
+  "missing_frames": [],
+  "head": 91,
+  "cut": 90,
+  "two_fists": 46,
+  "one_fist": 44,
+  "no_fist": [
+   "fs_elbow"
+  ],
+  "auto": 16,
+  "outside": []
+ }
+}

@@ -34,8 +34,10 @@ function mainDmgType(p) {
 // 用当前 inv.equip 算影子实体的「输出」与「有效生命」
 function gearMetrics(p, type) {
   const q = Object.create(p); recalcStats(q);
-  const atk = type === 'mag' ? q.matk : type === 'indep' ? q.indep : q.baseStats.atk;
-  const crit = clamp(type === 'mag' ? q.mcrit : q.crit, 0, 1), spd = type === 'mag' ? q.cspd : q.aspd;
+  let atk = type === 'mag' ? q.matk : type === 'indep' ? q.indep : q.baseStats.atk;
+  let crit = clamp(type === 'mag' ? q.mcrit : q.crit, 0, 1); const spd = type === 'mag' ? q.cspd : q.aspd;
+  // 街霸「邪功修炼」（fighter_brawler.js 每帧按面板算）：力量 / 智力、物理 / 魔法暴击取高——对比装备时也按取高算，不然重甲精通的力量、偏力量的武器在街霸身上显示成没用
+  if (type === 'mag' && typeof hasSkill === 'function' && hasSkill(p, 'fb_overstrain')) { if (q.str > q.int) atk *= (1 + q.str * 0.004) / (1 + q.int * 0.004); crit = clamp(Math.max(q.mcrit, q.crit), 0, 1); }
   const el = q.elem || {}, elemBonus = q.atkElem ? (el[q.atkElem] || 0) / 220 : Math.max(0, el.fire || 0, el.ice || 0, el.light || 0, el.dark || 0) / 220 * 0.3;
   const off = atk * (1 + crit * (q.critDmg - 1)) * (1 + (q.dmgUp || 0)) * (0.6 + 0.4 * spd) * (1 + elemBonus);
   const dr = (q.def / (q.def + 1200) + q.mdef / (q.mdef + 1200)) / 2;   // 与伤害结算一致：减伤 = 防御 / (防御 + 1200)，物理魔法各半

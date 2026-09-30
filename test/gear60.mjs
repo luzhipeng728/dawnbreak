@@ -4,6 +4,9 @@
 //           不丢不复制、强化等转移、强度不变、刷新后不重复补发、云存档走真服务端往返、一键满级券升到 60 后能穿回老物品
 //           （还没有真实的搬家时，测试自己登记一个样本：阿波菲斯 → Lv55 + 继承装备，身上的 Lv28 五件套整套搬到 Lv60 + 继承套装）
 //   content B1~B3 交付时要过：每部位 × 等级段数量下限、蓝图的搬家表、继承装备数值一致、每件有图标 / 武器图、G60.problems 为空
+//   jobs    每个开放的转职（格斗家的气功师 / 散打 / 街霸 / 柔道家也在内）：每 5 级都能买到 / 掉到能装的武器、每 10 级内有能刷到的史诗武器；
+//           单换武器的「最好史诗 / 同级稀有」倍率按转职的伤害类型算够高（魔法转职的武器要有智力 / 魔法暴击 / 施放）；装备对比、红字默认属性按转职伤害类型；
+//           每类武器 Lv60 T1 < T2 < T3、Lv55 < T1（按这类武器的主口径：魔攻系数高的按魔法转职）
 //   power   各等级「同级最好史诗」对「同级稀有（去掉随机属性）」的综合倍率，和 Lv30 比在 ±10% 以内（搜索见 test/lib_bestkit.mjs，结果和原因见 GEAR.md §10.4）；加 --why 输出拆解（因子 / 套装 / fx / 每件）
 import { launch, URL_BASE } from './lib.mjs';
 import { BEST_KIT_SRC } from './lib_bestkit.mjs';
@@ -259,9 +262,17 @@ if (run('content')) {
     const eq = (a, b) => JSON.stringify(norm(a)) === JSON.stringify(norm(b));
     for (const [K, S] of Object.entries(G60.succ)) { const O = G60.orig[K], D = ITEMS[S]; if (!O || !D || !want(D)) continue; if (D.lvl !== O.lvl || !eq(D.fx, O.fx) || !eq(D.proc, O.proc) || D.slot !== O.slot) inhBad.push(`${S}（${K}）`); }
     const noIcon = E.concat(named).filter(want).filter(D => !ASSET_SRC['icon/' + (D.icon || 'item_' + D.key)]).map(D => D.key);
-    const noArt = E.filter(D => D.slot === 'weapon' && want(D) && (!WEAPON_IMG[D.key] || !ASSET_SRC['weapon/' + D.key])).map(D => D.key);
+    const artKey = D => D.pal && !WEAPON_IMG[D.key] ? `${D.wtype}_r4` : D.key;   // 配色变体（格斗家，物品上写 pal）：拿在手里 = <类型>_r4 + 换色，不另画图
+    const noArt = E.filter(D => D.slot === 'weapon' && want(D) && (!WEAPON_IMG[artKey(D)] || !ASSET_SRC['weapon/' + artKey(D)])).map(D => D.key);
+    // 职业之间持平（武器）：每个开放职业的领主神器 ≥ 6 件、深渊专属武器 21~30 ≥ 3 / 暗黑城深渊（Lv38）≥ 5 / 时空之门深渊（T3）≥ 5、官方 T1 / T2 / T3 各 ≥ 5
+    const parity = [];
+    if (!ONLY || ONLY === 'weapon') for (const cls of openClasses()) { const W = Object.values(ITEMS).filter(D => D.kind === 'equip' && D.slot === 'weapon' && D.cls === cls), nm = s => W.filter(D => D.rar === 5 && D.abyssRegion === s).length;
+      const got = { named: W.filter(D => D.named && D.rar === 3).length, low: W.filter(D => D.rar === 5 && D.abyss && D.lvl >= 21 && D.lvl <= 30).length, darkelf: nm('darkelf'), timegate: nm('timegate'),
+        t1: W.filter(D => D.rar === 5 && D.tier === 1).length, t2: W.filter(D => D.rar === 5 && D.tier === 2).length, t3: W.filter(D => D.rar === 5 && D.tier === 3).length };
+      const need = { named: 6, low: 3, darkelf: 5, timegate: 5, t1: 5, t2: 5, t3: 5 };
+      for (const k in need) if (got[k] < need[k]) parity.push(`${cls} ${k} ${got[k]}/${need[k]}`); }
     const count = { weapon: E.filter(D => D.slot === 'weapon').length, armor: E.filter(D => ARMOR_SLOTS.includes(D.slot)).length, acc: E.filter(D => !ARMOR_SLOTS.includes(D.slot) && D.slot !== 'weapon').length, named: named.length };
-    return { short, moveBad, inhBad, noIcon, noArt, count, problems: G60.problems.slice() };
+    return { short, moveBad, inhBad, noIcon, noArt, count, parity, problems: G60.problems.slice() };
   }, { MOVES, ONLY });
   console.log('  史诗件数', JSON.stringify(c.count));
   check(!c.short.length, `每部位 × 等级段的数量下限（缺 ${c.short.length} 处）`, c.short.slice(0, 20).join('；'));
@@ -269,8 +280,92 @@ if (run('content')) {
   check(!c.inhBad.length, '继承装备和搬家前的数值 / 特效 / 部位完全一样', c.inhBad.slice(0, 10).join(' '));
   if (!ONLY || ONLY === 'armor' || ONLY === 'acc' || ONLY === 'weapon') check(c.count.named >= (ONLY ? 5 : 40), `领主神器 ${c.count.named} 件`);
   check(!c.noIcon.length, `每件都有图标（缺 ${c.noIcon.length}）`, c.noIcon.slice(0, 20).join(' '));
-  check(!c.noArt.length, `史诗武器都有武器图（缺 ${c.noArt.length}）`, c.noArt.slice(0, 20).join(' '));
+  check(!c.noArt.length, `史诗武器都有武器图（缺 ${c.noArt.length}；配色变体按 <类型>_r4 查）`, c.noArt.slice(0, 20).join(' '));
+  check(!c.parity.length, '职业之间持平（武器）：每个开放职业都有领主神器 ≥ 6、21~30 / 暗黑城 / 时空之门深渊专属、T1 / T2 / T3 各 ≥ 5', c.parity.join('；'));
   check(!c.problems.length, `G60.problems 为空（${c.problems.length}）`, c.problems.slice(0, 8));
+}
+
+/* ================= jobs ================= */
+if (run('jobs')) {
+  step('jobs：每个转职都有能用的武器 / 史诗，魔法转职的武器有魔法属性');
+  await boot('town&fresh&mute&cls=sword');
+  const J = await ev(() => {
+    const out = { rows: [], lack: [], weak: [], stat: [], cmp: [], order: [], magItem: [] };
+    const W = Object.values(ITEMS).filter(D => D.kind === 'equip' && D.slot === 'weapon');
+    const dropKeys = new Set(); for (const id in DROP_TABLES) for (const e of DROP_TABLES[id].boss) dropKeys.add(e[0]);
+    const epicOk = D => D.rar === 5 && (dropKeys.has(D.key) || D.abyssRegion || (!D.noDrop && !D.abyss));   // 能刷到：领主表 / 深渊专属 / 随机池
+    const shopWeapons = L => new Set(Object.values(SHOPS).flatMap(S => S.tabs.flatMap(T => typeof T.goods === 'function' ? T.goods(L) : T.goods)).filter(k => ITEMS[k] && ITEMS[k].slot === 'weapon'));
+    const GEARS = SLOTS.filter(s => !s.startsWith('av_') && s !== 'title');
+    const rareIt = D => { const it = makeItem(D.key, 1, { grade: 2 }), R = mulberry(keySeed((D._def && D._def.seed) || D.key));
+      const k = ['str', 'int', 'vit', 'spr', 'hp', 'mp', 'crit', 'hit', 'evade'][Math.floor(R() * 9)], L = D.lvl, m = RAR_MUL[D.rar], st = { ...D.st };
+      if (k === 'crit') { st.crit = +(st.crit - 0.01 * D.rar).toFixed(3); st.mcrit = +(st.mcrit - 0.01 * D.rar).toFixed(3); }
+      else if (k === 'hit' || k === 'evade') st[k] = +(st[k] - (0.01 + 0.005 * D.rar)).toFixed(3);
+      else st[k] -= Math.round(k === 'hp' ? L * 8 * m : k === 'mp' ? L * 5 * m : (2 + L * 0.5) * m);
+      const g = gradeMul(it.grade); it.st = {}; for (const x in st) if (st[x]) it.st[x] = FLAT_STATS.includes(x) ? Math.round(st[x] * g) : st[x];
+      return it; };
+    const ratioRows = {};
+    for (const cls of openClasses()) for (const job of openJobs(cls)) {
+      const C = CLASSES[cls], Jd = C.jobs[job], TYPE = Jd.dmgType || C.dmgType || (cls === 'mage' ? 'mag' : 'phys'), row = `${cls}:${job}`;
+      game.player = makePlayer(cls); game.job = job; const p = game.player;
+      game.skillLv = {}; for (const id of Jd.auto || []) game.skillLv[id] = 1;
+      const wear = D => D.cls === cls && wtypeJobOk(D.wtype, job);
+      // 1. 每 5 级：能买到 / 掉到的武器（普通~传说，等级在 (L-5, L]）；每 5 级（Lv10 起）：10 级内能刷到的史诗
+      for (let L = 5; L <= 60; L += 5) {
+        const shop = shopWeapons(L), mine = W.filter(D => wear(D) && D.rar < 5 && !D.named && D.lvl <= L && D.lvl > L - 5);
+        if (!mine.some(D => shop.has(D.key))) out.lack.push(`${row} Lv${L} 商店没有能装的武器`);
+        if (!mine.some(D => GEAR.includes(D))) out.lack.push(`${row} Lv${L} 掉落池里没有能装的武器`);
+        if (L >= 10 && !W.some(D => wear(D) && epicOk(D) && D.lvl <= L && D.lvl > L - 10)) out.lack.push(`${row} Lv${L} 10 级内没有能刷到的史诗武器`);
+      }
+      // 2. 单换武器的倍率（其余部位 = 同级稀有，去掉随机属性；和 gear60 power / GEAR.md §10.1 同一口径）
+      const score = () => { const m = gearMetrics(p, TYPE); return Math.pow(m.off, 0.7) * Math.pow(m.ehp, 0.3); };
+      const M = masteryOf(cls, job), SW = CLASS_START_WEAPON[cls], R = ratioRows[row] = {};
+      for (let L = 10; L <= 60; L += 5) {
+        game.lvl = L; const T = Math.floor(L / 5) * 5;
+        for (const s of GEARS) delete inv.equip[s];
+        for (const s of GEARS) { const D = GEAR.find(D => D.slot === s && D.rar === 2 && D.lvl === T && !D.set && !D.named && (s !== 'weapon' || D.wtype === SW) && (!ARMOR_SLOTS.includes(s) || D.atype === M)); if (D) inv.equip[s] = rareIt(D); }
+        recalcStats(p); const base = score(); let best = 0;
+        for (const D of W) if (wear(D) && D.rar === 5 && D.lvl <= L && D.lvl > L - (L <= 30 ? 6 : 12)) { inv.equip.weapon = makeItem(D.key); recalcStats(p); best = Math.max(best, score() / base); }
+        R[L] = +best.toFixed(3);
+        if (best < (L <= 30 ? 1.15 : 1.3)) out.weak.push(`${row} Lv${L} ×${best.toFixed(2)}`);
+      }
+      // 3. 装备对比 / 红字默认属性按转职的伤害类型
+      if (Jd.dmgType === 'mag') {
+        for (const id in SKILLS) { const S = SKILLS[id]; if (S.job === job && !S.passive && !S.awaken) game.skillLv[id] = 1; }
+        if (mainDmgType(p) !== 'mag') out.cmp.push(`${row} 装备对比按 ${mainDmgType(p)}`);
+        if (mainStatOf(cls, job) !== 'int') out.stat.push(`${row} 红字默认 ${mainStatOf(cls, job)}`);
+        // 魔法转职能装的 Lv31+ 史诗：写了物理暴击的也要有魔法暴击、写了力量的也要有智力（不然魔法转职拿到是白板）
+        for (const D of W) if (wear(D) && (D.rar === 5 || D.named) && D.lvl > 30) { const f = D.fx || {}, st = (D._def && D._def.st) || {};
+          if ((f.crit && !f.mcrit) || (st.str && !st.int)) out.magItem.push(`${row} ${D.name}`); }
+      }
+    }
+    // 4. 每类武器 Lv55 < T1 < T2 < T3（按这类武器的主口径：魔攻系数更高的按本职业的魔法转职，否则物理转职；没有这种转职就按职业）
+    //    只查格斗家：三职业是各自的块按自己的口径定的（阿波菲斯是 Lv55 最强巨剑、魔法师矛 / 棍棒按物理口径…，GEAR.md §10.1），这里的主口径不适用
+    const ORDER_CLS = ['fighter'];
+    for (const t of Object.keys(WTYPES).filter(t => clsOpen(WTYPES[t].cls) && ORDER_CLS.includes(WTYPES[t].cls))) {
+      const cls = WTYPES[t].cls, C = CLASSES[cls], want = WTYPES[t].mag > WTYPES[t].phys ? 'mag' : 'phys';
+      const job = openJobs(cls).find(j => wtypeJobOk(t, j) && (C.jobs[j].dmgType || C.dmgType || (cls === 'mage' ? 'mag' : 'phys')) === want) || null;
+      game.player = makePlayer(cls); game.job = job; const p = game.player, Jd = job && C.jobs[job], TYPE = (Jd && Jd.dmgType) || C.dmgType || (cls === 'mage' ? 'mag' : 'phys');
+      game.skillLv = {}; if (Jd) for (const id of Jd.auto || []) game.skillLv[id] = 1;
+      const score = () => { const m = gearMetrics(p, TYPE); return Math.pow(m.off, 0.7) * Math.pow(m.ehp, 0.3); };
+      game.lvl = 60; for (const s of GEARS) delete inv.equip[s];
+      const M = masteryOf(cls, job); for (const s of GEARS) { const D = GEAR.find(D => D.slot === s && D.rar === 2 && D.lvl === 60 && !D.set && !D.named && (s !== 'weapon' || D.wtype === CLASS_START_WEAPON[cls]) && (!ARMOR_SLOTS.includes(s) || D.atype === M)); if (D) inv.equip[s] = rareIt(D); }
+      const sc = D => { inv.equip.weapon = makeItem(D.key); recalcStats(p); return score(); };
+      const band = f => W.filter(D => D.wtype === t && D.rar === 5 && f(D)).map(sc);
+      const g = [band(D => D.lvl === 55), band(D => D.tier === 1), band(D => D.tier === 2), band(D => D.tier === 3)];
+      for (let i = 1; i < 4; i++) if (g[i - 1].length && g[i].length && Math.max(...g[i - 1]) >= Math.min(...g[i])) out.order.push(`${WTYPES[t].name}（${job || cls}）${['Lv55', 'T1', 'T2', 'T3'][i - 1]} ≥ ${['Lv55', 'T1', 'T2', 'T3'][i]}`);
+    }
+    out.ratio = ratioRows;
+    return out;
+  });
+  const KNOWN = { 'gun:mechanic': '机械师（魔法口径）没单独平衡过' };
+  const known = x => Object.keys(KNOWN).some(k => x.startsWith(k + ' '));
+  for (const [row, R] of Object.entries(J.ratio)) if (row.startsWith('fighter:')) console.log(`  ${row}：单换武器 ${Object.entries(R).map(([L, v]) => `Lv${L} ×${v}`).join(' ')}`);
+  check(!J.lack.length, `每个转职每 5 级都有能买 / 能掉的武器，每 10 级内有能刷到的史诗武器（${Object.keys(J.ratio).length} 个转职）`, J.lack.slice(0, 12).join('；'));
+  check(!J.weak.filter(x => !known(x)).length, '单换武器的最好史诗 / 同级稀有：Lv10~30 ≥ ×1.15、Lv35~60 ≥ ×1.3（按转职的伤害类型）', J.weak.filter(x => !known(x)).join('；'));
+  check(!J.cmp.length && !J.stat.length, '魔法转职：装备对比按魔法算、红字默认智力', J.cmp.concat(J.stat).join('；'));
+  const mi = J.magItem.filter(x => !known(x)), mk = J.magItem.filter(known);
+  check(!mi.length, `魔法转职能装的 Lv31+ 史诗 / 领主神器都有魔法属性（有物理暴击就有魔法暴击、有力量就有智力）${mk.length ? `；已知：机械师 ${mk.length} 件` : ''}`, mi.slice(0, 12).join('；'));
+  check(!J.order.length, '格斗家每类武器 Lv55 < T1 < T2 < T3（主口径：手套按气功师，其余按物理转职）', J.order.join('；'));
 }
 
 /* ================= power ================= */
@@ -281,20 +376,25 @@ if (run('power')) {
   const WHY = process.argv.includes('--why');
   const R = await ev(async (WHY) => {
     const out = {}, why = {};
-    for (const cls of openClasses()) {   // 已开放的职业（ready:false 的不算）
-      game.player = makePlayer(cls); game.job = null; const p = game.player;
-      // 按职业的伤害类型算（魔法师 = 魔法）；不用 mainDmgType：启动页是鬼剑士，game.skillLv 里是鬼剑士的物理技能，会把魔法师也算成物理（矛 vs 稀有魔杖）
-      const TYPE = p.dmgType || 'phys', score = () => { const m = gearMetrics(p, TYPE); return Math.pow(m.off, 0.7) * Math.pow(m.ehp, 0.3); };
+    // 行 = 已开放的职业（没转职）+ 和职业口径不一样的转职：伤害类型不同（气功师 / 街霸 / 机械师 = 魔法）或有转职专用武器（散打的拳套）
+    const rows = openClasses().map(cls => [cls, null]);
+    for (const cls of openClasses()) { const C = CLASSES[cls]; for (const job of openJobs(cls)) { const J = C.jobs[job];
+      if ((J.dmgType && J.dmgType !== (C.dmgType || (cls === 'mage' ? 'mag' : 'phys'))) || CLASS_WTYPES(cls).some(t => (WTYPES[t].jobs || []).includes(job))) rows.push([cls, job]); } }
+    for (const [cls, job] of rows) {
+      game.player = makePlayer(cls); game.job = job; const p = game.player, J = job && CLASSES[cls].jobs[job], row = job ? `${cls}:${job}` : cls;
+      game.skillLv = {}; if (J) for (const id of J.auto || []) game.skillLv[id] = 1;   // 转职自动学会的被动（街霸「邪功修炼」：力智取高）
+      // 按职业 / 转职的伤害类型算（魔法师、气功师、街霸 = 魔法）；不用 mainDmgType：启动页是鬼剑士，game.skillLv 里是鬼剑士的物理技能，会把魔法师也算成物理（矛 vs 稀有魔杖）
+      const TYPE = (J && J.dmgType) || p.dmgType || 'phys', score = () => { const m = gearMetrics(p, TYPE); return Math.pow(m.off, 0.7) * Math.pow(m.ehp, 0.3); };
       // --why：把综合分拆成因子（攻击 / 暴击 / 伤害增加 / 速度 / 属强 / 有效生命），log 贡献 = 0.7·ln(输出因子比) 或 0.3·ln(生存比)
       const parts = () => { const q = Object.create(p); recalcStats(q); const type = TYPE, m = gearMetrics(p, type);
         const crit = clamp(type === 'mag' ? q.mcrit : q.crit, 0, 1), spd = type === 'mag' ? q.cspd : q.aspd, el = q.elem || {};
         return { atk: type === 'mag' ? q.matk : q.baseStats.atk, crit: 1 + crit * (q.critDmg - 1), dmg: 1 + (q.dmgUp || 0), spd: 0.6 + 0.4 * spd,
           elem: 1 + (q.atkElem ? (el[q.atkElem] || 0) / 220 : Math.max(0, el.fire || 0, el.ice || 0, el.light || 0, el.dark || 0) / 220 * 0.3), ehp: m.ehp }; };
-      out[cls] = {}; why[cls] = {};
+      out[row] = {}; why[row] = {};
       for (const L of [30, 35, 40, 45, 50, 55, 60]) {
         game.lvl = L;
         const { best, base, baseKit, bestKit, GEARS } = g60BestKit(L);   // test/lib_bestkit.mjs
-        out[cls][L] = +(best / base).toFixed(3);
+        out[row][L] = +(best / base).toFixed(3);
         if (!WHY) continue;
         for (const s of GEARS) { if (baseKit[s]) inv.equip[s] = baseKit[s]; else delete inv.equip[s]; } const P0 = parts();
         for (const s of GEARS) { if (bestKit[s]) inv.equip[s] = bestKit[s]; else delete inv.equip[s]; }
@@ -305,7 +405,7 @@ if (run('power')) {
         const bk = {}; for (const x of p.sets || []) { bk[x.id] = SETS[x.id].bonus; SETS[x.id].bonus = {}; } recalcStats(p); const noSet = +Math.log(best / score()).toFixed(3); for (const id in bk) SETS[id].bonus = bk[id];
         const fxs = {}; for (const s of GEARS) { const it = inv.equip[s]; if (it && it.fx) { fxs[s] = it.fx; it.fx = undefined; } } recalcStats(p); const noFx = +Math.log(best / score()).toFixed(3); for (const s in fxs) inv.equip[s].fx = fxs[s];
         recalcStats(p);
-        why[cls][L] = { lnTotal: +Math.log(best / base).toFixed(3), factor: f, setsLn: noSet, fxLn: noFx, sets, kit, base: Object.fromEntries(Object.entries(P0).map(([k, v]) => [k, +v.toFixed(3)])), epic: Object.fromEntries(Object.entries(P1).map(([k, v]) => [k, +v.toFixed(3)])) };
+        why[row][L] = { lnTotal: +Math.log(best / base).toFixed(3), factor: f, setsLn: noSet, fxLn: noFx, sets, kit, base: Object.fromEntries(Object.entries(P0).map(([k, v]) => [k, +v.toFixed(3)])), epic: Object.fromEntries(Object.entries(P1).map(([k, v]) => [k, +v.toFixed(3)])) };
       }
     }
     return { out, why };
@@ -313,8 +413,15 @@ if (run('power')) {
   const pw = R.out;
   if (WHY) { const f = path.join(os.tmpdir(), 'gear60_power_why.json'); fs.writeFileSync(f, JSON.stringify(R.why, null, 1)); console.log('  拆解（每件换回稀有的 ln 损失、套装 / fx 的 ln 贡献、因子 ln 贡献）写到', f);
     for (const cls in R.why) for (const L in R.why[cls]) { const w = R.why[cls][L]; console.log(`  ${cls} Lv${L} ln=${w.lnTotal} 套装${w.setsLn} fx${w.fxLn} ${JSON.stringify(w.factor).replace(/"/g, '')} ${w.sets.join(' ')}`); } }
+  // 已知没按转职口径平衡过的行（只提示、不算失败）：机械师是神枪手里的魔法转职，GEAR.md §10.4 按职业（物理）口径调的，Lv40 / 55 偏低、Lv60 偏高（docs/FIGHTER_GEAR_AUDIT.md 遗留项）
+  const KNOWN = { 'gun:mechanic': '机械师（魔法口径）没单独平衡过' };
   for (const cls of Object.keys(pw)) { const r30 = pw[cls][30], bad = Object.entries(pw[cls]).filter(([L, v]) => +L > 30 && Math.abs(v / r30 - 1) > 0.1);
+    if (KNOWN[cls]) { console.log(bad.length ? '  ⚠' : '  ✓', `${cls}：史诗 / 稀有倍率 ${Object.entries(pw[cls]).map(([L, v]) => `Lv${L} ×${v}`).join(' ')}（已知：${KNOWN[cls]}）`, bad.map(([L, v]) => `Lv${L} ${(v / r30).toFixed(2)}`).join(' ')); continue; }
     check(!bad.length, `${cls}：史诗 / 稀有倍率 ${Object.entries(pw[cls]).map(([L, v]) => `Lv${L} ×${v}`).join(' ')}（和 Lv30 比 ±10%）`, bad.map(([L, v]) => `Lv${L} ${(v / r30).toFixed(2)}`).join(' ')); }
+  // 职业之间：各行（职业 / 转职）Lv30~60 的平均倍率和中位数比 ±15%（格斗家没有史诗武器时只有 ×3.1，其余 ×4.4~5.1）
+  const avg = Object.fromEntries(Object.entries(pw).map(([k, r]) => [k, Object.values(r).reduce((a, b) => a + b, 0) / Object.values(r).length])), med = Object.values(avg).sort((a, b) => a - b)[Math.floor(Object.values(avg).length / 2)];
+  const off = Object.entries(avg).filter(([k, v]) => !KNOWN[k] && Math.abs(v / med - 1) > 0.15);
+  check(!off.length, `职业之间持平：平均倍率 ${Object.entries(avg).map(([k, v]) => `${k} ×${v.toFixed(2)}`).join(' ')}（中位数 ×${med.toFixed(2)} 的 ±15%）`, off.map(([k, v]) => `${k} ${(v / med).toFixed(2)}`).join(' '));
 }
 
 check(!logs.some(l => l.type === 'pageerror'), '没有页面报错', logs.filter(l => l.type === 'pageerror').map(l => l.text.slice(0, 200)));

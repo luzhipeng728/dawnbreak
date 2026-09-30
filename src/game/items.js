@@ -214,7 +214,7 @@ function rollEquip(o = {}) {
     const lo = lvl - 6 - tries * 4, hi = lvl + 1 + Math.floor(tries / 2);
     let pool = GEAR.filter(D => D.slot === slot && D.rar === rar && D.lvl >= lo && D.lvl <= hi && !D.shopOnly && (!o.wtype || D.wtype === o.wtype) && (!o.atype || D.atype === o.atype));
     if (slot === 'weapon') pool = pool.filter(D => !D.cls || clsOpen(D.cls));   // 还没开放的职业（格斗家 ready:false）的武器不掉
-    if (slot === 'weapon' && !o.wtype) { const own = pool.filter(D => D.cls === cls); if (own.length && Math.random() < 0.8) pool = own; }
+    if (slot === 'weapon' && !o.wtype) { const own = pool.filter(D => D.cls === cls && wtypeJobOk(D.wtype, game.job)); if (own.length && Math.random() < 0.8) pool = own; }
     if (ARMOR_SLOTS.includes(slot) && !o.atype) { const m = pool.filter(D => D.atype === mastery); if (m.length && Math.random() < 0.6) pool = m; }
     if (pool.length) {
       // 等级越接近越容易出（不出比目标高很多的）

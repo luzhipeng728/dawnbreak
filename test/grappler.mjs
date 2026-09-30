@@ -135,7 +135,7 @@ if (MODES.includes('boss')) {
   report('抓轰炮：领主抓不住 → 伤害 + 强制硬直（×0.3 ≈ 0.45 秒）、0.4 秒内收招', !R.cannon.held && R.cannon.cannoned && R.cannon.dmg > 0 && Math.abs(R.cannon.hold - 0.45) < 0.1 && R.cannon.endIn <= 0.45, R.cannon);
   report('无情摔击撞领主：伤害 + 强制硬直后继续冲；神怡气静：原地停下', R.bd.hold && R.bd.dmg && R.bd.moved > 150 && R.bdEq.moved < R.bd.moved - 40 && R.bdEq.hold, { bd: R.bd, eq: R.bdEq });
   report(`全部主动技能对领主：不卡死、抓取不残留（${R.all.n} 个）`, !R.all.bad.length, R.all.bad);
-  report('全部主动技能对领主都打得到', !R.all.noHit.length, R.all.noHit);
+  report('全部主动技能对领主都打得到（分身 / 瞬步 / 蹲伏这类不攻击的基础技能除外）', !R.all.noHit.filter(id => !['f_clone', 'f_flash', 'f_crouch'].includes(id)).length, R.all.noHit);
 }
 
 // ---------------- shots ----------------

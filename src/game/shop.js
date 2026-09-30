@@ -318,11 +318,12 @@ bus.on('sceneEnter', () => { const S = cashData(); if (S && !S.lvlPaid) S.lvlPai
 // 一键满级：一次升到 MAX_LVL，逐级累加 SP，升级事件只发一次（逐级发会刷 30 条“可以直接完成的任务”提示）
 function maxLvApply() {
   const from = game.lvl; game.exp = 0;
-  while (game.lvl < MAX_LVL) { game.lvl++; game.sp = (game.sp || 0) + 28 + game.lvl; }
+  const sp0 = game.sp || 0;
+  while (game.lvl < MAX_LVL) { game.lvl++; game.sp = (game.sp || 0) + spOfLv(game.lvl); }
   bus.emit('levelUp', { lvl: game.lvl });
   const p = game.player; recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax;
   sfx.levelUp(); fxAura(p, '#ffd23a', 2); fxBurst(p.x, p.y, p.z + 60, 260, '#ffd23a');
-  toastMsg(`一键满级！Lv.${from} → Lv.${game.lvl}，获得 SP ${(from + 1 + game.lvl) * (game.lvl - from) / 2 + 28 * (game.lvl - from)}`, '#ffe070');
+  toastMsg(`一键满级！Lv.${from} → Lv.${game.lvl}，获得 SP ${fmtNum(game.sp - sp0)}`, '#ffe070');
   save.write(); return true;
 }
 // 账号共享的满级券（save.acct.maxlv）：邮件领取 / 老存档背包里的券都收进这里，哪个角色都能用

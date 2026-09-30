@@ -196,13 +196,12 @@ try {
   const gf = await ev(A, () => ({ g: game.gold, f: inv.count('fatigue') }));
   await A.page.click('.sxmail button:has-text("领取附件")');
   ok(await until(A.page, o => game.gold === o.g + 12345 && inv.count('fatigue') === o.f + 1, gf), 'alice 领取管理员邮件：金币 + 物品到账');
-  for (const tab of ['邀请码', '在线玩家', '日志', '拍卖行']) { await G.page.click(`.sxgm .itab:has-text("${tab}")`); await sleep(500); }
+  ok(!(await G.page.locator('.sxgm .itab:has-text("邀请码")').count()), '邀请码页签已去掉（注册已开放）');
+  for (const tab of ['在线玩家', '日志', '拍卖行']) { await G.page.click(`.sxgm .itab:has-text("${tab}")`); await sleep(500); }
   ok(await G.page.locator('.sxgm tbody tr').count() >= 1, '拍卖行管理页有记录');
   await G.page.click('.sxgm .itab:has-text("在线玩家")'); await until(G.page, () => document.querySelector('.sxgm tbody tr'));
   const onl = await G.page.locator('.sxgm tbody tr').allTextContents();
   ok(onl.length === 2 && onl.join().includes('alice'), '在线玩家：alice、gm', onl);
-  await G.page.click('.sxgm .itab:has-text("邀请码")'); await sleep(400);
-  await G.page.click('.sxgm button:has-text("生成")'); ok(await until(G.page, () => document.querySelector('.sxgm td.code')), '生成邀请码');
   await G.page.click('.sxgm .itab:has-text("日志")'); await until(G.page, () => document.querySelector('.sxgm tbody tr'));
   await shot(G, '12-gm-logs');
   await G.page.click('.sxgm .itab:has-text("全服公告")'); await sleep(300);

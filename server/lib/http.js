@@ -1,6 +1,8 @@
-/* HTTP：路由表、JSON 请求体（带大小上限）、鉴权、限流、错误处理；开发 / 测试时可以顺带托管静态文件（DNF_STATIC） */
+/* HTTP：路由表、JSON 请求体（带大小上限）、鉴权、限流、错误处理；开发 / 测试时可以顺带托管静态文件（DNF_STATIC）
+   /admin/：后台管理页面（server/admin/ 下固定的几个文件，带严格的 CSP；页面本身不含数据，数据都走 /api/gm/*，只有管理员能调） */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { HttpError, limiter } from './util.js';
 
 export class Router {
@@ -67,6 +69,20 @@ function serveStatic(root, pathname, res) {
   });
 }
 
+const ADMIN_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'admin');
+const ADMIN_FILES = { '/admin/': 'index.html', '/admin/index.html': 'index.html', '/admin/admin.js': 'admin.js', '/admin/admin.css': 'admin.css' };
+const ADMIN_CSP = "default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+function serveAdmin(pathname, res) {
+  if (pathname === '/admin') { res.writeHead(301, { Location: '/admin/' }); res.end(); return; }
+  const f = ADMIN_FILES[pathname];
+  if (!f) { res.writeHead(404); res.end('not found'); return; }
+  fs.readFile(path.join(ADMIN_DIR, f), (e, buf) => {
+    if (e) { res.writeHead(404); res.end('not found'); return; }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)], 'Cache-Control': 'no-cache', 'Content-Security-Policy': ADMIN_CSP, 'X-Frame-Options': 'DENY', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' });
+    res.end(buf);
+  });
+}
+
 // 生成 http.createServer 用的处理函数
 export function makeHandler({ router, ctx, cfg, auth }) {
   const ipLimit = limiter(cfg.httpRate[0], cfg.httpRate[1]);
@@ -75,6 +91,7 @@ export function makeHandler({ router, ctx, cfg, auth }) {
     try { url = new URL(req.url, 'http://x'); } catch { res.writeHead(400); res.end(); return; }
     const pathname = url.pathname;
     if (!pathname.startsWith('/api/')) {
+      if (pathname === '/admin' || pathname.startsWith('/admin/')) return serveAdmin(pathname, res);
       if (cfg.static) return serveStatic(path.resolve(cfg.static), pathname, res);
       res.writeHead(404); res.end('not found'); return;
     }

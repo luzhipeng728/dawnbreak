@@ -28,7 +28,7 @@ fi
 echo "Node: $("$BASE/runtime/bin/node" -v)"
 
 # 同步代码（保留 node_modules 以外的旧文件不删；data / .env 在 app 目录之外，不会被覆盖）
-cp -R "$SRC/index.js" "$SRC/package.json" "$SRC/package-lock.json" "$SRC/lib" "$SRC/core" "$BASE/app/"
+cp -R "$SRC/index.js" "$SRC/package.json" "$SRC/package-lock.json" "$SRC/lib" "$SRC/core" "$SRC/admin" "$BASE/app/"
 mkdir -p "$BASE/app/modules" && cp -R "$SRC/modules/." "$BASE/app/modules/" 2>/dev/null || true
 cd "$BASE/app" && PATH="$BASE/runtime/bin:$PATH" npm ci --omit=dev --no-audit --no-fund
 

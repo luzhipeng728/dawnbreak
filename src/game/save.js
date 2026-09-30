@@ -85,6 +85,7 @@ const save = {
       this.skillReset = true;
     }
     if ((d.v || 1) < 5) this.migrateV5(d);
+    spMigrate(d);   // SP 改成每级 ×SP_MUL：老角色补发差额（game/progress.js）
     if (typeof g60MigrateChar === 'function') g60MigrateChar(d);   // 装备 2.0：官方史诗回到官方等级 → 等级不够的补发继承装备（content/items/gear60_api.js，按 d.g60m 只处理一次）
     if (!Array.isArray(d.skillBar)) d.skillBar = [];
     while (d.skillBar.length < SKILL_SLOTS) d.skillBar.push(null);   // 技能栏 14 格（旧存档 12 格）
@@ -113,6 +114,7 @@ const save = {
   newGame(cls, name) {
     this.loadAll();   // 先读出已有角色，新角色追加在后面，不覆盖
     this.data = this.defaults(cls, name || CLASSES[cls].name);
+    this.data.spMul = SP_MUL;   // 新角色一开始就按新规则拿 SP（不能放进 defaults：老存档读档时先铺 defaults，会跳过补发）
     this.cur = -1;
     const C = CLASSES[cls];
     for (const id of C.start) this.data.skillLv[id] = 1;

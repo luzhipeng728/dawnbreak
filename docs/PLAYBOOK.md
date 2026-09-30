@@ -73,6 +73,7 @@
 | 做什么 | 命令 |
 |---|---|
 | 部署前端 / 服务端 | `sh tools/deploy.sh web` / `server` / `all` |
+| 后台管理（账号 / 封禁 / 注册 IP / 发邮件 / 公告 / 报错 / 日志，网页） | https://dnf.cc.l-hate.com/admin/ （`DNF_ADMIN` 账号登录，见 server/deploy/DEPLOY.md「后台管理」）；测试 `server/test/admin.mjs` + `test/admin_console.mjs` |
 | 看所有账号、角色、点券 | `sh tools/admin/admin.sh users` |
 | 给玩家发点券 | `sh tools/admin/admin.sh cera <账号> <数量>` |
 | 角色全满（满级 / 任务 / 三觉 / 技能 / 最强装备 +12） | `sh tools/admin/admin.sh maxout <账号> [职业=转职,...] [额外点券]` |

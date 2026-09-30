@@ -40,6 +40,8 @@ run paramedic node test/paramedic.mjs
 run enchant   node test/enchantress.mjs
 run witch     node test/witch.mjs
 run fighter   node test/fighter.mjs   # 格斗家 B0：存档安全（未知 / 没开放职业的角色不丢）、id 预留、武器手感、开放开关、?fighter=1 建角色进地下城
+run fgrappler node test/fighter_grappler.mjs   # 柔道家（B7）：登记、28 个技能逐个能放
+run grappler  node test/grappler.mjs   # 柔道家机制：抓轰炮 / 暴力抓取 / 滑行 / 连环 / 二觉预约 / 领主不卡死
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs

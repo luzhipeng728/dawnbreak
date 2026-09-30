@@ -392,7 +392,8 @@ function msOnDamaged(m, a, dmg, crit, h) {
   msTraitCall(m, 'damaged', a, dmg, crit, h || {});
   if (m.msReflect && typeof msReflectHit === 'function') msReflectHit(m, a, dmg, h || {}, m.msReflect);   // stance 的反伤模式
   if (m.msMechs) for (const st of m.msMechs) { const M = BOSS_MECHS[st.id]; if (!st.done && !st.mirror && M.onHit) M.onHit(m, st, dmg, a, h); }   // 镜像（组队队员）：结果以主机为准
-  if (m.msMul && m.msMul.invuln === 0) { m.hp = Math.min(m.hpMax, m.hp + dmg); if (!(m.msInvulTxt > game.t)) { m.msInvulTxt = game.t + 0.8; fxText('无敌', m.x, m.y, m.z + 40, { col: '#c8c8ff', size: 12 }); } }
+  // 倍率 0 在 applyHit 里会被当成 1（dmgTakenMul || 1）：无敌、车轮战观战（gauntlet watch）都在这里把血补回去
+  if (m.msMul && (m.msMul.invuln === 0 || m.msMul.gauntlet === 0)) { m.hp = Math.min(m.hpMax, m.hp + dmg); if (!(m.msInvulTxt > game.t)) { m.msInvulTxt = game.t + 0.8; fxText('无敌', m.x, m.y, m.z + 40, { col: '#c8c8ff', size: 12 }); } }
   const H = D.hook && REGION_HOOKS[D.hook]; if (H && H.onHit && m.boss) H.onHit(m, dmg, a, h);
 }
 function msObjAI(m, dt) { m.vx = m.vy = 0; if (m.msMechs) msMechUpdate(m, dt); msTraitCall(m, 'update', dt); }
@@ -896,7 +897,8 @@ defineBossMech('duo', { defaults: { with: [], hp: 1, window: 0, reviveHp: 0.5, o
   update(m, st) { if (st.group.every(o => o.dead)) st.done = true; },
   net: (m, st) => ({ g: st.group.map(o => o.nid || 0) }),
   mirror: { start(m, st, p) { if (p.say) toastMsg(p.say, p.col); } },
-  hud(c, m, st, x, y) { const p = st.p, left = st.group.filter(o => !o.dead).length; uiText(`同场领主 ${left}/${st.group.length}：全部打倒才算通关${p.window ? `（${p.window} 秒内一起打倒，否则会复活）` : ''}`, x, y + 14, { size: 15, color: '#ffd8b0', sw: 3 }); return 18; } });
+  // 组队队员的镜像没有 st.group（搭档是傀儡）：按场上的领主傀儡算
+  hud(c, m, st, x, y) { const p = st.p, G = st.group || ents.filter(e => e.boss && e.team === 'e' && !e.remove), left = G.filter(o => !o.dead).length; uiText(`同场领主 ${left}/${G.length}：全部打倒才算通关${p.window ? `（${p.window} 秒内一起打倒，否则会复活）` : ''}`, x, y + 14, { size: 15, color: '#ffd8b0', sw: 3 }); return 18; } });
 // 主机：搭档倒下 → 其余狂暴 / 计时复活；领主本体先倒下也照样跑（挂在一个特效上），返回 true = 全部倒下
 function msDuoTick(st, p, dt) {
   if (game.dungeon && game.dungeon.state === 'result') return true;

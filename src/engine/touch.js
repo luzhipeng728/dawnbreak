@@ -76,7 +76,7 @@ const touch = {
       this.btns.push({ id, el: b, ang, r, d }); el.appendChild(b);
     }
     // ---- 状态键：没放进技能栏的 Buff（方向 + 空格那类）/ 受击技能，一点就放（手机上按不了组合键）----
-    this.buffBtns = [0, 1, 2, 3].map(i => {
+    this.buffBtns = [0, 1, 2, 3, 4].map(i => {
       const b = face(h('div', { class: 'tbtn sk tbuff', 'data-id': 'buff' + i }));
       bind(b, 'buffcol', () => { if (b._id) this.castQ = b._id; }, null);
       el.appendChild(b); return b;
@@ -166,7 +166,8 @@ const touch = {
       Object.assign(el.style, { width: d * U + 'px', height: d * U + 'px', bottom: sf.bottom + (cy - d / 2) * U + 'px', [side]: sf[side] + (cx - d / 2) * U + 'px', [other]: '' });
     }
     const [bx, by] = pos.buffcol || [0, 0];
-    this.buffBtns.forEach((b, i) => { const d = 7.5, cx = 4 + bx, cy = 64 + i * 8.2 + by; Object.assign(b.style, { width: d * U + 'px', height: d * U + 'px', bottom: sf.bottom + (cy - d / 2) * U + 'px', [side]: sf[side] + (cx - d / 2) * U + 'px', [other]: '' }); });
+    // 状态键一列 4 个；第 5 个（格斗家气功师有 5 个 Buff）放在最上面一格的里侧
+    this.buffBtns.forEach((b, i) => { const d = 7.5, cx = 4 + (i > 3 ? 8.2 : 0) + bx, cy = 64 + Math.min(i, 3) * 8.2 + by; Object.assign(b.style, { width: d * U + 'px', height: d * U + 'px', bottom: sf.bottom + (cy - d / 2) * U + 'px', [side]: sf[side] + (cx - d / 2) * U + 'px', [other]: '' }); });
     this.col.forEach((b, i) => Object.assign(b.style, { width: 8 * U + 'px', height: 8 * U + 'px', top: sf.top + (2.5 + i * 9.4 + (i >= 4 ? 2.5 : 0)) * U + 'px', [other]: sf[other] + 1.5 * U + 'px', [side]: '' }));
     this.zone.classList.toggle('swap', sw);
     const st = stage.getBoundingClientRect(), colR = sw ? 0 : sf.left + 9.5 * U;   // hud.js 的左上角状态条避开这一列按钮（逻辑坐标）
@@ -238,7 +239,8 @@ const touch = {
   },
 };
 
-// 状态键里放哪些技能：学会了、当前转职能用、不是被动 / 觉醒、没在技能栏里的 Buff 类（方向 + 空格、S.buff）和受击技能（S.whenHit），按学习等级排，最多 4 个
+// 状态键里放哪些技能：学会了、当前转职能用、不是被动 / 觉醒、没在技能栏里的 Buff 类（方向 + 空格、S.buff）和受击技能（S.whenHit），最多 5 个；
+// 真正的 Buff / 受击技能排前面，其余“方向 + 空格”的攻击技能（分身、瞬步、念气罩……）排后面，各自按学习等级排（格斗家气功师 5 个 Buff 都放得下）
 function touchBuffSkills(p, bar) {
   const C = CLASSES[p.cls], on = new Set(bar.filter(Boolean)), out = [], seen = new Set();
   const cand = [...(C.cmds || []).filter(c => c[2] === 'buff').map(c => c[1]), ...Object.keys(SKILLS).filter(id => SKILLS[id].cls === p.cls && (SKILLS[id].buff || SKILLS[id].whenHit))];
@@ -247,5 +249,6 @@ function touchBuffSkills(p, bar) {
     if (S.passive || S.awaken || on.has(id) || (S.job && S.job !== game.job) || !(skillLvOf(p, id) > 0) || !(S.act || S.instant)) continue;
     out.push(id);
   }
-  return out.sort((a, b) => (SKILLS[a].lvReq || 0) - (SKILLS[b].lvReq || 0)).slice(0, 4);
+  const rank = id => SKILLS[id].buff || SKILLS[id].whenHit ? 0 : 1;
+  return out.sort((a, b) => rank(a) - rank(b) || (SKILLS[a].lvReq || 0) - (SKILLS[b].lvReq || 0)).slice(0, 5);
 }

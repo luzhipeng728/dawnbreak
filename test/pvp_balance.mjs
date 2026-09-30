@@ -1,12 +1,12 @@
-// 决斗场平衡：18 种职业 / 转职两两 AI 对打（难度 3，公正决斗规则），无渲染快进（直接调 step），统计每个职业的回合胜率
+// 决斗场平衡：23 种职业 / 转职两两 AI 对打（难度 3，公正决斗规则），无渲染快进（直接调 step），统计每个职业的回合胜率
 // 用法：node test/pvp_balance.mjs [每对打几场=2（左右各一场）] [只跑含这些的组合，逗号分隔，如 gun:spitfire；all = 全部] [自动调参轮数=0]
-//   全部 153 对 × 6 场约 20~30 秒（无渲染快进）
+//   全部 253 对 × 6 场约 25 秒、× 20 场约 75 秒（无渲染快进）；格斗家还没开放（ready:false）也一起进循环赛（网址带 ?fighter=1），FIGHTER=0 只跑已开放的
 // 输出：每个职业的回合胜率（35%~65% 以外标 ⚠）；完整矩阵写到 test/shots/pvp_balance.json。调参看 game/duel.js 的 PVP_JOB / PVP_SKILL（docs/PVP.md）
 import fs from 'node:fs';
 import { launch, URL_BASE } from './lib.mjs';
 const N = +(process.argv[2] || 2), only = (process.argv[3] || '').split(',').filter(x => x && x !== 'all');
 const { browser, page, logs } = await launch({ width: 640, height: 360 });
-await page.goto(`${URL_BASE}?duel=sword&vs=gun&auto&ai=3&mute`);
+await page.goto(`${URL_BASE}?duel=sword&vs=gun&auto&ai=3&mute${process.env.FIGHTER === '0' ? '' : '&fighter=1'}`);
 await page.waitForFunction(() => window.__READY && game.duel, null, { timeout: 60000 });
 const combos = await page.evaluate(async () => {
   await loadBundles(openClasses().map(c => 'spr:' + c));
@@ -15,7 +15,7 @@ const combos = await page.evaluate(async () => {
 });
 const pairs = [];
 for (let i = 0; i < combos.length; i++) for (let j = i + 1; j < combos.length; j++) if (!only.length || only.some(o => combos[i] === o || combos[j] === o)) pairs.push([combos[i], combos[j]]);
-const TUNE = +(process.argv[4] || 0);   // 第 3 个参数 > 0：自动调 PVP_JOB（每轮按胜率偏离 50% 的程度乘一个系数），最后打印调好的表
+const TUNE = +(process.argv[4] || 0);   // 第 3 个参数 > 0：自动调 PVP_JOB（每轮按胜率偏离 50% 的程度乘一个系数），最后打印调好的表；TUNE_ONLY=fighter 只调这些前缀的（新职业入场时不动老职业的数）
 let W, R;   // W[x][y] = x 对 y 赢的回合数
 const t0 = Date.now();
 async function runAll() {
@@ -46,7 +46,7 @@ const rate = c => R[c].win / Math.max(1, R[c].win + R[c].lose);
 for (let it = 0; it < TUNE; it++) {
   await runAll();
   const J = await page.evaluate(() => ({ ...PVP_JOB }));
-  for (const c of combos) { const r = Math.min(0.95, Math.max(0.05, rate(c))); const o = J[c] ?? 1, v = Array.isArray(o) ? o[0] : o, nv = Math.round(Math.min(2.5, Math.max(0.5, v * Math.pow(0.5 / r, 0.6))) * 100) / 100; J[c] = Array.isArray(o) ? [nv, o[1]] : nv; }
+  for (const c of combos) { if (process.env.TUNE_ONLY && !process.env.TUNE_ONLY.split(',').some(x => c.startsWith(x))) continue; const r = Math.min(0.95, Math.max(0.05, rate(c))); const o = J[c] ?? 1, v = Array.isArray(o) ? o[0] : o, nv = Math.round(Math.min(2.5, Math.max(0.3, v * Math.pow(0.5 / r, 0.6))) * 100) / 100; J[c] = Array.isArray(o) ? [nv, o[1]] : nv; }
   await page.evaluate(J => Object.assign(PVP_JOB, J), J);
   console.log(`第 ${it + 1} 轮：最高 ${Math.round(Math.max(...combos.map(rate)) * 100)}%，最低 ${Math.round(Math.min(...combos.map(rate)) * 100)}% → PVP_JOB = ${JSON.stringify(J)}`);
 }

@@ -298,14 +298,21 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 - **没开放时不生效**：37 个任务全是 `cls: 'fighter'`；老职业角色（包括做完所有前置的 Lv30）看不到、NPC 身上也没有；`J.ready:false` 时转职窗口接不到。
 - **测试**：`node test/fighter_quests.mjs [inert,data,chain]`（quick.sh g5 / all.sh）。`test/fighter.mjs smoke` 看风振转职窗口前先把 `q_job_fighter_final` 记成已完成（有了转职试炼之后 `jobAvailable` 要它）。
 - **文档**：PLAYER_GUIDE（选职业、导师表、转职表 + 四条任务线、一觉剧情）、dnf_reference §6.2 改成男格斗、SKILLS_OFFICIAL_common §8、SKILLS_OFFICIAL_fighter §8.4、PLAYBOOK。JOB_VISUALS §5（B2）、PVP（B9）、GEAR（二期）留给各自的块。
-||||||| f48af6e
-### 4.4 B3 已交付（2026-09-30，基础职业；逐技能对照 docs/skills/fighter_base_final.md）
+### 4.5 B3 已交付（2026-09-30，基础职业；逐技能对照 docs/skills/fighter_base_final.md）
 - **技能**：15 个基础技能全部实装（`f_` id 同预留表），指令 / 冷却（namu 现版）/ MP（DFO Lv1）按官方；规格 `docs/skills/fighter.json` 13 个主动技能，`skillaudit --compare` 不一致 0。
 - **给转职用的接口**：`fNenShot(e, lv, { sc, pierce, dmg, life, speed, hit })`（蓄念炮）；`fighterActsFor(F)` 生成的普攻表里有 `fchain1~4`（疾风追击的追加击），`FIGHTER_ACT_PICK` 换普攻时 `{ ...fighterActsFor(F), atk1: … }` 别丢了它们；`fRing(e, x, y, r, t => hit | null, { skip, zMax })` 圆形范围打击；`fKick(t, o)` 踢腿弧光；`SKILLS.f_knee.act` 可以包一层做柔道家的强化膝击（↑ 跳起 / ↓ 摔地）；蹲伏动作 `links: ['fs_pusher']` 已留好散打铁山靠。
 - **取消例外**：技能的 `noForce` 可以写成函数 `p => bool`（引擎 canCancelInto 已支持）：念气波 `jobOf(p) !== 'nenmaster'`、抛沙 `!== 'brawler'`、旋风腿 `!== 'striker'`、分身 `!skLv(p, 'fn_blast')`（气功师学幻影爆碎后能在普攻中放分身）。
 - **引擎**（player.js 两处）：noForce 函数；`downJumpCmd`——以 ↓ 结尾的 C 指令（蹲伏 ↓↓+C）优先于后跳 ↓+C。
 - **美术**：图标 16 个一张表（`art/tools/fighter_base_art.py icons / iconcut`，1 次生图），特效全部复用 fx；人物动作用矢量占位片段（CLIPS.fighter 补了 highkick / hammer / grab / knee / spinkick / stomp / dive / palm / palm2 / seal / focus / quake），B1 出帧后按 SPR_ANIMS.fighter 自动换。
 - **测试**：`node test/fighter.mjs base`（技能放得出 / 打得中 / 冷却 / MP、14 条指令、抓取、疾风追击、取消例外、各技能机制）；`node test/skillshots.mjs fighter` 连拍 `test/shots/skills/fighter-base.jpg`。
+
+### 4.6 B9 已交付（2026-09-30，决斗 / AI / 组队 / 手机 / 上线检查）
+- **决斗**（`game/duel.js`，docs/PVP.md §4）：`DUEL_BASE.fighter` 和鬼剑士同一档（近战），强弱全在 `PVP_JOB`：未转职 `[2.3, 0.6]`、气功师 `[0.42, 1.3]`（伤害之外还有念气罩无敌 / 龙虎啸减伤，只压伤害要压到 0.3 以下，所以同时加受到伤害）、散打 0.74、街霸 0.45、柔道家 0.73；老职业为了整体回到区间小调了 8 项（见 PVP.md）。决斗专属规则：强制硬直 `hold` 最长 1 秒、结束后 1.5 秒内不能再被 hold，束缚最长 3 秒（`PVP_CTRL`）；格斗家的持续伤害（毒 / 出血 / 感电追加）也乘 `PVP.dmg` 和职业修正（原来直接扣血，不吃 0.35）。
+- **AI**（`game/fighter_ai.js` 的 `AI_F_*` / `fBusy` / `fAttack`）：格斗家用整个技能池（`aiKit().pool`，20+ 个主动技能放不下 14 格：要放的技能不在栏上就临时换进空闲 / 冷却中的格子，觉醒格和正在放的不换）；放得少的优先（1/(1+次数)²）+ 偶尔先试这局没放过的；立回距离按转职（气功 190、街霸 140、其余贴身）；贴身抓（对手没有抓取保护时）；投后追击（扔到空中 → 跳起来接鹰踏 / 空绞锤 / 裂石破天，倒地 → 霹雳旋踢 / 下段踢 / 伏虎霸王拳）；跳入放空中技；施放中按方向（抛投 / 浮空凌云踢 ↓ 砸地后接霹雳旋踢、夺命锁 ↑）、再按（鹰踏第二踩、殒灭、疾风闪电）、连打 X（极恶飞锁 / 极义震天破 / 月华万象）；念气罩挡近身招、蹲伏躲飞行道具。
+- **排位 AI 池**（`server/modules/arena.js`）：`AI_POOL` 加格斗家 5 种（23 种）；客户端 `arena:join` 带 `pool`（自己这边已开放的“职业:转职”），服务端只从里面抽（`aiPoolOf`），老客户端不带 = 原来 18 种 → **格斗家没开放时不会排到格斗家 AI**。服务端要先部署。
+- **组队**（`net/coop.js` 抓取段、新文件 `net/coop_fighter.js`，docs/NETWORK.md「格斗家」）：队员抓主机的怪带 `gd`（抓倒地）/ `gm`（这一下最多抓几个，主机不再先放开前一个）；队员 `throwArc` 扔主机的怪发 `g: 2`（落点 / 高度 / 时长），主机按同一条弧线飞（伤害仍由队员的命中包结算），队友影子重放招式时不再自己扔；影子显示本人的可见 BUFF / 念气珠 / 风雷能量 / 装填数（'p' 消息的 `ff`）；念气罩本来就走 party_sync。
+- **手机**（`engine/touch.js`，docs/MOBILE.md）：格斗家的指令在触屏上都有按法（空中 C = 空中再点跳跃、蹲伏 / 前踢 / 鹰踏点技能键、蹲着点攻击 = 肩撞 / 点跳跃 = 起身、跑攻中点攻击 = 疾风追击）；状态键最多 5 个、真正的 Buff 排前面（气功师 5 个 Buff 都放得下，第 5 个在最上面一格的里侧）；气功师风雷能量条在触屏上挪到 BUFF 行下面（原来压住 BUFF 倒计时）。
+- **测试**：`node test/fighter_pvp.mjs`（决斗表、AI 用得出各转职全部主动技能 + 招牌技能、抓取公平，约 10 秒）、`node test/mp_fighter.mjs`（组队，约 1 分钟）、`node test/mobile_fighter.mjs [shots]`（手机，约 30 秒）、`node test/fighter_launch.mjs`（上线整条流程，约 40 秒）、`node test/pvp_balance.mjs 20 all`（循环赛默认带 `?fighter=1`；`TUNE_ONLY=fighter` 只调格斗家的数）、`server/test/arena.mjs`（AI 池）。
 
 ---
 
@@ -326,3 +333,34 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 | D12 | 四维 / HP·MP | 力 7 / 体 7 / 智 4 / 精 4（改掉现在的力 8）；HP / MP 抄鬼剑士 | HP / MP 官方没查到（低置信） |
 | D13 | 决斗 / 排位 | 平衡跑到 42~60% 再进排位 AI 池（ALL18 → ALL22） | 服务端要部署 |
 | D14 | 版本口径 | 国服现版（偷师技能等已删的不做；和女格斗家不同的以男版为准；低置信项按 namu 现版） | common.md §12 原则 |
+
+---
+
+## 6. 上线清单（launch checklist，B9 2026-09-30；开关由主线程决定，B9 没有改 `ready`）
+
+开放 = 删掉 `CLASSES.fighter.ready: false` 和 4 个转职各自的 `ready: false`（fighter.js / fighter_nen / _striker / _brawler / _grappler.js）。**服务端（server/modules/arena.js 的 AI 池）要先于或和客户端一起部署**：老服务端不认 `pool`，照旧抽 18 种（不会出错，只是排不到格斗家 AI）。
+
+### 6.1 已验证（`?fighter=1`，测试见 §4.6）
+| 项 | 结果 | 测试 |
+|---|---|---|
+| 建角色 → 30 级 → 转职（4 个方向）→ 技能 / 三次觉醒 | 真实选角界面建角色、`doJobChange` 转职；气功 / 街霸魔攻高于物攻，散打 / 柔道相反 | `fighter_launch.mjs` |
+| 地下城 | 气功师 / 街霸 / 柔道家机器人各自打通格兰之森（A / A / B） | `fighter_launch.mjs` |
+| 决斗 | 散打用自己的技能栏打完一局；公正属性（Lv30、HP 21000、无装备特效）；23 种职业 / 转职循环赛 20 场 / 对全部在 42~60%（PVP.md §4） | `fighter_launch.mjs`、`pvp_balance.mjs 20 all` |
+| 决斗 AI | 4 个转职的全部主动技能都会用（含霹雳旋踢、鹰踏 / 空绞锤 / 裂石破天）；抓取保护内不会被再抓、hold ≤ 1 秒 | `fighter_pvp.mjs` |
+| 排位 AI 池 | 上报只开放格斗家 → AI 都是格斗家；不带 pool → 18 种；排位按上报的职业记 | `server/test/arena.mjs` |
+| 存档 | 刷新后原样；**没开放的版本**读到格斗家角色：原样保留、选角“需要更新”、写回一字不改；新建角色“即将开放” | `fighter_launch.mjs`、`fighter.mjs save` |
+| 组队 | 队员（柔道家）抓 / 扔主机的怪：主机挂到影子上、飞到同一落点（误差 0px）；抓倒地 / 多抓；可见 BUFF / 念气珠 / 装填同步；念气罩；一起通关击杀数一致、无报错 | `mp_fighter.mjs` |
+| 手机 | 4 个转职按键不出屏不重叠、状态键（气功 5 个 Buff）、空中 C / 蹲伏 / 前踢 / 鹰踏 / 跑攻中 X、装填角标、风雷能量条位置 | `mobile_fighter.mjs` |
+
+### 6.2 还没做 / 要主线程拍板（按上线影响排）
+| # | 缺口 | 影响 | 归属 |
+|---|---|---|---|
+| G1 | **外观**：4 个转职的 `JOB_LOOKS`（发色 / 头饰）、6 套时装帧 `spr/fighter@*`、5 类武器图 / 图标（`art/final/weapon` 里还没有）、城镇路人 | 选角 / 城镇里 4 个转职长得一样；穿时装只显示原装；拿武器看不到武器 | B2（进行中） |
+| G2 | 具名史诗武器（`epics60_w_fighter.js` 还是空壳） | 格斗家刷不到本职业具名史诗武器（通用史诗 / 普通—传说能用） | B8 二期 |
+| G3 | skillaudit 规格：街霸 20 个、柔道家 19 个技能没写规格（`docs/skills/fighter.json`）；气功师 `fn_blast` 段数 1 项不一致（规格 [1,3]，实测 6；原因没查，B9 没动这部分代码）；`all.sh` 还没有格斗家的 `skillaudit --compare` 行 | 数值没和官方逐项对照 | B6 / B7 / B4 |
+| G4 | 街霸的决斗专属规则（罗网强化只拉倒地 / 空中、伏虎霸王拳只抓倒地、砖块对罗网目标眩晕减半）没做 | 现在靠 B9 的通用上限（hold 1 秒、束缚 3 秒、持续伤害吃 PvP 系数）+ PVP_JOB 0.45 压住，胜率在区间内 | B6（可选） |
+| G5 | 柔道家版金刚碎（肘击砸地、对倒地更高）没做，只加了“收招接霹雳旋踢” | 小差异 | B3 |
+| G6 | HP / MP 成长抄鬼剑士（官方没查到）；决斗 `DUEL_BASE.fighter` 也按鬼剑士 | 低置信，平衡靠 PVP_JOB | — |
+| G7 | 决斗长连段：抓取 + 觉醒接觉醒最长约 7~12 秒不能行动（老职业同样量法：阿修罗 17 秒、枪炮师 7 秒），不是格斗家独有 | 觉醒每局一次，不会无限 | 全局 PvP 规则（要不要“觉醒不能接觉醒”由主线程定） |
+| G8 | `test/mobile.mjs` 的 `up()` 用 CDP `touchEnd` 时列的是“剩下的手指”，实际松开的是列出来的那些（双指用例里松攻击键会把摇杆松掉），它的双指检查可能是碰巧通过；`mobile_fighter.mjs` 用的是正确写法 | 只影响测试可信度 | 手机组 |
+| G9 | 开放后排位 AI 局会抽到格斗家；改了格斗家的技能 / AI / 全局 PvP 规则后要重跑 `node test/pvp_balance.mjs 20 all`（循环赛一直带着 `?fighter=1`，开放前后都一样） | — | 主线程 |

@@ -10,7 +10,7 @@ const DUEL_BASE = {   // 每个职业的 PvP 基准属性（天平后）
   sword: { hp: 21000, mp: 4200, atk: 2100, matk: 1800, def: 2100, mdef: 1800 },
   gun: { hp: 19500, mp: 4400, atk: 2000, matk: 1700, def: 1900, mdef: 1900 },
   mage: { hp: 18000, mp: 5600, atk: 1300, matk: 2150, def: 1700, mdef: 2200 },
-  fighter: { hp: 21000, mp: 4200, atk: 2100, matk: 1800, def: 2100, mdef: 1800 },   // B0 先抄鬼剑士，B9 跑 pvp_balance 再调
+  fighter: { hp: 21000, mp: 4200, atk: 2100, matk: 1800, def: 2100, mdef: 1800 },   // 男格斗家和鬼剑士同一档（近战、官方四维相同），强弱由 PVP_JOB 调（B9，docs/PVP.md §4）
 };
 function duelStats(p) {
   const B = DUEL_BASE[p.cls], C = CLASSES[p.cls];
@@ -47,13 +47,25 @@ function duelFairSnap(p) {
 { const rs0 = recalcStats; recalcStats = function (p) { if (p && p.fighter && game.pvp && game.duel && p.kit) return; return rs0(p); }; }
 // 决斗里所有觉醒都能放（不看觉醒任务）
 { const tu0 = tierUnlocked; tierUnlocked = function (n) { return game.pvp && game.duel ? true : tu0(n); }; }
+// 决斗里的控制上限（docs/PVP.md「抓取 / 强制硬直」）：强制硬直 hold（格斗家组，无视霸体）最长 1 秒，结束后 1.5 秒内不能再被 hold（和抓取保护一样）；束缚最长 3 秒。地下城不受影响
+// 格斗家的持续伤害（街霸的毒 / 出血、气功师的感电追加）在决斗里也吃 PVP.dmg 和职业修正（updateStatus 直接扣血，不走 applyHit；老职业的没改，免得动已调好的平衡）
+const PVP_CTRL = { hold: 1.0, holdProt: 1.5, bind: 3 };
+{ const as0 = addStatus; addStatus = function (t, kind, dur, o = {}) {
+  if (game.pvp && game.duel && t && t.fighter) {
+    if (kind === 'hold') { if (game.t < (t.pvpHoldProt || 0)) return; dur = Math.min(dur, PVP_CTRL.hold); t.pvpHoldProt = game.t + dur + PVP_CTRL.holdProt; }
+    else if (kind === 'bind') dur = Math.min(dur, PVP_CTRL.bind);
+    const s = o.src; if (s && s.cls === 'fighter' && (o.dps || o.hitDmg)) { const k = PVP.dmg * (1 + (s.dmgUp || 0)) * (t.dmgTaken ?? 1); o = { ...o, dps: (o.dps || 0) * k, hitDmg: (o.hitDmg || 0) * k }; }
+  }
+  return as0(t, kind, dur, o);
+}; }
 /* ---- 决斗场伤害修正（全局 PVP.dmg 之外，按技能类型的默认系数；职业文件里写了 S.pvp 的以职业为准）---- */
 const PVP_SKILL = { awaken: 0.5, grab: 0.8, summon: 0.8, burst: 0.85, aoe: 0.9 };
 // 职业（转职）整体修正：AI 循环赛（node test/pvp_balance.mjs 6 all 6）自动调出来的，1 = 不修正；数组 = [造成伤害, 受到伤害]（未转职技能太少，只加伤害追不上）
 const PVP_JOB = {
-  'sword:': [1.95, 0.55], 'sword:blade': 0.66, 'sword:berserker': 0.76, 'sword:asura': [0.34, 1.15], 'sword:soulbender': 0.72, 'sword:ghostblade': 0.64,
-  'gun:': [2.8, 0.65], 'gun:ranger': 1.16, 'gun:launcher': 1.15, 'gun:spitfire': 0.58, 'gun:mechanic': 0.62, 'gun:paramedic': 1.2,
-  'mage:': 2.0, 'mage:elemental': 0.76, 'mage:battlemage': 0.88, 'mage:summoner': 0.56, 'mage:witch': 0.48, 'mage:enchantress': 0.78,
+  'sword:': [1.95, 0.55], 'sword:blade': 0.7, 'sword:berserker': 0.71, 'sword:asura': [0.36, 1.15], 'sword:soulbender': 0.65, 'sword:ghostblade': 0.64,
+  'gun:': [2.95, 0.65], 'gun:ranger': 1.16, 'gun:launcher': 1.15, 'gun:spitfire': 0.58, 'gun:mechanic': 0.62, 'gun:paramedic': 1.2,
+  'mage:': 2.35, 'mage:elemental': 0.76, 'mage:battlemage': 0.88, 'mage:summoner': 0.6, 'mage:witch': 0.56, 'mage:enchantress': 0.62,
+  'fighter:': [2.3, 0.6], 'fighter:nenmaster': [0.42, 1.3], 'fighter:striker': 0.74, 'fighter:brawler': 0.45, 'fighter:grappler': 0.73,
 };
 for (const id in SKILLS) {
   const S = SKILLS[id]; if (!S || S.passive) continue;
@@ -71,7 +83,7 @@ const duel = {
     // 玩家一方：技能栏 / 等级写进 game（HUD 用），角色用同一份 kit
     const kA = duelKit(o.a, o.ja, o.me && o.me.skillBar);   // 我的角色：标准技能等级 + 自己的技能栏
     game.job = o.ja; game.skillLv = kA.lv; game.skillBar = kA.bar;
-    const a = makePlayer(o.a, { kit: { bar: game.skillBar, lv: game.skillLv, job: o.ja, wtype: null }, name: o.nameA || CLASSES[o.a].name });
+    const a = makePlayer(o.a, { kit: { bar: game.skillBar, lv: game.skillLv, job: o.ja, wtype: null, pool: kA.pool }, name: o.nameA || CLASSES[o.a].name });
     if (o.auto) { a.pad = new Pad(); a.brain = new FighterBrain(a, o.ai); }
     const b = makePlayer(o.b, { team: 'e', pad: new Pad(), kit: duelKit(o.b, o.jb), name: o.nameB || 'AI · ' + CLASSES[o.b].name });
     b.brain = new FighterBrain(b, o.ai);
@@ -83,7 +95,7 @@ const duel = {
   resetRound() {
     projs.length = 0; groundFx.length = 0; game.timeStop = 0; game.cutin = null; game.slowmo = false;
     [[this.a, 330, 1], [this.b, 790, -1]].forEach(([p, x, f]) => {
-      Object.assign(p, { x, y: DEPTH / 2, z: 0, vx: 0, vy: 0, vz: 0, face: f, dead: false, hp: p.hpMax, mp: p.mpMax, invul: 0, superArmor: 0, stun: 0, hitstop: 0, act: null, status: {}, buffs: {}, cool: {}, chasers: [], rot: 0, reboundCd: 0, bsCd: 0, charges: {}, burning: false });
+      Object.assign(p, { x, y: DEPTH / 2, z: 0, vx: 0, vy: 0, vz: 0, face: f, dead: false, hp: p.hpMax, mp: p.mpMax, invul: 0, superArmor: 0, stun: 0, hitstop: 0, act: null, status: {}, buffs: {}, cool: {}, chasers: [], rot: 0, reboundCd: 0, bsCd: 0, charges: {}, burning: false, pvpHoldProt: 0 });
       if (p.brain) p.brain.reset();
       p.grabbed = null; p.heldBy = null; p.deadT = 0; p.remove = false; if (!ents.includes(p)) ents.push(p); p.setState('idle'); p.play('idle', true); resetCmb(p); applyBuffs(p);
     });

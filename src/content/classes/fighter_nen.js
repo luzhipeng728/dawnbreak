@@ -337,7 +337,7 @@ function fnHudHook() {
 function fnDrawGauge(c) {
   const p = game.player; if (!fnIs(p) || !fnHasGauge(p)) return;
   const touchOn = typeof touch !== 'undefined' && touch.on, w = touchOn ? 400 : 190, h = touchOn ? 14 : 14;
-  const x = touchOn ? (touch.hudX || 30) + 110 : HUD.mp.x - w / 2, y = touchOn ? 142 : HUD.y0 - 40;
+  const x = touchOn ? (touch.hudX || 30) + 110 : HUD.mp.x - w / 2, y = touchOn ? 172 : HUD.y0 - 40;   // 触屏：放在 BUFF 行（y 100~150，含倒计时）下面，标题字不压住 BUFF
   const e = fnE(p), f = e / FN_EMAX, on = fnWS(p), full = e >= FN_EON;
   c.fillStyle = 'rgba(10,8,8,.8)'; c.fillRect(x - 3, y - 3, w + 6, h + 6);
   const g = c.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, '#8a6010'); g.addColorStop(1, on ? '#fff6b0' : '#ffd23a');

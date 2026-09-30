@@ -28,7 +28,8 @@ const arena = {
   join() {
     const why = this.canQueue(); if (why) { toastMsg(why, '#ffd0a0'); return; }
     const d = save.data, p = game.player;
-    net.send({ t: 'arena:join', cid: this.cid(), char: { name: d.name || CLASSES[p.cls].name, cls: p.cls, job: game.job || null } });
+    const pool = openClasses().flatMap(c => [c + ':', ...openJobs(c).map(j => c + ':' + j)]);   // AI 对手只从这边已开放的职业 / 转职里抽（没开放的格斗家不会排到，server/modules/arena.js aiPoolOf）
+    net.send({ t: 'arena:join', cid: this.cid(), char: { name: d.name || CLASSES[p.cls].name, cls: p.cls, job: game.job || null }, pool });
   },
   leave() { if (this.q) net.send({ t: 'arena:leave' }); this.q = null; this.draw(); },
   /* ---------------- AI 对局（本地模拟） ---------------- */

@@ -78,8 +78,8 @@ if (mode === 'fast') {
   const t = await page.evaluate(() => { const got = []; window.toastMsg = m => got.push(m); game.lvl = 30; game.exp = 12345; save.data.capNote = undefined; save.data.seenHelp = true; afterEnterWorld(); afterEnterWorld(); return { got: got.filter(m => /等级上限/.test(m)).length, exp: game.exp }; });
   ok(t.got === 1 && t.exp === 12345, '老的 Lv30 角色：进城提示“等级上限提升到 Lv.60”（只提示一次），经验不动', t);
   // 8. 决斗：固定 Lv30
-  const du = await page.evaluate(() => { game.lvl = 60; const p = makePlayer('sword'); p.kit = { job: Object.keys(CLASSES.sword.jobs)[0] }; duelStats(p); return { cfg: DUEL_CFG.lv, lvl: p.lvl, hp: p.hpMax }; });
-  ok(du.cfg === 30 && du.lvl === 30 && du.hp === 21000, '决斗等级固定 Lv30（角色 Lv60 进决斗也按 30 算，属性是天平值）', du);
+  const du = await page.evaluate(() => { game.lvl = 60; const p = makePlayer('sword'); p.kit = { job: Object.keys(CLASSES.sword.jobs)[0] }; duelStats(p); return { cfg: DUEL_CFG.lv, lvl: p.lvl, hp: p.hpMax, want: Math.round(DUEL_BASE.sword.hp * DUEL_CFG.hpMul) }; });
+  ok(du.cfg === 30 && du.lvl === 30 && du.hp === du.want, '决斗等级固定 Lv30（角色 Lv60 进决斗也按 30 算，属性是天平值）', du);
   // 9. 怪物等级公式：Lv30 以内不变；Lv60 稀有装打 Lv60 区域怪的击杀 / 受伤和 Lv30 相近（算上技能等级成长）
   const mon = await page.evaluate(() => {
     const old = lv => ({ hp: 1 + (lv - 1) * 0.15, atk: 1 + (lv - 1) * 0.1, def: 1 + (lv - 1) * 0.08 });

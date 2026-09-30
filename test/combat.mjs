@@ -171,14 +171,14 @@ async function open(q) {
     // 倒地保护：倒地后累计伤害超过 20% → 强制起身 + 0.7 秒无敌
     B.hp = B.hpMax; resetCmb(B); B.vz = 0; B.z = 0; B.setState('down'); B.downTime = 9; let st = [];
     for (let i = 0; i < 60 && B.st !== 'getup'; i++) { if (B.st === 'air') { B.z = 0; B.vz = 0; B.setState('down'); B.downTime = 9; } applyHit(A, B, { dmg: 1.5, downHit: true, sure: true }, { proj: true }); st.push(B.st); }
-    out.down = { st: B.st, invul: +B.invul.toFixed(2), ratio: +(B.cmb.downDmg / B.hpMax).toFixed(2) };
+    out.down = { st: B.st, invul: +B.invul.toFixed(2), ratio: +(B.cmb.downDmg / (B.hpMax / DUEL_CFG.hpMul)).toFixed(2) };   // 保护阈值按原 HP（决斗 HP ÷ hpMul）算
     // 抓取保护：被抓释放后 1.5 秒内不能再被抓
     B.invul = 0; B.setState('idle'); resetCmb(B); A.doAct({ name: 'g', dur: 1, hits: [] }); applyHit(A, B, { dmg: 0.1, grab: true }, {}); const held = B.st; A.endAct(); T.run(2);
     A.doAct({ name: 'g', dur: 1, hits: [] }); applyHit(A, B, { dmg: 0.1, grab: true }, {}); out.grab = { first: held, second: B.st, prot: +B.grabProt.toFixed(2) }; A.endAct();
     // 平推保护：站着连续挨打累计超过 22% → 强制击倒
     B.hp = B.hpMax; resetCmb(B); B.invul = 0; B.grabProt = 0; B.z = 0; B.vz = 0; B.setState('idle'); let st2 = [];
     for (let i = 0; i < 80 && B.st !== 'air'; i++) { B.setState('idle'); applyHit(A, B, { dmg: 0.8, stun: 0.3, sure: true, type: 'phys' }, { proj: true }); st2.push(B.st); }
-    out.stand = { st: B.st, ratio: +((B.hpMax - B.hp) / B.hpMax).toFixed(2) };
+    out.stand = { st: B.st, ratio: +((B.hpMax - B.hp) / (B.hpMax / DUEL_CFG.hpMul)).toFixed(2) };
     // 被格斗者打中不再给 0.2 秒保护无敌（否则连不上招）
     A.invul = 0; A.setState('idle'); applyHit(B, A, { dmg: 0.1, sure: true }, { proj: true }); out.noMercyInvul = A.invul <= 0;
     return out;

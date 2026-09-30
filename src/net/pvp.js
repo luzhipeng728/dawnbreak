@@ -89,7 +89,7 @@ const netDuel = {
   hostSnap() {
     const f = p => [Math.round(p.x), Math.round(p.y), Math.round(p.z), p.face < 0 ? -1 : 1, Math.max(0, COOP_ST.indexOf(p.st)), p.clipName, +p.animT.toFixed(2), Math.round(p.hp), Math.round(p.mp), p.invul > 0 ? 1 : 0, hasSA(p) ? 1 : 0, p.burning ? 1 : 0, Math.round(p.cmb.airDmg), Math.round(p.cmb.downDmg), p.dead ? 1 : 0, Math.round(p.hpMax), Math.round(p.mpMax), +(p.reboundCd || 0).toFixed(1), p.techHold ? 1 : 0];
     const cool = {}; for (const k in duel.b.cool) if (duel.b.cool[k] > 0.05) cool[k] = +duel.b.cool[k].toFixed(1);
-    this.send({ k: 'ds', ck: Math.round(lastT), iq: this.inDone, a: f(duel.a), b: f(duel.b), tm: +duel.timer.toFixed(1), st: duel.state, r: duel.round, w: duel.wins, msg: duel.msg, mt: +Math.max(0, duel.msgT).toFixed(2), md: duel.msgDur || 1, cool, ts: game.timeStop > 0 ? 1 : 0 });
+    this.send({ k: 'ds', ck: Math.round(lastT), iq: this.inDone, a: f(duel.a), b: f(duel.b), tm: +duel.timer.toFixed(1), st: duel.state, r: duel.round, w: duel.wins, msg: duel.msg, mt: +Math.max(0, duel.msgT).toFixed(2), md: duel.msgDur || 1, cool, ts: game.timeStop > 0 ? 1 : 0, gd: +Math.max(0, duel.guardT || 0).toFixed(2) });   // gd：开局倒计时还剩几秒（对方那边也不能攻击）
   },
   /* ---------------- 对方（队员）：两个影子 + 预测 ---------------- */
   guestStart(d) {
@@ -144,7 +144,7 @@ const netDuel = {
       p.hp = hp; p.mp = mp; p.hpMax = hpMax; p.mpMax = mpMax; p.invul = inv ? 0.05 : 0; p.superArmor = sa ? 0.05 : 0; p.burning = !!burn; p.cmb.airDmg = ad; p.cmb.downDmg = dd;
       p.dead = !!dead; p.last = { x, y, z, f, t: now };
     }
-    V.timer = d.tm; V.round = d.r; V.wins = d.w; V.state = d.st;
+    V.timer = d.tm; V.round = d.r; V.wins = d.w; V.state = d.st; V.guardT = +d.gd || 0;
     const msg = this.flip(d.msg);
     if (msg !== V.msg || d.mt > V.msgT + 0.3) { V.msg = msg; V.msgT = d.mt; V.msgDur = d.md; }
     if (!local) { B.cool = {}; for (const k in d.cool) B.cool[k] = d.cool[k]; }

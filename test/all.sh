@@ -83,6 +83,8 @@ run bhmroute  node test/behemoth_route.mjs
 run region    node test/region.mjs siroco   # 区域流水线：数据 / 技能库 / 机制库 / 怪物 / 场景 / 任务 / 机器人通关（约 25 分钟）
 run duel      node test/duel.mjs sword:gun,gun:mage,mage:sword 3
 run pvpbal    node test/pvp_balance.mjs 4 all
+run duelrules node test/duel_rules.mjs   # 决斗规则单测：HP 倍率、开局 3 秒倒计时、开局冷却、追加浮空 / 一级·二级保护 / 倒地·二次浮空 / 平推 / 硬直 / 时间保护 / 错位、指令缓冲
+run duelstats node test/duel_stats.mjs 2 all   # 决斗节奏：一局用时、连招段数 / 时长 / 伤害占比（只打印，不判失败）
 run juggle    node test/juggle.mjs
 run mobile    node test/mobile.mjs
 run mobilef   node test/mobile_fighter.mjs   # 格斗家手机操作：4 个转职的按键布局 / 状态键、空中 C、蹲伏、前踢、鹰踏、跑攻中 X、装填角标、风雷能量条

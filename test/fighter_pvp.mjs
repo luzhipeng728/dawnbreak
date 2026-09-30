@@ -30,7 +30,7 @@ async function runJob(job, n, opps) {
         duel.start({ a: me ? 'fighter' : cb, ja: me ? job || null : jb || null, b: me ? cb : 'fighter', jb: me ? jb || null : job || null, lv: DUEL_CFG.lv, ai: 3, auto: true, theme: 'ruinsDark' });
         F = me ? duel.a : duel.b; const V = me ? duel.b : duel.a;
         let held = 0, lock = 0, relT = -9, wasHeld = false, holdT = 0;
-        for (let i = 0; i < 60 * 60 * 1.3 && duel.state !== 'result' && duel.state !== 'done'; i++) {
+        for (let i = 0; i < 60 * 110 && duel.state !== 'result' && duel.state !== 'done'; i++) {
           step(1 / 60);
           if (duel.state !== 'fight' || game.timeStop > 0) continue;   // 觉醒定格（双方都停）不算
           const h = V.st === 'held' && V.heldBy === F;
@@ -75,7 +75,7 @@ if (parts.includes('grab')) for (const job of ['grappler', 'brawler']) {
   ok(G.regrabFast === 0, `${job}：放开后 ${'1.5'} 秒内（抓取保护）没有再被抓住`, G);
   ok(G.maxHeld < 4.2, `${job}：一次最多被抓 ${G.maxHeld.toFixed(2)} 秒（上限 4 秒）`, G);
   ok(G.maxHold <= 1.05, `${job}：决斗里强制硬直（hold）最长 ${G.maxHold.toFixed(2)} 秒（≤1 秒）`, G);
-  ok(G.maxLock < 15, `${job}：对手连续不能行动最长 ${G.maxLock.toFixed(1)} 秒（没有无限连；抓取 + 觉醒接觉醒的长连段，老职业同样量法：阿修罗 17 秒、枪炮师 7 秒）`, G);
+  ok(G.maxLock < 10, `${job}：对手连续不能行动最长 ${G.maxLock.toFixed(1)} 秒（时间保护 7 秒后下一下脱出，没有无限连）`, G);
 }
 const errs = logs.filter(l => l.type === 'pageerror');
 ok(!errs.length, '没有页面报错', errs.slice(0, 3));

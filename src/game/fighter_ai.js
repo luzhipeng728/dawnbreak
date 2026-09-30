@@ -113,6 +113,7 @@ class FighterBrain {
     if (p.st === 'hit') { if (bsupReady(p) && p.cmb.hits >= 4 && Math.random() < L.escape * dt * 6) { P.hold('down'); P.tap('jump'); } return; }
     if (!p.free && p.st !== 'act') return;
     if (p.cls === 'fighter' && p.st === 'act') this.fBusy(o, dir, adx);
+    if (game.duel && game.duel.state === 'fight' && game.duel.guardT > 0) { this.guardTick(o, dx, dy, adx, ady, dir); return; }   // 开局倒计时：只走位、放 BUFF
     // ---- 防守：对手出招（反应延迟后）或飞行道具逼近 ----
     if (o.st === 'act' && o.act !== this.seenAct) { this.seenAct = o.act; this.seenT = this.t; this.defRoll = Math.random(); }
     if (o.st !== 'act') this.seenAct = null;
@@ -204,6 +205,12 @@ class FighterBrain {
     if (id && Math.random() < 0.6) { this.cast(id, dir); return; }
     if (p.cls === 'gun' && adx < 360 && Math.random() < 0.6) { P.hold(dir > 0 ? 'right' : 'left'); P.tap('attack'); return; }
     if (p.cls === 'mage' && adx < 360 && Math.random() < 0.3 && this.ready('mg_orb')) { this.cast('mg_orb', dir); return; }
+    this.move(o, dx, dy, adx, ady, dir);
+  }
+  // 开局倒计时（决斗 3 秒）：能放的 BUFF 补上，其余时间走到想要的距离
+  guardTick(o, dx, dy, adx, ady, dir) {
+    const p = this.p; if (!p.free) return;
+    if (this.t >= this.nextThink) { this.nextThink = this.t + this.L.think * rnd(0.7, 1.3); const b = this.pickSkill(['buff'], adx, ady, false); if (b && !p.buffs[b] && duelGuardFree(b) && Math.random() < 0.6) { this.cast(b, dir); return; } }
     this.move(o, dx, dy, adx, ady, dir);
   }
   // ---- 男格斗家：施放中每帧补按的键（方向 / 再按 / 连打 X / 朝对手调） ----

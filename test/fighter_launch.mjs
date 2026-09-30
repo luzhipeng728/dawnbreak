@@ -69,12 +69,12 @@ try {
     game.paused = true;
     duel.start({ a: 'fighter', ja: me.job, b: 'sword', jb: 'blade', lv: DUEL_CFG.lv, ai: 2, auto: true, theme: 'ruinsDark', nameA: me.name, me: { skillBar: me.skillBar } });
     const snap = duelFairSnap(duel.a), bar = game.skillBar.filter(Boolean);
-    for (let k = 0; k < 60 * 70 && duel.state !== 'result' && duel.state !== 'done'; k++) step(1 / 60);
+    for (let k = 0; k < 60 * 110 && duel.state !== 'result' && duel.state !== 'done'; k++) step(1 / 60);
     const res = duel.result; game.paused = false;
-    return { res, snap, bar, own: me.skillBar.filter(Boolean) };
+    return { res, snap, bar, own: me.skillBar.filter(Boolean), wantHp: Math.round(DUEL_BASE.fighter.hp * DUEL_CFG.hpMul) };
   }, JOBS.indexOf('striker'));
   ok(duelR.res && duelR.res.a === 'fighter:striker' && duelR.res.rounds.length === 1, `散打决斗：打完一局（${duelR.res && (duelR.res.winner === 0 ? '赢' : duelR.res.winner === 1 ? '输' : '平')}，${duelR.res && duelR.res.rounds[0] && duelR.res.rounds[0].time} 秒）`, duelR.res);
-  ok(duelR.snap.hpMax === 21000 && duelR.snap.lvl === 30 && duelR.snap.procs === 0 && /fs_/.test(duelR.snap.skills) && duelR.bar.every(id => duelR.own.includes(id)), '决斗用公正属性（Lv30、HP 21000、没有装备特效）+ 自己的技能栏', { snap: duelR.snap, bar: duelR.bar });
+  ok(duelR.snap.hpMax === duelR.wantHp && duelR.snap.lvl === 30 && duelR.snap.procs === 0 && /fs_/.test(duelR.snap.skills) && duelR.bar.every(id => duelR.own.includes(id)), `决斗用公正属性（Lv30、HP ${duelR.snap.hpMax}、没有装备特效）+ 自己的技能栏`, { snap: duelR.snap, bar: duelR.bar });
   // ---- 4) 存档往返 ----
   const pick = () => page.evaluate(() => { save.loadAll(); return save.chars.map(c => JSON.stringify({ cls: c.cls, job: c.job, lvl: c.lvl, name: c.name, bar: c.skillBar, sk: c.skillLv, fl: c.flags })); });
   await open(); const A = await pick();

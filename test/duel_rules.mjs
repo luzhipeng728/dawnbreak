@@ -1,0 +1,199 @@
+// 决斗场规则单测（B9，docs/PVP.md §5）：逐帧 step()、不渲染，约 10 秒
+//   hp      决斗 HP 倍率（所有职业 + AI）、保护阈值按原 HP 算、地下城不受影响
+//   guard   开局 3 秒倒计时：能走、能放 BUFF；普攻 / 伤害技能 / 命中 / 异常状态无效；AI 也守规矩；计时器倒计时结束才走；联机主机快照带 gd
+//   startcd 开局冷却：觉醒 30 / 40 / 45 秒、决斗冷却 ≥14 秒的大技能整段冷却（最多 42 秒）、8~14 秒的一半、小技能 / BUFF 没有；技能栏直接显示
+//   juggle  追加浮空（下落中再挑起、一次比一次低）、一级 / 二级保护（重力变大、二级挑不起来、不强制空中受身）、落地后还能追击直到倒地保护（强制起身 + 无敌）、
+//           二次浮空（落地后再挑起的伤害也算倒地保护）、平推保护、硬直衰减、时间保护（连续不能行动 7 秒）、错位（纵深超出判定打不到，击退不改纵深）、受击状态修正
+//   buffer  指令缓冲各职业一致：动作结束前 0.3 秒内按的技能键会在动作结束后放出，更早按的作废
+// 用法：node test/duel_rules.mjs [hp,guard,startcd,juggle,buffer]
+import { launch, URL_BASE } from './lib.mjs';
+const parts = (process.argv[2] || 'hp,guard,startcd,juggle,buffer').split(',');
+const { browser, page, logs } = await launch({ width: 640, height: 360 });
+await page.goto(`${URL_BASE}?duel=sword&vs=gun&auto&ai=3&mute&fighter=1`);
+await page.waitForFunction(() => window.__READY && game.duel, null, { timeout: 60000 });
+await page.evaluate(async () => {
+  await loadBundles(openClasses().map(c => 'spr:' + c)); game.paused = true; window.toastMsg = () => {};
+  // 测试台：a 由测试按键（自己的 Pad），b 默认不动（木桩），需要时给 b 装 AI
+  window.__T = {
+    start(a = 'sword', ja = null, b = 'gun', jb = null, o = {}) {
+      duel.start({ a, ja, b, jb, lv: DUEL_CFG.lv, ai: 3, auto: true, theme: 'ruinsDark' });
+      const A = duel.a, B = duel.b; A.brain = null; A.pad = new Pad(); A.control = (e, dt) => { if (duel.state === 'fight') { e.pad.frame(game.t); playerControl(e, dt); } };
+      if (!o.aiB) { B.brain = null; B.control = () => {}; }
+      return { A, B };
+    },
+    run(n) { for (let i = 0; i < n; i++) step(1 / 60); },
+    toFight(skipGuard) { for (let i = 0; i < 200 && duel.state !== 'fight'; i++) step(1 / 60); if (skipGuard) { duel.guardT = 0; } },
+  };
+});
+let fails = 0;
+const ok = (c, msg, x) => { if (c) console.log('✓', msg); else { fails++; console.log('✗', msg, x !== undefined ? JSON.stringify(x).slice(0, 700) : ''); } };
+const ev = (fn, arg) => page.evaluate(fn, arg);
+
+if (parts.includes('hp')) {
+  const r = await ev(() => {
+    const out = {};
+    for (const c of ['sword', 'gun', 'mage', 'fighter']) { const { A, B } = __T.start(c, null, 'sword'); out[c] = { hp: A.hpMax, base: DUEL_BASE[c].hp, ai: B.hpMax, mp: A.mpMax }; }
+    out.mul = DUEL_CFG.hpMul; out.air = +(PVP.airProt * DUEL_CFG.hpMul).toFixed(3); out.down = +(PVP.downProt * DUEL_CFG.hpMul).toFixed(3); out.stand = +(PVP.standProt * DUEL_CFG.hpMul).toFixed(3);
+    return out;
+  });
+  ok(['sword', 'gun', 'mage', 'fighter'].every(c => r[c].hp === Math.round(r[c].base * r.mul)) && r.sword.ai === Math.round(DUEL_BASE_SWORD() * r.mul), `决斗 HP ×${r.mul}（4 个职业、AI 一样）`, r);
+  function DUEL_BASE_SWORD() { return r.sword.base; }
+  ok(r.air === 0.2 && r.down === 0.2 && r.stand === 0.22, '保护阈值按原 HP 算（平推 22% / 浮空 20% / 倒地 20%）：连招长度不因为 HP 变多而变长', r);
+  const pve = await ev(async () => { const P = makePlayer('sword'); game.lvl = 30; const pvp0 = game.pvp; game.pvp = false; game.duel = null; recalcStats(P); const hp = P.hpMax; game.pvp = pvp0; game.duel = duel; return { hp, isPvp: isPvp(P, duel.b) }; });
+  ok(pve.hp > 0 && pve.hp < 21000 * 1.5, `地下城不受影响：Lv30 鬼剑士 recalcStats 的 HP ${pve.hp}（不乘决斗倍率）`, pve);
+}
+
+if (parts.includes('guard')) {
+  const r = await ev(() => {
+    const { A, B } = __T.start('sword', 'berserker', 'fighter', 'grappler');
+    __T.toFight();
+    const out = { guard0: +duel.guardT.toFixed(2), timer0: duel.timer, state: duel.state };
+    const x0 = A.x; for (let i = 0; i < 20; i++) { A.pad.hold('right'); __T.run(1); } out.moved = Math.round(A.x - x0);
+    A.pad.tap('attack'); __T.run(2); out.atkAct = A.act ? A.act.name : null;
+    const dmgSkill = A.kit.bar.find(id => id && !duelGuardFree(id) && !SKILLS[id].awaken && !(A.cool[id] > 0));
+    const s = A.kit.bar.indexOf(dmgSkill); A.pad.tap('s' + s); __T.run(3); out.dmgSkill = dmgSkill; out.dmgAct = A.act ? A.act.name : null; out.dmgCool = +(A.cool[dmgSkill] || 0).toFixed(2);
+    const buff = Object.keys(A.kit.lv).find(id => duelGuardFree(id) && SKILLS[id].act && !(A.cool[id] > 0));
+    out.buff = buff; if (buff) { A.act = null; A.setState('idle'); out.buffCast = castSkill(A, buff); __T.run(40); out.buffOn = !!A.buffs[buff] || !!(A.act && A.act.skill === buff) || (A.cool[buff] > 0); }
+    out.hit = applyHit(A, B, { dmg: 2, sure: true, stun: 0.3 }); out.bHp = B.hp === B.hpMax; addStatus(B, 'stun', 1); out.status = !!(B.status && B.status.stun);
+    out.timerDuring = duel.timer;
+    for (let i = 0; i < 200 && duel.guardT > 0; i++) __T.run(1);
+    out.msg = duel.msg; A.act = null; A.setState('idle'); A.pad.tap('attack'); __T.run(2); out.atkAfter = A.act ? A.act.name : null;
+    out.hitAfter = applyHit(A, B, { dmg: 0.01, sure: true, stun: 0.2 }); __T.run(30); out.timerAfter = +duel.timer.toFixed(1);
+    // 联机：主机快照带倒计时
+    const s0 = netDuel.send, r0 = netDuel.role, st0 = netDuel.state; let snap = null; netDuel.send = m => { snap = m; }; netDuel.role = 'host'; netDuel.state = 'fight'; duel.guardT = 2.5; try { netDuel.hostSnap(); } finally { netDuel.send = s0; netDuel.role = r0; netDuel.state = st0; duel.guardT = 0; }
+    out.snapGd = snap && snap.gd;
+    return out;
+  });
+  ok(r.state === 'fight' && r.guard0 > 2.9 && r.timer0 === r.timerDuring, `开局 ${r.guard0} 秒倒计时，倒计时期间计时器不走（${r.timer0}）`, r);
+  ok(r.moved > 40, `倒计时中能走（${r.moved}px）`, r);
+  ok(!r.atkAct && !r.dmgAct && !(r.dmgCool > 0), `倒计时中普攻、伤害技能（${r.dmgSkill}）放不出来，也不进冷却`, r);
+  ok(!r.buff || (r.buffCast && r.buffOn), `倒计时中 BUFF 能放（${r.buff}）`, r);
+  ok(r.hit === false && r.bHp && !r.status, '倒计时中命中 / 异常状态都无效', r);
+  ok(r.msg === '开始!' && /atk/.test(r.atkAfter || '') && r.hitAfter === true && r.timerAfter < r.timer0, `倒计时结束“开始!”，之后能普攻（${r.atkAfter}）、能打中，计时器开始走（${r.timerAfter}）`, r);
+  ok(r.snapGd === 2.5, '联机：主机快照带开局倒计时 gd（对方那边同样不能攻击）', r);
+  const ai = await ev(() => {
+    const out = [];
+    for (const [a, ja, b, jb] of [['fighter', 'nenmaster', 'sword', 'blade'], ['mage', 'elemental', 'fighter', 'striker'], ['gun', 'launcher', 'fighter', 'brawler']]) {
+      duel.start({ a, ja, b, jb, lv: DUEL_CFG.lv, ai: 3, auto: true, theme: 'ruinsDark' }); const A = duel.a, B = duel.b, x = [A.x, B.x];
+      for (let i = 0; i < 200 && duel.state !== 'fight'; i++) step(1 / 60);
+      let hurt = 0; while (duel.guardT > 0) { step(1 / 60); if (A.hp < A.hpMax || B.hp < B.hpMax) hurt++; }
+      out.push({ m: a + ':' + ja + ' vs ' + b + ':' + jb, hurt, moved: Math.round(Math.abs(A.x - x[0]) + Math.abs(B.x - x[1])), buffs: [...Object.keys(A.buffs), ...Object.keys(B.buffs)].filter(k => k !== 'burn_mode').length });
+      for (let i = 0; i < 60 * 10 && duel.state === 'fight'; i++) step(1 / 60);
+      out[out.length - 1].fought = A.hp < A.hpMax || B.hp < B.hpMax;
+    }
+    return out;
+  });
+  ok(ai.every(x => x.hurt === 0 && x.moved > 30 && x.fought), `AI 守倒计时：3 局倒计时里都没人掉血、会走位（放了 BUFF：${ai.map(x => x.buffs).join('/')}），倒计时后开打`, ai);
+}
+
+if (parts.includes('startcd')) {
+  const r = await ev(() => {
+    const out = {};
+    for (const [c, j] of [['sword', 'berserker'], ['gun', 'launcher'], ['mage', 'elemental'], ['fighter', 'grappler'], ['fighter', 'nenmaster']]) {
+      const { A } = __T.start(c, j, 'sword');
+      const L = Object.keys(A.kit.lv).filter(id => SKILLS[id] && !SKILLS[id].passive && (SKILLS[id].act || SKILLS[id].instant));
+      const aw = L.filter(id => SKILLS[id].awaken).map(id => [id, duelAwTier(id), +(A.cool[id] || 0).toFixed(1)]);
+      const big = L.filter(id => !SKILLS[id].awaken && !duelGuardFree(id) && SKILLS[id].cd * (SKILLS[id].pvpCd || 1) >= 14).map(id => [id, SKILLS[id].cd, +(A.cool[id] || 0).toFixed(1)]);
+      const small = L.filter(id => !SKILLS[id].awaken && SKILLS[id].cd * (SKILLS[id].pvpCd || 1) < 8).map(id => [id, +(A.cool[id] || 0).toFixed(1)]);
+      const bar = game.skillBar.filter(id => id && A.cool[id] > 0).length;
+      out[c + ':' + j] = { aw, big, small, bar, buffs: L.filter(id => duelGuardFree(id)).map(id => [id, A.cool[id] || 0]) };
+    }
+    return out;
+  });
+  for (const [k, v] of Object.entries(r)) {
+    ok(v.aw.length && v.aw.every(([, t, c]) => c === [30, 40, 45][t - 1]), `${k}：觉醒开局冷却 ${v.aw.map(a => a[0] + ' ' + a[2] + 's').join(' / ')}`, v.aw);
+    ok(v.big.length && v.big.every(([, cd, c]) => Math.abs(c - Math.min(42, cd)) < 0.2 || c > 0), `${k}：大技能开局整段冷却（${v.big.slice(0, 3).map(b => b[0] + ' ' + b[2] + 's').join('、')}…）`, v.big);
+    ok(v.small.every(([, c]) => c === 0) && v.buffs.every(([, c]) => !c), `${k}：小技能（${v.small.length} 个）和 BUFF 开局就能用`, { small: v.small.filter(s => s[1]), buffs: v.buffs.filter(b => b[1]) });
+    ok(v.bar > 0, `${k}：技能栏上 ${v.bar} 格开局显示冷却`, v.bar);
+  }
+}
+
+if (parts.includes('juggle')) {
+  const r = await ev(() => {
+    const out = {};
+    const fresh = () => { const { A, B } = __T.start('sword', null, 'gun'); __T.toFight(true); B.x = A.x + 60; B.y = A.y; B.face = -1; A.face = 1; A.atk = A.matk = 2000; A.crit = A.mcrit = 0; A.critDmg = 1; A.dmgUp = 0; B.dmgTaken = 1; B.evade = 0; resetCmb(B); return { A, B }; };
+    const base = B => B.hpMax / DUEL_CFG.hpMul;
+    const fall = (B, n = 400) => { for (let i = 0; i < n && (B.z > 0.5 || B.st === 'air'); i++) __T.run(1); };
+    // 追加浮空：挑空 → 下落中再挑 ×3，每次挑起的初速度一次比一次小（同一轮连招里递减）
+    { const { A, B } = fresh(); const vz = [];
+      applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); vz.push(Math.round(B.vz));
+      for (let k = 0; k < 3; k++) { let top = 0, falling = false; for (let i = 0; i < 300; i++) { __T.run(1); top = Math.max(top, B.z); if (B.vz < 0 && B.z < top * 0.7) { falling = true; break; } } if (!falling) break; applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); vz.push(Math.round(B.vz)); }
+      out.relaunch = { vz, lv: duelAirLv(B) }; }
+    // 一级 / 二级保护：按原 HP 的 20% / 30%；重力变大；二级后挑空几乎没用；不强制空中受身；落地后追击直到倒地保护
+    { const { A, B } = fresh(); applyHit(A, B, { dmg: 0.05, launch: 700, sure: true }); __T.run(10);
+      const g0 = airGravity(B); let n = 0; const hitAir = () => { applyHit(A, B, { dmg: 3, airLift: 160, sure: true }); n++; };
+      while (duelAirLv(B) < 1 && n < 60) { B.z = Math.max(B.z, 80); B.vz = Math.max(B.vz, 50); hitAir(); }
+      const lv1 = { n, air: +(B.cmb.airDmg / base(B)).toFixed(3), g: +(airGravity(B) / g0).toFixed(2) };
+      while (duelAirLv(B) < 2 && n < 120) { B.z = Math.max(B.z, 80); B.vz = Math.max(B.vz, 50); hitAir(); }
+      const lv2 = { n, air: +(B.cmb.airDmg / base(B)).toFixed(3), g: +(airGravity(B) / g0).toFixed(2) };
+      B.vz = -10; applyHit(A, B, { dmg: 0.02, launch: 700, sure: true }); lv2.relaunchVz = Math.round(B.vz); lv2.recover = !!B.recoverLand;
+      fall(B); lv2.landSt = B.st;
+      let otg = 0; const d0 = B.cmb.downDmg; for (let i = 0; i < 40 && B.st === 'down'; i++) { if (applyHit(A, B, { dmg: 2, downHit: true, sure: true, stun: 0.3 }) !== false) otg++; __T.run(3); if (B.st !== 'down' && B.st !== 'air') break; if (B.st === 'air') fall(B); }
+      out.prot = { lv1, lv2, otg, downPct: +((B.cmb.downDmg || 0) / base(B)).toFixed(3), afterSt: B.st, invul: +B.invul.toFixed(2), fullDown: +(PVP.downProt * B.hpMax / base(B)).toFixed(2) }; }
+    // 二次浮空：落地后再挑起，伤害算倒地保护，超过就落地站起（受身）
+    { const { A, B } = fresh(); applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); fall(B); const st = B.st; B.cmb.hits = Math.max(1, B.cmb.hits); __T.run(1);
+      applyHit(A, B, { dmg: 0.05, launch: 500, downHit: true, sure: true }); let n = 0; while (!B.recoverLand && n < 60 && !B.dead) { B.z = Math.max(B.z, 60); applyHit(A, B, { dmg: 2, airLift: 120, sure: true }); n++; }
+      out.second = { st, landed: !!B.cmb.landed, recover: !!B.recoverLand, n, down: +(B.cmb.downDmg / base(B)).toFixed(3) }; }
+    // 平推保护：站着挨打累计 22%（原 HP）→ 强制击倒
+    { const { A, B } = fresh(); let n = 0, d = 0; while (B.st !== 'air' && n < 80) { B.stun = 0; B.setState('idle'); d = B.cmb.dmg; applyHit(A, B, { dmg: 2, stun: 0.3, sure: true }); n++; } out.stand = { n, st: B.st, pct: +(d / base(B)).toFixed(3), pctAfter: +(B.cmb.dmg / base(B)).toFixed(3) }; }
+    // 硬直衰减：同一轮每多挨一下硬直 −2.5%，最低 60%
+    { const { A, B } = fresh(); const S = []; for (let k = 0; k < 20; k++) { B.setState('idle'); applyHit(A, B, { dmg: 0.001, stun: 0.4, sure: true }); S.push(+B.stun.toFixed(3)); } out.stun = { first: S[0], tenth: S[9], last: S[19], min: +(S[0] * PVP.stunMin / (1 - PVP.stunDecay)).toFixed(3) }; }
+    // 时间保护：连续不能行动超过 7 秒，下一下直接脱出
+    { const { A, B } = fresh(); let t = 0, esc = null; for (let i = 0; i < 60 * 12; i++) { if (i % 12 === 0) { const r = applyHit(A, B, { dmg: 0.0005, stun: 0.5, sure: true }); if (r === false && !esc) { esc = { t: +t.toFixed(2), lock: +(B.pvpLockT || 0).toFixed(2), invul: +B.invul.toFixed(2) }; break; } } __T.run(1); t += 1 / 60; } out.lock = esc; }
+    // 错位：判定纵深 ±20 → 对方偏 30 打不到、偏 10 打得到；击退不改纵深
+    { const { A, B } = fresh(); A.face = 1; B.x = A.x + 50; B.y = A.y + 20 + B.d + 6; const hb = { t0: 0, t1: 1, box: [0, 90, 20, 0, 120], dmg: 1, stun: 0.3, knock: 200 }; const box = atkBox(A, hb);
+      const far = overlaps(box, B); B.y = A.y + 10; const near = overlaps(atkBox(A, hb), B); const y0 = B.y; applyHit(A, B, { dmg: 0.01, stun: 0.3, knock: 300, sure: true }); __T.run(20);
+      out.z = { far, near, dy: +(B.y - y0).toFixed(2), dx: Math.round(B.x - (A.x + 50)) }; }
+    // 受击状态修正：同一下，浮空中 ×0.85、倒地 ×0.9
+    { const one = st => { const { A, B } = fresh(); A.crit = 0; if (st === 'air') { B.z = 60; B.setState('air'); } if (st === 'down') B.setState('down'); const hp = B.hp; const orig = Math.random; Math.random = () => 0.5; try { applyHit(A, B, { dmg: 1, sure: true, downHit: true }); } finally { Math.random = orig; } return hp - B.hp; };
+      const s = one('stand'), a = one('air'), d = one('down'); out.state = { s, a: +(a / s).toFixed(3), d: +(d / s).toFixed(3) }; }
+    return out;
+  });
+  const t = r.relaunch.vz;
+  ok(t.length >= 4 && t.slice(1).every((v, i) => v > 0 && v < t[i]), `追加浮空：下落中再挑起来 ${t.length - 1} 次，挑起的初速度一次比一次小（${t.join(' → ')}）`, r.relaunch);
+  const P = r.prot;
+  ok(P.lv1.air >= 0.2 && P.lv1.air < 0.27 && P.lv1.g > 1.3, `一级保护：浮空中累计原 HP 的 ${(P.lv1.air * 100).toFixed(1)}% 开始，重力 ×${P.lv1.g}`, P.lv1);
+  ok(P.lv2.air >= 0.3 && P.lv2.air < 0.37 && P.lv2.g > P.lv1.g && P.lv2.relaunchVz < 150 && !P.lv2.recover, `二级保护：累计 ${(P.lv2.air * 100).toFixed(1)}%，重力 ×${P.lv2.g}，再挑空只有 ${P.lv2.relaunchVz}（挑不起来）、不强制空中受身`, P.lv2);
+  ok(P.lv2.landSt === 'down' && P.otg >= 2 && P.downPct >= 0.19 && (P.afterSt === 'getup' || P.afterSt === 'idle') && P.invul > 0, `到底：落地后还能追击 ${P.otg} 下，倒地保护（原 HP 的 ${(P.downPct * 100).toFixed(0)}%）后强制起身 + 无敌 ${P.invul} 秒`, P);
+  ok(r.second.landed && r.second.recover && r.second.down >= 0.19, `二次浮空：落地后再挑起来的伤害也算倒地保护（${(r.second.down * 100).toFixed(0)}%），超过就落地受身`, r.second);
+  ok(r.stand.st === 'air' && r.stand.pct < 0.22 && r.stand.pctAfter >= 0.22, `平推保护：站着挨打到原 HP 的 ~22% 强制击倒（${r.stand.n} 下）`, r.stand);
+  ok(r.stun.tenth < r.stun.first && r.stun.last >= r.stun.min - 0.005 && r.stun.last < r.stun.tenth, `硬直衰减：第 1 下 ${r.stun.first}s → 第 10 下 ${r.stun.tenth}s → 第 20 下 ${r.stun.last}s（最低 60%）`, r.stun);
+  ok(r.lock && r.lock.t >= 6.9 && r.lock.t < 7.6 && r.lock.invul > 0, `时间保护：连续不能行动 ${r.lock && r.lock.t} 秒后下一下直接脱出（无敌 ${r.lock && r.lock.invul}s）`, r.lock);
+  ok(!r.z.far && r.z.near && Math.abs(r.z.dy) < 1 && r.z.dx > 20, `错位：纵深超出判定（±20 + 身体厚度）打不到、偏 10 打得到，击退只沿横向（横移 ${r.z.dx}px、纵深变化 ${r.z.dy}）`, r.z);
+  ok(Math.abs(r.state.a - 0.85) < 0.02 && Math.abs(r.state.d - 0.9) < 0.02, `受击状态修正：浮空 ×${r.state.a}、倒地 ×${r.state.d}`, r.state);
+}
+
+if (parts.includes('buffer')) {
+  const r = await ev(() => {
+    const out = {};
+    for (const c of ['sword', 'gun', 'mage', 'fighter']) {
+      const res = [];
+      for (const lead of [0.2, 0.5]) {
+        const { A, B } = __T.start(c, null, 'sword'); __T.toFight(true); B.x = A.x + 400; A.mp = 1e6;
+        const L = A.kit.bar.filter(id => id && SKILLS[id].act && !SKILLS[id].awaken && !SKILLS[id].air && !SKILLS[id].airOnly && !SKILLS[id].charge);
+        for (const id of L) A.cool[id] = 0;
+        // 先放一个长一点、不能取消的技能，结束前 lead 秒按下另一个技能
+        const first = L.find(id => { A.act = null; A.setState('idle'); if (!castSkill(A, id)) return false; const a = A.act; const ok2 = a && !a.links && !a.cancelable && a.dur > 0.5; A.act = null; A.setState('idle'); A.cool[id] = 0; return ok2; });
+        const second = L.find(id => id !== first);
+        if (!first || !second) { res.push({ lead, skip: true }); continue; }
+        castSkill(A, first); const dur = A.act.dur, s2 = A.kit.bar.indexOf(second);
+        let pressed = false, got = null;
+        for (let i = 0; i < 240; i++) { if (!pressed && A.act && A.act.skill === first && A.act.dur - A.actT <= lead) { A.pad.tap('s' + s2); pressed = true; } __T.run(1); if (pressed && A.act && A.act.skill === second) { got = true; break; } if (pressed && (!A.act || A.act.skill !== first) && i > 0 && !got) { got = got || false; } }
+        res.push({ lead, first, second, dur: +dur.toFixed(2), got: !!got });
+      }
+      out[c] = res;
+    }
+    return out;
+  });
+  for (const [c, L] of Object.entries(r)) {
+    const a = L[0], b = L[1];
+    if (a.skip) { ok(true, `${c}：没有合适的不可取消技能，跳过`); continue; }
+    ok(a.got && !b.got, `${c}：${a.first}（${a.dur}s）结束前 0.2 秒按的 ${a.second} 接着放出，0.5 秒前按的作废（指令缓冲 0.3 秒，各职业同一套）`, L);
+  }
+}
+
+const errs = logs.filter(l => l.type === 'pageerror');
+ok(!errs.length, '没有页面报错', errs.slice(0, 3));
+await browser.close();
+console.log(fails ? `\n${fails} 项失败` : '\n全部通过');
+process.exit(fails ? 1 : 0);

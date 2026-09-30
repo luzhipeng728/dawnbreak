@@ -76,7 +76,7 @@ class AvatarLayer {
     const O = SPR_DATA[k].frames[f], im = O && IMG[`spr/${k}/${f}`];
     if (!O) return null;
     if (!im) { if (!AV_ARM_LOAD[k]) AV_ARM_LOAD[k] = loadBundles(['spr:' + k]); return null; }
-    return { O, im: this.armV ? avArmTint(im, this.armV) : im };
+    return { O, im: this.armV ? avArmTint(im, this.armV, this.look.wpn, f, O) : im };
   }
   armDraw(c, ov, f) {
     const { O } = ov, src = this.fr && this.fr.src, B = SPR_DATA.fighter.frames[f], bim = IMG['spr/fighter/' + f];
@@ -231,27 +231,99 @@ function avArmVariant(key, type) {
   if (key.startsWith('ep_')) return 'r4';
   const sk = key.split('_')[0]; return AV_ARM_TINT[sk] ? sk : null;
 }
-function avArmTint(im, v) {
+/* 品级外观 / 武器装扮的手臂层：① 先按材质换色（主色 / 辅色，见 AV_ARM_TINT）；② 再把这一款武器图（WEAPON_IMG[key]，有宝石 / 翅膀 / 西瓜纹 / 火焰…）
+   按每只手的拳心、前臂方向和手套大小“贴进”手套的材质里（深色描边、绑带皮肤不动，明暗按手臂层原来的亮度）—— 形状是重画的手，花纹是这一款的。
+   武器图没加载完先只换色（不缓存），加载完再算。东方棍的握点在把手上、和手的对应关系不稳 → 只换色。 */
+const AV_ART_PX = new Map();
+// 武器图按目标大小先缩小（高质量缩放，避免 3 倍图里的细花纹逐像素采样出噪点）：s = 武器图像素 / 手臂层像素，按 0.25 分档缓存
+function avArtPx(key, s) {
+  const im = IMG['weapon/' + key]; if (!im) { if (typeof loadArtKey === 'function') loadArtKey('weapon/' + key); return null; }
+  const b = Math.max(1, Math.round(s * 4) / 4), ck = key + '|' + b; let o = AV_ART_PX.get(ck); if (o) return o;
+  const w = Math.max(1, Math.round(im.width / b)), h = Math.max(1, Math.round(im.height / b)), [cv, x] = offCanvas(w, h);
+  x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, w, h);
+  try { o = { d: x.getImageData(0, 0, w, h).data, w, h, k: 1 / b }; } catch (e) { o = { d: null }; }
+  AV_ART_PX.set(ck, o); return o;
+}
+// 武器图的两种主色（换色的主色 / 辅色用它，没贴到花纹的地方颜色也对得上这一款）：有颜色的像素按亮度中位、发白发灰的平均
+function avArtCols(key) {
+  const a = avArtPx(key, 4); if (!a || !a.d) return null; if (a.cols) return a.cols;
+  const C = [], G = [0, 0, 0, 0];
+  for (let i = 0; i < a.d.length; i += 4) {
+    if (a.d[i + 3] < 200) continue; const r = a.d[i], g = a.d[i + 1], b = a.d[i + 2], mx = Math.max(r, g, b), sat = mx ? (mx - Math.min(r, g, b)) / mx : 0;
+    if (mx < 60) continue; if (sat >= 0.3) C.push([0.3 * r + 0.59 * g + 0.11 * b, r, g, b]); else if (mx >= 110) { G[0] += r; G[1] += g; G[2] += b; G[3]++; }
+  }
+  if (C.length < 20) return null; C.sort((x, y) => x[0] - y[0]);
+  const m = C.slice(Math.floor(C.length * 0.35), Math.ceil(C.length * 0.75)), avg = j => m.reduce((t, c) => t + c[j], 0) / m.length;
+  return (a.cols = [[avg(1), avg(2), avg(3)], G[3] > 10 ? [G[0] / G[3], G[1] / G[3], G[2] / G[3]] : [220, 220, 225]]);
+}
+function avArmTint(im, v, key, f, O) {
   let M = AV_ARM_TC.get(im); if (!M) AV_ARM_TC.set(im, M = new Map());
-  let o = M.get(v); if (o) return o;
+  const ck = v + '|' + key; let o = M.get(ck); if (o) return o;
+  const A = key && WEAPON_IMG[key], proj = !!(A && A.kind !== 'tonfa' && A.fh && f && O);
+  if (proj && !IMG['weapon/' + key]) { if (typeof loadArtKey === 'function') loadArtKey('weapon/' + key); }
   const W = im.width, H = im.height, [cv, x] = offCanvas(W, H); x.drawImage(im, 0, 0);
-  let d; try { d = x.getImageData(0, 0, W, H); } catch (e) { M.set(v, im); return im; }
-  const p = d.data, [m1, m2] = AV_ARM_TINT[v].map(hexRgb), cls = new Uint8Array(p.length / 4), L = [];
-  for (let i = 0; i < p.length; i += 4) {   // 1 = 有颜色的材质（换主色），2 = 金属 / 白（往辅色靠），0 = 不动
-    if (p[i + 3] < 10) continue;
-    const r = p[i], g = p[i + 1], b = p[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+  let d; try { d = x.getImageData(0, 0, W, H); } catch (e) { M.set(ck, im); return im; }
+  const AC = proj && IMG['weapon/' + key] ? avArtCols(key) : null, [m1, m2] = AC || AV_ARM_TINT[v].map(hexRgb);
+  const p = d.data, n = p.length / 4, cls = new Uint8Array(n), lum = new Float32Array(n), L = [];
+  for (let i = 0; i < n; i++) {   // 1 = 有颜色的材质（换主色），2 = 金属 / 白（往辅色靠），0 = 不动
+    const q = i * 4; if (p[q + 3] < 10) continue;
+    const r = p[q], g = p[q + 1], b = p[q + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
     let h = 0; if (mx > mn) { h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4; h *= 60; if (h < 0) h += 360; }
+    lum[i] = 0.3 * r + 0.59 * g + 0.11 * b;
     if (mx < 60 || (mx >= 140 && sat >= 0.07 && sat < 0.45 && r >= b && h > 8 && h < 48)) continue;   // 描边 / 绑带皮肤不动
-    if (sat >= 0.25) { cls[i / 4] = 1; L.push(0.3 * r + 0.59 * g + 0.11 * b); } else if (mx >= 90) cls[i / 4] = 2;
+    if (sat >= 0.25) { cls[i] = 1; L.push(lum[i]); } else if (mx >= 90) cls[i] = 2;
   }
   L.sort((a, b) => a - b); const med = Math.max(20, L.length ? L[L.length >> 1] : 100);   // 主材质的中间亮度 → 对到主色（明暗按比例）
-  for (let i = 0; i < p.length; i += 4) {
-    const c = cls[i / 4]; if (!c) continue;
-    const l = 0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2];
-    if (c === 1) { const k = l / med, hi = Math.max(0, k - 1.1) * 0.7; for (let j = 0; j < 3; j++) p[i + j] = Math.min(255, m1[j] * Math.min(k, 1.2) + (255 - m1[j]) * hi); }
-    else for (let j = 0; j < 3; j++) p[i + j] = Math.min(255, p[i + j] * 0.4 + m2[j] * (l / 200) * 0.6);
+  for (let i = 0; i < n; i++) {
+    const c = cls[i], q = i * 4; if (!c) continue;
+    const l = lum[i];
+    if (c === 1) { const ml = 0.3 * m1[0] + 0.59 * m1[1] + 0.11 * m1[2], k = l / med * (AC ? Math.min(1.6, 150 / Math.max(40, ml)) * ml / 150 : 1), hi = Math.max(0, k - 1.1) * 0.7; for (let j = 0; j < 3; j++) p[q + j] = Math.min(255, m1[j] * Math.min(k, 1.2) + (255 - m1[j]) * hi); }
+    else for (let j = 0; j < 3; j++) p[q + j] = Math.min(255, p[q + j] * 0.4 + m2[j] * (l / 200) * 0.6);
   }
-  x.putImageData(d, 0, 0); M.set(v, cv); return cv;
+  let done = !proj;
+  const B = proj && SPR_DATA.fighter.frames[f], bim = B && IMG['spr/fighter/' + f], fits = bim ? avFists(bim, B) : null;   // 原装帧里每只手的前臂方向（手腕 → 拳心，avFists）比锚点的方向准
+  const hands = B ? ['wpn', 'wpn2'].filter(k => B[k]).map(k => { const w = B[k], ft = fits && fits.fit[k]; return { x: w.gx - B.ax + O.ax, y: w.gy - B.ay + O.ay, ang: ft ? ft.ang : w.ang, P: [] }; }) : [];
+  if (hands.length && IMG['weapon/' + key]) {
+    done = true;
+    // 材质块（被深色描边隔开的连通块）离某只手的锚点 ≤ 30 像素才算手套；块里每个像素分给离它近的那只手
+    const lab = new Int32Array(n), st = [];
+    for (let i0 = 0; i0 < n; i0++) {
+      if (!cls[i0] || lab[i0]) continue;
+      const blob = [i0]; lab[i0] = 1; st.push(i0);
+      while (st.length) { const i = st.pop(), xx = i % W; for (const j of [xx > 0 ? i - 1 : -1, xx < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < n && cls[j] && !lab[j]) { lab[j] = 1; blob.push(j); st.push(j); } }
+      let ok = false;
+      for (const h of hands) for (const i of blob) if ((i % W - h.x) ** 2 + (((i - i % W) / W) - h.y) ** 2 < 900) { ok = true; break; }
+      if (!ok) continue;
+      for (const i of blob) { let best = hands[0], bd = 1e9; for (const h of hands) { const dd = (i % W - h.x) ** 2 + (((i - i % W) / W) - h.y) ** 2; if (dd < bd) { bd = dd; best = h; } } best.P.push(i); }   // 两只手套连在一起时按离哪只手近分开
+    }
+    const kA = (A.tx - A.gx) / A.size, fhA = A.fh * kA;
+    for (const h of hands) {
+      if (h.P.length < 20) continue;
+      // 手套的朝向：这只手的材质像素做主成分（手套 + 袖口顺着小臂拉长）；太圆就用锚点方向；正负按锚点方向定（拳头朝外）
+      let mx0 = 0, my0 = 0; for (const i of h.P) { mx0 += i % W; my0 += (i - i % W) / W; } mx0 /= h.P.length; my0 /= h.P.length;
+      let sxx = 0, syy = 0, sxy = 0; for (const i of h.P) { const dx = i % W - mx0, dy = (i - i % W) / W - my0; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+      const tr = sxx + syy, det = sxx * syy - sxy * sxy, l1 = tr / 2 + Math.sqrt(Math.max(0, tr * tr / 4 - det)), l2 = tr - l1;
+      let ux = Math.cos(h.ang), uy = Math.sin(h.ang);
+      if (l1 > l2 * 1.3) { let ex = sxy, ey = l1 - sxx; if (Math.abs(ex) + Math.abs(ey) < 1e-6) { ex = 1; ey = 0; } const el = Math.hypot(ex, ey); ex /= el; ey /= el; if (ex * ux + ey * uy < 0) { ex = -ex; ey = -ey; } ux = ex; uy = ey; }
+      const T = [], N = [], Ls = [];
+      for (const i of h.P) { const dx = i % W - h.x, dy = ((i - i % W) / W) - h.y; T.push(dx * ux + dy * uy); N.push(-dx * uy + dy * ux); Ls.push(lum[i]); }
+      const srt = a => a.slice().sort((a2, b2) => a2 - b2), qt = (a, k) => a[Math.min(a.length - 1, Math.floor(a.length * k))];
+      const near = h.P.map((i, j) => Math.abs(N[j]) < 40 && T[j] > -20 && T[j] < 30), TS = srt(T.filter((t, j) => near[j])), NS = srt(N.filter((t, j) => near[j] && T[j] > qt(TS, 0.94) - 22)), LS = srt(Ls);
+      if (TS.length < 10 || NS.length < 5) continue;
+      const front = qt(TS, 0.94), hh = clamp(qt(NS, 0.96) - qt(NS, 0.04) + 2, A.fh * 0.75, A.fh * 1.35), nc = (qt(NS, 0.96) + qt(NS, 0.04)) / 2, tc = front - hh / 2, lm = Math.max(30, qt(LS, 0.5));   // 手套高度夹在武器图拳头高的 0.75~1.35 倍（量歪了会把花纹拉成条纹）
+      const s2 = fhA / hh, art = avArtPx(key, s2); if (!art || !art.d) continue;
+      const k2 = s2 * art.k, gx = A.gx * art.k, gy = A.gy * art.k, fy = ux < -0.05 ? -1 : 1;
+      const at = (ax, ay) => { ax = Math.round(ax); ay = Math.round(ay); if (ax < 0 || ay < 0 || ax >= art.w || ay >= art.h) return -1; const a4 = (ay * art.w + ax) * 4; return art.d[a4 + 3] >= 140 ? a4 : -1; };
+      h.P.forEach((i, j) => {
+        const a4 = at(gx + (T[j] - tc) * k2, gy + (N[j] - nc) * k2 * fy); if (a4 < 0) return;   // 落在武器图外面：保留换色（主色取自这一款武器图）
+        const sh = Math.pow(Math.min(1.35, Math.max(0.55, Ls[j] / lm)), 0.8), q = i * 4;
+        for (let c = 0; c < 3; c++) p[q + c] = Math.min(255, art.d[a4 + c] * sh);
+      });
+    }
+  }
+  x.putImageData(d, 0, 0);
+  if (done) M.set(ck, cv);   // 武器图还没加载：这次只换色，下次再贴花纹
+  return cv;
 }
 let AV_SCRATCH = null;
 function avScratch(w, h) {
@@ -275,6 +347,13 @@ function avFistsCalc(im, F) {
     if (mx >= 140 && sat < 0.45) L[i] = 1; else if (mx >= 95 && sat < 0.65) L[i] = 2;
   }
   for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const i = y * W + x; E[i] = L[i] === 1 && L[i - 1] === 1 && L[i + 1] === 1 && L[i - W] === 1 && L[i + W] === 1 ? 1 : 0; }
+  for (const k of ['wpn', 'wpn2']) {   // 拳头附近半透明的浅色残影（原装个别帧远侧小臂画成了半透明）一起清掉
+    const w = F[k]; if (!w) continue;
+    for (let y = Math.max(0, Math.floor(w.gy - AV_ARM_R)); y <= Math.min(H - 1, Math.ceil(w.gy + AV_ARM_R)); y++) for (let x = Math.max(0, Math.floor(w.gx - AV_ARM_R)); x <= Math.min(W - 1, Math.ceil(w.gx + AV_ARM_R)); x++) {
+      const i = y * W + x, a = p[i * 4 + 3]; if (a < 8 || a > 190 || (x - w.gx) ** 2 + (y - w.gy) ** 2 > AV_ARM_R * AV_ARM_R) continue;
+      if (Math.max(p[i * 4], p[i * 4 + 1], p[i * 4 + 2]) >= 130) p[i * 4 + 3] = 0;
+    }
+  }
   const keys = ['wpn', 'wpn2'].filter(k => F[k]).sort((a, b) => (F[a].side === 'f') - (F[b].side === 'f'));   // 近侧拳先找
   for (const key of keys) {
     const w = F[key], gx = w.gx, gy = w.gy, R = AV_ARM_R, X0 = Math.max(0, Math.floor(gx - R - 3)), X1 = Math.min(W - 1, Math.ceil(gx + R + 3)), Y0 = Math.max(0, Math.floor(gy - R - 3)), Y1 = Math.min(H - 1, Math.ceil(gy + R + 3));

@@ -15,7 +15,7 @@ const out = 'test/shots/skills'; fs.mkdirSync(out, { recursive: true });
 const arg = process.argv[2] || 'sword:soulbender', N = +(process.argv[3] || 6);
 // all = 已开放的基础职业 + 转职（读 CLASSES，跳过 ready:false）
 const list = arg === 'all' ? await openLists().then(L => [...L.classes, ...L.jobs]) : arg.split(',');
-const SKILLS_AIR_DELAY = new Set(['silver', 'aircut']);
+const SKILLS_AIR_DELAY = new Set(['silver', 'aircut', 'f_airwalk']);
 let fail = 0;
 const SPEC = {}; for (const c of new Set(list.map(x => x.split(':')[0]))) { try { SPEC[c] = JSON.parse(fs.readFileSync(`docs/skills/${c}.json`, 'utf8')); } catch (e) { /* 还没有规格 */ } }
 for (const item of list) {

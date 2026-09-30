@@ -298,6 +298,14 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 - **没开放时不生效**：37 个任务全是 `cls: 'fighter'`；老职业角色（包括做完所有前置的 Lv30）看不到、NPC 身上也没有；`J.ready:false` 时转职窗口接不到。
 - **测试**：`node test/fighter_quests.mjs [inert,data,chain]`（quick.sh g5 / all.sh）。`test/fighter.mjs smoke` 看风振转职窗口前先把 `q_job_fighter_final` 记成已完成（有了转职试炼之后 `jobAvailable` 要它）。
 - **文档**：PLAYER_GUIDE（选职业、导师表、转职表 + 四条任务线、一觉剧情）、dnf_reference §6.2 改成男格斗、SKILLS_OFFICIAL_common §8、SKILLS_OFFICIAL_fighter §8.4、PLAYBOOK。JOB_VISUALS §5（B2）、PVP（B9）、GEAR（二期）留给各自的块。
+||||||| f48af6e
+### 4.4 B3 已交付（2026-09-30，基础职业；逐技能对照 docs/skills/fighter_base_final.md）
+- **技能**：15 个基础技能全部实装（`f_` id 同预留表），指令 / 冷却（namu 现版）/ MP（DFO Lv1）按官方；规格 `docs/skills/fighter.json` 13 个主动技能，`skillaudit --compare` 不一致 0。
+- **给转职用的接口**：`fNenShot(e, lv, { sc, pierce, dmg, life, speed, hit })`（蓄念炮）；`fighterActsFor(F)` 生成的普攻表里有 `fchain1~4`（疾风追击的追加击），`FIGHTER_ACT_PICK` 换普攻时 `{ ...fighterActsFor(F), atk1: … }` 别丢了它们；`fRing(e, x, y, r, t => hit | null, { skip, zMax })` 圆形范围打击；`fKick(t, o)` 踢腿弧光；`SKILLS.f_knee.act` 可以包一层做柔道家的强化膝击（↑ 跳起 / ↓ 摔地）；蹲伏动作 `links: ['fs_pusher']` 已留好散打铁山靠。
+- **取消例外**：技能的 `noForce` 可以写成函数 `p => bool`（引擎 canCancelInto 已支持）：念气波 `jobOf(p) !== 'nenmaster'`、抛沙 `!== 'brawler'`、旋风腿 `!== 'striker'`、分身 `!skLv(p, 'fn_blast')`（气功师学幻影爆碎后能在普攻中放分身）。
+- **引擎**（player.js 两处）：noForce 函数；`downJumpCmd`——以 ↓ 结尾的 C 指令（蹲伏 ↓↓+C）优先于后跳 ↓+C。
+- **美术**：图标 16 个一张表（`art/tools/fighter_base_art.py icons / iconcut`，1 次生图），特效全部复用 fx；人物动作用矢量占位片段（CLIPS.fighter 补了 highkick / hammer / grab / knee / spinkick / stomp / dive / palm / palm2 / seal / focus / quake），B1 出帧后按 SPR_ANIMS.fighter 自动换。
+- **测试**：`node test/fighter.mjs base`（技能放得出 / 打得中 / 冷却 / MP、14 条指令、抓取、疾风追击、取消例外、各技能机制）；`node test/skillshots.mjs fighter` 连拍 `test/shots/skills/fighter-base.jpg`。
 
 ---
 

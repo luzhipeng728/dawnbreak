@@ -247,10 +247,11 @@ async function open(q) {
     T.key('up'); T.run(16); T.key('cmd'); T.run(1); out.cmdHoldU = cast(); T.release('up'); T.release('cmd'); T.run(30); T.reset();
     T.key('jump'); T.run(1); T.release('jump'); out.groundC = p.st; T.run(10); T.key('jump'); T.run(1); T.release('jump'); out.airC = cast(); T.run(80); T.reset();
     // 12) 跑攻中 X：跑攻动作的 keyLinks { attack: 'f_chain' }（B3 的疾风追击）：学了才派生，没学照常
-    mk('f_chain', { act: () => ({ name: 'f_chainT', dur: 0.3, basic: true, hits: [] }) });
-    p.doAct(p.acts.dash); T.run(8); T.key('attack'); T.run(1); T.release('attack'); out.dashXNo = p.act && p.act.name; T.run(40); T.reset();
-    game.skillLv.f_chain = 1; p.doAct(p.acts.dash); T.run(8); T.key('attack'); T.run(1); T.release('attack'); out.dashX = cast(); T.run(40); T.reset();
-    delete SKILLS.f_chain; delete game.skillLv.f_chain; for (const id of ['_t_up', '_t_holdu', '_t_air']) { delete SKILLS[id]; delete game.skillLv[id]; } C.cmds = cmd0; C.cmdsSorted = null;
+    // 派生窗口从肩撞 0.16 秒起（先让肩撞打到人）；测试房间默认学了所有技能，先把 f_chain 设成没学；用完换回真的疾风追击
+    const realChain = SKILLS.f_chain, lv0 = game.skillLv.f_chain; mk('f_chain', { act: () => ({ name: 'f_chainT', dur: 0.3, basic: true, hits: [] }) });
+    game.skillLv.f_chain = 0; p.doAct(p.acts.dash); T.run(12); T.key('attack'); T.run(1); T.release('attack'); out.dashXNo = p.act && p.act.name; T.run(40); T.reset();
+    game.skillLv.f_chain = 1; p.doAct(p.acts.dash); T.run(12); T.key('attack'); T.run(1); T.release('attack'); out.dashX = cast(); T.run(40); T.reset();
+    if (realChain) SKILLS.f_chain = realChain; else delete SKILLS.f_chain; if (lv0 === undefined) delete game.skillLv.f_chain; else game.skillLv.f_chain = lv0; for (const id of ['_t_up', '_t_holdu', '_t_air']) { delete SKILLS[id]; delete game.skillLv[id]; } C.cmds = cmd0; C.cmdsSorted = null;
     // 13) 蹲伏：受击盒压低（高位攻击打不到、下段打得到）；C 起身；X 派生
     const m = T.mob('goblin', 360, 100, { set: big }); m.face = -1;
     p.doAct(fCrouchAct({ onX: e => e.doAct(e.acts.dash) })); T.run(2);

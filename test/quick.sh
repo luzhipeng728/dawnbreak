@@ -20,16 +20,8 @@ g3() { for t in combat summon avatar shop acct bag skyguide epicfx; do run 3 $t 
   run 3 skillsa node test/skill_sa.mjs; run 3 shopecon node test/shop_econ.mjs; run 3 shopsynth node test/shop_synth.mjs; run 3 vanity node test/vanity.mjs; run 3 juggle node test/juggle.mjs; }
 g4() { for t in sword gunner mage enchantress summoner awkcancel; do run 4 $t node test/$t.mjs; done
   run 4 region node test/region.mjs siroco data,skills,mechs,scenes,quest,abyss; }   # 区域流水线的快速部分（怪物逐个 / 机器人通关在 all.sh）
-<<<<<<< HEAD
 g5() { for t in paramedic witch spitfire mechanic fighter fighter_quests fighter_pvp fighter_launch duel_rules; do run 5 $t node test/$t.mjs; done; run 5 classes node test/classes.mjs sword,gun,mage; }
-g6() { run 6 serverapi node server/test/api.mjs; run 6 restore node --disable-warning=ExperimentalWarning server/test/restore.mjs; run 6 arenasrv node --disable-warning=ExperimentalWarning server/test/arena.mjs
-||||||| 055dcc0
-g5() { for t in paramedic witch spitfire mechanic fighter fighter_quests; do run 5 $t node test/$t.mjs; done; run 5 classes node test/classes.mjs sword,gun,mage; }
-g6() { run 6 serverapi node server/test/api.mjs; run 6 restore node --disable-warning=ExperimentalWarning server/test/restore.mjs; run 6 arenasrv node --disable-warning=ExperimentalWarning server/test/arena.mjs
-=======
-g5() { for t in paramedic witch spitfire mechanic fighter fighter_quests; do run 5 $t node test/$t.mjs; done; run 5 classes node test/classes.mjs sword,gun,mage; }
 g6() { run 6 serverapi node server/test/api.mjs; run 6 restore node --disable-warning=ExperimentalWarning server/test/restore.mjs; run 6 arenasrv node --disable-warning=ExperimentalWarning server/test/arena.mjs; run 6 adminsrv node --disable-warning=ExperimentalWarning server/test/admin.mjs
->>>>>>> main
   run 6 netacct node test/net_account.mjs; run 6 svcapi node test/svc_api.mjs; run 6 svcplay node test/svc_play.mjs
   run 6 mptown node test/mp_town.mjs; run 6 mpcoop node test/mp_coop.mjs 2; run 6 mpfighter node test/mp_fighter.mjs; run 6 mpmore node test/mp_coop_more.mjs; run 6 mpabyss node test/mp_abyss.mjs A,HA
   run 6 findfriend node test/findfriend.mjs; run 6 partyhud node test/mp_party_hud.mjs; run 6 inspect node test/inspect.mjs; }

@@ -9,7 +9,7 @@ function defineShop(id, def) { SHOPS[id] = { id, markup: 1, ...def }; }
 // 按等级段挑装备：等级段 = [lvl - 8, lvl + 4]（显示下一段的装备，等级不够的标红）
 function gearGoods({ slots, rars = [0, 1], wtypes, atypes, lo = -8, hi = 4, min = 1, max = 99 }) {
   return lvl => GEAR.filter(D => (!slots || slots.includes(D.slot)) && rars.includes(D.rar) && D.slot !== 'title' && !D.set && D.rar < 5
-    && (!wtypes || wtypes.includes(D.wtype)) && (!atypes || atypes.includes(D.atype)) && D.lvl >= Math.max(min, lvl + lo) && D.lvl <= Math.min(max, lvl + hi))
+    && (!wtypes || wtypes.includes(D.wtype)) && (!atypes || atypes.includes(D.atype)) && D.lvl >= Math.max(min, lvl + lo) && D.lvl <= Math.min(max, lvl + hi) && (!D.cls || clsOpen(D.cls)))   // 还没开放的职业（格斗家 ready:false）的武器不上架
     .sort((a, b) => SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot) || (a.wtype || a.atype || '').localeCompare(b.wtype || b.atype || '') || a.lvl - b.lvl || a.rar - b.rar).map(D => D.key);
 }
 defineShop('seria', { name: '赛丽亚的杂货', greet: '需要补给的话，随时来找我哦。', tabs: [
@@ -22,6 +22,9 @@ defineShop('linus', { name: '林纳斯的铁匠铺', greet: '看看吧，都是�
 defineShop('kiri', { name: '凯丽的枪械', greet: '天界的枪械技术，要不要试试？', tabs: [
   { name: '神枪手武器', goods: gearGoods({ slots: ['weapon'], wtypes: CLASS_WTYPES('gun'), rars: [0, 1, 2] }) },
   { name: '增幅材料', goods: ['m_contra', 'amp_purify', 'amp_guard'] }] });
+// 格斗家武器（风振，赫顿玛尔中央广场）：格斗家开放后风振才挂出商店（content/world/towns.js）
+defineShop('fengzhen', { name: '风振的拳脚铺', greet: '拳脚的家伙，要趁手才行。', tabs: [
+  { name: '格斗家武器', goods: gearGoods({ slots: ['weapon'], wtypes: CLASS_WTYPES('fighter'), rars: [0, 1, 2] }) }] });
 defineShop('lorian', { name: '罗莉安的魔法用品', markup: 1.1, greet: '魔法师的东西，这里都有。', tabs: [
   { name: '魔法师武器', goods: gearGoods({ slots: ['weapon'], wtypes: CLASS_WTYPES('mage'), rars: [0, 1, 2] }) },
   { name: '首饰', goods: gearGoods({ slots: ACC_SLOTS, rars: [1, 2] }) },

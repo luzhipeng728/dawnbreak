@@ -20,7 +20,7 @@ const WPN = { blade: 'ep_katana', soulbender: 'ep_ss_shura', berserker: 'ep_ls_e
 
 const HELP = () => {
   window.__jv = {
-    clsOf(job) { for (const c of ['sword', 'gun', 'mage']) if (CLASSES[c].jobs[job]) return c; return 'sword'; },
+    clsOf(job) { for (const c of openClasses()) if (CLASSES[c].jobs[job]) return c; return 'sword'; },
     eq(o = {}) {
       const e = {};
       if (o.wpn) e.weapon = { key: o.wpn, slot: 'weapon', kind: 'equip', wtype: ITEMS[o.wpn] ? ITEMS[o.wpn].wtype : null, rar: 4, enh: o.enh || 0, dim: o.amp ? 'str' : undefined };
@@ -59,12 +59,12 @@ const dungeon = async () => {
 //   直接用游戏的模型绘制（外观层 + 转职外观），1.3 倍 → test/shots/jobvisuals/heads.jpg
 const headsSheet = async () => {
   const url = await page.evaluate(async ([WPN, ONLY]) => {
-    let rows = []; for (const cls of ['sword', 'gun', 'mage']) { rows.push({ cls, job: null, name: CLASSES[cls].name }); for (const j in CLASSES[cls].jobs) rows.push({ cls, job: j, name: CLASSES[cls].jobs[j].name }); }
+    let rows = []; for (const cls of openClasses()) { rows.push({ cls, job: null, name: CLASSES[cls].name }); for (const j of openJobs(cls)) rows.push({ cls, job: j, name: CLASSES[cls].jobs[j].name }); }   // 已开放的职业 / 转职（ready:false 的不画）
     if (ONLY) rows = rows.filter(R => ONLY.includes(R.job || R.cls));   // HEADS=blade,ranger 只出这几排（调位置用）
     const COST = { academy: ['av_academy', 'av_hat_academy', 'av_hair_academy', 'av_face_academy'], sky2: ['av_sky2', 'av_hat_sky2', 'av_hair_sky2'] };
     const cols = [['城镇站立', 'idle'], ['跑动', 'run'], ['攻击', 'atk'], ['时装（学院 帽子+发饰+眼镜）', 'idle', 'academy'], ['时装跑动（炎龙 龙角+发饰）', 'run', 'sky2'], ['头部特写 ×2.6', 'idle', null, 1]];
     const S = 1.3, CW = 150, CH = 186, LW = 128, TH = 26, W = LW + cols.length * CW, H = TH + rows.length * CH;
-    await loadBundles(['spr:sword', 'spr:gun', 'spr:mage', ...['sword', 'gun', 'mage'].flatMap(c => [`spr:${c}@academy`, `spr:${c}@sky2`])]);
+    await loadBundles([...openClasses().map(c => 'spr:' + c), ...openClasses().flatMap(c => [`spr:${c}@academy`, `spr:${c}@sky2`])]);
     const [cv, x] = offCanvas(W, H); x.fillStyle = '#201c24'; x.fillRect(0, 0, W, H);
     x.font = 'bold 13px sans-serif'; x.fillStyle = '#ffe2a0'; cols.forEach(([t], i) => x.fillText(t, LW + i * CW + 6, 18));
     const frameOf = (cls, k) => { if (k === 'idle') return 'idle'; const A = SPR_ANIMS[cls], c = k === 'run' ? A.run : A.atk2 || A.atk1; if (!c) return 'idle'; const fr = c.frames ? c.frames.map(f => f) : c.map(e => e[0]); return fr[Math.min(1, fr.length - 1)]; };
@@ -109,7 +109,7 @@ const r1 = await page.evaluate(() => {
   game.job = 'soulbender'; const own = lookFromEquip('sword', inv.equip);
   save.chars = save.chars || []; const d = { cls: 'sword', job: 'berserker', equip: {} }; save.chars.push(d); const other = lookFromEquip('sword', d.equip); save.chars.pop();
   const asura = __jv.look('asura', {}), stranger = lookFromEquip('sword', {});
-  const all = []; for (const c of ['sword', 'gun', 'mage']) for (const j in CLASSES[c].jobs) all.push(j);
+  const all = []; for (const c of openClasses()) for (const j of openJobs(c)) all.push(j);
   const missing = all.filter(j => !JOB_LOOKS[j]);
   const bad = Object.keys(JOB_LOOKS).filter(j => { const L = __jv.look(j, {}); return L.job !== j || (JOB_LOOKS[j].acc || []).some(k => !L.acc.includes(k) || !AVATAR_ACC[k]); });
   const noState = Object.keys(JOB_LOOKS).filter(j => !(JOB_LOOKS[j].states || []).some(S => S.demo));
@@ -123,8 +123,8 @@ ok(!r1.noState.length, '每个转职都至少有一个状态特效（带 demo）
 console.log('1b. 头部（发色 + 头饰）');
 const r1b = await page.evaluate(async () => {
   const res = { dup: [], plain: [], noArt: [], noPos: [], hairCls: [], hairBad: [] };
-  const sig = {}; for (const c of ['sword', 'gun', 'mage']) sig[c] = { '|': c };   // 基础职业：原色头发、没有头饰
-  for (const c of ['sword', 'gun', 'mage']) for (const j in CLASSES[c].jobs) {
+  const sig = {}; for (const c of openClasses()) sig[c] = { '|': c };   // 基础职业：原色头发、没有头饰
+  for (const c of openClasses()) for (const j of openJobs(c)) {
     const J = JOB_LOOKS[j], acc = (J.acc || []).slice().sort(), s = (J.hair || '') + '|' + acc.join(',');
     if (!J.hair && !acc.length) res.plain.push(j);
     if (sig[c][s]) res.dup.push(j + '=' + sig[c][s]); sig[c][s] = j;
@@ -289,7 +289,7 @@ if (SHOTS || GLOW) {
     const w = Math.min(170, gap - 4); list.forEach((o, i) => tiles.push({ f, label: o.label, row: o.row ?? row, box: [pos[i].x - w / 2, pos[i].y - 150, w, 168].map(Math.round) }));
   };
   if (SHOTS) {
-    const J = await page.evaluate(() => { const r = []; for (const c of ['sword', 'gun', 'mage']) for (const j in CLASSES[c].jobs) if (JOB_LOOKS[j]) r.push({ job: j, cls: c, name: CLASSES[c].jobs[j].name, st: (JOB_LOOKS[j].states || []).map(S => S.name || S.id).join(' + ') }); return r; });
+    const J = await page.evaluate(() => { const r = []; for (const c of openClasses()) for (const j of openJobs(c)) if (JOB_LOOKS[j]) r.push({ job: j, cls: c, name: CLASSES[c].jobs[j].name, st: (JOB_LOOKS[j].states || []).map(S => S.name || S.id).join(' + ') }); return r; });
     const MIX = ['av_academy', 'av_festival', null];
     J.forEach((j, i) => { titles[i] = `${j.name}（${j.job}）· 状态：${j.st}`; });
     // 地下城：一次摆 5 个转职（每个一格，开着状态）

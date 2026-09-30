@@ -1,6 +1,6 @@
 // 帧率测试：测试房间里持续战斗（普攻 + 轮流放技能），统计逻辑 step / 渲染的耗时与帧率。node test/perf.mjs sword,gun,mage [秒]
-import { launch, URL_BASE } from './lib.mjs';
-const classes = (process.argv[2] || 'sword,gun,mage').split(','), secs = +(process.argv[3] || 8);
+import { launch, URL_BASE, openLists } from './lib.mjs';
+const classes = process.argv[2] ? process.argv[2].split(',') : (await openLists()).classes, secs = +(process.argv[3] || 8);   // 默认：已开放的职业
 let fail = 0;
 for (const cls of classes) {
   const { browser, page, logs } = await launch({ width: 1280, height: 720 });

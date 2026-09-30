@@ -48,9 +48,10 @@ defineNpc('vier', { name: '维尔·克鲁', title: '竞技大赛', art: 'world/n
 defineNpc('kiri', { name: '凯丽', title: '强化 · 神枪手导师', art: 'world/npc_kiri', h: 114, services: ['quest', 'shop:kiri', 'enhance', 'job'], jobFor: 'gun',
   greet: ['嗨~要让装备闪闪发光吗？'],
   lines: ['来自天界的技术，可比你们地上的铁匠厉害多了！', '想让装备闪闪发光？交给凯丽吧~', '枪械的奥秘，可不是随便谁都能掌握的哦。'] });
-defineNpc('fengzhen', { name: '风振', title: '格斗家导师', art: 'world/npc_fengzhen', h: 114, services: ['quest'],
+// 格斗家导师（docs/CLASS_PLAN_FIGHTER.md #44）：转职按钮只对格斗家显示（jobAvailable 看 jobFor）；武器商店等格斗家开放后才挂出来
+defineNpc('fengzhen', { name: '风振', title: '格斗家导师', art: 'world/npc_fengzhen', h: 114, services: ['quest', 'job', ...(clsOpen('fighter') ? ['shop:fengzhen'] : [])], jobFor: 'fighter',
   greet: ['嗯，来得正好。'],
-  lines: ['拳头，才是最诚实的武器。', '风拳流的修行，没有捷径。', '往左一直走就是格兰之森，路上小心。', '……你的身法还欠火候。（格斗家职业尚未开放）'] });
+  lines: ['拳头，才是最诚实的武器。', '风拳流的修行，没有捷径。', '往左一直走就是格兰之森，路上小心。', clsOpen('fighter') ? '……你的身法还欠火候。再来打一套给我看看。' : '……你的身法还欠火候。（格斗家职业尚未开放）'] });
 defineNpc('norton', { name: '诺顿', title: '商人 · 分解', art: 'world/npc_norton', h: 120, services: ['quest', 'shop:norton', 'disassemble', 'auction', 'mail'],   // auction 拍卖行、mail 邮箱：社交组注册，没登录时按钮自动隐藏
   greet: ['欢迎光临！诺顿的店，只做公道生意。'],
   lines: ['用不上的装备别急着卖，拿来分解，能得到不少好材料。', '赫顿玛尔是整个大陆的商业中心，什么稀罕货都能在这里找到。', '价钱嘛……好商量，好商量。', '我这双眼睛，看宝石从来没走眼过。'] });

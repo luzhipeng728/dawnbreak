@@ -9,13 +9,15 @@
      down                 倒地（downTime 秒后起身；只有带 downHit 的攻击能打到）
      getup                起身（带无敌）；tech = 受身起身
      held                 被抓取（位置由抓取者控制，不能行动）
+     （air + thrown）     被扔出去（engine/combat.js throwArc：位置按弧线走，不受重力 / AI，落地结算）
      dead
    动作定义 act：{ name, clip, dur,
      hits:[{ t0, t1, box:[前沿0,前沿1,纵深半宽,z0,z1], dmg, type, elem, stun, knock, launch, airLift, down, downHit, grab, heavy, hs, rep, max, ... }],
      move:[[t0,t1,vx,vz?,vy?]], events:[{t,fn}], update(e,dt), onStart, onEnd(e,interrupted), onLand,
      superArmor: true | [t0,t1] | [[t0,t1],...]，invul: 同上（无敌窗口），noCounter（不会被破招），
      speed: 'aspd' | 'cspd' | 数字（动作速度），charge:{ at, max, min, dmg, clip, onRelease }（按住技能键蓄力），
-     cancelFrom（此时间后可被技能 / 后跳取消），chain/next（普攻连段），airOnly, lowGrav }
+     cancelFrom（此时间后可被技能 / 后跳取消），chain/next（普攻连段），airOnly, lowGrav,
+     hurtH（动作中的受击盒高度：格斗家 蹲伏 = 压低到只有下段判定打得到；不写 = 身高） }
    ===================================================================== */
 const GRAV = 1500;
 const ents = [];
@@ -44,7 +46,7 @@ class Ent {
       st: 'idle', stT: 0, act: null, actT: 0, hitstop: 0, invul: 0, stun: 0, superArmor: 0, flash: 0,
       juggle: 0, downHits: 0, bounced: false, clipName: 'idle', animT: 0, pose: {}, dead: false, remove: false,
       speed: 150, runSpeed: 290, jumpV: 470, shadowR: 20, hitsDone: new Map(), stats: {},
-      rot: 0, grabbed: null, heldBy: null, grabProt: 0, freeT: 0,
+      rot: 0, grabbed: null, heldBy: null, grabProt: 0, freeT: 0, thrown: null,
       // 本轮连击统计（被打浮空 / 倒地期间累计；决斗场保护机制用）
       cmb: { air: 0, airDmg: 0, down: 0, downDmg: 0, hits: 0, dmg: 0 },
     }, o);
@@ -78,7 +80,7 @@ class Ent {
   // 中断当前动作（被打 / 被抓 / 眩晕）
   interrupt() { if (this.grabbed) dropGrab(this); if (this.act) { const a = this.act; this.act = null; if (a.onEnd) a.onEnd(this, true); } }
   // 当前的受击盒高度：倒地时很矮、浮空时是横躺的身体
-  hurtH() { return this.st === 'down' ? 22 : this.st === 'air' ? this.h * 0.55 : this.h; }
+  hurtH() { return this.st === 'down' ? 22 : this.st === 'air' ? this.h * 0.55 : this.st === 'act' && this.act && this.act.hurtH !== undefined ? this.act.hurtH : this.h; }
   update(dt) {
     if (this.flash > 0) this.flash -= dt;
     if (this.st === 'air') this.cmb.airT = (this.cmb.airT || 0) + dt;   // 本轮浮空时长（含打击停顿；JUGGLE：刷图 / 决斗防无限浮空）
@@ -87,6 +89,8 @@ class Ent {
     if (this.invul > 0) this.invul -= dt;
     if (this.superArmor > 0) this.superArmor -= dt;
     if (this.grabProt > 0) this.grabProt -= dt;
+    // ---- 被扔出去（throwArc）：位置按弧线走；中途被别的效果改了状态（脱身技能等）就停止 ----
+    if (this.thrown) { if (this.st !== 'air' || this.dead) this.thrown = null; else { this.animT += dt; updateThrown(this, dt); this.animate(dt); return; } }
     // ---- 被抓取：位置由抓取者决定 ----
     if (this.st === 'held') { this.animT += dt; updateHeld(this, dt); this.animate(dt); return; }
     // ---- 动作 ----

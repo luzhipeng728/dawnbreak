@@ -15,16 +15,16 @@ await ev(() => { window.toastMsg = () => {}; while (menus.stack.length) menus.cl
 
 step('物品');
 const lib = await ev(() => {
-  const all = [...CDR60.legend, ...CDR60.sand], D = k => ITEMS[k];
+  const D = k => ITEMS[k], all = [...CDR60.legend, ...CDR60.sand].filter(k => !D(k).cls || clsOpen(D(k).cls)), WT = Object.keys(WTYPES).filter(t => clsOpen(WTYPES[t].cls));   // 还没开放的职业（格斗家 ready:false）的流沙武器不算
   const bad = all.filter(k => { const x = D(k); return !x || x.lvl !== 50 || JSON.stringify(Object.keys(x.fx || {})) !== '["cdr"]' || x.proc || !x.noDrop; });
   return { legend: CDR60.legend.slice(), setPieces: SETS.set_hourglass.pieces.slice(), n: all.length, bad,
     legendOk: CDR60.legend.every(k => D(k).rar === 4 && D(k).fx.cdr === 0.1 && D(k).set === 'set_hourglass'),
-    sandOk: CDR60.sand.every(k => D(k).rar === 3 && D(k).fx.cdr === 0.06 && !D(k).set),
+    sandOk: CDR60.sand.every(k => D(k).rar === 3 && D(k).fx.cdr === 0.06 && !D(k).set),   // 没开放职业的也要是同样的神器（开放后直接用）
     armor: Object.keys(ATYPES).every(a => ARMOR_SLOTS.every(s => D(`sand_${a}_${s}`) && D(`sand_${a}_${s}`).atype === a)),
     acc: [...ACC_SLOTS, ...SPECIAL_SLOTS].every(s => D(`sand_${s}`) && D(`sand_${s}`).slot === s),
-    weapons: Object.keys(WTYPES).every(t => D(`sand_${t}`) && D(`sand_${t}`).wtype === t),
+    weapons: Object.keys(WTYPES).every(t => D(`sand_${t}`) && D(`sand_${t}`).wtype === t),   // 物品本身所有类型都有
     inPool: all.filter(k => GEAR.includes(D(k))), noIcon: all.filter(k => !ASSET_SRC['icon/' + D(k).icon]),
-    look: Object.keys(WTYPES).filter(t => weaponArtOf(makeItem(`sand_${t}`), WTYPES[t].cls) !== `${t}_r3`),
+    look: WT.filter(t => weaponArtOf(makeItem(`sand_${t}`), WTYPES[t].cls) !== `${t}_r3`),
     src: itemSourceText('sand_katana'), problems: G60.problems.slice() };
 });
 check(lib.n === 50 && !lib.bad.length, `50 件（5 传说 + 45 神器），都是 Lv50、只有 cdr 特效、没有 proc、不进随机池`, lib.bad);
@@ -86,7 +86,9 @@ check(b2.got === 1 && b2.soul === b1.soul - 20, `买到流沙太刀：宇宙灵�
 
 step('掉落表');
 const dr = await ev(() => {
-  const all = [...CDR60.legend, ...CDR60.sand], hi = [], lo = [], miss = [];
+  const all = [...CDR60.legend, ...CDR60.sand].filter(k => !ITEMS[k].cls || clsOpen(ITEMS[k].cls)), hi = [], lo = [], miss = [];
+  const off = CDR60.sand.filter(k => ITEMS[k].cls && !clsOpen(ITEMS[k].cls));   // 没开放职业的流沙武器：哪里都不掉
+  for (const id in DROP_TABLES) for (const e of DROP_TABLES[id].boss || []) if (off.includes(e[0])) lo.push(`${id}:${e[0]}`);
   for (const id in DUNGEONS) {
     const G = DUNGEONS[id], T = DROP_TABLES[id], B = new Map(((T && T.boss) || []).map(e => [e[0], e[1]]));
     if (G.lvl && G.lvl[1] >= 50) { hi.push(id); for (const k of all) if (B.get(k) !== (ITEMS[k].rar === 4 ? 0.002 : 0.004)) miss.push(`${id}:${k}=${B.get(k)}`); }

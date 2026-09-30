@@ -54,7 +54,7 @@ for (const t of Object.keys(WTYPES)) SAND(`sand_${t}`, { slot: 'weapon', wtype: 
 
 /* ---------------- 掉落：所有 Lv50 以上地下城（含深渊派对）的领主（要等所有区域定义完，排到 gear60_apply.js 执行）---------------- */
 g60Later(() => {
-  const list = [...CDR60.legend, ...CDR60.sand].map(k => [k, CDR60.drop[ITEMS[k].rar]]);
+  const list = [...CDR60.legend, ...CDR60.sand].filter(k => !ITEMS[k].cls || clsOpen(ITEMS[k].cls)).map(k => [k, CDR60.drop[ITEMS[k].rar]]);   // 还没开放的职业（格斗家）的流沙武器不掉
   for (const id in DUNGEONS) { const G = DUNGEONS[id]; if (G.lvl && G.lvl[1] >= CDR60.minLv) g60AddBoss(id, list); }   // g60Later 里直接调 gearDrop 的实现（gearDrop 本身在排队执行期间还会再排一次队）
 });
 }

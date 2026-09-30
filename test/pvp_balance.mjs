@@ -9,9 +9,9 @@ const { browser, page, logs } = await launch({ width: 640, height: 360 });
 await page.goto(`${URL_BASE}?duel=sword&vs=gun&auto&ai=3&mute`);
 await page.waitForFunction(() => window.__READY && game.duel, null, { timeout: 60000 });
 const combos = await page.evaluate(async () => {
-  await loadBundles(['spr:sword', 'spr:gun', 'spr:mage']);
+  await loadBundles(openClasses().map(c => 'spr:' + c));
   game.paused = true; window.toastMsg = () => {};
-  return ['sword', 'gun', 'mage'].flatMap(c => [c + ':', ...Object.keys(CLASSES[c].jobs).map(j => c + ':' + j)]);
+  return openClasses().flatMap(c => [c + ':', ...openJobs(c).map(j => c + ':' + j)]);   // 已开放的职业 / 转职（ready:false 的不进循环赛）
 });
 const pairs = [];
 for (let i = 0; i < combos.length; i++) for (let j = i + 1; j < combos.length; j++) if (!only.length || only.some(o => combos[i] === o || combos[j] === o)) pairs.push([combos[i], combos[j]]);

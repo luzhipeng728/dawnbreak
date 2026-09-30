@@ -41,7 +41,7 @@ export const aiLevel = r => r < 1150 ? 1 : r < 1500 ? 2 : 3;   // 段位越高 A
 export const expect = (ra, rb) => 1 / (1 + 10 ** ((rb - ra) / 400));
 const txt = (s, n) => String(s ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n);
 const cidOf = v => txt(v, 24) || '0';
-const KEY_RE = /^[a-z][a-z0-9_]{0,23}$/;
+const KEY_RE = /^[a-z][a-z0-9_]{0,23}$/, CLS_RE = /^[a-z]{2,12}$/;   // 职业 key 和 core/social.js cleanChar 同一个规则
 
 export default {
   name: 'arena',
@@ -173,7 +173,7 @@ export default {
         if (queue.has(me)) { const e = queue.get(me); return c.send({ t: 'arena:queued', rating: e.rating, tier: tierOf(e.rating), n: queue.size, aiAfter: C('arenaAiMs') }); }
         if (ctx.mods.room.of(me)) return note('你正在地下城或决斗中，不能排队');
         const ch = msg.char && typeof msg.char === 'object' ? msg.char : {};
-        const char = { name: txt(ch.name, 16) || c.user.name, cls: AI_POOL[ch.cls] ? ch.cls : 'sword', job: KEY_RE.test(ch.job || '') ? ch.job : null };
+        const char = { name: txt(ch.name, 16) || c.user.name, cls: CLS_RE.test(ch.cls || '') ? ch.cls : 'sword', job: KEY_RE.test(ch.job || '') ? ch.job : null };   // 按上报的职业记（新职业 格斗家 不在 AI_POOL 里也不能记成鬼剑士）
         const cid = cidOf(msg.cid);
         dropAi(me);
         ctx.db.run(`INSERT INTO arena (user_id, cid, user_name, char_name, cls, job, updated) VALUES (?,?,?,?,?,?,?)

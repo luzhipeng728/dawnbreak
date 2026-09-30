@@ -114,7 +114,7 @@ const liveUpdate = {
     if (!save.loadAll()) return false;
     let i = st.cur;
     if (!save.chars[i] || save.chars[i].name !== st.name || save.chars[i].cls !== st.cls) i = save.chars.findIndex(c => c.name === st.name && c.cls === st.cls);
-    if (i < 0) return false;
+    if (i < 0 || !charOpen(save.chars[i])) return false;   // 职业在这个版本没开放（save.js charOpen）：走正常标题
     save.select(i); save.apply();
     if (st.loc && SCENES[st.loc.scene]) save.data.loc = st.loc;
     if (st.party) netParty.lastPid = st.party;   // 同一个队伍：重连后不再提示“已加入队伍”

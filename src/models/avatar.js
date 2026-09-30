@@ -12,7 +12,7 @@
    外观 look = { wpn: 武器图 key | null, set: 套装 id | null, acc: [配件物品 key], job: 转职 | null }（见 content/avatar/looks.js；转职外观见 models/job_fx.js）
    性能：每帧只多 1 次 drawImage + 变换（身前武器再多 1 次握拳小图）；换装 / 首次用到某帧时才分配对象。
    ===================================================================== */
-const AVATAR_CLS = { sword: 1, gun: 1, mage: 1, pmsuit: 1 };   // pmsuit：协战师的战斗服（地下城里整套换帧），只用来挂转职外观（帧里没有武器轨迹 / 头部锚点）
+const AVATAR_CLS = { sword: 1, gun: 1, mage: 1, fighter: 1, pmsuit: 1 };   // pmsuit：协战师的战斗服（地下城里整套换帧），只用来挂转职外观（帧里没有武器轨迹 / 头部锚点）
 const AVATAR_SIG_SLOTS = ['weapon', 'av_weapon', 'av_top', 'av_bottom', 'av_chest', 'av_belt', 'av_shoes', 'av_hat', 'av_hair', 'av_face'];   // 这些部位换了就重算外观
 class AvatarLayer {
   constructor(m) {

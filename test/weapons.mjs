@@ -3,11 +3,11 @@
 //   2. 品级选择：普通 / 高级 → 基础外观，稀有 / 神器 / 传说 → 品级外观，史诗 → 专属外观，武器装扮优先
 //   3. 联机外观：自己的 look.wpn 经服务端清洗后不变，别人的模型按这个 key 画出同一把武器
 // 审图：node test/weapons.mjs shots <key,key,...|all|epics|tiers> [输出.jpg] —— 每把武器拿在对应职业手里（游戏内大小 + 放大）拼成一张总览图
-import { launch, URL_BASE } from './lib.mjs';
+import { launch, URL_BASE, openLists } from './lib.mjs';
 import { cleanChar } from '../server/core/social.js';
 import fs from 'fs';
 let fail = 0; const ok = (c, msg, x = '') => { console.log((c ? '  ✓ ' : '  ✗ ') + msg, x); if (!c) fail++; };
-const WT = ['shortsword', 'katana', 'club', 'greatsword', 'lightsaber', 'revolver', 'autopistol', 'rifle', 'handcannon', 'bowgun', 'spear', 'pole', 'rod', 'staff', 'broom'];
+const WT = (await openLists()).wtypes;   // 已开放职业的武器类型（读 WTYPES，跳过 ready:false 的职业；三职业 15 种）
 
 if (process.argv[2] === 'shots') {
   const sel = process.argv[3] || 'all', outp = process.argv[4] || 'test/shots/weapons/weapons.png', one = process.argv[5] === '1x';   // 1x：只画游戏内大小的攻击帧（全量总览用）

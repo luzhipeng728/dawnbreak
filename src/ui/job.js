@@ -7,8 +7,9 @@
    - 执行：game.job = id → bus.emit('jobChange', { job }) → onJobChange(p, job)（若定义）→ save.write()，然后播放转职演出
    ===================================================================== */
 const JOB_LVL = 15;
-const JOB_MENTOR = { sword: 'gsd', gun: 'kiri', mage: 'sharan' };
-const jobsOf = cls => (CLASSES[cls] && CLASSES[cls].jobs) || null;
+const JOB_MENTOR = { sword: 'gsd', gun: 'kiri', mage: 'sharan', fighter: 'fengzhen' };
+// 这个职业现在能选的转职（J.ready === false 的不显示，开发测试 ?fighter=1 强制开放，见 content/classes/common.js jobOpen）；一个都没有 = null
+const jobsOf = cls => { const J = CLASSES[cls] && CLASSES[cls].jobs; if (!J) return null; const ids = Object.keys(J).filter(j => jobOpen(J[j])); if (!ids.length) return null; if (ids.length === Object.keys(J).length) return J; const o = {}; for (const j of ids) o[j] = J[j]; return o; };
 const jobTrialDone = cls => !QUESTS['q_job_' + cls + '_final'] || questDone('q_job_' + cls + '_final');
 // 这个方向的专属转职任务（J.trial）做完没有（任务没定义 = 没有这道门槛）
 const jobTrialOk = J => !J || ((J.direct || jobTrialDone(qPlayerCls())) && (!J.trial || !QUESTS[J.trial] || questDone(J.trial)));
@@ -50,7 +51,7 @@ const jobArtKey = (cls, id) => { const J = jobsOf(cls) && jobsOf(cls)[id]; retur
 const jobArt = (cls, id) => IMG[jobArtKey(cls, id)] || IMG['cutin/' + cls] || IMG['class/' + cls] || null;
 // 立绘单独分包（build.mjs 里 job/ → 'job'）：打开导师对话 / 转职窗口时再加载；分包不存在时这些图已在 core 里
 function jobArtPreload(then) { if (typeof loadBundles !== 'function') return; const p = loadBundles(['job']); if (then) p.then(then); }
-bus.on('npcTalk', e => { const N = NPCS[e.id]; if (N && N.jobFor) jobArtPreload(); });
+bus.on('npcTalk', e => { const N = NPCS[e.id]; if (N && N.jobFor && clsOpen(N.jobFor)) jobArtPreload(); });
 function jobName(cls = qPlayerCls(), job = game.job) { const J = job && jobsOf(cls) && jobsOf(cls)[job]; return J ? J.name : null; }
 function doJobChange(jobId) {
   const cls = qPlayerCls(), J = jobsOf(cls) && jobsOf(cls)[jobId];

@@ -10,6 +10,7 @@ const DUEL_BASE = {   // 每个职业的 PvP 基准属性（天平后）
   sword: { hp: 21000, mp: 4200, atk: 2100, matk: 1800, def: 2100, mdef: 1800 },
   gun: { hp: 19500, mp: 4400, atk: 2000, matk: 1700, def: 1900, mdef: 1900 },
   mage: { hp: 18000, mp: 5600, atk: 1300, matk: 2150, def: 1700, mdef: 2200 },
+  fighter: { hp: 21000, mp: 4200, atk: 2100, matk: 1800, def: 2100, mdef: 1800 },   // B0 先抄鬼剑士，B9 跑 pvp_balance 再调
 };
 function duelStats(p) {
   const B = DUEL_BASE[p.cls], C = CLASSES[p.cls];
@@ -24,7 +25,7 @@ function duelStats(p) {
   p.baseStats = { atk: B.atk, speed: C.speed * 1.1, runSpeed: C.runSpeed * 1.1 };
   applyBuffs(p);
 }
-const firstJob = cls => Object.keys(CLASSES[cls].jobs || {})[0] || null;
+const firstJob = cls => openJobs(cls)[0] || null;   // 没开放的转职（J.ready === false）不选
 /* ---- 公正决斗（排位 / 练习 / 好友决斗都一样，地下城不受影响）：规则见 docs/PVP.md ----
    技能等级：决斗等级（30）下本职业 + 转职能学的技能全部按标准等级 1 + ⌊(30 − 需求等级) / 3⌋（不超过满级），和 SP 加点、装备的技能等级无关；
    觉醒（一 / 二 / 三觉）在决斗里全部可用，不看觉醒任务；每局最多放一次（冷却至少 61 秒，每局开始冷却清零）。技能栏沿用玩家自己的摆放（只保留能用的技能） */
@@ -164,7 +165,7 @@ function duelParams() {
   const pick1 = (v, def) => CLASSES[v] ? v : def;
   let a = PARAMS.get('duel'), me = null;
   if (a === 'me') { const k0 = save.key; save.key = 'dawnbreak_save_v1'; try { if (save.load()) me = JSON.parse(JSON.stringify(save.data)); } catch (e) { /* 没有存档 */ } save.key = k0; a = me ? me.cls : 'sword'; }   // 只读正式存档，不写回
-  a = pick1(a, 'sword'); const b = pick1(PARAMS.get('vs'), pick(['sword', 'gun', 'mage']));
+  a = pick1(a, 'sword'); const b = pick1(PARAMS.get('vs'), pick(openClasses()));   // 随机对手：已开放的职业（ready:false 的不抽）
   const jobOk = (cls, j) => j === 'none' ? null : CLASSES[cls].jobs && CLASSES[cls].jobs[j] ? j : firstJob(cls);
   return { a, b, ja: me && me.job ? me.job : jobOk(a, PARAMS.get('job')), jb: jobOk(b, PARAMS.get('vsjob')), lv: +(PARAMS.get('lv') || DUEL_CFG.lv), ai: clamp(+(PARAMS.get('ai') || 2), 1, 3),
     auto: PARAMS.has('auto'), theme: PARAMS.get('theme') || 'ruinsDark', nameA: me && me.name, me };
@@ -179,12 +180,12 @@ if (typeof NPC_SERVICES !== 'undefined') NPC_SERVICES.arena = { label: '决斗�
 Object.assign(menus, {
   w_duel() {
     const sel = { a: 'me', ja: '', b: 'gun', jb: '', ai: 2 };
-    const clsBtns = (key, jkey, withMe) => { const row = h('div', { class: 'duelrow' }); const draw = () => { row.replaceChildren(...[...(withMe ? ['me'] : []), 'sword', 'gun', 'mage'].map(c => h('button', { class: 'btn' + (sel[key] === c ? '' : ' off'), onclick: () => { sel[key] = c; sel[jkey] = ''; draw(); jobRow(); } }, c === 'me' ? '我的角色' : CLASSES[c].name))); }; draw(); return row; };
+    const clsBtns = (key, jkey, withMe) => { const row = h('div', { class: 'duelrow' }); const draw = () => { row.replaceChildren(...[...(withMe ? ['me'] : []), ...openClasses()].map(c => h('button', { class: 'btn' + (sel[key] === c ? '' : ' off'), onclick: () => { sel[key] = c; sel[jkey] = ''; draw(); jobRow(); } }, c === 'me' ? '我的角色' : CLASSES[c].name))); }; draw(); return row; };
     const jobsA = h('div', { class: 'duelrow' }), jobsB = h('div', { class: 'duelrow' });
-    const jobRow = () => { for (const [key, jkey, el] of [['a', 'ja', jobsA], ['b', 'jb', jobsB]]) { const c = sel[key]; el.replaceChildren(...(c === 'me' ? [] : Object.entries(CLASSES[c].jobs || {}).map(([j, J]) => h('button', { class: 'btn' + (sel[jkey] === j || (!sel[jkey] && j === firstJob(c)) ? '' : ' off'), onclick: () => { sel[jkey] = j; jobRow(); } }, J.name)))); } };
+    const jobRow = () => { for (const [key, jkey, el] of [['a', 'ja', jobsA], ['b', 'jb', jobsB]]) { const c = sel[key]; el.replaceChildren(...(c === 'me' ? [] : Object.entries(CLASSES[c].jobs || {}).filter(([, J]) => jobOpen(J)).map(([j, J]) => h('button', { class: 'btn' + (sel[jkey] === j || (!sel[jkey] && j === firstJob(c)) ? '' : ' off'), onclick: () => { sel[jkey] = j; jobRow(); } }, J.name)))); } };
     jobRow();
     const lvRow = h('div', { class: 'duelrow' }, ...[1, 2, 3].map(n => h('button', { class: 'btn' + (sel.ai === n ? '' : ' off'), onclick: e => { sel.ai = n; [...lvRow.children].forEach((b, i) => b.classList.toggle('off', i + 1 !== n)); } }, ['简单', '普通', '困难'][n - 1])));
-    const go = h('button', { class: 'btn big', onclick: () => { const q = new URLSearchParams({ duel: sel.a, vs: sel.b, ai: sel.ai }); if (sel.ja) q.set('job', sel.ja); if (sel.jb) q.set('vsjob', sel.jb); if (save.data) save.write(); location.search = '?' + q.toString(); } }, '开始决斗');
+    const go = h('button', { class: 'btn big', onclick: () => { const q = new URLSearchParams({ duel: sel.a, vs: sel.b, ai: sel.ai }); if (DEV_OPEN) q.set('fighter', '1'); if (sel.ja) q.set('job', sel.ja); if (sel.jb) q.set('vsjob', sel.jb); if (save.data) save.write(); location.search = '?' + q.toString(); } }, '开始决斗');
     return this.win('决斗场', h('div', { class: 'duelwin' }, h('b', {}, '我方'), clsBtns('a', 'ja', true), jobsA, h('b', {}, '对手（AI）'), clsBtns('b', 'jb', false), jobsB, h('b', {}, 'AI 难度'), lvRow,
       h('div', { class: 'dueltip' }, '三局两胜，每局 60 秒。双方属性由天平系统统一；浮空 / 倒地保护与燃斗模式生效。'), go), { w: 34 });
   },

@@ -3,7 +3,7 @@
 //   2. 截图里没有绿色占位像素残留
 //   3. 三个职业所有动画片段、所有帧都能正常绘制（有武器轨迹的帧武器也画出来）
 //   shots：另外把「帧 × 外观」拼成大图写到 test/shots/avatar/，给人逐帧看
-import { launch, URL_BASE } from './lib.mjs';
+import { launch, URL_BASE, openLists } from './lib.mjs';
 import fs from 'fs';
 const SHOTS = process.argv.includes('shots');
 const out = 'test/shots/avatar'; fs.mkdirSync(out, { recursive: true });
@@ -38,7 +38,7 @@ const HELPERS = () => {
   console.log('逐帧绘制（三职业全部帧 × 每种武器 × 时装）+ 全部动画片段');
   const r = await page.evaluate(async () => {
     const res = {};
-    for (const cls of ['sword', 'gun', 'mage']) {
+    for (const cls of openClasses()) {   // 已开放的职业（ready:false 的不查）
       const S = SPR_DATA[cls], frames = Object.keys(S.frames); let wpn = 0, bad = [], green = {}, draws = 0;
       const m = new SpriteModel(cls, SPR_FALLBACK, SPR_ANIMS[cls]);
       const sets = Object.values(AVATAR_SETS).map(X => X.id).filter(id => SPR_DATA[`${cls}@${id}`]);
@@ -97,8 +97,8 @@ const HELPERS = () => {
     const W = (wtype, cls) => ({ key: `${wtype}_1_0`, wtype, cls }), skin = s => ({ key: 'av_weapon_' + s, skin: s });
     const r = {};
     for (const s of Object.values(WEAPON_SKINS)) {
-      const types = Object.keys(WTYPES), have = types.filter(t => WEAPON_IMG[`${s}_${t}`]);
-      r[s] = { n: have.length, ok: have.every(t => lookFromEquip(WTYPES[t].cls, { weapon: W(t, WTYPES[t].cls), av_weapon: skin(s) }).wpn === `${s}_${t}`) };
+      const types = Object.keys(WTYPES).filter(t => clsOpen(WTYPES[t].cls)), have = types.filter(t => WEAPON_IMG[`${s}_${t}`]);   // 已开放职业的武器类型
+      r[s] = { n: have.length, all: types.length, ok: have.every(t => lookFromEquip(WTYPES[t].cls, { weapon: W(t, WTYPES[t].cls), av_weapon: skin(s) }).wpn === `${s}_${t}`) };
     }
     r.noWeapon = lookFromEquip('sword', { av_weapon: skin('spring') }).wpn;
     r.overEpic = lookFromEquip('sword', { weapon: { key: 'ep_katana', wtype: 'katana' }, av_weapon: skin('spring') }).wpn;
@@ -107,7 +107,7 @@ const HELPERS = () => {
     r.skins = Object.values(WEAPON_SKINS);
     return r;
   });
-  for (const s of sk.skins) ok(sk[s].n === 15 && sk[s].ok, `${s} 装扮覆盖 ${sk[s].n}/15 种武器类型，装上后换成对应的图`);
+  for (const s of sk.skins) ok(sk[s].n === sk[s].all && sk[s].all >= 15 && sk[s].ok, `${s} 装扮覆盖 ${sk[s].n}/${sk[s].all} 种武器类型，装上后换成对应的图`);
   ok(sk.noWeapon === null, '只装武器装扮、没装武器：空手');
   ok(sk.overEpic === 'spring_katana', '装扮优先于史诗专属外观');
   ok(sk.byKey === 'summer_rifle', '物品没有 skin 字段时按 key 查表');
@@ -164,7 +164,7 @@ const EQUIP = keys => {
   for (const k of keys) { const it = typeof k === 'string' ? makeItem(k) : rollEquip(k); if (!it) return 'no item ' + JSON.stringify(k); inv.add(it); if (!inv.wear(it)) return 'wear failed ' + it.key; }
   return null;
 };
-for (const cls of ['sword', 'gun', 'mage']) {
+for (const cls of (await openLists()).classes) {
   console.log(`游戏里（${cls}）：换武器 / 穿脱时装 / 刷新`);
   const { browser, page, logs } = await launch({ width: 1280, height: 720 });
   await page.goto(`${URL_BASE}?town&cls=${cls}&mute&fresh`);
@@ -273,7 +273,7 @@ for (const cls of ['sword', 'gun', 'mage']) {
     cnt(m1, 'walk3'); cnt(m2, 'walk3');
     const calls = [cnt(m1, 'walk3'), cnt(m2, 'walk3')];
     const sets = Object.values(AVATAR_SETS).map(S => S.id);
-    for (const cls of ['sword', 'gun', 'mage']) for (let i = 0; i < 4; i++) {
+    for (const cls of openClasses()) for (let i = 0; i < 4; i++) {
       const look = { wpn: null, set: sets[i], parts: { up: sets[i], low: sets[(i + 1) % sets.length], feet: sets[(i + 2) % sets.length] }, acc: [] };
       for (const f of Object.keys(SPR_DATA[cls].frames)) { const mm = mk(cls, look, f); mm.av.frame(mm, f); }
     }

@@ -31,9 +31,18 @@ const WTYPES = {
   rod: { name: '魔杖', cls: 'mage', phys: 0.55, mag: 1.05, aspd: 0.12, cspd: 0.05, spd: '极快', dur: 26, desc: '攻速极快，魔法攻击力次于法杖，施放速度 +5%' },
   staff: { name: '法杖', cls: 'mage', phys: 0.5, mag: 1.15, aspd: -0.12, mcrit: 0.02, spd: '极慢', dur: 30, desc: '魔法攻击力最高，攻速极慢' },
   broom: { name: '扫把', cls: 'mage', phys: 0.8, mag: 1.0, aspd: 0.06, mspd: 0.03, spd: '快速', dur: 28, desc: '移动速度 +3%' },
+  // 格斗家（男）5 种：只改速度 / 距离 / 数值，不改普攻动作（距离 / 硬直 / 臂铠的物理技能惩罚在 content/classes/fighter.js 的 FIGHTER_FEEL）；jobs = 只有这些转职能装备
+  knuckle: { name: '手套', cls: 'fighter', phys: 0.88, mag: 1.12, aspd: 0.14, cspd: 0.05, spd: '极快', dur: 28, desc: '出手最快、攻击距离最短，魔法攻击力最高，施放速度 +5%' },
+  boxing: { name: '拳套', cls: 'fighter', jobs: ['striker'], phys: 1.08, mag: 0.6, aspd: 0.1, spd: '快速', dur: 30, desc: '出手很快、距离短，物理攻击力高；只有散打能装备，散打技能冷却 -10%' },
+  claw: { name: '爪', cls: 'fighter', phys: 1.0, mag: 0.95, aspd: 0, stagger: 30, spd: '普通', dur: 32, desc: '攻击距离长，打击让敌人僵直更久' },
+  tonfa: { name: '东方棍', cls: 'fighter', phys: 0.85, mag: 0.8, aspd: 0.06, defPct: 0.05, spd: '快速', dur: 34, desc: '出手快、距离较长，攻击力最低，附带物理防御 +5%' },
+  gauntlet: { name: '臂铠', cls: 'fighter', phys: 1.22, mag: 0.5, aspd: -0.12, hardness: 20, spd: '缓慢', dur: 36, desc: '物理攻击力最高、出手慢；物理技能 MP 消耗和冷却增加（抓取技能不受影响）' },
 };
 const CLASS_WTYPES = cls => Object.keys(WTYPES).filter(k => WTYPES[k].cls === cls);
-const CLASS_START_WEAPON = { sword: 'katana', gun: 'revolver', mage: 'rod' };   // 初始武器选攻速不慢的类型
+const CLASS_START_WEAPON = { sword: 'katana', gun: 'revolver', mage: 'rod', fighter: 'knuckle' };   // 初始武器选攻速不慢的类型（格斗家：官方不装武器按手套算）
+// 转职专用的武器类型（WTYPES[t].jobs，例：拳套只有散打能装）：能不能装 / 说明文字（背包、比较、商店、提示框共用）
+const wtypeJobOk = (wtype, job) => { const T = WTYPES[wtype]; return !T || !T.jobs || T.jobs.includes(job); };
+const wtypeJobText = wtype => { const T = WTYPES[wtype]; if (!T || !T.jobs) return ''; const C = CLASSES[T.cls]; return T.jobs.map(j => (C && C.jobs && C.jobs[j] && C.jobs[j].name) || j).join(' / '); };
 // 防具类型：def / mdef / hp / mp 系数，dur 上衣耐久（官方：布 28、皮 33、轻 38、重 40、板 60；其他部位 ×0.85）
 const ATYPES = {
   cloth: { name: '布甲', def: 0.94, mdef: 1.3, hp: 0.95, mp: 1.4, dur: 28 },
@@ -204,6 +213,7 @@ function rollEquip(o = {}) {
   for (let tries = 0; tries < 8; tries++) {
     const lo = lvl - 6 - tries * 4, hi = lvl + 1 + Math.floor(tries / 2);
     let pool = GEAR.filter(D => D.slot === slot && D.rar === rar && D.lvl >= lo && D.lvl <= hi && !D.shopOnly && (!o.wtype || D.wtype === o.wtype) && (!o.atype || D.atype === o.atype));
+    if (slot === 'weapon') pool = pool.filter(D => !D.cls || clsOpen(D.cls));   // 还没开放的职业（格斗家 ready:false）的武器不掉
     if (slot === 'weapon' && !o.wtype) { const own = pool.filter(D => D.cls === cls); if (own.length && Math.random() < 0.8) pool = own; }
     if (ARMOR_SLOTS.includes(slot) && !o.atype) { const m = pool.filter(D => D.atype === mastery); if (m.length && Math.random() < 0.6) pool = m; }
     if (pool.length) {
@@ -275,6 +285,7 @@ const inv = {
     if (!it || it.kind !== 'equip') return fail('不能装备');
     if (it.lvl > game.lvl) return fail(`需要等级 ${it.lvl}`);
     if (it.slot === 'weapon' && it.cls && game.player && it.cls !== game.player.cls) return fail(`${CLASSES[it.cls] ? CLASSES[it.cls].name : ''}专用武器，无法装备`);
+    if (it.slot === 'weapon' && !wtypeJobOk(it.wtype, game.job)) return fail(`${wtypeJobText(it.wtype)}专用武器，无法装备`);
     return true;
   },
   wear(it) {

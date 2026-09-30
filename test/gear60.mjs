@@ -247,7 +247,8 @@ if (run('content')) {
     const E = Object.values(ITEMS).filter(D => D.kind === 'equip' && D.rar === 5 && !isAvatar(D));
     const MIN = { weapon: [1, 1, 2, 2, 2, 4], armor: [1, 3, 5, 5, 6, 8], acc: [1, 2, 3, 3, 3, 5], special: [0, 2, 2, 2, 3, 10] };
     const short = [];
-    for (const t of Object.keys(WTYPES)) { const n = B.map(() => 0); for (const D of E) if (D.wtype === t) n[bi(D.lvl)]++; n.forEach((v, i) => { if (v < MIN.weapon[i] && (!ONLY || ONLY === 'weapon')) short.push(`${WTYPES[t].name} Lv${B[i].join('~')}：${v}/${MIN.weapon[i]}`); }); }
+    // 武器类型：只查已开放职业的（clsOpen）
+    for (const t of Object.keys(WTYPES).filter(t => clsOpen(WTYPES[t].cls))) { const n = B.map(() => 0); for (const D of E) if (D.wtype === t) n[bi(D.lvl)]++; n.forEach((v, i) => { if (v < MIN.weapon[i] && (!ONLY || ONLY === 'weapon')) short.push(`${WTYPES[t].name} Lv${B[i].join('~')}：${v}/${MIN.weapon[i]}`); }); }
     for (const s of ARMOR_SLOTS) { const n = B.map(() => 0); for (const D of E) if (D.slot === s) n[bi(D.lvl)]++; n.forEach((v, i) => { if (v < MIN.armor[i] && (!ONLY || ONLY === 'armor')) short.push(`${SLOT_NAME[s]} Lv${B[i].join('~')}：${v}/${MIN.armor[i]}`); });
       for (const a of Object.keys(ATYPES)) for (let i = 3; i < 6; i++) if (!E.some(D => D.slot === s && D.atype === a && bi(D.lvl) === i) && (!ONLY || ONLY === 'armor')) short.push(`${ATYPES[a].name}${SLOT_NAME[s]} Lv${B[i].join('~')}：0`); }
     for (const s of [...ACC_SLOTS, ...SPECIAL_SLOTS]) { const M = ACC_SLOTS.includes(s) ? MIN.acc : MIN.special, n = B.map(() => 0); for (const D of E) if (D.slot === s) n[bi(D.lvl)]++; n.forEach((v, i) => { if (v < M[i] && (!ONLY || ONLY === 'acc')) short.push(`${SLOT_NAME[s]} Lv${B[i].join('~')}：${v}/${M[i]}`); }); }
@@ -280,7 +281,7 @@ if (run('power')) {
   const WHY = process.argv.includes('--why');
   const R = await ev(async (WHY) => {
     const out = {}, why = {};
-    for (const cls of ['sword', 'gun', 'mage']) {
+    for (const cls of openClasses()) {   // 已开放的职业（ready:false 的不算）
       game.player = makePlayer(cls); game.job = null; const p = game.player;
       // 按职业的伤害类型算（魔法师 = 魔法）；不用 mainDmgType：启动页是鬼剑士，game.skillLv 里是鬼剑士的物理技能，会把魔法师也算成物理（矛 vs 稀有魔杖）
       const TYPE = p.dmgType || 'phys', score = () => { const m = gearMetrics(p, TYPE); return Math.pow(m.off, 0.7) * Math.pow(m.ehp, 0.3); };
@@ -312,7 +313,7 @@ if (run('power')) {
   const pw = R.out;
   if (WHY) { const f = path.join(os.tmpdir(), 'gear60_power_why.json'); fs.writeFileSync(f, JSON.stringify(R.why, null, 1)); console.log('  拆解（每件换回稀有的 ln 损失、套装 / fx 的 ln 贡献、因子 ln 贡献）写到', f);
     for (const cls in R.why) for (const L in R.why[cls]) { const w = R.why[cls][L]; console.log(`  ${cls} Lv${L} ln=${w.lnTotal} 套装${w.setsLn} fx${w.fxLn} ${JSON.stringify(w.factor).replace(/"/g, '')} ${w.sets.join(' ')}`); } }
-  for (const cls of ['sword', 'gun', 'mage']) { const r30 = pw[cls][30], bad = Object.entries(pw[cls]).filter(([L, v]) => +L > 30 && Math.abs(v / r30 - 1) > 0.1);
+  for (const cls of Object.keys(pw)) { const r30 = pw[cls][30], bad = Object.entries(pw[cls]).filter(([L, v]) => +L > 30 && Math.abs(v / r30 - 1) > 0.1);
     check(!bad.length, `${cls}：史诗 / 稀有倍率 ${Object.entries(pw[cls]).map(([L, v]) => `Lv${L} ×${v}`).join(' ')}（和 Lv30 比 ±10%）`, bad.map(([L, v]) => `Lv${L} ${(v / r30).toFixed(2)}`).join(' ')); }
 }
 

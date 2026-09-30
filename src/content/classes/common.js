@@ -33,18 +33,26 @@ function skillAllowed(id, job) { const S = SKILLS[id]; if (!S) return false; if 
 // 某个转职能学的全部技能：基础（按转职限制过滤）+ 该转职
 function classSkills(cls, job) { const C = CLASSES[cls]; if (!C) return []; const J = job && C.jobs && C.jobs[job], base = C.skills.filter(id => skillAllowed(id, job)); return J ? base.concat(J.skills) : base; }
 const CMD_KEY_TXT = { cmd: 'Z', attack: 'X', buff: 'Space', jump: 'C' };
-const CMD_SEQ_TXT = { hold: '按住→', holdd: '按住↓' };
-// 技能的指令文字（例如 "↓→+Z"），没有指令返回 ''
+const CMD_SEQ_TXT = { hold: '按住→', holdd: '按住↓', holdu: '按住↑' };
+// 技能的指令文字（例如 "↓→+Z"），没有指令返回 ''；只能在空中放（air + airOnly）、按键是 C 的写成“空中 C”（格斗家 空绞锤 / 裂石破天）
 function cmdTextOf(id) {
   const S = SKILLS[id]; if (!S) return '';
   if (S.cmdNote) return S.cmdNote;
   const C = CLASSES[S.cls]; if (!C) return '';
   for (const [seq, sid, key] of C.cmds) if (sid === id) {
     const arrows = CMD_SEQ_TXT[seq] || [...seq].map(c => ({ f: '→', b: '←', u: '↑', d: '↓' })[c]).join('');
-    return `${arrows}${arrows ? '+' : ''}${CMD_KEY_TXT[key || 'cmd']}`;
+    return `${key === 'jump' && S.airOnly ? '空中 ' : ''}${arrows}${arrows ? '+' : ''}${CMD_KEY_TXT[key || 'cmd']}`;
   }
   return '';
 }
+/* ---- 分阶段上线开关（新职业，docs/CLASS_PLAN_FIGHTER.md §4.1）：CLASSES[cls].ready === false = 选角显示“即将开放”、不能创建，
+   这个职业的角色在选角里显示“需要更新”、不能进入（存档原样保留）；J.ready === false = 转职窗口不显示这个方向。
+   开发测试：网址加 ?fighter=1 全部强制开放（之后的块和测试用它创建格斗家）；测试列表用 openClasses() / openJobs(cls) ---- */
+const DEV_OPEN = typeof PARAMS !== 'undefined' && PARAMS.get('fighter') === '1';
+const clsOpen = cls => !!(cls && CLASSES[cls] && CLASSES[cls].name) && (CLASSES[cls].ready !== false || DEV_OPEN);
+const jobOpen = J => !!J && (J.ready !== false || DEV_OPEN);
+const openClasses = () => Object.keys(CLASSES).filter(clsOpen);
+const openJobs = cls => { const J = CLASSES[cls] && CLASSES[cls].jobs; return J ? Object.keys(J).filter(j => jobOpen(J[j])) : []; };
 function cmdLabel(cls) { for (const id of classSkills(cls, null).concat(...Object.values(CLASSES[cls].jobs || {}).map(j => j.skills))) if (SKILLS[id]) { const t = cmdTextOf(id); SKILLS[id].cmdTxt = t ? '指令：' + t : ''; } }
 /* ---- 通用技能（所有职业）：后跳-强化（官方 2022 通用被动，替代本作以前的闪避翻滚）。
    后跳（↓+C）和受身蹲伏（倒地时 C）是自带的动作，见 game/player.js ---- */

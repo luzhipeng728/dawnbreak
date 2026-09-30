@@ -17,7 +17,7 @@
   - 已登记 `CLASSES.priest`、男圣职基础属性、模型回退、普攻、基础技能、武器标签、技能栏和四个转职占位。
   - 该文件单独 `node --check` 已通过。
 
-## 当前工作区未提交改动
+## 当前工作区未提交改动（主线程已移到分支 `priest/wip`，main 工作区已恢复干净）
 
 这些改动来自主线程，尚未完成构建验证：
 
@@ -27,7 +27,7 @@
 - `src/game/duel.js`：已加入 Priest PvP 基准属性及四个转职占位修正。
 - `server/modules/arena.js`：已把 Priest 基础职业和四个转职加入 AI 池。
 - `src/content/classes/priest_crusader.js`：当前新增文件，已实现圣骑士骨架，尚未提交。
-- `test/affected.mjs`：工作区出现的未跟踪测试辅助文件；来源不是主线程，提交前应先确认是否保留。
+- （更正）`test/affected.mjs` 是主线程加的“只跑受影响测试”工具，已提交在 main，不属于圣职者的改动。
 
 当前执行结果：
 

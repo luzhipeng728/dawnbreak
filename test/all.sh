@@ -86,6 +86,7 @@ run bhmroute  node test/behemoth_route.mjs
 run region    node test/region.mjs siroco   # 区域流水线：数据 / 技能库 / 机制库 / 怪物 / 场景 / 任务 / 机器人通关（约 25 分钟）
 run duel      node test/duel.mjs sword:gun,gun:mage,mage:sword 3
 run pvpbal    node test/pvp_balance.mjs 4 all
+run duelwake  node test/duel_wakeup.mjs   # 决斗一定站得起来：阿修罗无尽波动打倒地的人、硬控上限、23 种职业 AI 打人倒地 ≤1.6 秒 / 不能行动 ≤4 秒
 run duelrules node test/duel_rules.mjs   # 决斗规则单测：HP 倍率、开局 3 秒倒计时、开局冷却、追加浮空 / 一级·二级保护 / 倒地·二次浮空 / 平推 / 硬直 / 时间保护 / 错位、指令缓冲
 run duelstats node test/duel_stats.mjs 2 all   # 决斗节奏：一局用时、连招段数 / 时长 / 伤害占比（只打印，不判失败）
 run juggle    node test/juggle.mjs

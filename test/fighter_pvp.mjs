@@ -37,15 +37,16 @@ async function runJob(job, n, opps) {
           if (h && !wasHeld) { G.grabs++; if (game.t - relT < PVP.grabProt - 0.05) G.regrabFast++; }
           if (!h && wasHeld) relT = game.t;
           wasHeld = h; held = h ? held + 1 / 60 : 0; G.maxHeld = Math.max(G.maxHeld, held);
-          const locked = !V.dead && !(V.free || V.st === 'act');
-          lock = locked ? lock + 1 / 60 : 0; G.maxLock = Math.max(G.maxLock, lock);
+          const locked = !V.dead && !(V.free || V.st === 'act' || V.techHold);
+          lock = locked ? lock + 1 / 60 : 0; if (locked) { (G._l ||= []).push(`${lock.toFixed(1)}:${V.st}${V.recoverLand ? 'R' : ''}${V.invul > 0 ? 'I' : ''}${V.thrown ? 'T' : ''} z${Math.round(V.z)} ${F.act ? (F.act.skill || F.act.name) : F.st}`); if (G._l.length > 400) G._l.shift(); } else G._l = [];
+          if (lock > G.maxLock) { G.maxLock = lock; if (lock > 4.2) G.lockLog = G._l.filter((_, i) => i % 6 === 0).slice(-22).join(' | '); }
           const hs = V.status && V.status.hold; holdT = hs ? holdT + 1 / 60 : 0; G.maxHold = Math.max(G.maxHold, holdT);
         }
         G.rounds++; const L = duel.roundLog || []; duel.roundLog = []; G.secs += L.length ? L[0].time : 0;
       }
     } finally { castSkill = cs0; }
     const pool = aiKit('fighter', job || null, DUEL_CFG.lv).pool;
-    return { cnt, G, pool };
+    delete G._l; return { cnt, G, pool };
   }, { job, n, opps });
 }
 const OPPS = ['sword:blade', 'gun:ranger', 'mage:elemental', 'sword:berserker', 'gun:mechanic', 'mage:battlemage', 'fighter:grappler', 'fighter:nenmaster'];
@@ -75,7 +76,7 @@ if (parts.includes('grab')) for (const job of ['grappler', 'brawler']) {
   ok(G.regrabFast === 0, `${job}：放开后 ${'1.5'} 秒内（抓取保护）没有再被抓住`, G);
   ok(G.maxHeld < 4.2, `${job}：一次最多被抓 ${G.maxHeld.toFixed(2)} 秒（上限 4 秒）`, G);
   ok(G.maxHold <= 1.05, `${job}：决斗里强制硬直（hold）最长 ${G.maxHold.toFixed(2)} 秒（≤1 秒）`, G);
-  ok(G.maxLock < 10, `${job}：对手连续不能行动最长 ${G.maxLock.toFixed(1)} 秒（时间保护 7 秒后下一下脱出，没有无限连）`, G);
+  ok(G.maxLock <= 4.2, `${job}：对手连续不能行动最长 ${G.maxLock.toFixed(1)} 秒（时间保护：连续 3.2 秒就脱出，≤ 4 秒）`, G);
 }
 const errs = logs.filter(l => l.type === 'pageerror');
 ok(!errs.length, '没有页面报错', errs.slice(0, 3));

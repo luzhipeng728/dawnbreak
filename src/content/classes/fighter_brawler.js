@@ -508,7 +508,7 @@ defSkill('fb_lariat', { name: '极恶飞锁', cls: 'fighter', job: FB_JOB, lvReq
 
 /* ---- 转职登记（J.ready 保持 false：等 B1 出帧、主线程开放）---- */
 CLASSES.fighter.jobs.brawler = { art: 'job/brawler', name: '街霸', role: '中近距离 · 投掷 / 异常（魔法百分比）', armor: 'heavy', dmgType: 'mag', growth: { int: 1.08, vit: 1.05 },
-  awakenName: '千手罗汉', awakenName2: '暗街之王', awakenName3: '归元·街霸', ready: false,
+  awakenName: '千手罗汉', awakenName2: '暗街之王', awakenName3: '归元·街霸', ready: true,
   desc: '在暗街里摸爬滚打出来的格斗家。毒瓶、毒针、砖块、罗网四种投掷物自动装填，敌人身上的异常越多伤害越高；锁链大招把一群敌人拖进来暴打。魔法百分比伤害职业。' };
 Object.assign(CLASSES.fighter.jobs.brawler, {
   awaken: 'fb_awaken', awaken2: 'fb_awaken2', awaken3: 'fb_awaken3',

@@ -108,7 +108,7 @@ for (const item of list) {
     const why = [];
     if (r.err) why.push('报错 ' + r.err);
     if (!r.air && r.allow && !r.ok) why.push('允许取消但没切进觉醒 ' + JSON.stringify(r.dbg));
-    if (!r.air && !r.allow) why.push('被挡住（noAwk？）');
+    if (!r.air && !r.allow && !specOf(first).noAwk) why.push('被挡住（noAwk？）');   // 规格里写了 noAwk（带理由）的是有意不让切的抓取演出 / 姿态
     if (r.ok && r.awkLocked === false) why.push('觉醒被另一个觉醒打断');
     if (!r.settled) why.push(`没回到空闲（${r.st}, z ${r.z}）`);
     if (r.leak && r.leak.length) why.push('残留 ' + r.leak.join(' '));

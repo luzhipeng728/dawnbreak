@@ -22,7 +22,7 @@ if (mode === 'fast') {
     const x0 = game.exp; gainExp(1e7); r.stay = game.lvl === 60 && game.exp === x0;
     return r;
   });
-  let spWant = 0; for (let l = 31; l <= 60; l++) spWant += 28 + l;
+  let spWant = 0; for (let l = 31; l <= 60; l++) spWant += 6 * (28 + l);   // SP_MUL = 6
   ok(e.cap === 60 && e.lvl === 60, 'Lv30 靠经验一路升到 Lv60', e);
   ok(e.sp === spWant, `31~60 每级照常发 SP（共 ${spWant}）`, e.sp);
   ok(e.stay, '满级后经验不再增加、不再升级');

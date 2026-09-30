@@ -1,7 +1,8 @@
 /* 核心模块：账号（注册 / 登录 / 登出 / 当前用户 / 改密码）、会话 token、邀请码
    - 密码：scrypt（N=16384, r=8, p=1, 64 字节），存成 scrypt$N$r$p$盐$哈希
    - token：32 字节随机数（base64url）交给客户端，数据库只存它的 sha256；30 天有效，使用中自动续期
-   - 开放注册，不需要邀请码（管理员后台的邀请码功能已不再使用） */
+   - 开放注册，不需要邀请码（管理员后台的邀请码功能已不再使用）
+   - users 还记录注册 IP / 最近登录 IP（后台管理看注册来源）和 deleted_at（后台“删除账号”是软删除：停用 + 标记，数据都留着，可以恢复） */
 import crypto from 'node:crypto';
 import { checkUser, checkPass, limiter, str } from '../lib/util.js';
 
@@ -26,6 +27,11 @@ export default {
     `CREATE TABLE sessions (token TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, created INTEGER NOT NULL, expires INTEGER NOT NULL, last_seen INTEGER NOT NULL, ip TEXT, ua TEXT);
      CREATE INDEX sessions_user ON sessions(user_id)`,
     `CREATE TABLE invites (code TEXT PRIMARY KEY, created_by INTEGER, created_at INTEGER NOT NULL, used_by INTEGER, used_at INTEGER, note TEXT)`,
+    `ALTER TABLE users ADD COLUMN reg_ip TEXT NOT NULL DEFAULT '';
+     ALTER TABLE users ADD COLUMN last_ip TEXT NOT NULL DEFAULT '';
+     ALTER TABLE users ADD COLUMN deleted_at INTEGER;
+     UPDATE users SET reg_ip = COALESCE((SELECT ip FROM sessions s WHERE s.user_id = users.id ORDER BY created LIMIT 1), ''),
+                      last_ip = COALESCE((SELECT ip FROM sessions s WHERE s.user_id = users.id ORDER BY last_seen DESC LIMIT 1), '')`,
   ],
   init(ctx) {
     const { db, cfg } = ctx, DAY = 86400_000, TTL = cfg.sessionDays * DAY;
@@ -57,8 +63,8 @@ export default {
         return token;
       },
       findUser(q) {
-        const row = typeof q === 'number' ? db.get('SELECT id, name, created, banned FROM users WHERE id = ?', q) : db.get('SELECT id, name, created, banned FROM users WHERE name = ?', String(q));
-        return row ? { ...pub(row), created: row.created, banned: !!row.banned } : null;
+        const row = typeof q === 'number' ? db.get('SELECT id, name, created, banned, deleted_at FROM users WHERE id = ?', q) : db.get('SELECT id, name, created, banned, deleted_at FROM users WHERE name = ?', String(q));
+        return row ? { ...pub(row), created: row.created, banned: !!row.banned, deleted: !!row.deleted_at } : null;
       },
       // 玩家手动输入的名字：先按账号名，找不到再按角色名（存档里的角色名，精确匹配）。同名角色有多个时报错，请对方给账号名
       findPlayer(q) {
@@ -83,10 +89,19 @@ export default {
         db.run('UPDATE users SET banned = ? WHERE id = ?', on ? 1 : 0, userId);
         if (on) { db.run('DELETE FROM sessions WHERE user_id = ?', userId); for (const [k, v] of cache) if (v.user.id === userId) cache.delete(k); ctx.hub.kick(userId, '账号已被管理员停用'); }
       },
+      // 给“发给全体”用：停用 / 删除的账号不算
+      listUsers() { return db.all('SELECT id, name FROM users WHERE banned = 0 AND deleted_at IS NULL ORDER BY id'); },
+      // 管理员重设密码：旧会话全部作废并踢下线
+      async setPassword(userId, pass) {
+        db.run('UPDATE users SET pass = ? WHERE id = ?', await hashPass(pass), userId);
+        api.logoutAll(userId); ctx.hub.kick(userId, '密码已被管理员重设，请用新密码登录');
+      },
       logout(token) { const h = sha(token); db.run('DELETE FROM sessions WHERE token = ?', h); cache.delete(h); },
       logoutAll(userId) { db.run('DELETE FROM sessions WHERE user_id = ?', userId); for (const [k, v] of cache) if (v.user.id === userId) cache.delete(k); },
     };
     ctx.findUser = api.findUser; ctx.findPlayer = api.findPlayer;
+    // 注册是开放的：DNF_ADMIN 里还没注册的名字谁先注册谁就是管理员，启动时提醒（先注册、再写进 DNF_ADMIN）
+    for (const n of cfg.admins) if (!db.get('SELECT 1 FROM users WHERE name = ?', n)) ctx.log(`警告：DNF_ADMIN 里的「${n}」还没有注册，任何人注册这个名字都会成为管理员；请先注册再写进 DNF_ADMIN`);
     return api;
   },
   routes(r, ctx) {
@@ -100,7 +115,7 @@ export default {
       const hash = await hashPass(pass);
       let id;
       try {
-        id = db.tx(() => db.run('INSERT INTO users (name, pass, created, last_login, invite) VALUES (?, ?, ?, ?, ?)', user, hash, Date.now(), Date.now(), '').lastInsertRowid);
+        id = db.tx(() => db.run('INSERT INTO users (name, pass, created, last_login, invite, reg_ip, last_ip) VALUES (?, ?, ?, ?, ?, ?, ?)', user, hash, Date.now(), Date.now(), '', str(req.ip, 64), str(req.ip, 64)).lastInsertRowid);
       } catch (e2) { if (/UNIQUE/.test(String(e2.message))) throw err(409, '这个用户名已经被注册了'); throw e2; }
       ctx.log(`新用户注册：${user}（#${id}）`);
       return { token: A().newSession(id, req.ip, req.headers['user-agent']), user: A().pub({ id, name: user }) };
@@ -113,7 +128,7 @@ export default {
       const ok = await verifyPass(pass.slice(0, 64), row ? row.pass : DUMMY_HASH);
       if (!row || !ok) throw err(401, '用户名或密码不对');
       if (row.banned) throw err(403, '这个账号已被管理员停用');
-      db.run('UPDATE users SET last_login = ? WHERE id = ?', Date.now(), row.id);
+      db.run('UPDATE users SET last_login = ?, last_ip = ? WHERE id = ?', Date.now(), str(req.ip, 64), row.id);
       return { token: A().newSession(row.id, req.ip, req.headers['user-agent']), user: A().pub(row) };
     });
     r.post('/api/logout', { auth: true }, req => {

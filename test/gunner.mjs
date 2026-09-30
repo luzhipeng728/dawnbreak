@@ -79,7 +79,7 @@ const R = await page.evaluate(() => {
   out.lvStep = { knee: skLvReqOf('g_knee', 4), gat: skLvReqOf('g_gatling', 3) };
   // 14) v4 → v5 迁移：技能重置、SP 全额返还、技能栏 14 格且保留原来的位置
   const d = save.migrate({ ...save.defaults('gun'), v: 4, lvl: 20, sp: 3, skillLv: { g_knee: 5, g_spin: 7 }, skillBar: ['g_spin', 'g_knee', null, null, 'nope', null, null, null, null, null, null, 'g_launch'], opts: { cmdLock: { g_knee: true } } });
-  let sp = 150; for (let l = 2; l <= 20; l++) sp += 28 + l;
+  let sp = 150; for (let l = 2; l <= 20; l++) sp += 6 * (28 + l);   // v5 迁移按老规则返还，随后 spMigrate 补到 SP_MUL = 6
   out.migrate = { v: d.v, lv: d.skillLv, sp: d.sp, want: sp, bar: d.skillBar, len: d.skillBar.length, lock: d.opts.cmdLock };
   return out;
   function skLvReqOf(id, lv) { const S = SKILLS[id]; return S.lvReq + (lv - 1) * S.lvStep; }

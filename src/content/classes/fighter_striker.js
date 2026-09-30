@@ -547,7 +547,7 @@ CLASSES.fighter.passives.push(p => {
 
 /* ---- 登记 ---- */
 CLASSES.fighter.jobs.striker = { art: 'job/striker', name: '散打', role: '近战 · 连打（物理）', armor: 'light', growth: { str: 1.1, vit: 1.04 },
-  awaken: 'fs_awaken', awakenName: '武极', awaken2: 'fs_awaken2', awakenName2: '极武皇', awaken3: 'fs_awaken3', awakenName3: '归元·散打', ready: false,
+  awaken: 'fs_awaken', awakenName: '武极', awaken2: 'fs_awaken2', awakenName2: '极武皇', awaken3: 'fs_awaken3', awakenName3: '归元·散打', ready: true,
   desc: '只相信自己拳脚的格斗家。柔化肌肉让散打技能之间可以强制衔接，霸体护甲撑住正面；一觉烈焰焚步点燃双腿，还能把下一记大招双重施放。拳套只有散打能装备。',
   auto: ['fs_glove', 'fs_light'],
   anims: FS_ANIMS,

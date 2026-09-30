@@ -1,10 +1,11 @@
 # 加到 dnf.cc.l-hate.com 的站点块里（静态文件照旧由 Caddy 托管 dist/web）：
 #   /api/* 和 /ws → 127.0.0.1:18790（WebSocket 由 reverse_proxy 自动升级，不需要额外配置）
+#   /admin、/admin/* → 同一个服务端（后台管理页面，server/admin/）
 # 注意：handle 块要写在原有的 file_server 之前（或原有配置也放进 handle { } 里），保证 /api、/ws 不会被当成静态文件
 dnf.cc.l-hate.com {
 	# ……原有的 tls / root / file_server 配置保持不变……
 
-	@dnfnet path /api/* /ws
+	@dnfnet path /api/* /ws /admin /admin/*
 	handle @dnfnet {
 		reverse_proxy 127.0.0.1:18790 {
 			# 服务端每 20 秒 ping 一次 WebSocket；这里别让代理提前断开长连接

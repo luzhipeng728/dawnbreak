@@ -44,8 +44,38 @@ function skillDownBlock(id) {
   for (const k in SKILLS) { const S = SKILLS[k]; if ((game.skillLv[k] || 0) > 0 && S.pre && S.pre[id] >= lv) return `${S.name} 需要这个技能 Lv.${S.pre[id]}`; }
   return null;
 }
+// 前置技能没学够时，先把前置（和前置的前置）学到要求的等级；SP 不够或等级不够就不动，返回 false
+function skillLearnPre(id, depth = 0) {
+  const S = SKILLS[id]; if (!S || depth > 6) return false;
+  const snap = { sp: game.sp, lv: { ...game.skillLv } };
+  for (const pid in S.pre || {}) while ((game.skillLv[pid] || 0) < S.pre[pid]) {
+    if (skillUpBlock(pid) && !(skillLearnPre(pid, depth + 1) && !skillUpBlock(pid))) { game.sp = snap.sp; game.skillLv = snap.lv; return false; }
+    skillUpQuiet(pid);
+  }
+  return true;
+}
+function skillUpQuiet(id) {
+  const S = SKILLS[id], lv = game.skillLv[id] || 0;
+  game.sp -= skCost(S, lv); game.skillLv[id] = lv + 1;
+  if (!lv && !S.passive && !game.skillBar.includes(id)) { const k = game.skillBar.indexOf(null); if (k >= 0) game.skillBar[k] = id; }
+}
+// 一键加点：按学习等级从低到高，基础技能先、转职技能后，能升就升，直到 SP 用完或全部学满（前置自然按顺序满足）
+function skillAutoLearn() {
+  const { base, job } = skillPages(), ids = [...base, ...job].filter(id => SKILLS[id]);
+  const rank = id => skLvReq(SKILLS[id], 1) * 10 + (job.includes(id) ? 1 : 0);
+  ids.sort((a, b) => rank(a) - rank(b));
+  const sp0 = game.sp || 0; let n = 0, moved = true;
+  while (moved) { moved = false; for (const id of ids) if (!skillUpBlock(id)) { skillUpQuiet(id); n++; moved = true; } }
+  if (!n) { toastMsg(game.sp > 0 ? '没有能升级的技能了（等级、觉醒任务或前置不够）' : 'SP 不足', '#ffb0a0'); sfx.error(); return 0; }
+  if (game.player && typeof recalcStats === 'function') recalcStats(game.player);
+  save.write(); sfx.buff(); toastMsg(`一键加点：升级 ${n} 次，花费 SP ${fmtNum(sp0 - game.sp)}（剩余 ${fmtNum(game.sp)}）`, '#8aff9a');
+  return n;
+}
+const skPreOnly = why => !!why && /^需要 .+ Lv\.\d+$/.test(why);   // 只差前置：点 + 会先自动学前置
 function skillUp(id) {
-  const why = skillUpBlock(id); if (why) { toastMsg(why, '#ffb0a0'); sfx.error(); return false; }
+  let why = skillUpBlock(id);
+  if (skPreOnly(why) && skillLearnPre(id)) { why = skillUpBlock(id); if (!why) toastMsg('已自动学会前置技能', '#8aff9a', 'log'); }
+  if (why) { toastMsg(why, '#ffb0a0'); sfx.error(); return false; }
   const S = SKILLS[id], lv = game.skillLv[id] || 0;
   game.sp -= skCost(S, lv); game.skillLv[id] = lv + 1;
   if (!lv && !S.passive && !game.skillBar.includes(id)) { const k = game.skillBar.indexOf(null); if (k >= 0) game.skillBar[k] = id; }
@@ -126,9 +156,9 @@ Object.assign(menus, {
       const lock = S.job && S.job !== game.job || game.lvl < (S.lvReq || 1);
       return h('div', { class: 'ski2' + (id === sel ? ' sel' : '') + (lock ? ' lock' : ''), onclick: () => { if (this.skSel !== id) { this.skSel = id; sfx.click(); rf(); } } },
         icon(id),
-        h('div', { class: 'd' }, h('b', {}, S.name), h('div', { class: 'small' }, `Lv.${lv}/${skillMaxLv(S)}`, lv < skillMaxLv(S) ? h('span', { class: 'dim' }, ` · 需 Lv.${skLvReq(S, lv + 1)}`) : null)),
+        h('div', { class: 'd' }, h('b', {}, S.name), h('div', { class: 'small' }, `Lv.${lv}/${skillMaxLv(S)}`, lv < skillMaxLv(S) ? h('span', { class: 'dim' }, ` · 需 Lv.${skLvReq(S, lv + 1)}`) : null, skPreOnly(upWhy) ? h('span', { style: 'color:#ffb08a' }, ' · 缺前置') : null)),
         h('div', { class: 'pm' },
-          h('button', { class: 'btn pmb' + (upWhy ? ' off' : ''), title: upWhy || `升级（SP ${skCost(S, lv)}）`, onclick: ev => { ev.stopPropagation(); this.skSel = id; if (skillUp(id)) rf(); } }, '+'),
+          h('button', { class: 'btn pmb' + (upWhy && !skPreOnly(upWhy) ? ' off' : ''), title: skPreOnly(upWhy) ? `${upWhy}：点 + 先自动学会前置` : upWhy || `升级（SP ${skCost(S, lv)}）`, onclick: ev => { ev.stopPropagation(); this.skSel = id; if (skillUp(id)) rf(); } }, '+'),
           h('button', { class: 'btn pmb' + (dnWhy ? ' off' : ''), title: dnWhy || '降级（返还 SP）', onclick: ev => { ev.stopPropagation(); this.skSel = id; if (skillDown(id)) rf(); } }, '−')));
     }));
     // 详情
@@ -146,7 +176,7 @@ Object.assign(menus, {
         cur.length ? h('div', { class: 'sksec' }, h('div', { class: 'small dim' }, `当前 Lv.${lv}`), kv(cur)) : null,
         lv < skillMaxLv(S) ? h('div', { class: 'sksec' }, h('div', { class: 'small dim' }, `下一级 Lv.${lv + 1} · 需要等级 ${skLvReq(S, lv + 1)} · SP ${skCost(S, lv)}`), kv(nxt, '#8aff9a')) : h('div', { class: 'small gold' }, '已达到最高等级'),
         h('div', { class: 'row', style: 'margin-top:auto' },
-          h('button', { class: 'btn' + (upWhy ? ' off' : ''), onclick: () => { if (skillUp(sel)) rf(); } }, lv ? '升级' : '学习'),
+          h('button', { class: 'btn' + (upWhy && !skPreOnly(upWhy) ? ' off' : ''), onclick: () => { if (skillUp(sel)) rf(); } }, skPreOnly(upWhy) ? '学前置并学习' : lv ? '升级' : '学习'),
           h('button', { class: 'btn' + (skillDownBlock(sel) ? ' off' : ''), onclick: () => { if (skillDown(sel)) rf(); } }, '降级'),
           cmd ? h('button', { class: 'btn', onclick: () => { toggleCmdLock(sel); rf(); } }, cmdLocked(sel) ? '解锁指令' : '锁定指令') : null,
           S.switchOpt ? h('button', { class: 'btn', onclick: () => { toggleSwitchOpt(sel); rf(); } }, ((save.data.opts.swOff || {})[sel] ? '开启' : '关闭') + S.switchOpt) : null),
@@ -167,7 +197,7 @@ Object.assign(menus, {
     const reset = () => this.ask({ title: '重置技能', text: '把所有技能降回初始等级，并返还全部 SP？', okText: '重置', danger: true, ok: () => { resetSkills(); rf(); } });
     const body = h('div', { class: 'col skwin' }, tabs,
       h('div', { class: 'row', style: 'align-items:stretch;gap:.8em' }, list, detail),
-      h('div', { class: 'row small dim', style: 'justify-content:space-between' }, h('span', {}, '技能栏：拖入技能 / 选中技能后点格子；拖出或右键清空'), h('button', { class: 'btn', style: 'font-size:.9em;padding:.2em .8em', onclick: reset }, '重置技能')),
+      h('div', { class: 'row small dim', style: 'justify-content:space-between' }, h('span', {}, '技能栏：拖入技能 / 选中技能后点格子；拖出或右键清空'), h('span', { class: 'row', style: 'gap:.4em' }, h('button', { class: 'btn', 'data-autolearn': 1, style: 'font-size:.9em;padding:.2em .8em;background:linear-gradient(180deg,#c8902a,#7a4a10);border-color:#ffd070', title: '按学习等级从低到高自动升级所有能学的技能（前置会先学）', onclick: () => { if (skillAutoLearn()) rf(); } }, '一键加点'), h('button', { class: 'btn', style: 'font-size:.9em;padding:.2em .8em', onclick: reset }, '重置技能'))),
       bar);
     return this.win('技能', body, { w: 54 });
   },

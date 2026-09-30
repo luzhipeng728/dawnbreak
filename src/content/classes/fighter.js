@@ -379,7 +379,7 @@ defSkill('f_tornado', { name: '旋风腿', cls: 'fighter', lvReq: 18, mp: 50, cd
       hits: [HB(0.12, 0.16 + n * 0.1, [-96, 108, 38, -12, 118], skillDmg(1.15, 0.06, lv), { rep: 0.1, max: n, radial: true, knock: -90, airLift: 200, stun: 0.35, hs: 0.035, snd: 'blunt' })] }; } });
 
 /* ---- 职业定义 ---- */
-CLASSES.fighter = { name: '格斗家', ready: false, hp0: 1800, hpPer: 150, mp0: 700, mpPer: 40, atk0: 480, atkPer: 58, str0: 7, strPer: 2.2, def0: 300, defPer: 28, crit: 0.08, speed: 165, runSpeed: 300,
+CLASSES.fighter = { name: '格斗家', ready: true, hp0: 1800, hpPer: 150, mp0: 700, mpPer: 40, atk0: 480, atkPer: 58, str0: 7, strPer: 2.2, def0: 300, defPer: 28, crit: 0.08, speed: 165, runSpeed: 300,
   desc: '以拳脚为武器的武斗家。男格斗家主要用腿，上踢、膝击、下段踢衔接抓取与投技；转职后可以成为气功师、散打、街霸或柔道家。',
   model: () => buildSwordsman(PAL_FIGHTER, { weapon: null, hair: 'short', hat: 'bandana', scarf: false, pauldron: false, coatTail: false }),
   acts: FIGHTER_ACTS, slashCol: '#ffb04a', dmgType: 'phys', airMax: 1,

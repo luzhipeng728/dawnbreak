@@ -5,10 +5,12 @@
 //       node build.mjs --web      （只出网页版）  node build.mjs --offline（只出离线版）
 // 版本号 BUILD_ID = 网页版页面内容的哈希（内容不变就不变，两个版本共用）；网页版另写 dist/web/version.json { id, time, notes }，
 // 在线的页面轮询它发现新版本（net/liveupdate.js）；notes 用环境变量 NOTES，没给就取最近几条 feat / fix 提交的标题
+// 网页版另写 dist/web/catalog.json（物品 / 职业目录，后台管理 /admin 用，见 tools/item_catalog.mjs）
 import fs from 'fs';
 import crypto from 'crypto';
 import path from 'path';
 import { execFileSync } from 'child_process';
+import { writeCatalog } from './tools/item_catalog.mjs';
 const ROOT = path.dirname(new URL(import.meta.url).pathname);
 const SRC = path.join(ROOT, 'src'), ART = path.join(ROOT, 'art', 'final'), DIST = path.join(ROOT, 'dist');
 const args = process.argv.slice(2), want = k => !args.length || args.includes('--' + k);
@@ -84,6 +86,7 @@ if (want('web')) {
   for (const f of files) { const d = path.join(out, 'assets', f); fs.mkdirSync(path.dirname(d), { recursive: true }); fs.copyFileSync(path.join(ART, f), d); }
   const page = html(js); fs.writeFileSync(path.join(out, 'index.html'), page);
   fs.writeFileSync(path.join(out, 'version.json'), JSON.stringify({ id: BUILD_ID, time: new Date().toISOString(), notes: patchNotes() }));
+  writeCatalog(js, out, BUILD_ID);
   const artKB = files.reduce((s, f) => s + fs.statSync(path.join(ART, f)).size, 0) / 1024;
   console.log(`dist/web/index.html: ${(page.length / 1024).toFixed(0)} KB + ${files.length} 个素材文件（${(artKB / 1024).toFixed(1)} MB，按需加载），版本 ${BUILD_ID}`);
 }

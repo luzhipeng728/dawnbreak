@@ -17,7 +17,7 @@ step('物品');
 const lib = await ev(() => {
   const D = k => ITEMS[k], all = [...CDR60.legend, ...CDR60.sand].filter(k => !D(k).cls || clsOpen(D(k).cls)), WT = Object.keys(WTYPES).filter(t => clsOpen(WTYPES[t].cls));   // 还没开放的职业（格斗家 ready:false）的流沙武器不算
   const bad = all.filter(k => { const x = D(k); return !x || x.lvl !== 50 || JSON.stringify(Object.keys(x.fx || {})) !== '["cdr"]' || x.proc || !x.noDrop; });
-  return { legend: CDR60.legend.slice(), setPieces: SETS.set_hourglass.pieces.slice(), n: all.length, bad,
+  return { nNewW: WT.filter(t => WTYPES[t].cls === 'fighter').length, legend: CDR60.legend.slice(), setPieces: SETS.set_hourglass.pieces.slice(), n: all.length, bad,
     legendOk: CDR60.legend.every(k => D(k).rar === 4 && D(k).fx.cdr === 0.1 && D(k).set === 'set_hourglass'),
     sandOk: CDR60.sand.every(k => D(k).rar === 3 && D(k).fx.cdr === 0.06 && !D(k).set),   // 没开放职业的也要是同样的神器（开放后直接用）
     armor: Object.keys(ATYPES).every(a => ARMOR_SLOTS.every(s => D(`sand_${a}_${s}`) && D(`sand_${a}_${s}`).atype === a)),
@@ -27,7 +27,7 @@ const lib = await ev(() => {
     look: WT.filter(t => weaponArtOf(makeItem(`sand_${t}`), WTYPES[t].cls) !== `${t}_r3`),
     src: itemSourceText('sand_katana'), problems: G60.problems.slice() };
 });
-check(lib.n === 50 && !lib.bad.length, `50 件（5 传说 + 45 神器），都是 Lv50、只有 cdr 特效、没有 proc、不进随机池`, lib.bad);
+check(lib.n === 50 + lib.nNewW && !lib.bad.length, `${lib.n} 件（5 传说 + 45 神器 + 开放职业新增的武器类型），都是 Lv50、只有 cdr 特效、没有 proc、不进随机池`, lib.bad);
 check(lib.legendOk && lib.setPieces.join() === lib.legend.join(), `时之沙漏：${lib.legend.join(' ')}（传说，每件 -10%）`);
 check(lib.sandOk && lib.armor && lib.acc && lib.weapons, '流沙：5 种护甲 × 5 部位 + 首饰 3 + 辅助 + 魔法石 + 15 种武器（神器，每件 -6%）');
 check(!lib.inPool.length, '不在随机掉落池里', lib.inPool);

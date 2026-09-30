@@ -14,7 +14,7 @@
    ===================================================================== */
 const NEN = 'nenmaster';
 CLASSES.fighter.jobs.nenmaster = { art: 'job/nenmaster', name: '气功师', role: '中距离 · 念气（光属性魔法）', armor: 'cloth', dmgType: 'mag', growth: { int: 1.1, spr: 1.05 },
-  awakenName: '狂虎帝', awakenName2: '念皇', awakenName3: '归元·气功师', ready: false,
+  awakenName: '狂虎帝', awakenName2: '念皇', awakenName3: '归元·气功师', ready: true,
   desc: '以念气为武器的格斗家。念气珠环绕周身自动出击，念兽·龙虎啸让普攻化为光属性魔法，二觉的风雷能量槽攒满后开启风雷啸；念气罩护住罩内的队友。光属性魔法伤害职业。',
   skills: [], anims: {} };
 const NEN_COL = '#ffd23a', NEN_WHITE = '#fff4c8', NEN_DEEP = '#f0a020', NEN_BOLT = '#fff39a';

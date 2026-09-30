@@ -15,7 +15,7 @@ check(r0.acct === 6 && r0.bagLeft === 0, `老存档背包里的 6 张券收进�
 // 角色 1（乙）进游戏，物品栏按钮用 1 张
 const r1 = await page.evaluate(async () => { save.select(1); await startGameNow(save.data.cls); while (menus.stack.length) menus.close(menus.stack[menus.stack.length - 1]); menus.open('inv'); await new Promise(r => setTimeout(r, 300));
   const sp0 = game.sp || 0, b = document.querySelector('[data-maxlv]'); const txt = b && b.textContent; b && b.click(); return { txt, lvl: game.lvl, left: save.acct.maxlv, sp: game.sp - sp0 }; });
-let sp = 0; for (let l = 31; l <= 60; l++) sp += 28 + l;
+let sp = 0; for (let l = 31; l <= 60; l++) sp += 6 * (28 + l);   // SP_MUL = 6
 check(r1.txt === '一键满级 ×6' && r1.lvl === 60 && r1.left === 5 && r1.sp === sp, `另一个角色在物品栏也能用：${r1.txt} → Lv.${r1.lvl}，剩 ${r1.left}`, JSON.stringify(r1));
 // 邮件领取：券直接进账号
 const r2 = await page.evaluate(() => { const got = sxApplyClaim({ items: [{ key: 'tk_maxlv', n: 3 }] }); return { got, left: save.acct.maxlv, bag: inv.items.filter(i => i.key === 'tk_maxlv').length }; });

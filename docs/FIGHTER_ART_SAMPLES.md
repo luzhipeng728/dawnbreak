@@ -39,7 +39,7 @@
 |---|---|
 | move（第三版） | idle、run1~8、jump1~5、f_jkick1/2 |
 | combo（样表，f_mid2 单格返修） | f_jab1/2、f_low1/2、f_mid1/2、f_axe1/2、f_high1/2、f_shoulder1/2、f_grab、f_knee、f_crouch |
-| walk（第二版，只切走路格） | walk1~8 |
+| walk（第三版：放松的日常走路，§8；第 9~15 格是备份不切） | walk1~8 |
 | react（= walk 第一版，只切受击格；第二版的受击格把远侧拳的棒画成了嘴边的褐色棍子） | hit1~3、airUp、tumble、air、bounce |
 | base2 | down、getup、tech、held、charge、roll、victory、f_lift、f_slam、f_spin1/2、f_stomp、f_dive、f_flykick、f_palm1 |
 | base3 | f_palm2、f_focus、f_seal、f_quake、f_smash、**fn_** meditate / ride / thrust1 / thrust2、**fs_** elbow / kneekick / rush1 / rush2 / dashpunch / divepunch |
@@ -56,7 +56,7 @@
 
 ### 4.3 给外观块（B2）：锚点
 - 每帧 `head`（91/91）、`cut`（90/91，roll 缩成一团不写）、拳头锚点 `wpn` / `wpn2`（字段同三职业 + `side`：'n' 近侧 / 'f' 远侧；`auto`：1 = 按绑带颜色找的、2 = 走路一圈里抄的，只有握点和前臂方向，没有握拳轮廓 `hand`）。
-- 覆盖：两只拳都有 46 帧、一只 44 帧、没有 1 帧（`fs_elbow`，模型没画棒、兜底也找不准）；兜底锚点 16 个。**没锚点的拳头多半是真被身体挡住了**；露在外面但没锚点的（走路的后手护在下巴下、f_jab1/2 的后手等）穿拳上武器时是空拳 → cover 模式要能接受“这一帧只有一只手”。
+- 覆盖（走路重画、B2 补了 `auto: 3` 之后）：两只拳都有 59 帧、一只 32 帧、没有 0 帧；兜底锚点 26 个（B1 的 `auto: 1` + B2 的 `auto: 3`）。**没锚点的拳头多半是真被身体挡住了**；露在外面但没锚点的（走路的后手护在下巴下、f_jab1/2 的后手等）穿拳上武器时是空拳 → cover 模式要能接受“这一帧只有一只手”。
 - 远侧拳的锚点也是 `front: 1`（拳头露在外面才会有锚点），但它在身后那只胳膊上，cover 图会盖在身体上面：B2 画远侧手套时要用握拳轮廓 / 身体遮罩裁一下。
 - B2 补了 14 只露在外面、之前没锚点的拳（`auto: 3`，`art/tools/fighter_fists.py`，逐帧看过）：walk1~8 护在下巴前的后手、run3 / run4 / run7 往后甩的手、f_jab1 / f_jab2 的后手、fs_elbow 的前手；现在两只拳都有 59 帧、一只 32 帧、没有 0 帧（剩下的一只多半真被身体挡住）。拳上武器的画法见 CLASS_PLAN_FIGHTER.md §4.5。
 - 时装（B2）直接拿 `art/src/fighter/sheets/fighter_<表>.png` 当占位表（已经带绿棒），不用再跑 `avatar_gen.py wpn`；react 表只切受击格、walk 表只切走路格（`SHEETS` 里名字是 None 的格不切）。
@@ -67,10 +67,10 @@
 ## 5. 体检（和三职业原装同一把尺子）
 | 项 | 格斗家 | 鬼剑士 | 神枪手 | 魔法师 |
 |---|---|---|---|---|
-| 衣服闪烁（avatar_flicker 离群分）walk / run | 0.165 / 0.110 | 0.143 / 0.075 | 0.166 / 0.206 | 0.100 / 0.162 |
+| 衣服闪烁（avatar_flicker 离群分）walk / run | 0.187（idle 拳架和走路不同；walk1~8 之间 0.098）/ 0.110 | 0.143 / 0.075 | 0.166 / 0.206 | 0.100 / 0.162 |
 | 头部比例（每帧对 idle，偏差中位数；>12% 的帧） | 0.02；bounce、fg_press（躺 / 平趴，头的匹配不准） | 0.02；无 | 0.04；11 帧 | 0.04；2 帧 |
 | 动作表逐格（sheetflicker 直方图差） | 0.10~0.17 | 0.07~0.15 | — | — |
-| animfeel 走：头部每步最大跳 / 起伏 / 步幅匹配 | 0.42 / 0.39 / 1.04 | 0.48 / 0.78 / 1.14 | | |
+| animfeel 走：头部每步最大跳 / 起伏 / 步幅匹配 | 1.15 / 1.28 / 0.83（放松走路，§8；拳架版 0.42 / 0.39 / 1.04） | 0.48 / 0.78 / 1.14 | | |
 | animfeel 跑：头部每步最大跳 / 起伏 / 步幅匹配 | 0.91 / 1.28 / 0.72 | 3.24 / 5.75 / 0.66 | | |
 | animfeel 普攻 1 / 跑攻换帧头部跳动 | 12.1 / 13.9（缓动收得住） | 8.8 / 48.4 | | |
 | 游戏内（`?fighter=1`） | 41 个片段逐帧对得上、0 兜底、0 报错 | | | |
@@ -98,7 +98,20 @@
 - 拳头锚点：绑带和皮肤同色，颜色兜底只能配人工核对；靠谱的是让模型画出两根棒（提示词写“两只拳都要露出棒”）。脚尖棒只在踢腿帧出现，按帧列出来比写分类器稳。
 - 一张表坏了几格别整张重出：好的格和另一版的好格分成两张“表”切（walk / react），各自归一比例。
 
-## 8. 命令
+## 8. 上线后返修：走路（2026-09-30，玩家反馈“哪有日常这么走路的”）
+- 问题：walk1~8 一直是拳击护架（两拳贴在下巴前，拳头高度 = 头→脚的 0.26~0.31，鬼剑士走路 0.49~0.62），城镇里戴上拳套更明显。
+- 参照：官方男格斗家的逐帧素材（The Spriters Resource「Dungeon Fighter Online / Male Fighter (Claw)」asset 169376，161 帧；图床对脚本返回 403，没能逐帧看）+ 本作鬼剑士 / 神枪手的走路帧（直立、两臂下垂自然摆）：城镇走路是日常步态，拳架只在 idle。
+- 改法：walk 表第三版（1 张图）：姿势小人换成 poseguide 的标准走路（和三职业同一套：两臂和腿反向摆 ±26°、前臂微弯，拳头在胯旁），第 1 格改成放松站直（拳架参考格会把走路带成拳架），第 9~15 格是 walk1~7 的备份；`CYCLE_FILL` 关掉（两臂在摆，不能抄邻帧）、去掉走路后手的 `HAND_FIX`。idle 拳架、跑步不动（跑步两臂前后交替摆：前拳在胸前 0.33、后拳在身后 0.40，不是贴在下巴上）。
+- 锚点：8 帧都有两只拳（棒子 12 个 + 绑带颜色兜底 4 个：walk1/2 近侧、walk4/6 远侧，逐个看过都在拳头上），近侧 / 远侧和姿势小人的摆臂相位一致；其余 83 帧的锚点（含 B2 的 `auto: 3`）逐项对比没变。B2 `fighter_fists.py` 的 `ACCEPT` 里 walk1~8 是给旧拳架后手的，现在这些帧已有两只拳，`apply` 会跳过（无害，可删）。
+- 时装：B2 的 6 套时装走路帧是从原装 `walkreact` 拼表改图出来的 → 重拼 `fighter_base/fighter_walkreact.png`、清掉比例缓存，每套重出 1 张 walkreact（6 张图），`fighter_art.py looks-walk` 只切 walk1~8（受击格沿用已审过的旧帧）；6 套 × 8 帧都是两只拳锚点、和原装轮廓重合度都 ≥ 0.6，其余帧 / 锚点没变。旧表备份在 `art/src/avatar/sets/<套装>/_pre/fighter_walkreact_guard.png`、`fighter_base/*_guard.*`。
+- 生图：原装 1 + 时装 6 = 7 次（B1 累计 19 次）。
+- 指标（`WEB=1 node test/animfeel.mjs fighter`）：走 帧停留全 4 步（CV 0）、头部每步最大跳 1.15、起伏 1.28、步幅匹配 0.83（鬼剑士 0.48 / 0.78 / 1.14，神枪手步幅 0.57、魔法师 0.63）；衣服闪烁 walk1~8 最大离群 0.098（鬼剑士 0.154）；动作表逐格直方图差 0.087（鬼剑士 walk 表 0.115）；头部比例偏差中位 0.02 不变。
+- 前后对比（城镇赫顿玛尔，上一行格斗家、下一行鬼剑士，同一套输入）：`art/work/fighter_samples/before_town_walk_{1x,4x}.png` → `after_town_walk_{1x,4x}.png`（`node art/tools/fighter_shots.mjs --town` + `fighter_art.py town <前缀>`）。
+
+![改前](../art/work/fighter_samples/before_town_walk_4x.png)
+![改后](../art/work/fighter_samples/after_town_walk_4x.png)
+
+## 9. 命令
 ```
 python3 art/tools/fighter_art.py guides | ref | design | sheets [--only 表] [--force] | touch 表 格 | frames [表...] [--dry] | check | class | review
 node build.mjs && node art/tools/fighter_shots.mjs          # 游戏内连拍 + 41 个片段逐帧核对 → art/work/fighter_samples/engine_*.jpg

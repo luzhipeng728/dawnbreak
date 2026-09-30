@@ -92,6 +92,8 @@ run botrun    env SPEED=3 node test/botrun.mjs lorien:3:0:sword,lorien_deep:4:0:
 run serverapi node server/test/api.mjs
 run restore   node --disable-warning=ExperimentalWarning server/test/restore.mjs
 run arenasrv  node --disable-warning=ExperimentalWarning server/test/arena.mjs
+run adminsrv  node --disable-warning=ExperimentalWarning server/test/admin.mjs
+run adminui   node test/admin_console.mjs
 run netacct   node test/net_account.mjs
 run liveupd   node test/liveupdate.mjs
 # 社交组、联机组后续的测试加在这里

@@ -561,7 +561,7 @@ CLASSES.fighter.passives.push(p => {
 
 /* ================= 转职登记 ================= */
 CLASSES.fighter.jobs.grappler = { art: 'job/grappler', name: '柔道家', role: '近战 · 抓取 / 投技（物理）', armor: 'light', growth: { str: 1.1, vit: 1.06 },
-  awaken: 'fg_awaken', awakenName: '风林火山', awakenName2: '宗师', awakenName3: '归元·柔道家', ready: false,
+  awaken: 'fg_awaken', awakenName: '风林火山', awakenName2: '宗师', awakenName3: '归元·柔道家', ready: true,
   desc: '把抓取练到极致的格斗家。几乎所有技能都是抓取，抓住时自己无敌；抓不动的敌人自动改成抓轰炮，冲击波加上无视霸体的强制硬直。暴力抓取把周围的敌人一起卷过来，冲刺中能滑行抓取，野蛮冲撞 / 彗星冲击命中后连环抓取。',
   auto: ['fg_grabcannon', 'fg_gauntlet'],
   skills: ['fg_grabcannon', 'fg_takedown', 'fg_overgrab', 'fg_slide', 'fg_light', 'fg_gauntlet', 'fg_combo', 'fg_fling', 'fg_tackle', 'fg_breakdown', 'fg_necksnap',

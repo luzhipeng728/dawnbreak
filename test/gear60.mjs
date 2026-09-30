@@ -262,7 +262,8 @@ if (run('content')) {
     const eq = (a, b) => JSON.stringify(norm(a)) === JSON.stringify(norm(b));
     for (const [K, S] of Object.entries(G60.succ)) { const O = G60.orig[K], D = ITEMS[S]; if (!O || !D || !want(D)) continue; if (D.lvl !== O.lvl || !eq(D.fx, O.fx) || !eq(D.proc, O.proc) || D.slot !== O.slot) inhBad.push(`${S}（${K}）`); }
     const noIcon = E.concat(named).filter(want).filter(D => !ASSET_SRC['icon/' + (D.icon || 'item_' + D.key)]).map(D => D.key);
-    const artKey = D => D.pal && !WEAPON_IMG[D.key] ? `${D.wtype}_r4` : D.key;   // 配色变体（格斗家，物品上写 pal）：拿在手里 = <类型>_r4 + 换色，不另画图
+    // 配色变体（格斗家，物品上写 pal）：拿在手里 = <类型>_r4 + 换色，不另画图
+    const artKey = D => D.pal && !WEAPON_IMG[D.key] ? `${D.wtype}_r4` : D.key;
     const noArt = E.filter(D => D.slot === 'weapon' && want(D) && (!WEAPON_IMG[artKey(D)] || !ASSET_SRC['weapon/' + artKey(D)])).map(D => D.key);
     // 职业之间持平（武器）：每个开放职业的领主神器 ≥ 6 件、深渊专属武器 21~30 ≥ 3 / 暗黑城深渊（Lv38）≥ 5 / 时空之门深渊（T3）≥ 5、官方 T1 / T2 / T3 各 ≥ 5
     const parity = [];
@@ -293,7 +294,8 @@ if (run('jobs')) {
     const out = { rows: [], lack: [], weak: [], stat: [], cmp: [], order: [], magItem: [] };
     const W = Object.values(ITEMS).filter(D => D.kind === 'equip' && D.slot === 'weapon');
     const dropKeys = new Set(); for (const id in DROP_TABLES) for (const e of DROP_TABLES[id].boss) dropKeys.add(e[0]);
-    const epicOk = D => D.rar === 5 && (dropKeys.has(D.key) || D.abyssRegion || (!D.noDrop && !D.abyss));   // 能刷到：领主表 / 深渊专属 / 随机池
+    // 能刷到：领主表 / 深渊专属 / 随机池
+    const epicOk = D => D.rar === 5 && (dropKeys.has(D.key) || D.abyssRegion || (!D.noDrop && !D.abyss));
     const shopWeapons = L => new Set(Object.values(SHOPS).flatMap(S => S.tabs.flatMap(T => typeof T.goods === 'function' ? T.goods(L) : T.goods)).filter(k => ITEMS[k] && ITEMS[k].slot === 'weapon'));
     const GEARS = SLOTS.filter(s => !s.startsWith('av_') && s !== 'title');
     const rareIt = D => { const it = makeItem(D.key, 1, { grade: 2 }), R = mulberry(keySeed((D._def && D._def.seed) || D.key));
@@ -366,6 +368,30 @@ if (run('jobs')) {
   const mi = J.magItem.filter(x => !known(x)), mk = J.magItem.filter(known);
   check(!mi.length, `魔法转职能装的 Lv31+ 史诗 / 领主神器都有魔法属性（有物理暴击就有魔法暴击、有力量就有智力）${mk.length ? `；已知：机械师 ${mk.length} 件` : ''}`, mi.slice(0, 12).join('；'));
   check(!J.order.length, '格斗家每类武器 Lv55 < T1 < T2 < T3（主口径：手套按气功师，其余按物理转职）', J.order.join('；'));
+  // 5. 异界套装（传说，每转职一套）：每个开放职业至少 2 个转职有，格斗家 4 个转职都有；真放一次招牌技能：冷却减少 + 2 秒增伤生效，深渊掉落优先本转职
+  await page.goto(`${URL_BASE}?test&cls=fighter&mobs=0&mute`); await page.waitForFunction(() => window.__READY && game.player, null, { timeout: 60000 });
+  const OW = await ev(() => {
+    game.paused = true; window.toastMsg = () => {}; const out = { cnt: {}, bad: [] }, p = game.player;
+    for (const cls of openClasses()) out.cnt[cls] = openJobs(cls).filter(j => Object.values(SETS).some(S => S.job === j)).length;
+    for (const job of openJobs('fighter')) {
+      const S = Object.values(SETS).find(S => S.job === job);
+      if (!S) { out.bad.push(`${job} 没有异界套装`); continue; }
+      const P = S.bonus[3].proc, id = P[0].skill, K = SKILLS[id];
+      if (!K || K.job !== job || K.passive) { out.bad.push(`${job} 套装技能 ${id} 不是本转职的主动技能`); continue; }
+      game.job = job; if (typeof onJobChange === 'function') onJobChange(p, job);
+      game.lvl = 60; game.skillLv[id] = 5;
+      const cast = () => { recalcStats(p); Object.assign(p, { cool: {}, mp: 5000, invul: 0 }); p.buffs = {}; p.act = null; p.setState('idle'); return castSkill(p, id); };
+      cast(); const want = (p.cool[id] || 0) - P[0].sec;
+      for (const k of S.pieces) inv.equip[ITEMS[k].slot] = makeItem(k);
+      const ok = cast(), cd = p.cool[id] || 0, buff = Object.keys(p.buffs).some(k => k.includes(S.pieces[0].replace(/_neck$/, '')));
+      if (!ok || Math.abs(cd - want) > 0.05 || !buff) out.bad.push(`${job} ${K.name}：施放 ${ok} 冷却 ${cd.toFixed(2)}（应为 ${want.toFixed(2)}）增伤 ${buff}`);
+      const drops = new Set(); for (let i = 0; i < 40; i++) drops.add(abyssOtherworldPiece());
+      if ([...drops].some(k => !S.pieces.includes(k))) out.bad.push(`${job} 深渊掉落的异界部件不是本转职的`);
+      for (const k of S.pieces) delete inv.equip[ITEMS[k].slot];
+    }
+    return out;
+  });
+  check(!OW.bad.length && Object.values(OW.cnt).every(n => n >= 2) && OW.cnt.fighter === 4,`异界套装：每个职业有套装的转职 ${JSON.stringify(OW.cnt)}（格斗家 4 个都有，施放招牌技能冷却减少 + 增伤、深渊掉本转职的）`, OW.bad.join('；'));
 }
 
 /* ================= power ================= */
@@ -382,7 +408,8 @@ if (run('power')) {
       if ((J.dmgType && J.dmgType !== (C.dmgType || (cls === 'mage' ? 'mag' : 'phys'))) || CLASS_WTYPES(cls).some(t => (WTYPES[t].jobs || []).includes(job))) rows.push([cls, job]); } }
     for (const [cls, job] of rows) {
       game.player = makePlayer(cls); game.job = job; const p = game.player, J = job && CLASSES[cls].jobs[job], row = job ? `${cls}:${job}` : cls;
-      game.skillLv = {}; if (J) for (const id of J.auto || []) game.skillLv[id] = 1;   // 转职自动学会的被动（街霸「邪功修炼」：力智取高）
+      // 转职自动学会的被动（街霸「邪功修炼」：力智取高）
+      game.skillLv = {}; if (J) for (const id of J.auto || []) game.skillLv[id] = 1;
       // 按职业 / 转职的伤害类型算（魔法师、气功师、街霸 = 魔法）；不用 mainDmgType：启动页是鬼剑士，game.skillLv 里是鬼剑士的物理技能，会把魔法师也算成物理（矛 vs 稀有魔杖）
       const TYPE = (J && J.dmgType) || p.dmgType || 'phys', score = () => { const m = gearMetrics(p, TYPE); return Math.pow(m.off, 0.7) * Math.pow(m.ehp, 0.3); };
       // --why：把综合分拆成因子（攻击 / 暴击 / 伤害增加 / 速度 / 属强 / 有效生命），log 贡献 = 0.7·ln(输出因子比) 或 0.3·ln(生存比)

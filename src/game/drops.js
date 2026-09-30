@@ -24,7 +24,8 @@ const dropLvl = (t, dg) => { const L = dg ? dg.def.lvl : [t.lvl, t.lvl]; return 
 // opt：{ abyss（深渊派对：可出深渊专属，且偏向接近 lvl 的）, lo（最低等级） }
 function rollEpic(lvl, opt = {}) {
   const cls = game.player ? game.player.cls : 'sword';
-  const pool = EPICS.filter(E => { const D = ITEMS[E.key]; return D && E.lvl <= lvl + 3 && E.lvl >= (opt.lo || 0) && (!E.cls || E.cls === cls) && wtypeJobOk(D.wtype, game.job) && !D.noDrop && (opt.abyss || !D.abyss); });   // wtypeJobOk：转职专用的武器（拳套只有散打）不掉给别的转职
+  // wtypeJobOk：转职专用的武器（拳套只有散打）不掉给别的转职
+  const pool = EPICS.filter(E => { const D = ITEMS[E.key]; return D && E.lvl <= lvl + 3 && E.lvl >= (opt.lo || 0) && (!E.cls || E.cls === cls) && wtypeJobOk(D.wtype, game.job) && !D.noDrop && (opt.abyss || !D.abyss); });
   if (!pool.length) return null;
   // 越接近目标等级越容易出（深渊派对里更集中）
   const w = pool.map(E => 1 / (1 + Math.abs(lvl - E.lvl) * (opt.abyss ? 0.18 : 0.08)));

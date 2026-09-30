@@ -26,12 +26,13 @@ const lib = await ev(() => {
   const epicSets = Object.values(SETS).filter(S => S.epic), sizes = epicSets.map(S => S.pieces.length);
   const lv = [...new Set(ep.map(D => D.lvl))].sort((a, b) => a - b);
   const badIcon = ep.filter(D => !ASSET_SRC['icon/' + D.icon]).map(D => D.key);
-  return { n: ep.length, minW: Math.min(...Object.values(byW)), wtypes: Object.keys(byW).length, slots, epicSets: epicSets.length, has5: sizes.includes(5), has3: sizes.includes(3), maxLv: Math.max(...lv), lv, badIcon: badIcon.length, badIconList: badIcon.slice(0, 8), legend: Object.values(SETS).filter(S => S.job).length, cards: Object.keys(ITEMS).filter(k => ITEMS[k].orb).length };
+  const openW = Object.keys(WTYPES).filter(t => clsOpen(WTYPES[t].cls)).length;
+  return { n: ep.length, minW: Math.min(...Object.values(byW)), wtypes: Object.keys(byW).length, openW, slots, epicSets: epicSets.length, has5: sizes.includes(5), has3: sizes.includes(3), maxLv: Math.max(...lv), lv, badIcon: badIcon.length, badIconList: badIcon.slice(0, 8), legend: Object.values(SETS).filter(S => S.job).length, cards: Object.keys(ITEMS).filter(k => ITEMS[k].orb).length };
 });
-check(lib.n >= 120 && lib.wtypes === 15 && lib.minW >= 3, `史诗 ${lib.n} 件，15 种武器每种至少 ${lib.minW} 件`);
+check(lib.n >= 120 && lib.wtypes === lib.openW && lib.minW >= 3, `史诗 ${lib.n} 件，${lib.openW} 种武器（已开放职业）每种至少 ${lib.minW} 件`);
 check(['weapon', 'top', 'head', 'bottom', 'belt', 'shoes', 'neck', 'bracelet', 'ring', 'support', 'stone'].every(s => lib.slots[s] >= 2), '每个部位至少 2 件史诗', JSON.stringify(lib.slots));
 check(lib.epicSets >= 12 && lib.has5 && lib.has3 && lib.maxLv >= 30 && lib.maxLv <= 60, `史诗套装 ${lib.epicSets} 套（有 3 件 / 5 件套），最高 Lv${lib.maxLv}`);
-check(lib.legend === 6 && lib.cards >= 30, `异界套装 ${lib.legend} 套，怪物卡片 ${lib.cards} 张`);
+check(lib.legend === 10 && lib.cards >= 30, `异界套装 ${lib.legend} 套（格斗家 4 个转职各一套），怪物卡片 ${lib.cards} 张`);
 check(lib.badIcon === 0, '每件史诗都有专属图标', lib.badIconList.join(','));
 
 /* ---------- 2. 绑定 / 交易 ---------- */

@@ -47,6 +47,12 @@ content/classes/mage_battle_p1.js
 content/classes/mage_summoner_p1.js
 content/classes/mage_witch.js
 content/classes/mage_enchantress.js
+# 格斗家（男，docs/CLASS_PLAN_FIGHTER.md）：B0 骨架 + 4 个转职空壳（ready:false），之后各块只改自己的文件
+content/classes/fighter.js
+content/classes/fighter_nen.js
+content/classes/fighter_striker.js
+content/classes/fighter_brawler.js
+content/classes/fighter_grappler.js
 engine/touch.js
 game/drops.js
 game/progress.js
@@ -75,6 +81,7 @@ content/items/gear60_api.js
 content/items/epics60_w_sword.js
 content/items/epics60_w_gun.js
 content/items/epics60_w_mage.js
+content/items/epics60_w_fighter.js
 content/items/epics60_armor.js
 content/items/epics60_acc.js
 content/items/cdr60.js
@@ -112,6 +119,7 @@ content/quests/side.js
 content/quests/daily.js
 content/quests/job.js
 content/quests/witch.js
+content/quests/fighter.js
 content/quests/sky.js
 content/quests/behemoth.js
 # 区域流水线（docs/REGION_PIPELINE.md）：怪物技能库 + 领主机制库 → defineRegion(spec) 生成器 → 每个区域一个纯数据 spec（+ 可选的领主自定义钩子）

@@ -1,9 +1,9 @@
 // 装备好坏对比：背包格子角标 ▲▼=× 与 tooltip 总结；模拟穿戴不能改动玩家真实属性
-import { launch, URL_BASE } from './lib.mjs';
+import { launch, URL_BASE, openLists } from './lib.mjs';
 import fs from 'fs';
 const out = 'test/shots/compare'; fs.mkdirSync(out, { recursive: true });
 let fail = 0; const ok = (c, m, x = '') => { console.log(c ? '  ✓' : '  ✗', m, x); if (!c) fail++; };
-for (const cls of ['sword', 'gun', 'mage']) {
+for (const cls of (await openLists()).classes) {   // 已开放的职业（读 CLASSES，跳过 ready:false）
   const { browser, page, logs } = await launch({ width: 1280, height: 720 });
   await page.goto(`${URL_BASE}?town&mute&cls=${cls}`); await page.waitForFunction(() => window.__READY);
   await page.waitForTimeout(800);

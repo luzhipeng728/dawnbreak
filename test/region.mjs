@@ -9,7 +9,7 @@
 //   bot      机器人以区域等级（Lv30 全身 +12 史诗）通关每个地下城，统计用时 / 被击 / 死亡（BOT=abyss_<id>:sword 也能跑深渊；GEAR=base 只穿稀有装备、GEAR=rare 同级稀有 +7、GEAR=epic 同级最好的一套史诗 +7（ENH 改强化）、LV=等级，用来和老区域对照难度）
 // 默认全跑；环境变量 SPEED（默认 3）、BOT=地下城:职业,...（覆盖机器人的分配）。截图在 test/shots/region_<id>/
 // 整个测试只开一个无头浏览器（各部分用同一个页面换地址）
-import { launch, URL_BASE } from './lib.mjs';
+import { launch, URL_BASE, openLists } from './lib.mjs';
 import { BEST_KIT_SRC } from './lib_bestkit.mjs';
 import fs from 'fs';
 const id = process.argv[2] || 'siroco';
@@ -484,9 +484,9 @@ if (parts.includes('abyss')) {
 
 /* ---------------- 7. 机器人通关（区域等级 全身 +12 史诗）---------------- */
 if (parts.includes('bot')) {
-  const CLS = ['sword', 'gun', 'mage'];
+  const CLS = (await openLists(page)).classes;   // 已开放的职业（读 CLASSES，跳过 ready:false）
   const DUNGEONS_LV = await page.evaluate(ids => Object.fromEntries(ids.filter(d => DUNGEONS[d]).map(d => [d, DUNGEONS[d].lvl[1]])), [...R.dungeons, ...(process.env.BOT || '').split(',').map(x => x.split(':')[0])]);   // 机器人用各地下城自己的等级
-  const plan = process.env.BOT ? process.env.BOT.split(',').map(s => s.split(':')) : R.dungeons.map((d, i) => [d, CLS[i % 3]]);
+  const plan = process.env.BOT ? process.env.BOT.split(',').map(s => s.split(':')) : R.dungeons.map((d, i) => [d, CLS[i % CLS.length]]);
   const rows = [];
   for (const [did, cls] of plan) {
     await open(`town&mute&cls=${cls}`);

@@ -65,6 +65,7 @@ Object.assign(menus, {
     const sel = this.csSel, d = chars[sel];
     const start = i => {
       if (!chars[i] || this.csBusy) return;
+      if (!charOpen(chars[i])) { sfx.error(); toastMsg(`「${chars[i].name || '这个角色'}」的职业在当前版本还不能进入，请刷新页面更新到最新版本（角色数据已原样保留）`, '#ffb08a'); return; }
       this.csBusy = true; sfx.click();
       save.select(i); save.apply(); this.close('charselect');
       Promise.resolve(startGame(save.data.cls)).finally(() => { this.csBusy = false; });
@@ -73,12 +74,16 @@ Object.assign(menus, {
     for (let i = 0; i < MAX_CHARS; i++) {
       const c = chars[i];
       if (!c) { slots.push(h('div', { class: 'cslot empty', onclick: () => { sfx.click(); this.close('charselect'); this.open('newgame'); } }, h('div', { class: 'plus' }, '+'), h('div', { class: 'small' }, '创建角色'))); continue; }
-      const card = h('div', { class: 'cslot' + (i === sel ? ' sel' : ''), 'data-i': i, onclick: () => { if (this.csSel !== i) { this.csSel = i; sfx.click(); this.refresh('charselect'); } }, ondblclick: () => start(i) },
-        h('div', { class: 'lv' }, `Lv.${c.lvl}`), csCharArt(c), h('div', { class: 'stage' }),
-        h('div', { class: 'nm' }, c.name || csClassName(c.cls)), h('div', { class: 'job' }, csClassName(c.cls, c.job)));
+      const off = !charOpen(c);   // 不认识 / 还没开放的职业：原样保留，显示“需要更新”
+      const card = h('div', { class: 'cslot' + (i === sel ? ' sel' : '') + (off ? ' off' : ''), 'data-i': i, onclick: () => { if (this.csSel !== i) { this.csSel = i; sfx.click(); this.refresh('charselect'); } }, ondblclick: () => start(i) },
+        h('div', { class: 'lv' }, `Lv.${c.lvl}`), off ? h('div', { class: 'cart', style: 'display:flex;align-items:center;justify-content:center;font-size:2.4em;opacity:.5' }, '?') : csCharArt(c), h('div', { class: 'stage' }),
+        h('div', { class: 'nm' }, c.name || csClassName(c.cls)), h('div', { class: 'job' }, off ? '需要更新' : csClassName(c.cls, c.job)));
       slots.push(card);
     }
-    const info = d ? h('div', { class: 'csinfo' },
+    const dOff = d && !charOpen(d);
+    const info = dOff ? h('div', { class: 'csinfo' }, h('div', { class: 'row' }, h('b', { class: 'big' }, d.name || '角色'), h('span', { class: 'gold' }, `Lv.${d.lvl}`)),
+      h('div', { class: 'small', style: 'color:#ffb08a' }, '这个角色的职业在当前版本还不能进入：请刷新页面更新到最新版本。角色数据已原样保留，不会丢失。'))
+      : d ? h('div', { class: 'csinfo' },
       h('div', { class: 'row' }, h('b', { class: 'big' }, d.name || csClassName(d.cls)), h('span', { class: 'gold' }, `Lv.${d.lvl}`), h('span', {}, csClassName(d.cls, d.job) + (d.job ? `（${CLASSES[d.cls].name}）` : ''))),
       h('div', { class: 'row small' }, h('span', {}, `所在位置：${csLocName(d)}`), h('span', {}, `金币：${fmtNum(d.gold || 0)} G`), h('span', {}, `疲劳：${d.fatigue}/${FATIGUE_MAX}`), h('span', {}, `游戏时间：${csFmtPlay(d.playTime)}`)))
       : h('div', { class: 'csinfo dim' }, chars.length ? '选择一个角色' : '还没有角色。点击空的角色位或“创建角色”，开始你的冒险吧！');
@@ -90,14 +95,14 @@ Object.assign(menus, {
         ok: () => { save.remove(sel); save.data = null; this.csSel = Math.min(sel, save.chars.length - 1); toastMsg(`角色 ${d.name} 已删除`, '#ffb0a0'); this.refresh('charselect'); } });
     };
     const rename = () => {
-      if (!d) return; sfx.click();
+      if (!d || dOff) return; sfx.click();
       this.ask({ title: '角色改名', okText: '改名',
         text: `给 <b class="gold">${escHtml(d.name)}</b>（Lv.${d.lvl} ${escHtml(csClassName(d.cls, d.job))}）起个新名字（${NAME_RULE.min}~${NAME_RULE.max} 个字符，汉字算 2 个）：`,
         input: { placeholder: d.name, max: 16, check: v => v === d.name ? '和现在的名字一样' : checkCharName(v, sel) },
         ok: v => { const old = d.name; d.name = v; save.persist(); toastMsg(`${old} 已改名为 ${v}`, '#8aff9a'); this.refresh('charselect'); } });
     };
     const maxlv = () => {   // 账号共享的一键满级券：选角界面直接给选中的角色用（改存档里的等级 / SP，和游戏内用券一样）
-      if (!d || (d.lvl || 1) >= MAX_LVL || !(save.acct && save.acct.maxlv > 0)) return; sfx.click();
+      if (!d || dOff || (d.lvl || 1) >= MAX_LVL || !(save.acct && save.acct.maxlv > 0)) return; sfx.click();
       this.ask({ title: '一键满级', okText: '使用',
         text: `给 <b class="gold">${escHtml(d.name)}</b>（Lv.${d.lvl}）使用 1 张一键满级券，直接升到 Lv.${MAX_LVL}？（剩 ${save.acct.maxlv} 张，账号共享）`,
         ok: () => { const from = d.lvl || 1; save.acct.maxlv--; for (let l = from + 1; l <= MAX_LVL; l++) d.sp = (d.sp || 0) + 28 + l; d.lvl = MAX_LVL; d.exp = 0; save.persist(); toastMsg(`${d.name} 一键满级：Lv.${from} → Lv.${MAX_LVL}`, '#ffe070'); this.refresh('charselect'); } });
@@ -106,10 +111,10 @@ Object.assign(menus, {
       h('div', { class: 'cshd' }, h('div', { class: 'logo' }, '选择角色'), h('div', { class: 'small dim' }, `角色位 ${chars.length}/${MAX_CHARS}`)),
       h('div', { class: 'csrow' }, slots), info,
       h('div', { class: 'row csbtns' },
-        h('button', { class: 'btn big' + (d ? '' : ' off'), onclick: () => start(sel) }, '开始游戏'),
+        h('button', { class: 'btn big' + (d && !dOff ? '' : ' off'), onclick: () => start(sel) }, '开始游戏'),
         h('button', { class: 'btn big blue' + (full ? ' off' : ''), onclick: () => { sfx.click(); this.close('charselect'); this.open('newgame'); } }, '创建角色'),
-        h('button', { class: 'btn' + (d ? '' : ' off'), onclick: rename }, '改名'),
-        save.acct && save.acct.maxlv > 0 && d && (d.lvl || 1) < MAX_LVL ? h('button', { class: 'btn', 'data-maxlv': 1, onclick: maxlv }, `一键满级 ×${save.acct.maxlv}`) : null,
+        h('button', { class: 'btn' + (d && !dOff ? '' : ' off'), onclick: rename }, '改名'),
+        save.acct && save.acct.maxlv > 0 && d && !dOff && (d.lvl || 1) < MAX_LVL ? h('button', { class: 'btn', 'data-maxlv': 1, onclick: maxlv }, `一键满级 ×${save.acct.maxlv}`) : null,
         h('button', { class: 'btn red' + (d ? '' : ' off'), onclick: del }, '删除角色'),
         h('button', { class: 'btn', onclick: () => { sfx.click(); this.close('charselect'); this.open('title'); } }, '返回')),
       full ? h('div', { class: 'small dim' }, `角色位已满（最多 ${MAX_CHARS} 个），删除角色后才能创建新角色`) : null);
@@ -122,14 +127,14 @@ Object.assign(menus, {
   w_newgame() {
     save.data = null; save.loadAll();
     const ids = Object.keys(CLASSES).filter(id => CLASSES[id].name);
-    if (!this.ngCls || !CLASSES[this.ngCls] || CLASSES[this.ngCls].ready === false) this.ngCls = ids.find(id => CLASSES[id].ready !== false) || ids[0];
+    if (!this.ngCls || !clsOpen(this.ngCls)) this.ngCls = ids.find(clsOpen) || ids[0];   // ready:false 的职业“即将开放”（开发测试 ?fighter=1 强制开放）
     const cls = this.ngCls, C = CLASSES[cls];
     const list = h('div', { class: 'nglist' }, ids.map(id => {
-      const K = CLASSES[id], off = K.ready === false;
+      const K = CLASSES[id], off = !clsOpen(id);
       return h('div', { class: 'clscard' + (id === cls ? ' sel' : '') + (off ? ' off' : ''), 'data-cls': id, onclick: () => { if (off) return; if (this.ngCls !== id) { if (!this.ngTyped) this.ngName = null; this.ngCls = id; sfx.click(); this.refresh('newgame'); } } },
         csClassArt(id, 'clsart'), h('h3', {}, K.name), off ? h('p', { class: 'gold' }, '即将开放') : null);
     }));
-    const jobs = C.jobs ? Object.entries(C.jobs) : [];
+    const jobs = C.jobs ? Object.entries(C.jobs).filter(([, J]) => jobOpen(J)) : [];   // 没开放的转职（J.ready === false）不列
     const jobsEl = jobs.length ? h('div', { class: 'ngjobs' }, jobs.map(([jid, J]) => h('div', { class: 'ngjob' },
       J.art && IMG[J.art] ? h('img', { src: IMG[J.art].src }) : null,
       h('b', {}, J.name), J.role ? h('span', { class: 'small gold' }, ` · ${J.role}`) : null, h('div', { class: 'small' }, J.desc || ''),
@@ -205,6 +210,7 @@ addStyle(`
 .csrow{display:flex;gap:.8em;align-items:flex-end;flex-wrap:wrap;justify-content:center;max-width:96%}
 .cslot{position:relative;width:10.5em;height:17em;border:.12em solid #5a4a36;border-radius:.5em;background:linear-gradient(180deg,rgba(40,30,44,.85),rgba(14,10,18,.92));cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:.5em .3em;transition:transform .15s,border-color .15s,box-shadow .15s}
 .cslot:hover{border-color:#b8945a;transform:translateY(-.2em)}
+.cslot.off{opacity:.6}.cslot.off .job{color:#ffb08a}
 .cslot.sel{border-color:#ffd23a;box-shadow:0 0 1.2em rgba(255,210,58,.45),inset 0 0 2em rgba(255,210,58,.12);transform:translateY(-.4em)}
 .cslot .cart{width:9em;height:12em;object-fit:contain;object-position:bottom;position:relative;z-index:1;filter:drop-shadow(0 .3em .4em rgba(0,0,0,.6))}
 .cslot.sel .cart{animation:csbob 1.6s ease-in-out infinite}

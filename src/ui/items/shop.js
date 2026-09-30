@@ -113,7 +113,7 @@ function shopBuyView(S, el) {
   for (const key of keys) {
     const D = ITEMS[key], pr = shopPrice(S, key), it = D.kind === 'equip' ? previewOf(key) : { ...D, key, n: 1 }, on = sel[key] > 0;
     const low = D.kind === 'equip' && D.lvl > game.lvl;
-    const sub = D.kind === 'equip' ? [h('span', { class: low ? 'bad' : '' }, `Lv.${D.lvl}`), ` ${itemTypeName(it)}`, D.cls && D.cls !== game.player.cls ? h('span', { class: 'bad' }, ` · ${CLASSES[D.cls] ? CLASSES[D.cls].name : ''}专用`) : null] : [itemTypeName(it), key === 'coin' ? ` · 持有 ${save.data.coins}` : ` · 持有 ${inv.count(key)}`];
+    const sub = D.kind === 'equip' ? [h('span', { class: low ? 'bad' : '' }, `Lv.${D.lvl}`), ` ${itemTypeName(it)}`, D.cls && D.cls !== game.player.cls ? h('span', { class: 'bad' }, ` · ${CLASSES[D.cls] ? CLASSES[D.cls].name : ''}专用`) : D.slot === 'weapon' && !wtypeJobOk(D.wtype, game.job) ? h('span', { class: 'bad' }, ` · ${wtypeJobText(D.wtype)}专用`) : null] : [itemTypeName(it), key === 'coin' ? ` · 持有 ${save.data.coins}` : ` · 持有 ${inv.count(key)}`];
     const row = h('div', { class: 'srow' + (on ? ' on' : '') },
       h('span', { class: 'ck' }, on ? '✔' : ''), itemSlot(it, { cmp: true }),
       h('div', {}, h('div', { class: `nm q${D.rar}` }, D.name), h('div', { class: 'sub' }, ...sub)),

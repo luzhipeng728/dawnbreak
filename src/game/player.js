@@ -349,18 +349,20 @@ function tryWhenHit(p) {
   return false;
 }
 // 指令表第三项（按键）→ 输入动作名：省略 = Z（cmd）、'buff' = Space（cmdB）、'attack' = X、'jump' = C
+// 空中 C（格斗家 空绞锤）：['', id, 'jump'] + 技能 air + airOnly——地面上按 C 照常起跳（airOk 挡住），空中按 C 才放；空中 ←→+C 同理写 ['bf', id, 'jump']
 const CMD_KEY_OF = { cmd: 'cmd', buff: 'cmdB', attack: 'attack', jump: 'jump' };
 const CMD_KEYS = ['cmdB', 'cmd', 'attack', 'jump'];
 // 指令优先级：长指令 > 按住方向 > 单方向 > 无方向
-const cmdRank = s => s === 'hold' || s === 'holdd' ? 1.5 : s === 'hit' ? 0.5 : s === '' ? 0 : s.length + (s.length === 1 ? 0.2 : 0);
+const cmdRank = s => s === 'hold' || s === 'holdd' || s === 'holdu' ? 1.5 : s === 'hit' ? 0.5 : s === '' ? 0 : s.length + (s.length === 1 ? 0.2 : 0);
 const HIT_WIN = 1;   // 「(被击时) Z」：受击 / 倒地中，或受击后 1 秒内
-const HOLD_MIN = 0.18;   // 「按住 ↓ + Z」：↓ 要先按住这么久（避免和 ↓+Z 抢指令）
+const HOLD_MIN = 0.18;   // 「按住 ↓ + Z」/「按住 ↑ + Z」（holdd / holdu，格斗家 前踢）：方向键要先按住这么久（避免和 ↓+Z / ↑+Z 抢指令）
 function cmdMatch(I, seq, face, p) {
   if (seq === '') return true;
   if (seq === 'hit') return !!p && (p.st === 'hit' || p.st === 'down' || game.t - (p.hurtT ?? -9) < HIT_WIN);
   const fw = face > 0 ? 'right' : 'left', bw = face > 0 ? 'left' : 'right';
   if (seq === 'hold') return I.is(fw);
   if (seq === 'holdd') return I.heldFor('down') >= HOLD_MIN;
+  if (seq === 'holdu') return I.heldFor('up') >= HOLD_MIN;
   if (seq.length === 1) { const d = { f: fw, b: bw, u: 'up', d: 'down' }[seq]; return I.is(d) || I.command(seq, face); }
   return I.command(seq, face);
 }

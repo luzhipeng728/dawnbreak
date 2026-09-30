@@ -192,5 +192,89 @@ async function open(q) {
   const errs = logs.filter(l => l.type !== 'warning'); report('无报错（决斗场）', errs.length === 0, errs.slice(0, 3));
   await browser.close();
 }
+// ---------------- 格斗家组引擎钩子（B0-E，docs/CLASS_PLAN_FIGHTER.md §4.1 第 5 条）：抓取扩展 / 投掷 / 强制硬直 / 指令 / 蹲伏 ----------------
+{
+  const { browser, page, logs } = await open('test&cls=fighter&fighter=1&mobs=0');
+  const R = await page.evaluate(() => {
+    const out = {}, p = game.player; T.clear(); T.reset();
+    const big = { hp: 1e9, hpMax: 1e9 };
+    const mobs = (xs, o = {}) => xs.map(x => T.mob('goblin', x, 100, { ...o, set: { ...big, ...(o.set || {}) } }));
+    // 抓取动作：hits 里一个抓取判定（前方 0~140），跑到判定结束
+    const grabAct = (h, dur = 1) => { p.doAct({ name: 'g', dur, hits: [{ t0: 0, t1: 0.2, box: [0, 140, 40, 0, 120], dmg: 0.01, grab: true, ...h }] }); T.run(8); };
+    const heldN = L => L.filter(m => m.st === 'held' && m.heldBy === p).length;
+    // 1) 老行为不变：不写新字段只抓 1 个；抓不了倒地的
+    let L = mobs([340, 360, 380]); grabAct({}); out.single = { held: heldN(L), list: grabsOf(p).length }; p.endAct(); T.run(2); T.clear(); T.reset();
+    L = mobs([350]); L[0].z = 0; L[0].setState('down'); L[0].downTime = 9; grabAct({}); out.downOld = L[0].st; p.endAct(); T.clear(); T.reset();
+    // 2) 多目标 grabMax：前方 4 只抓 3 只；grabsOf 顺序 = 主目标 + 其余；放手全放
+    L = mobs([330, 350, 370, 390]); grabAct({ grabMax: 3 }); out.multi = { held: heldN(L), list: grabsOf(p).length, primary: grabsOf(p)[0] === p.grabbed };
+    p.endAct(); T.run(2); out.multiRelease = heldN(L); T.clear(); T.reset();
+    // 3) grabRange：判定只碰到 1 只，身后 / 远处 200 以内的一起卷过来，更远的不管
+    L = mobs([360, 150, 480, 700]); grabAct({ grabRange: 210 }); out.range = { held: heldN(L), far: L[3].st }; p.endAct(); T.run(2); T.clear(); T.reset();
+    // 4) grabDown：能抓倒地的
+    L = mobs([350]); L[0].z = 0; L[0].setState('down'); L[0].downTime = 9; grabAct({ grabDown: true }); out.down = L[0].st; p.endAct(); T.clear(); T.reset();
+    // 5) grabAir：'only' 只抓空中的；false 不抓空中的
+    L = mobs([350]); grabAct({ grabAir: 'only' }); out.airOnlyGround = L[0].st; p.endAct(); T.run(2); T.clear(); T.reset();
+    L = mobs([350]); L[0].z = 40; L[0].setState('air'); grabAct({ grabAir: 'only' }); out.airOnlyAir = L[0].st; p.endAct(); T.run(2); T.clear(); T.reset();
+    L = mobs([350]); L[0].z = 40; L[0].setState('air'); grabAct({ grabAir: false }); out.airFalse = L[0].st === 'held'; p.endAct(); T.run(2); T.clear(); T.reset();
+    // 6) grabInvul：抓住期间施放者无敌，放开后恢复
+    L = mobs([350]); grabAct({ grabInvul: true }); out.invulHeld = p.invul > 0; p.endAct(); T.run(6); out.invulAfter = +p.invul.toFixed(3); T.clear(); T.reset();
+    L = mobs([350]); grabAct({}); out.invulPlain = p.invul > 0; p.endAct(); T.clear(); T.reset();
+    // 7) onGrabFail：领主抓不住 → 回调（抓轰炮：强制硬直）
+    const boss = T.mob('goblin', 350, 100, { boss: true, set: big }); boss.superArmor = 5; let failed = null, stun0 = 0;
+    grabAct({ onGrabFail: (a, t) => { failed = t; addStatus(t, 'hold', 2, { src: a }); stun0 = t.stun; } }); out.fail = { called: failed === boss, st: boss.st, stun: +stun0.toFixed(2) }; p.endAct(); T.clear(); T.reset();
+    // 8) throwAll：多目标全部扔出
+    L = mobs([330, 350, 370]); grabAct({ grabMax: 3 }, 2); const thrown = throwAll(p, { dmg: 0.01, launch: 300 }); out.throwAll = { n: thrown.length, held: heldN(L), left: grabsOf(p).length, st: L.map(m => m.st) }; p.endAct(); T.run(60); T.clear(); T.reset();
+    // 9) throwArc：抓住后往前扔 200，路上撞到另一只，落地砸倒
+    L = mobs([340, 505]); grabAct({}, 2); const x0 = L[0].x, hp1 = L[1].hp;
+    throwArc(p, L[0], { dx: 200, h: 80, dur: 0.4 }); out.arcStart = { thrown: !!L[0].thrown, held: L[0].heldBy === p, grabbed: p.grabbed === L[0] };
+    let zMax = 0; for (let i = 0; i < 24; i++) { T.run(1); zMax = Math.max(zMax, L[0].z); }
+    for (let i = 0; i < 90 && L[0].st === 'air'; i++) T.run(1);
+    out.arc = { dx: Math.round(L[0].x - x0), zMax: Math.round(zMax), st: L[0].st, otherHit: L[1].hp < hp1, otherSt: L[1].st };
+    p.endAct(); T.run(60); T.clear(); T.reset();
+    // 10) 强制硬直 hold：霸体照样打断；领主 ×0.3；原来的 stun 对霸体仍然不打断（老行为）
+    const sa = T.mob('goblin', 400, 100, { set: big }); sa.superArmor = 5; sa.doAct({ name: 'club', dur: 2, superArmor: true, hits: [] });
+    addStatus(sa, 'hold', 1, { src: p }); out.hold = { st: sa.st, stun: +sa.stun.toFixed(2), act: !!sa.act }; T.run(30); out.holdMid = sa.st; T.run(40); out.holdEnd = sa.st;
+    const bs = T.mob('goblin', 500, 100, { boss: true, set: big }); addStatus(bs, 'hold', 1, { src: p }); out.holdBoss = +bs.status.hold.t.toFixed(2);
+    const sa2 = T.mob('goblin', 600, 100, { set: big }); sa2.superArmor = 5; sa2.doAct({ name: 'club', dur: 2, superArmor: true, hits: [] }); addStatus(sa2, 'stun', 1, { src: p }); out.stunSA = { st: sa2.st, t: +sa2.status.stun.t.toFixed(2) };
+    T.clear(); T.reset();
+    // 11) 指令：按住↑ + Z（holdu）和 ↑ + Z 分得开；空中 C（['', id, 'jump'] + air + airOnly）；地面 C 照常起跳
+    const mk = (id, o) => defSkill(id, { name: id, cls: 'fighter', lvReq: 1, mp: 0, cd: 0.1, act: () => ({ name: id, dur: 0.3, hits: [] }), ...o });
+    mk('_t_up', {}); mk('_t_holdu', {}); mk('_t_air', { air: true, airOnly: true });
+    const C = CLASSES.fighter, cmd0 = C.cmds; C.cmds = [['u', '_t_up'], ['holdu', '_t_holdu'], ['', '_t_air', 'jump']]; C.cmdsSorted = null;
+    for (const id of ['_t_up', '_t_holdu', '_t_air']) game.skillLv[id] = 1;
+    const cast = () => p.act && p.act.skill;
+    T.key('up'); T.run(1); T.key('cmd'); T.run(1); out.cmdU = cast(); T.release('up'); T.release('cmd'); T.run(30); T.reset();
+    T.key('up'); T.run(16); T.key('cmd'); T.run(1); out.cmdHoldU = cast(); T.release('up'); T.release('cmd'); T.run(30); T.reset();
+    T.key('jump'); T.run(1); T.release('jump'); out.groundC = p.st; T.run(10); T.key('jump'); T.run(1); T.release('jump'); out.airC = cast(); T.run(80); T.reset();
+    // 12) 跑攻中 X：跑攻动作的 keyLinks { attack: 'f_chain' }（B3 的疾风追击）：学了才派生，没学照常
+    mk('f_chain', { act: () => ({ name: 'f_chainT', dur: 0.3, basic: true, hits: [] }) });
+    p.doAct(p.acts.dash); T.run(8); T.key('attack'); T.run(1); T.release('attack'); out.dashXNo = p.act && p.act.name; T.run(40); T.reset();
+    game.skillLv.f_chain = 1; p.doAct(p.acts.dash); T.run(8); T.key('attack'); T.run(1); T.release('attack'); out.dashX = cast(); T.run(40); T.reset();
+    delete SKILLS.f_chain; delete game.skillLv.f_chain; for (const id of ['_t_up', '_t_holdu', '_t_air']) { delete SKILLS[id]; delete game.skillLv[id]; } C.cmds = cmd0; C.cmdsSorted = null;
+    // 13) 蹲伏：受击盒压低（高位攻击打不到、下段打得到）；C 起身；X 派生
+    const m = T.mob('goblin', 360, 100, { set: big }); m.face = -1;
+    p.doAct(fCrouchAct({ onX: e => e.doAct(e.acts.dash) })); T.run(2);
+    const hi = { box: [0, 80, 30, 40, 100] }, lo = { box: [0, 80, 30, 0, 30] };
+    out.crouch = { hurtH: p.hurtH(), high: overlaps(atkBox(m, hi), p), low: overlaps(atkBox(m, lo), p) };
+    T.key('jump'); T.run(2); T.release('jump'); out.crouchC = { act: p.act && p.act.name, st: p.st, hurtH: p.hurtH() }; T.run(10); T.reset();
+    p.doAct(fCrouchAct({ onX: e => e.doAct(e.acts.dash) })); T.run(2); T.key('attack'); T.run(1); T.release('attack'); out.crouchX = p.act && p.act.name;
+    return out;
+  });
+  report('抓取老行为不变：默认只抓 1 个、抓不了倒地的', R.single.held === 1 && R.single.list === 1 && R.downOld !== 'held', { single: R.single, down: R.downOld });
+  report('多目标抓取 grabMax：前方 4 只抓 3 只，放手全放', R.multi.held === 3 && R.multi.list === 3 && R.multi.primary && R.multiRelease === 0, { multi: R.multi, release: R.multiRelease });
+  report('范围抓取 grabRange：周围的一起卷过来，远的不抓', R.range.held === 3 && R.range.far !== 'held', R.range);
+  report('grabDown 抓倒地 / grabAir 空中投', R.down === 'held' && R.airOnlyGround !== 'held' && R.airOnlyAir === 'held' && !R.airFalse, { down: R.down, g: R.airOnlyGround, a: R.airOnlyAir, airFalse: R.airFalse });
+  report('grabInvul：抓住期间无敌，放开后恢复；不写不无敌', R.invulHeld && R.invulAfter <= 0 && !R.invulPlain, { held: R.invulHeld, after: R.invulAfter, plain: R.invulPlain });
+  report('onGrabFail：领主抓不住 → 回调（强制硬直打断霸体，领主 ×0.3）', R.fail.called && R.fail.st === 'hit' && Math.abs(R.fail.stun - 0.6) < 0.05, R.fail);
+  report('throwAll：多目标全部扔出', R.throwAll.n === 3 && R.throwAll.held === 0 && R.throwAll.left === 0, R.throwAll);
+  report('throwArc：弧线飞 200、路上撞人、落地砸倒', R.arcStart.thrown && !R.arcStart.held && !R.arcStart.grabbed && Math.abs(R.arc.dx - 200) < 25 && R.arc.zMax > 50 && R.arc.otherHit && (R.arc.st === 'down' || R.arc.st === 'getup'), { start: R.arcStart, arc: R.arc });
+  report('强制硬直 hold：霸体也打断、到时恢复；领主 ×0.3；stun 对霸体照旧不打断', R.hold.st === 'hit' && Math.abs(R.hold.stun - 1) < 0.02 && !R.hold.act && R.holdMid === 'hit' && R.holdEnd !== 'hit' && Math.abs(R.holdBoss - 0.3) < 0.02 && R.stunSA.st === 'act' && Math.abs(R.stunSA.t - 0.3) < 0.02,
+    { hold: R.hold, mid: R.holdMid, end: R.holdEnd, boss: R.holdBoss, stunSA: R.stunSA });
+  report('指令：↑+Z / 按住↑+Z（holdu）分开；地面 C 起跳、空中 C 放空中技能', R.cmdU === '_t_up' && R.cmdHoldU === '_t_holdu' && R.groundC === 'jump' && R.airC === '_t_air', { u: R.cmdU, holdu: R.cmdHoldU, groundC: R.groundC, airC: R.airC });
+  report('跑攻中 X：学了疾风追击才派生', R.dashXNo === 'dash' && R.dashX === 'f_chain', { no: R.dashXNo, yes: R.dashX });
+  report('蹲伏：受击盒压低（高位打不到、下段打得到），C 起身、X 派生', R.crouch.hurtH <= 20 && !R.crouch.high && R.crouch.low && R.crouchC.act !== 'f_crouch' && R.crouchC.hurtH > 90 && R.crouchX === 'dash', { crouch: R.crouch, c: R.crouchC, x: R.crouchX });
+  const errs = logs.filter(l => l.type !== 'warning'); report('无报错（格斗家钩子）', errs.length === 0, errs.slice(0, 3));
+  await browser.close();
+}
 console.log(fail ? `${fail} 项失败` : '全部通过');
 process.exit(fail ? 1 : 0);

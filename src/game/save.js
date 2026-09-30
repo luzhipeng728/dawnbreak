@@ -6,7 +6,10 @@ const FATIGUE_MAX = 156;
 const dayKey = () => { const d = new Date(Date.now() - 6 * 3600 * 1000); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 const SAVE_V = 5, MAX_CHARS = 6;
 const DUNGEON_ALIAS = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
-/* 存档结构：{ v, cur, chars: [角色数据...] }，每个角色独立保存等级 / 背包 / 任务 / 位置等（官方的角色选择） */
+/* 存档结构：{ v, cur, chars: [角色数据...] }，每个角色独立保存等级 / 背包 / 任务 / 位置等（官方的角色选择）
+   不认识 / 还没开放的职业的角色（新版本加的职业、网址 ?fighter=1 建的格斗家、ready:false）：原样留在 chars 里——不升级、不改数据、写回时照抄，
+   选角显示“需要更新”、不能进入（老页面读到新职业的角色再写回云端也不会丢，docs/CLASS_PLAN_FIGHTER.md #19） */
+const charOpen = c => !!c && clsOpen(c.cls);
 const save = {
   key: ['test', 'dungeon', 'town', 'bot', 'cls', 'duel'].some(k => PARAMS.has(k)) ? 'dawnbreak_dev' : 'dawnbreak_save_v1', data: null, chars: [], cur: -1, live: false, acct: {},   // 调试参数用独立存档，不碰玩家的正式存档
   defaults(cls = 'sword', name = '勇士') {
@@ -23,15 +26,15 @@ const save = {
       const d = JSON.parse(raw);
       if (d.chars) { this.chars = d.chars; this.cur = d.cur ?? 0; this.acct = d.acct || {}; }
       else { this.chars = [d]; this.cur = 0; }            // v1/v2：单角色存档
-      this.chars = this.chars.filter(c => c && CLASSES[c.cls]).map(c => this.migrate({ ...this.defaults(c.cls), ...c, v: c.v || 1, opts: { ...this.defaults().opts, ...(c.opts || {}) } }));
+      this.chars = this.chars.filter(c => c && typeof c === 'object').map(c => charOpen(c) ? this.migrate({ ...this.defaults(c.cls), ...c, v: c.v || 1, opts: { ...this.defaults().opts, ...(c.opts || {}) } }) : c);
     } catch (e) { this.chars = []; }
     if (this.cur >= this.chars.length) this.cur = this.chars.length - 1;
-    for (const c of this.chars) if (!c.name || !String(c.name).trim()) c.name = CLASSES[c.cls].name;   // 早期存档 / 本机导入的角色可能没有名字
+    for (const c of this.chars) if (charOpen(c) && (!c.name || !String(c.name).trim())) c.name = CLASSES[c.cls].name;   // 早期存档 / 本机导入的角色可能没有名字
     this.mergeAcctCurrency();
     return this.chars.length > 0;
   },
   // 兼容旧接口：读取并选中上次的角色
-  load() { if (!this.loadAll()) { this.data = null; return false; } this.select(Math.max(0, this.cur)); return true; },
+  load() { if (!this.loadAll()) { this.data = null; return false; } let i = Math.max(0, this.cur); if (!charOpen(this.chars[i])) i = this.chars.findIndex(charOpen); if (i < 0) { this.data = null; return false; } this.select(i); return true; },
   select(i) { this.cur = i; this.data = this.chars[i]; this.live = false; this.daily(); },
   daily() { const d = dayKey(); if (this.data.day !== d) { this.data.day = d; this.data.fatigue = FATIGUE_MAX; this.data.coins = Math.max(this.data.coins, 0) + 1; if (typeof questsDailyReset === 'function') questsDailyReset(this.data); toastMsg('新的一天：疲劳值已恢复，领取复活币 ×1', '#bfe8bf'); } },
   write() {
@@ -48,8 +51,9 @@ const save = {
   mergeAcctCurrency() {
     const A = this.acct;
     A.cera = A.cera || 0; A.shard = A.shard || 0; A.gcoin = A.gcoin || 0; A.maxlv = A.maxlv || 0;
-    for (const c of this.chars) for (const k of ['inv', 'storage']) if (Array.isArray(c[k])) c[k] = c[k].filter(it => { if (it && it.key === 'tk_maxlv') { A.maxlv += it.n || 1; return false; } return true; });   // 一键满级券账号共享（以前领进了某个角色的背包，别的角色用不到）
-    for (const c of this.chars) {
+    const own = this.chars.filter(charOpen);   // 没开放职业的角色原样不动（开放它的版本读档时再收）
+    for (const c of own) for (const k of ['inv', 'storage']) if (Array.isArray(c[k])) c[k] = c[k].filter(it => { if (it && it.key === 'tk_maxlv') { A.maxlv += it.n || 1; return false; } return true; });   // 一键满级券账号共享（以前领进了某个角色的背包，别的角色用不到）
+    for (const c of own) {
       A.cera += c.cera || 0; c.cera = 0;
       if (c.shop) { A.shard += c.shop.shard || 0; A.gcoin += c.shop.gcoin || 0; c.shop.shard = 0; c.shop.gcoin = 0; }
     }

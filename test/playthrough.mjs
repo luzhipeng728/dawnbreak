@@ -1,10 +1,10 @@
 // 真实试玩：像玩家一样用键盘 / 鼠标从头玩（kbplay.mjs），每一步截图，记录发现的问题
 // 用法：node test/playthrough.mjs <路线> [职业序号 0/1/2]
 //   newbie：标题 → 创建角色 → 赛丽亚 → 林纳斯 → 洛兰 → 通关翻牌 → 回门口 → 回城交任务 → 商店 / 强化 / 装备 / 技能 / 地图
-import { launch, URL_BASE } from './lib.mjs';
+import { launch, URL_BASE, openLists } from './lib.mjs';
 import { kbPlayer } from './kbplay.mjs';
 const leg = process.argv[2] || 'newbie', ci = +(process.argv[3] || 0);
-const CLS = ['sword', 'gun', 'mage'][ci];
+const CLS = (await openLists()).classes[ci];   // 已开放的职业（读 CLASSES，跳过 ready:false）
 const out = `test/shots/playthrough/${leg}-${CLS}`;
 const { browser, page, logs } = await launch({ width: 1280, height: 720 });
 const P = kbPlayer(page, { out });

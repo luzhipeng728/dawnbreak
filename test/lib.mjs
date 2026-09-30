@@ -74,6 +74,16 @@ export async function imageStats(page, pngBuffer) {
   }, b64);
 }
 
+// 已开放的职业 / 转职：读页面里的 CLASSES，跳过 ready === false（职业）/ J.ready === false（转职）——新职业（格斗家）开放后自动进各测试的列表
+// openLists(page) → { classes: ['sword', ...], jobs: ['sword:blade', ...], wtypes: 这些职业的武器类型 }；没开页面时 openLists() 临时开一个（约 3 秒）
+export async function openLists(page) {
+  const get = pg => pg.evaluate(() => ({ classes: openClasses(), jobs: openClasses().flatMap(c => openJobs(c).map(j => c + ':' + j)), wtypes: Object.keys(WTYPES).filter(t => clsOpen(WTYPES[t].cls)) }));
+  if (page) return get(page);
+  const { browser, page: pg } = await launch({ width: 320, height: 180 });
+  await pg.goto(`${URL_BASE}?mute`); await pg.waitForFunction(() => window.__READY, null, { timeout: 60000 });
+  const r = await get(pg); await browser.close(); return r;
+}
+
 export async function forceGC(page) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('HeapProfiler.collectGarbage');

@@ -15,6 +15,9 @@ const BASE_ANIMS = {
 // 新动作帧还没进素材时，先用已有的帧顶上（出了素材自动换成新帧）
 const sprHas = (c, f) => !!(typeof SPR_DATA !== 'undefined' && SPR_DATA[c] && SPR_DATA[c].frames[f]);
 const sprOr = (c, f, fallback) => sprHas(c, f) ? [[f, 0]] : fallback;
+// 多帧版：时间轴的第一帧有素材就整条用，否则用兜底（格斗家 B1 分批出帧）
+const sprTl = (c, tl, fallback) => sprHas(c, tl[0][0]) ? tl : fallback;
+const fAnim = (tl, fb = [['idle', 0]]) => sprTl('fighter', tl, fb);
 const SPR_ANIMS = {
   sword: { ...BASE_ANIMS,
     atk1: [['a1_1', 0], ['a1_2', 0.05], ['a1_3', 0.12]], atk2: [['a2_1', 0], ['a2_2', 0.05], ['a2_3', 0.14]], atk3: [['a3_1', 0], ['a3_2', 0.12]],
@@ -81,6 +84,16 @@ const SPR_ANIMS = {
     faceplant: [['faceplant', 0]], sooty: [['sooty', 0]], potion: [['potion1', 0], ['potion2', 0.14]], potionHold: [['potion1', 0]],
     swat: [['swat1', 0], ['swat2', 0.18]], swatAir: [['brAtk2', 0], ['swat2', 0.12]], fling: [['fling', 0]], hammer: [['hammer', 0]], hammerRun: { fps: 10, frames: ['hammer', 'run3', 'hammer', 'run7'] },
     candy: [['candy1', 0], ['potion2', 0.36]], wtCheer: [['wtCheer', 0]] },
+  // 格斗家（男）：B0 定的片段名契约（docs/CLASS_PLAN_FIGHTER.md §3.2），B1 按这些帧名出帧（art/final/spr/fighter/<帧>.webp），没出之前用通用帧兜底。
+  // 通用骨架帧和鬼剑士同名（BASE_ANIMS）；职业自己的帧一律 f_ 前缀，转职的帧用 fn_ / fs_ / fb_ / fg_ 前缀写进各自的 J.anims
+  fighter: { ...BASE_ANIMS,
+    atk1: fAnim([['f_jab1', 0], ['f_jab2', 0.05]]), atk2: fAnim([['f_low1', 0], ['f_low2', 0.04]]), atk3: fAnim([['f_mid1', 0], ['f_mid2', 0.07]]), atk4: fAnim([['f_axe1', 0], ['f_axe2', 0.14]]),
+    dash: fAnim([['f_shoulder1', 0], ['f_shoulder2', 0.05]], [['run3', 0]]), jatk: fAnim([['f_jkick1', 0], ['f_jkick2', 0.06]], [['jump2', 0]]),
+    highkick: fAnim([['f_high1', 0], ['f_high2', 0.08]]), hammer: fAnim([['f_mid1', 0], ['f_mid2', 0.07]]), crouch: fAnim([['f_crouch', 0]], [['charge', 0]]),
+    grab: fAnim([['f_grab', 0]]), knee: fAnim([['f_grab', 0], ['f_knee', 0.06]]), lift: fAnim([['f_lift', 0]]), slam: fAnim([['f_slam', 0]]),
+    spinkick: sprHas('fighter', 'f_spin1') ? { fps: 16, frames: ['f_spin1', 'f_spin2'] } : [['idle', 0]], stomp: fAnim([['f_stomp', 0]], [['jump3', 0]]), dive: fAnim([['f_dive', 0]], [['jump3', 0]]),
+    flykick: fAnim([['f_flykick', 0]], [['jump2', 0]]), palm: fAnim([['f_palm1', 0]]), palm2: fAnim([['f_palm2', 0]]), focus: fAnim([['f_focus', 0]], [['charge', 0]]), seal: fAnim([['f_seal', 0]], [['charge', 0]]),
+    quake: fAnim([['f_quake', 0]]), smash: fAnim([['f_smash', 0]]) },
   monster: { ...BASE_ANIMS, run: seq('run', 8, 15), jumpUp: [['jump', 0]], jumpFall: [['jump', 0]], land: [['low1', 0]], back: [['jump', 0]],
     hit2: [['hit2', 0]], airUp: [['air', 0]], air: [['air', 0]], bounceUp: [['down', 0], ['air', 0.1]], down: [['down', 0]], held: [['hit2', 0]], tech: [['getup', 0]],
     club: [['atk1', 0], ['atk2', 0.15], ['atk3', 0.42], ['atk4', 0.6]], throw: [['atk1', 0], ['atk2', 0.15], ['atk3', 0.45], ['atk4', 0.6]],
@@ -96,9 +109,9 @@ addCommonSkills();
 for (const c in SPR_ANIMS) { const C = CLASSES[c]; if (C && C.jobs) for (const J of Object.values(C.jobs)) if (J.anims) Object.assign(SPR_ANIMS[c], J.anims); }
 // 玩家职业的走 / 跑（docs/ANIMATION.md）：每帧停留整数个 60Hz 逻辑步（走 5 步 = 12fps、跑 3 步 = 20fps，原来跑 16.7fps 是 3 / 4 步交替，节奏发瘸）；
 // v = 这个 fps 对应的移动速度（职业基础移速），实际速度不同（移速装备 / BUFF、城镇移速、路人）时按比例加快 / 放慢，见 SpriteModel.loopRate
-for (const c of ['sword', 'gun', 'mage']) { SPR_ANIMS[c].walk = { ...seq('walk', 8, 12), v: CLASSES[c].speed }; SPR_ANIMS[c].run = { ...seq('run', 8, 20), v: CLASSES[c].runSpeed }; }
+for (const c of ['sword', 'gun', 'mage', 'fighter']) { SPR_ANIMS[c].walk = { ...seq('walk', 8, 12), v: CLASSES[c].speed }; SPR_ANIMS[c].run = { ...seq('run', 8, 20), v: CLASSES[c].runSpeed }; }
 // 没有骨骼片段的动画自动补一个（时长覆盖所有帧，循环动画按帧数 / fps）
-for (const c of ['sword', 'gun', 'mage']) {
+for (const c of ['sword', 'gun', 'mage', 'fighter']) {
   CLIPS[c] = CLIPS[c] || { ...HUMAN_CLIPS };
   for (const name in SPR_ANIMS[c]) {
     const A = SPR_ANIMS[c][name];
@@ -111,7 +124,7 @@ for (const c of ['sword', 'gun', 'mage']) {
 for (const S of [GOB_CLIPS, BEAST_CLIPS]) { S.hit2 = S.hit2 || { ...S.hit }; S.held = S.held || { ...S.hit, dur: 9 }; S.airUp = S.airUp || { ...S.air }; S.bounceUp = S.bounceUp || { ...S.air }; }
 // 兜底：姿势名 → 帧（没有列进动画表的片段用）
 const SPR_FALLBACK = { idle: 'idle', idle2: 'idle', mIdle: 'idle', mIdle2: 'idle', hit: 'hit1', hit2: 'hit2', air: 'air', air2: 'air', down: 'down', getup: 'getup', tuck: 'roll', _: 'idle' };
-for (const c of ['sword', 'gun', 'mage']) {
+for (const c of ['sword', 'gun', 'mage', 'fighter']) {
   const old = CLASSES[c].model;
   CLASSES[c].model = () => SPR_DATA[c] && IMG[`spr/${c}/idle`] ? new SpriteModel(c, SPR_FALLBACK, SPR_ANIMS[c]) : old();
 }

@@ -92,8 +92,8 @@ function atkBox(a, h, out = {}) {
 function overlaps(B, t) {
   return B.x1 >= t.x - t.w && B.x0 <= t.x + t.w && B.y1 >= t.y - t.d && B.y0 <= t.y + t.d && B.z1 >= t.z && B.z0 <= t.z + t.hurtH();
 }
-// 能否打到：倒地目标只有追击判定（downHit）能打到；被别人抓住的目标也能打（只受伤不反应）
-const canHit = (a, t, h) => foe(a, t) && t.invul <= 0 && (t.st !== 'down' || !!h.downHit);
+// 能否打到：倒地目标只有追击判定（downHit）或能抓倒地的抓取（grabDown）能打到；被别人抓住的目标也能打（只受伤不反应）
+const canHit = (a, t, h) => foe(a, t) && t.invul <= 0 && (t.st !== 'down' || !!h.downHit || !!h.grabDown);
 const BOX = {};
 function resolveHits() {
   for (const a of ents) {
@@ -101,7 +101,7 @@ function resolveHits() {
     const act = a.act;
     for (let hi = 0; hi < act.hits.length; hi++) {
       const h = act.hits[hi];
-      if (a.actT < h.t0 || a.actT >= h.t1 || (h.grab && a.grabbed)) continue;
+      if (a.actT < h.t0 || a.actT >= h.t1 || (h.grab && grabFull(a, h))) continue;
       const B = atkBox(a, h, BOX);
       for (const t of ents) {
         if (!canHit(a, t, h) || !overlaps(B, t)) continue;
@@ -113,7 +113,7 @@ function resolveHits() {
         if (G) G.last.set(t.id, game.t);
         a.hitsDone.set(key, a.actT);
         applyHit(a, t, h);
-        if (a.act !== act || (h.grab && a.grabbed)) break;
+        if (a.act !== act || (h.grab && grabFull(a, h))) break;
       }
       if (a.act !== act) break;
     }
@@ -122,7 +122,7 @@ function resolveHits() {
 // 立即判定（不依赖动作的命中窗口）：冲击波、拔刀等
 function instantHit(e, h) {
   const B = atkBox(e, h); let n = 0;
-  for (const t of ents) if (canHit(e, t, h) && overlaps(B, t)) { applyHit(e, t, h); n++; if (h.grab && e.grabbed) break; }
+  for (const t of ents) if (canHit(e, t, h) && overlaps(B, t)) { applyHit(e, t, h); n++; if (h.grab && grabFull(e, h)) break; }
   return n;
 }
 
@@ -205,7 +205,7 @@ function react(a, t, h, src, counter, pvp) {
   if (t.st === 'held') return;                                      // 被抓住：只受伤不反应
   // 怪物蓄力招式：被打出足够伤害 → 破招
   if (t.act && t.act.breakable && a.team !== t.team) { t.breakDmg = (t.breakDmg || 0) + t.lastDmg; if (t.breakDmg > t.hpMax * t.act.breakable) { breakAct(t); return; } }
-  if (h.grab) { if (canGrab(a, t, h)) { startGrab(a, t, h); return; } if (hasSA(t)) { t.flash = 0.1; return; } }
+  if (h.grab) { if (canGrab(a, t, h)) { startGrab(a, t, h); return; } if (h.onGrabFail) { h.onGrabFail(a, t, h); return; } if (hasSA(t)) { t.flash = 0.1; return; } }
   else if (hasSA(t) && !h.throwHit) { t.flash = 0.1; return; }      // 霸体：照常受伤，不硬直不浮空（抓取技的投掷无视霸体）
   t.interrupt();
   const dir = h.radial ? Math.sign(t.x - src.x || src.face) : h.pull ? -src.face : src.face;
@@ -261,7 +261,7 @@ function airRecover(t) {
   fxText('受身', t.x, t.y, t.z + 30, { col: '#9fe8ff', size: 11 }); fxAura(t, '#9fe8ff', 0.5);
 }
 function killEnt(t, a, h) {
-  t.interrupt(); if (t.heldBy) { if (t.heldBy.grabbed === t) t.heldBy.grabbed = null; t.heldBy = null; }
+  t.interrupt(); if (t.heldBy) { ungrab(t.heldBy, t); t.heldBy = null; } t.thrown = null;
   t.dead = true; t.setState('dead'); t.deadT = 0; t.act = null;
   t.vz = Math.max(t.vz, t.z > 2 ? 120 : 260); t.vx = (a ? a.face : -t.face) * 120; t.z = Math.max(t.z, 1);
   t.hitstop = 0.12;
@@ -270,37 +270,116 @@ function killEnt(t, a, h) {
 }
 
 /* ---- 抓取：抓取判定（hit.grab）可以抓住霸体目标；体型过大（noGrab / 领主）抓不住 ----
-   抓住后目标进入 held 状态，位置跟随抓取者（act.hold(e, t) 可自定义），抓取者的动作结束 / 被打断即释放；
-   throwGrab(e, hit) 用一次攻击把目标扔出（必中，带正常的受击反应） */
-function canGrab(a, t, h) { return !t.noGrab && !(t.boss && !h.grabBoss) && t.grabProt <= 0 && !t.heldBy && t.st !== 'down' && t.weight <= (h.grabMaxW ?? 2.2) && !t.dead; }
+   抓住后目标进入 held 状态，位置跟随抓取者（act.hold(e, t, i) 可自定义，i = 第几个目标），抓取者的动作结束 / 被打断即释放；
+   throwGrab(e, hit) 用一次攻击把目标扔出（必中，带正常的受击反应）
+   格斗家组扩展（B0-E，docs/CLASS_PLAN_FIGHTER.md §2.4；字段不写 = 原来的行为）：
+     h.grabInvul         抓住期间施放者无敌（官方：格斗家的抓取技抓住时自己无敌）
+     h.grabMax           这一下最多抓几个（默认 1）。多目标：第一个是 a.grabbed（老代码照旧能用），其余在 a.grabMore；grabsOf(a) 取全部
+     h.grabRange         抓住第一个之后，把周围 grabRange 像素内能抓的敌人一起卷过来（范围抓取；没写 grabMax 时最多 5 个）
+     h.grabDown          能抓倒地的目标（也能打到倒地目标）
+     h.grabAir           'only' = 只抓空中的目标（空中投）；false = 只抓地面上的；不写 = 不限（原来的行为）
+     h.onGrabFail(a,t,h) 打中了但抓不住（领主 / noGrab / 太重 / 刚被抓过）时调用，之后不走普通受击反应（柔道家 抓轰炮：冲击波 + addStatus(t, 'hold')）
+   throwGrab 只扔主目标（其余的顺延成主目标），throwAll 全部扔出；throwArc(a, t, o) 把人当投射物扔出去（见下方） */
+function canGrab(a, t, h) {
+  if (t.noGrab || (t.boss && !h.grabBoss) || t.grabProt > 0 || t.heldBy || t.dead || t.weight > (h.grabMaxW ?? 2.2)) return false;
+  if (t.st === 'down' && !h.grabDown) return false;
+  if (h.grabAir !== undefined) { const air = t.st === 'air' || t.z > 2; if (h.grabAir === 'only' ? !air : h.grabAir === false && air) return false; }
+  return true;
+}
+const grabCap = h => h.grabMax || (h.grabRange ? 5 : 1);
+const grabFull = (a, h) => !!a.grabbed && 1 + (a.grabMore ? a.grabMore.length : 0) >= grabCap(h);
+const holdsGrab = (a, t) => a.grabbed === t || !!(a.grabMore && a.grabMore.includes(t));
+function grabsOf(a) { return a.grabbed ? (a.grabMore && a.grabMore.length ? [a.grabbed, ...a.grabMore] : [a.grabbed]) : []; }
+// 从抓取者的抓取列表里去掉 t（主目标去掉后，其余的顺延成主目标）
+function ungrab(a, t) {
+  if (!a) return;
+  if (a.grabMore) { const i = a.grabMore.indexOf(t); if (i >= 0) a.grabMore.splice(i, 1); }
+  if (a.grabbed === t) a.grabbed = a.grabMore && a.grabMore.length ? a.grabMore.shift() : null;
+}
 function startGrab(a, t, h) {
-  t.interrupt(); t.setState('held'); t.heldBy = a; t.vx = t.vy = t.vz = 0; t.heldT = 0; t.rot = 0; t.play(t.clipOr('held', 'hit2', 'hit'), true);
-  a.grabbed = t; t.face = -a.face; t.hitHeavy = true;
+  t.interrupt(); t.setState('held'); t.heldBy = a; t.vx = t.vy = t.vz = 0; t.heldT = 0; t.rot = 0; t.thrown = null; t.play(t.clipOr('held', 'hit2', 'hit'), true);
+  const more = !!(a.grabbed && a.grabbed !== t && h && grabCap(h) > 1);   // 多目标：已经抓着别人 → 追加
+  if (more) (a.grabMore || (a.grabMore = [])).push(t); else a.grabbed = t;
+  t.face = -a.face; t.hitHeavy = true;
+  if (h && h.grabInvul && a.act) a.act.grabInvul = true;
   sfx.hit('blunt', false); fxText('抓取', t.x, t.y, t.z + 10, { col: '#ffcf6a', size: 10, dur: 0.5 });
   if (a.act && a.act.onGrab) a.act.onGrab(a, t);
+  if (!more && h && h.grabRange) grabSweep(a, t, h);
   holdGrabbed(a);
 }
+// 范围抓取：离抓取者 grabRange 以内（纵深减半）能抓的敌人，由近到远卷过来
+function grabSweep(a, t0, h) {
+  const cap = grabCap(h), sub = { ...h, grabRange: 0, grabMax: cap };
+  const L = ents.filter(t => t !== t0 && foe(a, t) && t.invul <= 0 && canGrab(a, t, h) && Math.abs(t.x - a.x) <= h.grabRange && Math.abs(t.y - a.y) <= h.grabRange * 0.5)
+    .sort((p, q) => Math.abs(p.x - a.x) - Math.abs(q.x - a.x));
+  for (const t of L) { if (grabFull(a, sub)) break; startGrab(a, t, sub); }
+}
 function holdGrabbed(a) {
-  const t = a.grabbed; if (!t || t.heldBy !== a) { a.grabbed = null; return; }
-  if (a.act && a.act.hold) { a.act.hold(a, t); return; }
+  let t = a.grabbed; while (t && t.heldBy !== a) { ungrab(a, t); t = a.grabbed; }
+  if (!t) return;
+  if (a.act && a.act.grabInvul) a.invul = Math.max(a.invul, 0.05);   // 抓住期间无敌（h.grabInvul）
+  const L = a.grabMore;
+  if (a.act && a.act.hold) { a.act.hold(a, t, 0); if (L) L.forEach((x, i) => { if (x.heldBy === a) a.act.hold(a, x, i + 1); }); return; }
   const g = a.act && a.act.grabAt || GRAB_AT;
   t.x = a.x + a.face * g[0]; t.y = a.y + 0.5; t.z = Math.max(0, a.z + g[1]); t.face = -a.face;
+  if (L) L.forEach((x, i) => { if (x.heldBy !== a) return; x.x = t.x + a.face * 12 * (i + 1); x.y = clamp(t.y + (i % 2 ? 7 : -7), 4, DEPTH - 4); x.z = t.z; x.face = -a.face; });   // 其余目标挤在主目标后面
 }
 const GRAB_AT = [34, 18];
 function updateHeld(t, dt) {
   t.heldT += dt;
   const a = t.heldBy;
-  if (!a || a.dead || a.grabbed !== t || a.st !== 'act' || t.heldT > 4) releaseHeld(t);
+  if (!a || a.dead || !holdsGrab(a, t) || a.st !== 'act' || t.heldT > 4) releaseHeld(t);
 }
 function releaseHeld(t) {
-  const a = t.heldBy; t.heldBy = null; t.heldClip = null; if (a && a.grabbed === t) a.grabbed = null;
+  const a = t.heldBy; t.heldBy = null; t.heldClip = null; ungrab(a, t);
   t.grabProt = isPvp(a, t) ? PVP.grabProt : 0.3;
   if (t.z > 2) { t.setState('air'); t.vz = 0; t.bounced = false; } else { t.setState('hit'); t.stun = 0.15; }
 }
-function dropGrab(a) { const t = a.grabbed; a.grabbed = null; if (t && t.heldBy === a) releaseHeld(t); }
+function dropGrab(a) {
+  const L = a.grabMore, t = a.grabbed; a.grabMore = null; a.grabbed = null;
+  if (t && t.heldBy === a) releaseHeld(t);
+  if (L) for (const x of L) if (x.heldBy === a) releaseHeld(x);
+}
 function throwGrab(a, h) {
   const t = a.grabbed; if (!t) return null;
-  a.grabbed = null; t.heldBy = null; t.heldClip = null; t.setState('hit'); t.grabProt = isPvp(a, t) ? PVP.grabProt : 0.3;
+  ungrab(a, t); t.heldBy = null; t.heldClip = null; t.setState('hit'); t.grabProt = isPvp(a, t) ? PVP.grabProt : 0.3;
   applyHit(a, t, { sure: true, noCounterBonus: true, throwHit: true, ...h }, { proj: !!h.proj });
   return t;
+}
+// 多目标：全部扔出（每个目标同一个攻击）
+function throwAll(a, h) { const out = []; for (let n = 0; a.grabbed && n < 32; n++) { const t = throwGrab(a, h); if (t) out.push(t); } return out; }
+/* ---- 投掷：throwArc(a, t, o) 把目标当投射物扔出去（格斗家 背摔 / 柔道家 / 街霸，B0-E） ----
+   o = { dx 水平距离（默认 180）, dy 纵深位移（0）, h 弧线最高点（90）, dur 飞行秒数（0.45）, dir 方向（默认 a.face；-a.face = 往身后摔，方向键选摔向由技能自己算）,
+         other 路上撞到别的敌人时对它的攻击（applyHit 的 h，每个敌人一次；默认 { dmg: 0.5, down: true, knock: 120 }；false = 不撞人），
+         hit 落地时对被扔的人的攻击（默认 { dmg: 0.2, spike: 300 } 砸地倒下；写 bounce: k 强制弹地；false = 只是落地），
+         onHitOther(a, t, o2) / onLand(a, t) 额外回调 }
+   被扔的人：先从抓取里放开，飞行中是浮空状态、位置按弧线走（不受重力 / AI，撞墙停在墙边），落地结算 hit；返回 t。
+   组队：队员扔主机的怪（傀儡）目前只在本地飞（主机那边照常放开），联机同步留给 B9 */
+function throwArc(a, t, o = {}) {
+  if (!t || t.dead) return null;
+  if (t.heldBy) releaseHeld(t);
+  const dir = o.dir ?? a.face, R = game.room;
+  let x1 = t.x + dir * (o.dx ?? 180); if (R) x1 = clamp(x1, R.x0 + t.w, R.x1 - t.w);
+  t.interrupt(); t.setState('air'); t.vx = t.vy = t.vz = 0; t.bounced = true; t.bouncing = false;
+  t.thrown = { src: a, dir, x0: t.x, y0: t.y, z0: t.z, x1, y1: clamp(t.y + (o.dy || 0), 4, DEPTH - 4), h: o.h ?? 90, dur: Math.max(0.05, o.dur ?? 0.45), k: 0, hitSet: new Set(), o };
+  t.play(t.clipOr('air'), true);
+  return t;
+}
+// 被扔出去的目标每帧（entity.update 调用）：沿弧线移动、撞人、落地
+function updateThrown(t, dt) {
+  const A = t.thrown, o = A.o, a = A.src;
+  A.k = Math.min(1, A.k + dt / A.dur); const k = A.k;
+  t.x = A.x0 + (A.x1 - A.x0) * k; t.y = A.y0 + (A.y1 - A.y0) * k; t.z = Math.max(0, A.z0 * (1 - k) + 4 * A.h * k * (1 - k));
+  t.rot = -A.dir * 0.5 * Math.sin(k * Math.PI);
+  if (o.other !== false) for (const e of ents) {   // 路上撞到的敌人（每个一次）
+    if (e === t || A.hitSet.has(e) || !foe(a, e) || e.invul > 0 || e.st === 'down' || e.heldBy || e.thrown) continue;
+    if (Math.abs(e.x - t.x) > e.w + t.w || Math.abs(e.y - t.y) > e.d + t.d || t.z > e.z + e.hurtH() || t.z + t.h * 0.55 < e.z) continue;
+    A.hitSet.add(e); applyHit(a, e, { sure: true, dmg: 0.5, down: true, knock: 120, hs: 0.05, radial: true, ...(o.other || {}) }, { proj: true, src: t });   // radial：从飞过来的人身上往外撞开
+    if (o.onHitOther) o.onHitOther(a, t, e);
+  }
+  if (k < 1 || t.thrown !== A) return;
+  t.thrown = null; t.z = 0.5; t.vz = -60; t.rot = 0;
+  if (o.hit !== false) applyHit(a, t, { sure: true, noCounterBonus: true, throwHit: true, dmg: 0.2, spike: 300, hs: 0.08, snd: 'blunt', shake: 3, ...(o.hit || {}) }, { proj: true, src: { x: t.x - A.dir * 10, y: t.y, z: 0, face: A.dir } });   // 击退方向 = 扔的方向
+  fxDust(t.x, t.y, 6, 18);
+  if (o.onLand) o.onLand(a, t);
 }

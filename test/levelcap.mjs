@@ -88,7 +88,7 @@ if (mode === 'fast') {
     const F = lv => { let s = 0, n = 0; for (const S of act) { try { const a = S.pow(lv), b = S.pow(1); if (a > 0 && b > 0 && isFinite(a / b)) { s += a / b; n++; } } catch (e) { /* 跳过 */ } } return s / n; };
     const skF = L => { let sp = 0; for (let l = 2; l <= L; l++) sp += 28 + l; const lv = Math.min(10 + Math.max(0, Math.floor((L - 30) / 3)), sp / 240), f = Math.floor(lv); return F(f) + (F(f + 1) - F(f)) * (lv - f); };
     const out = {};
-    for (const cls of ['sword', 'gun', 'mage']) {
+    for (const cls of openClasses()) {   // 已开放的职业（ready:false 的不算）
       const p = makePlayer(cls); game.player = p; const row = {};
       for (const L of [30, 60]) {
         game.lvl = L; const m = masteryOf(cls, null), w = CLASS_START_WEAPON[cls];

@@ -89,7 +89,7 @@ sec('角色位上限');
 {
   const P2 = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   await P2.goto(`${URL_BASE}?mute`); await P2.waitForFunction(() => window.__READY);
-  await P2.evaluate(() => { const chars = Array.from({ length: MAX_CHARS }, (_, i) => ({ ...save.defaults(['sword', 'gun', 'mage'][i % 3], '角色' + '甲乙丙丁戊己庚辛'[i]), lvl: 10 + i })); localStorage.setItem(save.key + '_bak', localStorage.getItem(save.key) || ''); localStorage.setItem(save.key, JSON.stringify({ v: SAVE_V, cur: 2, chars })); menus.closeAll(); menus.open('charselect'); });
+  await P2.evaluate(() => { const chars = Array.from({ length: MAX_CHARS }, (_, i) => ({ ...save.defaults(openClasses()[i % openClasses().length], '角色' + '甲乙丙丁戊己庚辛'[i]), lvl: 10 + i })); localStorage.setItem(save.key + '_bak', localStorage.getItem(save.key) || ''); localStorage.setItem(save.key, JSON.stringify({ v: SAVE_V, cur: 2, chars })); menus.closeAll(); menus.open('charselect'); });
   await untilOn(P2, () => document.querySelectorAll('#charsel .cslot').length > 0 && document.querySelectorAll('#charsel .cslot.empty').length === 0);
   ok((await P2.locator('#charsel .cslot.empty').count()) === 0 && (await P2.locator('#charsel .cslot.sel').count()) === 1, `${await ev(() => MAX_CHARS)} 个角色位全满，默认选中上次的角色`);
   ok(await P2.evaluate(() => document.querySelector('#charsel button.blue').classList.contains('off')), '角色位满时“创建角色”不可用');

@@ -8,15 +8,16 @@
 //   ✗报错     施放过程中页面报错
 // 输出：test/shots/skills/<职业>-<转职>.png（总览）、<职业>-<转职>.json（问题清单）
 // 用法：node test/skillshots.mjs sword:soulbender,gun:ranger [每个技能的张数=6]；all = 全部 18 个（基础职业 + 15 个转职）
-import { launch, URL_BASE } from './lib.mjs';
+import { launch, URL_BASE, openLists } from './lib.mjs';
 import fs from 'fs';
 import { execFileSync } from 'child_process';
 const out = 'test/shots/skills'; fs.mkdirSync(out, { recursive: true });
-const ALL = 'sword,gun,mage,sword:blade,sword:berserker,sword:asura,sword:soulbender,sword:ghostblade,gun:ranger,gun:launcher,gun:mechanic,gun:spitfire,gun:paramedic,mage:elemental,mage:battlemage,mage:summoner,mage:witch,mage:enchantress';
-const arg = process.argv[2] || 'sword:soulbender', list = (arg === 'all' ? ALL : arg).split(','), N = +(process.argv[3] || 6);
+const arg = process.argv[2] || 'sword:soulbender', N = +(process.argv[3] || 6);
+// all = 已开放的基础职业 + 转职（读 CLASSES，跳过 ready:false）
+const list = arg === 'all' ? await openLists().then(L => [...L.classes, ...L.jobs]) : arg.split(',');
 const SKILLS_AIR_DELAY = new Set(['silver', 'aircut']);
 let fail = 0;
-const SPEC = {}; for (const c of ['sword', 'gun', 'mage']) { try { SPEC[c] = JSON.parse(fs.readFileSync(`docs/skills/${c}.json`, 'utf8')); } catch (e) { /* 还没有规格 */ } }
+const SPEC = {}; for (const c of new Set(list.map(x => x.split(':')[0]))) { try { SPEC[c] = JSON.parse(fs.readFileSync(`docs/skills/${c}.json`, 'utf8')); } catch (e) { /* 还没有规格 */ } }
 for (const item of list) {
   const [cls, job] = item.split(':'), tag = `${cls}-${job || 'base'}`;
   const dir = `${out}/${tag}`; fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });

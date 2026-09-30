@@ -280,6 +280,17 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 上线：B0 部署 → B1+B2(原装武器)+B3 → fighter.ready → 每个 B4~B7 合并 → 该转职 J.ready → B2 时装 → B9 平衡 → 进排位 AI 池
 ```
 
+### 4.3 B0 已交付（2026-09-30，接口速查）
+- **开关**：`CLASSES.fighter.ready = false`、4 个转职各自 `J.ready = false`；判断一律用 `clsOpen(cls)` / `jobOpen(J)` / `openClasses()` / `openJobs(cls)`（content/classes/common.js）。开发测试网址加 **`?fighter=1`**（选角能建格斗家、转职窗口 4 个方向、风振挂出武器店、随机决斗能抽到）；测试房间 `?test&cls=fighter&fighter=1&mobs=0`。上线 = 删掉那一项 `ready: false`。
+- **存档**（#19 #20，要先部署）：不认识 / 没开放职业的角色原样留在 `save.chars`（`charOpen(c)`，不升级、不改、写回照抄），选角显示“需要更新”、不能进；`cloudSave.localChars()` 不再过滤；排位按上报的职业记（server/modules/arena.js）。
+- **文件归属**：`fighter.js`（B3）、`fighter_nen / _striker / _brawler / _grappler.js`（B4~B7，`CLASSES.fighter.jobs.<id>` 已登记：精通 / dmgType / growth / 三次觉醒名 / ready:false / skills:[] / anims:{}）、`content/quests/fighter.js`（B8）、`content/items/epics60_w_fighter.js`（B8 二期）。
+- **预留 id**：`FIGHTER_IDS`（130 个技能 id，按 SKILLS_OFFICIAL_fighter.md 定死）= `docs/skills/fighter.json` 的 `_meta.reserved`；武器 `knuckle / boxing（jobs: ['striker']）/ claw / tonfa（defPct 物防）/ gauntlet`。
+- **钩子**：`FIGHTER_HOOKS.{onHit, onHurt, beforeHurt, onCast, cancelHook, softCommit}.push(fn)`；`FIGHTER_ACT_PICK.push(p => 动作表 | null)`（龙虎啸换普攻）；`FIGHTER_FEEL[武器] = { reach, stun, physMp, physCd, jobCd }`，普攻表按武器由 `fighterActsFor(F)` 生成；技能写 `grab: true` 不吃臂铠惩罚；职业天生属抗 `C.res`。
+- **引擎（B0-E）**：hit 字段 `grabInvul / grabMax / grabRange / grabDown / grabAir（'only' | false）/ onGrabFail(a, t, h)`；`grabsOf(a)`、`throwAll(a, h)`、`throwArc(a, t, { dx, dy, h, dur, dir, other, hit, onHitOther, onLand })`；`addStatus(t, 'hold', 秒)`（无视霸体，领主 ×0.3）；指令 `'holdu'`（按住↑）、空中 C（`['', id, 'jump']` + 技能 `air: true, airOnly: true`）、跑攻中 X（占位跑攻已写 `keyLinks: { attack: 'f_chain' }`）、蹲伏 `fCrouchAct({ dur, hurtH, onX })`（`act.hurtH` 压低受击盒，C 起身）。单测在 `node test/combat.mjs` 最后一段。
+- **动画契约**：`SPR_ANIMS.fighter`（content/sprites.js，41 个片段），职业帧名 `f_jab1/2 f_low1/2 f_mid1/2 f_axe1/2 f_shoulder1/2 f_jkick1/2 f_high1/2 f_crouch f_grab f_knee f_lift f_slam f_spin1/2 f_stomp f_dive f_flykick f_palm1/2 f_focus f_seal f_quake f_smash`，没出帧时 `fAnim` 用通用帧兜底；矢量占位 `CLIPS.fighter`。
+- **测试**：`node test/fighter.mjs [save,ids,feel,switch,smoke]`（quick.sh g5 / all.sh）；`test/fighter_<转职>.mjs` 模板（各块补本转职的机制测试后加进 quick g2）；测试里的职业 / 转职 / 武器类型列表一律读 CLASSES（test/lib.mjs `openLists()`），开放后自动进列表。
+- **留给后面**：组队时队员抓主机的怪（grabDown / grabMax / throwArc 的主机同步，net/coop.js remoteGrab）→ B9；服务端 AI_POOL → B9；武器图 / 图标 / 流沙武器图标 → B2（没开放时测试自动跳过）；HP / MP 暂抄鬼剑士。
+
 ---
 
 ## 5. 风险与要主线程拍板的决定

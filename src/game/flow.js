@@ -35,7 +35,7 @@ function boot() {
     return withLoading(['spr:' + tcls, 'bg:forest', ...monBundles(kinds)], () => { save.newGame(tcls); Object.assign((save.data.flags ??= {}), { awaken: true, awaken2: true, awaken3: true }); /* 测试房间：一 / 二 / 三次觉醒都视为已完成觉醒任务 */ game.player = makePlayer(tcls); cmdLabel(tcls); for (const id of CLASSES[tcls].skills) game.skillLv[id] = Math.max(game.skillLv[id] || 0, 1); game.skillBar = CLASSES[tcls].skills.filter(id => !SKILLS[id].passive).concat(Array(SKILL_SLOTS).fill(null)).slice(0, SKILL_SLOTS); startTestRoom(); });
   }
   const alias = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
-  const devSave = () => { save.loadAll(); const i = PARAMS.has('cls') ? save.chars.findIndex(c => c.cls === tcls) : save.chars.length - 1; if (i >= 0) save.select(i); else save.newGame(tcls); save.apply(); };
+  const devSave = () => { save.loadAll(); const i = PARAMS.has('cls') ? save.chars.findIndex(c => c.cls === tcls && charOpen(c)) : save.chars.map(charOpen).lastIndexOf(true); if (i >= 0) save.select(i); else save.newGame(tcls); save.apply(); };
   if (PARAMS.has('dungeon')) { devSave(); return startGame(save.data.cls).then(() => { if (menus.isOpen('help')) menus.close('help'); if (PARAMS.has('lv')) testLoadout(+PARAMS.get('lv')); const id = PARAMS.get('dungeon') || 'lorien'; return enterDungeon(alias[id] || id, +(PARAMS.get('diff') || 0)); }); }
   if (PARAMS.has('town')) { devSave(); return startGame(save.data.cls); }
   if (PARAMS.has('resume') && save.load()) { save.apply(); return startGame(save.data.cls); }   // 从决斗场回来：直接接着玩上次的角色（不用再经过标题和选角）

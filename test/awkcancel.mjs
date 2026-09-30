@@ -2,12 +2,10 @@
 // 对每个转职：普攻第 1 段中途 → 觉醒；每个非觉醒主动技能放到约 30% 时 → 觉醒（一 / 二 / 三觉轮流）；觉醒中再按另一个觉醒 → 不能打断
 // 检查：觉醒真的切进来了、旧技能收尾后没有残留（人物回到站立、在地面、重力 / 隐身 / 抓取之类的字段复原）、没有页面报错
 // 用法：node test/awkcancel.mjs [sword:blade,gun:ranger,...]（默认 15 个转职全跑）
-import { launch, URL_BASE } from './lib.mjs';
+import { launch, URL_BASE, openLists } from './lib.mjs';
 import fs from 'fs';
 
-const ALL = ['sword:blade', 'sword:berserker', 'sword:asura', 'sword:soulbender', 'sword:ghostblade', 'gun:ranger', 'gun:launcher', 'gun:spitfire', 'gun:mechanic', 'gun:paramedic',
-  'mage:elemental', 'mage:battlemage', 'mage:summoner', 'mage:witch', 'mage:enchantress'];
-const list = process.argv[2] ? process.argv[2].split(',') : ALL;
+const list = process.argv[2] ? process.argv[2].split(',') : (await openLists()).jobs;   // 默认：已开放的全部转职（读 CLASSES，跳过 ready:false）
 
 function pageInit() {
   game.paused = true; window.toastMsg = () => {};

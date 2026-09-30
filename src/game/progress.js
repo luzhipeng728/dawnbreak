@@ -42,12 +42,12 @@ function onLevelUp() {
 }
 // 勇者加成：整体降低难度（2026-09-27 调整）
 const HERO_BONUS = { hp: 1.6, mp: 1.25, def: 1.3, atk: 1.2, spd: 1.12 };
-/* ---- 四维：职业初始值与每级成长（官方初始：鬼剑士 力7 智4 体7 精4、神枪手 6/5/6/5、魔法师 4/8/4/7、格斗家 8/4/7/4、圣职者 6/4/6/6） ---- */
+/* ---- 四维：职业初始值与每级成长（官方初始：鬼剑士 力7 智4 体7 精4、神枪手 6/5/6/5、魔法师 4/8/4/7、男格斗家 7/4/7/4（DFO，和男鬼剑一样）、圣职者 6/4/6/6） ---- */
 const CLASS_BASE4 = {
   sword: { str: [7, 2.2], int: [4, 1.2], vit: [7, 2.0], spr: [4, 1.2], mdefK: 0.8 },
   gun: { str: [6, 2.0], int: [5, 1.5], vit: [6, 1.8], spr: [5, 1.5], mdefK: 0.9 },
   mage: { str: [4, 1.1], int: [8, 1.9], vit: [4, 1.2], spr: [7, 1.8], mdefK: 1.15 },
-  fighter: { str: [8, 2.3], int: [4, 1.1], vit: [7, 2.0], spr: [4, 1.2], mdefK: 0.85 },
+  fighter: { str: [7, 2.3], int: [4, 1.1], vit: [7, 2.0], spr: [4, 1.2], mdefK: 0.85 },
   priest: { str: [6, 2.0], int: [4, 1.2], vit: [6, 2.0], spr: [6, 1.6], mdefK: 1.0 },
 };
 // 转职后的四维成长倍率（CLASSES[cls].jobs[job].growth 有就以它为准）
@@ -130,7 +130,7 @@ function recalcStats(p) {
   const hpMax = Math.round((C.hp0 + C.hpPer * (L - 1) + g('hp') + gearVit * 9) * (1 + g('hpPct')) * HB.hp);
   const mpMax = Math.round((C.mp0 + C.mpPer * (L - 1) + g('mp') + gearSpr * 7) * (1 + g('mpPct')) * HB.mp);
   const lvDef = C.def0 + C.defPer * (L - 1);
-  const def = (lvDef + g('def') + gearVit * 3) * (1 + g('defPct')) * HB.def;
+  const def = (lvDef + g('def') + gearVit * 3) * (1 + g('defPct') + (WT.defPct || 0)) * HB.def;   // WT.defPct：武器附带物防（格斗家 东方棍）
   const mdef = (lvDef * (B.mdefK || 1) + g('mdef') + gearSpr * 3) * (1 + g('defPct')) * HB.def;
   const hf = p.hpMax ? p.hp / p.hpMax : 1, mf = p.mpMax ? p.mp / p.mpMax : 1;
   // 写到实体上（语义见协作板）
@@ -146,7 +146,8 @@ function recalcStats(p) {
   p.hitRate = (WT.hit || 0) + g('hit'); p.evade = Math.min(0.5, g('evade'));
   const ea = g('elemAll'), ra = g('resAll');
   p.elem = { fire: g('fire') + ea, ice: g('ice') + ea, light: g('light') + ea, dark: g('dark') + ea };
-  p.res = { fire: g('rfire') + ra, ice: g('rice') + ra, light: g('rlight') + ra, dark: g('rdark') + ra };
+  const CR = C.res || {};   // 职业天生的属性抗性（格斗家 光 +20 / 暗 -20）
+  p.res = { fire: g('rfire') + ra + (CR.fire || 0), ice: g('rice') + ra + (CR.ice || 0), light: g('rlight') + ra + (CR.light || 0), dark: g('rdark') + ra + (CR.dark || 0) };
   p.hardness = g('hardness') + (WT.hardness || 0); p.stagger = g('stagger') + (WT.stagger || 0);
   p.atkElem = WT.elem || eq.atkElem || null;
   p.dmgUp = g('dmgUp'); p.dmgTaken = 1 - Math.min(0.5, g('dmgReduce'));

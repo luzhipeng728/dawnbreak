@@ -38,25 +38,26 @@ const BEAST_CLIPS = { ...GOB_CLIPS,
      bind    束缚：不能移动，但还能攻击（领主改为减速）
      taunt   挑衅：怪物的攻击目标强制切到施加者 src
      confuse 混乱：怪物乱走、不出招；玩家方向键反转（player.js 读 statusConfused(e)）
+     hold    强制硬直（格斗家组 B0-E，官方 Hold）：无视霸体直接打断、原地硬直 dur 秒；领主时长 ×0.3（抓轰炮 / 罗网 / 念之战矛 / 折颈等）
    免疫：t.statusImmune = { kind: true }；受击前钩子返回 noStatus 时，同一帧内不附加任何状态 */
 const STATUS_COL = { burn: '#ff7a2a', poison: '#b05aff', bleed: '#e02a2a', freeze: '#8ae0ff', stun: '#ffe070', slow: '#6ab0ff', blind: '#202030',
-  shock: '#fff38a', curse: '#9a4ad0', sleep: '#a8b0ff', root: '#d0a060', bind: '#7aa05a', taunt: '#ff5a3a', confuse: '#ff8ae0' };
+  shock: '#fff38a', curse: '#9a4ad0', sleep: '#a8b0ff', root: '#d0a060', bind: '#7aa05a', taunt: '#ff5a3a', confuse: '#ff8ae0', hold: '#ffb04a' };
 const STATUS_NAME = { burn: '灼烧', poison: '中毒', bleed: '出血', freeze: '冰冻', stun: '眩晕', slow: '减速', blind: '失明',
-  shock: '感电', curse: '诅咒', sleep: '睡眠', root: '定身', bind: '束缚', taunt: '挑衅', confuse: '混乱' };
-const STATUS_HARD = { stun: 1, freeze: 1, sleep: 1, root: 1 };   // 硬控：不能行动（进入 hit 状态）
+  shock: '感电', curse: '诅咒', sleep: '睡眠', root: '定身', bind: '束缚', taunt: '挑衅', confuse: '混乱', hold: '强制硬直' };
+const STATUS_HARD = { stun: 1, freeze: 1, sleep: 1, root: 1, hold: 1 };   // 硬控：不能行动（进入 hit 状态）
 function addStatus(t, kind, dur, o = {}) {
   if (t.dead || t.invul > 0 || t.remove) return;
   if (t.statusImmune && t.statusImmune[kind]) return;
   if (t._noStatusT === game.t && !o.force) return;   // 受击前钩子 noStatus：这一帧不附加状态
   if ((kind === 'root' || kind === 'bind') && t.boss && !o.force) kind = 'slow';   // 领主：定身 / 束缚改为减速
-  const sa = t.superArmor > 0 || (t.act && t.act.superArmor), hard = !!STATUS_HARD[kind];
-  if (hard && (t.boss || sa) && !o.force) dur *= 0.3;
+  const sa = t.superArmor > 0 || (t.act && t.act.superArmor), hard = !!STATUS_HARD[kind], hold = kind === 'hold';
+  if (hold ? t.boss : hard && (t.boss || sa) && !o.force) dur *= 0.3;   // 强制硬直：霸体照样打断，只有领主缩短
   t.status = t.status || {};
   const cur = t.status[kind];
   t.status[kind] = { t: Math.max(dur, cur ? cur.t : 0), dps: Math.max(o.dps || 0, cur ? cur.dps : 0), src: o.src || (cur && cur.src) || null, tick: cur ? cur.tick : 0.5,
     amt: o.amt ?? (cur ? cur.amt : undefined), hitDmg: Math.max(o.hitDmg || 0, cur ? cur.hitDmg || 0 : 0) };
   // 硬控：霸体动作中不打断（除非强制），浮空 / 倒地时等落地再生效
-  if (hard && (!sa || o.force) && t.st !== 'air' && t.st !== 'down' && t.z <= 2) { if (t.act) { const a = t.act; t.act = null; if (a.onEnd) a.onEnd(t, true); } t.setState('hit'); t.stun = dur; t.vx *= 0.3; }
+  if (hard && (!sa || o.force || hold) && t.st !== 'air' && t.st !== 'down' && t.z <= 2) { if (t.act) { const a = t.act; t.act = null; if (a.onEnd) a.onEnd(t, true); } t.setState('hit'); t.stun = dur; t.vx *= 0.3; }
   if (kind === 'root' || kind === 'bind') { t.vx = t.vy = 0; }
   if (!cur) fxText(STATUS_NAME[kind], t.x, t.y, t.z + 20, { col: STATUS_COL[kind], size: 10, dur: 0.8 });
 }
@@ -95,7 +96,7 @@ function updateStatus(t, dt) {
     if (s.dps) { s.tick -= dt; if (s.tick <= 0) { s.tick = 0.5; const dmg = Math.max(1, Math.round(s.dps * 0.5)); t.hp -= dmg; addNumber(dmg, t.x, t.y, t.z, { player: t.team === 'p' && !t.summon, col: STATUS_COL[k] }); if (t.hp <= 0 && !t.dead) { t.hp = 0; killEnt(t, s.src || t, {}); return; } } }
     if (STATUS_HARD[k]) {
       const sa = t.superArmor > 0 || (t.act && t.act.superArmor);
-      if (t.st !== 'hit' && t.st !== 'air' && t.st !== 'down' && t.st !== 'getup' && t.st !== 'held' && !sa) { if (t.act) { const a = t.act; t.act = null; if (a.onEnd) a.onEnd(t, true); } t.setState('hit'); t.stun = s.t; }
+      if (t.st !== 'hit' && t.st !== 'air' && t.st !== 'down' && t.st !== 'getup' && t.st !== 'held' && (!sa || k === 'hold')) { if (t.act) { const a = t.act; t.act = null; if (a.onEnd) a.onEnd(t, true); } t.setState('hit'); t.stun = s.t; }
       if (t.st === 'hit' && t.stun < s.t && (k === 'root' || k === 'sleep')) t.stun = Math.min(s.t, t.stun + dt * 2);
       if ((k === 'freeze' || k === 'sleep' || k === 'root') && t.st === 'hit') t.animT -= dt;
     }
@@ -116,6 +117,7 @@ function drawStatus(c, t) {
   if (S.shock && Math.floor(game.t * 12) % 3 === 0) { c.strokeStyle = '#fff38a'; c.lineWidth = 1.5; const y0 = sy(t.y, t.z + t.h * 0.5), w = t.w * 1.4; c.beginPath(); c.moveTo(X - w, y0 - 6); c.lineTo(X - 2, y0 + 4); c.lineTo(X + 3, y0 - 8); c.lineTo(X + w, y0 + 2); c.stroke(); }
   if (S.curse) { c.fillStyle = 'rgba(120,40,170,.55)'; for (let i = 0; i < 3; i++) { const a = game.t * 2 + i * TAU / 3; c.beginPath(); c.arc(X + Math.cos(a) * 11, top + 4 + Math.sin(a) * 3, 2.5, 0, TAU); c.fill(); } }
   if (S.root || S.bind) { c.strokeStyle = S.root ? 'rgba(210,160,90,.8)' : 'rgba(122,160,90,.8)'; c.lineWidth = 2; const Y0 = sy(t.y, 0); for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(X + i * 8, Y0); c.quadraticCurveTo(X + i * 12, Y0 - 12, X + i * 4, Y0 - 22); c.stroke(); } }
+  if (S.hold) { c.strokeStyle = STATUS_COL.hold; c.lineWidth = 1.5; c.globalAlpha = 0.6 + 0.4 * Math.sin(game.t * 12); c.beginPath(); c.ellipse(X, top + 4, 12, 4, 0, 0, TAU); c.stroke(); c.globalAlpha = 1; }
   if (S.taunt) { c.fillStyle = '#ff5a3a'; c.font = 'bold 12px sans-serif'; c.textAlign = 'center'; c.fillText('!', X, top - 6 + Math.sin(game.t * 10) * 2); }
   if (S.confuse) { c.fillStyle = '#ff8ae0'; c.font = 'bold 10px sans-serif'; c.textAlign = 'center'; for (let i = 0; i < 2; i++) { const a = game.t * 4 + i * Math.PI; c.fillText('?', X + Math.cos(a) * 10, top + Math.sin(a) * 3); } }
 }

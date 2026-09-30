@@ -50,6 +50,7 @@ function equipCompare(it) {
   if (!p || !it || it.kind !== 'equip' || !SLOTS.includes(it.slot)) return null;
   if (inv.equip[it.slot] === it) return { v: 'worn' };
   if (it.slot === 'weapon' && it.cls && it.cls !== p.cls) return { v: 'na', why: `${CLASSES[it.cls] ? CLASSES[it.cls].name : ''}专用武器，当前职业不能使用` };
+  if (it.slot === 'weapon' && !wtypeJobOk(it.wtype, game.job)) return { v: 'na', why: `${wtypeJobText(it.wtype)}专用武器，当前转职不能使用` };
   const sig = [game.lvl, game.job, save.data && save.data.weak > Date.now() ? 1 : 0, ...SLOTS.map(s => itemSigOf(inv.equip[s]))].join('|');
   if (CMP.sig !== sig) { CMP.sig = sig; CMP.map.clear(); CMP.type = mainDmgType(p); CMP.base = gearMetrics(p, CMP.type); }
   const key = itemSigOf(it); let r = CMP.map.get(key); if (r) return r;

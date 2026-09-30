@@ -131,8 +131,8 @@ const cloudSave = {
     else if (menus.isOpen('charselect')) menus.refresh('charselect');
     else if (menus.isOpen('title')) menus.refresh('title');
   },
-  // 本机（未登录时玩的）存档里的角色
-  localChars() { try { const d = JSON.parse(localStorage.getItem(LOCAL_SAVE_KEY) || 'null'); return d ? (d.chars || [d]).filter(c => c && CLASSES[c.cls]) : []; } catch (e) { return []; } },
+  // 本机（未登录时玩的）存档里的角色：不认识的职业（新版本的职业）也原样带上，不能丢（docs/CLASS_PLAN_FIGHTER.md #20）
+  localChars() { try { const d = JSON.parse(localStorage.getItem(LOCAL_SAVE_KEY) || 'null'); return d ? (d.chars || [d]).filter(c => c && typeof c === 'object' && typeof c.cls === 'string') : []; } catch (e) { return []; } },
   // 把本机角色追加到账号（名字重复的自动加后缀；超出角色位上限的不传）
   importLocal() {
     const add = this.localChars(); if (!add.length) return { n: 0, skipped: 0 };

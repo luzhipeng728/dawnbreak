@@ -201,11 +201,13 @@ const PAGE_SRC = String.raw`(() => {
     if (m.msHidden) { for (let k = 0; k < 6 && m.msHidden; k++) { for (const s of m.msMechs || []) if (s.id === 'invuln') { for (const o of s.objs || []) BH.kill(o); if (s.p.until === 'survive') s.t = Math.max(s.t, s.p.survive); if (s.p.until === 'hook') m.msInvulDone = true; } for (const e of [...ents]) if (e.team === 'e' && e !== m && !e.dead) BH.kill(e); await BH.gw(0.5); } r.back = !m.msHidden; }
     BH.clearAdds(); return r; };
   // 机器人：从领主房门口开始计时，领主倒下（bossDown）为止
-  BH.botStart = () => { const D = game.dungeon; BH.b0 = { t: D.t, hurt: D.hurt, deaths: bot.deaths || 0, mech: { ...MS_STATS.mech }, cast: { ...MS_STATS.cast } }; BH.bossDown = null; BH.maxPhase = 0;
+  BH.botStart = () => { const D = game.dungeon; BH.b0 = { t: D.t, hurt: D.hurt, deaths: bot.deaths || 0, mech: { ...MS_STATS.mech }, cast: { ...MS_STATS.cast } };
+    BH.live0 = new Set((ents || []).filter(e => e.msMechs).flatMap(e => e.msMechs.filter(x => !x.done).map(x => x.id)));   // 出场就启动的机制（groggy / enrage 这类常驻的）：botStart 之前已经在跑，也算“这场触发过” BH.bossDown = null; BH.maxPhase = 0;
     const bd = D.bossDown.bind(D); D.bossDown = b => { BH.bossDown = { t: D.t, hurt: D.hurt, deaths: bot.deaths || 0 }; return bd(b); };
     bot.on = true; window.__botDone = null; };
   BH.botPoll = () => { const D = game.dungeon, m = D && D.boss; if (m && m.msPhase > BH.maxPhase) BH.maxPhase = m.msPhase; const b0 = BH.b0, e = BH.bossDown;
     const dm = {}; for (const k in MS_STATS.mech) { const v = MS_STATS.mech[k] - (b0.mech[k] || 0); if (v > 0) dm[k] = v; }
+    for (const k of BH.live0 || []) if (!dm[k]) dm[k] = 1;
     const dc = {}; for (const k in MS_STATS.cast) { const v = MS_STATS.cast[k] - (b0.cast[k] || 0); if (v > 0) dc[k] = v; }
     return { done: !!e, time: e ? Math.round(e.t - b0.t) : D ? Math.round(D.t - b0.t) : null, hurt: e ? e.hurt - b0.hurt : D ? D.hurt - b0.hurt : null, deaths: (e ? e.deaths : bot.deaths || 0) - b0.deaths,
       bossHp: m ? Math.round(m.hp / m.hpMax * 100) : null, phase: BH.maxPhase, phases: m ? (m.def_.msPhases || []).length : 0, mech: dm, cast: dc, hp: Math.round(game.player.hp / game.player.hpMax * 100), state: D ? D.state : 'none' }; };

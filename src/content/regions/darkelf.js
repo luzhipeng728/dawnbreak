@@ -25,23 +25,23 @@ const DE_LAVA_FLOOR = { use: 'arena', kind: 'tiles', cols: 7, hot: 0.43, every: 
 // 王的遗迹：王的五骑士车轮战（官方顺序：风 → 守护 → 冰 → 炎 → 光），各带一个招牌；打完波罗丁才亲自出手
 const DE_BORO_KNIGHTS = { use: 'gauntlet', boss: 'watch', gap: 1.5, col: '#d8c0ff', say: '王的五骑士依次上前——打倒他们，不灭之王才会亲自出手！', done: '不灭之王 波罗丁亲自出手了！',
   waves: [
-    { kind: 'knightWind', name: '风之涡苏', hp: 0.8, say: '风之骑士涡苏——隐身时伤害降低，看准影子打！',
+    { kind: 'knightWind', name: '风之涡苏', hp: 1, say: '风之骑士涡苏——隐身时伤害降低，看准影子打！',
       mechs: [{ use: 'stance', every: [5, 6], modes: [{ id: 'hide', name: '隐身', invis: 0.85, dmgTaken: 0.5, col: '#9aff9a', say: '风之涡苏隐身了！' }, { id: 'show', name: '现身', col: '#9aff9a', aura: false }] }] },
-    { kind: 'knightGuard', name: '守护之迈拉', hp: 0.9, say: '守护骑士迈拉——红光反弹物理，蓝光反弹魔法！',
+    { kind: 'knightGuard', name: '守护之迈拉', hp: 1, say: '守护骑士迈拉——红光反弹物理，蓝光反弹魔法！',
       mechs: [{ use: 'stance', every: [6, 6], modes: [{ id: 'red', name: '赤之守护（反弹物理）', reflect: 'phys', col: '#ff5a5a', say: '赤之守护——物理攻击会被反弹！' }, { id: 'blue', name: '蓝之守护（反弹魔法）', reflect: 'magic', col: '#6ab0ff', say: '蓝之守护——魔法攻击会被反弹！' }] }] },
-    { kind: 'knightIce', name: '冰之埃斯顿', hp: 0.8, say: '冰之骑士埃斯顿——地上的冰刃会冻住脚，站进没亮的那一排！' },
-    { kind: 'knightFire', name: '炎之古拉德', hp: 0.8, say: '炎之骑士古拉德——打它会在你身上叠炸弹，叠满会爆！' },
-    { kind: 'knightLight', name: '光之沃德咯斯', hp: 0.9, say: '光之骑士沃德咯斯——全屏闪电，找没亮的那一排！' }] };
+    { kind: 'knightIce', name: '冰之埃斯顿', hp: 1, say: '冰之骑士埃斯顿——地上的冰刃会冻住脚，站进没亮的那一排！' },
+    { kind: 'knightFire', name: '炎之古拉德', hp: 1, say: '炎之骑士古拉德——打它会在你身上叠炸弹，叠满会爆！' },
+    { kind: 'knightLight', name: '光之沃德咯斯', hp: 1, say: '光之骑士沃德咯斯——全屏闪电，找没亮的那一排！' }] };
 const DE_BORO_UNDYING = { use: 'shield', hp: 0.05, dur: 14, punish: 'nova', onBreak: 'groggy', col: '#c8a0ff', say: '不灭之王——打碎护盾！' };
 // 无头骑士：低血梦魇狂奔（回血，钩子 REGION_HOOKS.headless）↔ 喘息（受到的伤害 +30%）轮换；狂奔时只放自己的两招
 const DE_HEADLESS_GALLOP = { use: 'stance', sig: '梦魇狂奔 ↔ 喘息', every: [9, 11], modes: [
   { id: 'gallop', name: '梦魇狂奔（回血）', col: '#b890ff', speed: 1.7, replace: true, say: '无头骑士开始满场狂奔——梦魇之力在回复它的伤口！',
-    skills: [{ use: 'dash', carry: true, speed: 820, windup: 0.9, hw: 26, dmg: 1.2, col: '#b890ff', cd: [4, 5.5], w: 2 },
-      { use: 'lanes', kind: 'runner', runner: 'nightmareShade', lanes: 5, hit: 4, speed: 780, windup: 1.0, dmg: 1.1, col: '#b890ff', cd: [6, 8], w: 1.4 }] },
+    skills: [{ use: 'dash', carry: true, speed: 820, windup: 0.9, hw: 26, dmg: 1.2, col: '#b890ff', cd: [6, 8], w: 2 },
+      { use: 'lanes', kind: 'runner', runner: 'nightmareShade', lanes: 5, hit: 4, speed: 950, windup: 1.0, dmg: 1.1, col: '#b890ff', cd: [8, 10], w: 1.4, then: { use: 'hold', dur: 1.8, clip: 'roar', col: '#b890ff' } }] },
   { id: 'rest', name: '喘息', col: '#ffe070', dmgTaken: 1.3, say: '无头骑士停下来喘息——趁现在！' }] };
 // 诺伊佩拉：搜捕团祭司（两个一起上，8 秒内没一起倒下就互相复活；狄瑞吉这时裹在瘟疫里打不动）、瘟疫爆发（远离）、分裂（钩子 split）
 const DE_NEIPERA_PRIESTS = { use: 'gauntlet', boss: 'watch', window: 8, reviveHp: 0.6, gap: 1, col: '#d8c880', say: '狄瑞吉裹进了瘟疫——搜捕团祭司会互相复活，8 秒内把两个都打倒！', done: '瘟疫散开了——狄瑞吉的幻影又动了！',
-  waves: [{ kind: 'searchPriest', n: 2, hp: 1.3, name: '搜捕团祭司', say: '搜捕团的两名祭司——8 秒内一起打倒！' }] };
+  waves: [{ kind: 'searchPriest', n: 2, hp: 1.6, name: '搜捕团祭司', say: '搜捕团的两名祭司——8 秒内一起打倒！' }] };
 const DE_NEIPERA_BURST = { use: 'safezone', mode: 'far', r: 240, windup: 3.2, frac: 0.35, col: '#c8b860', say: '瘟疫爆发——远离狄瑞吉！' };
 const DE_DIREGIE_SPLIT = { use: 'split', n: 3, kind: 'diregieShard', window: 10, reviveHp: 0.5, col: '#c0a0ff', say: '狄瑞吉的幻影分裂了——10 秒内把三块碎片全部打倒！' };
 defineRegion({
@@ -168,7 +168,7 @@ defineRegion({
   bosses: {
     // 怨恨之摩根（官方 HK66）：死亡诅咒（头顶骷髅标记，1.5 秒后一大片——跳起来 / 离队友远一点）、连扔 3 个骷髅头（到点爆炸，打碎就没事）、
     // 起身震击、被背击喷毒雾；血量过半调配禁忌药剂（打断 → 破招）
-    morgan: { name: '怨恨之摩根', lvl: 32, power: 1.15, size: [14, 12, 112], elem: 'dark', art: 'deMorgan', pref: 160,
+    morgan: { name: '怨恨之摩根', lvl: 32, power: 1.35, size: [14, 12, 112], elem: 'dark', art: 'deMorgan', pref: 160,
       traits: { back: { do: { use: 'pool', zone: 'poison', at: 'self', r: 100, windup: 0.9, linger: 5, col: '#c8e070', say: '背后挨打——喷出毒雾！' }, cd: 7 },
         onGetup: { use: 'aoe', shape: 'circle', at: 'self', r: 150, windup: 0.9, dmg: 1.1, col: '#c8e070', say: '起身震击！' } },
       mechs: [{ use: 'groggy', max: 90, dur: 6 }],
@@ -184,28 +184,28 @@ defineRegion({
             { use: 'summon', kind: 'boneThrower', n: 2, max: 3, cd: [16, 20], w: 0.7 }] },
       ] },
     // 艾克洛索（官方 HK68）：升天后追踪落下（黄圈 + 电流）、弹珠式连续弹射（撞墙反弹，最后一下撞晕自己）、喷网 3 连（束缚）、蜘蛛导弹（跳起躲）、召小蜘蛛
-    ekloso: { name: '艾克洛索', lvl: 33, power: 1.1, variantOf: 'poisonSpider', size: [26, 16, 90], weight: 4, speed: 105, art: ['deSpider', { hue: 80, sat: 1.2, bright: 0.8, only: [230, 330] }], scale: 1.9, pref: 110,
+    ekloso: { name: '艾克洛索', lvl: 33, power: 1.5, variantOf: 'poisonSpider', size: [26, 16, 90], weight: 4, speed: 105, art: ['deSpider', { hue: 80, sat: 1.2, bright: 0.8, only: [230, 330] }], scale: 1.9, pref: 110,
       mechs: [{ use: 'groggy', max: 100, dur: 6 }],
       phases: [
         { at: 1, skills: [
           { use: 'swipe', clip: 'bite', reach: 110, width: 30, windup: 0.95, dmg: 1.2, status: 'poison', cd: [1.8, 2.8], w: 2 },
           { use: 'seq', id: 'web3', cd: [8, 11], w: 1.2, say: '喷网三连——被网住就动不了！', steps: [0, 1, 2].map(() => ({ use: 'shot', mode: 'straight', speed: 380, dmg: 0.55, status: 'bind', sdur: 0.8, size: 30, col: '#e8e0ff' })) },
           { use: 'leap', id: 'ascend', clip: 'sigA', crouch: 0.25, up: 0.35, track: 0.5, fall: 0.5, r: 120, hover: 560, dmg: 1.5, status: 'shock', sdur: 3, col: '#ffe070', cd: [12, 15], w: 1.3, say: '艾克洛索升天了——锁定后跑出黄圈！' },
-          { use: 'lanes', id: 'missile', kind: 'shot', lanes: 5, hit: 4, windup: 1.0, speed: 620, jump: true, dmg: 1.1, col: '#c8e070', cd: [10, 13], w: 1, say: '蜘蛛导弹——跳起来！' },
+          { use: 'lanes', id: 'missile', kind: 'shot', lanes: 5, hit: 4, windup: 1.0, speed: 900, jump: true, dmg: 1.1, col: '#c8e070', cd: [10, 13], w: 1, say: '蜘蛛导弹——跳起来！', then: { use: 'hold', dur: 1.9, clip: 'roar', col: '#c8e070' } },
           { use: 'summon', kind: 'smallSpider', n: 3, max: 4, cd: [13, 17], w: 0.7 }] },
         { at: 0.65, enter: { say: '艾克洛索躲进了蛛网——击破蜘蛛卵！', col: '#e8e0ff', mechs: [{ use: 'invuln', until: 'crystals', n: 3, name: '蜘蛛卵', hpFrac: 0.03 }] },
           skills: [{ use: 'seq', id: 'pinball', clip: 'sigB', cd: [13, 16], w: 1.3, say: '弹珠弹射——看着红线躲开！', steps: [DE_EKLOSO_BOUNCE(0.2, 1.0), DE_EKLOSO_BOUNCE(0.2, 1.0), DE_EKLOSO_BOUNCE(2, 1.2)] }] },
         { at: 0.35, enter: { col: '#c8e070', mechs: [DE_EKLOSO_VENOM] }, skills: [{ use: 'mech', mech: DE_EKLOSO_VENOM, cd: [22, 28], gap: 12, w: 0.8 }] },
       ] },
     // 邪龙斯皮兹的头部（官方 HK69：被锁链缚住的骨龙巨首，固定不动）：吐“邪龙的牺牲者”（追人自爆）、嘴边毒雾（残留）、锁链成排横扫、吼叫眩晕
-    spiz: { name: '邪龙斯皮兹的头部', lvl: 34, power: 1.15, size: [26, 16, 120], weight: 6, speed: 60, elem: 'dark', art: 'deSpiz', scale: 1.3, pref: 150, traits: { sa: 'cast', rooted: true },
+    spiz: { name: '邪龙斯皮兹的头部', lvl: 34, power: 1.3, size: [26, 16, 120], weight: 6, speed: 60, elem: 'dark', art: 'deSpiz', scale: 1.3, pref: 150, traits: { sa: 'cast', rooted: true },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }],
       phases: [
         { at: 1, skills: [
           { use: 'swipe', clip: 'bite', reach: 170, width: 38, windup: 0.95, dmg: 1.3, down: true, cd: [2.2, 3.2], w: 2 },
           { use: 'pool', id: 'fog', clip: 'sigB', zone: 'poison', at: 'front', r: 120, windup: 1.0, linger: 7, dmg: 0.8, col: '#b0d060', cd: [9, 12], w: 1.4, say: '邪龙吐出了毒雾——别站在雾里！' },
           { use: 'summon', id: 'victims', clip: 'sigA', kind: 'spizVictim', n: 3, max: 4, cd: [12, 15], w: 1.2, say: '邪龙的牺牲者——在它们扑上来之前打倒！' },
-          { use: 'lanes', id: 'chains', kind: 'wave', lanes: 5, hit: 4, windup: 1.1, speed: 700, dmg: 1.2, col: '#a8a8c0', cd: [11, 14], w: 1, say: '锁链横扫——站进没亮的那一排！' },
+          { use: 'lanes', id: 'chains', kind: 'wave', lanes: 5, hit: 4, windup: 1.1, speed: 900, dmg: 1.2, col: '#a8a8c0', cd: [11, 14], w: 1, say: '锁链横扫——站进没亮的那一排！', then: { use: 'hold', dur: 2.0, clip: 'roar', col: '#a8a8c0' } },
           { use: 'laser', windup: 1.2, dur: 1.2, sweep: 60, dmg: 0.45, col: '#b070ff', cd: [8, 10], say: '龙息！' }] },
         { at: 0.6, enter: { col: '#e8d8ff', mechs: [DE_SPIZ_ROAR] },
           skills: [{ use: 'mech', mech: DE_SPIZ_ROAR, cd: [24, 30], w: 0.8 },
@@ -241,11 +241,11 @@ defineRegion({
           { use: 'swipe', clip: 'slam', reach: 110, width: 32, windup: 0.95, dmg: 1.3, down: true, cd: [2.4, 3.4], w: 2 },
           { use: 'aoe', id: 'net', shape: 'circle', at: 'target', r: 90, windup: 1.0, dmg: 0.6, status: 'bind', sdur: 1.8, col: '#c8b890', cd: [9, 12], w: 1.4, say: '阿特拉斯撒网——被网住就动不了！' },
           { use: 'pool', zone: 'slow', at: 'target', n: 2, scatter: 120, r: 70, windup: 1.0, linger: 6, dmg: 0.5, col: '#c8b890', cd: [12, 15], say: '满地都是网！' }] },
-        { at: 0.35, enter: { col: '#ff5a3a', mechs: [{ use: 'enrage', t: 0.3, atk: 1.3, speed: 1.35, say: '暴走了！' }] } },
+        { at: 0.35, enter: { col: '#ff5a3a', mechs: [{ use: 'enrage', t: 1, atk: 1.3, speed: 1.35, say: '暴走了！' }] } },
       ] },
     // 不灭之王 波罗丁（官方 HK72）：王的五骑士车轮战（风 隐身 / 守护 红蓝反弹 / 冰 冰刃 / 炎 叠炸弹 / 光 全屏闪电）→ 本人：眩晕连击、三连震（跳三次）、
     // 炎与冰的法阵、不灭之王护盾
-    boroding: { name: '不灭之王 波罗丁', lvl: 36, size: [18, 14, 132], weight: 5, speed: 115, elem: 'dark', art: 'deBoroding', scale: 1.15, pref: 100, traits: { sa: 'cast' },
+    boroding: { name: '不灭之王 波罗丁', lvl: 36, power: 1.4, size: [18, 14, 132], weight: 5, speed: 115, elem: 'dark', art: 'deBoroding', scale: 1.15, pref: 100, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }, DE_BORO_KNIGHTS],
       phases: [
         { at: 1, skills: [
@@ -261,21 +261,21 @@ defineRegion({
       ] },
     // 无头骑士（官方 HK70）：全程霸体；影之梦魇沿纵深奔袭（留一排缺口）；冲撞把人顶到墙边多段；低血满图狂奔回血（输出检查）↔ 喘息；濒死几秒打不动
     // 美术：官方是骑着黑色梦魇的轮廓，新形象写在 art.chars.deHeadless.forms.rider（美术队列出图后把 art 换成 deHeadless_rider，现在的步战图给瘟疫之源的精英用）
-    headlessKnight: { name: '无头骑士', lvl: 37, power: 1.1, size: [16, 14, 128], speed: 125, elem: 'dark', art: 'deHeadless', scale: 1.15, pref: 150, hook: 'headless', traits: { sa: 'always' },
+    headlessKnight: { name: '无头骑士', lvl: 37, power: 1.5, size: [16, 14, 128], speed: 125, elem: 'dark', art: 'deHeadless', scale: 1.15, pref: 150, hook: 'headless', traits: { sa: 'always' },
       mechs: [{ use: 'groggy', max: 120, dur: 5 }],
       phases: [
         { at: 1, skills: [
           { use: 'swipe', n: 2, reach: 108, width: 24, windup: 0.95, dmg: 1.1, cd: [1.8, 2.6], w: 2 },
           { use: 'dash', id: 'ram', clip: 'sigA', carry: true, speed: 760, windup: 1.0, hw: 26, dmg: 1.3, col: '#b890ff', cd: [8, 11], w: 1.4, say: '冲锋——别被顶到墙上！' },
-          { use: 'lanes', id: 'nightmare', clip: 'sigB', kind: 'runner', runner: 'nightmareShade', lanes: 5, hit: 4, speed: 720, windup: 1.1, dmg: 1.3, col: '#b890ff', cd: [12, 15], w: 1.2, say: '影之梦魇奔袭——站进没亮的那一排！' },
+          { use: 'lanes', id: 'nightmare', clip: 'sigB', kind: 'runner', runner: 'nightmareShade', lanes: 5, hit: 4, speed: 900, windup: 1.1, dmg: 1.3, col: '#b890ff', cd: [12, 15], w: 1.2, say: '影之梦魇奔袭——站进没亮的那一排！', then: { use: 'hold', dur: 2.0, clip: 'roar', col: '#b890ff' } },
           { use: 'seq', cd: [10, 13], w: 1, steps: [{ use: 'blink', to: 'away', dist: 260 }, { use: 'dash', len: 480, speed: 820, windup: 0.9, dmg: 1.2, col: '#b890ff' }] }] },
         { at: 0.6, enter: { say: '无头骑士召来了更多的梦魇！', col: '#b890ff' },
-          skills: [{ use: 'lanes', id: 'nightmare2', kind: 'runner', runner: 'nightmareShade', lanes: 5, hit: 4, n: 2, gap: 1.4, speed: 760, windup: 1.1, dmg: 1.2, col: '#b890ff', cd: [16, 20], w: 1, say: '梦魇两连奔袭！' }] },
+          skills: [{ use: 'lanes', id: 'nightmare2', kind: 'runner', runner: 'nightmareShade', lanes: 6, hit: 5, speed: 950, windup: 1.1, dmg: 1.2, col: '#b890ff', cd: [16, 20], w: 1, say: '梦魇群奔袭——只剩一排缺口！', then: { use: 'hold', dur: 1.9, clip: 'roar', col: '#b890ff' } }] },
         { at: 0.35, enter: { col: '#b890ff', mechs: [DE_HEADLESS_GALLOP] } },
         { at: 0.15, enter: { say: '无头骑士在濒死中挣扎——几秒内打不动它！', col: '#e8d8ff', mechs: [{ use: 'invuln', until: 'survive', survive: 3.5, hide: false, col: '#e8d8ff' }] } },
       ] },
     // 狄瑞吉的幻影（官方 HK73）：流动之躯（吞噬 → 爆开）、瘟疫孢子；搜捕团祭司（两个互相复活）；瘟疫爆发（远离）；低血分裂成 3 块（共享击杀，钩子 split）
-    diregie: { name: '狄瑞吉的幻影', tier: 'raid', lvl: 39, size: [18, 15, 130], speed: 95, elem: 'dark', art: 'deDiregie', scale: 1.4, pref: 140,
+    diregie: { name: '狄瑞吉的幻影', tier: 'raid', lvl: 39, power: 1.8, size: [18, 15, 130], speed: 95, elem: 'dark', art: 'deDiregie', scale: 1.4, pref: 140,
       mechs: [{ use: 'groggy', max: 120, dur: 7, mul: 1.6 }],
       phases: [
         { at: 1, skills: [

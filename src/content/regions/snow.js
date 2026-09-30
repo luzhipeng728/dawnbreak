@@ -184,7 +184,7 @@ defineRegion({
 
   bosses: {
     // 查理（官方 HK57）：火箭拳、霸体冲撞、空中降冰块、坚硬玩具（固定 6 下打碎）；房间：保护查理的心脏（玩具摸到 → 查理回血）；心脏的冰晶护盾
-    charlie: { name: '查理', lvl: 37, power: 1.1, size: [20, 15, 140], weight: 5, speed: 75, elem: 'ice', art: 'snCharlie', scale: 1.15, pref: 110, traits: { sa: 'cast' },
+    charlie: { name: '查理', lvl: 37, power: 1.55, size: [20, 15, 140], weight: 5, speed: 75, elem: 'ice', art: 'snCharlie', scale: 1.15, pref: 110, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 90, dur: 6 }],
       phases: [
         { at: 1, skills: [
@@ -205,7 +205,7 @@ defineRegion({
           skills: [{ use: 'summon', kind: 'frostGolem', n: 1, max: 2, cd: [18, 24] }, { use: 'rain', kind: 'hex', n: 5, r: 48, windup: 1.2, dmg: 1.1, col: '#bfe6ff', cd: [8, 10] }] },
       ] },
     // 野兽师鲁乌格 + 冰齿沙凡特（官方 HK58，双领主）：上勾拳、召寒冰虎、加攻速；沙凡特出血飞跃、爪击突进；两个被远程打到都会霸体（逼近战）
-    ruug: { name: '野兽师鲁乌格', lvl: 39, variantOf: 'avalancheRabina', size: [15, 12, 116], speed: 110, art: ['snBantu', { hue: -60, sat: 1.1, bright: 0.85 }], scale: 1.3, pref: 140, traits: { saVsRanged: 1.2 },
+    ruug: { name: '野兽师鲁乌格', lvl: 39, power: 1.3, variantOf: 'avalancheRabina', size: [15, 12, 116], speed: 110, art: ['snBantu', { hue: -60, sat: 1.1, bright: 0.85 }], scale: 1.3, pref: 140, traits: { saVsRanged: 1.2 },
       mechs: [{ use: 'groggy', max: 100, dur: 6 }, { use: 'duo', with: ['sabertooth'], hp: 0.55, onPartnerDown: 'enrage', atk: 1.3, speed: 1.2, col: '#bfe6ff', say: '野兽师鲁乌格和冰齿沙凡特一起上了——被远程打到它们会霸体，贴上去打！' }],
       phases: [
         { at: 1, skills: [
@@ -214,22 +214,22 @@ defineRegion({
           { use: 'shot', clip: 'sigB', mode: 'spread', n: 3, spread: 50, speed: 300, dmg: 0.85, cd: [5, 7], say: '飞斧！' },
           { use: 'summon', kind: 'iceTiger', n: 2, max: 3, cd: [14, 18], w: 0.8, say: '去吧，孩子们！' },
           { use: 'buff', kind: 'haste', target: 'allies', dur: 8, cd: [15, 19], w: 0.6, say: '狂野的号令——加速！' }] },
-        { at: 0.5, enter: { col: '#bfe6ff', mechs: [{ use: 'enrage', t: 0.3, atk: 1.25, speed: 1.2, say: '吹响了兽笛——野兽们狂暴了！' }] } },
+        { at: 0.5, enter: { col: '#bfe6ff', mechs: [{ use: 'enrage', t: 1, atk: 1.25, speed: 1.2, say: '吹响了兽笛——野兽们狂暴了！' }] } },
       ] },
-    sabertooth: { name: '冰齿沙凡特', lvl: 39, size: [22, 15, 90], scale: 1.45, weight: 3, speed: 140, elem: 'ice', art: ['snTiger', { hue: 20, sat: 0.8, bright: 0.9 }], pref: 80, noGrab: true, traits: { saVsRanged: 1.2 },
+    sabertooth: { name: '冰齿沙凡特', lvl: 39, power: 1.2, size: [22, 15, 90], scale: 1.45, weight: 3, speed: 140, elem: 'ice', art: ['snTiger', { hue: 20, sat: 0.8, bright: 0.9 }], pref: 80, noGrab: true, traits: { saVsRanged: 1.2 },
       mechs: [{ use: 'groggy', max: 70, dur: 5 }],
       phases: [{ at: 1, skills: [
         { use: 'swipe', clip: 'bite', reach: 94, width: 28, windup: 0.95, dmg: 1.2, cd: [1.8, 2.6], w: 2 },
         { use: 'leap', id: 'bleedLeap', crouch: 0.25, up: 0.3, track: 0.55, fall: 0.5, r: 100, hover: 360, dmg: 1.3, status: 'bleed', sdur: 3, col: '#e04a4a', cd: [9, 12], w: 1.3, say: '出血飞跃——锁定后跑出圈！' },
         { use: 'dash', clip: 'pounce', len: 420, speed: 760, windup: 1.0, dmg: 1.2, col: '#bfe6ff', cd: [6, 8], say: '爪击突进！' }] }] },
     // 塞斯奇（官方 HK60）：近身抓到头顶狂扁、双掌震地的雪波（沿纵深推进，留一排）、召小雪魈、血量很多；房间：库尼图腾（红 = 狂暴 / 蓝 = 回血，打碎就没事）
-    seski: { name: '塞斯奇', lvl: 40, power: 1.2, variantOf: 'frostApe', size: [22, 16, 140], weight: 6, speed: 60, art: ['snYeti', { hue: -20, sat: 0.8, bright: 0.85 }], scale: 1.55, pref: 110, traits: { sa: 'cast' },
+    seski: { name: '塞斯奇', lvl: 40, power: 1.7, variantOf: 'frostApe', size: [22, 16, 140], weight: 6, speed: 60, art: ['snYeti', { hue: -20, sat: 0.8, bright: 0.85 }], scale: 1.55, pref: 110, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 120, dur: 6 }],
       phases: [
         { at: 1, skills: [
           { use: 'grab', id: 'pummel', clip: 'sigA', reach: 96, windup: 0.95, hold: 1.4, dmg: 0.8, throwDmg: 1.7, cd: [6, 8], w: 1.6, say: '抓住了——举过头顶狂扁！' },
           { use: 'swipe', clip: 'slam', reach: 124, width: 34, windup: 0.95, dmg: 1.3, down: true, cd: [2.2, 3.2], w: 2 },
-          { use: 'lanes', id: 'snowwave', clip: 'sigB', kind: 'wave', lanes: 5, hit: 4, from: 'boss', windup: 1.1, speed: 620, dmg: 1.3, col: '#e8f4ff', cd: [9, 12], w: 1.4, say: '双掌震地——雪波！站进没亮的那一排！' },
+          { use: 'lanes', id: 'snowwave', clip: 'sigB', kind: 'wave', lanes: 5, hit: 4, from: 'boss', windup: 1.1, speed: 900, dmg: 1.3, col: '#e8f4ff', cd: [9, 12], w: 1.4, say: '双掌震地——雪波！站进没亮的那一排！', then: { use: 'hold', dur: 2.0, clip: 'roar', col: '#e8f4ff' } },
           { use: 'plant', id: 'totemRed', kind: 'kuniTotemRed', n: 1, at: 'spots', fuse: 10, hits: 5, onFuse: 'buff', max: 1, label: '红图腾', col: '#ff6a5a', cd: [18, 22], w: 0.8, say: '库尼红图腾——不打碎它，塞斯奇会狂暴！' },
           { use: 'summon', kind: 'snowApe', n: 2, max: 3, cd: [15, 19], w: 0.7, say: '小雪魈们，上！' }] },
         { at: 0.5, enter: { say: '塞斯奇捶胸咆哮！', col: '#e8f4ff', mechs: [SN_SESKI_POUND] },
@@ -251,7 +251,7 @@ defineRegion({
     // 冰雪女王洛丝（官方 HK61）：和冰晶王座融为一体、不能移动，坐在王座上指挥（rooted）；雷剑克鲁斯把她当成恋人守护她（连线）；
     // 五宫女（回复宫女会给女王回血，先打它）；洛丝的壁钟（钟响时躲到王座后，钩子 roseClock）；最后走下王座（form）
     // 美术：王座上的形态写在 art.chars.snRose.forms.throne（美术队列出图后领主平时用 snRose_throne，走下王座的 form 换回 snRose）
-    rose: { name: '冰雪女王洛丝', lvl: 42, power: 1.1, size: [15, 12, 124], speed: 95, elem: 'ice', art: 'snRose', scale: 1.15, pref: 220, hook: 'roseClock', traits: { rooted: true, sa: 'cast' },
+    rose: { name: '冰雪女王洛丝', lvl: 42, power: 1.7, size: [15, 12, 124], speed: 95, elem: 'ice', art: 'snRose', scale: 1.15, pref: 220, hook: 'roseClock', traits: { rooted: true, sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }, { use: 'tether', kind: 'kruse', mode: 'guard', mul: 0.35, hp: 0.22, onBreak: 'groggy', say: '雷剑克鲁斯把洛丝当成了恋人——先打倒克鲁斯！', col: '#ffe070' }],
       phases: [
         { at: 1, skills: [
@@ -326,7 +326,7 @@ defineRegion({
       drops: { boss: [['ep_sn_charlie', 0.02]], mats: [['crystal', 0.12, 10], ['m_soul', 0.003, 1], ['m_obsidian', 0.006, 1]] } },
     ice_palace: { name: '冰雪宫殿', lvl: [41, 42], theme: 'snPalace', layout: 'long', mobs: [['iceSprite', 2], ['kuniShaman', 1.5], ['tulusWarrior', 2], ['iceLurker', 1.5], ['aquiles', 0.5]], elite: 'tulusElite', boss: 'rose', bgm: 'dungeon3', bossBgm: 'boss',
       gate: { x: 2820, col: '190,230,255' }, desc: '冰雪女王洛丝的宫殿。洛丝和冰晶王座融为一体，一步也不动；雷剑克鲁斯把她当成了自己的恋人，拼死守护她——先打倒克鲁斯。宫女里的回复宫女会给女王回血，先打她；壁钟敲响时躲到王座后面。血量很低时洛丝会走下王座。',
-      bossProps: [{ kind: 'throne', x: 0.772, y: 0.4, h: 180, col: '#9ad0f0' }],
+      bossProps: [{ kind: 'throne', x: 0.772, y: 0.4, h: 180, col: '#cfeaff' }],
       drops: { boss: [['ep_sn_charlie', 0.012]], mats: [['crystal', 0.12, 10], ['m_elem2', 0.01, 1], ['c_blue', 0.03, 2]] } },
     skasa_nest: { name: '斯卡萨之巢', lvl: [42, 42], bossLvl: 44, theme: 'snNest', layout: 'raid', mobs: [['tulusWarrior', 2], ['iceLurker', 1.5], ['babySkasa', 1.5], ['iceSpider', 1.5], ['tulusElite', 0.5]], elite: 'aquiles', boss: 'skasa', bossAdds: 0,
       bgm: 'abyss', bossBgm: 'boss', preBoss: { kind: 'aquiles', say: '冰影阿奎利斯守在巢穴前……' },

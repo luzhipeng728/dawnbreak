@@ -4,6 +4,8 @@
      DNF_PORT=18790  DNF_HOST=127.0.0.1  DNF_DB=./data/dawnbreak.db
      DNF_INVITE=邀请码1,邀请码2（注册用，可重复使用）  DNF_ADMIN=管理员用户名1,用户名2
      DNF_STATIC=../dist/web（可选：本地测试时顺带托管网页版，线上由 Caddy 托管）  DNF_TRUST_PROXY=1  DNF_LOG_HTTP=0
+     DNF_CATALOG=/opt/dawnbreak/catalog.json（可选：网页版的物品目录，管理员发物品邮件时校验 key；没设时用 DNF_STATIC 下的 catalog.json）
+   后台管理页面：/admin/（server/admin/ 下的静态文件，只有 DNF_ADMIN 账号登录后能用，接口见 modules/admin.js）
    结构：server/core/*.js（账号、存档、好友 / 聊天 / 同屏、队伍、房间转发）和 server/modules/*.js（其他组的扩展模块）用同一套模块接口，见 README 段落 */
 import http from 'node:http';
 import fs from 'node:fs';
@@ -21,7 +23,7 @@ export const cfg = {
   port: +(env.DNF_PORT || 18790), host: env.DNF_HOST || '127.0.0.1',
   db: env.DNF_DB || path.join(DIR, 'data', 'dawnbreak.db'),
   invites: list(env.DNF_INVITE), admins: list(env.DNF_ADMIN).map(s => s.toLowerCase()),
-  static: env.DNF_STATIC || '', trustProxy: env.DNF_TRUST_PROXY !== '0', logHttp: env.DNF_LOG_HTTP === '1',
+  static: env.DNF_STATIC || '', catalog: env.DNF_CATALOG || '', trustProxy: env.DNF_TRUST_PROXY !== '0', logHttp: env.DNF_LOG_HTTP === '1',
   bodyLimit: 64 * 1024, saveLimit: 4 * 1024 * 1024,
   httpRate: [120, 10],          // 每个 IP：10 秒内最多 120 个请求
   wsConnRate: [20, 60],         // 每个 IP：60 秒内最多新建 20 条 WS 连接

@@ -1,5 +1,6 @@
 /* =====================================================================
-   管理员后台（gm，只有 DNF_ADMIN 账号能看到）：发放（金币 / 点券 / 物品邮件）、邀请码、在线玩家、全服公告、日志、拍卖行管理
+   管理员后台（gm，只有 DNF_ADMIN 账号能看到）：发放（金币 / 点券 / 物品邮件）、在线玩家、全服公告、日志、拍卖行管理
+   账号管理 / 注册记录 / 报错这些在独立的后台页面 /admin/（server/admin/）；注册已开放，邀请码页签已去掉
    ===================================================================== */
 addStyle(`
 .sxgm .gform{display:grid;grid-template-columns:5.5em 1fr;gap:.4em .6em;align-items:center}
@@ -11,17 +12,16 @@ addStyle(`
 .sxgm .gatt{display:flex;flex-direction:column;gap:.25em}
 .sxgm .gatt .r{display:flex;align-items:center;gap:.4em;font-size:.86em}
 .sxgm .gatt .r img{width:1.8em;height:1.8em}
-.sxgm .code{font-family:ui-monospace,Menlo,monospace;font-size:1.05em;color:#ffe8a8;user-select:text;-webkit-user-select:text}
 .sxgm .det{font-size:.78em;color:#b8ac90;max-width:26em;word-break:break-all}
 `);
 const SXG = { tab: 'give', g: { to: '', all: false, title: '', body: '', gold: '', cera: '', days: 30, items: [], q: '' }, logType: '', logUser: '', aucStatus: 'on' };
-const SXG_TABS = [['give', '发放'], ['invite', '邀请码'], ['online', '在线玩家'], ['notice', '全服公告'], ['logs', '日志'], ['auction', '拍卖行']];
+const SXG_TABS = [['give', '发放'], ['online', '在线玩家'], ['notice', '全服公告'], ['logs', '日志'], ['auction', '拍卖行']];
 const SXG_LOGS = [['', '全部'], ['auction', '拍卖行'], ['mail', '邮件'], ['signin', '签到'], ['gm', '管理员']];
-const SXG_DETAIL = { kind: '类型', from: '来自', title: '标题', gold: '金币', cera: '点券', items: '物品', to: '收件人', item: '物品', price: '价格', hours: '时长', fee: '保管费', seller: '卖家', tax: '手续费', day: '日期', count: '本月第几次', streak: '连续天数', codes: '邀请码', code: '邀请码', note: '备注', text: '内容', why: '原因', n: '人数' };
-const SXG_LOGNAME = { 'auction.list': '上架', 'auction.buy': '成交', 'auction.expire': '到期退回', 'auction.cancel': '下架', 'mail.send': '寄信', 'mail.claim': '领取附件', signin: '签到', 'gm.mail': '发放', 'gm.invite': '生成邀请码', 'gm.invite.del': '删除邀请码', 'gm.notice': '公告' };
+const SXG_DETAIL = { kind: '类型', from: '来自', title: '标题', gold: '金币', cera: '点券', items: '物品', to: '收件人', item: '物品', price: '价格', hours: '时长', fee: '保管费', seller: '卖家', tax: '手续费', day: '日期', count: '本月第几次', streak: '连续天数', codes: '邀请码', code: '邀请码', note: '备注', text: '内容', why: '原因', n: '人数', uid: '账号 ID', mails: '邮件数', days: '有效天数', batch: '批次', name: '账号', backup: '备份' };
+const SXG_LOGNAME = { 'auction.list': '上架', 'auction.buy': '成交', 'auction.expire': '到期退回', 'auction.cancel': '下架', 'mail.send': '寄信', 'mail.claim': '领取附件', signin: '签到', 'gm.mail': '发放', 'gm.invite': '生成邀请码', 'gm.invite.del': '删除邀请码', 'gm.notice': '公告',
+  'gm.ban': '封禁', 'gm.unban': '解封', 'gm.kick': '踢下线', 'gm.password': '重设密码', 'gm.delete': '删除账号', 'gm.undelete': '恢复账号' };
 const sxgLoad = () => {
   const t = SXG.tab;
-  if (t === 'invite') return sxApi('GET', '/api/gm/invites');
   if (t === 'online') return sxApi('GET', '/api/gm/online');
   if (t === 'logs') return sxApi('GET', `/api/gm/logs?limit=200${SXG.logType ? '&type=' + SXG.logType : ''}${SXG.logUser ? '&user=' + encodeURIComponent(SXG.logUser) : ''}`);
   if (t === 'auction') return sxApi('GET', `/api/gm/auction${SXG.aucStatus ? '?status=' + SXG.aucStatus : ''}`);
@@ -35,7 +35,7 @@ Object.assign(menus, {
       w: 52, load: sxgLoad,
       render: (el, d) => {
         const tabs = h('div', { class: 'itabs' }, SXG_TABS.map(([id, nm]) => h('div', { class: 'itab' + (SXG.tab === id ? ' on' : ''), onclick: () => { SXG.tab = id; sfx.click(); el._data = undefined; el._reload(); el._render(); } }, nm)));
-        const R = { give: sxgGive, invite: sxgInvite, online: sxgOnline, notice: sxgNotice, logs: sxgLogs, auction: sxgAuction }[SXG.tab];
+        const R = { give: sxgGive, online: sxgOnline, notice: sxgNotice, logs: sxgLogs, auction: sxgAuction }[SXG.tab] || sxgGive;
         return [tabs, ...R(el, d)];
       },
     });
@@ -97,19 +97,6 @@ function sxgGive(el) {
     h('span', { class: 'sxlbl' }, '金币 / 点券'), h('div', { class: 'row' }, gold, h('span', { class: 'small dim' }, 'G'), cera, h('span', { class: 'small dim' }, '点券'), h('span', { class: 'sp' }), h('span', { class: 'small dim' }, '有效'), days, h('span', { class: 'small dim' }, '天')),
     h('span', { class: 'sxlbl' }, '物品'), h('div', { class: 'col', style: 'gap:.3em' }, q, res, att)),
     h('div', { class: 'row' }, h('span', { class: 'ihint' }, '以“管理员”邮件发出，玩家在邮箱里领取。装备可以指定强化等级和品质。'), h('span', { class: 'sp' }), send)];
-}
-/* ---- 邀请码 ---- */
-function sxgInvite(el, d) {
-  const note = sxInput({ placeholder: '备注（给谁的）', maxlength: 40, style: 'width:12em' });
-  const n = sxInput({ type: 'number', min: 1, max: 20, value: 1, style: 'width:4em;text-align:right' });
-  // 联机组的 listInvites：{ code, createdAt, usedAt, note, createdBy（用户名）, usedBy（用户名）}
-  const list = (d.list || []).map(v => ({ code: v.code, note: v.note, at: v.createdAt ?? v.created_at, usedAt: v.usedAt ?? v.used_at, usedBy: v.usedBy ?? v.used_by, by: v.createdBy ?? '' })).sort((a, b) => (b.at || 0) - (a.at || 0));
-  return [h('div', { class: 'row' }, note, n, h('span', { class: 'small dim' }, '个'), h('button', { class: 'btn sm', onclick: () => sxApi('POST', '/api/gm/invite', { note: note.value, n: +n.value || 1 }).then(r => { toastMsg(`生成了 ${r.codes.length} 个邀请码`, '#8aff9a'); el._reload(); }).catch(sxgFail) }, '生成')),
-    h('div', { class: 'sxscroll', style: 'max-height:20em' }, list.length ? h('table', { class: 'sxtbl' }, h('thead', {}, h('tr', {}, ['邀请码', '备注', '生成时间', '状态', ''].map(t => h('th', {}, t)))),
-      h('tbody', {}, list.map(v => h('tr', {}, h('td', { class: 'code' }, v.code), h('td', { class: 'small' }, v.note || ''), h('td', { class: 'small dim' }, v.at ? sxDate(v.at) : ''),
-        h('td', { class: 'small', style: v.usedBy || v.usedAt ? 'color:#9a8f7c' : 'color:#8aff8a' }, v.usedBy || v.usedAt ? `已使用${v.usedBy ? `（${v.usedBy}）` : ''}${v.usedAt ? ' ' + sxDate(v.usedAt) : ''}` : '未使用'),
-        h('td', {}, v.usedBy || v.usedAt ? null : h('button', { class: 'btn sm red', onclick: () => sxApi('DELETE', `/api/gm/invite/${encodeURIComponent(v.code)}`).then(() => el._reload()).catch(sxgFail) }, '删除'))))))
-      : h('div', { class: 'sxload' }, '还没有邀请码'))];
 }
 /* ---- 在线玩家 ---- */
 function sxgOnline(el, d) {

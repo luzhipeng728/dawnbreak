@@ -291,6 +291,14 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 - **测试**：`node test/fighter.mjs [save,ids,feel,switch,smoke]`（quick.sh g5 / all.sh）；`test/fighter_<转职>.mjs` 模板（各块补本转职的机制测试后加进 quick g2）；测试里的职业 / 转职 / 武器类型列表一律读 CLASSES（test/lib.mjs `openLists()`），开放后自动进列表。
 - **留给后面**：组队时队员抓主机的怪（grabDown / grabMax / throwArc 的主机同步，net/coop.js remoteGrab）→ B9；服务端 AI_POOL → B9；武器图 / 图标 / 流沙武器图标 → B2（没开放时测试自动跳过）；HP / MP 暂抄鬼剑士。
 
+### 4.4 B8 一期已交付（2026-09-30，任务 / 台词 / 文档；二期具名史诗 `epics60_w_fighter.js` 还没做）
+- **风振的台词**：`quests/job.js` 的 `JOB_CHAINS.fighter`（入门「风拳流大师风振」、「风拳流 第一式 ~ 第六式」、「风拳流 - 出师之战」、转职「拳脚的道路」、一觉「觉醒 - 风的壁垒 / 破壁」）+ `AWAKEN_MORE.fighter`（二觉「风的尽头 / 无相」、三觉通用）。NPC 闲聊台词在 `world/towns.js`（B0 的，没动）。
+- **四条转职任务线**（`content/quests/fighter.js`，这个文件自己 defineQuest 并登记 `CLASSES.fighter.jobs.<id>.quests / trial`）：`q_job_nenmaster_1~3`、`q_job_striker_1~3`、`q_job_brawler_1~4`、`q_job_grappler_1~4`。**B4~B7 的转职文件不要写 `quests` / `trial`**（会被这里覆盖）。
+- **一觉剧情**：`q_awaken_<转职>_1~2`（Lv21，cond = 已转成这个方向），夹在 `q_awaken_fighter_1` 和 `q_awaken_fighter_2` 之间（后者加了 cond）。映射和与官方的差异见 `SKILLS_OFFICIAL_fighter.md` §8.4。
+- **没开放时不生效**：37 个任务全是 `cls: 'fighter'`；老职业角色（包括做完所有前置的 Lv30）看不到、NPC 身上也没有；`J.ready:false` 时转职窗口接不到。
+- **测试**：`node test/fighter_quests.mjs [inert,data,chain]`（quick.sh g5 / all.sh）。`test/fighter.mjs smoke` 看风振转职窗口前先把 `q_job_fighter_final` 记成已完成（有了转职试炼之后 `jobAvailable` 要它）。
+- **文档**：PLAYER_GUIDE（选职业、导师表、转职表 + 四条任务线、一觉剧情）、dnf_reference §6.2 改成男格斗、SKILLS_OFFICIAL_common §8、SKILLS_OFFICIAL_fighter §8.4、PLAYBOOK。JOB_VISUALS §5（B2）、PVP（B9）、GEAR（二期）留给各自的块。
+
 ---
 
 ## 5. 风险与要主线程拍板的决定

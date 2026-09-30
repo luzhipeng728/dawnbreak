@@ -40,6 +40,8 @@ run paramedic node test/paramedic.mjs
 run enchant   node test/enchantress.mjs
 run witch     node test/witch.mjs
 run fighter   node test/fighter.mjs   # 格斗家 B0：存档安全（未知 / 没开放职业的角色不丢）、id 预留、武器手感、开放开关、?fighter=1 建角色进地下城
+# 格斗家 B8：风振的转职任务链、四个转职各自的转职任务线、一觉剧情、一 / 二 / 三觉；没开放时老职业看不到
+run fquests   node test/fighter_quests.mjs
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs

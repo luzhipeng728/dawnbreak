@@ -89,7 +89,7 @@ function playerControl(p, dt) {
   if ((p.st === 'down' && p.stT > 0.1) || (p.st === 'getup' && !p.tech)) { if (tryKeyLinks(p, CLASSES[p.cls].getupLinks, I)) { p.downHits = 0; p.juggle = 0; p.invul = Math.max(p.invul, 0.15); return; } }
   if (!p.free && p.st !== 'act') return;   // 硬直 / 浮空 / 倒地 / 起身 / 被抓
   // 后跳：↓ + C（站立、普攻中随时；技能中要有后跳-强化）
-  if (I.buffered('jump') && I.is('down') && p.z <= 1) { const m = backstepMode(p); if (m) { I.consume('jump'); doBackstep(p, m); return; } }
+  if (I.buffered('jump') && I.is('down') && p.z <= 1 && !downJumpCmd(p, I)) { const m = backstepMode(p); if (m) { I.consume('jump'); doBackstep(p, m); return; } }
   // 觉醒取消先于动作自己的输入处理（天雷落点、连按追加这类 onInput 会吞掉按键）
   if (p.st === 'act' && p.act && (p.act.onInput || p.act.keyLinks) && tryAwk(p)) return;
   // 动作自己处理输入（流心的 X/C/Z、移动射击、天雷落点、连按追加……）
@@ -180,6 +180,9 @@ function backstepMode(p) {
   return null;
 }
 const canBackstep = p => !!backstepMode(p);
+// 以 ↓ 结尾的 C 指令（格斗家 蹲伏 ↓↓+C）：输完指令时 ↓ 往往还按着，这时优先放技能、不当成后跳（↓+C）；技能在冷却 / 放不了就照常后跳
+const downJumpCmd = (p, I) => CLASSES[p.cls].cmds.some(([seq, id, k]) => k === 'jump' && seq.length > 1 && seq[seq.length - 1] === 'd' && SKILLS[id] && !(p.cool[id] > 0)
+  && skillUsable(p, id) && airOk(p, SKILLS[id]) && cmdMatch(I, seq, p.face, p) && canCancelInto(p, id));
 function doBackstep(p, mode) {
   if (mode === 'up') { p.bsCd = BSUP_CD_SKILL; p.doAct(p.acts.back || BACKSTEP, { escape: true, invul: true }); return; }
   p.doAct(p.acts.back || BACKSTEP);
@@ -199,7 +202,7 @@ function canCancelInto(p, id) {
   if (a.name === 'back') return !!(S && S.air) && p.actT >= 0.06;              // 后跳算空中：可以接空中技能
   const A = a.skill && SKILLS[a.skill];
   if (S && S.awaken && airOk(p, S) && awkCancelOk(p, a, A)) return true;                     // 觉醒（一 / 二 / 三觉）：可以打断普攻和大部分技能
-  if (a.basic) return !(S && (S.noForce ?? S.buff));                           // 强制：普攻随时可被攻击类技能取消
+  if (a.basic) return !(S && (typeof S.noForce === 'function' ? S.noForce(p) : (S.noForce ?? S.buff)));   // 强制：普攻随时可被攻击类技能取消；noForce(p) 按转职判断（格斗家 念气波只有气功师能取消普攻）
   if (A && A.awaken) return false;
   const L = a.links || (A && A.links);
   if (L && L.includes(id) && p.actT >= (a.linkFrom ?? (A && A.linkFrom) ?? 0) && (!(a.hitCancel ?? (A && A.hitCancel)) || a.hitAny || p.hitsDone.size > 0)) return true;

@@ -291,6 +291,14 @@ B0 ──┬─> B1 原装帧 ──(逐张过审)──> B2 时装帧
 - **测试**：`node test/fighter.mjs [save,ids,feel,switch,smoke]`（quick.sh g5 / all.sh）；`test/fighter_<转职>.mjs` 模板（各块补本转职的机制测试后加进 quick g2）；测试里的职业 / 转职 / 武器类型列表一律读 CLASSES（test/lib.mjs `openLists()`），开放后自动进列表。
 - **留给后面**：组队时队员抓主机的怪（grabDown / grabMax / throwArc 的主机同步，net/coop.js remoteGrab）→ B9；服务端 AI_POOL → B9；武器图 / 图标 / 流沙武器图标 → B2（没开放时测试自动跳过）；HP / MP 暂抄鬼剑士。
 
+### 4.4 B3 已交付（2026-09-30，基础职业；逐技能对照 docs/skills/fighter_base_final.md）
+- **技能**：15 个基础技能全部实装（`f_` id 同预留表），指令 / 冷却（namu 现版）/ MP（DFO Lv1）按官方；规格 `docs/skills/fighter.json` 13 个主动技能，`skillaudit --compare` 不一致 0。
+- **给转职用的接口**：`fNenShot(e, lv, { sc, pierce, dmg, life, speed, hit })`（蓄念炮）；`fighterActsFor(F)` 生成的普攻表里有 `fchain1~4`（疾风追击的追加击），`FIGHTER_ACT_PICK` 换普攻时 `{ ...fighterActsFor(F), atk1: … }` 别丢了它们；`fRing(e, x, y, r, t => hit | null, { skip, zMax })` 圆形范围打击；`fKick(t, o)` 踢腿弧光；`SKILLS.f_knee.act` 可以包一层做柔道家的强化膝击（↑ 跳起 / ↓ 摔地）；蹲伏动作 `links: ['fs_pusher']` 已留好散打铁山靠。
+- **取消例外**：技能的 `noForce` 可以写成函数 `p => bool`（引擎 canCancelInto 已支持）：念气波 `jobOf(p) !== 'nenmaster'`、抛沙 `!== 'brawler'`、旋风腿 `!== 'striker'`、分身 `!skLv(p, 'fn_blast')`（气功师学幻影爆碎后能在普攻中放分身）。
+- **引擎**（player.js 两处）：noForce 函数；`downJumpCmd`——以 ↓ 结尾的 C 指令（蹲伏 ↓↓+C）优先于后跳 ↓+C。
+- **美术**：图标 16 个一张表（`art/tools/fighter_base_art.py icons / iconcut`，1 次生图），特效全部复用 fx；人物动作用矢量占位片段（CLIPS.fighter 补了 highkick / hammer / grab / knee / spinkick / stomp / dive / palm / palm2 / seal / focus / quake），B1 出帧后按 SPR_ANIMS.fighter 自动换。
+- **测试**：`node test/fighter.mjs base`（技能放得出 / 打得中 / 冷却 / MP、14 条指令、抓取、疾风追击、取消例外、各技能机制）；`node test/skillshots.mjs fighter` 连拍 `test/shots/skills/fighter-base.jpg`。
+
 ---
 
 ## 5. 风险与要主线程拍板的决定

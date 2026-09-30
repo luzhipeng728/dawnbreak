@@ -6,7 +6,7 @@
   striker_art.py cutin [--only 名字]       觉醒插图（一觉 / 二觉 / 三觉）→ <主仓库>/art/src/combat/cutin/striker*.png
   striker_art.py cutinprep                 → art/final/cutin/striker{,2,3}.webp
   striker_art.py job / jobprep             转职立绘 → art/final/job/striker.webp
-人物参考：格斗家原装立绘 art/src/fighter_ref.png（B1）在的时候用它当人物参考；还没有时用鬼剑士的觉醒插图当“画风参考”，人物按文字描述画（和矢量占位模型的配色一致）。
+人物参考：一觉插图按文字描述画、用鬼剑士的觉醒插图当“画风参考”（散打自己的装扮：米白练功服 + 红拳套，不是原装的暗红背心）；主线程审过后，二觉 / 三觉插图和转职立绘都拿它（art/src/combat/cutin/striker.png）当人物参考。
 生图约定：同时最多 1 个请求（全队共用接口），429 退避 65 秒；已存在的输出跳过。纯绿 #00FF00 / 品红 #FF00FF 是流水线标记色，不能用。
 """
 import os, sys
@@ -17,7 +17,6 @@ import combatgen as C
 LOOK = ('a young male martial artist (striker) in cute chibi anime style: short spiky dark brown hair, a red headband with two long tails fluttering behind, '
         'a cream-white sleeveless martial-arts gi top with red trim and a red sash belt, dark navy baggy pants tucked into short brown boots, '
         'bright red boxing gloves with white cuffs, confident fierce expression, athletic build')
-FIGHTER_REF = os.path.join(C.SRC, 'fighter_ref.png')
 STYLE_REF = os.path.join(C.OUT, 'cutin', 'blade.png')
 
 ICONS_A = [
@@ -59,22 +58,24 @@ CUTIN = {
     'striker2': 'mid-air in a powerful flying side kick toward the viewer, a golden aura and speed lines behind him, fierce shout',
     'striker3': 'throwing a blazing full-power punch straight forward, his red boxing glove engulfed in crimson and gold fire, a burning sun behind him, determined expression',
 }
-JOB_PROMPT = (f'Draw a full-body standing portrait for a class selection screen of {LOOK}, cute chibi proportions like the reference art style, '
+JOB_PROMPT = (f'Using this exact chibi character (same face, same spiky brown hair, same red headband, same outfit and red boxing gloves), draw a full-body standing portrait for a class selection screen of {LOOK}, cute chibi proportions, full body visible from head to boots, '
               'facing slightly right in three-quarter view, in a relaxed boxing guard with the red boxing gloves raised, faint flames curling around his boots, confident grin. '
               'Plain pure white background, no text, no effects other than the small flames at the boots.')
 
+APPROVED = os.path.join(C.OUT, 'cutin', 'striker.png')   # 主线程审过的一觉插图：二觉 / 三觉插图和转职立绘都拿它当人物参考，保证同一套散打装扮
+
 def _ref():
-    return FIGHTER_REF if os.path.exists(FIGHTER_REF) else STYLE_REF
+    return STYLE_REF
 
 def cutin_jobs():
     L = []
     for n, d in CUTIN.items():
-        if os.path.exists(FIGHTER_REF):
-            p = f'Using this exact chibi character (same design, same colors, same cute art style), draw a dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Plain pure white background, no text.'
+        if n != 'striker' and os.path.exists(APPROVED):
+            p = f'Using this exact chibi character (same face, same spiky brown hair, same red headband, same cream-white gi with red trim and sash, same red boxing gloves, same cute art style), draw a dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. Plain pure white background, no text.'
         else:
             p = (f'Match the art style of this reference image exactly (same chibi anime proportions, line weight, coloring and rendering), but draw a DIFFERENT character: {LOOK}. '
                  f'A dynamic dramatic upper-body close-up illustration for an ultimate-skill cut-in, facing right: {d}. No sword, no weapon. Plain pure white background, no text.')
-        L.append({'out': os.path.join(C.OUT, 'cutin', f'{n}.png'), 'ref': _ref(), 'size': '1536x1024', 'model': 'gpt-image-2.5-sunburst', 'prompt': p})
+        L.append({'out': os.path.join(C.OUT, 'cutin', f'{n}.png'), 'ref': APPROVED if n != 'striker' and os.path.exists(APPROVED) else _ref(), 'size': '1536x1024', 'model': 'gpt-image-2.5-sunburst', 'prompt': p})
     return L
 
 def clear_flame_holes(im):
@@ -100,7 +101,7 @@ def cutin_prep(only=''):
         im.save(f, 'WEBP', quality=82, method=6); print(n, os.path.getsize(f) // 1024, 'KB')
 
 def job_jobs():
-    return [{'out': os.path.join(C.SRC, 'quests', 'job_striker.png'), 'ref': _ref(), 'size': '1024x1536', 'model': 'gpt-image-2.5-sunburst', 'prompt': JOB_PROMPT}]
+    return [{'out': os.path.join(C.SRC, 'quests', 'job_striker.png'), 'ref': APPROVED if os.path.exists(APPROVED) else _ref(), 'size': '1024x1536', 'model': 'gpt-image-2.5-sunburst', 'prompt': JOB_PROMPT}]
 
 def job_prep():
     from importlib import util as _u

@@ -51,7 +51,7 @@
 - `test/quick.sh` g2 加 `fighter_striker.mjs`；`test/all.sh` 加 `striker.mjs`。
 
 ## 美术
-- 生图 2 次（样图）：图标表 A（16 个 `icon/fs_*`，已切图接进游戏）、一觉插图 `cutin/striker`。人物参考图 `art/src/fighter_ref.png`（B1）还没有，插图按文字描述 + 鬼剑士插图当画风参考（红头巾、米白练功服、红拳套，和矢量占位模型配色一致）。
-- 待审批后再出（约 4 次）：图标表 B（12 个）、`cutin/striker2`、`cutin/striker3`、`job/striker`：`python3 art/tools/striker_art.py icons --only fs_icons_b && ... cutin && ... job`，再 `iconcut / cutinprep / jobprep`。
+- 生图共 6 次：先出 2 张样图（图标表 A 16 个、一觉插图 `cutin/striker`，主线程审过：散打自己的装扮 = 米白练功服 + 红拳套，棕色刺猬头和 B1 的格斗家一致），再出图标表 B（12 个）、`cutin/striker2`、`cutin/striker3`、`job/striker`（后 3 张拿审过的一觉插图当人物参考）。28 个技能图标全部接上（skillshots 提醒 0）。
+- 重出：`python3 art/tools/striker_art.py icons|cutin|job`（已存在的跳过）→ `iconcut / cutinprep / jobprep`；cutinprep 会清掉火焰包住的白底斑（保护人物身体一带）。
 - 特效全部复用：`jv_flame`（双脚 / 地面 / 旋风火舌）、`explosion` `lava` `burst` `shock` `wave` `thrust` `slash` `orb` `rune` + 代码画的闪电折线 / 骨裂纹。
 - 人物帧：矢量占位模型的片段在本文件 `CLIPS.fighter.fs*`；精灵帧到位后 `J.anims` 先找 `fs_elbow / fs_knee / fs_punch1·2 / fs_cannon1 / fs_dive`（B1 的散打专用 6 帧），没有就退回 B0 的 `f_*` 帧。

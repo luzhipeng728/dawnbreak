@@ -64,7 +64,7 @@ Object.assign(menus, {
         const slot = h('div', { class: 'enhslot' + (IW.enhBusy ? ' busy' : '') + (M && !IW.enhBusy ? ' ' + M.cls : '') }, itemSlot(it, { cmp: false, drop: { accept: p => p.type === 'item' && (p.from === 'inv' || p.from === 'equip') && canEnhance(p.item), drop: p => { IW.enhSel = p.item; IW.enhMsg = null; el._render(); } } }));
         right.append(slot, h('div', { class: `q${it.rar}`, style: 'font-weight:900;text-align:center' }, it.name));
         if (sel) {
-          const c = enhCost(sel), rate = sel.enh < ENH_MAX ? ENH_RATE[sel.enh] : 0, [risk, rc] = enhRiskText(sel), f = enhFailResult(sel);
+          const c = enhCost(sel), rate = sel.enh < ENH_MAX ? enhRate(sel.enh) : 0, [risk, rc] = enhRiskText(sel), f = enhFailResult(sel);
           const hasG = inv.count('crystal'), guardN = inv.count('guard');
           right.append(...[
             h('div', { class: 'enhlv' }, `+${sel.enh}`, sel.enh < ENH_MAX ? h('span', { class: 'to' }, ` → +${sel.enh + 1}`) : null),
@@ -105,7 +105,7 @@ function enhGo(el, it) {
     }, 1150);
   };
   // 有破碎风险又没用保护券：先确认
-  if (f.broken && !(IW.enhGuard && inv.count('guard'))) itemDialog(el, { title: '强化有破碎风险', msg: `${itemNameHtml(it)} 当前 +${it.enh}，强化失败时<b style="color:#ff6a5a">装备会破碎</b>。<br>成功率 ${(ENH_RATE[it.enh] * 100).toFixed(1)}%，确定要强化吗？`, okText: '强化', danger: true, onOk: run });
+  if (f.broken && !(IW.enhGuard && inv.count('guard'))) itemDialog(el, { title: '强化有破碎风险', msg: `${itemNameHtml(it)} 当前 +${it.enh}，强化失败时<b style="color:#ff6a5a">装备会破碎</b>。<br>成功率 ${(enhRate(it.enh) * 100).toFixed(1)}%，确定要强化吗？`, okText: '强化', danger: true, onOk: run });
   else run();
 }
 /* ---------------- 分解 ---------------- */

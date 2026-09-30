@@ -5,7 +5,7 @@
 import fs from 'fs';
 const [W, name, lvArg, statArg] = process.argv.slice(2);
 const lv = +lvArg, stat = statArg || 'str';
-if (!W || !name || !(lv >= 1 && lv <= 16) || !['str', 'int', 'vit', 'spr'].includes(stat)) { console.error('用法：amp.mjs <工作目录> <角色名> <1~16> [str|int|vit|spr]'); process.exit(1); }
+if (!W || !name || !(lv >= 1 && lv <= 999) || !['str', 'int', 'vit', 'spr'].includes(stat)) { console.error('用法：amp.mjs <工作目录> <角色名> <1~16> [str|int|vit|spr]'); process.exit(1); }
 const cloud = JSON.parse(fs.readFileSync(W + '/cloud.json', 'utf8')), d = cloud.data;
 const c = (d.chars || []).find(x => x && x.name === name);
 if (!c) { console.error('没有这个角色：' + name + '（现有：' + d.chars.map(x => x.name).join('、') + '）'); process.exit(1); }

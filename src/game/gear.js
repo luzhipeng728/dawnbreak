@@ -42,15 +42,17 @@ bus.on('equip', e => { const it = e && e.item; if (it && itemBind(it) === 'equip
    本作：Lv15 以上、稀有品级以上的装备带有异界气息。 */
 const DIM_STATS = ['str', 'int', 'vit', 'spr'];
 const DIM_NAME = { str: '异次元力量', int: '异次元智力', vit: '异次元体力', spr: '异次元精神' };
-const AMP_MAX = 16;   // 和强化上限 ENH_MAX 一致
+const AMP_MAX = Infinity;   // 不设上限（同强化）；+16 以后成功率继续下降（最低 1%），红字每级 ×1.15
 // 到 +1 ~ +15 的成功率（下标 = 当前等级；官方公示：+1~+4 必定成功，+5 80%、+6 70%、+7 60%、+8 70%、+9 60%、+10 50%、+11 40%、+12 30%、+13 起 20%）
 const AMP_RATE = [1, 1, 1, 1, 0.8, 0.7, 0.6, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.2, 0.2, 0.15];
 // 红字 = round((1 + 装备等级 × 0.09) × 品级系数 × AMP_MUL[等级])；官方：+6 和 +10 之后涨幅明显变大，红 10 → 红 11 约涨 70%
 const AMP_MUL = [0, 0.3, 0.6, 0.9, 1.2, 1.5, 2.0, 2.4, 2.8, 3.2, 3.6, 6.1, 7.6, 9.2, 11, 13, 15.5];
+const ampRate = lv => lv < AMP_RATE.length ? AMP_RATE[lv] : Math.max(0.01, 0.15 * Math.pow(0.85, lv - 15));
+const ampMul = lv => lv < AMP_MUL.length ? AMP_MUL[lv] : 15.5 * Math.pow(1.15, lv - 16);
 const AMP_RAR = [0.7, 0.8, 0.9, 1, 1.1, 1.25];
 const canAmplify = it => !!it && it.kind === 'equip' && SLOTS.includes(it.slot) && it.slot !== 'title' && !isAvatar(it) && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);
 const hasOtherworld = it => canAmplify(it) && (it.lvl || 1) >= 15 && (it.rar || 0) >= 2;
-const ampStatVal = (it, lv = it.enh || 0) => lv > 0 ? Math.round((1 + (it.lvl || 1) * 0.09) * AMP_RAR[it.rar || 0] * AMP_MUL[Math.min(AMP_MAX, lv)]) : 0;
+const ampStatVal = (it, lv = it.enh || 0) => lv > 0 ? Math.round((1 + (it.lvl || 1) * 0.09) * AMP_RAR[it.rar || 0] * ampMul(lv)) : 0;
 // 职业的主属性（增幅券缺省按它赋予红字）
 // 转职的伤害类型优先（气功师 / 街霸 / 机械师是魔法职业 → 智力）
 const mainStatOf = (cls = game.player && game.player.cls, job = game.job) => { const C = CLASSES[cls] || {}, J = job && C.jobs && C.jobs[job]; return ((J && J.dmgType) || C.dmgType || (cls === 'mage' ? 'mag' : 'phys')) === 'mag' ? 'int' : 'str'; };
@@ -96,7 +98,7 @@ function tryAmplify(it, opt = {}, r01 = Math.random()) {
   if (inv.count('m_contra') < c.contra) return { err: '矛盾的结晶体不足' };
   const book = !!opt.book && inv.count('amp_book') > 0;
   game.gold -= c.gold; inv.take('m_contra', c.contra); if (book) inv.take('amp_book', 1);
-  const from = it.enh || 0, rate = Math.min(1, AMP_RATE[from] + (book ? 0.15 : 0));
+  const from = it.enh || 0, rate = Math.min(1, ampRate(from) + (book ? 0.15 : 0));
   let res;
   if (r01 < rate) { it.enh = from + 1; res = { ok: true, from, lvl: it.enh, book }; }
   else {

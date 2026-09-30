@@ -24,7 +24,7 @@ export function cleanItems(ctx, list) {
     }
     if (e && typeof e.key === 'string' && e.key && e.key.length <= 60) {
       const o = { key: e.key, n: int(e.n ?? 1, 1, 9999) };
-      if (e.opt && typeof e.opt === 'object') { const p = {}; if (e.opt.enh != null) p.enh = int(e.opt.enh, 0, 31); if (e.opt.grade != null) p.grade = int(e.opt.grade, 0, 4); if (Object.keys(p).length) o.opt = p; }
+      if (e.opt && typeof e.opt === 'object') { const p = {}; if (e.opt.enh != null) p.enh = int(e.opt.enh, 0, 999); if (e.opt.grade != null) p.grade = int(e.opt.grade, 0, 4); if (Object.keys(p).length) o.opt = p; }
       return o;
     }
     throw ctx.err(400, '附件物品不对');

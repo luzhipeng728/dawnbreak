@@ -55,6 +55,8 @@ run fbrawler  node test/fighter_brawler.mjs
 run fpvp      node test/fighter_pvp.mjs   # 格斗家 B9：决斗表登记、AI 用得出各转职全部主动技能（霹雳旋踢 / 空中技）、抓取公平（抓取保护 / 强制硬直 ≤1 秒）
 run flaunch   node test/fighter_launch.mjs   # 格斗家上线整条流程：建 4 个转职、3 个转职打通地下城、决斗、存档往返（没开放时原样保留）、选角显示
 run flooks    node test/fighter_looks.mjs   # 格斗家外观（B2）：转职动作片段、转职外观 / 头饰 / 道服色、拳上武器 50 张 + 图标、6 套时装、配件、路人
+run priest    node test/priest.mjs   # 圣职者 B0 + 基础职业：开放开关（?priest=1 / 没开放时原样保留）、id / 转职登记 / 武器 / 动画契约、队伍原语（hot / life / d.to）、11 个基础技能逐个放 / 命中 / 冷却 / MP / 指令 / 机制
+run audit_priest node test/skillaudit.mjs priest --compare   # 圣职者技能对官方规格 docs/skills/priest.json（转职块做完把 priest:<转职> 加进来）
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs

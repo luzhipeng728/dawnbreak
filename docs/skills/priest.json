@@ -1,0 +1,243 @@
+{
+ "_meta": {
+  "about": "圣职者（男）逐技能官方规格，给 test/skillaudit.mjs --compare 用（格式照 docs/skills/sword.json / fighter.json）。基础职业块（P-core）填基础技能，4 个转职块各填自己的技能（前缀 pc_ / pi_ / pe_ / pa_，见 PRIEST_IDS），基础技能在某转职下的强化版写 “<id>@<转职>”。数值按本作尺度（官方 px × 1.05），等级按 SKILLS_OFFICIAL_common.md 第 7 节压缩；冷却写官方现版值，本作有意不同的写在 why.cd",
+  "version": "国服现版（2026）/ namu 프리스트(남)/공통스킬（2026）/ wiki.dfo.world 各技能页；满级角色，默认武器十字架（官方：不装武器按十字架算）",
+  "sources": [
+   "docs/skills/priest_base_final.md（逐技能对照）",
+   "https://wiki.dfo.world/view/<英文技能名>（指令 / MP / 施放时间 / Lv1 各段百分比）",
+   "https://namu.wiki/w/프리스트(던전앤파이터)/남자/공통스킬（现版冷却 / 学习等级 / 转职差异）"
+  ],
+  "fields": {
+   "hits": "[最少, 最多]：轻木桩（身前 70px）被打中的总次数（所有来源：动作 / 投射物 / 召唤物）",
+   "launch": "true/false：轻木桩被打到 ≥40px 高",
+   "relaunch": "true/false：悬空木桩被追加浮空（命中后上升速度 ≥250）",
+   "down": "true/false：轻木桩倒地过",
+   "bounce": "true/false：强制弹地",
+   "grab": "true/false：抓住轻木桩",
+   "sa / invul": "技能自己写的霸体 / 无敌占动作时长的比例：'none' <10%，'part' 10–85%，'full' ≥85%，'any' 不查（地下城里所有技能另有默认霸体，这里查的是决斗场 / 官方原版的）",
+   "dx": "[最少, 最多]：向前位移 px（负数 = 后退）",
+   "pull": "true/false：一排木桩里有被拉近 ≥30px 的",
+   "behind": "true/false：打到身后 80px 的木桩",
+   "reach": "[最少, 最多]：打到的最远木桩（70 / 170 / 300 / 450）",
+   "cd": "官方冷却（秒），和技能定义比 ±25% 或 ±1s",
+   "summon": "true/false：放出召唤物 / 阵",
+   "acts": "[最少, 最多]：段数（追加 / 再按产生的动作数）",
+   "dur": "[最少, 最多]：技能动作总时长（秒）",
+   "atkCancel": "true/false：后摇可以按普攻取消（官方 Basic Attack Cancelable）",
+   "why": "{ 字段: 理由 }：本作有意不同的地方，算“已说明”",
+   "official / src / en / conf": "官方行为一句话 / 来源 / 英文名 / 置信度（高 = 技能页写明，中 = 推断或单一弱来源）",
+   "输入": "pre（先放的技能）、input（tap / hold / mash）、holdT、mashT、hp（施放前 HP 比例）、dir（'f'/'b' 全程按住）、presses（再按时刻）、watch（观察秒数）、at（木桩距离）、air / airDelay（先起跳）",
+   "key": "“<id>@<转职>” = 基础技能在该转职下的强化版，只在该转职的表里比对"
+  },
+  "reserved": {
+   "prefix": {
+    "base": "p_",
+    "crusader": "pc_",
+    "monk": "pi_",
+    "exorcist": "pe_",
+    "avenger": "pa_"
+   },
+   "base": [
+    "p_launcher",
+    "p_smasher",
+    "p_lucky",
+    "p_second",
+    "p_slowheal",
+    "p_cure",
+    "p_grab",
+    "p_purity",
+    "p_phoenix",
+    "p_rapture",
+    "p_emblem"
+   ]
+  }
+ },
+ "skills": {
+  "p_launcher": {
+   "official": "Z：巨兵从下往上挑，身前的敌人挑空、身后的敌人砸倒；整个动作霸体（挑空技能里霸体最长）；MP 无；可强制中断普攻；圣骑士算独立攻击、驱魔师可蓄力；意念驱动中不能用；CD 2s",
+   "src": "https://wiki.dfo.world/view/Giant_Weapon_Launcher；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Giant Weapon Launcher",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "launch": true,
+   "sa": "full",
+   "behind": true,
+   "reach": [
+    70,
+    70
+   ],
+   "cd": 2
+  },
+  "p_smasher": {
+   "official": "→↓+Z：抓住身前的敌人推着冲刺，沿路多段撞击其他敌人，最后扔出（被扔的敌人砸到沿路敌人）；冲刺中按攻击键立即扔出、扔出时按攻击 +20%；能抓霸体 / 格挡；抓不了不可抓取的；可强制中断普攻；CD 5s；MP 15",
+   "src": "https://wiki.dfo.world/view/Smasher；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Smasher",
+   "conf": "高",
+   "hits": [
+    2,
+    3
+   ],
+   "grab": true,
+   "down": true,
+   "invul": "part",
+   "dx": [
+    150,
+    260
+   ],
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 5
+  },
+  "p_lucky": {
+   "official": "→+Z：3 记直拳（368% / 368% / 1105%，最后一击暴击率 +20%）；按住 → 前进、按住 ← 原地；只有蓝拳圣使能强制中断普攻；CD 3s；MP 15",
+   "src": "https://wiki.dfo.world/view/Lucky_Straight_Punch；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Lucky Straight Punch",
+   "conf": "高",
+   "hits": [
+    3,
+    3
+   ],
+   "launch": false,
+   "dx": [
+    0,
+    130
+   ],
+   "behind": false,
+   "reach": [
+    70,
+    170
+   ],
+   "cd": 3
+  },
+  "p_second": {
+   "official": "跑攻（滑步猛击）中按 X：上勾拳挑空（1794%），上勾拳动作中霸体；贴身时打两下；CD 2s；MP 10",
+   "src": "https://wiki.dfo.world/view/Second_Uppercut；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Second Uppercut",
+   "conf": "高",
+   "hits": [
+    1,
+    2
+   ],
+   "launch": true,
+   "sa": "part",
+   "behind": false,
+   "reach": [
+    70,
+    70
+   ],
+   "cd": 2
+  },
+  "p_slowheal": {
+   "official": "→+Space：施放 0.8s，给 900px 内选中的一名队员 20 秒持续回复，施放者体力越高回复越多；CD 10s；MP 28",
+   "src": "https://wiki.dfo.world/view/Slow_Heal；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Slow Heal",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 10
+  },
+  "p_cure": {
+   "official": "↓↓+Space：施放 0.5s，解除 1530px 内队员身上最多 5 种异常；1 级满级；CD 15s；MP 22",
+   "src": "https://wiki.dfo.world/view/Cure；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Cure",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 15
+  },
+  "p_grab": {
+   "official": "↓→+Z：施放 0.3s，恶魔之手伸出（511%）再握紧（1022%），暗属性魔法，几率束缚（Lv1 20% / 2s）；伸出的手判定贴地；可强制中断普攻；圣骑士学不了；CD 6s；MP 28",
+   "src": "https://wiki.dfo.world/view/Furious_Grab；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Furious Grab",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "launch": false,
+   "behind": false,
+   "reach": [
+    170,
+    170
+   ],
+   "cd": 6
+  },
+  "p_purity": {
+   "official": "↑→+Z：双臂形成十字刀刃斩向前方，光属性，独立攻击，被斩中的敌人长时间硬直（244%）；可强制中断普攻；只有圣骑士；CD 2s；MP 27",
+   "src": "https://wiki.dfo.world/view/Blades_of_Purity；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Blades of Purity",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "launch": false,
+   "behind": false,
+   "reach": [
+    170,
+    170
+   ],
+   "cd": 2
+  },
+  "p_phoenix": {
+   "official": "↑↓+Z：跳起后把巨兵插进地面，直接伤害（489%）+ 冲击波（1958%）；跳起时前后移动；下落时霸体、拔出巨兵时无敌；驱魔师伤害 / 范围 / 跳跃更强、能强制中断普攻；意念驱动中不能用；CD 6s；MP 28",
+   "src": "https://wiki.dfo.world/view/Phoenix_Hammer；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Phoenix Hammer",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "launch": true,
+   "sa": "any",
+   "invul": "part",
+   "dx": [
+    20,
+    150
+   ],
+   "behind": true,
+   "reach": [
+    70,
+    170
+   ],
+   "cd": 6
+  },
+  "p_rapture": {
+   "official": "↓→+C：持续时间内定时消耗 HP 回复 MP，HP 太低不能施放；1 级满级；复仇者版本改写（恶魔能量 / 魔化时间 / 自动施放）；圣骑士学不了；CD 8s",
+   "src": "https://wiki.dfo.world/view/Painful_Rapture；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Painful Rapture",
+   "conf": "中",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 8
+  },
+  "p_emblem": {
+   "official": "↓↑+Z：施放 0.4s，前方地面升天法阵，光属性魔法挑空（只到头顶高度）；只有驱魔师能强制中断普攻（并 +伤害 / 范围，圣光脉轮聚怪）；圣骑士学不了；CD 5s；MP 28",
+   "src": "https://wiki.dfo.world/view/Rising_Emblem；namu 프리스트(남)/공통스킬（2026）",
+   "en": "Rising Emblem",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "launch": true,
+   "behind": false,
+   "reach": [
+    170,
+    170
+   ],
+   "cd": 5
+  }
+ }
+}

@@ -36,10 +36,16 @@ const WTYPES = {
   boxing: { name: '拳套', cls: 'fighter', jobs: ['striker'], phys: 1.08, mag: 0.6, aspd: 0.1, spd: '快速', dur: 30, desc: '出手很快、距离短，物理攻击力高；只有散打能装备，散打技能冷却 -10%' },
   claw: { name: '爪', cls: 'fighter', phys: 1.0, mag: 0.95, aspd: 0, stagger: 30, spd: '普通', dur: 32, desc: '攻击距离长，打击让敌人僵直更久' },
   tonfa: { name: '东方棍', cls: 'fighter', phys: 0.85, mag: 0.8, aspd: 0.06, defPct: 0.05, spd: '快速', dur: 34, desc: '出手快、距离较长，攻击力最低，附带物理防御 +5%' },
-  gauntlet: { name: '臂铠', cls: 'fighter', phys: 1.22, mag: 0.5, aspd: -0.12, hardness: 20, spd: '缓慢', dur: 36, desc: '物理攻击力最高、出手慢；物理技能 MP 消耗和冷却增加（抓取技能不受影响）' },
+  gauntlet: { name: '臂铠', cls: 'fighter', phys: 1.22, mag: 0.5, aspd: -0.12, hardness: 20, spd: '缓慢', dur: 36, desc: '物理攻击力最高、出手慢；物理技能 MP 消耗和冷却增加（抓取技能不受影响）' },  // 圣职者（男）5 种“巨兵”：拿在手上的武器（和鬼剑士 / 魔法师一样的手持武器图），不改普攻动作，只改速度 / 距离 / 硬直 / 数值（距离 / 硬直在 content/classes/priest.js 的 PRIEST_FEEL）；
+  // 官方排名（namu）：物攻 战斧 > 图腾 > 镰刀 > 十字架 > 念珠；魔攻 念珠 > 镰刀 > 十字架 > 图腾 > 战斧；攻速 镰刀 > 图腾 > 十字架 > 念珠 = 战斧。不装武器按十字架算
+  cross: { name: '十字架', cls: 'priest', phys: 0.92, mag: 1.0, aspd: 0, cspd: 0.02, defPct: 0.04, spd: '普通', dur: 34, desc: '唯一附带体力 / 精神和物理 / 魔法防御的巨兵，施放速度 +2%；圣骑士推荐' },
+  rosary: { name: '念珠', cls: 'priest', phys: 0.72, mag: 1.15, aspd: -0.08, cspd: 0.05, mcrit: 0.02, spd: '缓慢', dur: 28, desc: '魔法攻击力最高、物理攻击力最低，魔法暴击 +2%，施放速度 +5%，攻击距离较短' },
+  totem: { name: '图腾', cls: 'priest', phys: 1.12, mag: 0.75, aspd: 0.06, hit: 0.01, spd: '快速', dur: 36, desc: '物理攻击力高（力量最高），命中 +1%，攻击距离较短；蓝拳圣使推荐' },
+  scythe: { name: '镰刀', cls: 'priest', phys: 1.02, mag: 1.08, aspd: 0.12, crit: 0.02, mcrit: 0.02, hit: -0.01, spd: '极快', dur: 30, desc: '攻速最快、攻击距离很长，物理 / 魔法暴击都有，命中 -1%，打击硬直很小；复仇者推荐' },
+  battleaxe: { name: '战斧', cls: 'priest', phys: 1.22, mag: 0.55, aspd: -0.08, hit: 0.02, stagger: 30, spd: '缓慢', dur: 38, desc: '物理攻击力最高、攻击距离很长，命中 +2%，打击让敌人僵直更久；驱魔师推荐' },
 };
 const CLASS_WTYPES = cls => Object.keys(WTYPES).filter(k => WTYPES[k].cls === cls);
-const CLASS_START_WEAPON = { sword: 'katana', gun: 'revolver', mage: 'rod', fighter: 'knuckle' };   // 初始武器选攻速不慢的类型（格斗家：官方不装武器按手套算）
+const CLASS_START_WEAPON = { sword: 'katana', gun: 'revolver', mage: 'rod', fighter: 'knuckle', priest: 'cross' };   // 初始武器选攻速不慢的类型（格斗家：官方不装武器按手套算；圣职者：不装武器按十字架算）
 // 转职专用的武器类型（WTYPES[t].jobs，例：拳套只有散打能装）：能不能装 / 说明文字（背包、比较、商店、提示框共用）
 const wtypeJobOk = (wtype, job) => { const T = WTYPES[wtype]; return !T || !T.jobs || T.jobs.includes(job); };
 const wtypeJobText = wtype => { const T = WTYPES[wtype]; if (!T || !T.jobs) return ''; const C = CLASSES[T.cls]; return T.jobs.map(j => (C && C.jobs && C.jobs[j] && C.jobs[j].name) || j).join(' / '); };

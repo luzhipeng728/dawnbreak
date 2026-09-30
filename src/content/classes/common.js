@@ -47,12 +47,16 @@ function cmdTextOf(id) {
 }
 /* ---- 分阶段上线开关（新职业，docs/CLASS_PLAN_FIGHTER.md §4.1）：CLASSES[cls].ready === false = 选角显示“即将开放”、不能创建，
    这个职业的角色在选角里显示“需要更新”、不能进入（存档原样保留）；J.ready === false = 转职窗口不显示这个方向。
-   开发测试：网址加 ?fighter=1 全部强制开放（之后的块和测试用它创建格斗家）；测试列表用 openClasses() / openJobs(cls) ---- */
-const DEV_OPEN = typeof PARAMS !== 'undefined' && PARAMS.get('fighter') === '1';
-const clsOpen = cls => !!(cls && CLASSES[cls] && CLASSES[cls].name) && (CLASSES[cls].ready !== false || DEV_OPEN);
-const jobOpen = J => !!J && (J.ready !== false || DEV_OPEN);
+   开发测试：网址加 ?<职业>=1（?fighter=1、?priest=1）或 ?dev=priest,fighter 只强制开放这个职业和它的全部转职（别的没开放的职业不受影响）；测试列表用 openClasses() / openJobs(cls) ---- */
+const DEV_OPEN = new Set(typeof PARAMS === 'undefined' ? [] : [...(PARAMS.get('dev') || '').split(','), ...[...PARAMS.keys()].filter(k => PARAMS.get(k) === '1')].filter(Boolean));
+const clsOpen = cls => !!(cls && CLASSES[cls] && CLASSES[cls].name) && (CLASSES[cls].ready !== false || DEV_OPEN.has(cls));
+// 转职属于哪个职业（jobOpen 没传 cls 时用）
+const jobClsOf = J => Object.keys(CLASSES).find(c => CLASSES[c].jobs && Object.values(CLASSES[c].jobs).includes(J)) || null;
+const jobOpen = (J, cls) => !!J && (J.ready !== false || DEV_OPEN.has(cls || jobClsOf(J)));
 const openClasses = () => Object.keys(CLASSES).filter(clsOpen);
-const openJobs = cls => { const J = CLASSES[cls] && CLASSES[cls].jobs; return J ? Object.keys(J).filter(j => jobOpen(J[j])) : []; };
+const openJobs = cls => { const J = CLASSES[cls] && CLASSES[cls].jobs; return J ? Object.keys(J).filter(j => jobOpen(J[j], cls)) : []; };
+// 带上本页的开发开放开关（跳转网址时用，例：决斗界面“开始决斗”）
+const devOpenParams = q => { for (const c of DEV_OPEN) if (CLASSES[c]) q.set(c, '1'); return q; };
 function cmdLabel(cls) { for (const id of classSkills(cls, null).concat(...Object.values(CLASSES[cls].jobs || {}).map(j => j.skills))) if (SKILLS[id]) { const t = cmdTextOf(id); SKILLS[id].cmdTxt = t ? '指令：' + t : ''; } }
 /* ---- 通用技能（所有职业）：后跳-强化（官方 2022 通用被动，替代本作以前的闪避翻滚）。
    后跳（↓+C）和受身蹲伏（倒地时 C）是自带的动作，见 game/player.js ---- */

@@ -1,5 +1,7 @@
 # 男圣职新增任务交接
 
+> **已作废（2026-10-01 主线程）**：Lv.115 迁移不做；基础技能表、`priest.js`、`priest/wip` 的接线已由 P-core 重做。现在以 `docs/CLASS_PLAN_PRIEST.md`（计划 + B0 接口）和 `docs/skills/priest_base_final.md`（基础技能逐条对照）为准；本文只留作历史。
+
 更新时间：2026-09-30
 
 ## 用户目标

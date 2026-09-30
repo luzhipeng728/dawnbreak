@@ -113,7 +113,7 @@ for (const [cls, C] of Object.entries(JOB_CHAINS)) {
   defineQuest(`q_awaken3_${cls}_2`, { type: 'job', cls, job: true, name: `真正的觉醒 - 下`, npc: M, lvl: 30, pre: `q_awaken3_${cls}_1`,
     desc: '以冒险级以上的难度通关天帷禁地，战胜镜子里的自己。完成后解锁三次觉醒的技能。',
     goals: [{ type: 'clear', dungeon: 'forbidden_land', diff: 1 }],
-    talk: { offer: ['天帷禁地的最深处，有一个和你一模一样的人在等你。', '打败她——打败过去的自己，才是真正的觉醒。'], doing: ['天帷禁地，冒险级以上。'], done: A.d3 },
+    talk: { offer: ['天帷禁地的最深处，有一个和你一模一样的人在等你。', '打败那个人——打败过去的自己，才是真正的觉醒。'], doing: ['天帷禁地，冒险级以上。'], done: A.d3 },
     reward: QR(30, 0.2, 12000, { flag: 'awaken3' }) });
 }
 /* ---- 转职专属任务线（官方：在导师处选一个转职方向，接它的转职任务，做完才能转成这个方向）----

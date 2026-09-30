@@ -100,7 +100,7 @@ function worldTravel(id) {
 function fxRing() { const p = game.player; world.fx.push({ type: 'warp', x: p.x, y: p.y, t: 0, dur: 0.9 }); }
 // 当前可见的地下城门（隐藏地下城满足条件后才出现）
 const gateVisible = g => { const D = DUNGEONS[g.dungeon]; return D && (!D.hidden || dungeonUnlocked(D)); };
-function dungeonUnlocked(D) { if (!D.hidden) return true; const u = D.unlock || {}; if (u.quest) return !!(save.data.questDone || {})[u.quest]; if (u.clear) return !!(save.data.unlocked || {})[u.clear]; return true; }
+function dungeonUnlocked(D) { if (!D.hidden) return true; if ((save.data.dgOpen || {})[D.id]) return true; const u = D.unlock || {}; if (u.quest) return !!(save.data.questDone || {})[u.quest]; if (u.clear) return !!(save.data.unlocked || {})[u.clear]; return true; }
 /* ---- 每帧更新 ---- */
 function worldUpdate(dt) {
   const p = game.player, S = world.S;

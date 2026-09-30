@@ -198,6 +198,7 @@ function giveQuestRewards(q) {
   if (R.coins) { giveItem(makeItem('coin', R.coins)); got.push({ kind: 'coin', label: `复活币 ×${R.coins}` }); }
   for (const r of R.items || []) give(questMakeItem(r), 'item');
   if (R.title) { const it = makeItem(R.title); give(it, 'title', `称号「${it ? it.name : R.title}」`); if (it && !d.titles.includes(it.name)) d.titles.push(it.name); }
+  if (R.unlock) (d.dgOpen ??= {})[R.unlock] = true;
   if (R.unlock) got.push({ kind: 'unlock', label: `隐藏地下城「${qDgName(R.unlock)}」已开放` });
   if (R.flag) { d.flags[R.flag] = true; if (R.flag === 'awaken') { got.push({ kind: 'flag', label: '解锁觉醒技能' }); bus.emit('awaken', { job: game.job }); } }
   const exp = questExp(R);

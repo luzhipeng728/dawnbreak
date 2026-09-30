@@ -1,16 +1,23 @@
 #!/bin/sh
-# 快速回归（阶段交付 / 日常合并用，约 2 分钟）：只挑一分钟以内的核心测试，分 6 组并行跑。
+# 快速回归（主线程合并一批后用，约 9 分钟；平时开发只跑受影响的测试：node test/affected.mjs）：只挑一分钟以内的核心测试，分 6 组并行跑。
 #   - 每组内部串行，同一时间每组只开 1 个浏览器（共 3 个）
 #   - 联机测试对时序敏感，全部放在第 6 组串行跑
 #   - 慢的全量测试（bestiary / botrun / sky / behemoth / world / 全转职 classes / duel……）只在大阶段合并后由主线程跑 test/all.sh
 # 用法：sh test/quick.sh          新增的职业测试放进 g2（文件不存在时自动跳过）
 cd "$(dirname "$0")/.." || exit 1
+# 全局锁（和 test/affected.mjs 共用）：同一时间只跑一套测试，别的排队，避免几个智能体同时开十几个浏览器把电脑卡死
+LOCK=${TMPDIR:-/tmp}/dawnbreak-tests.lock; said=
+while ! mkdir "$LOCK" 2>/dev/null; do
+  pid=$(cat "$LOCK/pid" 2>/dev/null); if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then rm -rf "$LOCK"; continue; fi
+  [ -z "$said" ] && echo "另一套测试正在跑（pid $pid），排队等它结束……" && said=1; sleep 5
+done
+echo $$ > "$LOCK/pid"; trap 'rm -rf "$LOCK"' EXIT INT TERM
 node build.mjs | tail -1
 [ -d server/node_modules ] || npm ci --prefix server --no-audit --no-fund >/dev/null 2>&1
 LOG=test/shots/quick; mkdir -p $LOG; rm -f $LOG/summary-*.txt
 run() { g=$1; name=$2; shift 2
   for a in "$@"; do case $a in *test/*.mjs) [ -f "$a" ] || return 0 ;; esac; done   # 测试文件不存在（别的组还没合进来）就跳过
-  start=$(date +%s); "$@" > $LOG/$name.log 2>&1; code=$?
+  start=$(date +%s); nice -n 10 "$@" > $LOG/$name.log 2>&1; code=$?
   if [ $code -eq 0 ] && grep -qE '"type": ?"pageerror"|✗' $LOG/$name.log; then code=99; fi
   printf '== %-12s %s  %ss\n' "$name" "$([ $code -eq 0 ] && echo PASS || echo "FAIL($code)")" $(( $(date +%s) - start )) >> $LOG/summary-$g.txt; }
 # 6 组并行（用户允许多开并发，约 2 分钟）；每组内部串行，每组同一时间只开 1 个浏览器；联机测试对时序敏感，全部放在第 6 组串行跑
@@ -26,7 +33,9 @@ g6() { run 6 serverapi node server/test/api.mjs; run 6 restore node --disable-wa
   run 6 mptown node test/mp_town.mjs; run 6 mpcoop node test/mp_coop.mjs 2; run 6 mpfighter node test/mp_fighter.mjs; run 6 mpmore node test/mp_coop_more.mjs; run 6 mpabyss node test/mp_abyss.mjs A,HA
   run 6 findfriend node test/findfriend.mjs; run 6 partyhud node test/mp_party_hud.mjs; run 6 inspect node test/inspect.mjs; }
 t0=$(date +%s)
-g1 & g2 & g3 & g4 & g5 & g6 & wait
+# 默认 3 条并行（3 个浏览器）：电脑不卡，约 9 分钟；QUICK_J=6 sh test/quick.sh 恢复 6 条全并行（约 7 分钟，很占 CPU）
+if [ "${QUICK_J:-3}" -ge 6 ]; then g1 & g2 & g3 & g4 & g5 & g6 & wait
+else { g6; } & { g2; g4; } & { g3; g1; g5; } & wait; fi
 cat $LOG/summary-[1-6].txt | tee $LOG/summary.txt
 fails=$(grep -c FAIL $LOG/summary.txt); total=$(grep -c '^==' $LOG/summary.txt)
 echo "快速回归：$((total - fails))/$total 通过，用时 $(( $(date +%s) - t0 ))s（详情 $LOG/<名字>.log）"

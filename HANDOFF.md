@@ -31,7 +31,8 @@
 | 做什么 | 命令 |
 |---|---|
 | 构建 | `node build.mjs`（输出 `dist/web/` 和离线单文件 `dist/dawnbreak.html`） |
-| 快速回归（约 7 分钟，74 项，6 组并行） | `sh test/quick.sh` → 结果看最后一行，失败项的日志在 `test/shots/quick/<名字>.log` |
+| **只跑受影响的测试（日常用这个）** | `node test/affected.mjs`（按改动的文件自动挑测试，2 路并行；`--dry` 只看挑了哪些，`--base <提交>` 指定比较起点，`--only a,b` 只跑其中几项）；规则表在文件里的 `RULES`，新加的测试要是没被挑中就往里加一行 |
+| 快速回归（约 9 分钟，74 项，3 路并行） | `sh test/quick.sh`：**只由主线程在合并一批后跑**；和 affected 共用全局锁，同一时间只有一套测试在跑，别的排队 |
 | 单个测试 | `node test/<名字>.mjs`（无头 Chrome） |
 | 完整回归（约 70 分钟） | `sh test/all.sh`，只在大里程碑后台跑 |
 | 调试网址 | `?town&cls=gun` 直接进城、`?dungeon=lorien&lv=10`、`?test&cls=mage&mon=goblin&mobs=0` 测试房间、`?rawcd` 原始冷却、`?fresh` 空存档 |
@@ -48,10 +49,11 @@
    cd /Users/luzhipeng/projects/dawnbreak
    git worktree add .claude/worktrees/<你的名字> -b <你的名字>/<任务> main
    ```
+   **不要直接在主仓库目录（main 分支的工作区）里改文件和提交**，主线程和其他智能体都在用它；一律在自己的 worktree 分支里做。
    只改你认领的文件；需要改别人正在改的文件（见 §6 “进行中”一栏的文件归属），先在协作板上说。
 3. **提交格式**：Conventional Commits，`type(scope): 描述`（例：`feat(boss): 格兰之森领主加扇形吐息`），正文最后一行：
    `Co-Authored-By: <你的模型名> <noreply@anthropic.com>`
-4. **交付前**：`node build.mjs` + 你自己的测试 + 一次 `sh test/quick.sh`（失败项单独重跑确认是不是偶发）。不要在测试跑的时候重新构建。
+4. **交付前**：`node test/affected.mjs`（自动构建 + 跑受影响的测试；失败项单独重跑确认是不是偶发）。不要跑 quick.sh / all.sh，那是主线程合并后的事；不要在测试跑的时候重新构建。
 5. **不要部署**。`tools/deploy.sh` 只由主线程执行；也不要推 GitHub。做完在协作板写“已完成：分支名 + 提交号 + 测试结果 + 截图路径”，主线程合并、跑回归、部署。
 6. **美术**：
    - 流程：先出样图（一张总览），主线程审过再批量。

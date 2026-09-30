@@ -15,7 +15,7 @@ run() { g=$1; name=$2; shift 2
   printf '== %-12s %s  %ss\n' "$name" "$([ $code -eq 0 ] && echo PASS || echo "FAIL($code)")" $(( $(date +%s) - start )) >> $LOG/summary-$g.txt; }
 # 6 组并行（用户允许多开并发，约 2 分钟）；每组内部串行，每组同一时间只开 1 个浏览器；联机测试对时序敏感，全部放在第 6 组串行跑
 g1() { for t in flow ui mobile mobile_buff polish quests60; do run 1 $t node test/$t.mjs; done; }
-g2() { for t in items compare bulk gear guide quickquest levelcap; do run 2 $t node test/$t.mjs; done; run 2 gear60 node test/gear60.mjs core; run 2 cdr60 node test/cdr60.mjs; run 2 gearsim node test/gear_sim.mjs 40; run 2 jobvisuals node test/jobvisuals.mjs; }
+g2() { for t in items compare bulk gear guide quickquest levelcap; do run 2 $t node test/$t.mjs; done; run 2 gear60 node test/gear60.mjs core; run 2 cdr60 node test/cdr60.mjs; run 2 gearsim node test/gear_sim.mjs 40; run 2 jobvisuals node test/jobvisuals.mjs; run 2 fighter_nen node test/fighter_nenmaster.mjs; run 2 nenmaster node test/nenmaster.mjs; }
 g3() { for t in combat summon avatar shop acct bag skyguide epicfx; do run 3 $t node test/$t.mjs; done
   run 3 skillsa node test/skill_sa.mjs; run 3 shopecon node test/shop_econ.mjs; run 3 shopsynth node test/shop_synth.mjs; run 3 vanity node test/vanity.mjs; run 3 juggle node test/juggle.mjs; }
 g4() { for t in sword gunner mage enchantress summoner awkcancel; do run 4 $t node test/$t.mjs; done

@@ -92,14 +92,14 @@ if (MODES.includes('ids')) {
     const I = FIGHTER_IDS, all = [...I.base, ...I.jobs.flatMap(j => I[j])];
     const pre = { base: 'f_', ...Object.fromEntries(I.jobs.map(j => [j, I.prefix[j]])) };
     const badPre = Object.entries({ base: I.base, ...Object.fromEntries(I.jobs.map(j => [j, I[j]])) }).flatMap(([k, L]) => L.filter(id => !id.startsWith(pre[k])));
-    const otherPre = Object.keys(SKILLS).filter(id => /^f[nsbg]?_/.test(id));   // 现有技能里没人占用这些前缀（B3~B7 之后会有自己的）
+    const otherPre = Object.keys(SKILLS).filter(id => /^f[nsbg]?_/.test(id) && !all.includes(id));   // 用了这些前缀的技能都在预留表里（B3~B7 实装的技能就是预留的 id）
     const C = CLASSES.fighter, J = C.jobs;
     const jobs = Object.fromEntries(Object.entries(J).map(([k, v]) => [k, { ready: v.ready, armor: v.armor, dmg: v.dmgType || 'phys', skills: v.skills.length }]));
     const wt = Object.keys(WTYPES).filter(k => WTYPES[k].cls === 'fighter');
     const clash = Object.keys(JOB_ARMOR).filter(k => I.jobs.includes(k)).concat(...Object.keys(CLASSES).filter(c => c !== 'fighter').map(c => Object.keys(CLASSES[c].jobs || {}).filter(k => I.jobs.includes(k))));
     const A = SPR_ANIMS.fighter, frames = Object.values(A).flatMap(a => a.frames || a.map(x => x[0]));
     const base = new Set(Object.values(BASE_ANIMS).flatMap(a => a.frames || a.map(x => x[0])));
-    const badFrames = [...new Set(frames)].filter(f => !base.has(f) && !f.startsWith('f_') && !['idle', 'jump2', 'jump3', 'run3', 'charge'].includes(f));
+    const badFrames = [...new Set(frames)].filter(f => !base.has(f) && !/^f[nsbg]?_/.test(f) && !['idle', 'jump2', 'jump3', 'run3', 'charge'].includes(f));   // 转职帧用各自的前缀（fn_ / fs_ / fb_ / fg_）
     return { n: all.length, uniq: new Set(all).size, counts: [I.base.length, ...I.jobs.map(j => I[j].length)], badPre, otherPre, jobs, ready: C.ready, wt, boxJobs: WTYPES.boxing.jobs, start: CLASS_START_WEAPON.fighter,
       clash, anims: Object.keys(A).length, badFrames, clips: ['atk1', 'atk2', 'atk3', 'atk4', 'dash', 'jatk', 'crouch'].every(n => CLIPS.fighter[n]), base4: CLASS_BASE4.fighter.str[0], mentor: JOB_MENTOR.fighter,
       feng: { job: NPCS.fengzhen.services.includes('job'), jobFor: NPCS.fengzhen.jobFor }, duel: !!DUEL_BASE.fighter, av: !!AVATAR_CLS.fighter };
@@ -108,7 +108,7 @@ if (MODES.includes('ids')) {
   report('转职登记：4 个都 ready:false，精通 布 / 轻 / 重 / 轻，气功 / 街霸魔法', R.ready === false && Object.values(R.jobs).every(j => j.ready === false) && R.jobs.nenmaster.armor === 'cloth' && R.jobs.striker.armor === 'light' && R.jobs.brawler.armor === 'heavy' && R.jobs.grappler.armor === 'light'
     && R.jobs.nenmaster.dmg === 'mag' && R.jobs.brawler.dmg === 'mag' && R.jobs.striker.dmg === 'phys' && R.jobs.grappler.dmg === 'phys' && !R.clash.length, { jobs: R.jobs, clash: R.clash });
   report('武器 5 类（拳套只给散打）、初始手套、力量 7、导师风振、决斗 / 外观登记', R.wt.join() === 'knuckle,boxing,claw,tonfa,gauntlet' && R.boxJobs.join() === 'striker' && R.start === 'knuckle' && R.base4 === 7 && R.mentor === 'fengzhen' && R.feng.job && R.feng.jobFor === 'fighter' && R.duel && R.av, { wt: R.wt, box: R.boxJobs, start: R.start, str: R.base4, mentor: R.mentor, feng: R.feng, duel: R.duel, av: R.av });
-  report('动画契约：片段齐全、职业帧一律 f_ 前缀、占位骨骼片段在', R.anims >= 40 && !R.badFrames.length && R.clips, { anims: R.anims, bad: R.badFrames });
+  report('动画契约：片段齐全、职业帧一律 f_（转职 fn_ / fs_ / fb_ / fg_）前缀、占位骨骼片段在', R.anims >= 40 && !R.badFrames.length && R.clips, { anims: R.anims, bad: R.badFrames });
   noErr(logs, 'ids');
   await browser.close();
 }

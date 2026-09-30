@@ -34,18 +34,18 @@ const nodeT = n => T(n, `test/${n}.mjs`);
 const srvT = n => T(`srv_${n}`, '--disable-warning=ExperimentalWarning', `server/test/${n}.mjs`);
 
 // 职业文件 → [职业, 转职]
-const JOB_OF = { nen: 'nenmaster' };
+const JOB_OF = { nen: 'nenmaster', infighter: 'monk' };
 function classOf(f) {
   const m = f.match(/^src\/content\/classes\/([a-z]+?)(?:_([a-z]+?))?(?:_p\d)?\.js$/); if (!m || m[1] === 'common') return null;   // common.js 不是职业（见 RULES）
   if (!fs.existsSync(`src/content/classes/${m[1]}.js`)) return null;   // 职业的基础文件（sword.js / gunner.js / mage.js / fighter.js / 以后的新职业）
   const cls = { gunner: 'gun' }[m[1]] || m[1];
-  return [cls, m[2] ? (JOB_OF[m[2]] || m[2]) : null];
+  return [cls, m[2] ? (JOB_OF[m[2]] || m[2]) : null, m[2]];
 }
-function classTests(cls, job) {
+function classTests(cls, job, raw) {
   const out = [];
   const base = { gun: 'gunner' }[cls] || cls;
   if (!job) { if (fs.existsSync(`test/${base}.mjs`)) out.push(nodeT(base)); else out.push(T(`classes_${cls}`, 'test/classes.mjs', cls)); return out; }
-  for (const n of [job, `${cls}_${job}`]) if (fs.existsSync(`test/${n}.mjs`)) out.push(nodeT(n));
+  for (const n of new Set([job, raw, `${cls}_${job}`, `${cls}_${raw}`])) if (fs.existsSync(`test/${n}.mjs`)) out.push(nodeT(n));
   out.push(T(`classes_${job}`, 'test/classes.mjs', `${cls}:${job}`), T(`awk_${job}`, 'test/awkcancel.mjs', `${cls}:${job}`));
   return out;
 }

@@ -227,7 +227,7 @@ let bad = 0;
 const summary = [];
 for (const item of list) {
   const [cls, job] = item.split(':'), tag = `${cls}-${job || 'base'}`;
-  await page.goto(`${URL_BASE}?test&mute&cls=${cls}&${cls}=1&mobs=0`);   // &<职业>=1：还没开放的职业（ready:false）也能测 await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
+  await page.goto(`${URL_BASE}?test&mute&cls=${cls}&${cls}=1&mobs=0`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });   // &<职业>=1：还没开放的职业（ready:false）也能测
   await page.evaluate(pageInit);
   if (opt.weapon) await page.evaluate(w => { inv.equip.weapon = { wtype: w, slot: 'weapon' }; recalcStats(game.player); }, opt.weapon);
   const spec = specOf(cls), specS = (spec && spec.skills) || {};

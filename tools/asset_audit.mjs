@@ -1,11 +1,12 @@
-// 素材盘点：找出 art/final 里游戏从来不用的文件（docs/ASSET_AUDIT.md）
+// 素材盘点：找出 art/final 里游戏从来不用的文件（docs/ASSET_AUDIT.md）。先 node build.mjs（data / trace 要用构建好的页面）
 //   node tools/asset_audit.mjs static            只做静态扫描（src/**/*.js 的字符串 / 模板 → 匹配规则），打印统计
-//   node tools/asset_audit.mjs data              无头页面里按数据枚举（物品图标 / 武器外观 / 转职立绘 / 精灵动作帧 / 场景……）→ test/shots/asset_audit/data.json
-//   node tools/asset_audit.mjs trace [测试...]   记录实际画出来的素材：起一个带埋点的网页版（dist/web 拷贝），GAME_URL 指过去跑现成测试 + 自己的巡游 → test/shots/asset_audit/trace.json
-//   node tools/asset_audit.mjs report            合并三种来源 → docs/ASSET_AUDIT.md + test/shots/asset_audit/unused.json（删除候选）/ missing.json
-//   node tools/asset_audit.mjs delete            git rm 删除候选（只删 unused.json 里 sure 的；疑似的留着）
-// 规则：三种来源都没有引用的文件才算“没用”；动态拼出来的 key（模板里只有分类前缀、其余全是变量的）交给数据枚举和运行记录，
-// 其余模板 / 拼接 / 字面量一律按最宽的方式匹配（宁可留着）
+//   node tools/asset_audit.mjs data              无头页面里按数据枚举（运行时字符串 + 物品图标 / 武器外观 / 转职立绘 / 门 / 觉醒插图）→ test/shots/asset_audit/data.json
+//   PAR=4 node tools/asset_audit.mjs trace [测试...]   记录实际画出来的素材：dist/web 页面打埋点，GAME_URL 指过去跑现成测试 + 自己的巡游（tour）→ trace.json（约 50 分钟，跑的时候别重新构建）
+//   node tools/asset_audit.mjs report [--doc]    合并三种来源 → test/shots/asset_audit/unused.json（unused 删除 / suspect 疑似 / missing 缺文件）；--doc 重写 docs/ASSET_AUDIT.md 的 §2~§5
+//   node tools/asset_audit.mjs delete            git rm unused.json 里的 unused（疑似的留着），精灵帧同时从 spr.json 去掉
+//   node tools/asset_audit.mjs spot              删 / 压之后的目视抽查（网页版：4 个职业进城、地下城、背包、商城、觉醒插图），报“素材加载失败”和 404
+// 规则：三种来源都没有引用的文件才算“没用”；模板 / 拼接的洞只能填已有的字符串或数字（宽匹配只算“疑似”），
+// 只有分类前缀、其余全是变量的模板（'fx/' + name）交给名字规则、数据枚举和运行记录
 import fs from 'fs';
 import path from 'path';
 import http from 'http';
@@ -467,6 +468,7 @@ const PROBES = [
   [/^spr\/phantom\/idle$/, 'summon.js summonLoadArt 用 spr/<分包>/idle 判断分包是否已加载；幻鬼（phantom）的站姿帧叫 pfloat、没有 idle，所以每次召唤都会再调一次 loadBundles（功能正常，只是多做一次空加载）'],
   [/^bg\/.+_(mid|fore)$/, 'content/abyss.js 给深渊复制背景时 5 种图层逐个查，mid / fore 本来就没有（手绘背景只有 far / floor / edge）'],
   [/^bg\/abyss\w*_(far|floor|edge)$/, '深渊主题先查自己的背景，没有就借普通主题的（content/abyss.js）'],
+  [/^cutin\/fighter$/, 'hud.js 觉醒插图按 cutin/<职业或转职> 取；格斗家没有基础职业的插图（鬼剑士 / 神枪手 / 魔法师有），没有就画人物模型'],
   [/^cutin\/\w+[23]$/, 'cutinWho（common.js）：二觉 / 三觉有专属插图就用，没有就用一觉的'],
   [/^icon\//, 'itemArtKey / 技能图标：按候选顺序查（icon 字段 → 通用图 → 旧图标 → 代码绘制）'],
   [/^world\/g_/, 'gateArt（world.js）：地下城有专属门图就用，没有用通用门'],
@@ -481,17 +483,18 @@ function writeDoc(A) {
   const cats = {}; for (const k in files) { const c = cat(k); (cats[c] ||= { n: 0, b: 0, un: 0, ub: 0, su: 0 }); cats[c].n++; cats[c].b += files[k]; }
   for (const k of unused) { cats[cat(k)].un++; cats[cat(k)].ub += files[k]; }
   for (const k of suspect) cats[cat(k)].su++;
-  L.push('## 2. 按目录汇总（盘点时的 art/final）', '', '| 目录 | 文件 | 大小 MB | 没用（删除） | 删除 KB | 疑似（留着） |', '|---|---:|---:|---:|---:|---:|');
+  L.push('## 2. 按目录汇总（盘点时的 art/final）', '', '| 目录 | 文件 | 大小 MiB | 没用（删除） | 删除 KiB | 疑似（留着） |', '|---|---:|---:|---:|---:|---:|');
   for (const [c, v] of Object.entries(cats).sort((a, b) => b[1].b - a[1].b)) L.push(`| ${c} | ${v.n} | ${fmtMB(v.b)} | ${v.un} | ${kb(v.ub)} | ${v.su} |`);
   const tot = Object.values(cats).reduce((s, v) => ({ n: s.n + v.n, b: s.b + v.b, un: s.un + v.un, ub: s.ub + v.ub, su: s.su + v.su }), { n: 0, b: 0, un: 0, ub: 0, su: 0 });
   L.push(`| **合计** | ${tot.n} | ${fmtMB(tot.b)} | ${tot.un} | ${kb(tot.ub)} | ${tot.su} |`, '');
   L.push('## 3. 删除清单', '', '### 3.1 最大的 30 个', '', '| 文件 | KB | 为什么没用 |', '|---|---:|---|');
   for (const k of [...unused].sort((a, b) => files[b] - files[a]).slice(0, 30)) L.push(`| \`${k}\` | ${kb(files[k])} | ${why(k)} |`);
-  L.push('', `### 3.2 全部 ${unused.length} 个（按目录，${fmtMB(size(unused))} MB）`, '');
+  L.push('', `### 3.2 全部 ${unused.length} 个（按目录，${fmtMB(size(unused))} MiB，每项后面是 KiB）`, '');
+  if (unused.some(k => C[k].note)) L.push('没写原因的都是普通怪物目录的帧：目录只当普通怪物用（MON_ART），这一帧不在 `SPR_ANIMS.monster` / 怪物兜底表里（见 §1 第 2 条）。', '');
   const by = {}; for (const k of unused) (by[groupOf(k)] ||= []).push(k);
   for (const [g, ks] of Object.entries(by).sort((a, b) => size(b[1]) - size(a[1]))) {
     const reasons = [...new Set(ks.map(why))];
-    L.push(`- \`${g}\`（${ks.length} 个，${kb(size(ks))} KB）：${ks.map(k => `${k.slice(g.length + 1)} ${kb(files[k])}`).join('、')}${reasons.length === 1 ? ' —— ' + reasons[0] : ''}`);
+    L.push(`- \`${g}\`（${ks.length} 个，${kb(size(ks))} KiB）：${ks.map(k => `${k.slice(g.length + 1)} ${kb(files[k])}`).join('、')}${reasons.length === 1 ? ' —— ' + reasons[0] : ''}`);
   }
   L.push('', `## 4. 疑似未用（${suspect.length} 个，留着没删）`, '');
   if (!suspect.length) L.push('没有：凡是只剩“模板宽匹配”这种弱证据的，都已按具体规则（洞必须能用已有的字符串 / 数字填上）判定。', '');

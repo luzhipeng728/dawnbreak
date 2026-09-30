@@ -52,6 +52,29 @@ for (const [seg, cols] of [['idle', 1], ['run', 6], ['combo', 6], ['jump', 5]]) 
   const url = await page.evaluate(({ seg, cols }) => __sheet(seg, cols), { seg, cols });
   fs.writeFileSync(`${out}/engine_${seg}.jpg`, Buffer.from(url.split(',')[1], 'base64'));
 }
+// 全部片段：SPR_ANIMS.fighter 的每个片段按时间轴（循环片段按帧）让真正的 SpriteModel 选帧，查“选到的帧 = 表里写的帧、帧图已加载”，并画一张总览（一行一个片段）
+const clips = await page.evaluate(() => {
+  const A = SPR_ANIMS.fighter, S = SPR_DATA.fighter, names = Object.keys(A), rows = [], bad = [], used = new Set();
+  for (const c of names) {
+    const a = A[c], want = a.frames ? a.frames.map((f, i) => [f, (i + 0.5) / a.fps]) : a.map(([f, t0], i) => [f, t0 + 0.001]);
+    const got = want.map(([f, t]) => { const m = new SpriteModel('fighter', SPR_FALLBACK, A); return [f, m.frameOf({ __c: c, __t: t, __n: c }), m, t]; });
+    for (const [f, g] of got) { used.add(g); if (f !== g || !S.frames[g] || !IMG[`spr/fighter/${g}`]) bad.push(`${c}:${f}→${g}`); }
+    rows.push([c, got]);
+  }
+  const cw = 170, ch = 170, cols = Math.max(...rows.map(r => r[1].length)) + 1, [cv, x] = offCanvas(cw * cols, ch * rows.length);
+  x.fillStyle = '#3a3e48'; x.fillRect(0, 0, cv.width, cv.height); x.font = '13px sans-serif';
+  rows.forEach(([c, got], r) => {
+    x.fillStyle = '#ffe070'; x.fillText(c, 6, r * ch + 20);
+    got.forEach(([f, g, m, t], i) => {
+      x.save(); x.translate((i + 1) * cw + cw / 2, r * ch + ch - 14); x.scale(S.res * 0.75, S.res * 0.75); m.draw(x, { __c: c, __t: t, __n: c }, t); x.restore();
+      x.fillStyle = f === g ? '#cfe' : '#f66'; x.fillText(g, (i + 1) * cw + 4, r * ch + 16);
+    });
+  });
+  const all = Object.keys(S.frames), unused = all.filter(f => !used.has(f));
+  return { clips: names.length, frames: all.length, bad, unused, url: cv.toDataURL('image/jpeg', 0.84) };
+});
+fs.writeFileSync(`${out}/engine_clips.jpg`, Buffer.from(clips.url.split(',')[1], 'base64'));
+console.log(JSON.stringify({ clips: clips.clips, frames: clips.frames, bad: clips.bad, unusedByBaseClips: clips.unused }));
 const errs = logs.filter(l => l.type === 'pageerror' || l.type === 'error');
 console.log('errors', errs.length, errs.slice(0, 3).map(e => e.text.slice(0, 200)));
 await browser.close();

@@ -3,7 +3,7 @@
 //   ids    id 预留表 / 转职登记 / 武器类型 / 动画契约
 //   feel   武器手感（判定距离、臂铠物理技能 MP·冷却惩罚、拳套转职限制）、光暗抗、四维
 //   switch 开放开关：ready:false 选角“即将开放”、J.ready:false 转职窗口不显示、?fighter=1 强制开放
-//   smoke  ?fighter=1 从创建角色界面建格斗家 → 城镇 → 洛兰 → 走动 / 普攻（矢量占位模型），不报错
+//   smoke  ?fighter=1 从创建角色界面建格斗家 → 城镇 → 洛兰 → 走动 / 普攻（有原装帧用精灵模型），不报错
 import { launch, URL_BASE } from './lib.mjs';
 const MODES = (process.argv[2] || 'save,ids,feel,switch,smoke').split(',');
 let fail = 0;
@@ -194,7 +194,7 @@ if (MODES.includes('smoke')) {
     for (const w of ['skills', 'inv', 'status']) { menus.open(w); await sleep(150); menus.close(w); }   // 技能 / 背包 / 属性窗口（格斗家还没有技能）
     game.lvl = 15; const avail = jobAvailable(NPCS.fengzhen); menus.open('job', NPCS.fengzhen); await sleep(250);   // Lv15 找风振：转职窗口 4 个方向（开发开关下）
     const cards = document.querySelectorAll('.jobcard').length; menus.close('job'); game.lvl = 1;
-    return { cls: game.player.cls, model: game.player.model.constructor.name, name: save.data.name, avail, cards };
+    return { cls: game.player.cls, model: game.player.model.constructor.name, spr: !!(SPR_DATA.fighter && IMG['spr/fighter/idle']), name: save.data.name, avail, cards };
   });
   await page.evaluate(() => enterDungeon('lorien', 0));
   await page.waitForFunction(() => game.scene === 'dungeon' && game.dungeon && game.player, null, { timeout: 30000 }); await page.waitForTimeout(800);
@@ -210,7 +210,7 @@ if (MODES.includes('smoke')) {
   await page.keyboard.press('ArrowRight'); await page.waitForTimeout(40); await page.keyboard.down('ArrowRight'); await page.waitForTimeout(250); await page.keyboard.press('KeyX'); await page.keyboard.up('ArrowRight'); await page.waitForTimeout(500);
   await page.keyboard.press('KeyC'); await page.waitForTimeout(120); await page.keyboard.press('KeyX'); await page.waitForTimeout(800);
   const R = await page.evaluate(() => ({ acts: [...__acts], hits: __hits, scene: game.scene, frameErrs: typeof frameErrs !== 'undefined' ? frameErrs.length : 0 }));
-  report('?fighter=1 从创建界面建格斗家进城（矢量占位模型）；技能 / 背包 / 属性窗口能开；Lv15 风振转职窗口 4 个方向', town.cls === 'fighter' && town.name === '风拳小子' && town.model !== 'SpriteModel' && town.avail && town.cards === 4, town);
+  report('?fighter=1 从创建界面建格斗家进城（有原装帧 = 精灵模型，没有 = 矢量占位模型）；技能 / 背包 / 属性窗口能开；Lv15 风振转职窗口 4 个方向', town.cls === 'fighter' && town.name === '风拳小子' && (town.model === 'SpriteModel') === town.spr && town.avail && town.cards === 4, town);
   report('地下城里走动 / 4 段普攻 / 跑攻 / 跳攻都能放、打得到怪', moved > 60 && ['atk1', 'atk2', 'atk3', 'atk4', 'dash', 'jatk'].every(a => R.acts.includes(a)) && R.hits > 3 && R.scene === 'dungeon' && !R.frameErrs, { moved, ...R });
   noErr(logs, 'smoke');
   await browser.close();

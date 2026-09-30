@@ -44,6 +44,31 @@
   - 好友列表：独立窗口，显示在线状态。
   - 统一放在 `src/net/account.js`、`src/ui/login.js`、`src/ui/friends.js`。
 
+## 后台管理（/admin，09-30）
+- 页面：`/admin/`，服务端托管 `server/admin/` 下固定的 3 个文件（index.html / admin.css / admin.js，无框架、无外部脚本），带 CSP（`script-src 'self'`、`frame-ancestors 'none'`）；线上 Caddy 要把 `/admin`、`/admin/*` 也反代到服务端（`server/deploy/Caddyfile.snippet`）。
+- 登录：用 `DNF_ADMIN` 里的游戏账号走 `POST /api/login`，拿到的 token 放在 `Authorization: Bearer` 头里（不用 cookie → 没有 CSRF）；不是管理员的账号登录后立刻登出并提示。页面上所有玩家提供的文字（用户名、角色名、邮件标题、报错消息）都用 textContent 显示，不用 innerHTML / eval。
+- 接口全部 `{ admin: true }`：没登录 401、普通玩家 403（`server/test/admin.mjs` 逐个检查）；写操作都进操作日志 svc_log（detail 带 `uid` = 被操作的账号），敏感操作单独限流。
+
+  | 接口 | 作用 |
+  |---|---|
+  | `GET /api/gm/stats?tz=` | 概况：总注册 / 封禁 / 删除、近 30 天每天注册数、24 小时 / 7 天登录、在线、职业 × 转职分布、等级分布、客户端报错数和前 5 条、服务器（协议版本、网页版本、运行时长、内存、数据库大小、物品目录） |
+  | `GET /api/gm/users?q=&filter=&sort=&dir=&page=&size=` | 账号列表：q 搜用户名 / 角色名 / IP / #ID；filter = active（默认，不含已删除）/ banned / online / deleted / all；sort = id / name / created / login / lvl / chars / cera / gold |
+  | `GET /api/gm/users/:id` | 详情：注册 / 最近 IP、在线状态、云存档摘要（角色、装备、背包格数、点券、金库）、最近 50 封邮件、登录会话、相关日志、客户端报错 |
+  | `POST /api/gm/users/:id/ban {on, reason}` | 封禁（立即踢下线、作废所有登录）/ 解封；管理员账号不能封（10 秒内 30 次） |
+  | `POST /api/gm/users/:id/logout` | 踢下线：作废全部会话 + 断开 WS；不能踢自己 |
+  | `POST /api/gm/users/:id/password {pass}` | 管理员重设密码（6~64 位），旧登录全部作废；不能改管理员的（1 分钟 10 次） |
+  | `POST /api/gm/users/:id/delete {confirm: 用户名}` | 软删除：先 `VACUUM INTO` 整库备份到数据库目录的 `backups/`，再停用 + 标记 `deleted_at`（数据保留）；10 分钟 5 次 |
+  | `POST /api/gm/users/:id/undelete` | 恢复（仍是封禁状态，要再解封） |
+  | `GET /api/gm/regs?days=&limit=` | 最近注册（注册 IP、第一个角色、同 IP 账号数）+ 同一个 IP 注册多个账号的汇总（3 个以上 flag） |
+  | `POST /api/gm/mail {to, title, body, gold, cera, items, days, preview?, rid?}` | 发邮件（游戏里的“管理”窗口也用它）：to = 用户名数组 / 逗号分隔（最多 500）/ `'*'`（全体，不含封禁 / 删除）；点券单封上限 1000 万，超出自动拆成多封（标题加“（2/3）”，每次最多 2 亿）；`preview: true` 只返回人数 / 拆分 / 物品名字；`rid` 批次号防重复提交；有物品目录时校验 key |
+  | `GET /api/gm/mails?limit=` | GM 邮件发送记录（带领取 / 已读进度，按批次号数 mail 表的 `rid = gm:<批次>:<uid>:<序号>`） |
+  | `GET /api/gm/cerr?user=&q=&before=&limit=` | 客户端报错明细 + 最近 7 天按“位置 + 消息”分组 |
+  | `GET /api/gm/online` / `POST /api/gm/notice {text}` / `GET /api/gm/logs?type=&user=&before=&limit=` | 原有接口（在线玩家多了 IP；日志多了 before 翻页） |
+
+- 账号表多了 `reg_ip` / `last_ip`（注册 / 登录时写；老账号按最早 / 最近的会话补上）和 `deleted_at`（软删除）。
+- 物品目录：`node build.mjs` 出网页版时 `tools/item_catalog.mjs` 在 Node 的 vm 里跑一遍网页版脚本（浏览器接口都换成空替身），读出 `ITEMS` / `CLASSES` / `SCENES`，写成 `dist/web/catalog.json`（约 340 KB，和浏览器里的 ITEMS 逐个 key 对过）。后台页面直接取 `/catalog.json`（物品选择器、职业 / 场景名字）；服务端用 `DNF_CATALOG`（线上 `/opt/dawnbreak/catalog.json`，本地 / 测试用 `DNF_STATIC` 下的）校验物品 key，读不到就只校验格式。
+- 测试：`node --disable-warning=ExperimentalWarning server/test/admin.mjs`（接口，约 3 秒）、`node test/admin_console.mjs`（无头浏览器走一遍所有页签 + 封禁 + 发邮件 + 手机宽度，截图 `test/shots/admin/`，约 20 秒）。
+
 ## 实时通信（服务端组搭框架，联机玩法组实现玩法）
 - 连接：`wss://<host>/ws?token=...`，消息是 JSON：`{ t: 类型, ...数据 }`。服务端每 20 秒 ping 一次，客户端断线后自动重连。
 - 服务端框架提供：

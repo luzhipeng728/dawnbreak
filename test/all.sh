@@ -84,6 +84,7 @@ run skyroute  node test/sky_route.mjs
 run behemoth  node test/behemoth.mjs
 run bhmroute  node test/behemoth_route.mjs
 run region    node test/region.mjs siroco   # 区域流水线：数据 / 技能库 / 机制库 / 怪物 / 场景 / 任务 / 机器人通关（约 25 分钟）
+run boss      node test/boss.mjs all   # 领主专项：59 个领主逐阶段 / 逐招 / 逐机制 + 机器人打领主房（每图一个职业轮换，约 40 分钟；总览图 test/shots/boss/）
 run duel      node test/duel.mjs sword:gun,gun:mage,mage:sword 3
 run pvpbal    node test/pvp_balance.mjs 4 all
 run duelwake  node test/duel_wakeup.mjs   # 决斗一定站得起来：阿修罗无尽波动打倒地的人、硬控上限、23 种职业 AI 打人倒地 ≤1.6 秒 / 不能行动 ≤4 秒
@@ -115,6 +116,7 @@ run mpduel    node test/mp_duel.mjs
 run duellag   env MAXMS=33 node test/mp_duel_lag.mjs 4 0,120   # 决斗：对方按键到自己出招（本地模拟，往返 120ms 下 ≤ 33ms）、不重播、位置一致
 run arena     node test/arena.mjs
 run mpmore    node test/mp_coop_more.mjs
+run bosscoop  node test/boss.mjs graca,floating_castle,second_spine,darkcity_gate,skasa_nest,bilmark,arden,siroco_coffin coop   # 组队领主：8 个代表领主逐招 / 逐阶段，队员的预警 / 机制 / 钩子事件一一对应、队员挨打
 run mpabyss   node test/mp_abyss.mjs   # 组队深渊：满级狂战士 + 冷却 ×0.34 打完两轮和三种深渊领主，两边不报错、每帧都画；队员逐招重播领主出招、会被打到；逐帧出错安全网
 run mprestart node test/mp_restart.mjs
 run findfriend node test/findfriend.mjs

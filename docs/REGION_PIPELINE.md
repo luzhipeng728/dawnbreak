@@ -12,6 +12,7 @@
 | `art/tools/region_art.py` | 美术流水线（读同一份 spec） |
 | `art/tools/region_spec.mjs` | 把 spec 导出成 JSON（`art/regions/<id>.json`） |
 | `test/region.mjs` | 通用测试 |
+| `test/boss.mjs`（+ `boss_coop.mjs`）、`tools/boss_inventory.mjs` | 领主专项测试（阶段 / 逐招 / 机制 / 机器人 / 组队，出总览图）、领主清单 + 查重（§6） |
 
 引擎只加了一行钩子：`game/monsters.js` 的 `spawnMonster` 里 `if (D.onSpawn) D.onSpawn(m, o)`。老区域的怪物不受影响。
 
@@ -154,6 +155,16 @@ defineRegionQuests('<区域 id>', { chapter: '<篇名> · 支线', scene: '<城�
 | `seq` | 连招：依次放出 `steps` 里的技能（领主的“剧本招式”） | `steps: [spec, ...]` |
 | `mech` | 启动一个领主机制（比如隔段时间重新架盾） | `mech: 机制 spec`（同种机制还在时不会放） |
 
+**领主的招牌招式**（docs/BOSS_PLAN.md §4.1，`tools/boss_inventory.mjs` 查“招牌 ≥ 2”，`test/boss.mjs` 的 data 部分也数）：满足任意一条就算一个招牌，按名字去重——
+- 技能写了 `sig: true | '名字'`，或动作片段是招牌动作 `clip: 'sigA' / 'sigB'`（帧由 `region_art.py sig` 出，见 §5）；
+- 用了 Phase 0 的新原语（`leap cone lanes mark plant pool pull`、dash 变体 `carry spin bounces wallStun frac`、aoe 带 `linger / zone / trail`；机制 `form stance duo gauntlet stagger arena protect facing split debuff order`；特性 `hitHp saVsRanged reflectRanged rooted back onGetup grabOnly stacks substitute`）；
+- 显式声明：spec 的 `boss.sig: ['名字', …]`、`MON.<领主>.sig`（手写 AI 已有的招牌）、`defineBossKit` 套件的 `sig`、钩子的 `REGION_HOOKS.<名字>.sig`；有钩子但没写 `sig` 算 1 个。
+- 名字取 `sig` 的字符串 > `say` > 原语名。老的通用招式（swipe aoe rain summon shot blink … + 九个老机制）不算招牌。
+- 换色领主写 `variantOf: '<原领主 kind>'`，体型要和原版差 ≥ 15%（查重工具查）。
+
+**每招怎么验**（`node test/boss.mjs <地下城> skills`）：玩家站在这一招的出手距离里（没打中就再贴身试一次），`monForceSkill` 强制放，记地面预警个数 / 时长、第一下命中的时间、投射物、召唤、启动的机制；总览图每招一格。
+伤害招式要打得中；`--strict` 时预警（地面预警的时长，没有就按出手到命中）要在 0.9~1.6 秒（CONTENT_GUIDE 的领主规定）。
+
 ## 4. 领主机制库（`mechs` / `enter.mechs` / `{ use: 'mech' }`）
 
 加新机制时组队也要一起写（net/coop_mech.js，见 docs/NETWORK.md「领主机制同步」）：随机出来的东西放进 `net(m, st, p)`（启动时发给队员），关键时刻调 `msNetEv(m, st, '事件', 数据)`，HUD 数值写 `netState(st)`；`mirror: { start, ev, update, end }` 在队员那边放同样的预警和攻击（只判定 `msSelf()`），不做结算。打玩家的循环要跳过队友影子（`t.ghost`）。
@@ -170,6 +181,23 @@ defineRegionQuests('<区域 id>', { chapter: '<篇名> · 支线', scene: '<城�
 | `element` | 属性切换：领主在 `modes` 之间轮换，场上两个颜色法阵；站在相克颜色（亮破暗、暗破亮）的法阵里打才有全额伤害，否则 ×`mul` | `modes [light, dark], every 12, mul 0.35, r 95` |
 | `tether` | 连线：召出搭档 `kind`（血量 `hp`×领主最大 HP）；`mode guard`（领主伤害 ×`mul`）/ `share`（伤害分担）/ `close`（靠近时互相回血）；搭档倒下 → `onBreak: 'groggy'` | `mul 0.35, hp 0.2, dist 180` |
 
+**每个机制怎么验**（`node test/boss.mjs <地下城> mechs`）：领主用到的每个机制（出场 + 阶段进入 + 技能里的 `use: 'mech'`）用领主自己的参数单独启动，再按下表解开；新机制在定义里加一个可选的
+`test: { solve(m, st, p, BH) }`（async，把它解开；BH 是 boss.mjs 的页面工具：`BH.kill(怪)`、`BH.gw(秒)` 按游戏时间等、`BH.boss()`），boss.mjs 优先用它；没写就用“打掉机制刷出的东西 + 打领主 + 等它结束”的通用解法（解不开只算提醒）。
+
+| 机制 | boss.mjs 怎么解 / 判定 |
+|---|---|
+| groggy | 连续命中直到破招（眩晕 + 伤害倍率 > 1） |
+| invuln | 水晶 / 小怪全部打掉；撑过的快进到点（期间伤害无效）；钩子的设 `m.msInvulDone`；解开后领主回到场上 |
+| shield | 先打一下确认挡伤害，再打到破盾 |
+| safezone | 站进第一个光圈（near 贴着领主、far 离远），到点只“安全”、不挨真实伤害 |
+| hazard | 看有没有预警 / 缩圈（持续伤害，没有“解开”） |
+| enrage | 快进到点，看攻击 / 出招间隔有没有变（DPS 检查） |
+| clones | 分身出来后打本体，分身全散 |
+| element | 站进相克颜色的法阵，伤害倍率回到 1 |
+| tether | 打倒搭档，连线断 |
+
+阶段（`phases`）：逐个把血量压到门槛下（有 P0 的 `bossPhaseSet(m, i)` 就用它），检查进了阶段、`enter.mechs` 都启动了，领主藏起来的阶段按上表解开以后要回到场上。
+
 ### 什么时候用机制库，什么时候写钩子
 - 先用机制库：以上九种能组合出绝大多数领主（希洛克 = 破招 + 狂暴 + 分身 + 无敌（记忆碎片）+ 连线（卢克西）+ 安全区 + 落石 + 场地缩小）。
 - 只有机制库表达不了的判定才写钩子，例如希洛克的「凝视」要看玩家的朝向。钩子写在 `src/content/regions/<id>_bosses.js`：
@@ -180,10 +208,22 @@ defineRegionQuests('<区域 id>', { chapter: '<篇名> · 支线', scene: '<城�
 
 ## 5. 美术流水线
 
-`python3 art/tools/region_art.py <id> [阶段] [--only 前缀]`，阶段：`refs bg review1 sheets cut norm outline edge bgcut world icons review`（不写 = 全部）。
+`python3 art/tools/region_art.py <id> [阶段] [--only 前缀] [--dry]`，阶段：`refs bg review1 sheets sig cut norm sigcut outline edge bgcut world icons review`（不写 = 全部）。
 - `art.chars.<名字>`：`h` 站立高度（世界单位，玩家约 115）、`desc`、`hold`、`atk` `cast` `low`（动作表描述）、`fly` + `hover`（悬浮高度）、`cycle: 'trot'`（四足）、`holes: false`（白色系角色）、`outline: '#颜色'`（描边）。领主在游戏里的大小用怪物的 `scale` 调（希洛克 h 126 × 1.5 ≈ 190），不用重出图。
 - 提示词自动加上：不画特效（烟 / 火花 / 光束 / 速度线由游戏运行时画）、不用纯绿和品红。`review` 阶段会统计每个角色帧里的纯绿 / 品红像素，超过 0.4% 标红。
 - 生图并发 2，429 退避 90 秒；已有的输出跳过。
+
+**招牌动作表**（BOSS_PLAN §3.3，每个领主 1 张）：`art.chars.<名字>.sig = ['招式 A 的动作', '招式 B 的动作']`（英文，写法同 `atk` / `cast`，例 `'rearing up and slamming both front claws into the ground'`），可选 `rage: '狂暴帧的动作'`。
+- `sig` 阶段：以参考立绘为底图出一张 3×3（每招 4 帧：起手 → 蓄力到顶（预警姿势）→ 出手 → 收招，最后一格狂暴）→ `.../sheets2/<名字>_sig.png`。没有区域原图的老领主用 act 表或已切好的 `idle.webp` 当参考。
+- `sigcut` 阶段：切成 `sigA1-4 / sigB1-4 / rage` 加进已有的 `art/final/spr/<名字>/`（其余帧不动，`spr.json` 记 `sig`）；9 帧高度的中位数对齐已有 act / more 帧的中位数，锚点按脚底；已描边的精灵同样描边。预览 `.../cut/<名字>_sig.png`。
+- 技能里写 `clip: 'sigA'` / `'sigB'` 用这两招（引擎的按精灵覆盖由 P0 做）；`review` 审图里有招牌帧的角色改摆 站立 / 攻击 / 施法 + 招牌帧。
+
+**形态**（第二套精灵，安祖机械形态、洛丝王座、斯卡萨起飞……）：`art.chars.<名字>.forms = { <形态>: { desc, h, sheets?, hold? atk? cast? low? fly? hover? sig? scale? } }` → 自动多一个角色 `<名字>_<形态>`，和普通角色一样走 `refs → sheets → cut → norm → outline → review`（参考立绘以本体的参考图为底图，保持同一个人；没写的字段沿用本体；`sheets` 只写要的表，如王座形态 `['act', 'more']`）。
+- 只做一个形态：`--only <名字>_<形态>`；机制 `form` 里写 `art: '<名字>_<形态>'`。形态名不能和已有角色重名（工具会停下）。
+
+**先 dry-run 自查**：`--dry` 只打印每一步要生成 / 要切的东西（输出路径、尺寸、参考图、提示词开头），不调生图、不写任何文件（不写 `art/regions/<id>.json`，审图 / 背景裁切跳过）。区域块写完 sig / forms 描述先跑一遍，交给美术队列生图（只有美术队列生图，BOSS_PLAN D7）。
+
+**不在区域 spec 里的老领主**（1~30 级手写领主）：`region_art.py <文件>.json sig,sigcut --only <精灵名>`，json 格式同导出的 spec，至少 `{ "id": "<原图目录名>", "art": { "chars": { "<精灵名>": { "h", "desc", "hold", "atk", "cast", "low", "sig": [...] } } } }`；原图放 `art/src/regions/<id>/`，精灵用已有的 `art/final/spr/<精灵名>/`（sigcut 只加帧，不会像 cut 那样清空目录；不要对老精灵跑 cut）。
 
 ## 6. 测试
 
@@ -197,6 +237,15 @@ defineRegionQuests('<区域 id>', { chapter: '<篇名> · 支线', scene: '<城�
 - `bot`：机器人以各地下城自己的等级、全身 +12 史诗通关每个地下城（`BOT=law_gate:sword,...` 可改分配），要求通关、用时不超限、死亡 ≤ 2、被击 ≤ 160。
   调难度用 `GEAR=rare`（全身同等级稀有 +7，`ENH=` 可改）或 `GEAR=base`（只有 testLoadout），`LV=` 强制等级；把老区域的同类地下城放进同一个 `BOT=` 一起跑当对照。
 `test/quick.sh` 跑前五个快的部分；`test/all.sh` 跑全部。
+
+**领主专项**（BOSS_PLAN §4.2 P0-C）：`node test/boss.mjs <地下城,...|all|区域 id|legacy|region> [data,phases,skills,mechs,bot,coop] [--strict]`
+- 进图后直接传到领主房；`data` 数据 / 招式数 / 招牌数，`phases` 逐阶段压血，`skills` 逐招强制放（§3），`mechs` 逐个机制启动再解开（§4），`bot` 机器人从领主房门口打到领主倒下（各图自己的等级、全身 +12 史诗，同上面的 `bot`；`BOTCLS=all` 每个开放职业各打一次），`coop` 两个真实客户端对比预警 / 机制 / 钩子事件（同 `test/mp_bosses.mjs`，要 server/node_modules）。默认跑前五个，coop 要写上。
+- 页面报错、强制放不出来、机制解不开、阶段进不去、机器人打不倒 = 失败；`--strict` 再按 BOSS_PLAN §4.5 验收（招牌 ≥2、预警 0.9~1.6 秒、用时在带内、0 死亡、被击上限、每个阶段 / 机制一场里都触发过），不过的算失败（不带时只提醒）。
+- 输出：`test/shots/boss/<地下城>.jpg` 总览图（每招 / 每个机制 / 每个阶段一格，红底 = 有问题），`<地下城>.json` 数据（各部分分开写）；`node test/boss.mjs table` 把所有 json 拼成基线表。
+- P0 合进来以后自动用上 `monForceSkill(m, id 或 spec)`、`bossPhaseSet(m, i)`、`MS_EVENTS`（有就记进每招 / coop 的对比里）。
+- 什么都不写 = 快速样本（`graca,skasa_nest data,phases,skills,mechs`，约 40 秒）；全量一定写 `all`。整个测试 nice 10 跑；`all` / 区域 / 超过 3 个图 / `bot` / `coop` 会先拿全局测试锁（`$TMPDIR/dawnbreak-tests.lock`，和 quick.sh、`test/affected.mjs` 同一把，别的套件在跑就排队；在它们里面跑时不重复拿）。电脑忙的时候全量只跑一个进程，别再分几份并行。
+
+查重：`node tools/boss_inventory.mjs [--baseline] [--no-write]` 从代码重新生成 `docs/boss_inventory.json`（人工整理的官方对照 / 目标原样保留），报：机制组合完全相同、招式相似度 ≥ 0.7、共用底图没写 `variantOf`（或换色体型差 < 15%）、招牌 < 2（报错，退出 1；`--baseline` 只报告）。
 
 ## 7. 已知的坑
 - 全身 +12 史诗的 Lv30 角色非常强：第一版按天帷巨兽的数值跑，普通图 90 秒通关、领主 20 秒就倒。难度一律用 `power / bossPower / atkPower` 调，机器人实测（`power 6.5, bossPower 0.75, atkPower 3.2`）：法则之门 150 秒、知性之门 256 秒、痛苦之门 194 秒、攻坚无形棺柩 282 秒，被击 27~88 次，0 死亡。同一职业的史诗是随机的，攻击力能差 50%，每张图至少跑两次再下结论。

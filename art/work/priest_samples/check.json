@@ -4,59 +4,43 @@
    "walk": {
     "frames": [
      "walk1",
+     "walk2",
      "walk3",
+     "walk4",
      "walk5",
-     "walk7"
+     "walk6",
+     "walk7",
+     "walk8"
     ],
-    "headJumpMax": 1.69,
-    "headJumpMean": 1.49,
-    "headBobY": 1.5,
-    "headSwayX": 1.11,
-    "strideMatch": 0.753
+    "headJumpMax": 0.63,
+    "headJumpMean": 0.45,
+    "headBobY": 1.44,
+    "headSwayX": 0.67,
+    "strideMatch": 0.634,
+    "gameJumpMax": 0.28,
+    "gameBobY": 0.31
    },
    "run": {
     "frames": [
      "run1",
+     "run2",
      "run3",
+     "run4",
      "run5",
-     "run7"
+     "run6",
+     "run7",
+     "run8"
     ],
-    "headJumpMax": 6.18,
-    "headJumpMean": 4.13,
-    "headBobY": 6.11,
-    "headSwayX": 2.72,
-    "strideMatch": 0.07
+    "headJumpMax": 4.31,
+    "headJumpMean": 2.14,
+    "headBobY": 4.72,
+    "headSwayX": 4.39,
+    "strideMatch": 0.585,
+    "gameJumpMax": 1.56,
+    "gameBobY": 2.53
    }
   },
   "sword": {
-   "walk": {
-    "frames": [
-     "walk1",
-     "walk3",
-     "walk5",
-     "walk7"
-    ],
-    "headJumpMax": 1.47,
-    "headJumpMean": 1.23,
-    "headBobY": 1.33,
-    "headSwayX": 1.11,
-    "strideMatch": 0.467
-   },
-   "run": {
-    "frames": [
-     "run1",
-     "run3",
-     "run5",
-     "run7"
-    ],
-    "headJumpMax": 7.28,
-    "headJumpMean": 6.44,
-    "headBobY": 6.61,
-    "headSwayX": 3.5,
-    "strideMatch": 0.381
-   }
-  },
-  "sword_8": {
    "walk": {
     "frames": [
      "walk1",
@@ -72,7 +56,9 @@
     "headJumpMean": 0.98,
     "headBobY": 1.33,
     "headSwayX": 1.56,
-    "strideMatch": 1.001
+    "strideMatch": 1.001,
+    "gameJumpMax": 0.48,
+    "gameBobY": 0.78
    },
    "run": {
     "frames": [
@@ -89,38 +75,12 @@
     "headJumpMean": 3.69,
     "headBobY": 7.22,
     "headSwayX": 3.83,
-    "strideMatch": 0.731
+    "strideMatch": 0.731,
+    "gameJumpMax": 3.24,
+    "gameBobY": 5.75
    }
   },
   "fighter": {
-   "walk": {
-    "frames": [
-     "walk1",
-     "walk3",
-     "walk5",
-     "walk7"
-    ],
-    "headJumpMax": 3.67,
-    "headJumpMean": 2.09,
-    "headBobY": 3.67,
-    "headSwayX": 0.94,
-    "strideMatch": 0.755
-   },
-   "run": {
-    "frames": [
-     "run1",
-     "run3",
-     "run5",
-     "run7"
-    ],
-    "headJumpMax": 2.26,
-    "headJumpMean": 1.43,
-    "headBobY": 2.0,
-    "headSwayX": 1.06,
-    "strideMatch": 0.0
-   }
-  },
-  "fighter_8": {
    "walk": {
     "frames": [
      "walk1",
@@ -136,7 +96,9 @@
     "headJumpMean": 1.2,
     "headBobY": 3.67,
     "headSwayX": 0.94,
-    "strideMatch": 0.763
+    "strideMatch": 0.763,
+    "gameJumpMax": 1.08,
+    "gameBobY": 1.28
    },
    "run": {
     "frames": [
@@ -153,60 +115,74 @@
     "headJumpMean": 1.29,
     "headBobY": 2.33,
     "headSwayX": 1.78,
-    "strideMatch": 0.849
+    "strideMatch": 0.849,
+    "gameJumpMax": 0.91,
+    "gameBobY": 1.28
    }
   }
  },
  "flicker": {
   "priest": {
-   "walk4": 0.068,
-   "run4": 0.063
+   "walk": 0.178,
+   "run": 0.107
   },
   "sword": {
-   "walk4": 0.144,
-   "run4": 0.063
+   "walk": 0.143,
+   "run": 0.075
   },
   "fighter": {
-   "walk4": 0.179,
-   "run4": 0.093
+   "walk": 0.187,
+   "run": 0.11
   }
  },
  "sheet": {
   "sample": {
-   "walk": [
-    0.079,
-    0.079,
-    0.07,
-    0.063
-   ],
-   "run": [
-    0.092,
-    0.078,
-    0.085,
-    0.07
-   ],
    "a1": [
     0.073,
-    0.077,
-    0.091
+    0.077
    ],
    "a2": [
-    0.085,
-    0.06,
-    0.07
-   ],
-   "idle_vs_walk": [
-    0.094,
-    0.068,
-    0.099,
-    0.082
+    0.084,
+    0.06
    ]
-  }
+  },
+  "move": {
+   "run": [
+    0.099,
+    0.115,
+    0.09,
+    0.062,
+    0.09,
+    0.079,
+    0.089
+   ],
+   "jump": [
+    0.103,
+    0.103,
+    0.123,
+    0.114
+   ]
+  },
+  "walkreact": {
+   "walk": [
+    0.048,
+    0.069,
+    0.081,
+    0.083,
+    0.05,
+    0.083,
+    0.086
+   ]
+  },
+  "base": {},
+  "skills": {},
+  "jobs1": {},
+  "jobs2": {}
  },
  "scale": {
   "priest": {
-   "frames": 16,
-   "trusted": 16,
+   "frames": 98,
+   "trusted": 96,
    "median_dev": 0.02,
    "over12": []
   },
@@ -232,68 +208,117 @@
    ]
   }
  },
+ "costume": {
+  "summer": {
+   "frames": 98,
+   "missing": [],
+   "iou_min": 0.63,
+   "iou_median": 0.869,
+   "iou_low": [],
+   "wpn": 98,
+   "flicker": {
+    "walk": 0.113,
+    "run": 0.14
+   }
+  },
+  "festival": {
+   "frames": 98,
+   "missing": [],
+   "iou_min": 0.759,
+   "iou_median": 0.862,
+   "iou_low": [],
+   "wpn": 98,
+   "flicker": {
+    "walk": 0.08,
+    "run": 0.094
+   }
+  },
+  "spring": {
+   "frames": 98,
+   "missing": [],
+   "iou_min": 0.788,
+   "iou_median": 0.864,
+   "iou_low": [],
+   "wpn": 98,
+   "flicker": {
+    "walk": 0.097,
+    "run": 0.137
+   }
+  },
+  "academy": {
+   "frames": 98,
+   "missing": [],
+   "iou_min": 0.764,
+   "iou_median": 0.859,
+   "iou_low": [],
+   "wpn": 98,
+   "flicker": {
+    "walk": 0.097,
+    "run": 0.103
+   }
+  },
+  "sky1": {
+   "frames": 98,
+   "missing": [],
+   "iou_min": 0.711,
+   "iou_median": 0.791,
+   "iou_low": [],
+   "wpn": 98,
+   "flicker": {
+    "walk": 0.104,
+    "run": 0.105
+   }
+  },
+  "sky2": {
+   "frames": 98,
+   "missing": [],
+   "iou_min": 0.673,
+   "iou_median": 0.752,
+   "iou_low": [],
+   "wpn": 98,
+   "flicker": {
+    "walk": 0.081,
+    "run": 0.116
+   }
+  }
+ },
+ "cross_low": {
+  "run1": 21.8,
+  "run2": 23.7,
+  "run3": 21.8,
+  "run4": 20.9,
+  "run5": 19.3,
+  "run6": 24.0,
+  "run7": 17.0,
+  "run8": 9.4,
+  "jump1": 6.7,
+  "p_hookDash": 8.6,
+  "p_tiger": 7.3,
+  "pm_duck": -0.6,
+  "p_jabEnd": 12.8
+ },
  "anchors": {
-  "frames": 16,
+  "frames": 98,
   "missing": [],
-  "head": 16,
-  "cut": 16,
-  "wpn": 16,
+  "head": 98,
+  "cut": 97,
+  "wpn": 98,
   "no_wpn": [],
   "wpn2": [],
-  "front": {
-   "a1_1": 1,
-   "a1_2": 1,
-   "a1_3": 1,
-   "a2_1": 1,
-   "a2_2": 1,
-   "a2_3": 1,
-   "a3_1": 1,
-   "idle": 1,
-   "run1": 1,
-   "run3": 1,
-   "run5": 1,
-   "run7": 1,
-   "walk1": 1,
-   "walk3": 1,
-   "walk5": 1,
-   "walk7": 1
-  },
-  "hand_polys": {
-   "a1_1": 1,
-   "a1_2": 1,
-   "a1_3": 1,
-   "a2_1": 1,
-   "a2_2": 1,
-   "a2_3": 1,
-   "a3_1": 1,
-   "idle": 1,
-   "run1": 1,
-   "run3": 1,
-   "run5": 1,
-   "run7": 1,
-   "walk1": 1,
-   "walk3": 1,
-   "walk5": 1,
-   "walk7": 1
-  },
-  "ang": {
-   "a1_1": -142,
-   "a1_2": -3,
-   "a1_3": 38,
-   "a2_1": 144,
-   "a2_2": -30,
-   "a2_3": -75,
-   "a3_1": -141,
-   "idle": -72,
-   "run1": 153,
-   "run3": 147,
-   "run5": 147,
-   "run7": 149,
-   "walk1": -72,
-   "walk3": -71,
-   "walk5": -75,
-   "walk7": -74
-  },
+  "back": [],
+  "no_hand": [
+   "pm_jab"
+  ],
+  "face_hidden": [
+   "a2_2",
+   "p_pray1",
+   "pa_hunch",
+   "pa_slash2",
+   "pc_raise",
+   "pe_summon",
+   "pe_sweep",
+   "pe_thrust"
+  ],
   "outside": []
  },
  "size": {

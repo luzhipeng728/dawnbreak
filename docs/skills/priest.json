@@ -49,6 +49,49 @@
     "p_phoenix",
     "p_rapture",
     "p_emblem"
+   ],
+   "exorcist": [
+    "pe_gale",
+    "pe_lotus",
+    "pe_star",
+    "pe_suzaku",
+    "pe_genbu",
+    "pe_byakko",
+    "pe_chaos",
+    "pe_spin",
+    "pe_atomic",
+    "pe_awaken",
+    "pe_seiryu",
+    "pe_quake",
+    "pe_seven",
+    "pe_pentacle",
+    "pe_awaken2",
+    "pe_blitz",
+    "pe_awaken3"
+   ],
+   "avenger": [
+    "pa_meta",
+    "pa_render",
+    "pa_mine",
+    "pa_cutter",
+    "pa_fall",
+    "pa_thorn",
+    "pa_wheel",
+    "pa_fist",
+    "pa_reaper",
+    "pa_authority",
+    "pa_awaken",
+    "pa_claw",
+    "pa_execute",
+    "pa_barrier",
+    "pa_rapture",
+    "pa_gate",
+    "pa_disaster",
+    "pa_howl",
+    "pa_smite",
+    "pa_awaken2",
+    "pa_stream",
+    "pa_awaken3"
    ]
   }
  },
@@ -238,6 +281,648 @@
     170
    ],
    "cd": 5
+  },
+  "pe_gale": {
+   "official": "→↑+Z：霸体肩撞冲刺（不能转向，攻速越快冲得越远），肩撞 355% : 冲击波 532%，15% 眩晕 1 秒；固定 1 级、随基础精通成长；可取消普攻、落凤锤后可接；CD 4（DFO 4.5）",
+   "src": "https://wiki.dfo.world/view/Gale_Smash；namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",
+   "en": "Gale Smash",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "launch": false,
+   "sa": "full",
+   "dx": [
+    200,
+    420
+   ],
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 4
+  },
+  "pe_lotus": {
+   "official": "↓→+Space：施放 0.7 秒的永久 BUFF，武器附带火 / 光属性，攻击力 / 命中 / 直接攻击硬直提高；CD 5",
+   "src": "namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告；ol.3dmgame.com/gl/282083.html",
+   "en": "Incantation of Light and Flame",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 5
+  },
+  "pe_star": {
+   "official": "↑↑+Z：抓住身前 1 个敌人（霸体也能抓）→ 小跳 → 吸周围的敌人 → 抡圆扔出（4888%，身边的敌人小浮空）；点按低 / 按住高；不按 = 砸进前方地面、→ = 平扔、↑ = 斜上；抓住后无敌、抓取前没有霸体；CD 12",
+   "src": "https://wiki.dfo.world/view/Star_in_the_Sky；namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",
+   "en": "Star in the Sky",
+   "conf": "高",
+   "hits": [
+    2,
+    4
+   ],
+   "grab": true,
+   "down": true,
+   "launch": true,
+   "sa": "none",
+   "invul": "part",
+   "cd": 12,
+   "why": {
+    "hits": "官方单段 4888%；本作分成抓取 1 + 抡扔时扫到身边 1 + 被扔的落地 1（总量一样），扔出去的敌人砸到别人另算"
+   }
+  },
+  "pe_suzaku": {
+   "official": "↑→→+Z：施放 0.3 秒，朱雀裹着火焰旋风往前冲（4 × 555%），再飞起爆炸（3333%）；看起来是火但不是火属性；可取消普攻；式神之悟后巨兵系施放中可共鸣瞬发；CD 8",
+   "src": "namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告；dnf.17173.com 式神：热炎朱雀",
+   "en": "Shikigami of Fire - Red Phoenix",
+   "conf": "高",
+   "hits": [
+    5,
+    5
+   ],
+   "summon": true,
+   "launch": true,
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 8
+  },
+  "pe_genbu": {
+   "official": "↑→+Z：玄武往前方伸手做出旋转碎石的区域，竖起手指：区域里所有敌人强制硬直（Hold）；碎石 10 × 718%（每 0.3 秒，95 被动后 0.2 秒）；出手前有预备；CD 8",
+   "src": "namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告；dnf.qq.com/cp/a20260423job（式神 : 地之玄武）",
+   "en": "Shikigami of Earth - Black Tortoise",
+   "conf": "高",
+   "hits": [
+    10,
+    10
+   ],
+   "summon": true,
+   "reach": [
+    300,
+    300
+   ],
+   "cd": 8
+  },
+  "pe_byakko": {
+   "official": "白虎在前方放下空之珠 → 雷电区域：固定 8 道落雷（每 0.3 秒，2109%），每道只打一个目标、在敌人之间分配；二觉被动范围 +10%；驱魔主力；CD 16.5",
+   "src": "namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",
+   "en": "Shikigami of Air - White Tiger",
+   "conf": "高（指令低：DFO 页写成和玄武一样的 ↑→+Z）",
+   "hits": [
+    8,
+    8
+   ],
+   "summon": true,
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 16.5,
+   "why": {
+    "cmd": "官方指令页有误（和玄武相同），本作用 ↓←+Z"
+   }
+  },
+  "pe_chaos": {
+   "official": "↓↓+Z：霸体原地向下连砸 4 下（2025.06 起固定满段），施放时把敌人聚过来，最后一下蓄力重锤眩晕；连按 / 按住加速，按住 ← / → 转身，最后一下前可跳跃取消（决斗场不行）；1038% × 3 : 1223%；2024 起没有冲击波；CD 14",
+   "src": "https://wiki.dfo.world/view/Chaos_Hammer；namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",
+   "en": "Chaos Hammer",
+   "conf": "高",
+   "hits": [
+    4,
+    4
+   ],
+   "sa": "full",
+   "behind": true,
+   "reach": [
+    300,
+    300
+   ],
+   "cd": 14,
+   "why": {
+    "behind": "施放时把身边（含身后）的敌人聚到身前再砸（官方“施放时聚怪”）"
+   }
+  },
+  "pe_spin": {
+   "official": "←↓→+Z：霸体大回旋 7 圈，方向键移动、连按加速，把敌人往身前卷，最后一圈挑空；可跳跃取消；848% × 6 : 1774%；CD 20",
+   "src": "https://wiki.dfo.world/view/Spinning_Cross；namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",
+   "en": "Spinning Cross",
+   "conf": "高",
+   "hits": [
+    7,
+    7
+   ],
+   "sa": "full",
+   "behind": true,
+   "launch": true,
+   "cd": 20
+  },
+  "pe_atomic": {
+   "official": "→←→+Z：转两圈把四面八方的敌人卷到一处（打击型抓取），再一记过顶重砸；卷人时霸体、砸下时无敌；按住推迟砸下；791% × 2 : 10505%；CD 40",
+   "src": "https://wiki.dfo.world/view/Atomic_Smash；namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",
+   "en": "Atomic Smash",
+   "conf": "高",
+   "hits": [
+    3,
+    3
+   ],
+   "sa": "part",
+   "invul": "part",
+   "behind": true,
+   "launch": true,
+   "cd": 40
+  },
+  "pe_awaken": {
+   "official": "↑↑↓↓+Z（一觉「龙斗士」觉醒技 四座千泰门）：召唤四座式神神殿的大门，推开大门神鸟群涌出（20 × 1669%），巨大神鸟撞破大门飞过（50056%），约 3.5 秒；Lv3 起无敌；CD 135（国服 2026-04，DFO 145）；MP 900",
+   "src": "dnf.qq.com/cp/a20260423job；namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",
+   "en": "Heavenly Gate of the Shikigami",
+   "conf": "高",
+   "hits": [
+    15,
+    25
+   ],
+   "sa": "full",
+   "invul": "full",
+   "summon": true,
+   "launch": true,
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 135
+  },
+  "pe_seiryu": {
+   "official": "←↓→+Space：青龙在身后出现，挥巨兵往前冲砍 3 下，跃起终结重砸，得意地消失（2973 : 5947 : 5947 : 14866 ≈ 1 : 2 : 2 : 5）；水花不是水属性；CD 30",
+   "src": "namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",
+   "en": "Shikigami of Water - Blue Dragon",
+   "conf": "高",
+   "hits": [
+    4,
+    4
+   ],
+   "summon": true,
+   "launch": true,
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 30
+  },
+  "pe_quake": {
+   "official": "→←↑→+Z：巨兵后拉 → 跃起 → 砸地震出巨大裂缝，单段 25800%；可蓄力：跳得更高、范围最多 +110%；落凤锤后可接；CD 50",
+   "src": "namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",
+   "en": "Dragon Quake",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "sa": "full",
+   "launch": true,
+   "behind": true,
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 50
+  },
+  "pe_seven": {
+   "official": "↓↑→+Z（旧 →←→+Z）：从天而降第一斧，打中的第一个敌人超级硬直，接着 6 斧（第 5 下双击）共 7 击 1:2:3:4:5:6:21；第一斧没中就结束；第一斧打中后无敌、不能中断；连按加速；CD 50",
+   "src": "https://wiki.dfo.world/view/Unrelenting_Seven；dnf.qq.com/cp/a20260423job（指令改动）",
+   "en": "Unrelenting Seven",
+   "conf": "高",
+   "hits": [
+    7,
+    7
+   ],
+   "sa": "full",
+   "invul": "full",
+   "reach": [
+    170,
+    170
+   ],
+   "cd": 50,
+   "why": {
+    "invul": "第一斧（跳起下劈 0.3 秒）不无敌，之后到结束都无敌：占 89%，按比例算进 full"
+   }
+  },
+  "pe_pentacle": {
+   "official": "←→→+Z：前方展开黄龙升天法阵（设置型），黄龙从中心升起（20 × 2666%，每 0.05 秒）再砸回（53291%），各约一半；施放 0.5 秒；CD 50",
+   "src": "namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告；fvJrxpcm7jY（旧五芒星阵视频）",
+   "en": "Pentacle of the Ascending Golden Dragon",
+   "conf": "高",
+   "hits": [
+    15,
+    25
+   ],
+   "summon": true,
+   "launch": true,
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 50
+  },
+  "pe_awaken2": {
+   "official": "↓↑→→+Z（二觉「真龙星君」觉醒技 真龙焚天）：布阵 → 黄龙从天而降化作巨大黄龙战斧 → 一记横扫（单段）；约 2.6 秒后出手，全程无敌；CD 170（DFO 180）",
+   "src": "dnf.qq.com/cp/a20260423job；namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",
+   "en": "Draconic Sanctum",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "sa": "full",
+   "invul": "full",
+   "launch": true,
+   "behind": true,
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 170
+  },
+  "pe_blitz": {
+   "official": "↑↓→→+Z：朱雀、玄武助阵（红色法阵）：巨兵插地 → 撬起岩盘往上抡 → 再往前一摔，岩盘砸进地里碎石四溅（4 段）；19069 : 9534 : 28603 : 9534；CD 60",
+   "src": "namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告；dnf.qq.com/cp/a20200922priestman",
+   "en": "Shikigami Blitz: Concert",
+   "conf": "高（比例中）",
+   "hits": [
+    5,
+    8
+   ],
+   "sa": "full",
+   "launch": true,
+   "cd": 60
+  },
+  "pe_awaken3": {
+   "official": "←→→↑+Z（三觉「光启·驱魔师」觉醒技 雷鸣怒海·火啸山崩）：五式神化作斧与念珠 → 青龙海啸 + 白虎雷霆（5 × 16337%）+ 水柱 16337% → 升到海面冥想 → 黄龙头战斧砸下 130694% → 地面爆炸 10 × 9802%；CD 270（DFO 290）",
+   "src": "dnf.qq.com/cp/a20200922priestman；F6hA3d4EeMk",
+   "en": "Nature's Five: Quintuple Reprisal",
+   "conf": "高",
+   "hits": [
+    15,
+    20
+   ],
+   "sa": "full",
+   "invul": "full",
+   "launch": true,
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 270
+  },
+  "pa_meta": {
+   "official": "↓→+Space：恶魔能量 ≥ 50% 时变身，周身暗爆一次；普攻改写、恶魔之力免费并强化、技能攻击 +(28+2n)%、攻速 +5%、移速 +10%；能量每 1.29 秒 −15，归零解除；冷却在结束后才开始；CD 5",
+   "src": "https://wiki.dfo.world/view/Metamorphosis；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Metamorphosis",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "sa": "full",
+   "cd": 5,
+   "set": {
+    "_paE": 400
+   }
+  },
+  "pa_render": {
+   "official": "↓→↑←+Space：霸体连斩 6 下（221%），连打加速；每下按命中数回血，最下段判定，把敌人拉近并让它转背；能量 +15；魔化：爪、攻 +125%、CD +60%；CD 5",
+   "src": "https://wiki.dfo.world/view/Shadow_Render；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Shadow Render",
+   "conf": "高（指令中）",
+   "hits": [
+    6,
+    6
+   ],
+   "sa": "full",
+   "reach": [
+    170,
+    170
+   ],
+   "cd": 5
+  },
+  "pa_mine": {
+   "official": "→↑+Z：一拳砸地，前方依次冒 3 根石柱（每根 441%），贴身打不到、轻推敌人、出手极快；能量 +30；魔化：暗黑石柱 4 根 × 冒出 + 爆炸、CD +55%；CD 5",
+   "src": "https://wiki.dfo.world/view/Thunder_Mine；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Thunder Mine",
+   "conf": "高",
+   "hits": [
+    1,
+    2
+   ],
+   "launch": false,
+   "reach": [
+    300,
+    300
+   ],
+   "cd": 5,
+   "why": {
+    "hits": "轻木桩在身前 70px，只有第 1 根石柱落在它身上（其余两根在 180 / 265px）"
+   }
+  },
+  "pa_cutter": {
+   "official": "↑←↓→+Space：掷镰：出手 1 击（674%）击退并吸 Y 轴 → 镰在原地转 4~5 击（396%）→ 再按或超时收回并把敌人拉回；全程霸体；能量 +20；魔化：高速镰影、不能手动收回、攻 +90%、CD +50%；CD 10",
+   "src": "https://wiki.dfo.world/view/Spin_Cutter；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Spin Cutter",
+   "conf": "高",
+   "hits": [
+    5,
+    7
+   ],
+   "sa": "full",
+   "reach": [
+    300,
+    300
+   ],
+   "cd": 10
+  },
+  "pa_fall": {
+   "official": "→↓+Space：消耗 60 能量的无限时 BUFF，复仇者基础 / 转职技能攻 +(10+n)%，等级跟恶魔之力；CD 5",
+   "src": "namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Falling Soul",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 5,
+   "set": {
+    "_paE": 400
+   }
+  },
+  "pa_thorn": {
+   "official": "↑↑+Z：蹲身聚力后放射暗刺（前多后少），1 击 2795%，硬直很长；纵深宽，空中地面都打；全程霸体、刺出一瞬无敌；受击中也能放（+20%）；能量 +40；魔化：2 击、第 1 击强制硬直、CD +60%；CD 10",
+   "src": "https://wiki.dfo.world/view/Thorn_of_Protection；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Thorn of Protection",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "sa": "full",
+   "invul": "part",
+   "behind": true,
+   "reach": [
+    170,
+    170
+   ],
+   "cd": 10
+  },
+  "pa_wheel": {
+   "official": "↑→+Z：变成巨型锯轮直冲 400px，9 击（685%）；上下调 Y 轴；跳跃 / 后跳中能放；霸体（能被抓）；能量 +25；魔化：死亡突击（6 击、约 2.34 倍、短暂无敌、CD +50%）；CD 16",
+   "src": "https://wiki.dfo.world/view/Spinning_Deformation；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Spinning Deformation",
+   "conf": "高",
+   "hits": [
+    9,
+    9
+   ],
+   "sa": "full",
+   "dx": [
+    350,
+    460
+   ],
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 16
+  },
+  "pa_fist": {
+   "official": "↓↓+Z：恶魔气缠在手臂上前伸：10 段多段（144%，短暂 hold），最后爆炸 5316%（1 : 3.7）；近处的敌人被推到手臂中段，几乎不聚怪；魔化：186% / 7217%；CD 20",
+   "src": "namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Devil's Fist",
+   "conf": "高",
+   "hits": [
+    11,
+    11
+   ],
+   "sa": "full",
+   "launch": true,
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 20
+  },
+  "pa_reaper": {
+   "official": "（2023 复刻，旧版 ↓↓+Z）恶魔之臂从影子里伸出，打周围并聚到前方，不管抓没抓到都撕裂爆炸，再把敌人拉回身前；hold；霸体；能量 +30；抓 : 爆 ≈ 1 : 3；魔化：手臂巨大化 +35%；CD 25",
+   "src": "df.nexon.com/community/news/update/2763942；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Reaper",
+   "conf": "机制高 / 指令·比例低",
+   "hits": [
+    2,
+    2
+   ],
+   "sa": "full",
+   "behind": true,
+   "reach": [
+    300,
+    300
+   ],
+   "cd": 25,
+   "why": {
+    "cmd": "旧版指令和恶魔之拳同为 ↓↓+Z，本作改成 ↓←+Z"
+   }
+  },
+  "pa_authority": {
+   "official": "→←→+Z（2023 重做）：砸地暗黑冲击波（打中的 hold）→ 横斩画出逆十字 → 沿斩痕爆炸（解除 hold）；按住耗 60 能量爆炸 +11%；三段范围不同要贴身放；魔化：刃爪旋身抓挠后爆炸；CD 40",
+   "src": "df.nexon.com/community/news/update/2763942；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Dark Authority",
+   "conf": "机制高 / 比例低",
+   "hits": [
+    3,
+    3
+   ],
+   "sa": "full",
+   "launch": true,
+   "cd": 40
+  },
+  "pa_awaken": {
+   "official": "↑↑↓↓+Z（一觉「末日审判者」觉醒技 魔化：末日审判者）：施放 0.5 秒，持续 50 秒；变身动画无敌；全程霸体、不能被抓；技能换成恶魔版、普攻变爪、多出恶魔之爪 / 审判 / 恶魔屏障；化魔每 8 秒续 7.3 秒、CD −21 秒；冷却好了再按 = 周身伤害并重置，冷却中再按 = 解除；CD 145",
+   "src": "https://wiki.dfo.world/view/Demonize；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Demonize",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "sa": "full",
+   "invul": "full",
+   "launch": true,
+   "cd": 145,
+   "why": {
+    "hits": "官方变身本身只在“从半魔化变身 / 冷却好了再按”时打一圈伤害；本作每次变身都炸一圈（震飞周围的敌人，演出更明显）"
+   }
+  },
+  "pa_claw": {
+   "official": "魔化中 Z（替换空斩打键）：暗属性巨爪下劈，可按住蓄力（加伤不多），命中能量 +15；可从普攻中放出、也能接其他技能；CD 约 2",
+   "src": "namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman；dnfziliao 旧版恶魔之爪",
+   "en": "Dark Slasher",
+   "conf": "中",
+   "hits": [
+    1,
+    1
+   ],
+   "cd": 2
+  },
+  "pa_execute": {
+   "official": "←→+Z（魔化 / 半魔化专属，耗 100 能量）：原地 = 巨臂上挑 + 终结砸（1 : 2.85）；带 → = 抓 → 摔到身后 → 拖地狂奔（上下移动、碰到的敌人强制硬直一起拖走、再按提前抛）→ 压 → 抛；抓取期间无敌；抓不起的握碎爆炸；CD 145",
+   "src": "https://wiki.dfo.world/view/Execution；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Execution",
+   "conf": "高",
+   "pre": [
+    "pa_awaken"
+   ],
+   "hits": [
+    2,
+    2
+   ],
+   "launch": true,
+   "down": true,
+   "sa": "full",
+   "cd": 145
+  },
+  "pa_barrier": {
+   "official": "↓↓+X（魔化专属）：2 秒暗黑屏障，受到的打击伤害 −60%（不是无敌）；再按取消；任何技能 / 跳跃中都能插放（三觉除外）；CD 5",
+   "src": "namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Demon Guard",
+   "conf": "高",
+   "pre": [
+    "pa_awaken"
+   ],
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 5
+  },
+  "pa_rapture": {
+   "official": "复仇者的化魔（고통의 희열）：第一次手动放完后每 8 秒自动施放，没有施放动作（其他技能中也能放）；每次能量 +(134+10n)、魔化 +(7.2+0.1n) 秒、魔化 CD −21 秒、必定触发幻听、HP 换 MP；CD 8",
+   "src": "namu 프리스트(남)/공통스킬；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Painful Rapture",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 8
+  },
+  "pa_gate": {
+   "official": "→←↓→+Z：前方开地狱门，远程直线多段，每个目标最多 8 击（1467%），射程和重火器差不多；手和门本体也有判定、法阵后方没有；轻微击退；霸体；能量 +40；魔化 +50%；CD 30",
+   "src": "https://wiki.dfo.world/view/Pandemonium；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Pandemonium",
+   "conf": "高",
+   "hits": [
+    8,
+    8
+   ],
+   "sa": "full",
+   "summon": true,
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 30
+  },
+  "pa_disaster": {
+   "official": "→←↑→+Z：起跳准备时霸体、飞出画面后无敌；地面漩涡魔法阵（方向键移动、吸怪）；再按或超时恶魔体砸落，单击 20616%；能量 +45；魔化 +35%；CD 50",
+   "src": "https://wiki.dfo.world/view/Disaster；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Disaster",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "sa": "full",
+   "invul": "part",
+   "summon": true,
+   "launch": true,
+   "cd": 50
+  },
+  "pa_howl": {
+   "official": "↓↑→+Z：全方位吼 3 击（10998%），50% 诅咒 3 秒；按住再吼 2 次（2752%，各耗 50 能量）；命中回能量（普通 20 / 领主 40）；魔化：5 段、垂直打浮空；CD 40",
+   "src": "https://wiki.dfo.world/view/Dark_Howling；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Dark Howling",
+   "conf": "高",
+   "hits": [
+    3,
+    3
+   ],
+   "sa": "full",
+   "behind": true,
+   "cd": 40
+  },
+  "pa_smite": {
+   "official": "↓→→+Z：瞬间魔化，用恶魔之角冲锋（略不到半屏，前后调距离、上下调 Y），前方和身后约 100px 的敌人挂在角上带走 → 骷髅形冲击波（≈28）+ 暗炎 5 击（≈1）；终结前再按耗最多 125 能量 → 暗炎 10 击；冲锋中无敌；CD 45",
+   "src": "https://wiki.dfo.world/view/Smite_of_Destruction；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Smite of Destruction",
+   "conf": "高",
+   "hits": [
+    6,
+    8
+   ],
+   "invul": "part",
+   "dx": [
+    380,
+    560
+   ],
+   "launch": true,
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 45
+  },
+  "pa_awaken2": {
+   "official": "↓↑→→+Z（二觉「永生者」觉醒技 永堕：混沌弑神）：人形时先变魔；解放爆炸 1 → 连锁撕裂 12 × 0.72（每次 +11 能量，无视霸体拉到身前）→ 上撕 1.8 → X 形终结 × 2（4.3）；连打 X 加速、终结前按住耗最多 100 能量 +35%、按 C 跳到终结；CD 180",
+   "src": "https://wiki.dfo.world/view/Unholy_Fury；dnf.qq.com/cp/a20200922priestman",
+   "en": "Unholy Fury",
+   "conf": "高",
+   "hits": [
+    16,
+    16
+   ],
+   "sa": "full",
+   "invul": "full",
+   "launch": true,
+   "cd": 180
+  },
+  "pa_stream": {
+   "official": "↑→→+Z：头顶暗黑球（闪现真魔化的翅膀）→ 光束横扫前方 3 击（1）+ 终结（4.5），地面留陨坑；按住耗 125 能量 +20% 并附带光属性；魔化 +30%；CD 60",
+   "src": "https://wiki.dfo.world/view/Dire_Stream；namu 어벤저(던전앤파이터)/스킬（2025-10）；dnf.qq.com/cp/a20200922priestman",
+   "en": "Dire Stream",
+   "conf": "高",
+   "hits": [
+    4,
+    4
+   ],
+   "sa": "full",
+   "launch": true,
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 60
+  },
+  "pa_awaken3": {
+   "official": "←↑→↓+Z（三觉「神启·复仇者」觉醒技 末日福音：毁灭之翼）：真·恶魔化 → 撕下一侧翅膀追踪全场最强敌人掷出 → 贯穿钉在空中（2）→ 急袭（1）→ 拔出撕开暗黑空间（2.5）→ 光之镰刀斩灭（4.5）；施放中不能用恶魔屏障；CD 290（KR）",
+   "src": "https://wiki.dfo.world/view/Destructive_Gospel；dnf.qq.com/cp/a20200922priestman",
+   "en": "Destructive Gospel",
+   "conf": "高",
+   "hits": [
+    4,
+    4
+   ],
+   "sa": "full",
+   "invul": "full",
+   "launch": true,
+   "cd": 290
   }
  }
 }

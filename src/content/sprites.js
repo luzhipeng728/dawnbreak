@@ -101,8 +101,19 @@ const SPR_ANIMS = {
     axe: [['atk1', 0], ['atk2', 0.2], ['atk3', 0.62], ['atk4', 0.85]], scratch: [['atk2', 0], ['atk3', 0.3], ['atk4', 0.45]], bite: [['atk2', 0], ['atk3', 0.3], ['atk4', 0.5]],
     slam: [['atk1', 0], ['atk2', 0.2], ['atk3', 0.7], ['atk4', 1.0]], pounce: [['low1', 0], ['jump', 0.35], ['low2', 0.6], ['atk4', 0.85]],
     chargeW: { fps: 3, frames: ['low1', 'low1'] }, charge: { fps: 8, frames: ['low2', 'low1'] }, roar: [['cast1', 0], ['cast2', 0.45]],
-    cast: { fps: 5, frames: ['cast1', 'cast2'] }, heal: { fps: 5, frames: ['cast1', 'cast2'] } },
+    cast: { fps: 5, frames: ['cast1', 'cast2'] }, heal: { fps: 5, frames: ['cast1', 'cast2'] },
+    sigA: [['atk1', 0], ['atk2', 0.2], ['atk3', 0.7], ['atk4', 1.0]], sigB: [['cast1', 0], ['cast2', 0.3], ['atk3', 0.7], ['atk4', 0.9]], rage: [['cast1', 0], ['cast2', 0.45]] },
 };
+// 领主招牌动作（docs/BOSS_SPEC.md §5）：每个领主可以多一张 3×3 的 sig 动作表，帧名 sigA1~4（招牌 A）/ sigB1~4（招牌 B）/ rage（狂暴 / 变身）；
+// 技能写 clip: 'sigA' | 'sigB' | 'rage'。这个精灵有 sig 帧就用自己的，没有就退回上面的 atk / cast 帧（先写数据、后出图也能跑）
+const SIG_ANIMS = { sigA: [['sigA1', 0], ['sigA2', 0.18], ['sigA3', 0.45], ['sigA4', 0.7]], sigB: [['sigB1', 0], ['sigB2', 0.18], ['sigB3', 0.45], ['sigB4', 0.7]], rage: [['rage', 0]] };
+const MON_ANIM_CACHE = {};
+function msMonAnims(r) {
+  if (MON_ANIM_CACHE[r]) return MON_ANIM_CACHE[r];
+  const A = { ...SPR_ANIMS.monster };
+  for (const k in SIG_ANIMS) if (sprHas(r, SIG_ANIMS[k][0][0])) A[k] = SIG_ANIMS[k];
+  return (MON_ANIM_CACHE[r] = A);
+}
 // 通用技能（后跳-强化等）挂到每个职业的技能表：这里所有职业 / 转职文件都已加载
 addCommonSkills();
 // 转职自带的动作片段（CLASSES[cls].jobs[job].anims，职业文件比这里早加载、碰不到 SPR_ANIMS）；帧名各转职用自己的前缀，不要互相覆盖
@@ -122,6 +133,8 @@ for (const c of ['sword', 'gun', 'mage', 'fighter']) {
 }
 // 怪物：重受击 / 被抓 / 上升浮空沿用已有的受击片段
 for (const S of [GOB_CLIPS, BEAST_CLIPS]) { S.hit2 = S.hit2 || { ...S.hit }; S.held = S.held || { ...S.hit, dur: 9 }; S.airUp = S.airUp || { ...S.air }; S.bounceUp = S.bounceUp || { ...S.air }; }
+// 招牌动作的骨骼片段（没有精灵的程序模型用；时长覆盖 sig 帧的时间轴）
+for (const S of [GOB_CLIPS, BEAST_CLIPS]) { S.sigA = S.sigA || { ...(S.slam || S.club), dur: 1.3 }; S.sigB = S.sigB || { ...(S.roar || S.cast || S.club), dur: 1.2 }; S.rage = S.rage || { ...(S.roar || S.club), dur: 1.2 }; }
 // 兜底：姿势名 → 帧（没有列进动画表的片段用）
 const SPR_FALLBACK = { idle: 'idle', idle2: 'idle', mIdle: 'idle', mIdle2: 'idle', hit: 'hit1', hit2: 'hit2', air: 'air', air2: 'air', down: 'down', getup: 'getup', tuck: 'roll', _: 'idle' };
 for (const c of ['sword', 'gun', 'mage', 'fighter']) {
@@ -131,5 +144,5 @@ for (const c of ['sword', 'gun', 'mage', 'fighter']) {
 for (const kk in MON_ART) {
   const [r, o] = MON_ART[kk]; if (!MON[kk] || !SPR_DATA[r]) continue;
   const old = MON[kk].model;
-  MON[kk].model = () => IMG[`spr/${r}/idle`] ? new SpriteModel(r, { ...SPR_FALLBACK, cast: 'cast1', roar: 'cast2', crouch: 'low1' }, SPR_ANIMS.monster, o) : old();
+  MON[kk].model = () => IMG[`spr/${r}/idle`] ? new SpriteModel(r, { ...SPR_FALLBACK, cast: 'cast1', roar: 'cast2', crouch: 'low1' }, msMonAnims(r), o) : old();
 }

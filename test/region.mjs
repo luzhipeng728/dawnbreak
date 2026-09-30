@@ -95,7 +95,7 @@ if (parts.includes('skills')) {
     const r = await page.evaluate(({ use, before }) => { clearInterval(__heldT); const now = MS_STATS.cast; return { cast: (now[use] || 0) - (before[use] || 0), tele: __tele, held: __held, counter: (now.aoe || 0) - (before.aoe || 0), adds: ents.filter(e => e.team === 'e' && e.kind === 'msCrystal' && !e.dead).length }; }, { use: L[i], before: r0.before });
     rows.push({ skill: L[i], ...r });
     check(r.cast > 0, `技能 ${L[i]} 没有放出来`);
-    if (['dash', 'aoe', 'rain', 'laser', 'explode'].includes(L[i])) check(r.tele > 0, `技能 ${L[i]} 没有地面预警`);
+    if (['dash', 'aoe', 'rain', 'laser', 'explode', 'leap', 'cone', 'lanes', 'mark', 'plant', 'pool', 'pull'].includes(L[i]) && !(L[i] === 'pool' && i >= L.indexOf('pool') + 1)) check(r.tele > 0, `技能 ${L[i]} 没有地面预警`);   // 第二批技能（docs/BOSS_SPEC.md）也要有预警；pool 的轨迹变体没有落点预警
     if (L[i] === 'guard') check(r.counter > 0, '格挡被打中后没有反击');
     if (L[i] === 'grab') check(r.held > 0, '抓取没有抓住玩家');
     if (L[i] === 'summon') check(r.adds > 0, '召唤没有召出小怪');
@@ -219,6 +219,23 @@ if (parts.includes('mechs')) {
     S['gaze_' + (facing ? 'facing' : 'back')] = g;
     check(facing ? g.hit > 0 : g.safe > 0 && g.hit === 0, `凝视（${facing ? '面朝' : '背对'}）不对：${JSON.stringify(g)}`);
   }
+  // 第二批机制（docs/BOSS_SPEC.md）：每个都能在本区域的领主身上启动、跑起来、结束，不报错（逐项的解法 / 失败判定在 test/boss_prims.mjs）
+  const MECH2 = [
+    { use: 'stagger', windup: 0.6, need: 0.9, skill: { use: 'aoe', at: 'self', r: 80, windup: 0.3 } }, { use: 'form', fly: 120, dur: 0.6, scale: 1.1 },
+    { use: 'stance', every: [0.3, 0.3], modes: [{ id: 'a', dmgTaken: 0.5 }, { id: 'b', reflect: 'phys' }] }, { use: 'duo', with: ['msLab'] },
+    { use: 'gauntlet', gap: 0.1, waves: [{ kind: 'msLab' }] }, { use: 'arena', kind: 'tiles', dur: 0.6, warn: 0.1 }, { use: 'arena', kind: 'wind', dur: 0.4 },
+    { use: 'protect', kind: 'msHeart', lives: 1, threat: 'msLab' }, { use: 'facing', windup: 0.4 }];
+  for (const spec of MECH2) {
+    await clearMechs();
+    const r0 = await page.evaluate(spec => { const p = game.player; p.x = 300; p.y = 100; const n = MS_STATS.mech[spec.use] || 0; window.__st = msMechStart(__b, spec); return n; }, spec);
+    for (let k = 0; k < 2; k++) { await simWait(0.7);
+    await page.evaluate(() => { for (const e of [...ents]) if (e.team === 'e' && e !== __b && !e.dead && !(e.def_ && e.def_.msObj)) { e.invul = 0; e.hp = 1; applyHit(game.player, e, { dmg: 50, sure: true }, { proj: true }); } const h = ents.find(e => e.kind === 'msHeart'); if (h) spawnMonster('msLab', h.x, h.y, { lvl: 30 }); }); }
+    await simWait(0.8);
+    const r = await page.evaluate(() => ({ n: MS_STATS.mech[__st.id] || 0, done: !!(__st.done || __st.ended), t: +__st.t.toFixed(2) }));
+    S['mech2_' + spec.use + (spec.kind ? '_' + spec.kind : '')] = r;
+    check(r.n > r0 && (r.done || spec.use === 'stance' || spec.use === 'duo'), `机制 ${spec.use}${spec.kind ? ' ' + spec.kind : ''} 没跑完：${JSON.stringify(r)}`);
+  }
+  await clearMechs();
   // 阶段切换：血量降到阈值 → 进阶段、启动该阶段的机制
   await fresh();
   const ph = await page.evaluate(async () => {

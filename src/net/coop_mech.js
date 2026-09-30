@@ -139,3 +139,20 @@ coop.sendSync = function (to) {
 };
 const _cmHurt = game.onPlayerHurt;
 game.onPlayerHurt = function (p, dmg, a) { if (msNetSrc && coop.role === 'guest' && p === game.player) coop.stats.mechHurt[msNetSrc] = (coop.stats.mechHurt[msNetSrc] || 0) + 1; return _cmHurt.call(this, p, dmg, a); };
+// 领主差异化 P0（docs/BOSS_SPEC.md §7）：
+// - 队员按生成信息建傀儡时（allowSpawn）不启动机制、不刷搭档（出场就带连线 / duo 的领主，以前会在队员本地多刷一只真怪）
+// - 特性要分“近战 / 远程 / 抓取”（saVsRanged、reflectRanged、grabOnly）：队员的命中包带上 mel / grb 两个标记，主机那边的 h 里也有
+// - 傀儡建好后按特性补一次本地表现（hitHp 的伤害恒为 1 等）
+msGuestSpawn = () => coop.role === 'guest' && !!coop.allowSpawn;
+COOP_HIT_KEYS.push('mel', 'grb');
+const _cmLocal = coop.localHit;
+coop.localHit = function (t, a, dmg, crit, h) {
+  const n = this.hitQ.length, r = _cmLocal.call(this, t, a, dmg, crit, h), q = this.hitQ[this.hitQ.length - 1];
+  if (this.hitQ.length > n && q && q.h && h) { if (h.box) q.h.mel = 1; if (h.grab) q.h.grb = 1; }
+  return r;
+};
+const _cmPuppet2 = coop.makePuppet;
+coop.makePuppet = function (s) {
+  const had = this.puppets.has(s.id); _cmPuppet2.call(this, s); const m = this.puppets.get(s.id); if (!m || had) return;
+  try { msTraitCall(m, 'puppet'); } catch (e) { console.error('傀儡特性出错', e); }
+};

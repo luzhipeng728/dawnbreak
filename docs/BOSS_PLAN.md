@@ -390,6 +390,7 @@
 ## 4. 规划
 
 ### 4.1 领主 spec 写法（P0 做完以后）
+> **P0-E 已交付（2026-09-30）**：每个原语的参数表和 3~5 行示例见 `docs/BOSS_SPEC.md`（SIMPLE 任务只读它就够）；下面是最早的草稿，以 BOSS_SPEC 为准。
 ```js
 // 区域领主：技能 / 机制全用库里的原语，招牌招式用 sig 动作
 skasa: { name: '冰龙斯卡萨', tier: 'raid', art: 'snSkasa', scale: 1.5, elem: 'ice', traits: { immune: ['freeze'] },

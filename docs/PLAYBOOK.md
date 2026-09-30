@@ -33,6 +33,7 @@
 
 ### 2.3 做一个新区域
 见 `docs/REGION_PIPELINE.md`（区域配置 + 怪物技能库 + 领主机制库 + 一键美术 + test/region.mjs）。
+领主要有自己的招牌机制：先查 `docs/BOSS_SPEC.md`（leap / cone / lanes / mark / plant / pool / pull、stagger / form / stance / duo / gauntlet / arena / protect / facing、特性、defineBossKit、领主房），只写数据；原语自带预警、生路、难度打折和组队同步。
 1. 复制 `src/content/regions/siroco.js` 为 `<id>.js`，只改数据（怪物 = 技能库 + 参数，领主 = 阶段 + 机制库，特殊判定才写 `<id>_bosses.js` 钩子），在 `src/ORDER` 加一行。
 2. 美术前先验逻辑：`node build.mjs && node test/region.mjs <id> skills,mechs,quest`。
 3. `python3 art/tools/region_art.py <id> refs,bg,review1 --sample` → 把 `review_refs.png` 发主线程；通过后 `region_art.py <id>` 一条命令跑完（可断点续跑）。

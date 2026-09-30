@@ -227,7 +227,7 @@ function abyssLord(dg) {
   fxSpr('pillar', b.x, b.y, 0, { h: 360, w: 140, dur: 1.2, ay: 1, col: '#b050ff' });
   cam.shake = 12; cam.flash = 0.3; cam.flashCol = '#6a1aaa'; sfx.boom(1.4); gearSfx.abyssOpen();
   toastMsg(`${b.name} 降临了！`, '#ff4ad0');
-  music.play(dg.def.bossBgm || 'boss');
+  music.play(bossTrack(dg.def));
 }
 // 深渊领主的机制（领主机制库，game/mon_skills.js）：mechs 降临时启动；cycle 按间隔反复启动（at = 血量低于多少才开始）
 // 区域领主本来就由 regionAI 驱动机制；老领主（手写 AI）由 msDriveLegacy 包一层 control / onDamaged 来驱动（和 defineBossKit 共用）

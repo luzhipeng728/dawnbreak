@@ -51,6 +51,7 @@ defineRegion({
       bg: ["Skasa's Nest, the lair of the ice dragon at the summit of the eternal snow mountain: a vast frozen crater of blue-white glacier ice, giant dragon claw marks on the walls, frozen bones of great beasts, a howling blizzard, huge ice eggs.",
         'rough blue-white glacier ice floor with deep claw scratches and drifting snow',
         'jagged glacier ice shards, frozen beast bones and cracked ice eggs'] },
+    snLikBoss: { edgeHoles: true, grade: { tint: 'rgba(60,110,180,0.12)', fog: 'rgba(200,230,255,0.12)' }, ambient: 'motes', rgb: '215,238,255', floorW: 1700, pal: { sky: ['#0e2034', '#23486e', '#6a9ac4'], haze: '#b8e2ff', floor: ['#5a7894', '#6a88a4', '#4a6884'] }, bg: ["The floor of a huge frozen cavern at the bottom of Lik's Well, a colossal shaft deep inside the eternal snow mountain: towering walls of layered blue glacier ice and dark slate rock, shafts of pale daylight falling from openings far above, giant pale-blue ice crystal columns, the huge Bantu ice wall braced by wooden scaffolding with ladders and hanging ropes, thick frozen iron chains hanging from above, gently falling snow.", 'thick cracked blue-grey ice over dark slate rock with frost patterns, scattered ice chunks and a few broken wooden planks', 'jagged pale-blue ice crystal clusters, broken wooden scaffolding planks, coiled frozen rope and dark rocks'] },
   },
 
   monsters: {
@@ -130,7 +131,7 @@ defineRegion({
         { at: 0.5, enter: { say: '查理的心脏在发光——打碎守护它的冰晶！', col: '#bfe6ff', mechs: [{ use: 'shield', hits: 12, dur: 14, punish: 'heal', onBreak: 'groggy', col: '#bfe6ff' }] },
           skills: [{ use: 'mech', mech: { use: 'shield', hits: 12, dur: 14, punish: 'heal', onBreak: 'groggy', col: '#bfe6ff' }, cd: [26, 32], say: '冰晶之心！' }, { use: 'summon', kind: 'toyBerserk', n: 1, max: 2, cd: [16, 20], w: 0.7 }] },
       ] },
-    lik: { name: '寒冰巨人利库', lvl: 38, size: [22, 16, 150], weight: 6, speed: 70, elem: 'ice', art: ['deGiant', { hue: -170, sat: 0.9, bright: 1.1 }], scale: 1.3, pref: 110, traits: { sa: 'cast' },
+    lik: { name: '寒冰巨人利库', lvl: 38, size: [22, 16, 150], weight: 6, speed: 70, elem: 'ice', art: 'snLik', scale: 1.3, pref: 110, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'slam', reach: 124, width: 34, windup: 0.7, dmg: 1.4, down: true, sa: true, cd: [2, 3], w: 2 }, { use: 'grab', reach: 84, hold: 0.9, throwDmg: 1.6, cd: [8, 10] },
@@ -213,7 +214,7 @@ defineRegion({
     frozen_heart: { name: '冰心少年', lvl: [36, 37], theme: 'snCave', layout: 'standard', mobs: [['toySoldier', 3], ['toyFine', 2], ['toyMass', 2], ['toyBerserk', 1]], elite: 'toyBerserk', boss: 'charlie', bgm: 'dungeon2', bossBgm: 'boss',
       gate: { x: 420, col: '170,220,255' }, desc: '被冰龙变成冰霜巨人的少年查理，和他的玩具士兵们。血量过半时他的心脏会被冰晶护住——打碎冰晶他就会破招。',
       drops: { boss: [['ep_sn_charlie', 0.03]], mats: [['crystal', 0.1, 8], ['c_white', 0.02, 1], ['m_cloth', 0.03, 2]] } },
-    lik_well: { name: '利库天井', lvl: [37, 38], theme: 'snRidge', layout: 'long', mobs: [['bantuWarrior', 3], ['frostGoblin', 2], ['foamSpider', 1.5], ['stormGolem', 0.7], ['thunderGolem', 0.7], ['frostGolem', 0.7]], elite: 'catapultCommander', boss: 'lik', bgm: 'dungeon3', bossBgm: 'boss',
+    lik_well: { name: '利库天井', lvl: [37, 38], theme: 'snRidge', layout: 'long', mobs: [['bantuWarrior', 3], ['frostGoblin', 2], ['foamSpider', 1.5], ['stormGolem', 0.7], ['thunderGolem', 0.7], ['frostGolem', 0.7]], elite: 'catapultCommander', boss: 'lik', bossTheme: 'snLikBoss', bgm: 'dungeon3', bossBgm: 'boss',
       gate: { x: 900, col: '200,230,255' }, desc: '冰封的天井里，寒冰巨人利库守着班图族的冰壁。他的冰裂会冻住人；血量过半后会召来暴风雪和冰霜石巨人。',
       drops: { boss: [['ep_sn_charlie', 0.012]], mats: [['crystal', 0.1, 8], ['m_iron', 0.03, 2], ['c_blue', 0.02, 1]] } },
     ridge: { name: '山脊', lvl: [38, 39], theme: 'snRidge', layout: 'standard', mobs: [['bantuWarrior', 3], ['frostGoblin', 2], ['iceTiger', 2], ['iceSprite', 1]], elite: 'bullBastur', boss: 'ruug', bgm: 'dungeon', bossBgm: 'boss',
@@ -333,6 +334,7 @@ defineRegion({
         atk: 'the huge spiked club', cast: 'raising the club high with a hearty laugh', low: 'charging forward low with the club held back' },
       snSkasa: { h: 140, boss: true, cycle: 'trot', desc: 'Skasa the Ice Dragon, the ancient fierce adult dragon of the eternal snow mountain: a huge heavily built four-legged dragon with a long powerful neck, a large angular head with a menacing scowl, long sharp swept-back horns, bared sharp fangs, cold glowing pale blue eyes, thick armored glacier-blue scales, jagged ice-crystal spines running along the back and tail, big tattered frosty wings folded, massive clawed feet. Menacing and powerful, an adult dragon, not a baby, not cute.',
         atk: 'its huge icy jaws biting', cast: 'rearing its head up and spreading its wings', low: 'lowering its head and lunging forward' },
+      snLik: { h: 150, boss: true, hold: null, outline: '#2a4a7a', desc: 'Lik the Frost Giant, an ancient boss of the eternal snow mountain: a colossal hulking giant made of dark slate-blue rock armored with thick translucent glacier-blue ice plates, very top-heavy with enormous shoulders and very long massive arms whose fists hang down near the knees, big jagged pale-cyan ice crystal clusters growing out of his shoulders and upper back like frozen mountain peaks, a small craggy head sunk low between the shoulders with a heavy frosty brow, two glowing icy cyan eyes and a short beard of icicles, huge blocky fists encrusted with ice crystals, short thick sturdy legs, a broken iron shackle with three chain links around one wrist. Menacing and powerful, an adult giant boss, not a child, not cute.', atk: 'his huge ice-crystal fist', cast: 'raising both huge fists to the sky and roaring', low: 'charging forward shoulder-first with the head down', sig: ['frost nova: hunching down and hugging both huge fists tight against his chest, then throwing both arms and his chest wide open to the sides in a huge outward burst pose', 'giant grab: lunging far forward and reaching out low with one enormous open hand to seize an enemy, then heaving the clenched fist high overhead'], rage: 'enraged roar: rearing up to full height, head thrown back roaring, both huge fists raised and clenched' },
     },
     gates: {
       frozen_heart: 'an ice cave entrance framed by giant blue ice crystals with a frozen wooden toy soldier on each side, a pale blue portal',

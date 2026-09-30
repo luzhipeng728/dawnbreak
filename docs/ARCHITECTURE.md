@@ -4,7 +4,7 @@
 - `src/ORDER` 列出的 JS 按顺序拼接进同一个 `<script>`，共享一个全局作用域（没有 import/export）。后加载的文件可以覆盖 / 扩展前面的定义（例如 `Object.assign(menus, { w_xxx })`）。
 - `node build.mjs` 输出：
   - `dist/web/`：网页版，美术按分包懒加载，用 `loadBundles` / `withLoading`。
-  - `dist/dawnbreak.html`：离线单文件。
+  - `dist/dawnbreak.html`：离线单文件（测试默认用它）。`node build.mjs --web` 只出网页版（部署 `tools/deploy.sh web` 用这个），`--offline` 只出单文件。
 - 美术放在 `art/final/<分类>/<名字>.webp`，代码里通过 `IMG['<分类>/<名字>']` 取用。分包规则见 `build.mjs` 的 `bundleOf`：
   - `spr:<id>`：逐帧精灵
   - `bg:<theme>`：场景背景

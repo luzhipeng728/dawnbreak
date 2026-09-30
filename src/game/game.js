@@ -31,6 +31,7 @@ function step(dt) {
     if (p.weak && (game.weakChk = (game.weakChk || 0) + dt) > 1) { game.weakChk = 0; if (!(save.data.weak > Date.now())) { recalcStats(p); toastMsg('虚弱状态解除了', '#8aff9a', 'log'); } }
     if (game.scene !== 'town' && !p.dead) for (let i = 0; i < 6; i++) if (input.hit('i' + i) && inv.quick[i]) inv.use(inv.quick[i]);
     if (p.buffs) for (const k in p.buffs) { p.buffs[k].t -= dt; if (p.buffs[k].t <= 0) delete p.buffs[k]; }
+    tickHot(p, dt);
     applyBuffs(p);
   }
   if (game.scene === 'dungeon' || game.scene === 'test') {

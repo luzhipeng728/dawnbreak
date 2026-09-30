@@ -88,7 +88,7 @@ export async function start(over = {}) {
   const addr = server.address();
   log(`破晓地下城服务端已启动：http://${cfg.host}:${addr.port}（协议 v${NET_VER}，数据库 ${cfg.db}，模块 ${loaded.map(m => m.name).join(' / ')}）`);
   if (!cfg.invites.length) log('提示：没有设置 DNF_INVITE，只能用管理员生成的邀请码注册');
-  const stop = () => new Promise(res => { hub.close(); server.close(() => { db.close(); res(); }); setTimeout(() => { db.close(); res(); }, 2000).unref(); });
+  const stop = () => new Promise(res => { for (const m of loaded) if (m.stop) { try { m.stop(ctx); } catch (e) { log(`${m.name}.stop 出错`, e.stack || e); } } hub.close(); server.close(() => { db.close(); res(); }); setTimeout(() => { db.close(); res(); }, 2000).unref(); });
   return { server, ctx, port: addr.port, stop };
 }
 

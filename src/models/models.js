@@ -64,6 +64,7 @@ function buildSwordsman(pal = PAL_SWORD, opt = {}) {
     { z: 17, bone: 'wF', when: () => O.weapon === 'hammer', draw: (c) => drawHammer(c) },
     { z: 17, bone: 'wF', when: () => O.weapon === 'staff', draw: (c) => drawStaff(c, pal) },
     { z: 17, bone: 'wF', when: () => O.weapon === 'gun', draw: (c, m, o) => drawGun(c, pal, o) },
+    { z: 17, bone: 'wF', when: () => O.weapon === 'cross', draw: (c) => drawGiantCross(c, pal) },
     { z: 18, bone: 'hF', draw: (c) => drawFist(c, pal.glove) },
   ];
   return new Model(skel, parts, s);
@@ -157,6 +158,8 @@ const HATS = {
   cap: (pal) => (c, R) => { c.beginPath(); c.ellipse(0, -R * 0.6, R * 1.0, R * 0.55, 0, Math.PI, 0); c.lineTo(R * 1.5, -R * 0.55); c.lineTo(R * 0.8, -R * 0.45); c.closePath(); fillStroke(c, pal.hat || '#3a5a3a', 1.2); },
 };
 function drawHammer(c) { c.fillStyle = '#6a4a30'; c.fillRect(-1.5, -6, 3, 26); c.strokeStyle = OUTLINE; c.lineWidth = 1; c.strokeRect(-1.5, -6, 3, 26); c.beginPath(); c.rect(-7, 18, 14, 9); fillStroke(c, gradX(c, -7, 7, '#8a8e96', -0.3, 0.3), 1.2); }
+// 巨型十字架（圣职者的矢量占位武器，局部 +y = 武器朝外的方向）
+function drawGiantCross(c, pal) { c.beginPath(); c.rect(-3.2, -14, 6.4, 72); fillStroke(c, gradX(c, -4, 4, pal.blade || '#d8dde8', -0.3, 0.35), 1); c.beginPath(); c.rect(-15, 40, 30, 7); fillStroke(c, gradX(c, -15, 15, pal.trim || '#d4b45e', -0.3, 0.35), 1); c.beginPath(); c.arc(0, 43.5, 4.5, 0, TAU); fillStroke(c, pal.glow || '#ffe3a0', 1); }
 function drawStaff(c, pal) { c.fillStyle = '#7a5030'; c.fillRect(-1.5, -14, 3, 44); c.strokeStyle = OUTLINE; c.lineWidth = 1; c.strokeRect(-1.5, -14, 3, 44); c.beginPath(); c.arc(0, 33, 4.5, 0, TAU); fillStroke(c, pal.orb || '#6ad0ff', 1.2); c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = shade(pal.orb || '#6ad0ff', 0.3, 0.5); c.beginPath(); c.arc(0, 33, 7, 0, TAU); c.fill(); c.restore(); }
 function drawGun(c, pal, o = {}) {
   // 左轮：局部 +y 为枪管方向

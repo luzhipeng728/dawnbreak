@@ -33,6 +33,7 @@
 
 ### 2.3 做一个新区域
 见 `docs/REGION_PIPELINE.md`（区域配置 + 怪物技能库 + 领主机制库 + 一键美术 + test/region.mjs）。
+领主要有自己的招牌机制：先查 `docs/BOSS_SPEC.md`（leap / cone / lanes / mark / plant / pool / pull、stagger / form / stance / duo / gauntlet / arena / protect / facing、特性、defineBossKit、领主房），只写数据；原语自带预警、生路、难度打折和组队同步。
 1. 复制 `src/content/regions/siroco.js` 为 `<id>.js`，只改数据（怪物 = 技能库 + 参数，领主 = 阶段 + 机制库，特殊判定才写 `<id>_bosses.js` 钩子），在 `src/ORDER` 加一行。
 2. 美术前先验逻辑：`node build.mjs && node test/region.mjs <id> skills,mechs,quest`。
 3. `python3 art/tools/region_art.py <id> refs,bg,review1 --sample` → 把 `review_refs.png` 发主线程；通过后 `region_art.py <id>` 一条命令跑完（可断点续跑）。
@@ -94,12 +95,17 @@
 | 招牌动作表 / 形态精灵（只打印不生图） | `python3 art/tools/region_art.py <id 或 xx.json> sig,sigcut --only <精灵名> --dry`（REGION_PIPELINE §5） |
 | 组队领主自定义机制（REGION_HOOKS / 房间机关：牛头械王落雷·罪恶之眼·保护模式、希洛克凝视 + 藏起来后护盾泡泡、伊凡房自爆·路障；钩子事件和地面预警两边一一对应 < 0.3 秒、队员被打中，约 2 分钟） | `node test/mp_bosses.mjs [MK,SR,RM]` |
 | 动作手感体检（走 / 跑 / 普攻逐步指标：帧停留、身体跳动、脚底打滑、相机甩动；`--pace` 测各种刷新率下的帧节奏） | `WEB=1 node test/animfeel.mjs <职业[:转职]> <名> [--pace] [--town] [--look=套装]`（约 6 秒）；改前 `B-<名>` / 改后 `A-<名>` 各跑一次后 `python3 test/animfeel_compare.py <名>` 出对比图（docs/ANIMATION.md） |
+| 素材盘点（找没用的图 / 缺的图）/ 瘦身（只压透明通道，颜色不变） | `node build.mjs && node tools/asset_audit.mjs data && PAR=4 node tools/asset_audit.mjs trace && node tools/asset_audit.mjs report --doc`（约 50 分钟）→ `node tools/asset_audit.mjs delete`；`python3 art/tools/asset_shrink.py`（幂等，新素材进 art/final 后跑一次，约 6 分钟）；说明 docs/ASSET_AUDIT.md |
 
 改完存档让玩家**刷新页面**，弹“存档冲突”时选**使用云端存档**。
 
 **发版会自动通知在线玩家**：`deploy.sh web` 最后才传 `version.json`（版本号 = 页面内容哈希，内容没变就不变），在线页面每 60 秒 / 切回前台时检查，右下角弹“发现新版本”，点一下存档 + 上传云存档后刷新，回到原来的角色、场景和坐标（地下城里可选“打完这局再更新”，回城 5 秒后自动更新）。更新说明默认取最近 3 条 feat / fix 提交标题，想写给玩家看的就 `NOTES='新增 xxx' sh tools/deploy.sh web`。测试：`node test/liveupdate.mjs`（约 40 秒）。
 
 ## 4. 踩过的坑（别再踩）
+- **逻辑别挂在特效上**：特效超过 FX_CAP（240）会从最早的删掉，挂在 `addFx` 上的每帧逻辑（领主藏起来时驱动机制、物件引信、残留区结算）会被一起删 → 领主藏起来就出不来。每帧逻辑用 `msTicker(fn)`（game/mon_skills.js，换房间清空），特效只负责画。
+- **包一层之前先确认挂在哪个对象上**：目标血条在 `ui.drawTarget`，不在 `HUD`（HUD 只是底栏布局常量）；以前机制提示包在 `HUD.drawTarget` 上，破招槽 / 护盾条从来没显示过（2026-09-30 修）。
+- **组队按“片段 + 时长”认招会认错**：罪恶之眼的追踪光柱和激光都是 cast / 1.8 秒。monsterAI / msStart 出招带 `aIdx`（招式表序号），net/coop.js 按它发；只有别处直接 doAct 的才退回“片段 + 时长”。
+- **队员建傀儡时不能启动会刷怪的机制**：出场就带 tether / duo 的领主，队员那边 `spawnMonster` 在 allowSpawn 期间会多刷一只真怪。`msMechStart` 在 `msGuestSpawn()` 时直接返回（机制以主机镜像为准）。
 - **完整回归跑的时候重新构建** → 正在加载页面的测试超时（bestiary 就这么挂过一次）。
 - **并行负载下的偶发失败**：测试里用固定 sleep / 墙钟时间判断会误报。一律按 `game.t` 或条件等待；站在掉落物上会被自动拾取（gear 测试）。
 - **Mac 键盘**：Option(Alt) 当技能键不好用 → 第 7 格默认改成左 Shift；Ctrl 这类修饰键绑定的界面开关要“单独按下再松开”才触发（避免 Mac 截图快捷键误触）。
@@ -120,6 +126,8 @@
 - **生图参考图别走 `sheets.upload` 的旧缓存**（2026-09-29 转职头饰）：缓存里的 hyprlab 地址会过期（生图 404），多线程同时写 `art/src/avatar/.upload_cache.json` 还会把 JSON 写坏（后面的脚本全部读档失败）。新脚本直接传 `'local:' + 本地路径`（gpt-image 路由自己按各家的方式传图），见 `art/tools/job_head_art.py` 的 `run`。
 - **转职专属任务线的两个坑**（2026-09-30 格斗家 B8）：① 任务奖励里的 `unlock: '<地下城>'` 只是奖励列表里显示一行字，隐藏地下城的门只认 `DUNGEONS[id].unlock.quest`（弹药专家第 1 步就是这样，门并没有开）——任务要用隐藏地下城，就在描述 / 进行中台词里写清先做哪个任务；② 给职业加了 `JOB_CHAINS.<职业>` 之后 `jobAvailable` 要先做完 `q_job_<职业>_final`，测试里直接看导师转职按钮 / 转职窗口的要先把它记成已完成。
 - **测 NPC 对话别无脑按 Esc**：Esc 只在不是最后一页时“跳到最后一页”，只有一页的对话（很多交付台词只有一句）按 Esc 会直接关窗口。先看 `npcUI.page < npcUI.pages.length - 1`。
+- **新职业的开发开关按职业分**（2026-10-01 圣职者）：`?<职业>=1` / `?dev=a,b` 只开放那个职业（`DEV_OPEN` 是 Set）；以前 `?fighter=1` 会把所有 ready:false 的职业一起打开，test/fighter.mjs 拿 `priest` 当“未知职业”样本就会被带开。体检工具（skillaudit / skillshots）网址自动带 `&<职业>=1`。
+- **`fxTint` 只对登记了 `FX_BASE_HUE` 的素材换色**：`heal` / `pillar` 没登记，传 `col` 不会变色（绿光柱还是绿的）；近白色（饱和度 < 0.22）才会去饱和变白。要换色先看 FX_BASE_HUE，别改它（会连带改掉别的职业已经用着的样子）。
 - **给全局函数加参数要查包装层**：`itemTipOne` 被 game/vanity.js 包了一层（`one0(it, cur, head)`），新加的参数会被吞掉；`equipTotals` / `recalcStats` 也分别被公会、决斗包过。改签名前先 `grep -rn "= 函数名\|函数名 = "`。
 - **图标表切出来只剩碎片 + 一条横线**：生图偶尔在表的上下边缘画一条深色边框线（2026-09-29 `cdr60_sand_leather`），切图时它连成横跨三格的连通块，把中间格的物品挤掉。先查 `mn < 110` 占满一行的边缘行，把原图（`art/src/gear/`，先留 `.bak.png`）上下各 4 行涂白再 `cut`，不用重生成。
 - **画的时候位置是插值过的**（game.js `lerpIn / lerpOut`，docs/ANIMATION.md）：renderWorld / ui.draw 期间实体、投射物、城镇路人的 x / y / z 和 cam.x 是两个逻辑步之间的插值，画完立刻换回。绘制代码别写这些字段（会被换回去）；新加会移动、又不在 ents / projs / world.crowd 里的东西，要在 `snapPrev` / `lerpIn` 里补上，否则在高刷屏上会和角色差一步。
@@ -177,3 +185,4 @@
 - **2026-09-30 领主工具 P0-T（test/boss.mjs、tools/boss_inventory.mjs、region_art.py 的 sig / forms，docs/BOSS_PLAN.md §4.5.1 基线）**：测试全部在页面里做“传到领主房 → 安抚领主（照跑 AI / 阶段 / 钩子，但不自己出招、不走动）→ 逐招 / 逐机制 / 逐阶段”，探针包在 `telegraph / onPlayerHurt / spawnProj / spawnMonster / msMechStart / warnMark` 上（都是 function 声明，页面里可以直接换）；总览图在页面里用 canvas 拼（不依赖 PIL）；查重用 vm 跑 src（约 0.3 秒，不用构建）。59 个领主 × 4 个职业的基线分三个进程并行约 55 分钟（之后用户要求：全量只跑一次、一个进程、nice、不和别的套件同时跑 → boss.mjs 的大跑法会自动拿全局测试锁）；P0 的新钩子（`bossPhaseSet` / `MS_EVENTS` / `BOSS_MECHS[id].test.solve`）都按“有就用”写，现在的领主照样能测。
   - 坑：① 测招 / 测机制时打破招槽、护盾会让领主掉血，掉到门槛就提前进阶段，后面“压血进阶段”就测不到 → 测招 / 测机制时每帧回满血，测阶段前 `msPhase` 归零。② `D.summons` 是 `regionKinds` 把 spec 里所有 `kind` 字段扫出来的（含落雨的 hex、场地危害的 debris），不能当“召唤物必须存在”查。③ 房间脚本会把物件设成 `invul 1e9`，`applyHit` 打不死 → 清怪用 `killEnt`。④ 钩子自己也会藏领主（虫王钻地 2.2 秒后破土），机制结束后要再等它回场，否则误报“解不开”。⑤ 希洛克凝视这类钩子会在安全区测试里顺手打人 → 只认那一下真实伤害（≥ frac × HP）。⑥ `String.raw` 模板里的页面代码不能再用反引号（整个测试文件语法错误）。⑦ 基线口径（全身 +12 史诗、各图自己的等级）下领主很脆：普通中位 21 秒，暗精灵以前的手写领主 6~30 秒就倒，原计划的 45~120 秒带完全对不上 → 带按基线重定（普通 20~75、攻坚 40~150），用 4 个职业平均判。
   - 顺手发现：组队时手写领主的招式按“片段 + 时长”找下标，罪恶之眼两招都是 cast / 1.8 秒，队员重播错招（`net/coop.js monAct`，待修）。
+- **2026-09-30 素材盘点 + 瘦身（docs/ASSET_AUDIT.md）**：art/final 124 → 103 MiB。先量再动手：静态扫描单独用会“什么都有人引用”（宽模板 `icon/item_${key}` 能匹配所有图标），所以模板的洞只准填已有的字符串 / 数字，再叠加运行时数据的全部字符串和取图函数枚举；运行记录要按测试分开记（并行跑时用页面路径 `/t/<测试名>/` 区分），不然分不清哪些帧只是被 avatar / fighter_looks 逐帧遍历画过。真正没用的只有 2.3 MiB（普通怪物的 idle2 / taunt 帧、victory 帧、旧图标）；大头在透明通道：ALPH 是无损的、占精灵文件 36%，把 ≤4 / ≥251 归整、半透明对齐到 8 的倍数后无损重压，VP8 彩色块原样拼回，−15%、颜色逐字节不变。坑：① 彩色部分已是 q≈80~90 的有损，再重压只省 11~15% 还是二代损失，别做；② `cwebp -alpha_filter best` 压不过原图（原图已是 method 6），要先改透明度的值才有得省；③ 删已被瘦身改过的文件要加 `-f`；④ 盘点时文件大小按 HEAD 里的原始大小算，不然瘦身后报告里的大小会变。

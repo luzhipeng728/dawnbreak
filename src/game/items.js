@@ -36,10 +36,16 @@ const WTYPES = {
   boxing: { name: '拳套', cls: 'fighter', jobs: ['striker'], phys: 1.08, mag: 0.6, aspd: 0.1, spd: '快速', dur: 30, desc: '出手很快、距离短，物理攻击力高；只有散打能装备，散打技能冷却 -10%' },
   claw: { name: '爪', cls: 'fighter', phys: 1.0, mag: 0.95, aspd: 0, stagger: 30, spd: '普通', dur: 32, desc: '攻击距离长，打击让敌人僵直更久' },
   tonfa: { name: '东方棍', cls: 'fighter', phys: 0.85, mag: 0.8, aspd: 0.06, defPct: 0.05, spd: '快速', dur: 34, desc: '出手快、距离较长，攻击力最低，附带物理防御 +5%' },
-  gauntlet: { name: '臂铠', cls: 'fighter', phys: 1.22, mag: 0.5, aspd: -0.12, hardness: 20, spd: '缓慢', dur: 36, desc: '物理攻击力最高、出手慢；物理技能 MP 消耗和冷却增加（抓取技能不受影响）' },
+  gauntlet: { name: '臂铠', cls: 'fighter', phys: 1.22, mag: 0.5, aspd: -0.12, hardness: 20, spd: '缓慢', dur: 36, desc: '物理攻击力最高、出手慢；物理技能 MP 消耗和冷却增加（抓取技能不受影响）' },  // 圣职者（男）5 种“巨兵”：拿在手上的武器（和鬼剑士 / 魔法师一样的手持武器图），不改普攻动作，只改速度 / 距离 / 硬直 / 数值（距离 / 硬直在 content/classes/priest.js 的 PRIEST_FEEL）；
+  // 官方排名（namu）：物攻 战斧 > 图腾 > 镰刀 > 十字架 > 念珠；魔攻 念珠 > 镰刀 > 十字架 > 图腾 > 战斧；攻速 镰刀 > 图腾 > 十字架 > 念珠 = 战斧。不装武器按十字架算
+  cross: { name: '十字架', cls: 'priest', phys: 0.92, mag: 1.0, aspd: 0, cspd: 0.02, defPct: 0.04, spd: '普通', dur: 34, desc: '唯一附带体力 / 精神和物理 / 魔法防御的巨兵，施放速度 +2%；圣骑士推荐' },
+  rosary: { name: '念珠', cls: 'priest', phys: 0.72, mag: 1.15, aspd: -0.08, cspd: 0.05, mcrit: 0.02, spd: '缓慢', dur: 28, desc: '魔法攻击力最高、物理攻击力最低，魔法暴击 +2%，施放速度 +5%，攻击距离较短' },
+  totem: { name: '图腾', cls: 'priest', phys: 1.12, mag: 0.75, aspd: 0.06, hit: 0.01, spd: '快速', dur: 36, desc: '物理攻击力高（力量最高），命中 +1%，攻击距离较短；蓝拳圣使推荐' },
+  scythe: { name: '镰刀', cls: 'priest', phys: 1.02, mag: 1.08, aspd: 0.12, crit: 0.02, mcrit: 0.02, hit: -0.01, spd: '极快', dur: 30, desc: '攻速最快、攻击距离很长，物理 / 魔法暴击都有，命中 -1%，打击硬直很小；复仇者推荐' },
+  battleaxe: { name: '战斧', cls: 'priest', phys: 1.22, mag: 0.55, aspd: -0.08, hit: 0.02, stagger: 30, spd: '缓慢', dur: 38, desc: '物理攻击力最高、攻击距离很长，命中 +2%，打击让敌人僵直更久；驱魔师推荐' },
 };
 const CLASS_WTYPES = cls => Object.keys(WTYPES).filter(k => WTYPES[k].cls === cls);
-const CLASS_START_WEAPON = { sword: 'katana', gun: 'revolver', mage: 'rod', fighter: 'knuckle' };   // 初始武器选攻速不慢的类型（格斗家：官方不装武器按手套算）
+const CLASS_START_WEAPON = { sword: 'katana', gun: 'revolver', mage: 'rod', fighter: 'knuckle', priest: 'cross' };   // 初始武器选攻速不慢的类型（格斗家：官方不装武器按手套算；圣职者：不装武器按十字架算）
 // 转职专用的武器类型（WTYPES[t].jobs，例：拳套只有散打能装）：能不能装 / 说明文字（背包、比较、商店、提示框共用）
 const wtypeJobOk = (wtype, job) => { const T = WTYPES[wtype]; return !T || !T.jobs || T.jobs.includes(job); };
 const wtypeJobText = wtype => { const T = WTYPES[wtype]; if (!T || !T.jobs) return ''; const C = CLASSES[T.cls]; return T.jobs.map(j => (C && C.jobs && C.jobs[j] && C.jobs[j].name) || j).join(' / '); };
@@ -434,9 +440,11 @@ function repairAll(verbose, list = repairList()) {
    失败：+3~+9 失败降 1 级；武器 +10 失败降为 +7、+11 失败降为 +8、+12 以上失败破碎；防具 / 首饰 / 特殊装备 +10 以上失败破碎
    强化保护券：本来会破碎时装备不碎，但强化等级归零（券被消耗）
    加成：武器 → 攻击力、防具 → 物理防御、首饰 → 魔法防御、特殊装备 → 四维 */
-const ENH_MAX = 16;
+const ENH_MAX = Infinity;   // 2026-10-01 用户：强化 / 增幅不设上限，越高越强，各凭本事（+16 以后成功率继续下降，最低 1%）
 const ENH_RATE = [1, 1, 1, 0.95, 0.9, 0.8, 0.75, 0.621, 0.537, 0.414, 0.339, 0.28, 0.207, 0.173, 0.136, 0.101];
-const enhBonus = e => e <= 0 ? 0 : [0, 0.03, 0.06, 0.1, 0.14, 0.19, 0.25, 0.32, 0.4, 0.5, 0.62, 0.8, 1.0, 1.25, 1.55, 1.9, 2.3][Math.min(ENH_MAX, e)];
+const ENH_BONUS = [0, 0.03, 0.06, 0.1, 0.14, 0.19, 0.25, 0.32, 0.4, 0.5, 0.62, 0.8, 1.0, 1.25, 1.55, 1.9, 2.3];
+const enhBonus = e => e <= 0 ? 0 : e < ENH_BONUS.length ? ENH_BONUS[e] : 2.3 * Math.pow(1.18, e - 16);   // +16 以后每级 ×1.18
+const enhRate = e => e < ENH_RATE.length ? ENH_RATE[e] : Math.max(0.01, 0.101 * Math.pow(0.85, e - 15));   // 冲 +N+1 的成功率
 const canEnhance = it => it && it.kind === 'equip' && it.slot !== 'title' && !isAvatar(it) && !it.dim && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);   // 带异次元属性（增幅）的装备不能再强化（game/gear.js）
 const enhCost = it => ({ gold: Math.round((it.lvl * 24 + 60) * Math.pow(1.42, it.enh) * (1 + it.rar * 0.3)), crystal: Math.max(1, Math.round((it.lvl + 4) * 0.35 * Math.pow(1.25, it.enh))) });
 // 失败后的结果：{ lvl（失败后的强化等级）, broken }
@@ -468,7 +476,7 @@ function tryEnhance(it, useGuard, rnd01 = Math.random()) {
   game.gold -= cost.gold; inv.take('crystal', cost.crystal);
   const from = it.enh;
   let res;
-  if (rnd01 < ENH_RATE[it.enh]) { it.enh++; res = { ok: true, from, lvl: it.enh }; }
+  if (rnd01 < enhRate(it.enh)) { it.enh++; res = { ok: true, from, lvl: it.enh }; }
   else {
     const f = enhFailResult(it);
     if (f.broken && useGuard && inv.take('guard', 1)) { it.enh = 0; res = { ok: false, from, lvl: 0, guard: true }; }

@@ -55,6 +55,8 @@ run fbrawler  node test/fighter_brawler.mjs
 run fpvp      node test/fighter_pvp.mjs   # 格斗家 B9：决斗表登记、AI 用得出各转职全部主动技能（霹雳旋踢 / 空中技）、抓取公平（抓取保护 / 强制硬直 ≤1 秒）
 run flaunch   node test/fighter_launch.mjs   # 格斗家上线整条流程：建 4 个转职、3 个转职打通地下城、决斗、存档往返（没开放时原样保留）、选角显示
 run flooks    node test/fighter_looks.mjs   # 格斗家外观（B2）：转职动作片段、转职外观 / 头饰 / 道服色、拳上武器 50 张 + 图标、6 套时装、配件、路人
+run priest    node test/priest.mjs   # 圣职者 B0 + 基础职业：开放开关（?priest=1 / 没开放时原样保留）、id / 转职登记 / 武器 / 动画契约、队伍原语（hot / life / d.to）、11 个基础技能逐个放 / 命中 / 冷却 / MP / 指令 / 机制
+run audit_priest node test/skillaudit.mjs priest --compare   # 圣职者技能对官方规格 docs/skills/priest.json（转职块做完把 priest:<转职> 加进来）
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
 run gunjobs   node test/gunner_jobs.mjs
@@ -84,6 +86,8 @@ run skyroute  node test/sky_route.mjs
 run behemoth  node test/behemoth.mjs
 run bhmroute  node test/behemoth_route.mjs
 run region    node test/region.mjs siroco   # 区域流水线：数据 / 技能库 / 机制库 / 怪物 / 场景 / 任务 / 机器人通关（约 25 分钟）
+run bossprims node test/boss_prims.mjs   # 领主差异化 P0 原语（docs/BOSS_SPEC.md）：每个技能的挨打 / 生路、机制的解开 / 失败、特性、defineBossKit、领主房
+run skasa     node test/skasa_s1.mjs   # S1 样板斯卡萨之巢：逐招总览图 + 实机 40 秒（test/shots/skasa_s1/）
 run boss      node test/boss.mjs all   # 领主专项：59 个领主逐阶段 / 逐招 / 逐机制 + 机器人打领主房（每图一个职业轮换，约 40 分钟；总览图 test/shots/boss/）
 run duel      node test/duel.mjs sword:gun,gun:mage,mage:sword 3
 run pvpbal    node test/pvp_balance.mjs 4 all
@@ -116,6 +120,7 @@ run mpduel    node test/mp_duel.mjs
 run duellag   env MAXMS=33 node test/mp_duel_lag.mjs 4 0,120   # 决斗：对方按键到自己出招（本地模拟，往返 120ms 下 ≤ 33ms）、不重播、位置一致
 run arena     node test/arena.mjs
 run mpmore    node test/mp_coop_more.mjs
+run mpbossprim node test/mp_bossprims.mjs   # 组队：新原语的 hook / 机制镜像两边一致、队员按自己的位置结算
 run bosscoop  node test/boss.mjs graca,floating_castle,second_spine,darkcity_gate,skasa_nest,bilmark,arden,siroco_coffin coop   # 组队领主：8 个代表领主逐招 / 逐阶段，队员的预警 / 机制 / 钩子事件一一对应、队员挨打
 run mpabyss   node test/mp_abyss.mjs   # 组队深渊：满级狂战士 + 冷却 ×0.34 打完两轮和三种深渊领主，两边不报错、每帧都画；队员逐招重播领主出招、会被打到；逐帧出错安全网
 run mprestart node test/mp_restart.mjs

@@ -1,8 +1,8 @@
 // 构建：把 src/ 下的脚本按 src/ORDER 顺序拼进一个 <script>（共享同一作用域），输出两个版本：
 //   dist/web/index.html + dist/web/assets/**   网页版：美术按分包按需加载（进城 / 进地下城时再加载对应素材）
 //   dist/dawnbreak.html                        离线单文件：全部美术以 data URI 内嵌，双击即可游玩
-// 用法：node build.mjs            （两个都出）
-//       node build.mjs --web      （只出网页版）  node build.mjs --offline（只出离线版）
+// 用法：node build.mjs            （两个都出；测试默认读离线单文件，quick.sh / all.sh 用这个）
+//       node build.mjs --web      （只出网页版，快、不写 175 MB 的单文件；部署 tools/deploy.sh 用这个）  node build.mjs --offline（只出离线版）
 // 版本号 BUILD_ID = 网页版页面内容的哈希（内容不变就不变，两个版本共用）；网页版另写 dist/web/version.json { id, time, notes }，
 // 在线的页面轮询它发现新版本（net/liveupdate.js）；notes 用环境变量 NOTES，没给就取最近几条 feat / fix 提交的标题
 // 网页版另写 dist/web/catalog.json（物品 / 职业目录，后台管理 /admin 用，见 tools/item_catalog.mjs）

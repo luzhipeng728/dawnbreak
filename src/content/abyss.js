@@ -227,32 +227,24 @@ function abyssLord(dg) {
   fxSpr('pillar', b.x, b.y, 0, { h: 360, w: 140, dur: 1.2, ay: 1, col: '#b050ff' });
   cam.shake = 12; cam.flash = 0.3; cam.flashCol = '#6a1aaa'; sfx.boom(1.4); gearSfx.abyssOpen();
   toastMsg(`${b.name} 降临了！`, '#ff4ad0');
-  music.play(dg.def.bossBgm || 'boss');
+  music.play(bossTrack(dg.def));
 }
 // 深渊领主的机制（领主机制库，game/mon_skills.js）：mechs 降临时启动；cycle 按间隔反复启动（at = 血量低于多少才开始）
-// 区域领主本来就由 regionAI 驱动机制；老领主（手写 AI）在这里包一层 control / onDamaged 来驱动
+// 区域领主本来就由 regionAI 驱动机制；老领主（手写 AI）由 msDriveLegacy 包一层 control / onDamaged 来驱动（和 defineBossKit 共用）
 function abyssLordMechs(b, L) {
   if (!L.mechs.length && !L.cycle.length) return;
+  msDriveLegacy(b);
   // 组队主机上 b.control 是 coop 的访问器（读出来是“先选目标再调里面的 AI”的包装）：必须包里面真正的 AI（aiInner），
   // 包成“包装 → 深渊层 → 包装 → …”会无限递归，第 2 轮领主降临后每帧爆栈、整帧不画（2026-09-29 组队深渊卡死）
-  const ai = b.aiInner || b.control, own = ai === regionAI, base = ai, every = c => rnd(...(c.every || [24, 30]));
+  const base = b.aiInner || b.control, every = c => rnd(...(c.every || [24, 30]));
   for (const s of L.mechs) if (!msMechActive(b, s.use)) msMechStart(b, s);   // 区域领主自带的同种机制（比如暗杀者的狂暴）不重复加
+  if (!L.cycle.length) return;
   const cyc = L.cycle.map(c => ({ ...c, next: every(c) * 0.6 }));
   const ctl = (m, dt) => {
-    if (!m.dead && !m.msHidden) {
-      if (!own && m.msMechs) msMechUpdate(m, dt);
-      for (const c of cyc) if ((c.next -= dt) <= 0 && m.hp <= m.hpMax * (c.at ?? 1) && !msMechActive(m, c.mech.use) && !(m.stun > 0)) { c.next = every(c); if (c.say) msSay(m, c.say, '#ff9ad8', 15); msMechStart(m, c.mech); }
-    }
+    if (!m.dead && !m.msHidden) for (const c of cyc) if ((c.next -= dt) <= 0 && m.hp <= m.hpMax * (c.at ?? 1) && !msMechActive(m, c.mech.use) && !(m.stun > 0)) { c.next = every(c); if (c.say) msSay(m, c.say, '#ff9ad8', 15); msMechStart(m, c.mech); }
     base(m, dt);
   };
   ctl.aiBase = base; b.control = ctl;   // 组队：主机按 aiBase 往里找真正的 AI（老领主自带 AI 的表外招式，队员那边用同一个 AI 重播；区域领主的招式按编号 / 阶段号重播）
-  if (own) return;
-  const od = b.onDamaged;
-  b.onDamaged = (t, a, dmg, crit, h) => {
-    if (od) od(t, a, dmg, crit, h);
-    for (const st of t.msMechs || []) { const M = BOSS_MECHS[st.id]; if (!st.done && M.onHit) M.onHit(t, st, dmg, a, h); }
-    if (t.msMul && t.msMul.invuln === 0) t.hp = Math.min(t.hpMax, t.hp + dmg);
-  };
 }
 
 function abyssTick(dg, chain) {

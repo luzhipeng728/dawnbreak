@@ -79,10 +79,11 @@ function monsterAI(m, dt) {
     if (ok.length && (m.boss || attacking < (game.maxAttackers || 3))) {
       let r = rnd(0, ok.reduce((s, A) => s + (A.w || 1), 0)), A = ok[ok.length - 1];
       for (const x of ok) { r -= x.w || 1; if (r <= 0) { A = x; break; } }
-      if (D.attacks.length > 1) { m.acd[D.attacks.indexOf(A)] = rnd(A.cd[0], A.cd[1]) * rage; m.aiCd = (m.boss ? rnd(1.2, 2.2) : rnd(0.7, 1.6)) * rage; }
+      const ai = D.attacks.indexOf(A);
+      if (D.attacks.length > 1) { m.acd[ai] = rnd(A.cd[0], A.cd[1]) * rage; m.aiCd = (m.boss ? rnd(1.2, 2.2) : rnd(0.7, 1.6)) * rage; }
       else m.aiCd = rnd(A.cd[0], A.cd[1]) * rage;
       const events = (A.act.events || []).map(ev => ({ ...ev, done: false }));
-      m.doAct({ name: A.clip, clip: A.clip, ...A.act, events, hits: A.act.hits && A.act.hits.map(h => ({ ...h })) });
+      m.doAct({ name: A.clip, clip: A.clip, ...A.act, events, hits: A.act.hits && A.act.hits.map(h => ({ ...h })), aIdx: ai });   // aIdx：招式表序号（组队按它告诉队员放的是哪一招，net/coop.js monAct）
       if (m.boss || m.elite || A.act.superArmor) warnMark(m, A.act.superArmor ? '#ff3a2a' : '#ffc02a');
       m.vx = m.vy = 0;
       return;

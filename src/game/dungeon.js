@@ -66,6 +66,9 @@ class Dungeon {
     ents.push(p);
     this.enter(this.layout.start, null);
     music.play(this.def.bgm || 'dungeon');
+    // 领主房单独的背景、稀有领主的精灵：进图时后台预载（到领主房还没载完就用普通背景 / 不换稀有领主）
+    const B = this.def, pre = [...(B.bossTheme ? ['bg:' + B.bossTheme] : []), ...(B.bossAlt && MON[B.bossAlt.kind] ? monBundles([B.bossAlt.kind]) : [])];
+    if (pre.length && typeof loadBundles === 'function') loadBundles(pre).catch(() => {});
     bus.emit('dungeonEnter', { id: this.def.id, diff: this.diff });
   }
   // 进入房间：from 为进来的方向（'left' 表示从本房间左门进来）
@@ -74,11 +77,12 @@ class Dungeon {
     if (first) { room.visited = true; this.roomsEntered++; save.useFatigue(1); }
     this.room = room;
     const W = room.type === 'boss' ? 1400 : room.type === 'start' ? 1150 : 1150 + Math.floor(hash2(room.gx, room.gy) * 3) * 250;
-    game.room = { x0: 0, x1: W, theme: this.def.theme, seed: room.seed, doors: room.doors, type: room.type };
+    const BT = room.type === 'boss' && this.def.bossTheme, theme = BT && (hasArt(`bg/${BT}_far`) || THEMES[BT]) ? BT : this.def.theme;   // 领主房单独的背景（bossTheme）
+    game.room = { x0: 0, x1: W, theme, seed: room.seed, doors: room.doors, type: room.type };
     buildRoomArt(game.room);
     for (let i = ents.length - 1; i >= 0; i--) if (ents[i].team !== 'p') ents.splice(i, 1);
     game.lastTarget = null;   // 换房间 / 换地下城：清掉上一个目标的血条
-    projs.length = 0; drops.length = 0; fxList.length = 0; groundFx.length = 0;
+    projs.length = 0; drops.length = 0; fxList.length = 0; groundFx.length = 0; if (typeof msRoomReset === 'function') msRoomReset();   // 领主机制的逻辑计时器 / 残留区（game/mon_skills.js）
     const p = game.player;
     const pos = { left: [60, DEPTH / 2], right: [W - 60, DEPTH / 2], up: [W / 2, 20], down: [W / 2, DEPTH - 16] };
     const [px, py] = fromDir ? pos[fromDir] : [120, DEPTH / 2];
@@ -88,10 +92,11 @@ class Dungeon {
     if (carry) { const a = p.act; if (a.onRoom) a.onRoom(p); if (a.charge && a.charge.onRoom) a.charge.onRoom(p); } else { if (p.act) p.endAct(); p.setState('idle'); }
     p.juggle = 0; p.downHits = 0; p.bounced = false; p.stun = 0; p.drawFlip = false;
     cam.x = clamp(p.x - WW / 2, 0, W - WW);
+    if (room.type === 'boss' && this.def.bossProps) bossPropsFx(this.def.bossProps, W);
     if (!room.cleared) this.spawnRoom(room, W, first); else this.onCleared(true);
     this.doorsOpen = room.cleared;
     if (first) bus.emit('roomEnter', { id: this.def.id, room, type: room.type });
-    if (room.type === 'boss' && !room.cleared) { music.play(this.def.bossBgm || 'boss'); toastMsg(`领主房 · ${MON[this.def.boss.kind].name}`, '#ff6a4a'); }
+    if (room.type === 'boss' && !room.cleared) { music.play(bossTrack(this.def)); toastMsg(`领主房 · ${MON[this.def.boss.kind].name}`, '#ff6a4a'); }
   }
   spawnRoom(room, W, first) {
     if (this.guest) { this.waves = []; return; }   // 组队的队员：怪物由队长那边生成后同步过来
@@ -102,7 +107,12 @@ class Dungeon {
     const count = room.type === 'start' ? 3 + Math.floor(R() * 2) : room.type === 'boss' ? def.bossAdds || 2 : 4 + Math.floor(R() * 4);
     for (let i = 0; i < count; i++) spawnMonster(pick(), 380 + R() * (W - 480), 20 + R() * (DEPTH - 40), o);
     if (room.type === 'elite') spawnMonster(def.elite || pick(), W * 0.6, DEPTH / 2, { ...o, elite: true, lvl: lv + 1 });
-    if (room.type === 'boss') { const b = spawnMonster(def.boss.kind, W - 320, DEPTH / 2, { ...o, lvl: def.boss.lvl, boss: true }); this.boss = b; game.lastTarget = b; game.lastTargetT = game.t; }
+    if (room.type === 'boss') {
+      const A = def.bossAlt, alt = A && MON[A.kind] && Math.random() < (A.chance ?? 0.1) && monBundles([A.kind]).every(b => IMG[b.replace(/^spr:/, 'spr/') + '/idle']);   // 稀有领主替换（素材没载完就不换）
+      const b = spawnMonster(alt ? A.kind : def.boss.kind, W - 320, DEPTH / 2, { ...o, lvl: def.boss.lvl, boss: true }); this.boss = b; game.lastTarget = b; game.lastTargetT = game.t;
+      if (alt) game.after(0.6, () => toastMsg(A.say || `稀有领主 ${b.name} 出现了！`, '#ffd23a'));
+      for (const P of def.bossProps || []) if (MON[P.kind]) spawnMonster(P.kind, P.x <= 1 ? W * P.x : P.x, (P.y ?? 0.5) <= 1 ? DEPTH * (P.y ?? 0.5) : P.y, { ...o, lvl: def.boss.lvl - 1 });   // 摆设里是怪物 id 的（投冰车、笼子……）由主机刷
+    }
     // 第二波（大房间）
     this.waves = room.type === 'normal' && W > 1500 ? [{ n: 3 + Math.floor(R() * 2), o }] : [];
   }
@@ -152,14 +162,23 @@ class Dungeon {
   onHit(t, dmg, counter, back) { if (t.st === 'air' || t.z > 4) this.aerial++; if (counter) this.counter++; if (back) this.back++; game.lastTarget = t; game.lastTargetT = game.t; }
   onKill(t, a) {
     this.kills++;
+    const left = t.boss && !t.abyssLord ? this.bossLeft(t) : [];   // 多领主同场（duo / gauntlet，game/mon_skills.js）：还有别的领主活着 = 只倒下一个，不结算
     bus.emit('kill', { kind: t.kind, lvl: t.lvl, boss: !!t.boss, elite: !!t.elite, dungeon: this.def.id, x: t.x, y: t.y });
+    if (left.length) { toastMsg(`${t.name}倒下了——还剩 ${left.length} 个领主！`, '#ffb070'); fxBurst(t.x, t.y, t.z + 60, 240, '#ffb070'); sfx.boom(1); cam.shake = Math.max(cam.shake, 8); }
     if (t.noLoot) return;
     const over = a.team === 'p' && t.lastDmg > t.hpMax * 0.3;
     if (over) { this.overkill++; fxText('OVER KILL', t.x, t.y, t.z + 14, { col: '#ff4aa0', size: 12 }); }
     const exp = t.exp || 20; gainExp(exp); this.expGot += exp;
     spawnCoins(t, Math.round(rndi(t.gold ? t.gold[0] : 5, t.gold ? t.gold[1] : 15) * (1 + t.lvl * 0.15) * (t.elite ? 3 : 1) * (t.boss ? 8 : 1)));
-    if (window.rollDrop) rollDrop(t, this);
-    if (t.boss) this.bossDown(t);
+    if (window.rollDrop) { if (left.length) { t.boss = false; try { rollDrop(t, this); } finally { t.boss = true; } } else rollDrop(t, this); }   // 领主掉落只在最后一个倒下时掉
+    if (t.boss && !left.length) this.bossDown(t);
+  }
+  // 同场还活着的领主（含藏起来的；队员这边看傀儡表）
+  bossLeft(t) {
+    const S = new Set([this.boss, ...(this.bossGroup || [])]);
+    for (const e of ents) if (e.boss) S.add(e);
+    if (this.guest && typeof coop !== 'undefined' && coop.puppets) for (const e of coop.puppets.values()) if (e.boss) S.add(e);
+    return [...S].filter(e => e && e !== t && e.boss && !e.dead && !e.abyssLord && e.hp > 0 && e.team === 'e');
   }
   bossDown(b) {
     // 击杀领主：慢动作 + 白闪，其余怪物一并消灭
@@ -273,5 +292,35 @@ function drawGate(c, X, Y, open, boss, dir) {
     c.globalCompositeOperation = 'source-over';
   } else { c.fillStyle = 'rgba(0,0,0,.6)'; c.fillRect(-w / 2 + 2, -h, w - 4, h); for (let i = 0; i < 4; i++) { c.fillStyle = '#5a4a3a'; c.fillRect(-w / 2 + 2, -h + 10 + i * 22, w - 4, 3); } }
   if (boss) { c.fillStyle = '#ff4a3a'; c.font = 'bold 14px sans-serif'; c.textAlign = 'center'; c.fillText('☠', 0, -h - 26); }
+  c.restore();
+}
+
+/* ---- 领主房摆设（bossProps）：王座 / 锁链 / 笼子 / 柱子 / 骨堆，程序画（art 写了素材名、素材也加载了就画素材）；kind 是怪物 id 的由主机刷（见 spawnRoom） ----
+   bossProps: [{ kind: 'throne' | 'chain' | 'cage' | 'pillar' | 'bones' | <怪物 id>, x: 0~1（按房间宽）| 像素, y: 0~1（按纵深）, h, col, art }] */
+function bossPropsFx(L, W) {
+  for (const P of L) {
+    if (MON[P.kind]) continue;
+    const x = P.x <= 1 ? W * P.x : P.x, y = (P.y ?? 0.1) <= 1 ? DEPTH * (P.y ?? 0.1) : P.y, h = P.h || 160, col = P.col || '#8a8aa0';
+    addFx({ x, y, z: 0, dur: 1e9, draw(c) { const X = sx(x), Y = sy(y, 0); if (X < -300 || X > WW + 300) return; if (P.art && IMG[P.art]) { drawSpr(c, IMG[P.art], X, Y, 0, h, { ay: 1, add: false }); return; } bossPropDraw(c, P.kind, X, Y, h, col); } });
+  }
+}
+function bossPropDraw(c, kind, X, Y, h, col) {
+  const dk = shade(col, -0.4, 1), lt = shade(col, 0.3, 1);
+  c.save(); c.lineWidth = 3; c.strokeStyle = '#120c16';
+  if (kind === 'throne') {
+    c.fillStyle = dk; c.fillRect(X - h * 0.32, Y - h, h * 0.64, h * 0.62); c.strokeRect(X - h * 0.32, Y - h, h * 0.64, h * 0.62);
+    c.fillStyle = col; c.fillRect(X - h * 0.4, Y - h * 0.42, h * 0.8, h * 0.18); c.fillRect(X - h * 0.4, Y - h * 0.26, h * 0.12, h * 0.26); c.fillRect(X + h * 0.28, Y - h * 0.26, h * 0.12, h * 0.26);
+    c.fillStyle = lt; for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(X + i * h * 0.2 - h * 0.07, Y - h); c.lineTo(X + i * h * 0.2, Y - h * 1.18); c.lineTo(X + i * h * 0.2 + h * 0.07, Y - h); c.fill(); }
+  } else if (kind === 'chain') {
+    c.strokeStyle = col; c.lineWidth = 4; for (let i = 0; i < 12; i++) { const yy = Y - h * 2 + i * h * 0.17; c.beginPath(); c.ellipse(X + Math.sin(game.t + i) * 2, yy, 6, 10, 0, 0, TAU); c.stroke(); }
+    c.fillStyle = dk; c.fillRect(X - 18, Y - 14, 36, 14);
+  } else if (kind === 'cage') {
+    c.strokeStyle = col; c.lineWidth = 4; for (let i = 0; i <= 5; i++) { const xx = X - h * 0.35 + i * h * 0.14; c.beginPath(); c.moveTo(xx, Y); c.lineTo(xx, Y - h); c.stroke(); }
+    c.fillStyle = dk; c.fillRect(X - h * 0.4, Y - h - 8, h * 0.8, 10); c.fillRect(X - h * 0.4, Y - 6, h * 0.8, 8);
+  } else if (kind === 'bones') {
+    c.fillStyle = '#e8e0cc'; for (let i = 0; i < 6; i++) { c.beginPath(); c.ellipse(X + (i - 3) * 16, Y - 6 - (i % 2) * 8, 18, 5, (i - 2) * 0.4, 0, TAU); c.fill(); c.stroke(); } c.beginPath(); c.arc(X + 8, Y - 22, 12, 0, TAU); c.fill(); c.stroke();
+  } else {   // pillar
+    c.fillStyle = dk; c.fillRect(X - h * 0.12, Y - h, h * 0.24, h); c.strokeRect(X - h * 0.12, Y - h, h * 0.24, h); c.fillStyle = col; c.fillRect(X - h * 0.16, Y - h - 10, h * 0.32, 12); c.fillRect(X - h * 0.16, Y - 10, h * 0.32, 10);
+  }
   c.restore();
 }

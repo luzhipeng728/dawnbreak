@@ -10,6 +10,12 @@
    野蛮牛族 / 图卢斯族 = 格兰之森的牛头人换色；冰霜 / 青哥布林 = 哥布林换色。
    入口：赫顿玛尔 · 后街（x 1960 往上，Lv.36）
    ===================================================================== */
+// 斯卡萨（S1 样板）的两个机制：蓄力龙息（stagger）、起飞（form）——阶段进场放一次，之后按冷却再放
+const SKASA_CHARGE = { use: 'stagger', windup: 3.2, need: 0.035, onBreak: 'groggy', say: '绝对零度龙息蓄力中——打断它！', col: '#9ad8ff',
+  skill: { use: 'cone', ang: 120, len: 520, windup: 0.4, dur: 1.2, tick: 0.2, dmg: 0.6, status: 'freeze', sdur: 1.2, col: '#9ad8ff', say: '绝对零度龙息！' } };
+const SKASA_FLY = { use: 'form', name: '升空', fly: 190, dur: 12, invulT: 1.5, say: '斯卡萨飞上了天空——躲开冰雨！', col: '#e8f4ff',
+  skills: [{ use: 'rain', kind: 'hex', n: 7, r: 50, interval: 0.3, windup: 1.2, dmg: 1.0, col: '#bfe6ff', cd: [3.2, 4.2], say: '冰雨' }],
+  land: { use: 'aoe', shape: 'circle', at: 'self', r: 170, windup: 0.9, dmg: 1.3, down: true, col: '#bfe6ff', say: '斯卡萨落地了！' } };
 defineRegion({
   id: 'snow', name: '万年雪山 · 斯顿雪域', lvl: 36, lvlMax: 42, power: 1.25, bossPower: 1, atkPower: 1.08,
   entry: { scene: 'hm_backstreet', side: 'up', x: 1960, to: 'storm_pass', minLv: 36, label: '斯顿雪域' },
@@ -45,6 +51,7 @@ defineRegion({
       bg: ["Skasa's Nest, the lair of the ice dragon at the summit of the eternal snow mountain: a vast frozen crater of blue-white glacier ice, giant dragon claw marks on the walls, frozen bones of great beasts, a howling blizzard, huge ice eggs.",
         'rough blue-white glacier ice floor with deep claw scratches and drifting snow',
         'jagged glacier ice shards, frozen beast bones and cracked ice eggs'] },
+    snLikBoss: { edgeHoles: true, grade: { tint: 'rgba(60,110,180,0.12)', fog: 'rgba(200,230,255,0.12)' }, ambient: 'motes', rgb: '215,238,255', floorW: 1700, pal: { sky: ['#0e2034', '#23486e', '#6a9ac4'], haze: '#b8e2ff', floor: ['#5a7894', '#6a88a4', '#4a6884'] }, bg: ["The floor of a huge frozen cavern at the bottom of Lik's Well, a colossal shaft deep inside the eternal snow mountain: towering walls of layered blue glacier ice and dark slate rock, shafts of pale daylight falling from openings far above, giant pale-blue ice crystal columns, the huge Bantu ice wall braced by wooden scaffolding with ladders and hanging ropes, thick frozen iron chains hanging from above, gently falling snow.", 'thick cracked blue-grey ice over dark slate rock with frost patterns, scattered ice chunks and a few broken wooden planks', 'jagged pale-blue ice crystal clusters, broken wooden scaffolding planks, coiled frozen rope and dark rocks'] },
   },
 
   monsters: {
@@ -102,6 +109,7 @@ defineRegion({
       skills: [{ use: 'swipe', clip: 'slam', reach: 96, width: 30, windup: 0.7, dmg: 1.3, down: true, sa: true, cd: [2.4, 3.6], w: 2 }, { use: 'rain', kind: 'bolt', n: 3, r: 44, windup: 1.0, dmg: 1.0, col: '#ffe070', cd: [7, 9] }] },
     frostGolem: { name: '冰霜石巨人', tier: 'brute', arch: 'guard', size: [20, 15, 120], weight: 4, hardness: 40, elem: 'ice', art: ['golem', { hue: -160, sat: 0.9, bright: 1.2 }], traits: { sa: 'cast' },
       skills: [{ use: 'swipe', clip: 'slam', reach: 96, width: 30, windup: 0.7, dmg: 1.3, down: true, sa: true, status: 'slow', cd: [2.4, 3.6], w: 2 }, { use: 'aoe', shape: 'cross', at: 'target', hw: 22, windup: 1.2, dmg: 1.1, status: 'freeze', sdur: 1, cd: [8, 10] }] },
+    skasaEgg: { name: '冰龙之卵', tier: 'swarm', size: [18, 12, 64], obj: { shape: 'egg', col: '#cfeeff', h: 64 } },   // plant 的物件（程序画，不用出图）
     babySkasa: { name: '斯卡萨幼龙', tier: 'flier', arch: 'flier', size: [16, 13, 80], elem: 'ice', art: ['wyvern', { hue: 40, sat: 0.8, bright: 1.15 }],
       skills: [{ use: 'shot', mode: 'straight', speed: 320, dmg: 0.85, status: 'slow', cd: [3.2, 4.5], w: 2, col: '#bfe6ff' }, { use: 'dash', len: 280, speed: 660, windup: 0.7, dmg: 1.0, cd: [5, 7] }] },
     aquiles: { name: '冰影阿奎利斯', tier: 'elite', arch: 'flier', size: [18, 14, 96], scale: 1.3, elem: 'ice', art: ['wyvern', { hue: 60, sat: 1.0, bright: 0.95 }], traits: { immune: ['freeze'] },
@@ -123,7 +131,7 @@ defineRegion({
         { at: 0.5, enter: { say: '查理的心脏在发光——打碎守护它的冰晶！', col: '#bfe6ff', mechs: [{ use: 'shield', hits: 12, dur: 14, punish: 'heal', onBreak: 'groggy', col: '#bfe6ff' }] },
           skills: [{ use: 'mech', mech: { use: 'shield', hits: 12, dur: 14, punish: 'heal', onBreak: 'groggy', col: '#bfe6ff' }, cd: [26, 32], say: '冰晶之心！' }, { use: 'summon', kind: 'toyBerserk', n: 1, max: 2, cd: [16, 20], w: 0.7 }] },
       ] },
-    lik: { name: '寒冰巨人利库', lvl: 38, size: [22, 16, 150], weight: 6, speed: 70, elem: 'ice', art: ['deGiant', { hue: -170, sat: 0.9, bright: 1.1 }], scale: 1.3, pref: 110, traits: { sa: 'cast' },
+    lik: { name: '寒冰巨人利库', lvl: 38, size: [22, 16, 150], weight: 6, speed: 70, elem: 'ice', art: 'snLik', scale: 1.3, pref: 110, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'slam', reach: 124, width: 34, windup: 0.7, dmg: 1.4, down: true, sa: true, cd: [2, 3], w: 2 }, { use: 'grab', reach: 84, hold: 0.9, throwDmg: 1.6, cd: [8, 10] },
@@ -165,15 +173,21 @@ defineRegion({
           skills: [{ use: 'mech', mech: { use: 'clones', n: 3, dur: 12, punish: 'heal' }, cd: [22, 28], say: '梦境' }, { use: 'laser', windup: 1.2, dur: 1.2, sweep: 70, dmg: 0.5, col: '#bfe6ff', cd: [8, 10] }] },
         { at: 0.25, enter: { say: '冰雪宫殿在收缩！', mechs: [{ use: 'hazard', kind: 'shrink', minW: 680, speed: 22, col: '#bfe6ff' }] } },
       ] },
+    // S1 机制样板（docs/BOSS_PLAN.md §4.3，docs/BOSS_SPEC.md）：前爪拍地（跳起躲）、极寒龙息（扇形，绕侧面）、吹气（推开 + 眩晕）、龙蛋（孵化前打碎）、
+    // 蓄力龙息（打够伤害打断 → 破招，打不断放大范围龙息）、起飞（空中冰雨，落地砸一下）
     skasa: { name: '冰龙斯卡萨', tier: 'raid', lvl: 43, power: 1.35, size: [30, 18, 140], weight: 8, speed: 70, elem: 'ice', art: 'snSkasa', scale: 1.5, pref: 150, traits: { sa: 'cast', immune: ['freeze'] },
       mechs: [{ use: 'groggy', max: 130, dur: 7, mul: 1.6 }, { use: 'enrage', t: 300 }],
       phases: [
-        { at: 1, skills: [{ use: 'swipe', clip: 'bite', reach: 140, width: 36, dmg: 1.3, down: true, cd: [2, 3], w: 2 }, { use: 'laser', windup: 1.2, dur: 1.5, sweep: 70, dmg: 0.5, status: 'slow', cd: [7, 9], say: '冰之吐息', col: '#bfe6ff' },
-          { use: 'rain', kind: 'hex', n: 6, r: 48, interval: 0.28, windup: 1.1, dmg: 1.1, col: '#bfe6ff', cd: [8, 11], say: '冰雹' }, { use: 'summon', kind: 'babySkasa', n: 2, max: 3, cd: [16, 20], w: 0.7 }] },
-        { at: 0.7, enter: { say: '斯卡萨冰封了自己——击破冰龙之卵！', col: '#bfe6ff', mechs: [{ use: 'invuln', until: 'crystals', n: 4, name: '冰龙之卵', hpFrac: 0.02 }] },
-          skills: [{ use: 'aoe', shape: 'circle', at: 'self', r: 220, windup: 1.4, dmg: 1.3, jump: true, status: 'freeze', sdur: 1.2, cd: [10, 13], say: '冰封大地——跳起来！', col: '#bfe6ff' }] },
-        { at: 0.45, enter: { say: '暴风雪来了！', col: '#e8f4ff', mechs: [{ use: 'hazard', kind: 'debris', every: 3.5, n: 4, col: '#bfe6ff' }] },
-          skills: [{ use: 'mech', mech: { use: 'safezone', windup: 3.4, n: 2, r: 72, frac: 0.4, say: '绝对零度——站进光圈！', col: '#6aa8ff' }, cd: [26, 32] }] },
+        { at: 1, skills: [
+          { use: 'aoe', id: 'claw', clip: 'sigA', shape: 'circle', at: 'front', r: 150, windup: 1.0, dmg: 1.4, jump: true, down: true, follow: false, cd: [5, 7], w: 1.6, say: '前爪拍地——跳起来！', col: '#bfe6ff' },
+          { use: 'swipe', clip: 'bite', reach: 140, width: 36, dmg: 1.2, down: true, cd: [2.5, 3.5], w: 1.2 },
+          { use: 'cone', id: 'breath', clip: 'sigB', ang: 56, len: 380, windup: 1.0, dur: 1.4, tick: 0.2, dmg: 0.32, status: 'freeze', sdur: 0.8, cd: [8, 10], w: 1.4, say: '极寒龙息——绕到侧面！', col: '#bfe6ff' },
+          { use: 'pull', id: 'blow', mode: 'out', r: 340, force: 320, windup: 0.9, dur: 1.1, status: 'stun', sdur: 0.9, dmg: 0.4, cd: [13, 16], say: '吹气！', col: '#e8f4ff' },
+          { use: 'plant', id: 'eggs', kind: 'skasaEgg', n: 3, at: 'spots', fuse: 12, hp: 0.012, onFuse: 'hatch:babySkasa', max: 3, cd: [22, 26], w: 0.8, label: '孵化', say: '斯卡萨产下了龙蛋——在孵化前打碎！', col: '#bfe6ff' }] },
+        { at: 0.7, enter: { col: '#bfe6ff', mechs: [SKASA_CHARGE] },
+          skills: [{ use: 'mech', mech: SKASA_CHARGE, cd: [26, 32], gap: 18, w: 0.8 }] },
+        { at: 0.45, enter: { col: '#e8f4ff', mechs: [SKASA_FLY] },
+          skills: [{ use: 'mech', mech: SKASA_FLY, cd: [42, 50], gap: 30, w: 0.6 }] },
         { at: 0.2, enter: { say: '斯卡萨之巢在崩塌！', mechs: [{ use: 'hazard', kind: 'shrink', minW: 640, speed: 20, col: '#bfe6ff' }] } },
       ] },
   },
@@ -200,7 +214,7 @@ defineRegion({
     frozen_heart: { name: '冰心少年', lvl: [36, 37], theme: 'snCave', layout: 'standard', mobs: [['toySoldier', 3], ['toyFine', 2], ['toyMass', 2], ['toyBerserk', 1]], elite: 'toyBerserk', boss: 'charlie', bgm: 'dungeon2', bossBgm: 'boss',
       gate: { x: 420, col: '170,220,255' }, desc: '被冰龙变成冰霜巨人的少年查理，和他的玩具士兵们。血量过半时他的心脏会被冰晶护住——打碎冰晶他就会破招。',
       drops: { boss: [['ep_sn_charlie', 0.03]], mats: [['crystal', 0.1, 8], ['c_white', 0.02, 1], ['m_cloth', 0.03, 2]] } },
-    lik_well: { name: '利库天井', lvl: [37, 38], theme: 'snRidge', layout: 'long', mobs: [['bantuWarrior', 3], ['frostGoblin', 2], ['foamSpider', 1.5], ['stormGolem', 0.7], ['thunderGolem', 0.7], ['frostGolem', 0.7]], elite: 'catapultCommander', boss: 'lik', bgm: 'dungeon3', bossBgm: 'boss',
+    lik_well: { name: '利库天井', lvl: [37, 38], theme: 'snRidge', layout: 'long', mobs: [['bantuWarrior', 3], ['frostGoblin', 2], ['foamSpider', 1.5], ['stormGolem', 0.7], ['thunderGolem', 0.7], ['frostGolem', 0.7]], elite: 'catapultCommander', boss: 'lik', bossTheme: 'snLikBoss', bgm: 'dungeon3', bossBgm: 'boss',
       gate: { x: 900, col: '200,230,255' }, desc: '冰封的天井里，寒冰巨人利库守着班图族的冰壁。他的冰裂会冻住人；血量过半后会召来暴风雪和冰霜石巨人。',
       drops: { boss: [['ep_sn_charlie', 0.012]], mats: [['crystal', 0.1, 8], ['m_iron', 0.03, 2], ['c_blue', 0.02, 1]] } },
     ridge: { name: '山脊', lvl: [38, 39], theme: 'snRidge', layout: 'standard', mobs: [['bantuWarrior', 3], ['frostGoblin', 2], ['iceTiger', 2], ['iceSprite', 1]], elite: 'bullBastur', boss: 'ruug', bgm: 'dungeon', bossBgm: 'boss',
@@ -220,7 +234,7 @@ defineRegion({
       drops: { boss: [['ep_sn_charlie', 0.012]], mats: [['crystal', 0.12, 10], ['m_elem2', 0.01, 1], ['c_blue', 0.03, 2]] } },
     skasa_nest: { name: '斯卡萨之巢', lvl: [42, 42], bossLvl: 44, theme: 'snNest', layout: 'raid', mobs: [['tulusWarrior', 2], ['iceLurker', 1.5], ['babySkasa', 1.5], ['iceSpider', 1.5], ['tulusElite', 0.5]], elite: 'aquiles', boss: 'skasa', bossAdds: 0,
       bgm: 'abyss', bossBgm: 'boss', preBoss: { kind: 'aquiles', say: '冰影阿奎利斯守在巢穴前……' },
-      gate: { x: 3300, col: '170,215,255' }, desc: '【攻坚】万年雪山之巅的冰龙巢穴。斯卡萨会冰封自己（先击破冰龙之卵）、召来暴风雪；“绝对零度”时站进光圈，“冰封大地”时跳起来。',
+      gate: { x: 3300, col: '170,215,255' }, desc: '【攻坚】万年雪山之巅的冰龙巢穴。前爪拍地时跳起来，极寒龙息绕到侧面躲，吹气会把人吹开；龙蛋要在孵化前打碎；蓄力龙息打够伤害就能打断；它飞上天时躲开冰雨。',
       drops: { boss: [['ep_sn_charlie', 0.04], ['ep_de_cross', 0.01]], mats: [['crystal', 0.14, 12], ['m_soul', 0.004, 1], ['m_diamond', 0.01, 1]] } },
   },
 
@@ -320,6 +334,7 @@ defineRegion({
         atk: 'the huge spiked club', cast: 'raising the club high with a hearty laugh', low: 'charging forward low with the club held back' },
       snSkasa: { h: 140, boss: true, cycle: 'trot', desc: 'Skasa the Ice Dragon, the ancient fierce adult dragon of the eternal snow mountain: a huge heavily built four-legged dragon with a long powerful neck, a large angular head with a menacing scowl, long sharp swept-back horns, bared sharp fangs, cold glowing pale blue eyes, thick armored glacier-blue scales, jagged ice-crystal spines running along the back and tail, big tattered frosty wings folded, massive clawed feet. Menacing and powerful, an adult dragon, not a baby, not cute.',
         atk: 'its huge icy jaws biting', cast: 'rearing its head up and spreading its wings', low: 'lowering its head and lunging forward' },
+      snLik: { h: 150, boss: true, hold: null, outline: '#2a4a7a', desc: 'Lik the Frost Giant, an ancient boss of the eternal snow mountain: a colossal hulking giant made of dark slate-blue rock armored with thick translucent glacier-blue ice plates, very top-heavy with enormous shoulders and very long massive arms whose fists hang down near the knees, big jagged pale-cyan ice crystal clusters growing out of his shoulders and upper back like frozen mountain peaks, a small craggy head sunk low between the shoulders with a heavy frosty brow, two glowing icy cyan eyes and a short beard of icicles, huge blocky fists encrusted with ice crystals, short thick sturdy legs, a broken iron shackle with three chain links around one wrist. Menacing and powerful, an adult giant boss, not a child, not cute.', atk: 'his huge ice-crystal fist', cast: 'raising both huge fists to the sky and roaring', low: 'charging forward shoulder-first with the head down', sig: ['frost nova: hunching down and hugging both huge fists tight against his chest, then throwing both arms and his chest wide open to the sides in a huge outward burst pose', 'giant grab: lunging far forward and reaching out low with one enormous open hand to seize an enemy, then heaving the clenched fist high overhead'], rage: 'enraged roar: rearing up to full height, head thrown back roaring, both huge fists raised and clenched' },
     },
     gates: {
       frozen_heart: 'an ice cave entrance framed by giant blue ice crystals with a frozen wooden toy soldier on each side, a pale blue portal',

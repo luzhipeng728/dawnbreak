@@ -61,7 +61,7 @@ Object.assign(menus, {
         } else if (sel) {
           const c = ampCost(sel), lv = sel.enh || 0, max = lv >= AMP_MAX, [risk, rc] = ampRiskText(sel);
           const bookN = inv.count('amp_book'), guardN = inv.count('amp_guard'), f = max ? null : ampFailResult(sel), risky = f && (f.broken || f.lvl < lv - 1);
-          const rate = max ? 0 : Math.min(1, AMP_RATE[lv] + (IW.ampBook && bookN ? 0.15 : 0));
+          const rate = max ? 0 : Math.min(1, ampRate(lv) + (IW.ampBook && bookN ? 0.15 : 0));
           const v0 = ampStatVal(sel), v1 = max ? v0 : ampStatVal(sel, lv + 1);
           right.append(...[
             h('div', { class: 'enhlv' }, `+${lv}`, max ? null : h('span', { class: 'to' }, ` → +${lv + 1}`)),
@@ -108,7 +108,7 @@ function ampGo(el, it) {
       itemsRefresh();
     }, 1150);
   };
-  if ((f.broken || f.lvl < (it.enh || 0) - 1) && !guard) itemDialog(el, { title: '增幅有风险', msg: `${itemNameHtml(it)} 当前 +${it.enh}，增幅失败时<b style="color:#ff6a5a">${f.broken ? '装备会破碎' : '增幅等级归零'}</b>。<br>成功率 ${Math.round(Math.min(1, AMP_RATE[it.enh] + (IW.ampBook && inv.count('amp_book') ? 0.15 : 0)) * 100)}%，确定要增幅吗？`, okText: '增幅', danger: true, onOk: run });
+  if ((f.broken || f.lvl < (it.enh || 0) - 1) && !guard) itemDialog(el, { title: '增幅有风险', msg: `${itemNameHtml(it)} 当前 +${it.enh}，增幅失败时<b style="color:#ff6a5a">${f.broken ? '装备会破碎' : '增幅等级归零'}</b>。<br>成功率 ${Math.round(Math.min(1, ampRate(it.enh) + (IW.ampBook && inv.count('amp_book') ? 0.15 : 0)) * 100)}%，确定要增幅吗？`, okText: '增幅', danger: true, onOk: run });
   else run();
 }
 /* ---------------- 锻造 ---------------- */

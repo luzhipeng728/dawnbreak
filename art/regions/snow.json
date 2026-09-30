@@ -173,6 +173,34 @@
     "rough blue-white glacier ice floor with deep claw scratches and drifting snow",
     "jagged glacier ice shards, frozen beast bones and cracked ice eggs"
    ]
+  },
+  "snLikBoss": {
+   "edgeHoles": true,
+   "grade": {
+    "tint": "rgba(60,110,180,0.12)",
+    "fog": "rgba(200,230,255,0.12)"
+   },
+   "ambient": "motes",
+   "rgb": "215,238,255",
+   "floorW": 1700,
+   "pal": {
+    "sky": [
+     "#0e2034",
+     "#23486e",
+     "#6a9ac4"
+    ],
+    "haze": "#b8e2ff",
+    "floor": [
+     "#5a7894",
+     "#6a88a4",
+     "#4a6884"
+    ]
+   },
+   "bg": [
+    "The floor of a huge frozen cavern at the bottom of Lik's Well, a colossal shaft deep inside the eternal snow mountain: towering walls of layered blue glacier ice and dark slate rock, shafts of pale daylight falling from openings far above, giant pale-blue ice crystal columns, the huge Bantu ice wall braced by wooden scaffolding with ladders and hanging ropes, thick frozen iron chains hanging from above, gently falling snow.",
+    "thick cracked blue-grey ice over dark slate rock with frost patterns, scattered ice chunks and a few broken wooden planks",
+    "jagged pale-blue ice crystal clusters, broken wooden scaffolding planks, coiled frozen rope and dark rocks"
+   ]
   }
  },
  "monsters": {
@@ -1377,6 +1405,20 @@
     }
    ]
   },
+  "skasaEgg": {
+   "name": "冰龙之卵",
+   "tier": "swarm",
+   "size": [
+    18,
+    12,
+    64
+   ],
+   "obj": {
+    "shape": "egg",
+    "col": "#cfeeff",
+    "h": 64
+   }
+  },
   "babySkasa": {
    "name": "斯卡萨幼龙",
    "tier": "flier",
@@ -1781,14 +1823,7 @@
    "weight": 6,
    "speed": 70,
    "elem": "ice",
-   "art": [
-    "deGiant",
-    {
-     "hue": -170,
-     "sat": 0.9,
-     "bright": 1.1
-    }
-   ],
+   "art": "snLik",
    "scale": 1.3,
    "pref": 110,
    "traits": {
@@ -2139,6 +2174,7 @@
   "bwanga": {
    "name": "布万加",
    "lvl": 41,
+   "power": 1.35,
    "size": [
     18,
     14,
@@ -2432,6 +2468,7 @@
    "name": "冰龙斯卡萨",
    "tier": "raid",
    "lvl": 43,
+   "power": 1.35,
    "size": [
     30,
     18,
@@ -2466,107 +2503,122 @@
      "at": 1,
      "skills": [
       {
+       "use": "aoe",
+       "id": "claw",
+       "clip": "sigA",
+       "shape": "circle",
+       "at": "front",
+       "r": 150,
+       "windup": 1,
+       "dmg": 1.4,
+       "jump": true,
+       "down": true,
+       "follow": false,
+       "cd": [
+        5,
+        7
+       ],
+       "w": 1.6,
+       "say": "前爪拍地——跳起来！",
+       "col": "#bfe6ff"
+      },
+      {
        "use": "swipe",
        "clip": "bite",
        "reach": 140,
        "width": 36,
-       "dmg": 1.3,
+       "dmg": 1.2,
        "down": true,
        "cd": [
-        2,
-        3
+        2.5,
+        3.5
        ],
-       "w": 2
+       "w": 1.2
       },
       {
-       "use": "laser",
-       "windup": 1.2,
-       "dur": 1.5,
-       "sweep": 70,
-       "dmg": 0.5,
-       "status": "slow",
+       "use": "cone",
+       "id": "breath",
+       "clip": "sigB",
+       "ang": 56,
+       "len": 380,
+       "windup": 1,
+       "dur": 1.4,
+       "tick": 0.2,
+       "dmg": 0.32,
+       "status": "freeze",
+       "sdur": 0.8,
        "cd": [
-        7,
-        9
+        8,
+        10
        ],
-       "say": "冰之吐息",
+       "w": 1.4,
+       "say": "极寒龙息——绕到侧面！",
        "col": "#bfe6ff"
       },
       {
-       "use": "rain",
-       "kind": "hex",
-       "n": 6,
-       "r": 48,
-       "interval": 0.28,
-       "windup": 1.1,
-       "dmg": 1.1,
-       "col": "#bfe6ff",
+       "use": "pull",
+       "id": "blow",
+       "mode": "out",
+       "r": 340,
+       "force": 320,
+       "windup": 0.9,
+       "dur": 1.1,
+       "status": "stun",
+       "sdur": 0.9,
+       "dmg": 0.4,
        "cd": [
-        8,
-        11
+        13,
+        16
        ],
-       "say": "冰雹"
+       "say": "吹气！",
+       "col": "#e8f4ff"
       },
       {
-       "use": "summon",
-       "kind": "babySkasa",
-       "n": 2,
+       "use": "plant",
+       "id": "eggs",
+       "kind": "skasaEgg",
+       "n": 3,
+       "at": "spots",
+       "fuse": 12,
+       "hp": 0.012,
+       "onFuse": "hatch:babySkasa",
        "max": 3,
        "cd": [
-        16,
-        20
+        22,
+        26
        ],
-       "w": 0.7
+       "w": 0.8,
+       "label": "孵化",
+       "say": "斯卡萨产下了龙蛋——在孵化前打碎！",
+       "col": "#bfe6ff"
       }
      ]
     },
     {
      "at": 0.7,
      "enter": {
-      "say": "斯卡萨冰封了自己——击破冰龙之卵！",
       "col": "#bfe6ff",
       "mechs": [
        {
-        "use": "invuln",
-        "until": "crystals",
-        "n": 4,
-        "name": "冰龙之卵",
-        "hpFrac": 0.02
-       }
-      ]
-     },
-     "skills": [
-      {
-       "use": "aoe",
-       "shape": "circle",
-       "at": "self",
-       "r": 220,
-       "windup": 1.4,
-       "dmg": 1.3,
-       "jump": true,
-       "status": "freeze",
-       "sdur": 1.2,
-       "cd": [
-        10,
-        13
-       ],
-       "say": "冰封大地——跳起来！",
-       "col": "#bfe6ff"
-      }
-     ]
-    },
-    {
-     "at": 0.45,
-     "enter": {
-      "say": "暴风雪来了！",
-      "col": "#e8f4ff",
-      "mechs": [
-       {
-        "use": "hazard",
-        "kind": "debris",
-        "every": 3.5,
-        "n": 4,
-        "col": "#bfe6ff"
+        "use": "stagger",
+        "windup": 3.2,
+        "need": 0.035,
+        "onBreak": "groggy",
+        "say": "绝对零度龙息蓄力中——打断它！",
+        "col": "#9ad8ff",
+        "skill": {
+         "use": "cone",
+         "ang": 120,
+         "len": 520,
+         "windup": 0.4,
+         "dur": 1.2,
+         "tick": 0.2,
+         "dmg": 0.6,
+         "status": "freeze",
+         "sdur": 1.2,
+         "col": "#9ad8ff",
+         "say": "绝对零度龙息！"
+        }
        }
       ]
      },
@@ -2574,18 +2626,125 @@
       {
        "use": "mech",
        "mech": {
-        "use": "safezone",
-        "windup": 3.4,
-        "n": 2,
-        "r": 72,
-        "frac": 0.4,
-        "say": "绝对零度——站进光圈！",
-        "col": "#6aa8ff"
+        "use": "stagger",
+        "windup": 3.2,
+        "need": 0.035,
+        "onBreak": "groggy",
+        "say": "绝对零度龙息蓄力中——打断它！",
+        "col": "#9ad8ff",
+        "skill": {
+         "use": "cone",
+         "ang": 120,
+         "len": 520,
+         "windup": 0.4,
+         "dur": 1.2,
+         "tick": 0.2,
+         "dmg": 0.6,
+         "status": "freeze",
+         "sdur": 1.2,
+         "col": "#9ad8ff",
+         "say": "绝对零度龙息！"
+        }
        },
        "cd": [
         26,
         32
-       ]
+       ],
+       "gap": 18,
+       "w": 0.8
+      }
+     ]
+    },
+    {
+     "at": 0.45,
+     "enter": {
+      "col": "#e8f4ff",
+      "mechs": [
+       {
+        "use": "form",
+        "name": "升空",
+        "fly": 190,
+        "dur": 12,
+        "invulT": 1.5,
+        "say": "斯卡萨飞上了天空——躲开冰雨！",
+        "col": "#e8f4ff",
+        "skills": [
+         {
+          "use": "rain",
+          "kind": "hex",
+          "n": 7,
+          "r": 50,
+          "interval": 0.3,
+          "windup": 1.2,
+          "dmg": 1,
+          "col": "#bfe6ff",
+          "cd": [
+           3.2,
+           4.2
+          ],
+          "say": "冰雨"
+         }
+        ],
+        "land": {
+         "use": "aoe",
+         "shape": "circle",
+         "at": "self",
+         "r": 170,
+         "windup": 0.9,
+         "dmg": 1.3,
+         "down": true,
+         "col": "#bfe6ff",
+         "say": "斯卡萨落地了！"
+        }
+       }
+      ]
+     },
+     "skills": [
+      {
+       "use": "mech",
+       "mech": {
+        "use": "form",
+        "name": "升空",
+        "fly": 190,
+        "dur": 12,
+        "invulT": 1.5,
+        "say": "斯卡萨飞上了天空——躲开冰雨！",
+        "col": "#e8f4ff",
+        "skills": [
+         {
+          "use": "rain",
+          "kind": "hex",
+          "n": 7,
+          "r": 50,
+          "interval": 0.3,
+          "windup": 1.2,
+          "dmg": 1,
+          "col": "#bfe6ff",
+          "cd": [
+           3.2,
+           4.2
+          ],
+          "say": "冰雨"
+         }
+        ],
+        "land": {
+         "use": "aoe",
+         "shape": "circle",
+         "at": "self",
+         "r": 170,
+         "windup": 0.9,
+         "dmg": 1.3,
+         "down": true,
+         "col": "#bfe6ff",
+         "say": "斯卡萨落地了！"
+        }
+       },
+       "cd": [
+        42,
+        50
+       ],
+       "gap": 30,
+       "w": 0.6
       }
      ]
     },
@@ -2616,7 +2775,7 @@
     "name": "查理的石晶项链",
     "fx": {
      "ice": 25,
-     "dmgUp": 0.07,
+     "dmgUp": 0.09,
      "hpPct": 0.04
     },
     "desc": "巴尔雷娜小时候送给哥哥查理的项链，碎成了好几块，又被一块一块拼了回来。",
@@ -2771,6 +2930,7 @@
    ],
    "elite": "catapultCommander",
    "boss": "lik",
+   "bossTheme": "snLikBoss",
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "gate": {
@@ -3113,7 +3273,7 @@
     "x": 3300,
     "col": "170,215,255"
    },
-   "desc": "【攻坚】万年雪山之巅的冰龙巢穴。斯卡萨会冰封自己（先击破冰龙之卵）、召来暴风雪；“绝对零度”时站进光圈，“冰封大地”时跳起来。",
+   "desc": "【攻坚】万年雪山之巅的冰龙巢穴。前爪拍地时跳起来，极寒龙息绕到侧面躲，吹气会把人吹开；龙蛋要在孵化前打碎；蓄力龙息打够伤害就能打断；它飞上天时躲开冰雨。",
    "drops": {
     "boss": [
      [
@@ -3821,6 +3981,21 @@
     "atk": "its huge icy jaws biting",
     "cast": "rearing its head up and spreading its wings",
     "low": "lowering its head and lunging forward"
+   },
+   "snLik": {
+    "h": 150,
+    "boss": true,
+    "hold": null,
+    "outline": "#2a4a7a",
+    "desc": "Lik the Frost Giant, an ancient boss of the eternal snow mountain: a colossal hulking giant made of dark slate-blue rock armored with thick translucent glacier-blue ice plates, very top-heavy with enormous shoulders and very long massive arms whose fists hang down near the knees, big jagged pale-cyan ice crystal clusters growing out of his shoulders and upper back like frozen mountain peaks, a small craggy head sunk low between the shoulders with a heavy frosty brow, two glowing icy cyan eyes and a short beard of icicles, huge blocky fists encrusted with ice crystals, short thick sturdy legs, a broken iron shackle with three chain links around one wrist. Menacing and powerful, an adult giant boss, not a child, not cute.",
+    "atk": "his huge ice-crystal fist",
+    "cast": "raising both huge fists to the sky and roaring",
+    "low": "charging forward shoulder-first with the head down",
+    "sig": [
+     "frost nova: hunching down and hugging both huge fists tight against his chest, then throwing both arms and his chest wide open to the sides in a huge outward burst pose",
+     "giant grab: lunging far forward and reaching out low with one enormous open hand to seize an enemy, then heaving the clenched fist high overhead"
+    ],
+    "rage": "enraged roar: rearing up to full height, head thrown back roaring, both huge fists raised and clenched"
    }
   },
   "gates": {

@@ -418,7 +418,7 @@ defineBossKit('tauKing', { mechs: [{ use: 'groggy', max: 80 }],
 | P0-B 技能 + 特性 | 新文件 `game/mon_skills_ext.js`（ORDER 里放在 mon_skills.js 后面） | 技能：leap、cone、lanes、mark、plant、pool（linger / trail / ignite）、dash 变体、pull；特性：hitHp、saVsRanged、reflectRanged、rooted、back、onGetup、grabOnly、stacks、substitute | `test/region.mjs skills` 全绿（msLab 会自动放新技能）；每招有预警、能躲，组队重播一致 | 1 天 |
 | P0-C 工具 + 测试 | `test/boss.mjs`、`tools/boss_inventory.mjs`、`art/tools/region_art.py`、`docs/REGION_PIPELINE.md` §3~5 | 见下 | 对现有 59 个领主各跑一遍，出基线表（用时 / 被击 / 招式数 / 相似度） | 1 天 |
 
-**P0-C 的三件工具**
+**P0-C 的三件工具**（2026-09-30 已交付，用法见 REGION_PIPELINE §3~§6，基线见 §4.5.1）
 
 `test/boss.mjs <地下城,...> [data,phases,skills,mechs,bot,coop]` 是通用领主测试：
 - 进图后直接传到领主房（调试钩子）。
@@ -491,12 +491,102 @@ defineBossKit('tauKing', { mechs: [{ use: 'groggy', max: 80 }],
    - 机制事件和钩子事件一一对应。
    - 队员会被机制打到。
    - 两边页面都没有报错。
-5. **用时在带内**：
-   - 口径和 `region.mjs bot` 相同：机器人用各图自己的等级、全身 +12 史诗。
-   - 领主房用时：普通图 45~120 秒，攻坚 90~240 秒。
-   - 领主房里死亡 0；被击 ≤ 40，攻坚 ≤ 70。
-   - P0-C 先出现有 59 个领主的基线，按基线把这些数校准一次再定。
-6. **每个阶段、每个机制在一场里至少触发一次**（`MS_STATS`）；领主能打死；机器人能按机制打（物件标了 `botSkip`）。
+5. **用时在带内**（按 §4.5.1 的基线定，2026-09-30）：
+   - 口径和 `region.mjs bot` 相同：机器人用各图自己的等级、全身 +12 史诗；从领主房门口开始计时，到领主倒下为止；用 `BOTCLS=all` 四个职业各打一次，取平均。
+   - 领主房用时：**普通 20~75 秒，攻坚 40~150 秒**。下限 = 基线中位数（普通 21、攻坚 41）：现在一半领主撑不到这么久，招牌和阶段还没放完就倒了，重做后要靠阶段 / 机制 / `bossPower` 撑到下限；上限 ≈ 基线 P90 的 2 倍（普通）/ 3.5 倍（攻坚，车轮战、多领主会拉长）：机制可以让战斗变长，但不能变成磨血。
+   - 领主房里死亡 0；**被击 ≤ 20，攻坚 ≤ 40**（基线 P90 10 / 11，最多 18 / 30；上限 ≈ 用时上限 × 基线的被击速度 0.25 次/秒）。
+   - 检查：`BOTCLS=all node test/boss.mjs <图> bot --strict`（`test/boss.mjs` 的 `BANDS`）。
+6. **每个阶段、每个机制在一场里至少触发一次**（`MS_STATS`）；领主能打死；机器人能按机制打（物件标了 `botSkip`）。`--strict` 时机器人那一场逐项查。
+
+### 4.5.1 基线（P0-T，2026-09-30，`e294c1d` 上的现有 59 个领主）
+怎么重跑：`BOTCLS=all node test/boss.mjs all`（分三个进程并行约 55 分钟；只跑 `data,phases,skills,mechs` 约 20 分钟），再 `node test/boss.mjs table` 出下表；总览图 `test/shots/boss/<图>.jpg`；查重 `node tools/boss_inventory.mjs --baseline`。
+
+**结论**
+- 用时（4 个职业平均）：普通 51 个中位 21 秒（P10 14、P25 17、P75 28、P90 38）；攻坚 8 个中位 41 秒（P25 36、P75 42）。最快：幽暗密林 牛头巨兽 6 秒、幽暗密林深处 暗咒猫妖 12 秒，第二脊椎 / 洛兰 / 冰霜幽暗密林 / 树精丛林 14 秒；最慢：希洛克（无形棺柩 118、痛苦之门 114、知性之门 76、法则之门 75 秒），其次是攻坚 GT-9600 42、艾丽丝 43 和远古两张 41 秒。
+- 按新定的带：普通 23/51 个低于 20 秒下限、2 个高于 75 秒上限（知性之门 76、痛苦之门 114）；攻坚 3/8 个低于 40 秒（王的遗迹、布万加、阿登）。被击都在上限内。
+- 被击：普通中位 5（P90 10），攻坚中位 7（P90 11）；最多的是无形棺柩 30、痛苦之门 18。0 死亡。
+- 招式：225 个伤害招式里 141 个有地面预警（其余靠头顶“!”），7 个站在出手距离里也打不中（天之驱逐者、赛格哈特、普拉塔尼、克拉赫、道格里各 1 招，多是故意留生路的图案；马塞尔的护罩、毒猫王的毒云各 1 招，不直接打人）。126 个机制全部能启动、能解开；37 个区域领主的阶段全部压血能进。
+- 组队（8 个代表：格拉卡、罪恶之眼、长脚罗特斯、无头骑士、斯卡萨、牛头械王、安祖、希洛克）：见下面“组队对照”。
+- 查重（`tools/boss_inventory.mjs --baseline`）：报错 59 条（招牌 < 2：56 个 0 个，牛头械王 / 虫王 / 希洛克各 1 个，只有钩子）；警告 33 条：机制组合完全相同 7 组（最大一组 groggy+hazard 5 张：浅栖之地、利库天井、根特外围、根特东门、列车上的海贼）、相似度 ≥ 0.7 16 对（最高 熔岩穴↔利库天井 0.88、瘟疫之源↔暗黑圣战 0.88、冰心少年↔法则之门 0.86、诺伊佩拉↔斯卡萨之巢 0.82）、共用底图没写 `variantOf` 10 个。
+- 顺手发现：暗黑雷鸣废墟的领主（骨狱息 Lv19）比地下城最高等级（20）低 1 级（B1 改名时一起改）。
+
+机器人：各图自己的等级、全身 +12 史诗，从领主房门口打到领主倒下；sword / gun / mage / fighter 各打一次，用时 / 被击写“平均（最少~最多）”。招式 = 招式表的招数（其中伤害招式）；地面预警 / 打得中按伤害招式算。
+
+| 图 | 领主 | 类型 | 招式 | 机制 | 招牌 | 最相似 | 地面预警 | 打得中 | 领主房用时 s | 被击 | 死亡 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| lorien 洛兰 | 投掷哥布林首领 | 普通 | 3（2） | — | 0 | — | 0/2 | 2/2 | 14（9~25） | 4（2~8） | 0 |
+| lorien_deep 洛兰深处 | 牛头兵首领 | 普通 | 3（3） | — | 0 | — | 1/3 | 3/3 | 19（12~29） | 5（3~9） | 0 |
+| dark_woods 幽暗密林 | 牛头巨兽 | 普通 | 2（2） | — | 0 | — | 0/2 | 2/2 | 6（5~7） | 1（1~2） | 0 |
+| dark_woods_deep 幽暗密林深处 | 暗咒猫妖 | 普通 | 3（3） | — | 0 | — | 0/3 | 3/3 | 12（9~13） | 4（1~6） | 0 |
+| thunder_ruins 雷鸣废墟 | 落雷 凯诺 | 普通 | 2（2） | — | 0 | — | 1/2 | 2/2 | 16（14~18） | 2（0~3） | 0 |
+| venom_ruins 猛毒雷鸣废墟 | 毒猫王 | 普通 | 3（3） | — | 0 | — | 0/3 | 2/3 | 18（12~21） | 2（1~3） | 0 |
+| frozen_woods 冰霜幽暗密林 | 冰霜 克拉赫 | 普通 | 4（3） | — | 0 | — | 1/3 | 2/3 | 14（11~17） | 3（2~4） | 0 |
+| graca 格拉卡 | 牛头王 萨乌塔 | 普通 | 3（3） | — | 0 | — | 2/3 | 3/3 | 17（12~24） | 4（3~6） | 0 |
+| blazing_graca 烈焰格拉卡 | 烈焰 彼诺修 | 普通 | 3（2） | — | 0 | — | 1/2 | 2/2 | 25（20~30） | 5（3~7） | 0 |
+| dark_thunder 暗黑雷鸣废墟 | 盗尸者 骨狱息 | 普通 | 3（3） | — | 0 | — | 1/3 | 3/3 | 21（16~27） | 5（2~8） | 0 |
+| dragon_tower 龙人之塔 | 鲁卡斯 | 普通 | 4（3） | — | 0 | — | 2/3 | 3/3 | 24（21~29） | 1（0~3） | 0 |
+| puppet_hall 人偶玄关 | 人偶之王 道格里 | 普通 | 4（4） | — | 0 | — | 2/4 | 3/4 | 24（20~32） | 2（1~3） | 0 |
+| golem_tower 石巨人塔 | 黄金巨人 普拉塔尼 | 普通 | 6（6） | — | 0 | — | 5/6 | 5/6 | 19（16~21） | 3（1~4） | 0 |
+| dark_corridor 黑暗玄廊 | 天之驱逐者 | 普通 | 4（3） | — | 0 | — | 2/3 | 2/3 | 17（9~24） | 3（0~6） | 0 |
+| lord_palace 城主宫殿 | 光之城主 赛格哈特 | 普通 | 4（4） | — | 0 | — | 3/4 | 3/4 | 17（13~20） | 2（1~3） | 0 |
+| floating_castle 悬空城 | 罪恶之眼 | 普通 | 5（4） | — | 0 | — | 3/4 | 4/4 | 22（11~37） | 3（1~7） | 0 |
+| temple_outskirts 神殿外围 | GBL教大主教 | 普通 | 4（3） | — | 0 | — | 2/3 | 3/3 | 20（15~24） | 1（0~2） | 0 |
+| treant_jungle 树精丛林 | 巨树守护者 罗丁 | 普通 | 4（3） | — | 0 | — | 2/3 | 3/3 | 14（12~16） | 1（0~3） | 0 |
+| purgatory 炼狱 | 夜叉王 | 普通 | 4（4） | — | 0 | — | 1/4 | 4/4 | 15（11~25） | 3（2~4） | 0 |
+| polar_day 极昼 | 多尼尔（EX） | 普通 | 5（4） | — | 0 | — | 4/4 | 4/4 | 22（12~33） | 5（3~9） | 0 |
+| second_spine 第二脊椎 | 长脚罗特斯 | 普通 | 5（4） | — | 0 | — | 3/4 | 4/4 | 14（9~18） | 2（1~3） | 0 |
+| forbidden_land 天帷禁地 | 审判者马塞尔 | 普通 | 5（4） | — | 0 | — | 2/4 | 3/4 | 16（14~19） | 4（2~5） | 0 |
+| shallow_haunt 浅栖之地 | 怨恨之摩根 | 普通 | 6（3） | groggy hazard | 0 | sea_pirates 0.67 | 2/3 | 3/3 | 21（17~27） | 5（4~6） | 0 |
+| spider_cave 蜘蛛洞穴 | 艾克洛索 | 普通 | 5（4） | groggy invuln | 0 | fallen_bandits 0.67 | 2/4 | 4/4 | 22（16~25） | 2（1~3） | 0 |
+| darkelf_tomb 暗精灵墓地 | 邪龙斯皮兹 | 普通 | 6（4） | groggy safezone | 0 | skasa_nest 0.7 | 3/4 | 4/4 | 19（17~23） | 4（3~5） | 0 |
+| lava_cave 熔岩穴 | 歌利亚 | 普通 | 5（4） | groggy hazard tether | 0 | lik_well 0.88 | 2/4 | 4/4 | 29（23~35） | 6（4~8） | 0 |
+| king_ruins 王的遗迹 | 锤王波罗丁 | 攻坚 | 5（5） | element enrage groggy shield | 0 | gent_south 0.64 | 4/5 | 5/5 | 21（13~32） | 5（2~8） | 0 |
+| darkcity_gate 暗黑城入口 | 无头骑士 | 普通 | 4（3） | clones groggy | 0 | wit_gate 0.67 | 2/3 | 3/3 | 16（11~30） | 7（4~13） | 0 |
+| neipera 诺伊佩拉 | 狄瑞吉的幻影 | 攻坚 | 6（4） | enrage groggy hazard invuln safezone | 0 | skasa_nest 0.82 | 2/4 | 4/4 | 41（31~50） | 7（6~8） | 0 |
+| frozen_heart 冰心少年 | 查理 | 普通 | 6（3） | groggy shield | 0 | law_gate 0.86 | 2/3 | 3/3 | 18（14~26） | 4（3~5） | 0 |
+| lik_well 利库天井 | 寒冰巨人利库 | 普通 | 5（4） | groggy hazard | 0 | lava_cave 0.88 | 2/4 | 4/4 | 15（9~22） | 2（1~3） | 0 |
+| ridge 山脊 | 野兽师鲁乌格 | 普通 | 4（2） | enrage groggy tether | 0 | shallow_haunt 0.56 | 0/2 | 2/2 | 18（15~22） | 4（2~6） | 0 |
+| white_ruins 白色废墟 | 塞斯奇 | 普通 | 6（4） | groggy safezone | 0 | darkelf_tomb 0.63 | 2/4 | 4/4 | 17（16~19） | 5（2~6） | 0 |
+| bwanga_dojo 布万加的修炼场 | 布万加 | 攻坚 | 5（4） | enrage groggy safezone | 0 | wit_gate 0.64 | 2/4 | 4/4 | 19（15~25） | 3（2~5） | 0 |
+| ice_palace 冰雪宫殿 | 冰雪女王洛丝 | 普通 | 6（4） | clones groggy hazard tether | 0 | kartel_origin 0.58 | 2/4 | 4/4 | 25（17~30） | 5（3~8） | 0 |
+| skasa_nest 斯卡萨之巢 | 冰龙斯卡萨 | 攻坚 | 6（4） | enrage groggy hazard invuln safezone | 0 | neipera 0.82 | 3/4 | 4/4 | 42（34~49） | 7（6~7） | 0 |
+| fallen_bandits 堕落的盗贼 | 犬使魔震 | 普通 | 6（4） | groggy invuln | 0 | plague_source 0.78 | 3/4 | 4/4 | 31（15~53） | 5（3~8） | 0 |
+| hamelin 「迷乱之村」哈穆林 | 魔笛使者皮特 | 普通 | 5（2） | clones enrage groggy invuln | 0 | iris_raid 0.73 | 1/2 | 2/2 | 36（27~52） | 10（7~11） | 0 |
+| gent_outskirts 根特外围 | 纵火犯本汀克 | 普通 | 5（5） | groggy hazard | 0 | kartel_origin 0.73 | 4/5 | 5/5 | 19（13~23） | 4（1~6） | 0 |
+| gent_east 根特东门 | 机动队长苏雷德 | 普通 | 6（5） | groggy hazard | 0 | kartel_origin 0.58 | 5/5 | 5/5 | 25（19~33） | 7（5~9） | 0 |
+| gent_south 根特南门 | GT-9600 | 攻坚 | 7（4） | enrage groggy safezone shield | 0 | plague_source 0.7 | 3/4 | 4/4 | 42（29~59） | 9（4~18） | 0 |
+| bilmark 比尔马克帝国试验场 | 牛头械王 | 普通 | 4（4） | groggy invuln | 1 | holy_war 0.67 | 3/4 | 4/4 | 41（33~48） | 11（8~13） | 0 |
+| wailing_cave 悲鸣洞穴 | 虫王戮蛊 | 普通 | 6（5） | groggy invuln | 1 | spider_cave 0.6 | 3/5 | 5/5 | 41（35~49） | 4（4~4） | 0 |
+| sea_pirates 列车上的海贼 | 黑鳞莫贝尼 | 普通 | 6（5） | groggy hazard | 0 | gent_outskirts 0.7 | 3/5 | 5/5 | 26（18~31） | 5（3~8） | 0 |
+| west_line 夺回西部线 | 烈焰盾波迪尔 | 普通 | 6（4） | groggy hazard shield | 0 | secret_zone 0.6 | 4/4 | 4/4 | 23（15~30） | 5（1~9） | 0 |
+| heis 雾都赫伊斯 | 范·弗拉丁 | 普通 | 7（4） | clones groggy safezone | 0 | darkelf_tomb 0.67 | 3/4 | 4/4 | 28（22~45） | 5（4~7） | 0 |
+| arden 决战阿登高地 | 黎明之眼 安祖·塞弗 | 攻坚 | 8（5） | element enrage groggy safezone shield | 0 | gent_south 0.62 | 4/5 | 5/5 | 36（35~37） | 11（7~20） | 0 |
+| grand_fire 格兰之火 | 兽王乌塔拉 | 普通 | 5（4） | enrage groggy hazard invuln | 0 | neipera 0.73 | 3/4 | 4/4 | 38（28~49） | 10（7~13） | 0 |
+| plague_source 瘟疫之源 | 骷髅骑士 | 普通 | 7（5） | groggy invuln safezone | 0 | holy_war 0.88 | 4/5 | 5/5 | 28（24~31） | 6（2~9） | 0 |
+| kartel_origin 卡勒特之初 | 沙影贝利特 | 普通 | 6（5） | clones groggy hazard | 0 | gent_outskirts 0.73 | 3/5 | 5/5 | 33（28~44） | 8（4~13） | 0 |
+| holy_war 暗黑圣战 | 尼尔巴斯·格拉西亚 | 普通 | 6（5） | groggy invuln safezone | 0 | plague_source 0.88 | 4/5 | 5/5 | 27（23~29） | 8（4~10） | 0 |
+| secret_zone 绝密区域 | 地狱三头犬 | 普通 | 6（4） | groggy hazard shield | 0 | old_wail 0.64 | 3/4 | 4/4 | 22（14~27） | 5（3~8） | 0 |
+| old_wail 昔日悲鸣 | 凯恩 | 普通 | 6（4） | groggy hazard invuln safezone | 0 | sea_pirates 0.64 | 3/4 | 4/4 | 31（28~34） | 8（7~9） | 0 |
+| old_winter 凛冬 | 年轻的斯卡萨 | 普通 | 6（4） | groggy hazard safezone shield | 0 | gent_south 0.7 | 3/4 | 4/4 | 19（18~20） | 5（3~8） | 0 |
+| iris_raid 谜之觉悟 | 吟游诗人艾丽丝 | 攻坚 | 8（4） | clones enrage groggy invuln safezone | 0 | hamelin 0.73 | 3/4 | 4/4 | 43（33~49） | 10（5~13） | 0 |
+| law_gate 法则之门 | 奈克斯 | 普通 | 6（4） | groggy shield | 0 | frozen_heart 0.86 | 2/4 | 4/4 | 75（56~94） | 10（7~13） | 0 |
+| wit_gate 知性之门 | 暗杀者 | 普通 | 5（4） | clones enrage groggy | 0 | kartel_origin 0.73 | 2/4 | 4/4 | 76（49~99） | 13（3~18） | 0 |
+| pain_gate 痛苦之门 | 守门人 | 普通 | 5（4） | element groggy safezone | 0 | darkelf_tomb 0.56 | 3/4 | 4/4 | 114（74~157） | 18（12~27） | 0 |
+| siroco_coffin 无形棺柩 | 潜行者 希洛克 | 攻坚 | 9（7） | clones enrage groggy hazard invuln safezone tether | 1 | iris_raid 0.59 | 4/7 | 7/7 | 118（101~152） | 30（22~40） | 0 |
+
+**组队对照**（`node test/boss.mjs <图,...> coop`：主机逐招强制放 + 逐阶段压血，队员站在出手距离里）
+| 图 | 段数 | 地面预警（队员配上 / 主机） | 最大时间差 ms | 机制启动（两边一致） | 钩子事件 | 机制 / 钩子两边一致 | 队员被打中 |
+|---|---|---|---|---|---|---|---|
+| graca 牛头王 萨乌塔 | 3 | 2/2 | 1 | — | — | 是 | 2 |
+| floating_castle 罪恶之眼 | 5 | **6/7** | 2 | — | — | 是 | 8 |
+| second_spine 长脚罗特斯 | 5 | 5/5 | 4 | — | — | 是 | 4 |
+| darkcity_gate 无头骑士 | 5 | 10/10 | 48 | clones×2 | — | 是 | 2 |
+| skasa_nest 冰龙斯卡萨 | 7 | 20/21（1 个在段末 0.5 秒内，不算） | 4 | safezone×1 hazard×2 invuln×1 | — | 是 | 13 |
+| bilmark 牛头械王 | 5 | 9/9 | 60 | invuln×2 | eyeL×2 roar×2 | 是 | 5 |
+| arden 黎明之眼 安祖·塞弗 | 9 | 10/10 | 7 | shield×1 safezone×2 element×1 | — | 是 | 14 |
+| siroco_coffin 潜行者 希洛克 | 10 | 21/21 | 60 | clones×1 safezone×1 hazard×2 invuln×1 tether×1 | gaze×3 | 是 | 15 |
+
+罪恶之眼少的那一个是真 bug：`net/coop.js` 的 `monAct` 对手写领主按“片段 + 时长”找招（`D.attacks.findIndex(A => A.clip === def.clip && A.act.dur === def.dur)`），罪恶之眼的第 1 招（追踪光柱）和第 2 招（激光）都是 cast / 1.8 秒，主机放激光、队员那边重播成追踪光柱。同样撞车的还有普通怪 plague、kargoGoggle（throw / 0.9）。归 P0-E（或改 coop.js 的人）：手写招式按下标发。
 
 ### 4.6 时间
 | 阶段 | 并行 | 日历时间 |

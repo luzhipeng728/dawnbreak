@@ -3,21 +3,28 @@
 复用 sky_art.py（生图 / 动作表 / 切帧 / 背景裁切）、jobs.py（画风常量与背景提示词）、worldprep.py（NPC / 门去背）、
 gear_icons.py（史诗图标画风与切图）、summon_scale.py（比例校正）、summon_outline.py（描边），不修改它们。
 
-  region_art.py <id> [阶段] [--only 前缀]
+  region_art.py <id> [阶段] [--only 前缀] [--dry]
 阶段（不写 = all，按顺序全跑；每一步都跳过已存在的输出，可以断点续跑）：
-  refs     怪物 / 领主参考立绘            → <主仓库>/art/src/regions/<id>/<名字>_ref.png
+  refs     怪物 / 领主参考立绘            → <主仓库>/art/src/regions/<id>/<名字>_ref.png（形态角色以本体的参考图为底图生图）
   bg       背景远景 + 地面（每个主题）      → <主仓库>/art/src/regions/<id>/bg/<主题>_{far,floor}.png
   review1  第一次审图：所有参考立绘 + 一张背景样例 → <主仓库>/art/src/regions/<id>/review_refs.png
   sheets   动作表 walk / run / act / more → .../sheets2/<名字>_<表>.png
+  sig      招牌动作表（art.chars.<名字>.sig 写了两招的角色，每个 1 张 3×3：sigA1-4 / sigB1-4 / rage）→ .../sheets2/<名字>_sig.png
   cut      切帧 → art/final/spr/<名字>/*.webp + spr.json（预览 .../cut/）
   norm     比例校正（act / more 表和走路表比例不一致时缩放，summon_scale.py 的判定）
+  sigcut   招牌动作表切帧，加进已有的精灵（不动别的帧；比例按已有的 act / more 帧对齐，已描边的精灵同样描边）
   outline  描边（spec 里写了 outline 颜色的角色，只跑一次）
   edge     交界带（以远景为参考）         → .../bg/<主题>_edge.png
   bgcut    背景裁切 → art/final/bg/<主题>_{far,floor,edge}.webp
   world    NPC 立绘 + 地下城门 → <主仓库>/art/src/world/*.png → art/final/world/*.webp
   icons    史诗 / 任务道具图标（每 6 个一张表）→ art/final/icon/
-  review   最终审图：游戏比例的整张区域联系表 + 纯绿 / 品红检查 → .../review_final.png
+  review   最终审图：游戏比例的整张区域联系表 + 纯绿 / 品红检查 → .../review_final.png（有招牌动作 / 形态的也一起摆上）
 生图并发最多 2；429 退避。规则：帧里不画特效（烟、火花、光束、速度线都由游戏运行时画），任何地方不用纯绿和品红。
+领主差异化（docs/BOSS_PLAN.md §3.3 / §4.1）：
+  art.chars.<名字>.sig   = ['招式 A 的动作（英文，同 atk / cast 的写法）', '招式 B 的动作'] + 可选 rage（狂暴帧的描述）→ sig / sigcut 两个阶段
+  art.chars.<名字>.forms = { <形态>: { desc, h, sheets?, hold?, atk?, cast?, low?, sig?, scale? } } → 第二套精灵 <名字>_<形态>，
+      和普通角色一样走 refs / sheets / cut / norm / outline / review（没写的字段沿用本体）；--only <名字>_<形态> 只做这一个形态
+  --dry：只打印要生成 / 要切的东西（提示词开头、参考图、输出路径），不调生图、不写文件（区域块写完描述先用它自查）
 """
 import os, sys, json, subprocess, argparse, time, colorsys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -50,23 +57,46 @@ CYCLES = {   # 没有两条腿的角色：自定义走 / 跑循环（spec 里 cy
 }
 
 
+DRY = False   # --dry：只打印，不生图、不写文件
+SIG_NAMES = ['sigA1', 'sigA2', 'sigA3', 'sigA4', 'sigB1', 'sigB2', 'sigB3', 'sigB4', 'rage']
+FORM_KEEP = ('hold', 'atk', 'cast', 'low', 'cycle', 'fly', 'hover', 'holes', 'outline')   # 形态角色没写就沿用本体的字段
+FORMS = {}   # 形态角色名 → (本体名, 形态名)
+
+
 def load_spec(rid):
-    r = subprocess.run(['node', os.path.join(TOOLS, 'region_spec.mjs'), rid, '--write'], capture_output=True, text=True, cwd=REPO)
+    """区域 id → 读 src/content/regions/<id>.js；也可以直接给一个 .json（格式同导出的 spec，至少 id + art.chars；
+    给不在区域 spec 里的老领主出招牌动作表 / 形态用，例：{ "id": "sky", "art": { "chars": { "lucas": { "h": 124, "desc": "...", "sig": [...] } } } }）"""
+    if rid.endswith('.json'):
+        s = json.load(open(rid)); s.setdefault('name', s['id']); s.setdefault('themes', {}); s.setdefault('dungeons', {}); return s
+    r = subprocess.run(['node', os.path.join(TOOLS, 'region_spec.mjs'), rid] + ([] if DRY else ['--write']), capture_output=True, text=True, cwd=REPO)
     if r.returncode: sys.exit(r.stderr)
     return json.loads(r.stdout)
+
+
+def expand_forms(chars):
+    """art.chars.<本体>.forms.<形态> → 独立角色 <本体>_<形态>（第二套精灵），没写的字段沿用本体"""
+    out = {}; FORMS.clear()
+    for n, d in chars.items():
+        out[n] = {k: v for k, v in d.items() if k != 'forms'}
+        for f, fd in (d.get('forms') or {}).items():
+            fn = f'{n}_{f}'
+            if fn in chars: sys.exit(f'形态 {fn} 和 art.chars 里已有的角色重名')
+            out[fn] = {**{k: d[k] for k in FORM_KEEP if k in d}, **fd}; FORMS[fn] = (n, f)
+    return out
 
 
 def setup(spec):
     """把 spec 灌进 sky_art 的全局表（M / BG / FLOOR_W / HOVER / SRC），后面直接用 sky_art 的函数。"""
     A.PAR, A.BACKOFF = int(os.environ.get("PAR", 2)), 90
     A.SRC = os.path.join(A.MAIN, 'src', 'regions', spec['id'])
-    os.makedirs(A.SRC, exist_ok=True)
+    if not DRY: os.makedirs(A.SRC, exist_ok=True)
     A.M = {}
-    for n, d in spec['art']['chars'].items():
+    chars = expand_forms(spec['art']['chars'])
+    for n, d in chars.items():
         m = dict(d)
         if isinstance(m.get('cycle'), str): m['cycle'] = CYCLES[m['cycle']]
         A.M[n] = m
-    A.HOVER = {n: d['hover'] for n, d in spec['art']['chars'].items() if d.get('hover')}
+    A.HOVER = {n: d['hover'] for n, d in chars.items() if d.get('hover')}
     A.BG = {t: tuple(d['bg']) for t, d in spec['themes'].items() if d.get('bg')}
     A.FLOOR_W = {t: d.get('floorW', 1700) for t, d in spec['themes'].items()}
     A.EDGE_HOLES = {t for t, d in spec['themes'].items() if d.get('edgeHoles')}   # 交界带里被包住的白底也去掉（栏杆 / 锁链 / 笼子）
@@ -82,12 +112,19 @@ def spr_guard(n, rid):
 def st_cut(spec, only):
     for n in A.M:
         if not n.startswith(only): continue
-        spr_guard(n, spec['id']); A.cut(n)
+        spr_guard(n, spec['id'])
+        if DRY: print(f'[dry] 切帧 {n}: {[s for s in A.M[n].get("sheets", ("walk", "run", "act", "more"))]} → art/final/spr/{n}/'); continue
+        A.cut(n)
         j = os.path.join(A.HERE, 'final', 'spr', n, 'spr.json'); meta = json.load(open(j)); meta['region'] = spec['id']; json.dump(meta, open(j, 'w'), indent=1)
 
 
 def run_jobs(L):
-    print(f'{len(L)} jobs, {A.PAR} parallel', flush=True)
+    print(f'{len(L)} jobs, {A.PAR} parallel{" (dry)" if DRY else ""}', flush=True)
+    if DRY:
+        for out, prompt, size, model, refs in L:
+            state = '已有，跳过' if os.path.exists(out) else '要生成'
+            print(f'[dry] {state} {os.path.relpath(out, A.MAIN)}  {size} {model or "默认"}  参考图 {[os.path.relpath(r, A.MAIN) if r.startswith(A.MAIN) else r for r in refs] or "无"}\n       {prompt[:260]}{"…" if len(prompt) > 260 else ""}')
+        return
     with ThreadPoolExecutor(A.PAR) as ex:
         for f in as_completed([ex.submit(A.gen, *j) for j in L]): print(f.result(), flush=True)
 
@@ -98,8 +135,91 @@ def st_refs(spec, only):
     for n, d in A.M.items():
         if not n.startswith(only): continue
         pose = QUAD_POSE if d.get('cycle') is CYCLES['trot'] else QUAD_POSE.replace('all four legs', 'all of its legs') if d.get('cycle') is CYCLES['crawl'] else 'Strict side view profile facing RIGHT, the whole vehicle clearly visible.' if d.get('cycle') is CYCLES['roll'] else jobs.POSE
+        if n in FORMS:   # 形态：以本体的参考图为底图，保持同一个角色
+            base, f = FORMS[n]; bref = os.path.join(A.SRC, f'{base}_ref.png')
+            L.append((os.path.join(A.SRC, f'{n}_ref.png'), f'Full-body character design image for a 2D side-scrolling beat-em-up game. {pose} The SAME character as the reference image (same identity, face, colors and cute chibi art style with thick outlines), now in its "{f}" form: {d["desc"]}{NOFX} {jobs.REF_TAIL}', '1024x1536', 'gpt-image-2.5-sunburst', (bref,) if os.path.exists(bref) else ()))
+            continue
         L.append((os.path.join(A.SRC, f'{n}_ref.png'), f'Full-body character design image for a 2D side-scrolling beat-em-up game. {pose} {d["desc"]}{NOFX} {jobs.REF_TAIL}', '1024x1536', 'gpt-image-2.5-sunburst', ()))
     run_jobs(L)
+
+
+def sig_ref(n):
+    """招牌动作表的参考图：参考立绘 > act 动作表 > 已切好的站立帧（老领主没有区域原图时）"""
+    for p in (os.path.join(A.SRC, f'{n}_ref.png'), os.path.join(A.SRC, 'sheets2', f'{n}_act.png'), os.path.join(A.HERE, 'final', 'spr', n, 'idle.webp')):
+        if not os.path.exists(p): continue
+        if p.endswith('.webp') and not DRY:   # 生图接口按 png 传：站立帧垫白底放大存一份
+            im = Image.open(p).convert('RGBA'); k = max(1, 768 // max(im.size)); bg = Image.new('RGB', (im.width * k + 64, im.height * k + 64), (255, 255, 255))
+            bg.paste(im.resize((im.width * k, im.height * k), Image.LANCZOS), (32, 32), im.resize((im.width * k, im.height * k), Image.LANCZOS)); p2 = os.path.join(A.SRC, f'{n}_idle_ref.png'); os.makedirs(A.SRC, exist_ok=True); bg.save(p2); return p2
+        return p
+    return None
+
+
+def sig_prompt(d):
+    a, b = d['sig'][0], d['sig'][1]
+    rage = d.get('rage') or 'enraged roar: body reared up to full height, chest out, arms / claws spread wide, mouth wide open'
+    phase = lambda m: [f'{m} - wind-up start (anticipation begins)', f'{m} - wind-up peak, clearly readable telegraph pose held before the strike', f'{m} - the strike / release at full extension', f'{m} - follow-through and recovery']
+    items = '; '.join(f'({i + 1}) {p}' for i, p in enumerate(phase(a) + phase(b) + [rage]))
+    return ('Using this exact chibi character (same design, same colors, same proportions and the same cute art style with thick outlines), draw a professional 2D game SPRITE ANIMATION SHEET of its two SIGNATURE MOVES: '
+            '9 full-body frames of this SAME character at exactly the SAME scale as the reference, every frame in strict side view FACING RIGHT, arranged in a grid of 3 columns and 3 rows, '
+            'with wide empty white gaps so that no frame touches or overlaps another; the feet of grounded frames in each row sit on the same baseline. '
+            f'Frames in reading order (left to right, top to bottom): {items}. '
+            'Each move must have a big, exaggerated, instantly recognizable silhouette that is clearly different from a plain weapon swing. '
+            'Plain pure white background, no ground, no shadows, no text, no numbers, no motion lines outside the character.')
+
+
+def st_sig(spec, only):
+    """招牌动作表：art.chars.<名字>.sig 写了两招的角色，每个 1 张（3×3，sigA1-4 / sigB1-4 / rage）"""
+    L = []
+    for n, d in A.M.items():
+        if not n.startswith(only) or not d.get('sig'): continue
+        if len(d['sig']) < 2: print(f'WARN {n}: sig 要写两招（现在 {len(d["sig"])} 招），跳过'); continue
+        ref = sig_ref(n)
+        if not ref: print(f'WARN {n}: 没有参考图（{n}_ref.png / act 表 / 精灵站立帧都没有），跳过'); continue
+        L.append((os.path.join(A.SRC, 'sheets2', f'{n}_sig.png'), sig_prompt(d) + NOFX, '2048x2048', 'gpt-image-2.5-sunburst', (ref,)))
+    run_jobs(L)
+
+
+def outline_im(im, col, px, al=0.8):
+    """同 summon_outline.py：四周各扩 px，底下垫一圈纯色轮廓（已描边的精灵新加的帧也要描）"""
+    from PIL import ImageFilter
+    rgb = tuple(int(col[i:i + 2], 16) for i in (1, 3, 5))
+    big = Image.new('RGBA', (im.width + px * 2, im.height + px * 2), (0, 0, 0, 0)); big.paste(im, (px, px))
+    a = big.split()[3].point(lambda v: 255 if v > 90 else 0).filter(ImageFilter.MaxFilter(px * 2 + 1))
+    ol = Image.new('RGBA', big.size, rgb + (0,)); ol.putalpha(a.point(lambda v: int(v * al)))
+    return Image.alpha_composite(ol, big)
+
+
+def st_sigcut(spec, only):
+    """招牌动作表切帧：9 帧按阅读顺序命名 sigA1-4 / sigB1-4 / rage，加进 art/final/spr/<名字>/（其余帧不动）；
+    比例：9 帧高度的中位数 = 已有 act / more 帧（atk1-4 cast1-2 low1-2 taunt）高度的中位数；锚点按脚底（同 sky_art.cut 的非走跑表）"""
+    import statistics
+    for n, d in A.M.items():
+        if not n.startswith(only) or not d.get('sig'): continue
+        path = os.path.join(A.SRC, 'sheets2', f'{n}_sig.png'); sd = os.path.join(A.HERE, 'final', 'spr', n); j = os.path.join(sd, 'spr.json')
+        if not os.path.exists(j): print(f'WARN {n}: 还没有精灵（先跑 cut），跳过'); continue
+        if not os.path.exists(path): print(f'  缺少 {n}_sig'); continue
+        if DRY: print(f'[dry] 切招牌动作 {os.path.relpath(path, A.MAIN)} → art/final/spr/{n}/{{{",".join(SIG_NAMES)}}}.webp'); continue
+        meta = json.load(open(j)); F = meta['frames']
+        im, arr, lab, order = A.cut9(path, d.get('holes', True))
+        rows_ok = [sum(1 for b in order if b['row'] == r) for r in range(3)]
+        print(f'{n}_sig: {len(order)} frames rows={rows_ok}{"  <-- CHECK" if len(order) != 9 or rows_ok != [3, 3, 3] else ""}')
+        pv = Image.new('RGB', im.size, (60, 64, 72)); pv.paste(im, (0, 0), im); dr = ImageDraw.Draw(pv)
+        for i, b in enumerate(order): dr.rectangle([b['x0'], b['y0'], b['x1'], b['y1']], outline=(255, 220, 60), width=3); dr.text((b['x0'] + 4, b['y0'] + 4), f'{i} {SIG_NAMES[i] if i < 9 else "?"}', fill=(255, 60, 60))
+        os.makedirs(os.path.join(A.SRC, 'cut'), exist_ok=True); pv.thumbnail((900, 900)); pv.save(os.path.join(A.SRC, 'cut', f'{n}_sig.png'))
+        have = [F[x]['h'] for x in ('atk1', 'atk2', 'atk3', 'atk4', 'cast1', 'cast2', 'low1', 'low2', 'taunt') if x in F]
+        if not have or not order: print(f'WARN {n}: 没有 act / more 帧可对比例，跳过'); continue
+        k = statistics.median(have) / statistics.median([b['y1'] - b['y0'] for b in order])
+        ol = meta.get('outline'); lift = A.HOVER.get(n, 0) * meta.get('res', 2)
+        for b, fn in zip(order, SIG_NAMES):
+            sub = arr[b['y0']:b['y1'], b['x0']:b['x1']].copy(); sub[..., 3] = np.where(np.isin(lab[b['y0']:b['y1'], b['x0']:b['x1']], b['ids']), sub[..., 3], 0)
+            a = sub[..., 3] > 40; h = a.shape[0]; rows = np.where(a.any(1))[0]; bottom = rows.max() + 1
+            xs = np.where(a[max(0, bottom - int(h * 0.12)):bottom])[1]; ax = float(np.median(xs)) if len(xs) else a.shape[1] / 2
+            fr = Image.fromarray(sub, 'RGBA'); sm = fr.resize((max(1, round(fr.width * k)), max(1, round(fr.height * k))), Image.LANCZOS); px = 0
+            if ol: px = ol['px']; sm = outline_im(sm, ol['col'], px)
+            sm.save(os.path.join(sd, f'{fn}.webp'), 'WEBP', quality=76, method=6)
+            F[fn] = {'w': sm.width, 'h': sm.height, 'ax': round(ax * k + px, 1), 'ay': round(bottom * k + px + lift, 1)}
+        meta['sig'] = SIG_NAMES; json.dump(meta, open(j, 'w'), indent=1)
+        print(f'  -> {n}: +{min(9, len(order))} 招牌帧（比例 ×{k:.3f}{"，已描边" if ol else ""}）')
 
 
 def st_bg(spec, only, phase='bg', first=False):
@@ -129,15 +249,18 @@ def st_sheets(spec, only):
 def st_norm(spec, only):
     import summon_scale
     for n in A.M:
-        if n.startswith(only) and os.path.isdir(os.path.join(A.HERE, 'final', 'spr', n)): summon_scale.check(n, True, 0.08)
+        if n.startswith(only) and os.path.isdir(os.path.join(A.HERE, 'final', 'spr', n)): summon_scale.check(n, not DRY, 0.08)
     setup(spec)   # summon_scale 会 import summon_art，它会改掉 sky_art 的全局表（SRC / M / PAR），这里重新灌回来
 
 
 def st_outline(spec, only):
     for n, d in A.M.items():
         if not n.startswith(only) or not d.get('outline'): continue
-        meta = json.load(open(os.path.join(A.HERE, 'final', 'spr', n, 'spr.json')))
+        j = os.path.join(A.HERE, 'final', 'spr', n, 'spr.json')
+        if not os.path.exists(j): print(f'  {n} 还没有精灵，跳过描边'); continue
+        meta = json.load(open(j))
         if meta.get('outline'): print('已描边', n); continue
+        if DRY: print(f'[dry] 描边 {n} {d["outline"]}'); continue
         subprocess.run(['python3', os.path.join(TOOLS, 'summon_outline.py'), n, '--col', d['outline'], '--px', '3', '--alpha', '0.8'])
 
 
@@ -150,6 +273,7 @@ def st_world(spec, only):
     for g, d in spec['art'].get('gates', {}).items():
         if ('g_' + g).startswith(only or 'g_'): L.append((os.path.join(wsrc, f'g_{g}.png'), f'{d}.{NOFX} {jobs.GATE}', '1536x1024', None, ()))
     run_jobs(L)
+    if DRY: return
     names = [os.path.basename(j[0])[:-4] for j in L if os.path.exists(j[0])]
     if names: subprocess.run(['python3', os.path.join(TOOLS, 'worldprep.py'), *names], env={**os.environ, 'ART_SRC_ROOT': A.MAIN})
 
@@ -167,6 +291,7 @@ def st_icons(spec, only):
     icon = os.path.join(A.HERE, 'final', 'icon')
     have = lambda k: os.path.exists(os.path.join(icon, (k if k.startswith('q_') else f'item_{k}') + '.webp'))
     items = [x for x in icon_items(spec) if not have(x[0])]; sheets = {}   # 只出还没有图标的（后来加的史诗 / 深渊专属另起一张表，不打乱已有的表）
+    if DRY: print(f'[dry] 图标 {len(items)} 个要出：{[k for k, _ in items]}'); return
     for i in range(0, len(items), 6):
         chunk = items[i:i + 6]; chunk += [('gear_spare', 'a small plain round glass potion bottle with a violet cork')] * (6 - len(chunk))
         sheets[f'{spec["id"]}_icons_{chunk[0][0]}'] = chunk
@@ -230,14 +355,19 @@ def st_review(spec, only):
     for did, D in spec['dungeons'].items():
         for k, _ in D['mobs']: theme_of.setdefault(k, D['theme'])
         theme_of.setdefault(D['boss'], D['theme']); theme_of.setdefault(D.get('elite'), D['theme'])
-    mons = [(k, M, False) for k, M in spec['monsters'].items()] + [(k, M, True) for k, M in spec['bosses'].items()]
+    mons = [(k, M, False) for k, M in spec.get('monsters', {}).items()] + [(k, M, True) for k, M in spec.get('bosses', {}).items()]
+    for fn, (base, fm) in FORMS.items():   # 形态精灵：摆在本体领主后面，体型按形态的 scale（没写用本体的）
+        owner = next(((k, M) for k, M in spec.get('bosses', {}).items() if M.get('art') == base or (isinstance(M.get('art'), list) and M['art'][0] == base)), None)
+        if owner: theme_of.setdefault(fn, theme_of.get(owner[0]))
+        mons.append((fn, {'art': fn, 'name': f'{owner[1]["name"] if owner else base} · {fm}', 'scale': A.M[fn].get('scale', owner[1].get('scale', 1.15) if owner else 1.15), 'size': [0, 0, A.M[fn].get('h', 0)]}, True))
     for k, M, boss in mons:
         if 'art' not in M: continue   # 手画模型（没有逐帧精灵）的怪不进总审图
         art = M['art'] if isinstance(M['art'], str) else M['art'][0]; tint = {} if isinstance(M['art'], str) else (M['art'][1] if len(M['art']) > 1 else {})
         d = os.path.join(spr, art)
         if not os.path.exists(os.path.join(d, 'spr.json')): warns.append(f'{k}: 没有精灵 {art}'); continue
         meta = json.load(open(os.path.join(d, 'spr.json'))); res = meta.get('res', 2); scale = M.get('scale', 1.15 if boss else 1)
-        frames = [n for n in ('idle', 'walk3', 'atk3', 'cast2', 'hit2', 'down') if n in meta['frames']]
+        sig = [n for n in ('sigA2', 'sigA3', 'sigB2', 'sigB3', 'rage') if n in meta['frames']]
+        frames = [n for n in (('idle', 'atk3', 'cast2') if sig else ('idle', 'walk3', 'atk3', 'cast2', 'hit2', 'down')) if n in meta['frames']] + sig
         th = theme_of.get(k, 'siroCoffin'); floor = os.path.join(bgd, f'{th}_floor.webp')
         H = round(260 * K * (1.25 if boss else 1)); row = Image.new('RGB', (out_w, H), (30, 26, 36))
         if os.path.exists(floor): fl = Image.open(floor).convert('RGB'); row.paste(fl.resize((out_w, round(fl.height * out_w / fl.width))).crop((0, 0, out_w, H)), (0, round(H * 0.55)))
@@ -287,17 +417,24 @@ def hue_tint(im, t):
     return Image.fromarray((np.dstack([r, g, b, a[..., 3]]) * 255).astype(np.uint8), 'RGBA')
 
 
+def dry_skip(name):
+    return lambda s, o: print(f'[dry] 跳过 {name}（只读已有文件、写审图 / 背景，--dry 时不跑）')
+
+
 STAGES = {
-    'refs': st_refs, 'bg': st_bg, 'review1': st_review1, 'sheets': st_sheets, 'cut': st_cut,
-    'norm': st_norm, 'outline': st_outline, 'edge': lambda s, o: st_bg(s, o, 'edge'), 'bgcut': lambda s, o: [A.bgcut(t) for t in A.BG if t.startswith(o)],
+    'refs': st_refs, 'bg': st_bg, 'review1': st_review1, 'sheets': st_sheets, 'sig': st_sig, 'cut': st_cut,
+    'norm': st_norm, 'sigcut': st_sigcut, 'outline': st_outline, 'edge': lambda s, o: st_bg(s, o, 'edge'), 'bgcut': lambda s, o: [A.bgcut(t) for t in A.BG if t.startswith(o)],
     'world': st_world, 'icons': st_icons, 'review': st_review,
 }
-ORDER = ['refs', 'bg', 'review1', 'sheets', 'cut', 'norm', 'outline', 'edge', 'bgcut', 'world', 'icons', 'review']
+ORDER = ['refs', 'bg', 'review1', 'sheets', 'sig', 'cut', 'norm', 'sigcut', 'outline', 'edge', 'bgcut', 'world', 'icons', 'review']
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('id'); ap.add_argument('stage', nargs='?', default='all'); ap.add_argument('--only', default='')
     ap.add_argument('--sample', action='store_true', help='bg 阶段只出第一个主题的远景（给第一次审图用）')
-    a = ap.parse_args(); spec = load_spec(a.id); setup(spec)
+    ap.add_argument('--dry', action='store_true', help='只打印要生成 / 要切的东西，不生图、不写文件')
+    a = ap.parse_args(); DRY = a.dry
+    if DRY: STAGES.update({k: dry_skip(k) for k in ('review1', 'review', 'bgcut')})
+    spec = load_spec(a.id); setup(spec)
     for st in (ORDER if a.stage == 'all' else a.stage.split(',')):
         print(f'== {st}', flush=True); t = time.time()
         if st == 'bg' and a.sample: st_bg(spec, a.only, 'bg', first=True)

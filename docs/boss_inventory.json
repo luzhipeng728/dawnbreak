@@ -1,7 +1,7 @@
 {
- "generatedFrom": "vm dump of src/ @ d8cfe62",
- "generatedAt": "2026-09-30",
- "regenerate": "see docs/BOSS_PLAN.md §0 (tools/boss_inventory.mjs planned in Phase 0)",
+ "generatedFrom": "tools/boss_inventory.mjs（vm 里跑 src/）",
+ "generatedAt": "2026-09-30T15:39:48.991Z",
+ "regenerate": "node tools/boss_inventory.mjs",
  "summary": {
   "dungeons": 69,
   "normalDungeons": 59,
@@ -11,6 +11,22 @@
   "regionSpecBosses": 37,
   "distinctBossArtBases": 55,
   "sharedBossArt": {
+   "goblinChief": [
+    "lorien",
+    "fireChief(精英)"
+   ],
+   "tauArmored": [
+    "lorien_deep",
+    "tauGuard(精英)",
+    "bullBastur(精英)",
+    "tulusElite(精英)",
+    "tauCommander(精英)"
+   ],
+   "tau": [
+    "dark_woods",
+    "tauSoldier(精英)",
+    "tauVanguard(精英)"
+   ],
    "catKing": [
     "dark_woods_deep",
     "venom_ruins"
@@ -19,24 +35,56 @@
     "frozen_woods",
     "blazing_graca"
    ],
+   "archbishop": [
+    "temple_outskirts",
+    "chaosPriest(精英)"
+   ],
+   "deSpider": [
+    "spider_cave",
+    "poisonSpider(精英)"
+   ],
    "deGiant": [
     "lava_cave",
     "lik_well"
+   ],
+   "deHeadless": [
+    "darkcity_gate",
+    "plagueHeadless(精英)"
+   ],
+   "snBantu": [
+    "ridge",
+    "avalancheRabina(精英)",
+    "bantuElite(精英)"
+   ],
+   "snYeti": [
+    "white_ruins",
+    "frostApe(精英)"
    ],
    "snSkasa": [
     "skasa_nest",
     "old_winter"
    ],
+   "nmDogman": [
+    "fallen_bandits",
+    "dogmanHado(精英)"
+   ],
+   "gtSuleide": [
+    "gent_east",
+    "desertRider(精英)"
+   ],
+   "gtMech": [
+    "gent_south",
+    "labWalker(精英)"
+   ],
    "wcKain": [
-    "wailing_cave(精英)",
-    "old_wail"
+    "old_wail",
+    "kain(精英)"
    ]
   },
   "regionBossSkillUse": {
    "aoe": 34,
    "swipe": 33,
    "summon": 24,
-   "mech:*": 24,
    "rain": 23,
    "dash": 18,
    "shot": 15,
@@ -96,27 +144,87 @@
   },
   "mostSimilarPairs": [
    [
-    "plague_source",
-    "holy_war",
-    0.89
-   ],
-   [
     "lava_cave",
     "lik_well",
     0.88
    ],
    [
+    "plague_source",
+    "holy_war",
+    0.88
+   ],
+   [
     "frozen_heart",
     "law_gate",
-    0.88
+    0.86
    ],
    [
     "neipera",
     "skasa_nest",
-    0.83
+    0.82
+   ],
+   [
+    "fallen_bandits",
+    "plague_source",
+    0.78
+   ],
+   [
+    "neipera",
+    "grand_fire",
+    0.73
+   ],
+   [
+    "skasa_nest",
+    "grand_fire",
+    0.73
+   ],
+   [
+    "hamelin",
+    "iris_raid",
+    0.73
+   ],
+   [
+    "gent_outskirts",
+    "kartel_origin",
+    0.73
+   ],
+   [
+    "kartel_origin",
+    "wit_gate",
+    0.73
+   ],
+   [
+    "darkelf_tomb",
+    "skasa_nest",
+    0.7
+   ],
+   [
+    "fallen_bandits",
+    "grand_fire",
+    0.7
+   ],
+   [
+    "gent_outskirts",
+    "sea_pirates",
+    0.7
+   ],
+   [
+    "gent_south",
+    "plague_source",
+    0.7
+   ],
+   [
+    "gent_south",
+    "old_winter",
+    0.7
+   ],
+   [
+    "grand_fire",
+    "plague_source",
+    0.7
    ]
   ],
-  "bossBgm": "38/38 个区域地下城都用同一首 boss",
+  "bossBgm": "37/37 个区域地下城用同一首 boss",
   "animation": "所有怪物共用一套帧名：挥砍 / 砸地 / 投掷 / 斧劈都播 atk1→atk4，施法 / 咆哮都播 cast1→cast2",
   "imageEstimate": {
    "newBossArt": 18,
@@ -124,7 +232,166 @@
    "arenaBg": 12,
    "core": 79,
    "optional": 30
+  },
+  "sigCount": {
+   "lorien": 0,
+   "lorien_deep": 0,
+   "dark_woods": 0,
+   "dark_woods_deep": 0,
+   "thunder_ruins": 0,
+   "venom_ruins": 0,
+   "frozen_woods": 0,
+   "graca": 0,
+   "blazing_graca": 0,
+   "dark_thunder": 0,
+   "dragon_tower": 0,
+   "puppet_hall": 0,
+   "golem_tower": 0,
+   "dark_corridor": 0,
+   "lord_palace": 0,
+   "floating_castle": 0,
+   "temple_outskirts": 0,
+   "treant_jungle": 0,
+   "purgatory": 0,
+   "polar_day": 0,
+   "second_spine": 0,
+   "forbidden_land": 0,
+   "shallow_haunt": 0,
+   "spider_cave": 0,
+   "darkelf_tomb": 0,
+   "lava_cave": 0,
+   "king_ruins": 0,
+   "darkcity_gate": 0,
+   "neipera": 0,
+   "frozen_heart": 0,
+   "lik_well": 0,
+   "ridge": 0,
+   "white_ruins": 0,
+   "bwanga_dojo": 0,
+   "ice_palace": 0,
+   "skasa_nest": 0,
+   "fallen_bandits": 0,
+   "hamelin": 0,
+   "gent_outskirts": 0,
+   "gent_east": 0,
+   "gent_south": 0,
+   "bilmark": 1,
+   "wailing_cave": 1,
+   "sea_pirates": 0,
+   "west_line": 0,
+   "heis": 0,
+   "arden": 0,
+   "grand_fire": 0,
+   "plague_source": 0,
+   "kartel_origin": 0,
+   "holy_war": 0,
+   "secret_zone": 0,
+   "old_wail": 0,
+   "old_winter": 0,
+   "iris_raid": 0,
+   "law_gate": 0,
+   "wit_gate": 0,
+   "pain_gate": 0,
+   "siroco_coffin": 1
   }
+ },
+ "checks": {
+  "errors": [
+   "lorien（投掷哥布林首领）招牌 0 个 < 2",
+   "lorien_deep（牛头兵首领）招牌 0 个 < 2",
+   "dark_woods（牛头巨兽）招牌 0 个 < 2",
+   "dark_woods_deep（暗咒猫妖）招牌 0 个 < 2",
+   "thunder_ruins（落雷 凯诺）招牌 0 个 < 2",
+   "venom_ruins（毒猫王）招牌 0 个 < 2",
+   "frozen_woods（冰霜 克拉赫）招牌 0 个 < 2",
+   "graca（牛头王 萨乌塔）招牌 0 个 < 2",
+   "blazing_graca（烈焰 彼诺修）招牌 0 个 < 2",
+   "dark_thunder（盗尸者 骨狱息）招牌 0 个 < 2",
+   "dragon_tower（鲁卡斯）招牌 0 个 < 2",
+   "puppet_hall（人偶之王 道格里）招牌 0 个 < 2",
+   "golem_tower（黄金巨人 普拉塔尼）招牌 0 个 < 2",
+   "dark_corridor（天之驱逐者）招牌 0 个 < 2",
+   "lord_palace（光之城主 赛格哈特）招牌 0 个 < 2",
+   "floating_castle（罪恶之眼）招牌 0 个 < 2",
+   "temple_outskirts（GBL教大主教）招牌 0 个 < 2",
+   "treant_jungle（巨树守护者 罗丁）招牌 0 个 < 2",
+   "purgatory（夜叉王）招牌 0 个 < 2",
+   "polar_day（多尼尔（EX））招牌 0 个 < 2",
+   "second_spine（长脚罗特斯）招牌 0 个 < 2",
+   "forbidden_land（审判者马塞尔）招牌 0 个 < 2",
+   "shallow_haunt（怨恨之摩根）招牌 0 个 < 2",
+   "spider_cave（艾克洛索）招牌 0 个 < 2",
+   "darkelf_tomb（邪龙斯皮兹）招牌 0 个 < 2",
+   "lava_cave（歌利亚）招牌 0 个 < 2",
+   "king_ruins（锤王波罗丁）招牌 0 个 < 2",
+   "darkcity_gate（无头骑士）招牌 0 个 < 2",
+   "neipera（狄瑞吉的幻影）招牌 0 个 < 2",
+   "frozen_heart（查理）招牌 0 个 < 2",
+   "lik_well（寒冰巨人利库）招牌 0 个 < 2",
+   "ridge（野兽师鲁乌格）招牌 0 个 < 2",
+   "white_ruins（塞斯奇）招牌 0 个 < 2",
+   "bwanga_dojo（布万加）招牌 0 个 < 2",
+   "ice_palace（冰雪女王洛丝）招牌 0 个 < 2",
+   "skasa_nest（冰龙斯卡萨）招牌 0 个 < 2",
+   "fallen_bandits（犬使魔震）招牌 0 个 < 2",
+   "hamelin（魔笛使者皮特）招牌 0 个 < 2",
+   "gent_outskirts（纵火犯本汀克）招牌 0 个 < 2",
+   "gent_east（机动队长苏雷德）招牌 0 个 < 2",
+   "gent_south（GT-9600）招牌 0 个 < 2",
+   "bilmark（牛头械王）招牌 1 个 < 2：hook:mechKing",
+   "wailing_cave（虫王戮蛊）招牌 1 个 < 2：hook:bugKing",
+   "sea_pirates（黑鳞莫贝尼）招牌 0 个 < 2",
+   "west_line（烈焰盾波迪尔）招牌 0 个 < 2",
+   "heis（范·弗拉丁）招牌 0 个 < 2",
+   "arden（黎明之眼 安祖·塞弗）招牌 0 个 < 2",
+   "grand_fire（兽王乌塔拉）招牌 0 个 < 2",
+   "plague_source（骷髅骑士）招牌 0 个 < 2",
+   "kartel_origin（沙影贝利特）招牌 0 个 < 2",
+   "holy_war（尼尔巴斯·格拉西亚）招牌 0 个 < 2",
+   "secret_zone（地狱三头犬）招牌 0 个 < 2",
+   "old_wail（凯恩）招牌 0 个 < 2",
+   "old_winter（年轻的斯卡萨）招牌 0 个 < 2",
+   "iris_raid（吟游诗人艾丽丝）招牌 0 个 < 2",
+   "law_gate（奈克斯）招牌 0 个 < 2",
+   "wit_gate（暗杀者）招牌 0 个 < 2",
+   "pain_gate（守门人）招牌 0 个 < 2",
+   "siroco_coffin（潜行者 希洛克）招牌 1 个 < 2：hook:siroco"
+  ],
+  "warns": [
+   "机制组合完全相同（groggy+hazard）：shallow_haunt、lik_well、gent_outskirts、gent_east、sea_pirates",
+   "机制组合完全相同（groggy+invuln）：spider_cave、fallen_bandits、bilmark、wailing_cave",
+   "机制组合完全相同（groggy+safezone）：darkelf_tomb、white_ruins",
+   "机制组合完全相同（enrage+groggy+hazard+invuln+safezone）：neipera、skasa_nest",
+   "机制组合完全相同（groggy+shield）：frozen_heart、law_gate",
+   "机制组合完全相同（groggy+hazard+shield）：west_line、secret_zone",
+   "机制组合完全相同（groggy+invuln+safezone）：plague_source、holy_war",
+   "招式相似度 0.88 ≥ 0.7：lava_cave ↔ lik_well",
+   "招式相似度 0.88 ≥ 0.7：plague_source ↔ holy_war",
+   "招式相似度 0.86 ≥ 0.7：frozen_heart ↔ law_gate",
+   "招式相似度 0.82 ≥ 0.7：neipera ↔ skasa_nest",
+   "招式相似度 0.78 ≥ 0.7：fallen_bandits ↔ plague_source",
+   "招式相似度 0.73 ≥ 0.7：neipera ↔ grand_fire",
+   "招式相似度 0.73 ≥ 0.7：skasa_nest ↔ grand_fire",
+   "招式相似度 0.73 ≥ 0.7：hamelin ↔ iris_raid",
+   "招式相似度 0.73 ≥ 0.7：gent_outskirts ↔ kartel_origin",
+   "招式相似度 0.73 ≥ 0.7：kartel_origin ↔ wit_gate",
+   "招式相似度 0.7 ≥ 0.7：darkelf_tomb ↔ skasa_nest",
+   "招式相似度 0.7 ≥ 0.7：fallen_bandits ↔ grand_fire",
+   "招式相似度 0.7 ≥ 0.7：gent_outskirts ↔ sea_pirates",
+   "招式相似度 0.7 ≥ 0.7：gent_south ↔ plague_source",
+   "招式相似度 0.7 ≥ 0.7：gent_south ↔ old_winter",
+   "招式相似度 0.7 ≥ 0.7：grand_fire ↔ plague_source",
+   "底图 tau 和 tauSoldier（精英） 共用，dark_woods（tauBeast）没写 variantOf",
+   "底图 catKing 和 venom_ruins 共用，dark_woods_deep（catCurse）没写 variantOf",
+   "底图 flameMage 和 blazing_graca 共用，frozen_woods（frostMage）没写 variantOf",
+   "底图 deSpider 和 poisonSpider（精英） 共用，spider_cave（ekloso）没写 variantOf",
+   "底图 deGiant 和 lava_cave 共用，lik_well（lik）没写 variantOf",
+   "底图 snBantu 和 avalancheRabina（精英） 共用，ridge（ruug）没写 variantOf",
+   "底图 snYeti 和 frostApe（精英） 共用，white_ruins（seski）没写 variantOf",
+   "底图 snSkasa 和 skasa_nest 共用，old_winter（youngSkasa）没写 variantOf",
+   "底图 nmDogman 和 dogmanHado（精英） 共用，fallen_bandits（mozhen）没写 variantOf",
+   "底图 wcKain 和 kain（精英） 共用，old_wail（kainPast）没写 variantOf"
+  ]
  },
  "primitives": [
   {
@@ -703,18 +970,20 @@
     "kind": "goblinChief",
     "name": "投掷哥布林首领",
     "lvl": 3,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "goblinChief",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.45,
     "h": 100,
     "visualH": 145,
     "bars": 8,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "goblin",
      "goblinThrower"
@@ -724,10 +993,24 @@
      "slam",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 3,
+    "sig": [],
+    "tokens": [
+     "l:goblinChief"
+    ],
+    "windups": [],
     "signature": [
      "投石 ×2",
      "跳砸倒地",
      "召唤哥布林"
+    ],
+    "artSharedWith": [
+     "fireChief(精英)"
     ]
    },
    "elite": [],
@@ -736,7 +1019,9 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
-    "s_ray_patrol"
+    "q_m02",
+    "s_ray_patrol",
+    "s_lily_elf"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
@@ -764,6 +1049,11 @@
     "complexity": "SIMPLE",
     "block": "B1",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -784,28 +1074,47 @@
     "kind": "tauSoldierBoss",
     "name": "牛头兵首领",
     "lvl": 4,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "tauArmored",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 128,
     "visualH": 147,
     "bars": 10,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "axe",
      "chargeW",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 3,
+    "sig": [],
+    "tokens": [
+     "l:tauSoldierBoss"
+    ],
+    "windups": [],
     "signature": [
      "霸体斧击",
      "冲撞",
      "吼叫眩晕"
+    ],
+    "artSharedWith": [
+     "tauGuard(精英)",
+     "bullBastur(精英)",
+     "tulusElite(精英)",
+     "tauCommander(精英)"
     ]
    },
    "elite": [
@@ -821,7 +1130,9 @@
    "bossBgm": "boss",
    "quests": [
     "q_m03",
-    "s_linus_ring"
+    "s_linus_ring",
+    "s_tuguan_bet",
+    "q_job_kill"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
@@ -851,6 +1162,11 @@
     "complexity": "SIMPLE",
     "block": "B1",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -871,6 +1187,9 @@
     "kind": "tauBeast",
     "name": "牛头巨兽",
     "lvl": 7,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "tau",
      "recolor": {
@@ -879,21 +1198,35 @@
       "bright": 0.78
      }
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.3,
     "h": 140,
     "visualH": 182,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "slam",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 2,
+    "sig": [],
+    "tokens": [
+     "l:tauBeast"
+    ],
+    "windups": [],
     "signature": [
      "砸地",
      "咆哮"
+    ],
+    "artSharedWith": [
+     "tauSoldier(精英)",
+     "tauVanguard(精英)"
     ]
    },
    "elite": [
@@ -909,6 +1242,8 @@
    "bossBgm": "boss",
    "quests": [
     "q_m06",
+    "s_olan_herb",
+    "s_mc4",
     "q_job_sword_1",
     "q_job_gun_1",
     "q_job_mage_1",
@@ -945,6 +1280,11 @@
     "complexity": "SIMPLE",
     "block": "B1",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -965,6 +1305,9 @@
     "kind": "catCurse",
     "name": "暗咒猫妖",
     "lvl": 9,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "catKing",
      "recolor": {
@@ -973,26 +1316,37 @@
       "bright": 0.9
      }
     },
-    "artSharedWith": [
-     "venom_ruins"
-    ],
+    "variantOf": null,
     "scale": 1.2,
     "h": 100,
     "visualH": 120,
     "bars": 12,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "scratch",
      "pounce",
      "bite"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 3,
+    "sig": [],
+    "tokens": [
+     "l:catCurse"
+    ],
+    "windups": [],
     "signature": [
      "抓",
      "扑",
      "咬（减速 + 致盲）"
+    ],
+    "artSharedWith": [
+     "venom_ruins"
     ]
    },
    "elite": [
@@ -1007,7 +1361,11 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
-    "q_m07"
+    "q_m07",
+    "q_dark_2",
+    "s_fengzhen_wind",
+    "s_gsd_eye",
+    "s_mc4"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
@@ -1038,6 +1396,11 @@
     "complexity": "SIMPLE",
     "block": "B1",
     "rename": "暗咒猫妖 → 库罗猫妖"
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1058,27 +1421,41 @@
     "kind": "goblinShaman",
     "name": "落雷 凯诺",
     "lvl": 11,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "goblinShaman",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.25,
     "h": 90,
     "visualH": 113,
     "bars": 16,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "atk1",
      "cast"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 2,
+    "sig": [],
+    "tokens": [
+     "l:goblinShaman"
+    ],
+    "windups": [],
     "signature": [
      "光剑",
      "落雷图案"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -1093,7 +1470,15 @@
    "bossBgm": "boss",
    "quests": [
     "q_m09",
-    "s_sherlock_trust"
+    "q_hidden_frozen",
+    "q_dark_2",
+    "q_hidden_dark",
+    "s_sherlock_trust",
+    "q_job_sword_3",
+    "q_job_gun_3",
+    "q_job_mage_3",
+    "q_job_fighter_3",
+    "q_job_witch_1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
@@ -1128,6 +1513,11 @@
     "complexity": "SIMPLE",
     "block": "B1",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1148,30 +1538,44 @@
     "kind": "catKing",
     "name": "毒猫王",
     "lvl": 12,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "catKing",
      "recolor": null
     },
-    "artSharedWith": [
-     "dark_woods_deep"
-    ],
+    "variantOf": null,
     "scale": 1.25,
     "h": 100,
     "visualH": 125,
     "bars": 18,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "scratch",
      "pounce",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 3,
+    "sig": [],
+    "tokens": [
+     "l:catKing"
+    ],
+    "windups": [],
     "signature": [
      "毒爪",
      "扑",
      "毒云（被暴击也放）"
+    ],
+    "artSharedWith": [
+     "dark_woods_deep"
     ]
    },
    "elite": [
@@ -1187,6 +1591,9 @@
    "bossBgm": "boss",
    "quests": [
     "q_m12",
+    "q_dark_2",
+    "s_sosia_venom",
+    "s_minette_night",
     "q_job_sword_4",
     "q_job_gun_4",
     "q_job_mage_4",
@@ -1224,6 +1631,11 @@
     "complexity": "SIMPLE",
     "block": "B1",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1244,6 +1656,9 @@
     "kind": "frostMage",
     "name": "冰霜 克拉赫",
     "lvl": 12,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "flameMage",
      "recolor": {
@@ -1252,16 +1667,13 @@
       "bright": 1.05
      }
     },
-    "artSharedWith": [
-     "blazing_graca"
-    ],
+    "variantOf": null,
     "scale": 1.3,
     "h": 92,
     "visualH": 120,
     "bars": 16,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "goblinFrost"
     ],
@@ -1271,11 +1683,25 @@
      "cast",
      "cast"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "l:frostMage"
+    ],
+    "windups": [],
     "signature": [
      "冰斩",
      "冰弹",
      "冰箭环",
      "召冰霜哥布林"
+    ],
+    "artSharedWith": [
+     "blazing_graca"
     ]
    },
    "elite": [
@@ -1290,7 +1716,13 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
-    "q_m13"
+    "q_m13",
+    "s_alice_song",
+    "q_job_sword_5",
+    "q_job_gun_5",
+    "q_job_mage_5",
+    "q_job_fighter_5",
+    "q_job_witch_1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
@@ -1324,6 +1756,11 @@
     "complexity": "SIMPLE",
     "block": "B1",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1344,29 +1781,43 @@
     "kind": "tauKing",
     "name": "牛头王 萨乌塔",
     "lvl": 16,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "tauKing",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.4,
     "h": 150,
     "visualH": 210,
     "bars": 22,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "axe",
      "chargeW",
      "slam"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 3,
+    "sig": [],
+    "tokens": [
+     "l:tauKing"
+    ],
+    "windups": [],
     "signature": [
      "斧劈",
      "冲撞",
      "蓄力震地（可打断）"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -1381,7 +1832,14 @@
    "bossBgm": "boss",
    "quests": [
     "q_m14",
-    "s_skadi_border"
+    "s_skadi_border",
+    "s_ophelia_spine",
+    "q_job_sword_6",
+    "q_job_gun_6",
+    "q_job_mage_6",
+    "q_job_fighter_6",
+    "q_job_striker_1",
+    "q_job_grappler_2"
    ],
    "abyssLordOf": [
     "abyss_gf"
@@ -1416,6 +1874,11 @@
     "complexity": "SIMPLE",
     "block": "B1",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1436,20 +1899,20 @@
     "kind": "flameMage",
     "name": "烈焰 彼诺修",
     "lvl": 17,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "flameMage",
      "recolor": null
     },
-    "artSharedWith": [
-     "frozen_woods"
-    ],
+    "variantOf": null,
     "scale": 1.3,
     "h": 92,
     "visualH": 120,
     "bars": 24,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "goblinBomber"
     ],
@@ -1458,10 +1921,24 @@
      "cast",
      "cast"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 3,
+    "sig": [],
+    "tokens": [
+     "l:flameMage"
+    ],
+    "windups": [],
     "signature": [
      "火球",
      "陨石图案",
      "召自爆哥布林"
+    ],
+    "artSharedWith": [
+     "frozen_woods"
     ]
    },
    "elite": [
@@ -1477,7 +1954,23 @@
    "bossBgm": "boss",
    "quests": [
     "q_m16",
-    "q_m21"
+    "q_m21",
+    "s_skadi_border",
+    "s_ophelia_spine",
+    "s_alice_song",
+    "q_job_sword_final",
+    "q_awaken_sword_2",
+    "q_job_gun_final",
+    "q_awaken_gun_2",
+    "q_job_mage_final",
+    "q_awaken_mage_2",
+    "q_job_fighter_final",
+    "q_awaken_fighter_2",
+    "q_jl_mechanic_2",
+    "q_job_witch_1",
+    "q_job_nenmaster_2",
+    "q_job_striker_2",
+    "q_abyss_gf"
    ],
    "abyssLordOf": [
     "abyss_gf"
@@ -1511,6 +2004,11 @@
     "complexity": "SIMPLE",
     "block": "B1",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1531,29 +2029,43 @@
     "kind": "boneLord",
     "name": "盗尸者 骨狱息",
     "lvl": 19,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "boneLord",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.35,
     "h": 120,
     "visualH": 162,
     "bars": 30,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "bite",
      "cast",
      "throw"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 3,
+    "sig": [],
+    "tokens": [
+     "l:boneLord"
+    ],
+    "windups": [],
     "signature": [
      "吸血咬",
      "冰霜图案",
      "三连冰弹"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -1568,7 +2080,15 @@
    "bossBgm": "boss",
    "quests": [
     "q_m19",
-    "s_grandis_rest"
+    "s_grandis_rest",
+    "q_awaken_sword_1",
+    "q_awaken_gun_1",
+    "q_awaken_mage_1",
+    "q_awaken_fighter_1",
+    "q_job_spitfire_2",
+    "q_job_striker_3",
+    "q_job_brawler_4",
+    "q_job_grappler_4"
    ],
    "abyssLordOf": [
     "abyss_gf"
@@ -1601,6 +2121,11 @@
     "complexity": "SIMPLE",
     "block": "B1",
     "rename": "骨狱息 → 骨狱昔"
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1621,18 +2146,20 @@
     "kind": "lucas",
     "name": "鲁卡斯",
     "lvl": 17,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "lucas",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.2,
     "h": 124,
     "visualH": 149,
     "bars": 22,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "lucasClone",
      "dragonStatue"
@@ -1643,12 +2170,24 @@
      "roar",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "l:lucas"
+    ],
+    "windups": [],
     "signature": [
      "放电",
      "囚笼",
      "分身",
      "龙之雕像（房间）"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -1662,7 +2201,12 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
-    "q_c03"
+    "q_job_witch_2",
+    "q_c02",
+    "q_c03",
+    "q_c08",
+    "q_fl1",
+    "s_gsd_eyes"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
@@ -1695,6 +2239,11 @@
     "complexity": "SIMPLE",
     "block": "B2",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1715,18 +2264,20 @@
     "kind": "dogrey",
     "name": "人偶之王 道格里",
     "lvl": 18,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "dogrey",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.2,
     "h": 124,
     "visualH": 149,
     "bars": 24,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "club",
@@ -1734,11 +2285,23 @@
      "roar",
      "throw"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "l:dogrey"
+    ],
+    "windups": [],
     "signature": [
      "三连石柱",
      "提线拉扯",
      "石化石弹"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -1752,7 +2315,10 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
-    "q_c05"
+    "q_c05",
+    "q_c08",
+    "q_fl1",
+    "s_kakun_water"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
@@ -1783,6 +2349,11 @@
     "complexity": "SIMPLE",
     "block": "B2",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1803,18 +2374,20 @@
     "kind": "platani",
     "name": "黄金巨人 普拉塔尼",
     "lvl": 20,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "platani",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 140,
     "visualH": 161,
     "bars": 28,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "club",
@@ -1824,10 +2397,22 @@
      "slam",
      "cast"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "l:platani"
+    ],
+    "windups": [],
     "signature": [
      "连续冲撞 + 过热",
      "地刺列 / 圈"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -1841,7 +2426,11 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
-    "q_c09"
+    "q_awaken_grappler_2",
+    "q_c06",
+    "q_c08",
+    "q_c09",
+    "q_fl1"
    ],
    "abyssLordOf": [
     "abyss_sky"
@@ -1877,6 +2466,11 @@
     "complexity": "SIMPLE",
     "block": "B2",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1897,18 +2491,20 @@
     "kind": "skyExpeller",
     "name": "天之驱逐者",
     "lvl": 22,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "skyExpeller",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.18,
     "h": 124,
     "visualH": 146,
     "bars": 30,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "expeller",
      "expellerAxe"
@@ -1919,11 +2515,23 @@
      "chargeW",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "l:skyExpeller"
+    ],
+    "windups": [],
     "signature": [
      "双剑斩",
      "1~3 列落雷（留缝）",
      "长冲刺"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -1936,7 +2544,15 @@
    "bossAdds": 2,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "q_awaken_striker_1",
+    "q_awaken_brawler_2",
+    "q_c08",
+    "q_c11",
+    "q_fl1",
+    "q_hidden_floating",
+    "s_boken_danger"
+   ],
    "abyssLordOf": [
     "abyss_sky"
    ],
@@ -1969,6 +2585,11 @@
     "complexity": "SIMPLE",
     "block": "B2",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -1989,18 +2610,20 @@
     "kind": "seghart",
     "name": "光之城主 赛格哈特",
     "lvl": 24,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "seghart",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.18,
     "h": 128,
     "visualH": 151,
     "bars": 34,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "scratch",
@@ -2008,12 +2631,24 @@
      "cast",
      "cast"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "l:seghart"
+    ],
+    "windups": [],
     "signature": [
      "甩发",
      "光环",
      "雷电密布（环）",
      "激光"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -2027,8 +2662,16 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
+    "q_awaken_nenmaster_1",
+    "q_awaken_striker_1",
+    "q_awaken_brawler_2",
+    "q_awaken_grappler_2",
+    "q_c08",
     "q_c13",
-    "q_c16"
+    "q_c16",
+    "q_c18",
+    "q_fl1",
+    "q_abyss_sky"
    ],
    "abyssLordOf": [
     "abyss_sky"
@@ -2062,6 +2705,11 @@
     "complexity": "SIMPLE",
     "block": "B2",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -2082,18 +2730,20 @@
     "kind": "sinEye",
     "name": "罪恶之眼",
     "lvl": 25,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "sinEye",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 118,
     "visualH": 136,
     "bars": 36,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "knight"
     ],
@@ -2104,12 +2754,24 @@
      "roar",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "l:sinEye"
+    ],
+    "windups": [],
     "signature": [
      "冲击波",
      "追踪光柱",
      "激光",
      "石化眼球列（留缝）"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -2123,7 +2785,11 @@
    "bgm": "abyss",
    "bossBgm": "boss",
    "quests": [
-    "q_fl4"
+    "q_c08",
+    "q_fl1",
+    "q_fl3",
+    "q_fl4",
+    "s_norton_zerog"
    ],
    "abyssLordOf": [
     "abyss_sky"
@@ -2160,6 +2826,11 @@
     "complexity": "COMPLEX",
     "block": "B2",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -2180,18 +2851,20 @@
     "kind": "gblArchbishop",
     "name": "GBL教大主教",
     "lvl": 26,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "archbishop",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 124,
     "visualH": 143,
     "bars": 24,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "gblBeliever",
      "gblHighPriest"
@@ -2202,12 +2875,26 @@
      "cast",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "l:gblArchbishop"
+    ],
+    "windups": [],
     "signature": [
      "杖击",
      "圣光柱",
      "圣光环",
      "召信徒",
      "大祭司护盾（房间）"
+    ],
+    "artSharedWith": [
+     "chaosPriest(精英)"
     ]
    },
    "elite": [
@@ -2222,8 +2909,9 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
+    "q_b02",
     "q_b03",
-    "q_b03"
+    "q_fb2"
    ],
    "abyssLordOf": [
     "abyss_forbidden"
@@ -2256,6 +2944,11 @@
     "complexity": "SIMPLE",
     "block": "B3",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -2276,18 +2969,20 @@
     "kind": "rodin",
     "name": "巨树守护者 罗丁",
     "lvl": 27,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "rodin",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 150,
     "visualH": 173,
     "bars": 26,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "flower"
     ],
@@ -2297,12 +2992,24 @@
      "roar",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "l:rodin"
+    ],
+    "windups": [],
     "signature": [
      "横扫",
      "根须突刺",
      "果实雨",
      "混乱花"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -2317,6 +3024,7 @@
    "bossBgm": "boss",
    "quests": [
     "q_b04",
+    "q_fb2",
     "s_bh_gardener"
    ],
    "abyssLordOf": [
@@ -2352,6 +3060,11 @@
     "complexity": "SIMPLE",
     "block": "B3",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -2372,18 +3085,20 @@
     "kind": "yakshaKing",
     "name": "夜叉王",
     "lvl": 28,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "yakshaKing",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 126,
     "visualH": 145,
     "bars": 26,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [],
     "attacks": [
      "club",
@@ -2391,12 +3106,24 @@
      "throw",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "l:yakshaKing"
+    ],
+    "windups": [],
     "signature": [
      "双斩",
      "瞬斩",
      "业火斩",
      "震地咆哮（跳躲）"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -2410,7 +3137,12 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
-    "q_b05"
+    "q_awaken2_sword_1",
+    "q_awaken2_gun_1",
+    "q_awaken2_mage_1",
+    "q_awaken2_fighter_1",
+    "q_b05",
+    "q_fb2"
    ],
    "abyssLordOf": [
     "abyss_spine"
@@ -2448,6 +3180,11 @@
     "complexity": "SIMPLE",
     "block": "B3",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -2468,18 +3205,20 @@
     "kind": "donnierEX",
     "name": "多尼尔（EX）",
     "lvl": 29,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "donnierEX",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.2,
     "h": 104,
     "visualH": 125,
     "bars": 28,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "gblBeliever"
     ],
@@ -2490,13 +3229,25 @@
      "cast",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "l:donnierEX"
+    ],
+    "windups": [],
     "signature": [
      "炮击",
      "地毯轰炸",
      "激光扫射",
      "追踪导弹",
      "空投信徒"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -2510,7 +3261,12 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
-    "q_b06"
+    "q_awaken2_sword_2",
+    "q_awaken2_gun_2",
+    "q_awaken2_mage_2",
+    "q_awaken2_fighter_2",
+    "q_b06",
+    "q_fb2"
    ],
    "abyssLordOf": [
     "abyss_spine"
@@ -2543,6 +3299,11 @@
     "complexity": "SIMPLE",
     "block": "B3",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -2563,18 +3324,20 @@
     "kind": "lotus",
     "name": "长脚罗特斯",
     "lvl": 30,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "lotus",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.25,
     "h": 140,
     "visualH": 175,
     "bars": 30,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "babyOcto"
     ],
@@ -2585,13 +3348,25 @@
      "throw",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "l:lotus"
+    ],
+    "windups": [],
     "signature": [
      "触手横扫",
      "触手连砸",
      "喷墨",
      "召小八爪",
      "不挨打回血"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -2605,9 +3380,17 @@
    "bgm": "abyss",
    "bossBgm": "boss",
    "quests": [
+    "q_awaken3_sword_1",
+    "q_awaken3_gun_1",
+    "q_awaken3_mage_1",
+    "q_awaken3_fighter_1",
     "q_b07",
     "q_b08",
-    "q_fb1"
+    "q_b09",
+    "q_fb1",
+    "q_fb2",
+    "q_hidden_forbidden",
+    "q_abyss_spine"
    ],
    "abyssLordOf": [
     "abyss_spine",
@@ -2643,6 +3426,11 @@
     "complexity": "SIMPLE",
     "block": "B3",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -2663,18 +3451,20 @@
     "kind": "marcel",
     "name": "审判者马塞尔",
     "lvl": 30,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "marcel",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 122,
     "visualH": 140,
     "bars": 30,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "gblRevPriest"
     ],
@@ -2685,13 +3475,25 @@
      "cast",
      "roar"
     ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "l:marcel"
+    ],
+    "windups": [],
     "signature": [
      "三连飞刀",
      "拔刀刺",
      "震飞",
      "血色护罩",
      "复活教徒"
-    ]
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -2705,7 +3507,14 @@
    "bgm": "abyss",
    "bossBgm": "boss",
    "quests": [
-    "q_fb5"
+    "q_awaken3_sword_2",
+    "q_awaken3_gun_2",
+    "q_awaken3_mage_2",
+    "q_awaken3_fighter_2",
+    "q_fb2",
+    "q_fb4",
+    "q_fb5",
+    "q_abyss_forbidden"
    ],
    "abyssLordOf": [
     "abyss_forbidden"
@@ -2746,13 +3555,18 @@
     "complexity": "SIMPLE",
     "block": "B3",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
    "id": "shallow_haunt",
    "name": "浅栖之地",
    "region": "darkelf",
-   "regionName": "暗精灵地区",
+   "regionName": "暗精灵地区 · 暗黑城",
    "lvl": [
     31,
     32
@@ -2766,22 +3580,27 @@
     "kind": "morgan",
     "name": "怨恨之摩根",
     "lvl": 33,
+    "engine": "region-spec",
+    "region": "darkelf",
+    "hook": null,
     "art": {
      "base": "deMorgan",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 112,
     "visualH": 129,
     "bars": 32,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "corpseThief",
+     "fire",
+     "haste",
      "boneThrower"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -2801,7 +3620,7 @@
       ],
       "summon": null,
       "skills": [
-       "buff/haste",
+       "buff",
        "summon:boneThrower"
       ]
      }
@@ -2820,7 +3639,25 @@
     "mechSet": [
      "groggy",
      "hazard"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "s:aoe",
+     "s:buff",
+     "s:shot",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/circle",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -2834,31 +3671,15 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
-    "q_de03"
+    "q_de02",
+    "q_de03",
+    "s_de_morgan",
+    "r_de1"
    ],
    "abyssLordOf": [
     "abyss_darkelf"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "lik_well",
-     "gent_outskirts",
-     "gent_east",
-     "sea_pirates"
-    ],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "sea_pirates",
-      0.67
-     ],
-     [
-      "frozen_heart",
-      0.63
-     ]
-    ]
-   },
    "official": {
     "dungeon": "浅栖之地",
     "boss": "怨恨之摩根",
@@ -2889,13 +3710,32 @@
     "complexity": "SIMPLE",
     "block": "B4",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "lik_well",
+     "gent_outskirts",
+     "gent_east",
+     "sea_pirates"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "sea_pirates",
+      0.67
+     ],
+     [
+      "frozen_heart",
+      0.63
+     ]
+    ]
    }
   },
   {
    "id": "spider_cave",
    "name": "蜘蛛洞穴",
    "region": "darkelf",
-   "regionName": "暗精灵地区",
+   "regionName": "暗精灵地区 · 暗黑城",
    "lvl": [
     32,
     33
@@ -2909,6 +3749,9 @@
     "kind": "ekloso",
     "name": "艾克洛索",
     "lvl": 34,
+    "engine": "region-spec",
+    "region": "darkelf",
+    "hook": null,
     "art": {
      "base": "deSpider",
      "recolor": {
@@ -2921,17 +3764,17 @@
       ]
      }
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.9,
     "h": 90,
     "visualH": 171,
     "bars": 33,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "smallSpider"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -2969,6 +3812,30 @@
     "mechSet": [
      "groggy",
      "invuln"
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:invuln",
+     "s:aoe",
+     "s:dash",
+     "s:shot",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.8
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 1.3
+     }
+    ],
+    "artSharedWith": [
+     "poisonSpider(精英)"
     ]
    },
    "elite": [
@@ -2983,30 +3850,15 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
-    "q_de05"
+    "q_de04",
+    "q_de05",
+    "d_de_spider",
+    "r_de1"
    ],
    "abyssLordOf": [
     "abyss_darkelf"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "fallen_bandits",
-     "bilmark",
-     "wailing_cave"
-    ],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "wailing_cave",
-      0.75
-     ],
-     [
-      "fallen_bandits",
-      0.67
-     ]
-    ]
-   },
    "official": {
     "dungeon": "蜘蛛洞穴",
     "boss": "艾克洛索",
@@ -3037,13 +3889,31 @@
     "complexity": "SIMPLE",
     "block": "B4",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "fallen_bandits",
+     "bilmark",
+     "wailing_cave"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "fallen_bandits",
+      0.67
+     ],
+     [
+      "plague_source",
+      0.67
+     ]
+    ]
    }
   },
   {
    "id": "darkelf_tomb",
    "name": "暗精灵墓地",
    "region": "darkelf",
-   "regionName": "暗精灵地区",
+   "regionName": "暗精灵地区 · 暗黑城",
    "lvl": [
     33,
     34
@@ -3057,21 +3927,25 @@
     "kind": "spiz",
     "name": "邪龙斯皮兹",
     "lvl": 35,
+    "engine": "region-spec",
+    "region": "darkelf",
+    "hook": null,
     "art": {
      "base": "deSpiz",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.3,
     "h": 120,
     "visualH": 156,
     "bars": 34,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
+     "hex",
      "tombSkeleton"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -3110,7 +3984,33 @@
     "mechSet": [
      "groggy",
      "safezone"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:safezone",
+     "s:aoe",
+     "s:laser",
+     "s:rain",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "laser",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.1
+     },
+     {
+      "skill": "aoe/line",
+      "windup": 1.1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -3124,30 +4024,15 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
-    "q_de07"
+    "q_de06",
+    "q_de07",
+    "s_de_war",
+    "r_de1"
    ],
    "abyssLordOf": [
     "abyss_darkelf"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "white_ruins"
-    ],
-    "sameSkillSet": [
-     "skasa_nest"
-    ],
-    "mostSimilar": [
-     [
-      "skasa_nest",
-      0.7
-     ],
-     [
-      "heis",
-      0.67
-     ]
-    ]
-   },
    "official": {
     "dungeon": "暗精灵墓地",
     "boss": "邪龙斯皮兹的头部",
@@ -3177,13 +4062,31 @@
     "complexity": "SIMPLE",
     "block": "B4",
     "rename": "邪龙斯皮兹 →（可选）邪龙斯皮兹的头部"
+   },
+   "dup": {
+    "sameMechSet": [
+     "white_ruins"
+    ],
+    "sameSkillSet": [
+     "skasa_nest"
+    ],
+    "mostSimilar": [
+     [
+      "skasa_nest",
+      0.7
+     ],
+     [
+      "heis",
+      0.67
+     ]
+    ]
    }
   },
   {
    "id": "lava_cave",
    "name": "熔岩穴",
    "region": "darkelf",
-   "regionName": "暗精灵地区",
+   "regionName": "暗精灵地区 · 暗黑城",
    "lvl": [
     34,
     35
@@ -3197,25 +4100,28 @@
     "kind": "goliath",
     "name": "歌利亚",
     "lvl": 36,
+    "engine": "region-spec",
+    "region": "darkelf",
+    "hook": null,
     "art": {
      "base": "deGiant",
      "recolor": null
     },
-    "artSharedWith": [
-     "lik_well"
-    ],
+    "variantOf": null,
     "scale": 1.2,
     "h": 150,
     "visualH": 180,
     "bars": 35,
     "elem": "fire",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "burningHera",
      "atlas",
+     "fire",
+     "hex",
      "titan"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -3256,6 +4162,35 @@
      "groggy",
      "hazard",
      "tether"
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "m:tether",
+     "s:aoe",
+     "s:grab",
+     "s:rain",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "swipe",
+      "windup": 0.7
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": [
+     "lik_well"
     ]
    },
    "elite": [
@@ -3270,26 +4205,12 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
-    "q_de09"
+    "q_de08",
+    "q_de09",
+    "r_de1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [
-     "lik_well"
-    ],
-    "mostSimilar": [
-     [
-      "lik_well",
-      0.88
-     ],
-     [
-      "white_ruins",
-      0.56
-     ]
-    ]
-   },
    "official": {
     "dungeon": "熔岩穴",
     "boss": "歌利亚 / 泰坦 / 阿特拉斯（三兄弟）",
@@ -3319,13 +4240,29 @@
     "complexity": "COMPLEX",
     "block": "B4",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [
+     "lik_well"
+    ],
+    "mostSimilar": [
+     [
+      "lik_well",
+      0.88
+     ],
+     [
+      "white_ruins",
+      0.56
+     ]
+    ]
    }
   },
   {
    "id": "king_ruins",
    "name": "王的遗迹",
    "region": "darkelf",
-   "regionName": "暗精灵地区",
+   "regionName": "暗精灵地区 · 暗黑城",
    "lvl": [
     35,
     36
@@ -3339,19 +4276,24 @@
     "kind": "boroding",
     "name": "锤王波罗丁",
     "lvl": 37,
+    "engine": "region-spec",
+    "region": "darkelf",
+    "hook": null,
     "art": {
      "base": "deBoroding",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 132,
     "visualH": 152,
     "bars": 36,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
-    "summons": [],
+    "tier": null,
+    "summons": [
+     "bolt"
+    ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -3400,7 +4342,39 @@
      "enrage",
      "groggy",
      "shield"
-    ]
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:element",
+     "m:enrage",
+     "m:groggy",
+     "m:shield",
+     "s:aoe",
+     "s:dash",
+     "s:guard",
+     "s:rain",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "swipe",
+      "windup": 0.7
+     },
+     {
+      "skill": "aoe/cross",
+      "windup": 1.2
+     },
+     {
+      "skill": "dash",
+      "windup": 0.8
+     },
+     {
+      "skill": "rain/bolt",
+      "windup": 1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -3414,25 +4388,14 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
+    "q_de10",
     "q_de11",
-    "s_de_suffer"
+    "d_de_ruins",
+    "s_de_suffer",
+    "r_de1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "gent_south",
-      0.64
-     ],
-     [
-      "west_line",
-      0.55
-     ]
-    ]
-   },
    "official": {
     "dungeon": "王的遗迹",
     "boss": "不灭之王 波罗丁",
@@ -3461,13 +4424,27 @@
     "complexity": "COMPLEX",
     "block": "B4",
     "rename": "锤王波罗丁 → 不灭之王 波罗丁"
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "gent_south",
+      0.64
+     ],
+     [
+      "west_line",
+      0.55
+     ]
+    ]
    }
   },
   {
    "id": "darkcity_gate",
    "name": "暗黑城入口",
    "region": "darkelf",
-   "regionName": "暗精灵地区",
+   "regionName": "暗精灵地区 · 暗黑城",
    "lvl": [
     36,
     37
@@ -3481,21 +4458,24 @@
     "kind": "headlessKnight",
     "name": "无头骑士",
     "lvl": 38,
+    "engine": "region-spec",
+    "region": "darkelf",
+    "hook": null,
     "art": {
      "base": "deHeadless",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 128,
     "visualH": 147,
     "bars": 37,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "headlessKnightShade"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -3531,6 +4511,33 @@
     "mechSet": [
      "clones",
      "groggy"
+    ],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:groggy",
+     "s:blink",
+     "s:dash",
+     "s:seq",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.8
+     },
+     {
+      "skill": "dash",
+      "windup": 0.6
+     },
+     {
+      "skill": "dash",
+      "windup": 0.5
+     }
+    ],
+    "artSharedWith": [
+     "plagueHeadless(精英)"
     ]
    },
    "elite": [
@@ -3545,7 +4552,10 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
-    "q_de13"
+    "q_de12",
+    "q_de13",
+    "q_abyss_darkelf",
+    "r_de1"
    ],
    "abyssLordOf": [
     "abyss_darkelf"
@@ -3553,20 +4563,6 @@
    "sameBossAbyss": [
     "abyss_darkelf"
    ],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "wit_gate",
-      0.67
-     ],
-     [
-      "kartel_origin",
-      0.6
-     ]
-    ]
-   },
    "official": {
     "dungeon": "暗黑城入口",
     "boss": "无头骑士",
@@ -3597,13 +4593,27 @@
     "complexity": "COMPLEX",
     "block": "B4",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "wit_gate",
+      0.67
+     ],
+     [
+      "kartel_origin",
+      0.6
+     ]
+    ]
    }
   },
   {
    "id": "neipera",
    "name": "诺伊佩拉",
    "region": "darkelf",
-   "regionName": "暗精灵地区",
+   "regionName": "暗精灵地区 · 暗黑城",
    "lvl": [
     38,
     38
@@ -3617,21 +4627,27 @@
     "kind": "diregie",
     "name": "狄瑞吉的幻影",
     "lvl": 40,
+    "engine": "region-spec",
+    "region": "darkelf",
+    "hook": null,
     "art": {
      "base": "deDiregie",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.4,
     "h": 130,
     "visualH": 182,
     "bars": 55,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": "raid",
     "summons": [
-     "fierceZombie"
+     "fierceZombie",
+     "bolt",
+     "fire",
+     "shrink"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -3691,7 +4707,32 @@
      "hazard",
      "invuln",
      "safezone"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:enrage",
+     "m:groggy",
+     "m:hazard",
+     "m:invuln",
+     "m:safezone",
+     "s:aoe",
+     "s:rain",
+     "s:shot",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/ring",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/bolt",
+      "windup": 1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -3705,29 +4746,11 @@
    "bgm": "abyss",
    "bossBgm": "boss",
    "quests": [
-    "q_de14"
+    "q_de14",
+    "r_de2"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "skasa_nest"
-    ],
-    "sameSkillSet": [
-     "wailing_cave",
-     "law_gate"
-    ],
-    "mostSimilar": [
-     [
-      "skasa_nest",
-      0.82
-     ],
-     [
-      "grand_fire",
-      0.73
-     ]
-    ]
-   },
    "official": {
     "dungeon": "诺伊佩拉",
     "boss": "狄瑞吉的幻影",
@@ -3754,13 +4777,32 @@
     "complexity": "COMPLEX",
     "block": "B4",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "skasa_nest"
+    ],
+    "sameSkillSet": [
+     "wailing_cave",
+     "law_gate"
+    ],
+    "mostSimilar": [
+     [
+      "skasa_nest",
+      0.82
+     ],
+     [
+      "grand_fire",
+      0.73
+     ]
+    ]
    }
   },
   {
    "id": "frozen_heart",
    "name": "冰心少年",
    "region": "snow",
-   "regionName": "万年雪山",
+   "regionName": "万年雪山 · 斯顿雪域",
    "lvl": [
     36,
     37
@@ -3774,22 +4816,25 @@
     "kind": "charlie",
     "name": "查理",
     "lvl": 38,
+    "engine": "region-spec",
+    "region": "snow",
+    "hook": null,
     "art": {
      "base": "snCharlie",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 140,
     "visualH": 161,
     "bars": 37,
     "elem": "ice",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "toySoldier",
      "toyBerserk"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -3827,7 +4872,28 @@
     "mechSet": [
      "groggy",
      "shield"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:shield",
+     "s:aoe",
+     "s:shot",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "swipe",
+      "windup": 0.7
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -3841,29 +4907,16 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
+    "q_sn04",
     "q_sn05",
-    "s_sn_phantom"
+    "s_sn_phantom",
+    "s_sn_mother",
+    "r_sn1"
    ],
    "abyssLordOf": [
     "abyss_snow"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "law_gate"
-    ],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "law_gate",
-      0.86
-     ],
-     [
-      "shallow_haunt",
-      0.63
-     ]
-    ]
-   },
    "official": {
     "dungeon": "冰心少年",
     "boss": "查理",
@@ -3893,13 +4946,29 @@
     "complexity": "SIMPLE",
     "block": "B5",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "law_gate"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "law_gate",
+      0.86
+     ],
+     [
+      "shallow_haunt",
+      0.63
+     ]
+    ]
    }
   },
   {
    "id": "lik_well",
    "name": "利库天井",
    "region": "snow",
-   "regionName": "万年雪山",
+   "regionName": "万年雪山 · 斯顿雪域",
    "lvl": [
     37,
     38
@@ -3913,6 +4982,9 @@
     "kind": "lik",
     "name": "寒冰巨人利库",
     "lvl": 39,
+    "engine": "region-spec",
+    "region": "snow",
+    "hook": null,
     "art": {
      "base": "deGiant",
      "recolor": {
@@ -3921,19 +4993,19 @@
       "bright": 1.1
      }
     },
-    "artSharedWith": [
-     "lava_cave"
-    ],
+    "variantOf": null,
     "scale": 1.3,
     "h": 150,
     "visualH": 195,
     "bars": 38,
     "elem": "ice",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "frostGolem"
+     "debris",
+     "frostGolem",
+     "hex"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -3971,6 +5043,34 @@
     "mechSet": [
      "groggy",
      "hazard"
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "s:aoe",
+     "s:grab",
+     "s:rain",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "swipe",
+      "windup": 0.7
+     },
+     {
+      "skill": "aoe/cross",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": [
+     "lava_cave"
     ]
    },
    "elite": [
@@ -3985,33 +5085,14 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
-    "q_sn07"
+    "q_sn06",
+    "q_sn07",
+    "r_sn1"
    ],
    "abyssLordOf": [
     "abyss_snow"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "shallow_haunt",
-     "gent_outskirts",
-     "gent_east",
-     "sea_pirates"
-    ],
-    "sameSkillSet": [
-     "lava_cave"
-    ],
-    "mostSimilar": [
-     [
-      "lava_cave",
-      0.88
-     ],
-     [
-      "white_ruins",
-      0.63
-     ]
-    ]
-   },
    "official": {
     "dungeon": "利库天井",
     "boss": "寒冰巨人 利库",
@@ -4041,13 +5122,34 @@
     "complexity": "COMPLEX",
     "block": "P0.5",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "shallow_haunt",
+     "gent_outskirts",
+     "gent_east",
+     "sea_pirates"
+    ],
+    "sameSkillSet": [
+     "lava_cave"
+    ],
+    "mostSimilar": [
+     [
+      "lava_cave",
+      0.88
+     ],
+     [
+      "white_ruins",
+      0.63
+     ]
+    ]
    }
   },
   {
    "id": "ridge",
    "name": "山脊",
    "region": "snow",
-   "regionName": "万年雪山",
+   "regionName": "万年雪山 · 斯顿雪域",
    "lvl": [
     38,
     39
@@ -4061,6 +5163,9 @@
     "kind": "ruug",
     "name": "野兽师鲁乌格",
     "lvl": 40,
+    "engine": "region-spec",
+    "region": "snow",
+    "hook": null,
     "art": {
      "base": "snBantu",
      "recolor": {
@@ -4069,18 +5174,19 @@
       "bright": 0.85
      }
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 116,
     "visualH": 133,
     "bars": 39,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "iceTiger",
+     "haste",
      "sabertooth"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -4090,7 +5196,7 @@
        "swipe",
        "shot/spread",
        "summon:iceTiger",
-       "buff/haste"
+       "buff"
       ]
      },
      {
@@ -4117,6 +5223,22 @@
      "enrage",
      "groggy",
      "tether"
+    ],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "m:enrage",
+     "m:groggy",
+     "m:tether",
+     "s:buff",
+     "s:shot",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [],
+    "artSharedWith": [
+     "avalancheRabina(精英)",
+     "bantuElite(精英)"
     ]
    },
    "elite": [
@@ -4131,24 +5253,13 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
-    "q_sn03"
+    "q_sn02",
+    "q_sn03",
+    "d_sn_leather",
+    "r_sn1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "shallow_haunt",
-      0.56
-     ],
-     [
-      "frozen_heart",
-      0.44
-     ]
-    ]
-   },
    "official": {
     "dungeon": "山脊",
     "boss": "野兽师鲁乌格 + 冰齿沙凡特（双领主）",
@@ -4178,13 +5289,27 @@
     "complexity": "SIMPLE",
     "block": "B5",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "shallow_haunt",
+      0.56
+     ],
+     [
+      "frozen_heart",
+      0.44
+     ]
+    ]
    }
   },
   {
    "id": "white_ruins",
    "name": "白色废墟",
    "region": "snow",
-   "regionName": "万年雪山",
+   "regionName": "万年雪山 · 斯顿雪域",
    "lvl": [
     39,
     40
@@ -4198,6 +5323,9 @@
     "kind": "seski",
     "name": "塞斯奇",
     "lvl": 41,
+    "engine": "region-spec",
+    "region": "snow",
+    "hook": null,
     "art": {
      "base": "snYeti",
      "recolor": {
@@ -4206,17 +5334,17 @@
       "bright": 0.85
      }
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.55,
     "h": 140,
     "visualH": 217,
     "bars": 40,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "snowApe"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -4254,6 +5382,33 @@
     "mechSet": [
      "groggy",
      "safezone"
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:safezone",
+     "s:aoe",
+     "s:grab",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "swipe",
+      "windup": 0.6
+     },
+     {
+      "skill": "aoe/line",
+      "windup": 1
+     },
+     {
+      "skill": "aoe/line",
+      "windup": 1
+     }
+    ],
+    "artSharedWith": [
+     "frostApe(精英)"
     ]
    },
    "elite": [
@@ -4268,28 +5423,15 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
-    "q_sn09"
+    "q_sn08",
+    "q_sn09",
+    "d_sn_leather",
+    "r_sn1"
    ],
    "abyssLordOf": [
     "abyss_snow"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "darkelf_tomb"
-    ],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "darkelf_tomb",
-      0.63
-     ],
-     [
-      "lik_well",
-      0.63
-     ]
-    ]
-   },
    "official": {
     "dungeon": "白色废墟",
     "boss": "赛斯奇",
@@ -4319,13 +5461,29 @@
     "complexity": "SIMPLE",
     "block": "B5",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "darkelf_tomb"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "darkelf_tomb",
+      0.63
+     ],
+     [
+      "lik_well",
+      0.63
+     ]
+    ]
    }
   },
   {
    "id": "bwanga_dojo",
    "name": "布万加的修炼场",
    "region": "snow",
-   "regionName": "万年雪山",
+   "regionName": "万年雪山 · 斯顿雪域",
    "lvl": [
     40,
     41
@@ -4339,19 +5497,22 @@
     "kind": "bwanga",
     "name": "布万加",
     "lvl": 42,
+    "engine": "region-spec",
+    "region": "snow",
+    "hook": null,
     "art": {
      "base": "snBwanga",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 132,
     "visualH": 152,
     "bars": 41,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -4392,7 +5553,35 @@
      "enrage",
      "groggy",
      "safezone"
-    ]
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:enrage",
+     "m:groggy",
+     "m:safezone",
+     "s:aoe",
+     "s:blink",
+     "s:dash",
+     "s:guard",
+     "s:seq",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.7
+     },
+     {
+      "skill": "swipe",
+      "windup": 0.4
+     },
+     {
+      "skill": "aoe/cross",
+      "windup": 0.6
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -4406,24 +5595,12 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
-    "q_sn10"
+    "q_sn10",
+    "s_sn_bwanga",
+    "r_sn1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "wit_gate",
-      0.64
-     ],
-     [
-      "old_wail",
-      0.58
-     ]
-    ]
-   },
    "official": {
     "dungeon": "布万加的修炼场",
     "boss": "班图族长 布万加",
@@ -4454,13 +5631,27 @@
     "complexity": "COMPLEX",
     "block": "B5",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "wit_gate",
+      0.64
+     ],
+     [
+      "old_wail",
+      0.58
+     ]
+    ]
    }
   },
   {
    "id": "ice_palace",
    "name": "冰雪宫殿",
    "region": "snow",
-   "regionName": "万年雪山",
+   "regionName": "万年雪山 · 斯顿雪域",
    "lvl": [
     41,
     42
@@ -4474,22 +5665,26 @@
     "kind": "rose",
     "name": "冰雪女王洛丝",
     "lvl": 43,
+    "engine": "region-spec",
+    "region": "snow",
+    "hook": null,
     "art": {
      "base": "snRose",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 124,
     "visualH": 143,
     "bars": 42,
     "elem": "ice",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "roseShade",
+     "shrink",
      "kruse"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -4539,7 +5734,31 @@
      "groggy",
      "hazard",
      "tether"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:groggy",
+     "m:hazard",
+     "m:tether",
+     "s:aoe",
+     "s:blink",
+     "s:laser",
+     "s:shot",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/circle",
+      "windup": 1.2
+     },
+     {
+      "skill": "laser",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -4553,7 +5772,11 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
-    "q_sn12"
+    "q_sn11",
+    "q_sn12",
+    "q_abyss_snow",
+    "d_sn_endless",
+    "r_sn1"
    ],
    "abyssLordOf": [
     "abyss_snow"
@@ -4561,20 +5784,6 @@
    "sameBossAbyss": [
     "abyss_snow"
    ],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "siroco_coffin",
-      0.64
-     ],
-     [
-      "kartel_origin",
-      0.58
-     ]
-    ]
-   },
    "official": {
     "dungeon": "冰雪宫殿",
     "boss": "冰雪女王 洛丝",
@@ -4604,13 +5813,27 @@
     "complexity": "COMPLEX",
     "block": "B5",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "kartel_origin",
+      0.58
+     ],
+     [
+      "siroco_coffin",
+      0.56
+     ]
+    ]
    }
   },
   {
    "id": "skasa_nest",
    "name": "斯卡萨之巢",
    "region": "snow",
-   "regionName": "万年雪山",
+   "regionName": "万年雪山 · 斯顿雪域",
    "lvl": [
     42,
     42
@@ -4624,23 +5847,27 @@
     "kind": "skasa",
     "name": "冰龙斯卡萨",
     "lvl": 44,
+    "engine": "region-spec",
+    "region": "snow",
+    "hook": null,
     "art": {
      "base": "snSkasa",
      "recolor": null
     },
-    "artSharedWith": [
-     "old_winter"
-    ],
+    "variantOf": null,
     "scale": 1.5,
     "h": 140,
     "visualH": 210,
     "bars": 60,
     "elem": "ice",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": "raid",
     "summons": [
-     "babySkasa"
+     "hex",
+     "babySkasa",
+     "debris",
+     "shrink"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -4700,6 +5927,37 @@
      "hazard",
      "invuln",
      "safezone"
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:enrage",
+     "m:groggy",
+     "m:hazard",
+     "m:invuln",
+     "m:safezone",
+     "s:aoe",
+     "s:laser",
+     "s:rain",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "laser",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.1
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 1.4
+     }
+    ],
+    "artSharedWith": [
+     "old_winter"
     ]
    },
    "elite": [
@@ -4715,28 +5973,11 @@
    "bossBgm": "boss",
    "quests": [
     "q_sn13",
-    "s_sn_proof"
+    "s_sn_proof",
+    "r_sn2"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "neipera"
-    ],
-    "sameSkillSet": [
-     "darkelf_tomb"
-    ],
-    "mostSimilar": [
-     [
-      "neipera",
-      0.82
-     ],
-     [
-      "grand_fire",
-      0.73
-     ]
-    ]
-   },
    "official": {
     "dungeon": "斯卡萨之巢",
     "boss": "冰龙斯卡萨",
@@ -4770,13 +6011,31 @@
     "complexity": "COMPLEX",
     "block": "P0.5",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "neipera"
+    ],
+    "sameSkillSet": [
+     "darkelf_tomb"
+    ],
+    "mostSimilar": [
+     [
+      "neipera",
+      0.82
+     ],
+     [
+      "grand_fire",
+      0.73
+     ]
+    ]
    }
   },
   {
    "id": "fallen_bandits",
    "name": "堕落的盗贼",
    "region": "gent",
-   "regionName": "诺斯玛尔 + 根特",
+   "regionName": "诺斯玛尔 · 天界根特",
    "lvl": [
     44,
     45
@@ -4790,6 +6049,9 @@
     "kind": "mozhen",
     "name": "犬使魔震",
     "lvl": 46,
+    "engine": "region-spec",
+    "region": "gent",
+    "hook": null,
     "art": {
      "base": "nmDogman",
      "recolor": {
@@ -4798,17 +6060,19 @@
       "bright": 0.7
      }
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.3,
     "h": 130,
     "visualH": 169,
     "bars": 45,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "quakeHound"
+     "quakeHound",
+     "enrage",
+     "hex"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -4828,7 +6092,7 @@
       ],
       "summon": null,
       "skills": [
-       "buff/enrage",
+       "buff",
        "rain/hex"
       ]
      }
@@ -4848,6 +6112,35 @@
     "mechSet": [
      "groggy",
      "invuln"
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:invuln",
+     "s:aoe",
+     "s:buff",
+     "s:dash",
+     "s:rain",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.6
+     },
+     {
+      "skill": "aoe/ring",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.1
+     }
+    ],
+    "artSharedWith": [
+     "dogmanHado(精英)"
     ]
    },
    "elite": [
@@ -4862,31 +6155,15 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
+    "q_gt02",
     "q_gt03",
-    "d_gt_bandit"
+    "d_gt_bandit",
+    "r_gt1"
    ],
    "abyssLordOf": [
     "abyss_norsemar"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "spider_cave",
-     "bilmark",
-     "wailing_cave"
-    ],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "plague_source",
-      0.78
-     ],
-     [
-      "bilmark",
-      0.75
-     ]
-    ]
-   },
    "official": {
     "dungeon": "堕落的盗贼",
     "boss": "犬使 摩震",
@@ -4916,13 +6193,31 @@
     "complexity": "SIMPLE",
     "block": "B6",
     "rename": "犬使魔震 → 犬使摩震"
+   },
+   "dup": {
+    "sameMechSet": [
+     "spider_cave",
+     "bilmark",
+     "wailing_cave"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "plague_source",
+      0.78
+     ],
+     [
+      "grand_fire",
+      0.7
+     ]
+    ]
    }
   },
   {
    "id": "hamelin",
    "name": "「迷乱之村」哈穆林",
    "region": "gent",
-   "regionName": "诺斯玛尔 + 根特",
+   "regionName": "诺斯玛尔 · 天界根特",
    "lvl": [
     46,
     47
@@ -4936,23 +6231,26 @@
     "kind": "piper",
     "name": "魔笛使者皮特",
     "lvl": 48,
+    "engine": "region-spec",
+    "region": "gent",
+    "hook": null,
     "art": {
      "base": "nmPiper",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 116,
     "visualH": 133,
     "bars": 47,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "giantRat",
      "maneater",
      "piperShade"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -4999,7 +6297,26 @@
      "enrage",
      "groggy",
      "invuln"
-    ]
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:enrage",
+     "m:groggy",
+     "m:invuln",
+     "s:aoe",
+     "s:blink",
+     "s:shot",
+     "s:summon"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/ring",
+      "windup": 1.1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -5013,8 +6330,13 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
+    "q_gt04",
     "q_gt05",
-    "s_gt_flute"
+    "q_abyss_norsemar",
+    "d_gt_bandit",
+    "s_gt_piper",
+    "s_gt_flute",
+    "r_gt1"
    ],
    "abyssLordOf": [
     "abyss_norsemar"
@@ -5022,20 +6344,6 @@
    "sameBossAbyss": [
     "abyss_norsemar"
    ],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "iris_raid",
-      0.73
-     ],
-     [
-      "wit_gate",
-      0.55
-     ]
-    ]
-   },
    "official": {
     "dungeon": "「迷乱之村」哈穆林",
     "boss": "魔笛使者 皮特",
@@ -5065,13 +6373,27 @@
     "complexity": "SIMPLE",
     "block": "B6",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "iris_raid",
+      0.73
+     ],
+     [
+      "wit_gate",
+      0.55
+     ]
+    ]
    }
   },
   {
    "id": "gent_outskirts",
    "name": "根特外围",
    "region": "gent",
-   "regionName": "诺斯玛尔 + 根特",
+   "regionName": "诺斯玛尔 · 天界根特",
    "lvl": [
     48,
     49
@@ -5085,19 +6407,25 @@
     "kind": "bentink",
     "name": "纵火犯本汀克",
     "lvl": 50,
+    "engine": "region-spec",
+    "region": "gent",
+    "hook": null,
     "art": {
      "base": "gtBentink",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 120,
     "visualH": 138,
     "bars": 49,
     "elem": "fire",
-    "engine": "region-spec",
-    "hook": null,
-    "summons": [],
+    "tier": null,
+    "summons": [
+     "hex",
+     "fire"
+    ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -5137,7 +6465,35 @@
     "mechSet": [
      "groggy",
      "hazard"
-    ]
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "s:aoe",
+     "s:blink",
+     "s:explode",
+     "s:rain",
+     "s:seq",
+     "s:shot",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/circle",
+      "windup": 1.3
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     },
+     {
+      "skill": "explode",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -5151,32 +6507,16 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
+    "q_gt07",
     "q_gt08",
-    "s_gt_order"
+    "d_gt_supply",
+    "s_gt_order",
+    "r_gt2"
    ],
    "abyssLordOf": [
     "abyss_norsemar"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "shallow_haunt",
-     "lik_well",
-     "gent_east",
-     "sea_pirates"
-    ],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "kartel_origin",
-      0.73
-     ],
-     [
-      "sea_pirates",
-      0.7
-     ]
-    ]
-   },
    "official": {
     "dungeon": "根特外围",
     "boss": "纵火犯 本汀克",
@@ -5204,13 +6544,32 @@
     "complexity": "SIMPLE",
     "block": "B6",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "shallow_haunt",
+     "lik_well",
+     "gent_east",
+     "sea_pirates"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "kartel_origin",
+      0.73
+     ],
+     [
+      "sea_pirates",
+      0.7
+     ]
+    ]
    }
   },
   {
    "id": "gent_east",
    "name": "根特东门",
    "region": "gent",
-   "regionName": "诺斯玛尔 + 根特",
+   "regionName": "诺斯玛尔 · 天界根特",
    "lvl": [
     49,
     50
@@ -5224,21 +6583,26 @@
     "kind": "suleide",
     "name": "机动队长苏雷德",
     "lvl": 51,
+    "engine": "region-spec",
+    "region": "gent",
+    "hook": null,
     "art": {
      "base": "gtSuleide",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 124,
     "visualH": 143,
     "bars": 50,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
+     "hex",
+     "debris",
      "rx78"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -5279,6 +6643,48 @@
     "mechSet": [
      "groggy",
      "hazard"
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "s:aoe",
+     "s:blink",
+     "s:dash",
+     "s:laser",
+     "s:rain",
+     "s:seq",
+     "s:summon"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.7
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 0.6
+     },
+     {
+      "skill": "laser",
+      "windup": 1
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.1
+     },
+     {
+      "skill": "dash",
+      "windup": 0.5
+     },
+     {
+      "skill": "dash",
+      "windup": 0.4
+     }
+    ],
+    "artSharedWith": [
+     "desertRider(精英)"
     ]
    },
    "elite": [
@@ -5293,30 +6699,14 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
+    "q_gt09",
     "q_gt10",
-    "s_gt_order"
+    "d_gt_supply",
+    "s_gt_order",
+    "r_gt2"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "shallow_haunt",
-     "lik_well",
-     "gent_outskirts",
-     "sea_pirates"
-    ],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "kartel_origin",
-      0.58
-     ],
-     [
-      "old_wail",
-      0.58
-     ]
-    ]
-   },
    "official": {
     "dungeon": "根特东门",
     "boss": "机动队长 苏雷德",
@@ -5346,13 +6736,32 @@
     "complexity": "SIMPLE",
     "block": "B6",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "shallow_haunt",
+     "lik_well",
+     "gent_outskirts",
+     "sea_pirates"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "kartel_origin",
+      0.58
+     ],
+     [
+      "old_wail",
+      0.58
+     ]
+    ]
    }
   },
   {
    "id": "gent_south",
    "name": "根特南门",
    "region": "gent",
-   "regionName": "诺斯玛尔 + 根特",
+   "regionName": "诺斯玛尔 · 天界根特",
    "lvl": [
     51,
     52
@@ -5366,21 +6775,25 @@
     "kind": "gt9600",
     "name": "GT-9600",
     "lvl": 53,
+    "engine": "region-spec",
+    "region": "gent",
+    "hook": null,
     "art": {
      "base": "gtMech",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.4,
     "h": 150,
     "visualH": 210,
     "bars": 73,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": "raid",
     "summons": [
+     "hex",
      "rx78"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -5432,6 +6845,40 @@
      "groggy",
      "safezone",
      "shield"
+    ],
+    "moves": 7,
+    "sig": [],
+    "tokens": [
+     "m:enrage",
+     "m:groggy",
+     "m:safezone",
+     "m:shield",
+     "s:aoe",
+     "s:dash",
+     "s:rain",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.8
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     },
+     {
+      "skill": "swipe",
+      "windup": 0.7
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 1.3
+     }
+    ],
+    "artSharedWith": [
+     "labWalker(精英)"
     ]
    },
    "elite": [
@@ -5446,27 +6893,11 @@
    "bgm": "abyss",
    "bossBgm": "boss",
    "quests": [
-    "q_gt11"
+    "q_gt11",
+    "r_gt2"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [
-     "grand_fire",
-     "plague_source"
-    ],
-    "mostSimilar": [
-     [
-      "plague_source",
-      0.7
-     ],
-     [
-      "old_winter",
-      0.7
-     ]
-    ]
-   },
    "official": {
     "dungeon": "根特南门",
     "boss": "GT-9600",
@@ -5493,13 +6924,30 @@
     "complexity": "SIMPLE",
     "block": "B6",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [
+     "grand_fire",
+     "plague_source"
+    ],
+    "mostSimilar": [
+     [
+      "plague_source",
+      0.7
+     ],
+     [
+      "old_winter",
+      0.7
+     ]
+    ]
    }
   },
   {
    "id": "bilmark",
    "name": "比尔马克帝国试验场",
    "region": "ancient",
-   "regionName": "远古",
+   "regionName": "远古地下城",
    "lvl": [
     44,
     45
@@ -5513,22 +6961,26 @@
     "kind": "mechKing",
     "name": "牛头械王",
     "lvl": 46,
+    "engine": "region-spec",
+    "region": "ancient",
+    "hook": "mechKing",
     "art": {
      "base": "bmMechTau",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.3,
     "h": 150,
     "visualH": 195,
     "bars": 46,
     "elem": "fire",
-    "engine": "region-spec",
-    "hook": "mechKing",
+    "tier": null,
     "summons": [
      "bmRobot",
+     "bolt",
      "bmEye"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -5572,7 +7024,47 @@
     "mechSet": [
      "groggy",
      "invuln"
-    ]
+    ],
+    "moves": 4,
+    "sig": [
+     {
+      "name": "hook:mechKing",
+      "why": "hook"
+     }
+    ],
+    "tokens": [
+     "h:mechKing",
+     "m:groggy",
+     "m:invuln",
+     "s:aoe",
+     "s:dash",
+     "s:rain",
+     "s:swipe",
+     "x:hook:mechKing"
+    ],
+    "windups": [
+     {
+      "skill": "swipe",
+      "windup": 0.6
+     },
+     {
+      "skill": "aoe/line",
+      "windup": 0.8
+     },
+     {
+      "skill": "swipe",
+      "windup": 0.5
+     },
+     {
+      "skill": "dash",
+      "windup": 0.8
+     },
+     {
+      "skill": "rain/bolt",
+      "windup": 1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -5587,32 +7079,12 @@
    "bossBgm": "boss",
    "quests": [
     "q_an02",
+    "d_an_gear",
     "s_an_hanik",
-    "s_an_hanik"
+    "r_an1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "spider_cave",
-     "fallen_bandits",
-     "wailing_cave"
-    ],
-    "sameSkillSet": [
-     "holy_war",
-     "old_winter"
-    ],
-    "mostSimilar": [
-     [
-      "holy_war",
-      0.86
-     ],
-     [
-      "fallen_bandits",
-      0.75
-     ]
-    ]
-   },
    "official": {
     "dungeon": "比尔马克帝国试验场",
     "boss": "牛头械王",
@@ -5641,13 +7113,34 @@
     "complexity": "SIMPLE",
     "block": "B7",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "spider_cave",
+     "fallen_bandits",
+     "wailing_cave"
+    ],
+    "sameSkillSet": [
+     "holy_war",
+     "old_winter"
+    ],
+    "mostSimilar": [
+     [
+      "holy_war",
+      0.67
+     ],
+     [
+      "fallen_bandits",
+      0.6
+     ]
+    ]
    }
   },
   {
    "id": "wailing_cave",
    "name": "悲鸣洞穴",
    "region": "ancient",
-   "regionName": "远古",
+   "regionName": "远古地下城",
    "lvl": [
     49,
     50
@@ -5661,21 +7154,25 @@
     "kind": "bugKing",
     "name": "虫王戮蛊",
     "lvl": 51,
+    "engine": "region-spec",
+    "region": "ancient",
+    "hook": "bugKing",
     "art": {
      "base": "wcBugKing",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 2.2,
     "h": 130,
     "visualH": 286,
     "bars": 51,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": "bugKing",
+    "tier": null,
     "summons": [
+     "hex",
      "larva"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -5721,7 +7218,40 @@
     "mechSet": [
      "groggy",
      "invuln"
-    ]
+    ],
+    "moves": 6,
+    "sig": [
+     {
+      "name": "hook:bugKing",
+      "why": "hook"
+     }
+    ],
+    "tokens": [
+     "h:bugKing",
+     "m:groggy",
+     "m:invuln",
+     "s:aoe",
+     "s:rain",
+     "s:shot",
+     "s:summon",
+     "s:swipe",
+     "x:hook:bugKing"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/line",
+      "windup": 0.9
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 1
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -5736,32 +7266,12 @@
    "bossBgm": "boss",
    "quests": [
     "q_an04",
+    "d_an_wail",
     "s_an_apophis",
-    "s_an_apophis"
+    "r_an1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "spider_cave",
-     "fallen_bandits",
-     "bilmark"
-    ],
-    "sameSkillSet": [
-     "neipera",
-     "law_gate"
-    ],
-    "mostSimilar": [
-     [
-      "spider_cave",
-      0.75
-     ],
-     [
-      "law_gate",
-      0.75
-     ]
-    ]
-   },
    "official": {
     "dungeon": "悲鸣洞穴",
     "boss": "虫王 戮蛊",
@@ -5789,13 +7299,34 @@
     "complexity": "SIMPLE",
     "block": "B7",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "spider_cave",
+     "fallen_bandits",
+     "bilmark"
+    ],
+    "sameSkillSet": [
+     "neipera",
+     "law_gate"
+    ],
+    "mostSimilar": [
+     [
+      "spider_cave",
+      0.6
+     ],
+     [
+      "law_gate",
+      0.6
+     ]
+    ]
    }
   },
   {
    "id": "sea_pirates",
    "name": "列车上的海贼",
    "region": "train",
-   "regionName": "海上列车",
+   "regionName": "天界 · 海上列车",
    "lvl": [
     52,
     53
@@ -5809,21 +7340,25 @@
     "kind": "mobeni",
     "name": "黑鳞莫贝尼",
     "lvl": 54,
+    "engine": "region-spec",
+    "region": "train",
+    "hook": null,
     "art": {
      "base": "trMobeni",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.2,
     "h": 134,
     "visualH": 161,
     "bars": 53,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "crocPirate"
+     "crocPirate",
+     "debris"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -5863,7 +7398,46 @@
     "mechSet": [
      "groggy",
      "hazard"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "s:aoe",
+     "s:blink",
+     "s:seq",
+     "s:shot",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/circle",
+      "windup": 0.6
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 0.3
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 0.3
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 0.7
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 1.5
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 0.5
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -5877,33 +7451,16 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
+    "q_tr02",
     "q_tr03",
     "d_tr_pirate",
-    "s_tr_mermaid"
+    "s_tr_mermaid",
+    "r_tr1"
    ],
    "abyssLordOf": [
     "abyss_train"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "shallow_haunt",
-     "lik_well",
-     "gent_outskirts",
-     "gent_east"
-    ],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "gent_outskirts",
-      0.7
-     ],
-     [
-      "shallow_haunt",
-      0.67
-     ]
-    ]
-   },
    "official": {
     "dungeon": "列车上的海贼",
     "boss": "黑鳞莫贝尼",
@@ -5935,13 +7492,32 @@
     "complexity": "SIMPLE",
     "block": "B8",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "shallow_haunt",
+     "lik_well",
+     "gent_outskirts",
+     "gent_east"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "gent_outskirts",
+      0.7
+     ],
+     [
+      "shallow_haunt",
+      0.67
+     ]
+    ]
    }
   },
   {
    "id": "west_line",
    "name": "夺回西部线",
    "region": "train",
-   "regionName": "海上列车",
+   "regionName": "天界 · 海上列车",
    "lvl": [
     53,
     54
@@ -5955,21 +7531,26 @@
     "kind": "podir",
     "name": "烈焰盾波迪尔",
     "lvl": 55,
+    "engine": "region-spec",
+    "region": "train",
+    "hook": null,
     "art": {
      "base": "trPodir",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.2,
     "h": 130,
     "visualH": 156,
     "bars": 54,
     "elem": "fire",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "steamBoiler"
+     "steamBoiler",
+     "fire",
+     "hex"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -6010,7 +7591,34 @@
      "groggy",
      "hazard",
      "shield"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "m:shield",
+     "s:aoe",
+     "s:dash",
+     "s:guard",
+     "s:rain",
+     "s:summon"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.7
+     },
+     {
+      "skill": "aoe/line",
+      "windup": 0.9
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -6024,28 +7632,16 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
-    "q_tr05"
+    "q_tr04",
+    "q_tr05",
+    "d_tr_pirate",
+    "d_tr_parts",
+    "r_tr1"
    ],
    "abyssLordOf": [
     "abyss_train"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "secret_zone"
-    ],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "secret_zone",
-      0.6
-     ],
-     [
-      "old_winter",
-      0.6
-     ]
-    ]
-   },
    "official": {
     "dungeon": "夺回西部线",
     "boss": "烈焰盾 波迪尔",
@@ -6074,13 +7670,29 @@
     "complexity": "SIMPLE",
     "block": "B8",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "secret_zone"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "secret_zone",
+      0.6
+     ],
+     [
+      "old_winter",
+      0.6
+     ]
+    ]
    }
   },
   {
    "id": "heis",
    "name": "雾都赫伊斯",
    "region": "train",
-   "regionName": "海上列车",
+   "regionName": "天界 · 海上列车",
    "lvl": [
     54,
     55
@@ -6094,21 +7706,25 @@
     "kind": "fladin",
     "name": "范·弗拉丁",
     "lvl": 56,
+    "engine": "region-spec",
+    "region": "train",
+    "hook": null,
     "art": {
      "base": "trFladin",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.2,
     "h": 126,
     "visualH": 151,
     "bars": 55,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "fladinShade"
+     "fladinShade",
+     "hex"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -6158,7 +7774,34 @@
      "clones",
      "groggy",
      "safezone"
-    ]
+    ],
+    "moves": 7,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:groggy",
+     "m:safezone",
+     "s:aoe",
+     "s:blink",
+     "s:laser",
+     "s:rain",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "laser",
+      "windup": 1.5
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -6172,8 +7815,12 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
+    "q_tr06",
     "q_tr07",
-    "s_tr_log"
+    "q_abyss_train",
+    "d_tr_parts",
+    "s_tr_log",
+    "r_tr1"
    ],
    "abyssLordOf": [
     "abyss_train"
@@ -6181,20 +7828,6 @@
    "sameBossAbyss": [
     "abyss_train"
    ],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "darkelf_tomb",
-      0.67
-     ],
-     [
-      "iris_raid",
-      0.58
-     ]
-    ]
-   },
    "official": {
     "dungeon": "雾都赫伊斯（隐藏）",
     "boss": "范·弗拉丁",
@@ -6227,13 +7860,27 @@
     "complexity": "COMPLEX",
     "block": "B8",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "darkelf_tomb",
+      0.67
+     ],
+     [
+      "iris_raid",
+      0.58
+     ]
+    ]
    }
   },
   {
    "id": "arden",
    "name": "决战阿登高地",
    "region": "train",
-   "regionName": "海上列车",
+   "regionName": "天界 · 海上列车",
    "lvl": [
     55,
     56
@@ -6247,21 +7894,25 @@
     "kind": "anzu",
     "name": "黎明之眼 安祖·塞弗",
     "lvl": 57,
+    "engine": "region-spec",
+    "region": "train",
+    "hook": null,
     "art": {
      "base": "trAnzu",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.3,
     "h": 134,
     "visualH": 174,
     "bars": 78,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": "raid",
     "summons": [
+     "hex",
      "rx78"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -6317,7 +7968,46 @@
      "groggy",
      "safezone",
      "shield"
-    ]
+    ],
+    "moves": 8,
+    "sig": [],
+    "tokens": [
+     "m:element",
+     "m:enrage",
+     "m:groggy",
+     "m:safezone",
+     "m:shield",
+     "s:blink",
+     "s:dash",
+     "s:laser",
+     "s:rain",
+     "s:seq",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.7
+     },
+     {
+      "skill": "laser",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     },
+     {
+      "skill": "dash",
+      "windup": 0.5
+     },
+     {
+      "skill": "dash",
+      "windup": 0.4
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -6332,24 +8022,11 @@
    "bossBgm": "boss",
    "quests": [
     "q_tr08",
-    "s_tr_trek"
+    "s_tr_trek",
+    "r_tr2"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "gent_south",
-      0.62
-     ],
-     [
-      "king_ruins",
-      0.5
-     ]
-    ]
-   },
    "official": {
     "dungeon": "决战阿登高地（隐藏）",
     "boss": "黎明之眼 安祖·赛弗",
@@ -6378,6 +8055,20 @@
     "complexity": "COMPLEX",
     "block": "B8",
     "rename": "安祖·塞弗 → 安祖·赛弗"
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "gent_south",
+      0.62
+     ],
+     [
+      "king_ruins",
+      0.5
+     ]
+    ]
    }
   },
   {
@@ -6398,22 +8089,27 @@
     "kind": "utara",
     "name": "兽王乌塔拉",
     "lvl": 57,
+    "engine": "region-spec",
+    "region": "timegate",
+    "hook": null,
     "art": {
      "base": "tgUtara",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.25,
     "h": 136,
     "visualH": 170,
     "bars": 56,
     "elem": "fire",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "fireGoblin",
-     "fireSeed"
+     "fireSeed",
+     "fire",
+     "hex"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -6462,7 +8158,35 @@
      "groggy",
      "hazard",
      "invuln"
-    ]
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:enrage",
+     "m:groggy",
+     "m:hazard",
+     "m:invuln",
+     "s:aoe",
+     "s:dash",
+     "s:rain",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.6
+     },
+     {
+      "skill": "aoe/ring",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -6476,27 +8200,14 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
-    "q_tg03"
+    "q_tg02",
+    "q_tg03",
+    "d_tg_rift",
+    "s_tg_fire",
+    "r_tg1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [
-     "gent_south",
-     "plague_source"
-    ],
-    "mostSimilar": [
-     [
-      "neipera",
-      0.73
-     ],
-     [
-      "skasa_nest",
-      0.73
-     ]
-    ]
-   },
    "official": {
     "dungeon": "格兰之火",
     "boss": "兽王 乌塔拉",
@@ -6527,6 +8238,23 @@
     "complexity": "SIMPLE",
     "block": "B9",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [
+     "gent_south",
+     "plague_source"
+    ],
+    "mostSimilar": [
+     [
+      "neipera",
+      0.73
+     ],
+     [
+      "skasa_nest",
+      0.73
+     ]
+    ]
    }
   },
   {
@@ -6547,22 +8275,26 @@
     "kind": "skelKnight",
     "name": "骷髅骑士",
     "lvl": 57,
+    "engine": "region-spec",
+    "region": "timegate",
+    "hook": null,
     "art": {
      "base": "tgSkelKnight",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.2,
     "h": 134,
     "visualH": 161,
     "bars": 56,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
+     "hex",
      "plagueHeart",
      "plagueSkel"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -6612,7 +8344,38 @@
      "groggy",
      "invuln",
      "safezone"
-    ]
+    ],
+    "moves": 7,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:invuln",
+     "m:safezone",
+     "s:aoe",
+     "s:dash",
+     "s:rain",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.7
+     },
+     {
+      "skill": "aoe/line",
+      "windup": 0.9
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     },
+     {
+      "skill": "aoe/cross",
+      "windup": 1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -6626,29 +8389,13 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
-    "q_tg05"
+    "q_tg04",
+    "q_tg05",
+    "d_tg_rift",
+    "r_tg1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "holy_war"
-    ],
-    "sameSkillSet": [
-     "gent_south",
-     "grand_fire"
-    ],
-    "mostSimilar": [
-     [
-      "holy_war",
-      0.88
-     ],
-     [
-      "fallen_bandits",
-      0.78
-     ]
-    ]
-   },
    "official": {
     "dungeon": "瘟疫之源",
     "boss": "骷髅骑士",
@@ -6678,6 +8425,25 @@
     "complexity": "COMPLEX",
     "block": "B9",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "holy_war"
+    ],
+    "sameSkillSet": [
+     "gent_south",
+     "grand_fire"
+    ],
+    "mostSimilar": [
+     [
+      "holy_war",
+      0.88
+     ],
+     [
+      "fallen_bandits",
+      0.78
+     ]
+    ]
    }
   },
   {
@@ -6698,21 +8464,26 @@
     "kind": "belit",
     "name": "沙影贝利特",
     "lvl": 58,
+    "engine": "region-spec",
+    "region": "timegate",
+    "hook": null,
     "art": {
      "base": "tgBelit",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.2,
     "h": 122,
     "visualH": 146,
     "bars": 57,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "belitShade"
+     "belitShade",
+     "shrink",
+     "hex"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -6763,7 +8534,36 @@
      "clones",
      "groggy",
      "hazard"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:groggy",
+     "m:hazard",
+     "s:aoe",
+     "s:blink",
+     "s:dash",
+     "s:rain",
+     "s:seq",
+     "s:shot",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.5
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -6777,24 +8577,13 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
-    "q_tg07"
+    "q_tg06",
+    "q_tg07",
+    "d_tg_rift",
+    "r_tg1"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "gent_outskirts",
-      0.73
-     ],
-     [
-      "wit_gate",
-      0.73
-     ]
-    ]
-   },
    "official": {
     "dungeon": "卡勒特之初",
     "boss": "年轻的沙影 贝利特",
@@ -6825,6 +8614,20 @@
     "complexity": "SIMPLE",
     "block": "B9",
     "rename": "沙影贝利特 → 年轻的沙影 贝利特"
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "gent_outskirts",
+      0.73
+     ],
+     [
+      "wit_gate",
+      0.73
+     ]
+    ]
    }
   },
   {
@@ -6845,21 +8648,25 @@
     "kind": "nilbas",
     "name": "尼尔巴斯·格拉西亚",
     "lvl": 58,
+    "engine": "region-spec",
+    "region": "timegate",
+    "hook": null,
     "art": {
      "base": "tgNilbas",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.2,
     "h": 130,
     "visualH": 156,
     "bars": 57,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "ozmaCultist"
+     "ozmaCultist",
+     "hex"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -6907,7 +8714,37 @@
      "groggy",
      "invuln",
      "safezone"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:invuln",
+     "m:safezone",
+     "s:aoe",
+     "s:dash",
+     "s:rain",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.6
+     },
+     {
+      "skill": "aoe/cross",
+      "windup": 1.1
+     },
+     {
+      "skill": "aoe/line",
+      "windup": 0.8
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -6921,32 +8758,16 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
+    "q_tg08",
     "q_tg09",
-    "s_tg_gracia"
+    "d_tg_rift",
+    "s_tg_gracia",
+    "r_tg1"
    ],
    "abyssLordOf": [
     "abyss_timegate"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "plague_source"
-    ],
-    "sameSkillSet": [
-     "bilmark",
-     "old_winter"
-    ],
-    "mostSimilar": [
-     [
-      "plague_source",
-      0.88
-     ],
-     [
-      "bilmark",
-      0.86
-     ]
-    ]
-   },
    "official": {
     "dungeon": "暗黑圣战（已下架）",
     "boss": "尼尔巴斯·格拉西亚",
@@ -6976,6 +8797,25 @@
     "complexity": "COMPLEX",
     "block": "B9",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "plague_source"
+    ],
+    "sameSkillSet": [
+     "bilmark",
+     "old_winter"
+    ],
+    "mostSimilar": [
+     [
+      "plague_source",
+      0.88
+     ],
+     [
+      "fallen_bandits",
+      0.67
+     ]
+    ]
    }
   },
   {
@@ -6996,21 +8836,25 @@
     "kind": "cerberus",
     "name": "地狱三头犬",
     "lvl": 59,
+    "engine": "region-spec",
+    "region": "timegate",
+    "hook": null,
     "art": {
      "base": "tgCerberus",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.35,
     "h": 120,
     "visualH": 162,
     "bars": 58,
     "elem": "fire",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "labHound"
+     "labHound",
+     "fire"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -7059,7 +8903,42 @@
      "groggy",
      "hazard",
      "shield"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "m:shield",
+     "s:aoe",
+     "s:dash",
+     "s:seq",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.6
+     },
+     {
+      "skill": "aoe/line",
+      "windup": 0.9
+     },
+     {
+      "skill": "dash",
+      "windup": 0.5
+     },
+     {
+      "skill": "dash",
+      "windup": 0.35
+     },
+     {
+      "skill": "dash",
+      "windup": 0.35
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -7073,26 +8952,13 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
-    "q_tg10"
+    "q_tg10",
+    "d_tg_rift",
+    "d_tg_shard",
+    "r_tg2"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [
-     "west_line"
-    ],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "old_wail",
-      0.64
-     ],
-     [
-      "sea_pirates",
-      0.6
-     ]
-    ]
-   },
    "official": {
     "dungeon": "绝密区域",
     "boss": "地狱三头犬 Cerberus",
@@ -7122,6 +8988,22 @@
     "complexity": "SIMPLE",
     "block": "B9",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [
+     "west_line"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "old_wail",
+      0.64
+     ],
+     [
+      "sea_pirates",
+      0.6
+     ]
+    ]
    }
   },
   {
@@ -7142,6 +9024,9 @@
     "kind": "kainPast",
     "name": "凯恩",
     "lvl": 59,
+    "engine": "region-spec",
+    "region": "timegate",
+    "hook": null,
     "art": {
      "base": "wcKain",
      "recolor": {
@@ -7150,17 +9035,18 @@
       "bright": 0.85
      }
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.55,
     "h": 130,
     "visualH": 202,
     "bars": 58,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
+     "debris",
      "siroShade"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -7212,6 +9098,37 @@
      "hazard",
      "invuln",
      "safezone"
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "m:invuln",
+     "m:safezone",
+     "s:aoe",
+     "s:blink",
+     "s:dash",
+     "s:seq",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.6
+     },
+     {
+      "skill": "aoe/line",
+      "windup": 0.9
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 0.5
+     }
+    ],
+    "artSharedWith": [
+     "kain(精英)"
     ]
    },
    "elite": [
@@ -7227,7 +9144,10 @@
    "bossBgm": "boss",
    "quests": [
     "q_tg11",
-    "s_tg_shade"
+    "d_tg_rift",
+    "d_tg_shard",
+    "s_tg_shade",
+    "r_tg2"
    ],
    "abyssLordOf": [
     "abyss_timegate"
@@ -7235,20 +9155,6 @@
    "sameBossAbyss": [
     "abyss_timegate"
    ],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "sea_pirates",
-      0.64
-     ],
-     [
-      "plague_source",
-      0.64
-     ]
-    ]
-   },
    "official": {
     "dungeon": "昔日悲鸣",
     "boss": "凯恩 Kane",
@@ -7280,6 +9186,20 @@
     "complexity": "SIMPLE",
     "block": "B9",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "sea_pirates",
+      0.64
+     ],
+     [
+      "plague_source",
+      0.64
+     ]
+    ]
    }
   },
   {
@@ -7300,6 +9220,9 @@
     "kind": "youngSkasa",
     "name": "年轻的斯卡萨",
     "lvl": 60,
+    "engine": "region-spec",
+    "region": "timegate",
+    "hook": null,
     "art": {
      "base": "snSkasa",
      "recolor": {
@@ -7308,17 +9231,18 @@
       "bright": 1.12
      }
     },
-    "artSharedWith": [
-     "skasa_nest"
-    ],
+    "variantOf": null,
     "scale": 1.1,
     "h": 120,
     "visualH": 132,
     "bars": 59,
     "elem": "ice",
-    "engine": "region-spec",
-    "hook": null,
-    "summons": [],
+    "tier": null,
+    "summons": [
+     "hex",
+     "debris"
+    ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -7368,6 +9292,35 @@
      "hazard",
      "safezone",
      "shield"
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "m:safezone",
+     "m:shield",
+     "s:aoe",
+     "s:dash",
+     "s:rain",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/line",
+      "windup": 0.9
+     },
+     {
+      "skill": "dash",
+      "windup": 0.7
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": [
+     "skasa_nest"
     ]
    },
    "elite": [
@@ -7382,29 +9335,15 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
-    "q_tg12"
+    "q_tg12",
+    "d_tg_rift",
+    "d_tg_shard",
+    "r_tg2"
    ],
    "abyssLordOf": [
     "abyss_timegate"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [
-     "bilmark",
-     "holy_war"
-    ],
-    "mostSimilar": [
-     [
-      "gent_south",
-      0.7
-     ],
-     [
-      "holy_war",
-      0.67
-     ]
-    ]
-   },
    "official": {
     "dungeon": "凛冬",
     "boss": "年轻的斯卡萨",
@@ -7435,6 +9374,23 @@
     "complexity": "SIMPLE",
     "block": "B9",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [
+     "bilmark",
+     "holy_war"
+    ],
+    "mostSimilar": [
+     [
+      "gent_south",
+      0.7
+     ],
+     [
+      "holy_war",
+      0.67
+     ]
+    ]
    }
   },
   {
@@ -7455,22 +9411,26 @@
     "kind": "irisBard",
     "name": "吟游诗人艾丽丝",
     "lvl": 60,
+    "engine": "region-spec",
+    "region": "timegate",
+    "hook": null,
     "art": {
      "base": "tgIris",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.3,
     "h": 128,
     "visualH": 166,
     "bars": 83,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": "raid",
     "summons": [
+     "bolt",
      "riftGazer",
      "irisBardShade"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -7525,7 +9485,37 @@
      "groggy",
      "invuln",
      "safezone"
-    ]
+    ],
+    "moves": 8,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:enrage",
+     "m:groggy",
+     "m:invuln",
+     "m:safezone",
+     "s:aoe",
+     "s:blink",
+     "s:laser",
+     "s:rain",
+     "s:shot",
+     "s:summon"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/ring",
+      "windup": 1.1
+     },
+     {
+      "skill": "rain/bolt",
+      "windup": 1.1
+     },
+     {
+      "skill": "laser",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -7540,24 +9530,13 @@
    "bossBgm": "boss",
    "quests": [
     "q_tg13",
-    "s_tg_iris"
+    "q_abyss_timegate",
+    "d_tg_rift",
+    "s_tg_iris",
+    "r_tg3"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "hamelin",
-      0.73
-     ],
-     [
-      "siroco_coffin",
-      0.67
-     ]
-    ]
-   },
    "official": {
     "dungeon": "谜之觉悟",
     "boss": "吟游诗人 艾丽丝",
@@ -7584,13 +9563,27 @@
     "complexity": "SIMPLE",
     "block": "B9",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "hamelin",
+      0.73
+     ],
+     [
+      "neipera",
+      0.62
+     ]
+    ]
    }
   },
   {
    "id": "law_gate",
    "name": "法则之门",
    "region": "siroco",
-   "regionName": "魔界 · 希洛克",
+   "regionName": "魔界 · 潜行者希洛克",
    "lvl": [
     60,
     61
@@ -7604,21 +9597,25 @@
     "kind": "nex",
     "name": "奈克斯",
     "lvl": 62,
+    "engine": "region-spec",
+    "region": "siroco",
+    "hook": null,
     "art": {
      "base": "nex",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 122,
     "visualH": 140,
     "bars": 62,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "hellHound"
+     "hellHound",
+     "bolt"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -7657,7 +9654,29 @@
     "mechSet": [
      "groggy",
      "shield"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:shield",
+     "s:aoe",
+     "s:rain",
+     "s:shot",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/circle",
+      "windup": 1.5
+     },
+     {
+      "skill": "rain/bolt",
+      "windup": 1.1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -7671,7 +9690,10 @@
    "bgm": "dungeon2",
    "bossBgm": "boss",
    "quests": [
-    "q_si03"
+    "q_si02",
+    "q_si03",
+    "d_si_patrol",
+    "r_si1"
    ],
    "abyssLordOf": [
     "abyss_siroco"
@@ -7679,25 +9701,6 @@
    "sameBossAbyss": [
     "abyss_siroco"
    ],
-   "dup": {
-    "sameMechSet": [
-     "frozen_heart"
-    ],
-    "sameSkillSet": [
-     "neipera",
-     "wailing_cave"
-    ],
-    "mostSimilar": [
-     [
-      "frozen_heart",
-      0.86
-     ],
-     [
-      "wailing_cave",
-      0.75
-     ]
-    ]
-   },
    "official": {
     "dungeon": "法则之境（破坏之门）",
     "boss": "遗忘姓名的守门人",
@@ -7721,13 +9724,32 @@
     "complexity": "COMPLEX",
     "block": "B10",
     "rename": "奈克斯 → 守门人（和痛苦之门对调）"
+   },
+   "dup": {
+    "sameMechSet": [
+     "frozen_heart"
+    ],
+    "sameSkillSet": [
+     "neipera",
+     "wailing_cave"
+    ],
+    "mostSimilar": [
+     [
+      "frozen_heart",
+      0.86
+     ],
+     [
+      "gent_south",
+      0.6
+     ]
+    ]
    }
   },
   {
    "id": "wit_gate",
    "name": "知性之门",
    "region": "siroco",
-   "regionName": "魔界 · 希洛克",
+   "regionName": "魔界 · 潜行者希洛克",
    "lvl": [
     60,
     61
@@ -7741,21 +9763,24 @@
     "kind": "assassin",
     "name": "暗杀者",
     "lvl": 62,
+    "engine": "region-spec",
+    "region": "siroco",
+    "hook": null,
     "art": {
      "base": "assassin",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 112,
     "visualH": 129,
     "bars": 62,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "assassinShade"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -7796,7 +9821,35 @@
      "clones",
      "enrage",
      "groggy"
-    ]
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:enrage",
+     "m:groggy",
+     "s:aoe",
+     "s:blink",
+     "s:dash",
+     "s:seq",
+     "s:shot",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.75
+     },
+     {
+      "skill": "swipe",
+      "windup": 0.3
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 0.6
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -7810,26 +9863,16 @@
    "bgm": "dungeon3",
    "bossBgm": "boss",
    "quests": [
-    "q_si05"
+    "q_si04",
+    "q_si05",
+    "d_si_patrol",
+    "s_si_eye",
+    "r_si1"
    ],
    "abyssLordOf": [
     "abyss_siroco"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "kartel_origin",
-      0.73
-     ],
-     [
-      "darkcity_gate",
-      0.67
-     ]
-    ]
-   },
    "official": {
     "dungeon": "知性之境",
     "boss": "魅惑之哈妮尔 等",
@@ -7855,13 +9898,27 @@
     "complexity": "SIMPLE",
     "block": "B10",
     "rename": "暗杀者 → 魅惑之哈妮尔（近似）"
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "kartel_origin",
+      0.73
+     ],
+     [
+      "darkcity_gate",
+      0.67
+     ]
+    ]
    }
   },
   {
    "id": "pain_gate",
    "name": "痛苦之门",
    "region": "siroco",
-   "regionName": "魔界 · 希洛克",
+   "regionName": "魔界 · 潜行者希洛克",
    "lvl": [
     60,
     61
@@ -7875,19 +9932,22 @@
     "kind": "gatekeeper",
     "name": "守门人",
     "lvl": 62,
+    "engine": "region-spec",
+    "region": "siroco",
+    "hook": null,
     "art": {
      "base": "gatekeeper",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.15,
     "h": 132,
     "visualH": 152,
     "bars": 62,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -7926,7 +9986,33 @@
      "element",
      "groggy",
      "safezone"
-    ]
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:element",
+     "m:groggy",
+     "m:safezone",
+     "s:aoe",
+     "s:guard",
+     "s:laser",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "swipe",
+      "windup": 0.7
+     },
+     {
+      "skill": "aoe/cross",
+      "windup": 1.2
+     },
+     {
+      "skill": "laser",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -7940,27 +10026,17 @@
    "bgm": "dungeon",
    "bossBgm": "boss",
    "quests": [
+    "q_si06",
     "q_si07",
-    "s_si_jailer"
+    "d_si_patrol",
+    "s_si_eye",
+    "s_si_jailer",
+    "r_si1"
    ],
    "abyssLordOf": [
     "abyss_siroco"
    ],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "darkelf_tomb",
-      0.56
-     ],
-     [
-      "heis",
-      0.5
-     ]
-    ]
-   },
    "official": {
     "dungeon": "苦难之境",
     "boss": "公义之奈克斯 + 慈悲之维塔",
@@ -7990,13 +10066,27 @@
     "complexity": "COMPLEX",
     "block": "B10",
     "rename": "守门人 → 奈克斯 & 维塔"
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "darkelf_tomb",
+      0.56
+     ],
+     [
+      "heis",
+      0.5
+     ]
+    ]
    }
   },
   {
    "id": "siroco_coffin",
    "name": "无形棺柩",
    "region": "siroco",
-   "regionName": "魔界 · 希洛克",
+   "regionName": "魔界 · 潜行者希洛克",
    "lvl": [
     61,
     62
@@ -8010,22 +10100,29 @@
     "kind": "siroco",
     "name": "潜行者 希洛克",
     "lvl": 63,
+    "engine": "region-spec",
+    "region": "siroco",
+    "hook": "siroco",
     "art": {
      "base": "siroco",
      "recolor": null
     },
-    "artSharedWith": [],
+    "variantOf": null,
     "scale": 1.5,
     "h": 126,
     "visualH": 189,
     "bars": 88,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": "siroco",
+    "tier": "raid",
     "summons": [
+     "hex",
      "sirocoShade",
-     "luxi"
+     "luxi",
+     "debris",
+     "shrink",
+     "bolt"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -8093,7 +10190,55 @@
      "invuln",
      "safezone",
      "tether"
-    ]
+    ],
+    "moves": 9,
+    "sig": [
+     {
+      "name": "hook:siroco",
+      "why": "hook"
+     }
+    ],
+    "tokens": [
+     "h:siroco",
+     "m:clones",
+     "m:enrage",
+     "m:groggy",
+     "m:hazard",
+     "m:invuln",
+     "m:safezone",
+     "m:tether",
+     "s:aoe",
+     "s:blink",
+     "s:laser",
+     "s:rain",
+     "s:seq",
+     "s:shot",
+     "s:swipe",
+     "x:hook:siroco"
+    ],
+    "windups": [
+     {
+      "skill": "swipe",
+      "windup": 0.3
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     },
+     {
+      "skill": "laser",
+      "windup": 1.1
+     },
+     {
+      "skill": "aoe/cross",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/bolt",
+      "windup": 1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -8108,24 +10253,13 @@
    "bossBgm": "boss",
    "quests": [
     "q_si08",
-    "s_si_luxi"
+    "q_abyss_siroco",
+    "s_si_jailer",
+    "s_si_luxi",
+    "r_si2"
    ],
    "abyssLordOf": [],
    "sameBossAbyss": [],
-   "dup": {
-    "sameMechSet": [],
-    "sameSkillSet": [],
-    "mostSimilar": [
-     [
-      "iris_raid",
-      0.67
-     ],
-     [
-      "ice_palace",
-      0.64
-     ]
-    ]
-   },
    "official": {
     "dungeon": "无形棺柩",
     "boss": "潜行者 希洛克（拉维切 / 莱斯特 / 吉里）",
@@ -8155,6 +10289,20 @@
     "complexity": "COMPLEX",
     "block": "B10",
     "rename": null
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "iris_raid",
+      0.59
+     ],
+     [
+      "ice_palace",
+      0.56
+     ]
+    ]
    }
   },
   {
@@ -8175,21 +10323,38 @@
     "kind": "boneLord",
     "name": "盗尸者 骨狱息",
     "lvl": 20,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "boneLord",
      "recolor": null
     },
-    "artSharedWith": [
-     "dark_thunder"
-    ],
+    "variantOf": null,
     "scale": 1.35,
     "h": 120,
     "visualH": 162,
     "bars": 30,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
-    "summons": []
+    "tier": null,
+    "summons": [],
+    "attacks": [
+     "bite",
+     "cast",
+     "throw"
+    ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 3,
+    "sig": [],
+    "tokens": [
+     "l:boneLord"
+    ],
+    "windups": [],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -8202,7 +10367,9 @@
    "bossAdds": 2,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "d_si_abyss"
+   ],
    "abyssLordOf": [
     "abyss_gf"
    ],
@@ -8220,6 +10387,11 @@
     "cycle": [
      "safezone"
     ]
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -8240,23 +10412,42 @@
     "kind": "sinEye",
     "name": "罪恶之眼",
     "lvl": 27,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "sinEye",
      "recolor": null
     },
-    "artSharedWith": [
-     "floating_castle"
-    ],
+    "variantOf": null,
     "scale": 1.15,
     "h": 118,
     "visualH": 136,
     "bars": 36,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "knight"
-    ]
+    ],
+    "attacks": [
+     "cast",
+     "cast",
+     "cast",
+     "roar",
+     "roar"
+    ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "l:sinEye"
+    ],
+    "windups": [],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -8269,7 +10460,9 @@
    "bossAdds": 3,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "d_si_abyss"
+   ],
    "abyssLordOf": [
     "abyss_sky"
    ],
@@ -8288,6 +10481,11 @@
      "shield",
      "safezone"
     ]
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -8308,23 +10506,42 @@
     "kind": "lotus",
     "name": "长脚罗特斯",
     "lvl": 31,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "lotus",
      "recolor": null
     },
-    "artSharedWith": [
-     "second_spine"
-    ],
+    "variantOf": null,
     "scale": 1.25,
     "h": 140,
     "visualH": 175,
     "bars": 30,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "babyOcto"
-    ]
+    ],
+    "attacks": [
+     "slam",
+     "cast",
+     "roar",
+     "throw",
+     "roar"
+    ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "l:lotus"
+    ],
+    "windups": [],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -8337,7 +10554,9 @@
    "bossAdds": 2,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "d_si_abyss"
+   ],
    "abyssLordOf": [
     "abyss_spine",
     "abyss_forbidden"
@@ -8358,6 +10577,11 @@
      "hazard",
      "safezone"
     ]
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -8378,23 +10602,42 @@
     "kind": "marcel",
     "name": "审判者马塞尔",
     "lvl": 31,
+    "engine": "legacy-handwritten",
+    "region": null,
+    "hook": null,
     "art": {
      "base": "marcel",
      "recolor": null
     },
-    "artSharedWith": [
-     "forbidden_land"
-    ],
+    "variantOf": null,
     "scale": 1.15,
     "h": 122,
     "visualH": 140,
     "bars": 30,
     "elem": null,
-    "engine": "legacy-handwritten",
-    "hook": null,
+    "tier": null,
     "summons": [
      "gblRevPriest"
-    ]
+    ],
+    "attacks": [
+     "throw",
+     "chargeW",
+     "slam",
+     "cast",
+     "roar"
+    ],
+    "phases": [],
+    "baseSkills": [],
+    "mechs": [],
+    "skillUses": [],
+    "mechSet": [],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "l:marcel"
+    ],
+    "windups": [],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -8407,7 +10650,9 @@
    "bossAdds": 2,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "d_si_abyss"
+   ],
    "abyssLordOf": [
     "abyss_forbidden"
    ],
@@ -8426,6 +10671,11 @@
      "hazard",
      "shield"
     ]
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": []
    }
   },
   {
@@ -8446,23 +10696,24 @@
     "kind": "headlessKnight",
     "name": "无头骑士",
     "lvl": 39,
+    "engine": "region-spec",
+    "region": "darkelf",
+    "hook": null,
     "art": {
      "base": "deHeadless",
      "recolor": null
     },
-    "artSharedWith": [
-     "darkcity_gate"
-    ],
+    "variantOf": null,
     "scale": 1.15,
     "h": 128,
     "visualH": 147,
     "bars": 37,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "headlessKnightShade"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -8498,6 +10749,33 @@
     "mechSet": [
      "clones",
      "groggy"
+    ],
+    "moves": 4,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:groggy",
+     "s:blink",
+     "s:dash",
+     "s:seq",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.8
+     },
+     {
+      "skill": "dash",
+      "windup": 0.6
+     },
+     {
+      "skill": "dash",
+      "windup": 0.5
+     }
+    ],
+    "artSharedWith": [
+     "plagueHeadless(精英)"
     ]
    },
    "elite": [
@@ -8511,29 +10789,14 @@
    "bossAdds": 2,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "r_de2",
+    "d_si_abyss"
+   ],
    "abyssLordOf": [
     "abyss_darkelf"
    ],
    "sameBossAbyss": null,
-   "dup": {
-    "sameMechSet": [
-     "darkcity_gate"
-    ],
-    "sameSkillSet": [
-     "darkcity_gate"
-    ],
-    "mostSimilar": [
-     [
-      "darkcity_gate",
-      1
-     ],
-     [
-      "wit_gate",
-      0.67
-     ]
-    ]
-   },
    "abyssPool": {
     "lords": [
      "morgan",
@@ -8547,6 +10810,20 @@
     "cycle": [
      "shield",
      "safezone"
+    ]
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "wit_gate",
+      0.67
+     ],
+     [
+      "kartel_origin",
+      0.6
+     ]
     ]
    }
   },
@@ -8568,24 +10845,26 @@
     "kind": "rose",
     "name": "冰雪女王洛丝",
     "lvl": 43,
+    "engine": "region-spec",
+    "region": "snow",
+    "hook": null,
     "art": {
      "base": "snRose",
      "recolor": null
     },
-    "artSharedWith": [
-     "ice_palace"
-    ],
+    "variantOf": null,
     "scale": 1.15,
     "h": 124,
     "visualH": 143,
     "bars": 42,
     "elem": "ice",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "roseShade",
+     "shrink",
      "kruse"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -8635,7 +10914,31 @@
      "groggy",
      "hazard",
      "tether"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:groggy",
+     "m:hazard",
+     "m:tether",
+     "s:aoe",
+     "s:blink",
+     "s:laser",
+     "s:shot",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/circle",
+      "windup": 1.2
+     },
+     {
+      "skill": "laser",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -8648,29 +10951,14 @@
    "bossAdds": 2,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "r_sn2",
+    "d_si_abyss"
+   ],
    "abyssLordOf": [
     "abyss_snow"
    ],
    "sameBossAbyss": null,
-   "dup": {
-    "sameMechSet": [
-     "ice_palace"
-    ],
-    "sameSkillSet": [
-     "ice_palace"
-    ],
-    "mostSimilar": [
-     [
-      "ice_palace",
-      1
-     ],
-     [
-      "siroco_coffin",
-      0.64
-     ]
-    ]
-   },
    "abyssPool": {
     "lords": [
      "charlie",
@@ -8684,6 +10972,20 @@
     "cycle": [
      "hazard",
      "safezone"
+    ]
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "kartel_origin",
+      0.58
+     ],
+     [
+      "siroco_coffin",
+      0.56
+     ]
     ]
    }
   },
@@ -8705,25 +11007,26 @@
     "kind": "piper",
     "name": "魔笛使者皮特",
     "lvl": 49,
+    "engine": "region-spec",
+    "region": "gent",
+    "hook": null,
     "art": {
      "base": "nmPiper",
      "recolor": null
     },
-    "artSharedWith": [
-     "hamelin"
-    ],
+    "variantOf": null,
     "scale": 1.15,
     "h": 116,
     "visualH": 133,
     "bars": 47,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
      "giantRat",
      "maneater",
      "piperShade"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -8770,7 +11073,26 @@
      "enrage",
      "groggy",
      "invuln"
-    ]
+    ],
+    "moves": 5,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:enrage",
+     "m:groggy",
+     "m:invuln",
+     "s:aoe",
+     "s:blink",
+     "s:shot",
+     "s:summon"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/ring",
+      "windup": 1.1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -8783,29 +11105,14 @@
    "bossAdds": 2,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "r_gt1",
+    "d_si_abyss"
+   ],
    "abyssLordOf": [
     "abyss_norsemar"
    ],
    "sameBossAbyss": null,
-   "dup": {
-    "sameMechSet": [
-     "hamelin"
-    ],
-    "sameSkillSet": [
-     "hamelin"
-    ],
-    "mostSimilar": [
-     [
-      "hamelin",
-      1
-     ],
-     [
-      "iris_raid",
-      0.73
-     ]
-    ]
-   },
    "abyssPool": {
     "lords": [
      "mozhen",
@@ -8818,6 +11125,20 @@
     "cycle": [
      "shield",
      "safezone"
+    ]
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "iris_raid",
+      0.73
+     ],
+     [
+      "wit_gate",
+      0.55
+     ]
     ]
    }
   },
@@ -8839,23 +11160,25 @@
     "kind": "fladin",
     "name": "范·弗拉丁",
     "lvl": 57,
+    "engine": "region-spec",
+    "region": "train",
+    "hook": null,
     "art": {
      "base": "trFladin",
      "recolor": null
     },
-    "artSharedWith": [
-     "heis"
-    ],
+    "variantOf": null,
     "scale": 1.2,
     "h": 126,
     "visualH": 151,
     "bars": 55,
     "elem": null,
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "fladinShade"
+     "fladinShade",
+     "hex"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -8905,7 +11228,34 @@
      "clones",
      "groggy",
      "safezone"
-    ]
+    ],
+    "moves": 7,
+    "sig": [],
+    "tokens": [
+     "m:clones",
+     "m:groggy",
+     "m:safezone",
+     "s:aoe",
+     "s:blink",
+     "s:laser",
+     "s:rain",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "laser",
+      "windup": 1.5
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 1.2
+     },
+     {
+      "skill": "rain/hex",
+      "windup": 1.2
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -8918,29 +11268,14 @@
    "bossAdds": 2,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "r_tr2",
+    "d_si_abyss"
+   ],
    "abyssLordOf": [
     "abyss_train"
    ],
    "sameBossAbyss": null,
-   "dup": {
-    "sameMechSet": [
-     "heis"
-    ],
-    "sameSkillSet": [
-     "heis"
-    ],
-    "mostSimilar": [
-     [
-      "heis",
-      1
-     ],
-     [
-      "darkelf_tomb",
-      0.67
-     ]
-    ]
-   },
    "abyssPool": {
     "lords": [
      "mobeni",
@@ -8953,6 +11288,20 @@
     "cycle": [
      "shield",
      "safezone"
+    ]
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "darkelf_tomb",
+      0.67
+     ],
+     [
+      "iris_raid",
+      0.58
+     ]
     ]
    }
   },
@@ -8974,6 +11323,9 @@
     "kind": "kainPast",
     "name": "凯恩",
     "lvl": 60,
+    "engine": "region-spec",
+    "region": "timegate",
+    "hook": null,
     "art": {
      "base": "wcKain",
      "recolor": {
@@ -8982,19 +11334,18 @@
       "bright": 0.85
      }
     },
-    "artSharedWith": [
-     "old_wail"
-    ],
+    "variantOf": null,
     "scale": 1.55,
     "h": 130,
     "visualH": 202,
     "bars": 58,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
+     "debris",
      "siroShade"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -9046,6 +11397,37 @@
      "hazard",
      "invuln",
      "safezone"
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:hazard",
+     "m:invuln",
+     "m:safezone",
+     "s:aoe",
+     "s:blink",
+     "s:dash",
+     "s:seq",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "dash",
+      "windup": 0.6
+     },
+     {
+      "skill": "aoe/line",
+      "windup": 0.9
+     },
+     {
+      "skill": "aoe/circle",
+      "windup": 0.5
+     }
+    ],
+    "artSharedWith": [
+     "kain(精英)"
     ]
    },
    "elite": [
@@ -9059,29 +11441,14 @@
    "bossAdds": 2,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "r_tg3",
+    "d_si_abyss"
+   ],
    "abyssLordOf": [
     "abyss_timegate"
    ],
    "sameBossAbyss": null,
-   "dup": {
-    "sameMechSet": [
-     "old_wail"
-    ],
-    "sameSkillSet": [
-     "old_wail"
-    ],
-    "mostSimilar": [
-     [
-      "old_wail",
-      1
-     ],
-     [
-      "sea_pirates",
-      0.64
-     ]
-    ]
-   },
    "abyssPool": {
     "lords": [
      "kainPast",
@@ -9094,6 +11461,20 @@
     "cycle": [
      "shield",
      "safezone"
+    ]
+   },
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "sea_pirates",
+      0.64
+     ],
+     [
+      "plague_source",
+      0.64
+     ]
     ]
    }
   },
@@ -9115,23 +11496,25 @@
     "kind": "nex",
     "name": "奈克斯",
     "lvl": 62,
+    "engine": "region-spec",
+    "region": "siroco",
+    "hook": null,
     "art": {
      "base": "nex",
      "recolor": null
     },
-    "artSharedWith": [
-     "law_gate"
-    ],
+    "variantOf": null,
     "scale": 1.15,
     "h": 122,
     "visualH": 140,
     "bars": 62,
     "elem": "dark",
-    "engine": "region-spec",
-    "hook": null,
+    "tier": null,
     "summons": [
-     "hellHound"
+     "hellHound",
+     "bolt"
     ],
+    "attacks": [],
     "phases": [
      {
       "at": 1,
@@ -9170,7 +11553,29 @@
     "mechSet": [
      "groggy",
      "shield"
-    ]
+    ],
+    "moves": 6,
+    "sig": [],
+    "tokens": [
+     "m:groggy",
+     "m:shield",
+     "s:aoe",
+     "s:rain",
+     "s:shot",
+     "s:summon",
+     "s:swipe"
+    ],
+    "windups": [
+     {
+      "skill": "aoe/circle",
+      "windup": 1.5
+     },
+     {
+      "skill": "rain/bolt",
+      "windup": 1.1
+     }
+    ],
+    "artSharedWith": []
    },
    "elite": [
     {
@@ -9183,32 +11588,14 @@
    "bossAdds": 2,
    "bgm": "abyss",
    "bossBgm": "boss",
-   "quests": [],
+   "quests": [
+    "d_si_abyss",
+    "r_si2"
+   ],
    "abyssLordOf": [
     "abyss_siroco"
    ],
    "sameBossAbyss": null,
-   "dup": {
-    "sameMechSet": [
-     "frozen_heart",
-     "law_gate"
-    ],
-    "sameSkillSet": [
-     "neipera",
-     "wailing_cave",
-     "law_gate"
-    ],
-    "mostSimilar": [
-     [
-      "law_gate",
-      1
-     ],
-     [
-      "frozen_heart",
-      0.86
-     ]
-    ]
-   },
    "abyssPool": {
     "lords": [
      "nex",
@@ -9221,6 +11608,25 @@
     "cycle": [
      "hazard",
      "safezone"
+    ]
+   },
+   "dup": {
+    "sameMechSet": [
+     "frozen_heart"
+    ],
+    "sameSkillSet": [
+     "neipera",
+     "wailing_cave"
+    ],
+    "mostSimilar": [
+     [
+      "frozen_heart",
+      0.86
+     ],
+     [
+      "gent_south",
+      0.6
+     ]
     ]
    }
   }

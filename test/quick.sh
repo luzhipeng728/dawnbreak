@@ -19,7 +19,8 @@ g2() { for t in items compare bulk gear guide quickquest levelcap; do run 2 $t n
 g3() { for t in combat summon avatar shop acct bag skyguide epicfx; do run 3 $t node test/$t.mjs; done
   run 3 skillsa node test/skill_sa.mjs; run 3 shopecon node test/shop_econ.mjs; run 3 shopsynth node test/shop_synth.mjs; run 3 vanity node test/vanity.mjs; run 3 juggle node test/juggle.mjs; }
 g4() { for t in sword gunner mage enchantress summoner awkcancel; do run 4 $t node test/$t.mjs; done
-  run 4 region node test/region.mjs siroco data,skills,mechs,scenes,quest,abyss; }   # 区域流水线的快速部分（怪物逐个 / 机器人通关在 all.sh）
+  run 4 region node test/region.mjs siroco data,skills,mechs,scenes,quest,abyss   # 区域流水线的快速部分（怪物逐个 / 机器人通关在 all.sh）
+  run 4 boss node test/boss.mjs graca,skasa_nest data,phases,skills,mechs; }   # 领主专项的快速样本：一个手写领主 + 一个 4 阶段区域领主（全部 59 个 + 机器人在 all.sh）
 g5() { for t in paramedic witch spitfire mechanic fighter fighter_quests fighter_pvp fighter_launch duel_rules; do run 5 $t node test/$t.mjs; done; run 5 duelwake node test/duel_wakeup.mjs asura,aura; run 5 classes node test/classes.mjs sword,gun,mage; }
 g6() { run 6 serverapi node server/test/api.mjs; run 6 restore node --disable-warning=ExperimentalWarning server/test/restore.mjs; run 6 arenasrv node --disable-warning=ExperimentalWarning server/test/arena.mjs; run 6 adminsrv node --disable-warning=ExperimentalWarning server/test/admin.mjs
   run 6 netacct node test/net_account.mjs; run 6 svcapi node test/svc_api.mjs; run 6 svcplay node test/svc_play.mjs

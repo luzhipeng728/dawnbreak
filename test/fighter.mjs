@@ -192,8 +192,9 @@ if (MODES.includes('smoke')) {
   const town = await page.evaluate(async () => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     for (const w of ['skills', 'inv', 'status']) { menus.open(w); await sleep(150); menus.close(w); }   // 技能 / 背包 / 属性窗口（格斗家还没有技能）
-    game.lvl = 15; const avail = jobAvailable(NPCS.fengzhen); menus.open('job', NPCS.fengzhen); await sleep(250);   // Lv15 找风振：转职窗口 4 个方向（开发开关下）
-    const cards = document.querySelectorAll('.jobcard').length; menus.close('job'); game.lvl = 1;
+    // Lv15 + 做完风振的「风拳流 - 出师之战」（B8 的转职试炼）找风振：转职窗口 4 个方向（开发开关下）
+    game.lvl = 15; save.data.questDone.q_job_fighter_final = 1; const avail = jobAvailable(NPCS.fengzhen); menus.open('job', NPCS.fengzhen); await sleep(250);
+    const cards = document.querySelectorAll('.jobcard').length; menus.close('job'); game.lvl = 1; delete save.data.questDone.q_job_fighter_final;
     return { cls: game.player.cls, model: game.player.model.constructor.name, name: save.data.name, avail, cards };
   });
   await page.evaluate(() => enterDungeon('lorien', 0));

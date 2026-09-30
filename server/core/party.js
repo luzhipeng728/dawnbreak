@@ -30,6 +30,7 @@ export default {
         const g = grace.get(uid); if (g) { clearTimeout(g); grace.delete(uid); }
         ctx.sendTo(uid, { t: 'party', party: null, why });
         if (ctx.mods.room) ctx.mods.room.onPartyLeave(uid, P, why);
+        if (ctx.mods.raid) ctx.mods.raid.onPartyLeave(uid, P, why);
         if (P.members.length <= 1) {   // 只剩一个人：解散
           for (const id of P.members) { byUser.delete(id); ctx.sendTo(id, { t: 'party', party: null, why: 'disband' }); }
           parties.delete(P.id); return;
@@ -81,6 +82,7 @@ export default {
       if (P && P.members.length >= PARTY_MAX) return fail(`队伍已满（最多 ${PARTY_MAX} 人）`);
       if (P && ctx.mods.room && ctx.mods.room.partyBusy(P)) return fail('队伍正在地下城里，回城后再邀请');
       if (A.of(to.id)) return fail(`${to.name} 已经有队伍了`);
+      const rb = ctx.mods.raid && ctx.mods.raid.inviteBlock(me, to.id); if (rb) return fail(rb);   // 团本里：只能邀请同一个团本的人
       A.invites.set(`${to.id}:${me}`, { exp: Date.now() + INVITE_TTL, from: me, toName: to.name });
       ctx.sendTo(to.id, { t: 'party:invited', from: { id: me, name: c.user.name, char: c.char, build: c.build }, size: P ? P.members.length : 1 });
       c.send({ t: 'party:note', text: `已向 ${to.name} 发出组队邀请` });
@@ -96,6 +98,7 @@ export default {
       if (P && P.leader !== from) return fail('对方已经不是队长了');
       if (P && P.members.length >= PARTY_MAX) return fail('队伍已满');
       if (P && ctx.mods.room && ctx.mods.room.partyBusy(P)) return fail('队伍正在地下城里，稍后再试');
+      const rb = ctx.mods.raid && ctx.mods.raid.inviteBlock(from, me); if (rb) return fail(rb);
       if (!P) P = A.create(from, me); else A.join(me, P);
       for (const id of P.members) if (id !== me) ctx.sendTo(id, { t: 'party:note', text: `${c.user.name} 加入了队伍` });
       A.push(P);
@@ -116,6 +119,7 @@ export default {
       const A = ctx.mods.party, P = A.of(c.user.id), id = +msg.id;
       if (!P || P.leader !== c.user.id || !P.members.includes(id) || id === c.user.id) return;
       if (ctx.mods.room && ctx.mods.room.partyBusy(P)) return c.send({ t: 'party:note', text: '地下城里不能移交队长' });
+      if (ctx.mods.raid && ctx.mods.raid.busy(P)) return c.send({ t: 'party:note', text: '团本进行中不能移交队长' });
       if (!ctx.isOnline(id)) return c.send({ t: 'party:note', text: '对方不在线' });
       P.leader = id;
       const u = ctx.findUser(id);

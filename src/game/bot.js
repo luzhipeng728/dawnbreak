@@ -13,16 +13,25 @@ const bot = {
     if (D.state === 'dead') { if (!this.wasDead) this.deaths++; this.wasDead = true; if (D.deadT < 9) V.attack = 2; return; }
     this.wasDead = false;
     if (p.st === 'down' && Math.random() < 0.1) { V.jump = 2; return; }
-    // 1) 躲地面预警
-    const danger = groundFx.find(g => g.fire && !g.friendly && inGround(p, g.x, g.y, g.r + 10));
+    // 1) 躲：领主原语给的解法（game/mon_skills_ext.js msBotThreat：扇形 / 直线 / 分道 / 能跳的圈 / 双环 / 标记 / 吸人 / 安全区 / 地砖 / 凝视 / 残留区）
+    const T = typeof msBotThreat === 'function' ? msBotThreat(p) : null;
+    if (T && T.why !== this.lastWhy) { this.dodges = (this.dodges || 0) + 1; this.threats = this.threats || {}; this.threats[T.why] = (this.threats[T.why] || 0) + 1; }
+    this.lastWhy = T ? T.why : null;
+    if (T && T.jump) { V.jump = 2; return; }
+    if (T && T.face) { if (p.face !== T.face && !p.busy) V[T.face > 0 ? 'right' : 'left'] = 1; return; }
+    if (T && T.x !== undefined) { this.move(V, p, T.x, T.y, true); return; }
+    if (T && T.why === 'jump') return;   // 等着跳：别出招（出招中跳不起来）
+    const stay = !!(T && T.stay);   // 原地：够得着就打，不追
+    // 普通圆形预警（老办法）：跟着人的圈（还没锁定的跳砸、标记）不跑
+    const danger = !stay && groundFx.find(g => g.fire && !g.friendly && !g.track && !g.cone && !g.r0 && !g.jump && g.r > 0 && g.kind !== 'line' && inGround(p, g.x, g.y, g.r + 10));
     if (danger) {
       const ty = danger.y > DEPTH / 2 ? 8 : DEPTH - 8;
       if (canBackstep(p) && Math.random() < 0.3) { V.down = 1; V.jump = 2; this.dodges = (this.dodges || 0) + 1; return; }   // 后跳（官方没有闪避键）
       this.move(V, p, p.x + (p.x >= danger.x ? 60 : -60), ty, true); return;
     }
     // 2) 打怪
-    let tgt = null, best = 1e9;
-    for (const e of ents) if (e.team === 'e' && !e.dead && !e.remove && !e.botSkip) { const d = Math.abs(e.x - p.x) + Math.abs(e.y - p.y) * 2 + (e.boss ? -200 : 0); if (d < best) { best = d; tgt = e; } }
+    let tgt = typeof msBotTarget === 'function' ? msBotTarget(p) : null, best = 1e9;   // 引信在走的物件 / 冲着保护目标的小怪 / 读条的领主优先
+    if (!tgt) for (const e of ents) if (e.team === 'e' && !e.dead && !e.remove && !e.botSkip) { const d = Math.abs(e.x - p.x) + Math.abs(e.y - p.y) * 2 + (e.boss ? -200 : 0); if (d < best) { best = d; tgt = e; } }
     if (tgt) {
       const side = p.x < tgt.x ? -1 : 1, reach = 50 + tgt.w;
       const ax = Math.abs(tgt.x - p.x), ay = Math.abs(tgt.y - p.y);
@@ -32,12 +41,12 @@ const bot = {
         if (p.st === 'act' && Math.random() < 0.6) { V.attack = 2; return; }
         const ready = [];
         for (let i = 0; i < SKILL_SLOTS; i++) { const id = game.skillBar[i], S = id && SKILLS[id]; if (S && (game.skillLv[id] || 0) > 0 && (p.cool[id] || 0) <= 0 && p.mp >= S.mp && (!S.buff || !p.buffs[id])) ready.push(i); }
-        if (ready.length && Math.random() < 0.08) V['s' + pick(ready)] = 2; else V.attack = 2;
+        if (ready.length && Math.random() < (tgt.act && tgt.act.msHold ? 0.35 : 0.08)) V['s' + pick(ready)] = 2; else V.attack = 2;   // 领主读条（stagger）：多放技能打断
         if (p.hp < p.hpMax * 0.35 && inv.potCd <= 0 && inv.count(inv.quick[0])) V.i0 = 2;
         if (p.mp < p.mpMax * 0.2 && inv.potCd <= 0 && inv.count(inv.quick[1])) V.i1 = 2;
         return;
       }
-      this.move(V, p, tgt.x + side * reach, tgt.y, ax > 260);
+      if (!stay) this.move(V, p, tgt.x + side * reach, tgt.y, ax > 260);
       return;
     }
     // 3) 清完房间：走向通往领主房的门
@@ -71,7 +80,7 @@ const bot = {
   result(dt) {
     this.resT += dt;
     if (this.resT > 1 && !this.flipped) { const c = document.querySelector('#result .card'); if (c) { c.click(); this.flipped = true; } }
-    if (this.resT > 2.5 && !window.__botDone) { const D = game.dungeon; window.__botDone = { dodges: this.dodges || 0, rank: D.result.rank, time: Math.round(D.result.time), hurt: D.hurt, deaths: this.deaths, coins: D.usedCoins, lvl: game.lvl, maxCombo: game.maxCombo }; }
+    if (this.resT > 2.5 && !window.__botDone) { const D = game.dungeon; window.__botDone = { dodges: this.dodges || 0, threats: { ...(this.threats || {}) }, rank: D.result.rank, time: Math.round(D.result.time), hurt: D.hurt, deaths: this.deaths, coins: D.usedCoins, lvl: game.lvl, maxCombo: game.maxCombo }; }
   },
 };
 // 测试用：直接把角色拉到指定等级，穿上同等级的蓝/紫装，所有技能学到合理等级

@@ -31,6 +31,22 @@ function inWin(w, t) {
 }
 // BUFF 数值求和（buffs[k][key]）
 function buffVal(e, key) { let s = 0; const B = e.buffs; if (B) for (const k in B) { const v = B[k][key]; if (v) s += v; } return s; }
+// 持续回复（BUFF 的 hot = 每秒回复最大 HP 的比例，圣职者 缓慢愈合等）：每秒结算一次、飘绿字；键盘玩家在 game.step、其他格斗者在 tickFighter 里调用
+function tickHot(e, dt) {
+  const v = e.dead ? 0 : buffVal(e, 'hot'); if (!(v > 0)) { e._hotAcc = 0; e._hotT = 0; return; }
+  e._hotAcc = (e._hotAcc || 0) + e.hpMax * v * dt; e._hotT = (e._hotT || 0) + dt; if (e._hotT < 1) return;
+  const n = Math.min(Math.round(e._hotAcc), e.hpMax - e.hp); e._hotAcc = 0; e._hotT = 0;
+  if (n > 0) { e.hp += n; addNumber(n, e.x, e.y, e.z, { col: '#7aff8a' }); }
+}
+// 免死（BUFF 的 life = 受到致命伤害时不死、回复到最大 HP 的这个比例，用掉这个 BUFF；圣骑士 生命源泉 / 复仇者 恶之再临等）；决斗里不生效。killEnt 开头调用
+function lifeSave(t) {
+  const B = t.buffs; if (!B || game.pvp) return false;
+  const k = Object.keys(B).find(id => B[id].life > 0); if (!k) return false;
+  const pct = Math.min(1, B[k].life), name = B[k].name || '免死'; delete B[k];
+  t.hp = Math.max(1, Math.round(t.hpMax * pct)); t.invul = Math.max(t.invul || 0, 1);
+  fxText(name, t.x, t.y, t.z + 30, { col: '#ffe07a', size: 14, dur: 1 }); if (typeof fxAura === 'function') fxAura(t, '#ffe9a0', 1);
+  return true;
+}
 // 攻速 / 施放 / 移速倍率（1 = 基准；recalcStats 写面板值，BUFF 在读取时叠加）
 const aspdOf = e => clamp((e.aspd ?? 1) + buffVal(e, 'aspd'), 0.5, 2.5);
 const cspdOf = e => clamp((e.cspd ?? 1) + buffVal(e, 'cspd'), 0.5, 3);

@@ -32,9 +32,10 @@ defineNpc('lily', { name: '莉莉', title: '精灵迷少女', art: 'world/npc_li
 defineNpc('skadi', { name: '斯卡迪女王', title: '贝尔玛尔公国女王', art: 'world/npc_skadi', h: 120, services: ['quest'],
   greet: ['欢迎来到赫顿玛尔，勇士。'],
   lines: ['赫顿玛尔是大魔法师玛尔在沙漠中建起的城市，这里的一切都是白色的。', '格兰之森的异变，让我寝食难安。', '王国需要像你这样的冒险家。'] });
-defineNpc('grandis', { name: '歌兰蒂斯', title: '圣职者导师 · 大圣堂', art: 'world/npc_grandis', h: 124, services: ['quest', 'cure'],
+// 圣职者导师（docs/CLASS_PLAN_PRIEST.md）：转职按钮只对圣职者显示（jobAvailable 看 jobFor）；武器商店等圣职者开放后才挂出来
+defineNpc('grandis', { name: '歌兰蒂斯', title: '圣职者导师 · 大圣堂', art: 'world/npc_grandis', h: 124, services: ['quest', 'cure', 'job', ...(clsOpen('priest') ? ['shop:grandis'] : [])], jobFor: 'priest',
   greet: ['愿神的光辉指引你。'],
-  lines: ['愿神的光辉指引你。', '受了伤就来大圣堂吧，这里的祈祷能驱散虚弱。', '赫顿玛尔的人们，都在等待勇士的到来。', '圣职者的道路还没有向你敞开……（圣职者职业尚未开放）'] });
+  lines: ['愿神的光辉指引你。', '受了伤就来大圣堂吧，这里的祈祷能驱散虚弱。', '赫顿玛尔的人们，都在等待勇士的到来。', clsOpen('priest') ? '巨兵的重量，就是信仰的重量。不要辜负它。' : '圣职者的道路还没有向你敞开……（圣职者职业尚未开放）'] });
 defineNpc('albert', { name: '阿尔伯特', title: '技能研究家', art: 'world/npc_albert', h: 120, services: ['quest'],
   greet: ['哦？你的动作里有些有意思的东西。'],
   lines: ['我毕生都在研究各个流派的战斗技巧，哪怕只看一眼，也能看出门道。', '技能不在多，在于用得对不对。连招的衔接，才是真正的学问。', '听说剑魂能把一把普通的太刀用出十种花样……真想亲眼看看。', '攒够了技能点，别忘了按 K 好好规划一下。'] });

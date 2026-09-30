@@ -15,6 +15,7 @@ const DUEL_BASE = {   // 每个职业的 PvP 基准属性（天平后）
   gun: { hp: 19500, mp: 4400, atk: 2000, matk: 1700, def: 1900, mdef: 1900 },
   mage: { hp: 18000, mp: 5600, atk: 1300, matk: 2150, def: 1700, mdef: 2200 },
   fighter: { hp: 21000, mp: 4200, atk: 2100, matk: 1800, def: 2100, mdef: 1800 },   // 男格斗家和鬼剑士同一档（近战、官方四维相同），强弱由 PVP_JOB 调（B9，docs/PVP.md §4）
+  priest: { hp: 21500, mp: 4400, atk: 2050, matk: 1950, def: 2200, mdef: 2000 },   // 男圣职者（docs/CLASS_PLAN_PRIEST.md）：近战重甲，暂按鬼剑士一档略硬；强弱由圣职者决斗块跑循环赛调 PVP_JOB
 };
 function duelStats(p) {
   const B = DUEL_BASE[p.cls], C = CLASSES[p.cls];
@@ -79,6 +80,7 @@ const PVP_JOB = {
   'gun:': [2.05, 0.65], 'gun:ranger': 1.39, 'gun:launcher': 1.26, 'gun:spitfire': 1.08, 'gun:mechanic': 0.79, 'gun:paramedic': 1.49,
   'mage:': 1.94, 'mage:elemental': 1.14, 'mage:battlemage': 1.07, 'mage:summoner': 1.33, 'mage:witch': 1.42, 'mage:enchantress': 1.25,
   'fighter:': [1.62, 0.6], 'fighter:nenmaster': [0.37, 1.3], 'fighter:striker': 0.92, 'fighter:brawler': 0.46, 'fighter:grappler': 0.77,
+  'priest:': [1.5, 0.6],   // 圣职者：没开放前的占位（和未转职的鬼剑士 / 格斗家同一档），4 个转职等各自做完再由决斗块调
 };
 for (const id in SKILLS) {
   const S = SKILLS[id]; if (!S || S.passive) continue;
@@ -312,7 +314,7 @@ Object.assign(menus, {
     const jobRow = () => { for (const [key, jkey, el] of [['a', 'ja', jobsA], ['b', 'jb', jobsB]]) { const c = sel[key]; el.replaceChildren(...(c === 'me' ? [] : Object.entries(CLASSES[c].jobs || {}).filter(([, J]) => jobOpen(J)).map(([j, J]) => h('button', { class: 'btn' + (sel[jkey] === j || (!sel[jkey] && j === firstJob(c)) ? '' : ' off'), onclick: () => { sel[jkey] = j; jobRow(); } }, J.name)))); } };
     jobRow();
     const lvRow = h('div', { class: 'duelrow' }, ...[1, 2, 3].map(n => h('button', { class: 'btn' + (sel.ai === n ? '' : ' off'), onclick: e => { sel.ai = n; [...lvRow.children].forEach((b, i) => b.classList.toggle('off', i + 1 !== n)); } }, ['简单', '普通', '困难'][n - 1])));
-    const go = h('button', { class: 'btn big', onclick: () => { const q = new URLSearchParams({ duel: sel.a, vs: sel.b, ai: sel.ai }); if (DEV_OPEN) q.set('fighter', '1'); if (sel.ja) q.set('job', sel.ja); if (sel.jb) q.set('vsjob', sel.jb); if (save.data) save.write(); location.search = '?' + q.toString(); } }, '开始决斗');
+    const go = h('button', { class: 'btn big', onclick: () => { const q = new URLSearchParams({ duel: sel.a, vs: sel.b, ai: sel.ai }); devOpenParams(q); if (sel.ja) q.set('job', sel.ja); if (sel.jb) q.set('vsjob', sel.jb); if (save.data) save.write(); location.search = '?' + q.toString(); } }, '开始决斗');
     return this.win('决斗场', h('div', { class: 'duelwin' }, h('b', {}, '我方'), clsBtns('a', 'ja', true), jobsA, h('b', {}, '对手（AI）'), clsBtns('b', 'jb', false), jobsB, h('b', {}, 'AI 难度'), lvRow,
       h('div', { class: 'dueltip' }, `一局定胜负，每局 ${DUEL_CFG.time} 秒（开局 ${DUEL_CFG.guard} 秒倒计时只能走位 / 放 BUFF，大技能和觉醒开局在冷却）。双方属性由天平系统统一；平推 / 浮空 / 倒地 / 时间保护与燃斗模式生效。`), go), { w: 34 });
   },

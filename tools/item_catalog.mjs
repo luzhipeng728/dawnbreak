@@ -22,7 +22,8 @@ function dummy() {
   return p;
 }
 
-export function catalogFromJs(js, id = '') {
+// 在 Node 的 vm 里跑一遍网页版脚本（浏览器接口全部换成替身），返回这个 vm 上下文（server/test/raid.mjs 也用它取网页版里的 RAID_CORE）
+export function webContext(js) {
   const any = dummy(), store = { getItem: () => null, setItem() {}, removeItem() {}, clear() {}, key: () => null, length: 0 };
   const box = {
     console: { log() {}, warn() {}, error() {}, info() {}, debug() {} },
@@ -36,6 +37,11 @@ export function catalogFromJs(js, id = '') {
   box.window = box; box.self = box; box.globalThis = box;
   const ctx = vm.createContext(box);
   vm.runInContext(js, ctx, { filename: 'dawnbreak-web.js', timeout: 20000 });
+  return ctx;
+}
+
+export function catalogFromJs(js, id = '') {
+  const ctx = webContext(js);
   const out = vm.runInContext(`(() => {
     const items = Object.keys(ITEMS).map(k => {
       const D = ITEMS[k]; let icon = null;

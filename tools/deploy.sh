@@ -5,10 +5,11 @@
 #   sh tools/deploy.sh server     只发服务端（改了 server/ 才需要，会重启服务，正在组队 / 决斗的人会自动恢复）
 #   sh tools/deploy.sh all
 # 注意：完整回归（test/all.sh）跑的时候不要重新构建，会把正在加载页面的测试弄超时。
+# 前端只构建网页版（--web，不出 175 MB 的离线单文件 dist/dawnbreak.html，测试要用它时 quick.sh / all.sh 会自己重建）；不接 | tail，构建失败时 set -e 直接停下
 set -e
 cd "$(dirname "$0")/.."
 web() {
-  node build.mjs | tail -1
+  node build.mjs --web
   rsync -az --exclude version.json dist/web/ cc:/opt/dawnbreak/
   L=$(md5 -q dist/web/index.html 2>/dev/null || md5sum dist/web/index.html | cut -d' ' -f1)
   R=$(curl -s https://dnf.cc.l-hate.com/ | (md5 -q 2>/dev/null || md5sum | cut -d' ' -f1))
@@ -21,6 +22,7 @@ web() {
 server() {
   ssh cc 'sudo /opt/dawnbreak-server/backup.sh'
   rsync -az --delete --exclude node_modules --exclude data --exclude test server/ cc:/tmp/dawnbreak-server-src/
+  rsync -az src/game/raid_core.js cc:/tmp/dawnbreak-server-src/lib/raid_core.js   # 团本规则核心：浏览器和服务端共用同一个文件（server/modules/raid.js 用 node:vm 加载）
   ssh cc 'NODE_MIRROR=https://npmmirror.com/mirrors/node sh /tmp/dawnbreak-server-src/deploy/install.sh /tmp/dawnbreak-server-src 2>&1 | tail -2'
   curl -s https://dnf.cc.l-hate.com/api/health; echo
 }

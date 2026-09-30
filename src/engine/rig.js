@@ -59,6 +59,6 @@ const P = (base, over) => { const o = { ...base, ...over }; if (over.r) o.r = ov
 function poseName(p) { for (let i = 0; p && i < 6; i++, p = p.__b) if (p.__n) return p.__n; return ''; }
 function nameAllPoses() {
   for (const k in POSE) if (!Object.prototype.hasOwnProperty.call(POSE[k], '__n')) Object.defineProperty(POSE[k], '__n', { value: k });
-  const sets = [CLIPS.sword, CLIPS.gun, CLIPS.mage, CLIPS.fighter, HUMAN_CLIPS, GOB_CLIPS, BEAST_CLIPS];
+  const sets = [...Object.values(CLIPS), HUMAN_CLIPS, GOB_CLIPS, BEAST_CLIPS];   // 每个职业的骨骼片段表（CLIPS.<职业>）+ 通用
   for (const S of sets) if (S) for (const k in S) if (!S[k].__name) Object.defineProperty(S[k], '__name', { value: k });
 }

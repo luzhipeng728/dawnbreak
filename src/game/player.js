@@ -62,6 +62,7 @@ function tickFighter(p, dt) {
   if (p.dead) return;
   p.mp = Math.min(p.mpMax, p.mp + p.mpMax * 0.02 * dt);
   for (const k in p.buffs) { p.buffs[k].t -= dt; if (p.buffs[k].t <= 0) delete p.buffs[k]; }
+  if (!p.ghost) tickHot(p, dt);
   if (p.baseStats) applyBuffs(p);
 }
 // 装填次数制技能（S.charges = 上限，S.reload = 每颗补充秒数；例：G-14 手雷 3 颗、每 2 秒补 1 颗）

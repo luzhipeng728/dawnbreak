@@ -36,7 +36,7 @@ const srvT = n => T(`srv_${n}`, '--disable-warning=ExperimentalWarning', `server
 // 职业文件 → [职业, 转职]
 const JOB_OF = { nen: 'nenmaster' };
 function classOf(f) {
-  const m = f.match(/^src\/content\/classes\/([a-z]+?)(?:_([a-z]+?))?(?:_p\d)?\.js$/); if (!m) return null;
+  const m = f.match(/^src\/content\/classes\/([a-z]+?)(?:_([a-z]+?))?(?:_p\d)?\.js$/); if (!m || m[1] === 'common') return null;   // common.js 不是职业（见 RULES）
   if (!fs.existsSync(`src/content/classes/${m[1]}.js`)) return null;   // 职业的基础文件（sword.js / gunner.js / mage.js / fighter.js / 以后的新职业）
   const cls = { gunner: 'gun' }[m[1]] || m[1];
   return [cls, m[2] ? (JOB_OF[m[2]] || m[2]) : null];
@@ -53,9 +53,10 @@ function classTests(cls, job) {
 // ---- 规则：路径 → 测试 ----
 const RULES = [
   [/^src\/engine\/(combat|entity|proj)\.js$/, [nodeT('combat'), nodeT('juggle'), nodeT('skill_sa')]],
+  [/^src\/content\/classes\/common\.js$/, [T('fighter_open', 'test/fighter.mjs', 'save,switch'), T('classes_base', 'test/classes.mjs', 'sword,fighter')]],   // 职业公共件：开放开关 / 技能登记 / 指令
   [/^src\/game\/player\.js$/, [nodeT('combat'), T('awk_sample', 'test/awkcancel.mjs', 'sword:berserker,fighter:striker')]],
   [/^src\/(game\/duel|net\/pvp|net\/arena)\.js$|^server\/modules\/arena\.js$/, [nodeT('duel_rules'), T('duel_wakeup', 'test/duel_wakeup.mjs', 'asura,aura'), nodeT('fighter_pvp'), srvT('arena')]],
-  [/^src\/game\/(items|gear|drops|shop)\.js$|^src\/content\/items\//, [nodeT('items'), nodeT('gear'), nodeT('compare'), T('gear60', 'test/gear60.mjs', 'core'), nodeT('cdr60'), nodeT('shop')]],
+  [/^src\/game\/(items|gear|drops|shop)\.js$|^src\/content\/items\//, [nodeT('enh_nocap'), nodeT('items'), nodeT('gear'), nodeT('compare'), T('gear60', 'test/gear60.mjs', 'core'), nodeT('cdr60'), nodeT('shop')]],
   [/^src\/ui\/items\//, [nodeT('bag'), nodeT('items'), nodeT('bulk'), nodeT('compare'), nodeT('shop')]],
   [/^src\/ui\/cash\/|^src\/content\/cash\//, [nodeT('shop_econ'), nodeT('vanity'), nodeT('shop_synth')]],
   [/^src\/ui\/skillwin\.js$|^src\/game\/progress\.js$/, [nodeT('skill_autolearn'), nodeT('levelcap')]],
@@ -64,6 +65,8 @@ const RULES = [
   [/^src\/(game\/quests|ui\/quest|ui\/job|ui\/npc)\.js$|^src\/content\/quests\//, [nodeT('quickquest'), nodeT('quests60')]],
   [/^src\/net\/(coop|coop_mech|party_sync)\.js$|^server\/core\/(party|room)\.js$/, [T('mp_coop', 'test/mp_coop.mjs', '2'), nodeT('mp_coop_more')]],
   [/^src\/net\/(account|net|social|town)\.js$|^server\/(core|lib|index)/, [srvT('api'), nodeT('net_account')]],
+  [/^server\/modules\/(mail|social|gm|auction)\.js$/, [srvT('api')]],
+  [/^src\/game\/raid_core\.js$|^server\/modules\/raid\.js$|^server\/core\/party\.js$|^tools\/item_catalog\.mjs$/, [srvT('raid')]],
   [/^server\/(modules\/admin|admin\/)|^src\/ui\/social\/gm\.js$/, [srvT('admin'), nodeT('admin_console')]],
   [/^src\/game\/(mon_skills|mon_skills_ext|region)\.js$|^src\/content\/regions\/siroco/, [T('region_siroco', 'test/region.mjs', 'siroco', 'data,skills,mechs')]],
   [/^src\/content\/abyss\.js$/, [T('region_abyss', 'test/region.mjs', 'siroco', 'abyss'), T('mp_abyss', 'test/mp_abyss.mjs', 'A')]],

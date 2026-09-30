@@ -411,6 +411,306 @@
    ],
    "launch": false,
    "cd": 8
+  },
+  "fs_power": {
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 5,
+   "en": "Power Fist",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 2.1.3 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "→→+Space；施放 0.5 s；永久（决斗场 10 s）暴击伤害 +(3+2n)%、敌人硬直 130%；双拳发红光"
+  },
+  "fs_elbow": {
+   "hits": [
+    1,
+    1
+   ],
+   "launch": false,
+   "sa": "none",
+   "reach": [
+    70,
+    170
+   ],
+   "cd": 4,
+   "en": "Torpedo",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 2.2.1 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "↑→+Z；闪电般突进肘击使敌人硬直，一开始就有判定；按→/↑/↓ 向前 / 上 / 下移动，不按方向不前进；无霸体",
+   "why": {
+    "reach": "审计是轻点不按方向（官方不按方向不前进）；按 → 时冲约 200 px"
+   }
+  },
+  "fs_sa": {
+   "hits": [
+    0,
+    0
+   ],
+   "sa": "full",
+   "cd": 30,
+   "en": "Super Armor",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 2.1.2 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "↑↑+Space；施放 0.7 s（动作本身霸体）；60 s 霸体 + 双防 / 体力；柔化施放的技能命中 +2 s（上限 60）；决斗场 8.1 s、移速 −10%"
+  },
+  "fs_pusher": {
+   "hits": [
+    1,
+    1
+   ],
+   "sa": "part",
+   "dx": [
+    150,
+    320
+   ],
+   "reach": [
+    170,
+    300
+   ],
+   "cd": 7,
+   "en": "Mountain Pusher",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 2.2.2 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "→→+Z；发动时霸体，向前冲用肩撞飞（按住→ 更远）；Y 轴宽、能打倒地；千锤百炼后焚步中向前方扩散冲击波"
+  },
+  "fs_bone": {
+   "hits": [
+    1,
+    2
+   ],
+   "behind": true,
+   "reach": [
+    70,
+    300
+   ],
+   "cd": 7,
+   "en": "Bone Crusher",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 2.3.1 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "→↓+Z；强化下段踢，有前摇（柔化时没有）；几率减速 10 s（移速 −73%、攻速 −25%）；命中产生冲击波打周围敌人（直接命中者不吃）；能打倒地",
+   "why": {
+    "behind": "冲击波以被踢中的敌人为中心，身后的木桩也吃到（官方冲击波向周围扩散）"
+   }
+  },
+  "fs_rush": {
+   "hits": [
+    2,
+    2
+   ],
+   "cd": 12,
+   "en": "(KR 섬격)",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 2.3.2",
+   "conf": "high",
+   "official": "指令未查到（只能快捷栏）；冲向敌人，对途中第一个敌人打肘击 + 中段踢 2 连；按方向键追踪前方敌人，柔化施放也能换方向"
+  },
+  "fs_close": {
+   "hits": [
+    1,
+    2
+   ],
+   "launch": false,
+   "sa": "none",
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 15,
+   "en": "Close Kick",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 2.3.3 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "←↓→+Z；贴身中段踢，威力大，踢空破绽大；命中停一拍后冲击波打后面的敌人并远远推开（2019 起直接命中者不吃冲击波）；焚步中冲击波不推开"
+  },
+  "fs_flamekick": {
+   "hits": [
+    6,
+    8
+   ],
+   "launch": true,
+   "cd": 15,
+   "en": "Flame Tornado Kick",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 2.3.4 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "←↑→+Z；带火的旋风腿 6 段 + 强踢；按住→ 施放斜向上升 4 段再下劈（砸地弹起）；施放时攻速 +25%；空中可用；跳跃键取消；无属性物理"
+  },
+  "fs_dance": {
+   "hits": [
+    8,
+    12
+   ],
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 20,
+   "en": "Lightning Dance",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 2.3.5 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "←→→+Z；踢前方一个敌人，借反冲力瞬移到周围敌人身边连踢 8 次、把敌人赶到一处（强制硬直，霸体也不例外）再终结；瞬移瞬间无敌；没敌人就停；跳跃键立即终结"
+  },
+  "fs_dragon": {
+   "hits": [
+    1,
+    1
+   ],
+   "sa": "none",
+   "dx": [
+    250,
+    450
+   ],
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 45,
+   "en": "Dragon Kick（헥토파스칼 킥）",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 2.3.6 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "↑→→+Z；像要踢穿对手的飞踢，单发大伤害；被踢的敌人一律向前击退（2020 起）；X 轴判定大、贴身会踢过对手；落地后才能柔化"
+  },
+  "fs_awaken": {
+   "hits": [
+    1,
+    1
+   ],
+   "invul": "full",
+   "cd": 135,
+   "en": "Suju Inferno",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 3.1.2 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "↑↑↓↓+Z；变身型 BUFF 50 s：武术技能冷却 −15%、后摇 −(2+5n)%、技能攻击 +(−2+4n)%、敌人硬直 173%、柔化充能 −1 s；发动时周围爆炸伤害、移动时地面火焰有判定"
+  },
+  "fs_dual": {
+   "pre": [
+    "fs_awaken"
+   ],
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 135,
+   "en": "Dual Release",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 3.1.2.1 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "↓↓↑↑+Z；焚步中才能放；下一次 瞬影连环踢 / 烈火强拳 / 炼狱坠星腿 追加一次（千锤百炼后：打中才消耗、可在其他技能中施放）"
+  },
+  "fs_whirl": {
+   "hits": [
+    4,
+    6
+   ],
+   "pull": true,
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 20,
+   "en": "Whirlwind Kick",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 3.1.3 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "无指令；快速回旋踢把前方敌人扫到一起，再强力一击（回旋 : 终结 ≈ 1 : 2）；按→ 向前跃起施放；范围大",
+   "why": {
+    "pull": "回旋段确实把敌人扫到身前 140px（test/striker.mjs 量到 300px 的木桩被拉近 >30px），但终结一击把它们打飞，审计按结束时的位置算成“没拉近”"
+   }
+  },
+  "fs_spin": {
+   "hits": [
+    4,
+    8
+   ],
+   "behind": true,
+   "sa": "none",
+   "reach": [
+    170,
+    450
+   ],
+   "cd": 50,
+   "en": "Spin Kick",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 3.1.4 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "→←↑→+Z；原地转一圈（3~4 段，前后都有判定、把敌人卷到身前），低跳借离心力两脚把敌人踢飞击倒 + 爆炸；范围很大；没有霸体"
+  },
+  "fs_descent": {
+   "hits": [
+    2,
+    3
+   ],
+   "dx": [
+    120,
+    320
+   ],
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 45,
+   "en": "Power Descent",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 3.2.2 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "→←→+Z；前冲让敌人硬直并聚到前方，跳起强力下劈爆炸；空中 / 后跳中施放则原地直接下劈；空中可柔化；霸体敌人聚不了"
+  },
+  "fs_cannon": {
+   "hits": [
+    1,
+    1
+   ],
+   "dx": [
+    200,
+    480
+   ],
+   "reach": [
+    170,
+    450
+   ],
+   "cd": 55,
+   "en": "Atomic Cannon",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 3.2.3 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "↓→→+Z；按住技能键推迟出拳（不增伤）；准备中 → 冲得远、← 原地（原地时突进伤害并进拳击）；突进路线上的敌人被拖走；单发"
+  },
+  "fs_awaken2": {
+   "hits": [
+    3,
+    3
+   ],
+   "invul": "full",
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 170,
+   "en": "Tyrant Strike",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 3.2.4 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "↓↑→→+Z；左右来回各一拳把前方敌人聚到一点，再贯穿前方的飞踢（共 3 击，大部分伤害在飞踢）；“爆碎”"
+  },
+  "fs_mortal": {
+   "hits": [
+    2,
+    3
+   ],
+   "cd": 60,
+   "en": "Mortal Assault",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 3.3.2 / DFO(wiki.dfo.world 技能页)",
+   "conf": "high",
+   "official": "↑↓→→+Z；地面 / 空中；搜索 400 px 内最强的敌人，跃起后出现在其头顶下劈 + 冲击波（落地踢 : 冲击波 ≈ 45 : 55）；双重施放时追加终结拳（只打前方）"
+  },
+  "fs_awaken3": {
+   "hits": [
+    7,
+    12
+   ],
+   "invul": "full",
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 270,
+   "en": "Infernal Destroyer",
+   "src": "N-striker(namu 스트라이커(던전앤파이터)/남자/스킬 2026-07) 3.3.3 / DFO(wiki.dfo.world 技能页)",
+   "conf": "mid",
+   "official": "←↑→↓+Z；瞬移到附近最强的敌人身边全力连打（约 7 拳）+ 回旋踢 + “灭火”终结拳；判定比特效大得多；施放约 6 s"
   }
  }
 }

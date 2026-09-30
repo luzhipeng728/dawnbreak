@@ -1,0 +1,9228 @@
+{
+ "generatedFrom": "vm dump of src/ @ d8cfe62",
+ "generatedAt": "2026-09-30",
+ "regenerate": "see docs/BOSS_PLAN.md §0 (tools/boss_inventory.mjs planned in Phase 0)",
+ "summary": {
+  "dungeons": 69,
+  "normalDungeons": 59,
+  "abyssDungeons": 10,
+  "bossKinds": 59,
+  "legacyBosses": 22,
+  "regionSpecBosses": 37,
+  "distinctBossArtBases": 55,
+  "sharedBossArt": {
+   "catKing": [
+    "dark_woods_deep",
+    "venom_ruins"
+   ],
+   "flameMage": [
+    "frozen_woods",
+    "blazing_graca"
+   ],
+   "deGiant": [
+    "lava_cave",
+    "lik_well"
+   ],
+   "snSkasa": [
+    "skasa_nest",
+    "old_winter"
+   ],
+   "wcKain": [
+    "wailing_cave(精英)",
+    "old_wail"
+   ]
+  },
+  "regionBossSkillUse": {
+   "aoe": 34,
+   "swipe": 33,
+   "summon": 24,
+   "mech:*": 24,
+   "rain": 23,
+   "dash": 18,
+   "shot": 15,
+   "blink": 14,
+   "seq": 11,
+   "laser": 9,
+   "guard": 4,
+   "buff": 3,
+   "grab": 3,
+   "explode": 1
+  },
+  "regionBossMechUse": {
+   "groggy": 37,
+   "hazard": 16,
+   "safezone": 15,
+   "invuln": 13,
+   "enrage": 12,
+   "shield": 8,
+   "clones": 8,
+   "tether": 4,
+   "element": 3
+  },
+  "identicalMechSets": {
+   "groggy+hazard": [
+    "shallow_haunt",
+    "lik_well",
+    "gent_outskirts",
+    "gent_east",
+    "sea_pirates"
+   ],
+   "groggy+invuln": [
+    "spider_cave",
+    "fallen_bandits",
+    "bilmark",
+    "wailing_cave"
+   ],
+   "groggy+safezone": [
+    "darkelf_tomb",
+    "white_ruins"
+   ],
+   "enrage+groggy+hazard+invuln+safezone": [
+    "neipera",
+    "skasa_nest"
+   ],
+   "groggy+shield": [
+    "frozen_heart",
+    "law_gate"
+   ],
+   "groggy+hazard+shield": [
+    "west_line",
+    "secret_zone"
+   ],
+   "groggy+invuln+safezone": [
+    "plague_source",
+    "holy_war"
+   ]
+  },
+  "mostSimilarPairs": [
+   [
+    "plague_source",
+    "holy_war",
+    0.89
+   ],
+   [
+    "lava_cave",
+    "lik_well",
+    0.88
+   ],
+   [
+    "frozen_heart",
+    "law_gate",
+    0.88
+   ],
+   [
+    "neipera",
+    "skasa_nest",
+    0.83
+   ]
+  ],
+  "bossBgm": "38/38 个区域地下城都用同一首 boss",
+  "animation": "所有怪物共用一套帧名：挥砍 / 砸地 / 投掷 / 斧劈都播 atk1→atk4，施法 / 咆哮都播 cast1→cast2",
+  "imageEstimate": {
+   "newBossArt": 18,
+   "sigSheets": 49,
+   "arenaBg": 12,
+   "core": 79,
+   "optional": 30
+  }
+ },
+ "primitives": [
+  {
+   "id": "leap",
+   "kind": "skill",
+   "name": "跳砸 / 升空追踪落地",
+   "spec": "{ use:'leap', up:0.5, track:1.2, r:110, dmg, ring:[r0,r1], jump:true, n:1 }：起跳（不可选中）→ 地面圈跟目标 track 秒后锁定 → 落地圆形 / 双环冲击",
+   "users": [
+    "spider_cave",
+    "bwanga_dojo",
+    "purgatory",
+    "sea_pirates",
+    "ridge",
+    "gent_east"
+   ]
+  },
+  {
+   "id": "cone",
+   "kind": "skill",
+   "name": "扇形吐息 / 喷射",
+   "spec": "{ use:'cone', ang:70, len:260, dur:1.2, tick:0.2, windup:0.9, status, sweep:0 }：扇形预警 → 持续多段；sweep 让扇形转动",
+   "users": [
+    "skasa_nest",
+    "gent_outskirts",
+    "bilmark",
+    "purgatory",
+    "treant_jungle",
+    "west_line",
+    "heis"
+   ]
+  },
+  {
+   "id": "lanes",
+   "kind": "skill",
+   "name": "纵深分道奔袭 / 齐射",
+   "spec": "{ use:'lanes', lanes:4, hit:3, kind:'bolt'|'runner'|'wave'|'shot', runner:怪物 id, speed, windup:1.0, from:'side' }：挑 hit 条纵深（永远留一条）从一侧扫过去",
+   "users": [
+    "thunder_ruins",
+    "darkcity_gate",
+    "fallen_bandits",
+    "white_ruins",
+    "heis",
+    "old_wail",
+    "old_winter",
+    "holy_war",
+    "polar_day"
+   ]
+  },
+  {
+   "id": "mark",
+   "kind": "skill",
+   "name": "头顶标记延迟结算",
+   "spec": "{ use:'mark', delay:1.5, r:120, mode:'burst'|'share'|'move'|'cover', dmg|frac, jump:true }：头顶倒数图标；burst 以玩家为中心爆；share 队友分摊；move 站着不动持续掉血；cover 躲到掩体后",
+   "users": [
+    "shallow_haunt",
+    "gent_south",
+    "hamelin",
+    "heis",
+    "kartel_origin",
+    "secret_zone",
+    "pain_gate"
+   ]
+  },
+  {
+   "id": "plant",
+   "kind": "skill",
+   "name": "可破坏物件（图腾 / 蛋 / 炸弹 / 投石车 / 笼子）",
+   "spec": "{ use:'plant', kind:物件怪物 id, n, at:'target'|'self'|'spots', fuse:6, hp|hits, onFuse:'explode'|'hatch:<kind>'|'heal'|'buff'|'release:<kind>xN', root:true, operator:<kind> }：到时触发，打掉就没事",
+   "users": [
+    "shallow_haunt",
+    "lik_well",
+    "white_ruins",
+    "skasa_nest",
+    "sea_pirates",
+    "grand_fire",
+    "kartel_origin",
+    "secret_zone",
+    "old_winter",
+    "frozen_woods"
+   ]
+  },
+  {
+   "id": "pool",
+   "kind": "skill",
+   "name": "地面残留区（毒 / 油 / 冰 / 沼泽）",
+   "spec": "{ use:'aoe', ..., linger:6, zone:'poison'|'oil'|'ice'|'slow'|'blind' } + 交互：zone oil 被 fire 命中 → 连环爆；trail:true = 领主走过留下",
+   "users": [
+    "venom_ruins",
+    "darkelf_tomb",
+    "gent_outskirts",
+    "plague_source",
+    "old_wail",
+    "wailing_cave",
+    "forbidden_land",
+    "king_ruins"
+   ]
+  },
+  {
+   "id": "dash+",
+   "kind": "skill",
+   "name": "冲刺变体",
+   "spec": "dash 加参数：carry（顶着玩家走、撞墙多段）、spin（旋转多段）、bounces:n（撞墙反弹）、wallStun（撞墙自己眩晕 = 反击窗口）、frac（按最大 HP 结算）",
+   "users": [
+    "darkcity_gate",
+    "gent_east",
+    "plague_source",
+    "spider_cave",
+    "lorien_deep",
+    "dragon_tower"
+   ]
+  },
+  {
+   "id": "pull",
+   "kind": "skill",
+   "name": "吸 / 推",
+   "spec": "{ use:'pull', mode:'in'|'out'|'toward:<物件>', r:400, force:260, dur:1.5 }：黑洞吸人 / 咆哮吹人（推向火堆）",
+   "users": [
+    "arden",
+    "grand_fire",
+    "skasa_nest"
+   ]
+  },
+  {
+   "id": "traits",
+   "kind": "trait",
+   "name": "特性补充",
+   "spec": "hitHp:n（固定 n 下打碎 / 伤害恒为 1）、saVsRanged（被远程打自动霸体）、reflectRanged:{window}、rooted（不移动）、back:{do|interrupt}（背击反应）、onGetup:{skill}（起身反击）、grabOnly（霸体只怕抓取）、stacks:{n, on:'hit', do}（受击叠层满了爆）、substitute（挨重击留替身闪走）",
+   "users": [
+    "frozen_heart",
+    "ridge",
+    "golem_tower",
+    "wailing_cave",
+    "darkelf_tomb",
+    "ice_palace",
+    "shallow_haunt",
+    "treant_jungle",
+    "dark_woods",
+    "purgatory",
+    "puppet_hall",
+    "forbidden_land",
+    "king_ruins",
+    "fallen_bandits"
+   ]
+  },
+  {
+   "id": "form",
+   "kind": "mech",
+   "name": "形态切换",
+   "spec": "{ use:'form', art:'<精灵>'|[base,{hue}], scale, fly:hover, skills:[...], invulT:1.5, say }：阶段进入时换精灵 / 体型 / 浮空 / 招式表（过渡无敌），组队发 form 事件",
+   "users": [
+    "arden",
+    "ice_palace",
+    "skasa_nest",
+    "blazing_graca",
+    "siroco_coffin",
+    "old_winter"
+   ]
+  },
+  {
+   "id": "stance",
+   "kind": "mech",
+   "name": "模式轮换（不换图）",
+   "spec": "{ use:'stance', modes:[{ id, say, aura, skills:[招式 id], dmgTaken, reflect:'phys'|'magic', invis, speed }], every:[12,16] | at:血量 }：换招式子集 + 光环颜色提示",
+   "users": [
+    "gent_south",
+    "hamelin",
+    "west_line",
+    "kartel_origin",
+    "iris_raid",
+    "holy_war",
+    "lord_palace",
+    "frozen_woods",
+    "darkcity_gate",
+    "king_ruins",
+    "wit_gate"
+   ]
+  },
+  {
+   "id": "duo",
+   "kind": "mech",
+   "name": "多领主同场",
+   "spec": "{ use:'duo', with:[kind...], bars:true, window:0, onPartnerDown:'enrage'|'revive' }：搭档也算领主（全倒才结算），血条叠两条；window>0 = 必须 n 秒内一起倒否则复活",
+   "users": [
+    "lava_cave",
+    "ridge",
+    "temple_outskirts",
+    "floating_castle",
+    "pain_gate",
+    "neipera"
+   ]
+  },
+  {
+   "id": "gauntlet",
+   "kind": "mech",
+   "name": "车轮战",
+   "spec": "{ use:'gauntlet', waves:[{ kind, say, mechs }], boss:'watch'|'hide', revive:false }：命名精英依次上场（各带自己的招牌），打完领主才下场 / 解除无敌",
+   "users": [
+    "king_ruins",
+    "bwanga_dojo",
+    "ice_palace",
+    "iris_raid"
+   ]
+  },
+  {
+   "id": "split",
+   "kind": "mech",
+   "name": "分裂",
+   "spec": "{ use:'split', at:0.3, n:3, scale:0.6, share:true }：领主分成 n 份（血量均分、全灭才算）",
+   "users": [
+    "neipera"
+   ]
+  },
+  {
+   "id": "stagger",
+   "kind": "mech",
+   "name": "蓄力破招窗口",
+   "spec": "{ use:'stagger', windup:3, need:0.04 | hits:12, skill:<大招>, onBreak:'groggy', onFail:<技能 spec> }：蓄力条显示在头顶，打够就打断 + 破招，没打够放大招",
+   "users": [
+    "graca",
+    "skasa_nest",
+    "lik_well",
+    "grand_fire",
+    "dragon_tower"
+   ]
+  },
+  {
+   "id": "arena",
+   "kind": "mech",
+   "name": "场地规则",
+   "spec": "{ use:'arena', kind:'fog'(r 视野)|'wind'(推力 vx)|'tiles'(岩浆 / 移动 / 断层地砖，安全格)|'cover'(掩体物件)|'slide'(冰面) }",
+   "users": [
+    "heis",
+    "old_wail",
+    "lava_cave",
+    "pain_gate",
+    "siroco_coffin"
+   ]
+  },
+  {
+   "id": "debuff",
+   "kind": "mech",
+   "name": "叠层减益 + 净化",
+   "spec": "{ use:'debuff', kind:'plague'|'freeze'|'burn', t:150, stack, cleanse:{ pickup:<道具>|zone|object } }：全场倒计时 / 叠层，捡针管 / 站火盆清除",
+   "users": [
+    "plague_source"
+   ]
+  },
+  {
+   "id": "protect",
+   "kind": "mech",
+   "name": "保护 / 护送",
+   "spec": "{ use:'protect', kind:<物件 / NPC>, hp, onLose:'heal'|'enrage'|'fail', escort:{ to:'boss' } }",
+   "users": [
+    "frozen_heart",
+    "holy_war"
+   ]
+  },
+  {
+   "id": "order",
+   "kind": "mech",
+   "name": "顺序谜题",
+   "spec": "{ use:'order', n:4, kind:<水晶 / 小怪>, show:'orbs' }：头顶显示顺序，打错重置 + 惩罚",
+   "users": [
+    "law_gate"
+   ]
+  },
+  {
+   "id": "facing",
+   "kind": "mech",
+   "name": "朝向判定（凝视泛化）",
+   "spec": "{ use:'facing', mode:'away'|'toward', windup:1.8, frac, status:'petrify' }：希洛克凝视改成机制库通用版",
+   "users": [
+    "bwanga_dojo",
+    "siroco_coffin"
+   ]
+  },
+  {
+   "id": "sigAnim",
+   "kind": "engine",
+   "name": "招牌动作帧",
+   "spec": "新增第 5 张动作表 sig（9 帧：sigA1-4 / sigB1-4 / rage）；技能写 clip:'sigA'；SPR_ANIMS 按精灵覆盖",
+   "users": [
+    "所有 31~60 领主 + 天空之城 / 天帷巨兽"
+   ]
+  },
+  {
+   "id": "bossKit",
+   "kind": "engine",
+   "name": "老领主套件覆盖层",
+   "spec": "defineBossKit(kind, { mechs, phases:[{ at, say, mechs, skills }], skills, traits })：把机制库 / 技能库挂到手写 AI 的老领主上（泛化 abyssLordMechs）",
+   "users": [
+    "B1",
+    "B2",
+    "B3"
+   ]
+  },
+  {
+   "id": "bossRoom",
+   "kind": "engine",
+   "name": "领主房配置",
+   "spec": "地下城 bossTheme（领主房单独背景）、bossProps（王座 / 锁链 / 笼子）、bossAlt:{ kind, chance }（稀有领主替换）、bossBgm 用区域自己的曲子",
+   "users": [
+    "lik_well",
+    "bwanga_dojo",
+    "old_winter",
+    "darkelf_tomb",
+    "ice_palace",
+    "sea_pirates"
+   ]
+  }
+ ],
+ "blocks": [
+  {
+   "id": "P0-A",
+   "name": "引擎 + 机制",
+   "owns": [
+    "src/game/mon_skills.js",
+    "src/game/region.js",
+    "src/game/dungeon.js",
+    "src/game/monsters.js",
+    "src/content/sprites.js",
+    "src/content/abyss.js",
+    "src/net/coop_mech.js",
+    "src/models/imgmodel.js"
+   ],
+   "items": [
+    "form",
+    "stance",
+    "duo",
+    "gauntlet",
+    "split",
+    "stagger",
+    "arena",
+    "debuff",
+    "protect",
+    "order",
+    "facing",
+    "sigAnim",
+    "bossKit",
+    "bossRoom",
+    "trait hook 点"
+   ],
+   "complexity": "COMPLEX",
+   "deps": []
+  },
+  {
+   "id": "P0-B",
+   "name": "技能 + 特性",
+   "owns": [
+    "src/game/mon_skills_ext.js（新）",
+    "src/ORDER（加一行）"
+   ],
+   "items": [
+    "leap",
+    "cone",
+    "lanes",
+    "mark",
+    "plant",
+    "pool",
+    "dash+",
+    "pull",
+    "traits"
+   ],
+   "complexity": "COMPLEX",
+   "deps": [
+    "P0-A 的 trait 钩子接口（先约定，见 §4.1）"
+   ]
+  },
+  {
+   "id": "P0-C",
+   "name": "工具 + 测试",
+   "owns": [
+    "test/boss.mjs（新）",
+    "tools/boss_inventory.mjs（新）",
+    "art/tools/region_art.py",
+    "docs/REGION_PIPELINE.md §3~4"
+   ],
+   "items": [
+    "通用领主测试",
+    "清单 / 重复度检查",
+    "sig 表 + form 精灵的出图阶段"
+   ],
+   "complexity": "COMPLEX",
+   "deps": []
+  },
+  {
+   "id": "P0.5",
+   "name": "样板",
+   "owns": [
+    "src/content/regions/snow.js",
+    "src/content/regions/snow_bosses.js（新）"
+   ],
+   "items": [
+    "skasa_nest（机制样板）",
+    "lik_well（美术样板）"
+   ],
+   "complexity": "COMPLEX",
+   "deps": [
+    "P0-A",
+    "P0-B",
+    "P0-C"
+   ]
+  },
+  {
+   "id": "B1",
+   "name": "格兰之森",
+   "owns": [
+    "src/content/bosses/grand_flores.js（新）",
+    "bestiary.js 里 10 个领主条目（只改名 / 染色）"
+   ],
+   "complexity": "SIMPLE",
+   "deps": [
+    "P0"
+   ]
+  },
+  {
+   "id": "B2",
+   "name": "天空之城",
+   "owns": [
+    "src/content/bosses/sky_castle.js（新）"
+   ],
+   "complexity": "SIMPLE（悬空城双眼 COMPLEX）",
+   "deps": [
+    "P0"
+   ]
+  },
+  {
+   "id": "B3",
+   "name": "天帷巨兽",
+   "owns": [
+    "src/content/bosses/behemoth.js（新）"
+   ],
+   "complexity": "SIMPLE",
+   "deps": [
+    "P0"
+   ]
+  },
+  {
+   "id": "B4",
+   "name": "暗精灵",
+   "owns": [
+    "src/content/regions/darkelf.js",
+    "src/content/regions/darkelf_bosses.js（新）"
+   ],
+   "complexity": "COMPLEX",
+   "deps": [
+    "P0",
+    "美术队列（无头骑士）"
+   ]
+  },
+  {
+   "id": "B5",
+   "name": "万年雪山（余下 5 个）",
+   "owns": [
+    "src/content/regions/snow.js",
+    "src/content/regions/snow_bosses.js"
+   ],
+   "complexity": "COMPLEX",
+   "deps": [
+    "P0.5",
+    "美术队列（洛丝王座）"
+   ]
+  },
+  {
+   "id": "B6",
+   "name": "诺斯玛尔 + 根特",
+   "owns": [
+    "src/content/regions/gent.js",
+    "src/content/regions/gent_bosses.js（新）"
+   ],
+   "complexity": "SIMPLE",
+   "deps": [
+    "P0"
+   ]
+  },
+  {
+   "id": "B7",
+   "name": "远古",
+   "owns": [
+    "src/content/regions/ancient.js",
+    "src/content/regions/ancient_rooms.js"
+   ],
+   "complexity": "SIMPLE",
+   "deps": [
+    "P0"
+   ]
+  },
+  {
+   "id": "B8",
+   "name": "海上列车",
+   "owns": [
+    "src/content/regions/train.js",
+    "src/content/regions/train_bosses.js（新）"
+   ],
+   "complexity": "COMPLEX",
+   "deps": [
+    "P0",
+    "美术队列（机械安祖）"
+   ]
+  },
+  {
+   "id": "B9",
+   "name": "时空之门",
+   "owns": [
+    "src/content/regions/timegate.js",
+    "src/content/regions/timegate_bosses.js（新）"
+   ],
+   "complexity": "COMPLEX（4 张 SIMPLE）",
+   "deps": [
+    "P0"
+   ]
+  },
+  {
+   "id": "B10",
+   "name": "希洛克",
+   "owns": [
+    "src/content/regions/siroco.js",
+    "src/content/regions/siroco_bosses.js"
+   ],
+   "complexity": "COMPLEX",
+   "deps": [
+    "P0",
+    "决策 D3"
+   ]
+  },
+  {
+   "id": "B11",
+   "name": "深渊词条",
+   "owns": [
+    "src/content/abyss.js（P0-A 交付后）"
+   ],
+   "complexity": "SIMPLE",
+   "deps": [
+    "B4~B10"
+   ]
+  },
+  {
+   "id": "B12",
+   "name": "领主 BGM",
+   "owns": [
+    "src/content/music_bosses.js（新）"
+   ],
+   "complexity": "SIMPLE",
+   "deps": []
+  },
+  {
+   "id": "ART",
+   "name": "美术队列（唯一生图者）",
+   "owns": [
+    "art/final/spr/<新名字>",
+    "art/final/bg/<新主题>"
+   ],
+   "complexity": "COMPLEX",
+   "deps": [
+    "P0-C",
+    "样板审过"
+   ]
+  }
+ ],
+ "dungeons": [
+  {
+   "id": "lorien",
+   "name": "洛兰",
+   "region": "grand_flores",
+   "regionName": "格兰之森",
+   "lvl": [
+    1,
+    2
+   ],
+   "rooms": 3,
+   "layout": "legacy-grid",
+   "theme": "forest",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "goblinChief",
+    "name": "投掷哥布林首领",
+    "lvl": 3,
+    "art": {
+     "base": "goblinChief",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.45,
+    "h": 100,
+    "visualH": 145,
+    "bars": 8,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "goblin",
+     "goblinThrower"
+    ],
+    "attacks": [
+     "throw",
+     "slam",
+     "roar"
+    ],
+    "signature": [
+     "投石 ×2",
+     "跳砸倒地",
+     "召唤哥布林"
+    ]
+   },
+   "elite": [],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "s_ray_patrol"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "洛兰",
+    "boss": "投掷哥布林",
+    "look": "小型绿皮哥布林，持石",
+    "mechanics": [
+     "只有投石普攻（新手图）"
+    ],
+    "rooms": "全是哥布林",
+    "nameMatch": "部分",
+    "confidence": "近似",
+    "src": "17173GF, BAIKE"
+   },
+   "target": {
+    "mechanics": [
+     "投石三连（落点圈）",
+     "召唤投掷哥布林小队（已有）"
+    ],
+    "primitives": [
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B1",
+    "rename": null
+   }
+  },
+  {
+   "id": "lorien_deep",
+   "name": "洛兰深处",
+   "region": "grand_flores",
+   "regionName": "格兰之森",
+   "lvl": [
+    2,
+    3
+   ],
+   "rooms": 4,
+   "layout": "legacy-grid",
+   "theme": "forest",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "tauSoldierBoss",
+    "name": "牛头兵首领",
+    "lvl": 4,
+    "art": {
+     "base": "tauArmored",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 128,
+    "visualH": 147,
+    "bars": 10,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "axe",
+     "chargeW",
+     "roar"
+    ],
+    "signature": [
+     "霸体斧击",
+     "冲撞",
+     "吼叫眩晕"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "goblinCaptain",
+     "name": "哥布林十夫长",
+     "artBase": "goblinCaptain"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_m03",
+    "s_linus_ring"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "洛兰深处",
+    "boss": "牛头兵",
+    "look": "中型牛头人，持斧",
+    "mechanics": [
+     "霸体斧击",
+     "近战普攻"
+    ],
+    "rooms": "哥布林、投掷哥布林",
+    "nameMatch": "部分",
+    "confidence": "近似",
+    "src": "17173GF"
+   },
+   "target": {
+    "mechanics": [
+     "霸体斧击",
+     "冲撞撞墙自己眩晕 2 秒（反击窗口）"
+    ],
+    "primitives": [
+     "dash.wallStun",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B1",
+    "rename": null
+   }
+  },
+  {
+   "id": "dark_woods",
+   "name": "幽暗密林",
+   "region": "grand_flores",
+   "regionName": "格兰之森",
+   "lvl": [
+    3,
+    5
+   ],
+   "rooms": 5,
+   "layout": "legacy-grid",
+   "theme": "forestDark",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "tauBeast",
+    "name": "牛头巨兽",
+    "lvl": 7,
+    "art": {
+     "base": "tau",
+     "recolor": {
+      "weapon": false,
+      "hue": -10,
+      "bright": 0.78
+     }
+    },
+    "artSharedWith": [],
+    "scale": 1.3,
+    "h": 140,
+    "visualH": 182,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "slam",
+     "roar"
+    ],
+    "signature": [
+     "砸地",
+     "咆哮"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "tauSoldier",
+     "name": "牛头兵",
+     "artBase": "tau"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_m06",
+    "q_job_sword_1",
+    "q_job_gun_1",
+    "q_job_mage_1",
+    "q_job_fighter_1"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "幽暗密林",
+    "boss": "牛头巨兽",
+    "look": "巨型牛头人，体型是牛头兵三倍",
+    "mechanics": [
+     "眩晕咆哮",
+     "锤击 + 冲击波",
+     "起身冲击波",
+     "出招慢"
+    ],
+    "rooms": "牛头兵（霸体角撞）、十夫长",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173GF-2, DFO:Mirkwood"
+   },
+   "target": {
+    "mechanics": [
+     "锤击冲击波（贴地扩散，跳起躲）",
+     "起身冲击波",
+     "眩晕咆哮"
+    ],
+    "primitives": [
+     "trait.onGetup",
+     "kit"
+    ],
+    "art": "recolor+scale 1.6",
+    "complexity": "SIMPLE",
+    "block": "B1",
+    "rename": null
+   }
+  },
+  {
+   "id": "dark_woods_deep",
+   "name": "幽暗密林深处",
+   "region": "grand_flores",
+   "regionName": "格兰之森",
+   "lvl": [
+    4,
+    7
+   ],
+   "rooms": 6,
+   "layout": "legacy-grid",
+   "theme": "forestDark",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "catCurse",
+    "name": "暗咒猫妖",
+    "lvl": 9,
+    "art": {
+     "base": "catKing",
+     "recolor": {
+      "hue": 150,
+      "sat": 1.1,
+      "bright": 0.9
+     }
+    },
+    "artSharedWith": [
+     "venom_ruins"
+    ],
+    "scale": 1.2,
+    "h": 100,
+    "visualH": 120,
+    "bars": 12,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "scratch",
+     "pounce",
+     "bite"
+    ],
+    "signature": [
+     "抓",
+     "扑",
+     "咬（减速 + 致盲）"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "tauVanguard",
+     "name": "牛头先锋",
+     "artBase": "tau"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_m07"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "幽暗密林深处（已删图）",
+    "boss": "库罗猫妖 Kurogaru",
+    "look": "黑色猫妖，敏捷",
+    "mechanics": [
+     "2 段爪 + 跳跃爪",
+     "飞扑抓咬（连按挣脱）",
+     "咬中后自身属性提升"
+    ],
+    "rooms": "猫妖、投掷十夫长",
+    "nameMatch": "不同",
+    "confidence": "确认",
+    "src": "17173GF-3, QQBOOK"
+   },
+   "target": {
+    "mechanics": [
+     "飞扑抓咬：被抓连按挣脱",
+     "咬中后自身加速加攻（可见光环）"
+    ],
+    "primitives": [
+     "grab.mash",
+     "kit"
+    ],
+    "art": "recolor（黑猫，和毒猫王拉开）",
+    "complexity": "SIMPLE",
+    "block": "B1",
+    "rename": "暗咒猫妖 → 库罗猫妖"
+   }
+  },
+  {
+   "id": "thunder_ruins",
+   "name": "雷鸣废墟",
+   "region": "grand_flores",
+   "regionName": "格兰之森",
+   "lvl": [
+    6,
+    9
+   ],
+   "rooms": 6,
+   "layout": "legacy-grid",
+   "theme": "ruins",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "goblinShaman",
+    "name": "落雷 凯诺",
+    "lvl": 11,
+    "art": {
+     "base": "goblinShaman",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.25,
+    "h": 90,
+    "visualH": 113,
+    "bars": 16,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "atk1",
+     "cast"
+    ],
+    "signature": [
+     "光剑",
+     "落雷图案"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "catDemon",
+     "name": "猫妖",
+     "artBase": "cat"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_m09",
+    "s_sherlock_trust"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "雷鸣废墟",
+    "boss": "落雷 凯诺",
+    "look": "白皮老哥布林，持光剑",
+    "mechanics": [
+     "黄圈落雷",
+     "直线 6 连雷",
+     "圆形 10 连雷",
+     "身周雷圈",
+     "命令哥布林自爆"
+    ],
+    "rooms": "牛头前锋、希罗猫妖（群体治疗）",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173GF-4, DFO:Thunderland"
+   },
+   "target": {
+    "mechanics": [
+     "直线 6 连雷（留一条纵深安全）",
+     "圆形 10 连雷",
+     "身周雷圈",
+     "命令哥布林自爆"
+    ],
+    "primitives": [
+     "lanes",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B1",
+    "rename": null
+   }
+  },
+  {
+   "id": "venom_ruins",
+   "name": "猛毒雷鸣废墟",
+   "region": "grand_flores",
+   "regionName": "格兰之森",
+   "lvl": [
+    8,
+    11
+   ],
+   "rooms": 7,
+   "layout": "legacy-grid",
+   "theme": "ruinsPoison",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "catKing",
+    "name": "毒猫王",
+    "lvl": 12,
+    "art": {
+     "base": "catKing",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "dark_woods_deep"
+    ],
+    "scale": 1.25,
+    "h": 100,
+    "visualH": 125,
+    "bars": 18,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "scratch",
+     "pounce",
+     "roar"
+    ],
+    "signature": [
+     "毒爪",
+     "扑",
+     "毒云（被暴击也放）"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "catVenom",
+     "name": "毒爪猫妖",
+     "artBase": "cat"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_m12",
+    "q_job_sword_4",
+    "q_job_gun_4",
+    "q_job_mage_4",
+    "q_job_fighter_4"
+   ],
+   "abyssLordOf": [
+    "abyss_gf"
+   ],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "猛毒雷鸣废墟",
+    "boss": "毒猫王 Penril",
+    "look": "暗紫毒气缠身的大猫妖",
+    "mechanics": [
+     "带毒冲刺 2 连爪",
+     "暗属性跳爪",
+     "受击几率喷毒雾",
+     "半血后攻速移速上升"
+    ],
+    "rooms": "猫妖、库罗猫妖",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173GF-5, DFO:Poison_Thunderland"
+   },
+   "target": {
+    "mechanics": [
+     "受击喷毒雾（地面残留）",
+     "半血狂暴加速"
+    ],
+    "primitives": [
+     "pool",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B1",
+    "rename": null
+   }
+  },
+  {
+   "id": "frozen_woods",
+   "name": "冰霜幽暗密林",
+   "region": "grand_flores",
+   "regionName": "格兰之森",
+   "lvl": [
+    9,
+    12
+   ],
+   "rooms": 5,
+   "layout": "legacy-grid",
+   "theme": "frozenWoods",
+   "hidden": true,
+   "abyss": false,
+   "boss": {
+    "kind": "frostMage",
+    "name": "冰霜 克拉赫",
+    "lvl": 12,
+    "art": {
+     "base": "flameMage",
+     "recolor": {
+      "hue": 180,
+      "sat": 0.9,
+      "bright": 1.05
+     }
+    },
+    "artSharedWith": [
+     "blazing_graca"
+    ],
+    "scale": 1.3,
+    "h": 92,
+    "visualH": 120,
+    "bars": 16,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "goblinFrost"
+    ],
+    "attacks": [
+     "atk1",
+     "cast",
+     "cast",
+     "cast"
+    ],
+    "signature": [
+     "冰斩",
+     "冰弹",
+     "冰箭环",
+     "召冰霜哥布林"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "tauGuard",
+     "name": "牛头护卫",
+     "artBase": "tauArmored"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_m13"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "冰霜幽暗密林（隐藏）",
+    "boss": "冰霜 克拉赫 Keraha",
+    "look": "浮空蓝装女法师，持杖（彼诺修的妹妹）",
+    "mechanics": [
+     "黄圈冰柱落地，冰柱残留可打碎",
+     "4 连冰柱 / 四方冰柱",
+     "召唤哥布林突击兵",
+     "低血冰气加速，受击冰冻"
+    ],
+    "rooms": "牛头护卫（绝对防御）、园丁鲁尔",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173GF-6, DFO:Mirkwood_Frost"
+   },
+   "target": {
+    "mechanics": [
+     "冰柱落地后残留成障碍（可打碎）",
+     "四方冰柱",
+     "低血冰气：近身冻结"
+    ],
+    "primitives": [
+     "plant",
+     "stance",
+     "kit"
+    ],
+    "art": "recolor（姐妹同模）+ 浮空；现图是哥布林法师，官方是女法师，可选重画",
+    "complexity": "SIMPLE",
+    "block": "B1",
+    "rename": null
+   }
+  },
+  {
+   "id": "graca",
+   "name": "格拉卡",
+   "region": "grand_flores",
+   "regionName": "格兰之森",
+   "lvl": [
+    11,
+    14
+   ],
+   "rooms": 6,
+   "layout": "legacy-grid",
+   "theme": "camp",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "tauKing",
+    "name": "牛头王 萨乌塔",
+    "lvl": 16,
+    "art": {
+     "base": "tauKing",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.4,
+    "h": 150,
+    "visualH": 210,
+    "bars": 22,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "axe",
+     "chargeW",
+     "slam"
+    ],
+    "signature": [
+     "斧劈",
+     "冲撞",
+     "蓄力震地（可打断）"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "tauBeast",
+     "name": "牛头巨兽",
+     "artBase": "tau"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 3,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_m14",
+    "s_skadi_border"
+   ],
+   "abyssLordOf": [
+    "abyss_gf"
+   ],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "格拉卡",
+    "boss": "牛头王 萨乌塔",
+    "look": "最大的牛头王，持巨斧",
+    "mechanics": [
+     "霸体斧击",
+     "低头突进（出血）",
+     "蓄力斧 + 半屏冲击波",
+     "会格挡"
+    ],
+    "rooms": "牛头全家",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173GF-7, DFO:Grakqarak"
+   },
+   "target": {
+    "mechanics": [
+     "蓄力斧：破招窗口（打够伤害打断→破招）",
+     "低头突进",
+     "格挡反击"
+    ],
+    "primitives": [
+     "stagger",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B1",
+    "rename": null
+   }
+  },
+  {
+   "id": "blazing_graca",
+   "name": "烈焰格拉卡",
+   "region": "grand_flores",
+   "regionName": "格兰之森",
+   "lvl": [
+    12,
+    16
+   ],
+   "rooms": 7,
+   "layout": "legacy-grid",
+   "theme": "campFire",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "flameMage",
+    "name": "烈焰 彼诺修",
+    "lvl": 17,
+    "art": {
+     "base": "flameMage",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "frozen_woods"
+    ],
+    "scale": 1.3,
+    "h": 92,
+    "visualH": 120,
+    "bars": 24,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "goblinBomber"
+    ],
+    "attacks": [
+     "cast",
+     "cast",
+     "cast"
+    ],
+    "signature": [
+     "火球",
+     "陨石图案",
+     "召自爆哥布林"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "tauBeast",
+     "name": "牛头巨兽",
+     "artBase": "tau"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_m16",
+    "q_m21"
+   ],
+   "abyssLordOf": [
+    "abyss_gf"
+   ],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "烈焰格拉卡",
+    "boss": "烈焰 彼诺修 Binoche",
+    "look": "浮空红装女法师",
+    "mechanics": [
+     "六芒星预警斜飞陨石",
+     "升空召 2 颗陨石",
+     "召哥布林突击兵",
+     "身缠火焰，近身灼伤"
+    ],
+    "rooms": "同格拉卡，哥布林更多",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173GF-8, DFO:Blazing_Grakqarak"
+   },
+   "target": {
+    "mechanics": [
+     "升空阶段：浮空不可近战 + 陨石",
+     "火焰光环：贴身持续灼伤"
+    ],
+    "primitives": [
+     "form(fly)",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B1",
+    "rename": null
+   }
+  },
+  {
+   "id": "dark_thunder",
+   "name": "暗黑雷鸣废墟",
+   "region": "grand_flores",
+   "regionName": "格兰之森",
+   "lvl": [
+    14,
+    20
+   ],
+   "rooms": 7,
+   "layout": "legacy-grid",
+   "theme": "ruinsDark",
+   "hidden": true,
+   "abyss": false,
+   "boss": {
+    "kind": "boneLord",
+    "name": "盗尸者 骨狱息",
+    "lvl": 19,
+    "art": {
+     "base": "boneLord",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.35,
+    "h": 120,
+    "visualH": 162,
+    "bars": 30,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "bite",
+     "cast",
+     "throw"
+    ],
+    "signature": [
+     "吸血咬",
+     "冰霜图案",
+     "三连冰弹"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "zombieRed",
+     "name": "卡尔扎克",
+     "artBase": "zombie"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 3,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_m19",
+    "s_grandis_rest"
+   ],
+   "abyssLordOf": [
+    "abyss_gf"
+   ],
+   "sameBossAbyss": [
+    "abyss_gf"
+   ],
+   "official": {
+    "dungeon": "暗黑雷鸣废墟（隐藏）",
+    "boss": "盗尸者 骨狱昔 Ghoulguish",
+    "look": "僵尸王，周身冰气",
+    "mechanics": [
+     "常驻冰气光环（约 10 秒一次范围冰冻并加伤）",
+     "出血高速啃咬"
+    ],
+    "rooms": "丛林 / 饥饿僵尸（暗球致盲）",
+    "nameMatch": "部分（昔 / 息）",
+    "confidence": "确认",
+    "src": "17173GF-9, DFO:Shadow_Thunderland"
+   },
+   "target": {
+    "mechanics": [
+     "每 10 秒冰气爆发（范围冰冻，预警 1.2 秒）",
+     "出血啃咬吸血"
+    ],
+    "primitives": [
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B1",
+    "rename": "骨狱息 → 骨狱昔"
+   }
+  },
+  {
+   "id": "dragon_tower",
+   "name": "龙人之塔",
+   "region": "sky_castle",
+   "regionName": "天空之城",
+   "lvl": [
+    14,
+    16
+   ],
+   "rooms": 6,
+   "layout": "legacy-grid",
+   "theme": "skyTower",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "lucas",
+    "name": "鲁卡斯",
+    "lvl": 17,
+    "art": {
+     "base": "lucas",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.2,
+    "h": 124,
+    "visualH": 149,
+    "bars": 22,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "lucasClone",
+     "dragonStatue"
+    ],
+    "attacks": [
+     "club",
+     "cast",
+     "roar",
+     "roar"
+    ],
+    "signature": [
+     "放电",
+     "囚笼",
+     "分身",
+     "龙之雕像（房间）"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "minius",
+     "name": "米尼乌斯",
+     "artBase": "dragonman"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_c03"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "龙人之塔",
+    "boss": "鲁卡斯 Lakius",
+    "look": "龙人蜥蜴，持长矛，电光缠身",
+    "mechanics": [
+     "蓄力突刺（按最大 HP 扣 30%~80%）",
+     "起身放电圈",
+     "笼子困人",
+     "低血分身"
+    ],
+    "rooms": "龙人、冰人偶师杜莎",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "DFO:Lakius, 17173SKY-5"
+   },
+   "target": {
+    "mechanics": [
+     "蓄力突刺：长预警、按最大 HP 结算（躲不开就残血）",
+     "笼子 + 放电",
+     "低血分身（已有）"
+    ],
+    "primitives": [
+     "dash.frac",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B2",
+    "rename": null
+   }
+  },
+  {
+   "id": "puppet_hall",
+   "name": "人偶玄关",
+   "region": "sky_castle",
+   "regionName": "天空之城",
+   "lvl": [
+    15,
+    17
+   ],
+   "rooms": 6,
+   "layout": "legacy-grid",
+   "theme": "skyHall",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "dogrey",
+    "name": "人偶之王 道格里",
+    "lvl": 18,
+    "art": {
+     "base": "dogrey",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.2,
+    "h": 124,
+    "visualH": 149,
+    "bars": 24,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "club",
+     "cast",
+     "roar",
+     "throw"
+    ],
+    "signature": [
+     "三连石柱",
+     "提线拉扯",
+     "石化石弹"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "puppeteerRock",
+     "name": "岩石人偶师",
+     "artBase": "puppeteer"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_c05"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "人偶玄关",
+    "boss": "人偶之王 道格里",
+    "look": "绿皮操偶师",
+    "mechanics": [
+     "脚下绿圈落“天空果实”",
+     "霸体混乱抓取（只能被抓取技能破）",
+     "红光预警爆炸石柱"
+    ],
+    "rooms": "五职业石像、各色人偶师",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "DFO:Puppet_Museum, 52PK"
+   },
+   "target": {
+    "mechanics": [
+     "天空果实（绿圈落地爆）",
+     "提线抓取：霸体只怕抓取技"
+    ],
+    "primitives": [
+     "trait.grabOnly",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B2",
+    "rename": null
+   }
+  },
+  {
+   "id": "golem_tower",
+   "name": "石巨人塔",
+   "region": "sky_castle",
+   "regionName": "天空之城",
+   "lvl": [
+    16,
+    19
+   ],
+   "rooms": 7,
+   "layout": "legacy-grid",
+   "theme": "skyTower",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "platani",
+    "name": "黄金巨人 普拉塔尼",
+    "lvl": 20,
+    "art": {
+     "base": "platani",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 140,
+    "visualH": 161,
+    "bars": 28,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "club",
+     "chargeW",
+     "chargeW",
+     "chargeW",
+     "slam",
+     "cast"
+    ],
+    "signature": [
+     "连续冲撞 + 过热",
+     "地刺列 / 圈"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "golemMaster",
+     "name": "石巨人操纵师",
+     "artBase": "puppeteer"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_c09"
+   ],
+   "abyssLordOf": [
+    "abyss_sky"
+   ],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "石巨人塔",
+    "boss": "黄金巨人 普拉塔尼",
+    "look": "金色巨人，移速快",
+    "mechanics": [
+     "不浮空不倒地、投掷无效",
+     "冲撞",
+     "落 3 块岩石",
+     "残血霸体",
+     "几率反射远程"
+    ],
+    "rooms": "铜 / 泥 / 石巨人、傀儡师",
+    "nameMatch": "部分",
+    "confidence": "确认",
+    "src": "17173SKY-6, DFO:Golem_Tower"
+   },
+   "target": {
+    "mechanics": [
+     "连续冲撞 + 过热（已有）",
+     "落 3 块岩石",
+     "反射远程（护罩亮起时）"
+    ],
+    "primitives": [
+     "trait.reflectRanged",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B2",
+    "rename": null
+   }
+  },
+  {
+   "id": "dark_corridor",
+   "name": "黑暗玄廊",
+   "region": "sky_castle",
+   "regionName": "天空之城",
+   "lvl": [
+    18,
+    21
+   ],
+   "rooms": 6,
+   "layout": "legacy-grid",
+   "theme": "skyDark",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "skyExpeller",
+    "name": "天之驱逐者",
+    "lvl": 22,
+    "art": {
+     "base": "skyExpeller",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.18,
+    "h": 124,
+    "visualH": 146,
+    "bars": 30,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "expeller",
+     "expellerAxe"
+    ],
+    "attacks": [
+     "club",
+     "cast",
+     "chargeW",
+     "roar"
+    ],
+    "signature": [
+     "双剑斩",
+     "1~3 列落雷（留缝）",
+     "长冲刺"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "expellerAxe",
+     "name": "斧之驱逐者",
+     "artBase": "expeller"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_sky"
+   ],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "黑暗玄廊",
+    "boss": "天之驱逐者（电骑士）",
+    "look": "伪装成空铠甲的骑士",
+    "mechanics": [
+     "伪装铠甲（打出 1 伤害的就是它）",
+     "霸体雷电挥剑",
+     "高速多段突刺",
+     "1~3 方向 6 连雷"
+    ],
+    "rooms": "驱逐者、伪装盔甲",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173SKY-4, DFO:Vestibule_of_Darkness"
+   },
+   "target": {
+    "mechanics": [
+     "伪装：领主混进空铠甲里，打中显示 1 的是真身",
+     "落雷列（已有）"
+    ],
+    "primitives": [
+     "clones.disguise",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B2",
+    "rename": null
+   }
+  },
+  {
+   "id": "lord_palace",
+   "name": "城主宫殿",
+   "region": "sky_castle",
+   "regionName": "天空之城",
+   "lvl": [
+    20,
+    23
+   ],
+   "rooms": 7,
+   "layout": "legacy-grid",
+   "theme": "skyPalace",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "seghart",
+    "name": "光之城主 赛格哈特",
+    "lvl": 24,
+    "art": {
+     "base": "seghart",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.18,
+    "h": 128,
+    "visualH": 151,
+    "bars": 34,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "scratch",
+     "cast",
+     "cast",
+     "cast"
+    ],
+    "signature": [
+     "甩发",
+     "光环",
+     "雷电密布（环）",
+     "激光"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "hughes",
+     "name": "雷环休斯",
+     "artBase": "dragonman"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 3,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_c13",
+    "q_c16"
+   ],
+   "abyssLordOf": [
+    "abyss_sky"
+   ],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "城主宫殿",
+    "boss": "光之城主 赛格哈特",
+    "look": "长发光属性骑士",
+    "mechanics": [
+     "甩发 + 光圈",
+     "全房激光",
+     "周身雷电密布",
+     "血低张屏障，提升移速防御"
+    ],
+    "rooms": "前几图杂兵大集合",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173SKY-7, DFO:Castellan's_Chamber"
+   },
+   "target": {
+    "mechanics": [
+     "低血光之屏障（护盾 + 加速）",
+     "雷电密布 / 激光（已有）"
+    ],
+    "primitives": [
+     "stance",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B2",
+    "rename": null
+   }
+  },
+  {
+   "id": "floating_castle",
+   "name": "悬空城",
+   "region": "sky_castle",
+   "regionName": "天空之城",
+   "lvl": [
+    21,
+    24
+   ],
+   "rooms": 7,
+   "layout": "legacy-grid",
+   "theme": "skyPalace",
+   "hidden": true,
+   "abyss": false,
+   "boss": {
+    "kind": "sinEye",
+    "name": "罪恶之眼",
+    "lvl": 25,
+    "art": {
+     "base": "sinEye",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 118,
+    "visualH": 136,
+    "bars": 36,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "knight"
+    ],
+    "attacks": [
+     "cast",
+     "cast",
+     "cast",
+     "roar",
+     "roar"
+    ],
+    "signature": [
+     "冲击波",
+     "追踪光柱",
+     "激光",
+     "石化眼球列（留缝）"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "knight",
+     "name": "侍剑骑兵",
+     "artBase": "expeller"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 3,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_fl4"
+   ],
+   "abyssLordOf": [
+    "abyss_sky"
+   ],
+   "sameBossAbyss": [
+    "abyss_sky"
+   ],
+   "official": {
+    "dungeon": "悬空城（隐藏）",
+    "boss": "罪恶之眼（左眼 / 右眼）",
+    "look": "两只巨眼，固定不动",
+    "mechanics": [
+     "霸体冲击波",
+     "石化激光",
+     "跟踪激光 / 9 连追踪",
+     "黑暗投掷"
+    ],
+    "rooms": "彼诺修、克拉赫当精英",
+    "nameMatch": "部分",
+    "confidence": "确认",
+    "src": "DFO:Floating_Castle, 52PK"
+   },
+   "target": {
+    "mechanics": [
+     "左右双眼同场（各自血条，一只倒下另一只狂暴）",
+     "石化激光 + 眼球列（已有）"
+    ],
+    "primitives": [
+     "duo",
+     "trait.rooted",
+     "kit"
+    ],
+    "art": "mirror 一只（hue）",
+    "complexity": "COMPLEX",
+    "block": "B2",
+    "rename": null
+   }
+  },
+  {
+   "id": "temple_outskirts",
+   "name": "神殿外围",
+   "region": "behemoth",
+   "regionName": "天帷巨兽",
+   "lvl": [
+    24,
+    25
+   ],
+   "rooms": 6,
+   "layout": "legacy-grid",
+   "theme": "bhTemple",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "gblArchbishop",
+    "name": "GBL教大主教",
+    "lvl": 26,
+    "art": {
+     "base": "archbishop",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 124,
+    "visualH": 143,
+    "bars": 24,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "gblBeliever",
+     "gblHighPriest"
+    ],
+    "attacks": [
+     "club",
+     "cast",
+     "cast",
+     "roar"
+    ],
+    "signature": [
+     "杖击",
+     "圣光柱",
+     "圣光环",
+     "召信徒",
+     "大祭司护盾（房间）"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "gblBishop",
+     "name": "GBL教主教",
+     "artBase": "gbl"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_b03",
+    "q_b03"
+   ],
+   "abyssLordOf": [
+    "abyss_forbidden"
+   ],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "神殿外围",
+    "boss": "GBL教大主教 + GBL教大祭司（双领主）",
+    "look": "GBL 教士，长袍",
+    "mechanics": [
+     "大主教落雷感电",
+     "召雷沃斯（闪现背后眩晕）",
+     "大祭司召瑟冥特克"
+    ],
+    "rooms": "信徒（自杀召章鱼）、龙头炮",
+    "nameMatch": "部分",
+    "confidence": "近似",
+    "src": "17173BH-2, DFO:Outer_Temple_Wall"
+   },
+   "target": {
+    "mechanics": [
+     "双领主各自血条（现在大祭司只是保护者）",
+     "雷沃斯：闪到背后眩晕"
+    ],
+    "primitives": [
+     "duo",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B3",
+    "rename": null
+   }
+  },
+  {
+   "id": "treant_jungle",
+   "name": "树精丛林",
+   "region": "behemoth",
+   "regionName": "天帷巨兽",
+   "lvl": [
+    25,
+    26
+   ],
+   "rooms": 6,
+   "layout": "legacy-grid",
+   "theme": "bhJungle",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "rodin",
+    "name": "巨树守护者 罗丁",
+    "lvl": 27,
+    "art": {
+     "base": "rodin",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 150,
+    "visualH": 173,
+    "bars": 26,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "flower"
+    ],
+    "attacks": [
+     "slam",
+     "cast",
+     "roar",
+     "roar"
+    ],
+    "signature": [
+     "横扫",
+     "根须突刺",
+     "果实雨",
+     "混乱花"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "gardenerRul",
+     "name": "园丁鲁尔",
+     "artBase": "treant"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_b04",
+    "s_bh_gardener"
+   ],
+   "abyssLordOf": [
+    "abyss_spine"
+   ],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "树精丛林",
+    "boss": "巨树守护者 罗丁",
+    "look": "黑色巨树精",
+    "mechanics": [
+     "扎根后一排木刺（只能大跳躲）",
+     "霸体喷种子（失明）",
+     "打背后可打断"
+    ],
+    "rooms": "树精、藤蔓草地（站 3 秒缠身）",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173BH-3, DFO:Dendroid_Jungle"
+   },
+   "target": {
+    "mechanics": [
+     "扎根木刺列（跳起躲）",
+     "扇形喷种子致盲",
+     "打背后打断大招"
+    ],
+    "primitives": [
+     "cone",
+     "trait.back",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B3",
+    "rename": null
+   }
+  },
+  {
+   "id": "purgatory",
+   "name": "炼狱",
+   "region": "behemoth",
+   "regionName": "天帷巨兽",
+   "lvl": [
+    26,
+    27
+   ],
+   "rooms": 7,
+   "layout": "legacy-grid",
+   "theme": "bhPurgatory",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "yakshaKing",
+    "name": "夜叉王",
+    "lvl": 28,
+    "art": {
+     "base": "yakshaKing",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 126,
+    "visualH": 145,
+    "bars": 26,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [],
+    "attacks": [
+     "club",
+     "chargeW",
+     "throw",
+     "roar"
+    ],
+    "signature": [
+     "双斩",
+     "瞬斩",
+     "业火斩",
+     "震地咆哮（跳躲）"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "yaksha",
+     "name": "夜叉",
+     "artBase": "yaksha"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 3,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_b05"
+   ],
+   "abyssLordOf": [
+    "abyss_spine"
+   ],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "炼狱",
+    "boss": "夜叉王（后期版本为 Master Hunter）",
+    "look": "黑色狼人首领",
+    "mechanics": [
+     "霸体流血爪",
+     "直线 / 扇形喷毒",
+     "高跳践踏 + 冲击波",
+     "起身龙之吼击倒",
+     "血低加速"
+    ],
+    "rooms": "祭坛 + 花瓶隔断",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173BH-4, DFO:Purgatorium"
+   },
+   "target": {
+    "mechanics": [
+     "高跳践踏（跟随落点）",
+     "扇形喷毒",
+     "起身龙之吼"
+    ],
+    "primitives": [
+     "leap",
+     "cone",
+     "trait.onGetup",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B3",
+    "rename": null
+   }
+  },
+  {
+   "id": "polar_day",
+   "name": "极昼",
+   "region": "behemoth",
+   "regionName": "天帷巨兽",
+   "lvl": [
+    27,
+    28
+   ],
+   "rooms": 7,
+   "layout": "legacy-grid",
+   "theme": "bhDay",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "donnierEX",
+    "name": "多尼尔（EX）",
+    "lvl": 29,
+    "art": {
+     "base": "donnierEX",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.2,
+    "h": 104,
+    "visualH": 125,
+    "bars": 28,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "gblBeliever"
+    ],
+    "attacks": [
+     "cast",
+     "cast",
+     "cast",
+     "cast",
+     "roar"
+    ],
+    "signature": [
+     "炮击",
+     "地毯轰炸",
+     "激光扫射",
+     "追踪导弹",
+     "空投信徒"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "sawCart",
+     "name": "锯角撞车",
+     "artBase": "sawCart"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_b06"
+   ],
+   "abyssLordOf": [
+    "abyss_spine"
+   ],
+   "sameBossAbyss": [],
+   "official": {
+    "dungeon": "极昼",
+    "boss": "多尼尔 EX（空艇之王）",
+    "look": "黑色大炮艇，悬浮",
+    "mechanics": [
+     "霸体压地前冲",
+     "前后双机枪",
+     "不断扔 GBL 信徒（自爆）"
+    ],
+    "rooms": "小空艇、龙头炮、锯角撞车",
+    "nameMatch": "部分",
+    "confidence": "确认",
+    "src": "17173BH-5, DFO:Silver_Night"
+   },
+   "target": {
+    "mechanics": [
+     "前后双机枪（两侧同时扫）",
+     "空投自爆信徒（已有）"
+    ],
+    "primitives": [
+     "lanes",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B3",
+    "rename": null
+   }
+  },
+  {
+   "id": "second_spine",
+   "name": "第二脊椎",
+   "region": "behemoth",
+   "regionName": "天帷巨兽",
+   "lvl": [
+    28,
+    30
+   ],
+   "rooms": 7,
+   "layout": "legacy-grid",
+   "theme": "bhSpine",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "lotus",
+    "name": "长脚罗特斯",
+    "lvl": 30,
+    "art": {
+     "base": "lotus",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.25,
+    "h": 140,
+    "visualH": 175,
+    "bars": 30,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "babyOcto"
+    ],
+    "attacks": [
+     "slam",
+     "cast",
+     "roar",
+     "throw",
+     "roar"
+    ],
+    "signature": [
+     "触手横扫",
+     "触手连砸",
+     "喷墨",
+     "召小八爪",
+     "不挨打回血"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "blackOctopus",
+     "name": "巨型黑章鱼",
+     "artBase": "octopus"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_b07",
+    "q_b08",
+    "q_fb1"
+   ],
+   "abyssLordOf": [
+    "abyss_spine",
+    "abyss_forbidden"
+   ],
+   "sameBossAbyss": [
+    "abyss_spine"
+   ],
+   "official": {
+    "dungeon": "第二脊椎",
+    "boss": "长脚罗特斯（第八使徒）",
+    "look": "藏在建筑里，只露触手",
+    "mechanics": [
+     "长脚刺（2/3 屏）",
+     "横扫一条直线",
+     "天花板伸脚刺 / 卷住（黄圈）",
+     "震落石块夹章鱼"
+    ],
+    "rooms": "蓝章鱼、章鱼蛋（黏液）",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "17173BH-7, DFO:Second_Spine"
+   },
+   "target": {
+    "mechanics": [
+     "天花板触手卷住（黄圈后抓取）",
+     "震落石块夹小章鱼"
+    ],
+    "primitives": [
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B3",
+    "rename": null
+   }
+  },
+  {
+   "id": "forbidden_land",
+   "name": "天帷禁地",
+   "region": "behemoth",
+   "regionName": "天帷巨兽",
+   "lvl": [
+    29,
+    30
+   ],
+   "rooms": 7,
+   "layout": "legacy-grid",
+   "theme": "bhForbidden",
+   "hidden": true,
+   "abyss": false,
+   "boss": {
+    "kind": "marcel",
+    "name": "审判者马塞尔",
+    "lvl": 30,
+    "art": {
+     "base": "marcel",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 122,
+    "visualH": 140,
+    "bars": 30,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "gblRevPriest"
+    ],
+    "attacks": [
+     "throw",
+     "chargeW",
+     "slam",
+     "cast",
+     "roar"
+    ],
+    "signature": [
+     "三连飞刀",
+     "拔刀刺",
+     "震飞",
+     "血色护罩",
+     "复活教徒"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "gblRevBishop",
+     "name": "复活的GBL主教",
+     "artBase": "gbl"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 3,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_fb5"
+   ],
+   "abyssLordOf": [
+    "abyss_forbidden"
+   ],
+   "sameBossAbyss": [
+    "abyss_forbidden"
+   ],
+   "official": {
+    "dungeon": "天帷禁地（隐藏）",
+    "boss": "审判者 马塞尔",
+    "look": "GBL 教高阶暗杀首领，持匕首",
+    "mechanics": [
+     "常驻霸体（仅抓取有效）",
+     "黑烟",
+     "三连扩散飞刀",
+     "屏障",
+     "召不死主教",
+     "起身击退光环"
+    ],
+    "rooms": "不死 GBL 教徒",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "DFO:Arbitrator_Marcellus"
+   },
+   "target": {
+    "mechanics": [
+     "全程霸体：只有抓取技能能打出硬直",
+     "黑烟致盲区",
+     "起身击退光环"
+    ],
+    "primitives": [
+     "trait.grabOnly",
+     "pool",
+     "trait.onGetup",
+     "kit"
+    ],
+    "art": "keep",
+    "complexity": "SIMPLE",
+    "block": "B3",
+    "rename": null
+   }
+  },
+  {
+   "id": "shallow_haunt",
+   "name": "浅栖之地",
+   "region": "darkelf",
+   "regionName": "暗精灵地区",
+   "lvl": [
+    31,
+    32
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "deCave",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "morgan",
+    "name": "怨恨之摩根",
+    "lvl": 33,
+    "art": {
+     "base": "deMorgan",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 112,
+    "visualH": 129,
+    "bars": 32,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "corpseThief",
+     "boneThrower"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "shot/arc",
+       "aoe/circle",
+       "summon:corpseThief"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "buff/haste",
+       "summon:boneThrower"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "buff",
+     "shot",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "boneThrower",
+     "name": "骸骨投掷兵",
+     "artBase": "deSkel"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_de03"
+   ],
+   "abyssLordOf": [
+    "abyss_darkelf"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "lik_well",
+     "gent_outskirts",
+     "gent_east",
+     "sea_pirates"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "sea_pirates",
+      0.67
+     ],
+     [
+      "frozen_heart",
+      0.63
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "浅栖之地",
+    "boss": "怨恨之摩根",
+    "look": "暗精灵亡灵，灰紫色",
+    "mechanics": [
+     "死亡诅咒：头顶骷髅标记，1.5 秒后半屏一击（跳起 / 走开躲）",
+     "连扔 3 个骷髅头，数秒后爆炸",
+     "起身震击",
+     "被背击喷毒雾"
+    ],
+    "rooms": "盗尸者、骸骨投掷兵钻地",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "HK66"
+   },
+   "target": {
+    "mechanics": [
+     "死亡诅咒标记",
+     "骷髅头炸弹（可打掉）",
+     "背击喷毒雾"
+    ],
+    "primitives": [
+     "mark",
+     "plant",
+     "trait.back"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B4",
+    "rename": null
+   }
+  },
+  {
+   "id": "spider_cave",
+   "name": "蜘蛛洞穴",
+   "region": "darkelf",
+   "regionName": "暗精灵地区",
+   "lvl": [
+    32,
+    33
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "deCave",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "ekloso",
+    "name": "艾克洛索",
+    "lvl": 34,
+    "art": {
+     "base": "deSpider",
+     "recolor": {
+      "hue": 80,
+      "sat": 1.2,
+      "bright": 0.8,
+      "only": [
+       230,
+       330
+      ]
+     }
+    },
+    "artSharedWith": [],
+    "scale": 1.9,
+    "h": 90,
+    "visualH": 171,
+    "bars": 33,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "smallSpider"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "shot/spread",
+       "dash",
+       "summon:smallSpider"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "aoe/circle"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "dash",
+     "shot",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "invuln"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "poisonSpider",
+     "name": "毒蜘蛛",
+     "artBase": "deSpider"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_de05"
+   ],
+   "abyssLordOf": [
+    "abyss_darkelf"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "fallen_bandits",
+     "bilmark",
+     "wailing_cave"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "wailing_cave",
+      0.75
+     ],
+     [
+      "fallen_bandits",
+      0.67
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "蜘蛛洞穴",
+    "boss": "艾克洛索",
+    "look": "巨型蜘蛛，污绿色",
+    "mechanics": [
+     "蜘蛛导弹（跳起躲）",
+     "喷网 3 连（束缚）",
+     "升天后追踪落下（黄圈 + 电流）",
+     "弹珠式连续弹射",
+     "召唤小蜘蛛"
+    ],
+    "rooms": "冤魂远程蝙蝠；小蜘蛛贴地抓人",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "HK68"
+   },
+   "target": {
+    "mechanics": [
+     "升天追踪落下（带电圈）",
+     "弹珠弹射冲撞",
+     "喷网束缚 3 连"
+    ],
+    "primitives": [
+     "leap",
+     "dash.bounce"
+    ],
+    "art": "keep（体型 1.9 已和小蜘蛛拉开）+ sig",
+    "complexity": "SIMPLE",
+    "block": "B4",
+    "rename": null
+   }
+  },
+  {
+   "id": "darkelf_tomb",
+   "name": "暗精灵墓地",
+   "region": "darkelf",
+   "regionName": "暗精灵地区",
+   "lvl": [
+    33,
+    34
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "deTomb",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "spiz",
+    "name": "邪龙斯皮兹",
+    "lvl": 35,
+    "art": {
+     "base": "deSpiz",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.3,
+    "h": 120,
+    "visualH": 156,
+    "bars": 34,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "tombSkeleton"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "laser",
+       "rain/hex",
+       "summon:tombSkeleton"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone",
+       "aoe/line"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "laser",
+     "rain",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "rockSkeleton",
+     "name": "岩石骷髅",
+     "artBase": "deSkel"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_de07"
+   ],
+   "abyssLordOf": [
+    "abyss_darkelf"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "white_ruins"
+    ],
+    "sameSkillSet": [
+     "skasa_nest"
+    ],
+    "mostSimilar": [
+     [
+      "skasa_nest",
+      0.7
+     ],
+     [
+      "heis",
+      0.67
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "暗精灵墓地",
+    "boss": "邪龙斯皮兹的头部",
+    "look": "骨龙巨首，囚在小室",
+    "mechanics": [
+     "吐“邪龙的牺牲者”追人自爆",
+     "嘴边毒雾（黄圈，持续伤害）",
+     "铁链成排",
+     "吼叫眩晕"
+    ],
+    "rooms": "五巨头（绿名精英）、吞灵者",
+    "nameMatch": "部分",
+    "confidence": "确认",
+    "src": "HK69, 52PK"
+   },
+   "target": {
+    "mechanics": [
+     "固定不动（锁链缚住的龙首）",
+     "牺牲者：追人自爆的小怪",
+     "毒雾残留"
+    ],
+    "primitives": [
+     "trait.rooted",
+     "pool"
+    ],
+    "art": "keep（加锁链场景物）+ sig",
+    "complexity": "SIMPLE",
+    "block": "B4",
+    "rename": "邪龙斯皮兹 →（可选）邪龙斯皮兹的头部"
+   }
+  },
+  {
+   "id": "lava_cave",
+   "name": "熔岩穴",
+   "region": "darkelf",
+   "regionName": "暗精灵地区",
+   "lvl": [
+    34,
+    35
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "deLava",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "goliath",
+    "name": "歌利亚",
+    "lvl": 36,
+    "art": {
+     "base": "deGiant",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "lik_well"
+    ],
+    "scale": 1.2,
+    "h": 150,
+    "visualH": 180,
+    "bars": 35,
+    "elem": "fire",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "burningHera",
+     "atlas",
+     "titan"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "grab",
+       "aoe/circle",
+       "summon:burningHera"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "tether",
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "rain/hex"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "tether"
+    ],
+    "skillUses": [
+     "aoe",
+     "grab",
+     "rain",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard",
+     "tether"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "barrelOrik",
+     "name": "油桶欧力克",
+     "artBase": "goblin"
+    }
+   ],
+   "preBoss": "barrelOrik",
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_de09"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [
+     "lik_well"
+    ],
+    "mostSimilar": [
+     [
+      "lik_well",
+      0.88
+     ],
+     [
+      "white_ruins",
+      0.56
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "熔岩穴",
+    "boss": "歌利亚 / 泰坦 / 阿特拉斯（三兄弟）",
+    "look": "火红石巨人",
+    "mechanics": [
+     "歌利亚火属性，低血召吞灵者 / 亚德炎",
+     "泰坦眩晕，低血霸体并驱散增益",
+     "阿特拉斯撒网束缚、减速，低血暴走",
+     "三兄弟最终同场"
+    ],
+    "rooms": "三兄弟先在不同房间露面；岩浆地面灼伤",
+    "nameMatch": "部分",
+    "confidence": "确认",
+    "src": "HK67"
+   },
+   "target": {
+    "mechanics": [
+     "三兄弟同场（三条血条，倒一个其余狂暴）",
+     "泰坦驱散 / 阿特拉斯撒网",
+     "岩浆地砖"
+    ],
+    "primitives": [
+     "duo",
+     "arena.tiles"
+    ],
+    "art": "recolor ×3（官方同模三兄弟）",
+    "complexity": "COMPLEX",
+    "block": "B4",
+    "rename": null
+   }
+  },
+  {
+   "id": "king_ruins",
+   "name": "王的遗迹",
+   "region": "darkelf",
+   "regionName": "暗精灵地区",
+   "lvl": [
+    35,
+    36
+   ],
+   "rooms": 4,
+   "layout": "raid",
+   "theme": "deTomb",
+   "hidden": true,
+   "abyss": false,
+   "boss": {
+    "kind": "boroding",
+    "name": "锤王波罗丁",
+    "lvl": 37,
+    "art": {
+     "base": "deBoroding",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 132,
+    "visualH": 152,
+    "bars": 36,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "aoe/cross",
+       "dash",
+       "guard"
+      ]
+     },
+     {
+      "at": 0.65,
+      "enterMechs": [
+       "element"
+      ],
+      "summon": null,
+      "skills": []
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "shield"
+      ],
+      "summon": null,
+      "skills": [
+       "rain/bolt"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "enrage"
+    ],
+    "skillUses": [
+     "aoe",
+     "dash",
+     "guard",
+     "rain",
+     "swipe"
+    ],
+    "mechSet": [
+     "element",
+     "enrage",
+     "groggy",
+     "shield"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "knightLight",
+     "name": "光之沃德咯斯",
+     "artBase": "deElf"
+    }
+   ],
+   "preBoss": "knightLight",
+   "bossAdds": 1,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_de11",
+    "s_de_suffer"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "gent_south",
+      0.64
+     ],
+     [
+      "west_line",
+      0.55
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "王的遗迹",
+    "boss": "不灭之王 波罗丁",
+    "look": "持锤王者，亡灵铠甲",
+    "mechanics": [
+     "移动快，眩晕连击",
+     "三连震（跳起躲）"
+    ],
+    "rooms": "五骑士依次：风（隐身）、守护（红反物理 / 蓝反魔法）、冰（地面冰刀冻结）、炎（受击叠炸弹，满 6 爆）、光（全屏闪电 + 5 小弟）",
+    "nameMatch": "部分",
+    "confidence": "确认",
+    "src": "HK72"
+   },
+   "target": {
+    "mechanics": [
+     "五骑士车轮战（每人一个招牌）",
+     "三连震（跳起躲）"
+    ],
+    "primitives": [
+     "gauntlet",
+     "stance",
+     "trait.stacks",
+     "pool"
+    ],
+    "art": "recolor ×5（deElf）",
+    "complexity": "COMPLEX",
+    "block": "B4",
+    "rename": "锤王波罗丁 → 不灭之王 波罗丁"
+   }
+  },
+  {
+   "id": "darkcity_gate",
+   "name": "暗黑城入口",
+   "region": "darkelf",
+   "regionName": "暗精灵地区",
+   "lvl": [
+    36,
+    37
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "deGate",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "headlessKnight",
+    "name": "无头骑士",
+    "lvl": 38,
+    "art": {
+     "base": "deHeadless",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 128,
+    "visualH": 147,
+    "bars": 37,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "headlessKnightShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "seq[blink,dash,dash]"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "clones"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "blink",
+     "dash",
+     "seq",
+     "swipe"
+    ],
+    "mechSet": [
+     "clones",
+     "groggy"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "tinggao",
+     "name": "谨慎的仃高",
+     "artBase": "deElf"
+    }
+   ],
+   "preBoss": "hempley",
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_de13"
+   ],
+   "abyssLordOf": [
+    "abyss_darkelf"
+   ],
+   "sameBossAbyss": [
+    "abyss_darkelf"
+   ],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "wit_gate",
+      0.67
+     ],
+     [
+      "kartel_origin",
+      0.6
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "暗黑城入口",
+    "boss": "无头骑士",
+    "look": "骑黑色梦魇的无头骑士",
+    "mechanics": [
+     "全程霸体不浮空",
+     "召唤 4 只影之梦魇直线奔走",
+     "冲撞把人顶到墙边多段",
+     "低血满图狂奔回血，濒死数秒无敌"
+    ],
+    "rooms": "仃高（盾挡 90%，抓技可破）、亨普利",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "HK70"
+   },
+   "target": {
+    "mechanics": [
+     "梦魇奔袭（纵深分道，留缺口）",
+     "顶墙冲撞",
+     "低血狂奔回血（输出检查）"
+    ],
+    "primitives": [
+     "lanes",
+     "dash.carry",
+     "stance"
+    ],
+    "art": "NEW（骑马轮廓；现在的步战骑士图给瘟疫之源精英用）",
+    "complexity": "COMPLEX",
+    "block": "B4",
+    "rename": null
+   }
+  },
+  {
+   "id": "neipera",
+   "name": "诺伊佩拉",
+   "region": "darkelf",
+   "regionName": "暗精灵地区",
+   "lvl": [
+    38,
+    38
+   ],
+   "rooms": 4,
+   "layout": "raid",
+   "theme": "deNeipera",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "diregie",
+    "name": "狄瑞吉的幻影",
+    "lvl": 40,
+    "art": {
+     "base": "deDiregie",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.4,
+    "h": 130,
+    "visualH": 182,
+    "bars": 55,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "fierceZombie"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "shot/homing",
+       "aoe/ring",
+       "summon:fierceZombie"
+      ]
+     },
+     {
+      "at": 0.7,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "rain/bolt"
+      ]
+     },
+     {
+      "at": 0.45,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     },
+     {
+      "at": 0.2,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": []
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "enrage"
+    ],
+    "skillUses": [
+     "aoe",
+     "rain",
+     "shot",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "enrage",
+     "groggy",
+     "hazard",
+     "invuln",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "soulEater",
+     "name": "吞灵者",
+     "artBase": "deGhost"
+    }
+   ],
+   "preBoss": "brokenGoliath",
+   "bossAdds": 0,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_de14"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "skasa_nest"
+    ],
+    "sameSkillSet": [
+     "wailing_cave",
+     "law_gate"
+    ],
+    "mostSimilar": [
+     [
+      "skasa_nest",
+      0.82
+     ],
+     [
+      "grand_fire",
+      0.73
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "诺伊佩拉",
+    "boss": "狄瑞吉的幻影",
+    "look": "狄瑞吉邪念所化，流体",
+    "mechanics": [
+     "流动身体多种强攻",
+     "低血分裂"
+    ],
+    "rooms": "搜捕团祭司（互射虚无球计数）、伪装者（靠祭司复活）",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "HK73"
+   },
+   "target": {
+    "mechanics": [
+     "低血分裂成 3 团（共享击杀）",
+     "祭司双人：互相复活"
+    ],
+    "primitives": [
+     "split",
+     "duo"
+    ],
+    "art": "keep + sig",
+    "complexity": "COMPLEX",
+    "block": "B4",
+    "rename": null
+   }
+  },
+  {
+   "id": "frozen_heart",
+   "name": "冰心少年",
+   "region": "snow",
+   "regionName": "万年雪山",
+   "lvl": [
+    36,
+    37
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "snCave",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "charlie",
+    "name": "查理",
+    "lvl": 38,
+    "art": {
+     "base": "snCharlie",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 140,
+    "visualH": 161,
+    "bars": 37,
+    "elem": "ice",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "toySoldier",
+     "toyBerserk"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "aoe/circle",
+       "summon:toySoldier",
+       "shot/arc"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "shield"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:shield",
+       "summon:toyBerserk"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "shot",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "shield"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "toyBerserk",
+     "name": "狂暴型玩具士兵",
+     "artBase": "snToy"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_sn05",
+    "s_sn_phantom"
+   ],
+   "abyssLordOf": [
+    "abyss_snow"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "law_gate"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "law_gate",
+      0.86
+     ],
+     [
+      "shallow_haunt",
+      0.63
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "冰心少年",
+    "boss": "查理",
+    "look": "冰巨人，身边有玩具士兵（外形近似）",
+    "mechanics": [
+     "发射拳头",
+     "霸体冲撞",
+     "空中降冰块",
+     "召唤玩具士兵"
+    ],
+    "rooms": "保护查理的心脏；坚硬玩具只受 1 点伤害",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "HK57"
+   },
+   "target": {
+    "mechanics": [
+     "火箭拳",
+     "坚硬玩具（固定 6 下打碎）",
+     "保护心脏：玩具摸到心脏 → 查理回血"
+    ],
+    "primitives": [
+     "trait.hitHp",
+     "protect"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B5",
+    "rename": null
+   }
+  },
+  {
+   "id": "lik_well",
+   "name": "利库天井",
+   "region": "snow",
+   "regionName": "万年雪山",
+   "lvl": [
+    37,
+    38
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "snRidge",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "lik",
+    "name": "寒冰巨人利库",
+    "lvl": 39,
+    "art": {
+     "base": "deGiant",
+     "recolor": {
+      "hue": -170,
+      "sat": 0.9,
+      "bright": 1.1
+     }
+    },
+    "artSharedWith": [
+     "lava_cave"
+    ],
+    "scale": 1.3,
+    "h": 150,
+    "visualH": 195,
+    "bars": 38,
+    "elem": "ice",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "frostGolem"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "grab",
+       "aoe/cross"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "summon:frostGolem",
+       "rain/hex"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "grab",
+     "rain",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "catapultCommander",
+     "name": "哥布林投石车指挥官",
+     "artBase": "goblinCaptain"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_sn07"
+   ],
+   "abyssLordOf": [
+    "abyss_snow"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "shallow_haunt",
+     "gent_outskirts",
+     "gent_east",
+     "sea_pirates"
+    ],
+    "sameSkillSet": [
+     "lava_cave"
+    ],
+    "mostSimilar": [
+     [
+      "lava_cave",
+      0.88
+     ],
+     [
+      "white_ruins",
+      0.63
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "利库天井",
+    "boss": "寒冰巨人 利库",
+    "look": "冰蓝石巨人，似黄金巨人",
+    "mechanics": [
+     "向前霸体抓取",
+     "霜之新星（冻结身边）",
+     "前冲（中距离最危险）",
+     "不断召唤石头怪"
+    ],
+    "rooms": "冰哥布林驾驶的投冰车（杀操作者毁车）",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "HK59, NEWTON"
+   },
+   "target": {
+    "mechanics": [
+     "霜之新星冻结",
+     "霸体抓取",
+     "投冰车（有操作员的物件）"
+    ],
+    "primitives": [
+     "plant",
+     "stagger"
+    ],
+    "art": "NEW（样板 S2：冰晶石巨人，和歌利亚彻底分开）",
+    "complexity": "COMPLEX",
+    "block": "P0.5",
+    "rename": null
+   }
+  },
+  {
+   "id": "ridge",
+   "name": "山脊",
+   "region": "snow",
+   "regionName": "万年雪山",
+   "lvl": [
+    38,
+    39
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "snRidge",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "ruug",
+    "name": "野兽师鲁乌格",
+    "lvl": 40,
+    "art": {
+     "base": "snBantu",
+     "recolor": {
+      "hue": -60,
+      "sat": 1.1,
+      "bright": 0.85
+     }
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 116,
+    "visualH": 133,
+    "bars": 39,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "iceTiger",
+     "sabertooth"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "shot/spread",
+       "summon:iceTiger",
+       "buff/haste"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "enrage"
+      ],
+      "summon": null,
+      "skills": []
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "tether"
+    ],
+    "skillUses": [
+     "buff",
+     "shot",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "enrage",
+     "groggy",
+     "tether"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "bullBastur",
+     "name": "野蛮牛族勇士巴斯图鲁",
+     "artBase": "tauArmored"
+    }
+   ],
+   "preBoss": "bullEmuli",
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_sn03"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "shallow_haunt",
+      0.56
+     ],
+     [
+      "frozen_heart",
+      0.44
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "山脊",
+    "boss": "野兽师鲁乌格 + 冰齿沙凡特（双领主）",
+    "look": "班图驯兽师 + 白色雪虎",
+    "mechanics": [
+     "上勾拳、召寒冰虎、加攻速",
+     "沙凡特出血飞跃、爪击突进",
+     "两者被远程打都会霸体"
+    ],
+    "rooms": "雪崩拉比纳",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "HK58"
+   },
+   "target": {
+    "mechanics": [
+     "人虎双领主（两条血条）",
+     "被远程打就霸体（逼近战）",
+     "沙凡特出血飞跃"
+    ],
+    "primitives": [
+     "duo",
+     "trait.saVsRanged",
+     "leap"
+    ],
+    "art": "keep（沙凡特已有 snTiger）",
+    "complexity": "SIMPLE",
+    "block": "B5",
+    "rename": null
+   }
+  },
+  {
+   "id": "white_ruins",
+   "name": "白色废墟",
+   "region": "snow",
+   "regionName": "万年雪山",
+   "lvl": [
+    39,
+    40
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "snRuins",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "seski",
+    "name": "塞斯奇",
+    "lvl": 41,
+    "art": {
+     "base": "snYeti",
+     "recolor": {
+      "hue": -20,
+      "sat": 0.8,
+      "bright": 0.85
+     }
+    },
+    "artSharedWith": [],
+    "scale": 1.55,
+    "h": 140,
+    "visualH": 217,
+    "bars": 40,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "snowApe"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "grab",
+       "swipe",
+       "aoe/line",
+       "summon:snowApe"
+      ]
+     },
+     {
+      "at": 0.45,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone",
+       "aoe/line"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "grab",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "avalancheRabina",
+     "name": "雪崩拉比纳",
+     "artBase": "snBantu"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_sn09"
+   ],
+   "abyssLordOf": [
+    "abyss_snow"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "darkelf_tomb"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "darkelf_tomb",
+      0.63
+     ],
+     [
+      "lik_well",
+      0.63
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "白色废墟",
+    "boss": "赛斯奇",
+    "look": "巨型雪魈，白毛",
+    "mechanics": [
+     "近身抓到头顶狂扁",
+     "双掌震地，直线长距离雪波",
+     "召唤小雪魈",
+     "血量很多"
+    ],
+    "rooms": "修罗 APC、雪球噜噜伊、库尼图腾（红 / 蓝）",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "HK60"
+   },
+   "target": {
+    "mechanics": [
+     "头顶狂扁抓取",
+     "沿纵深推进的雪波",
+     "库尼图腾（房间物件）"
+    ],
+    "primitives": [
+     "lanes",
+     "plant"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B5",
+    "rename": null
+   }
+  },
+  {
+   "id": "bwanga_dojo",
+   "name": "布万加的修炼场",
+   "region": "snow",
+   "regionName": "万年雪山",
+   "lvl": [
+    40,
+    41
+   ],
+   "rooms": 4,
+   "layout": "raid",
+   "theme": "snRidge",
+   "hidden": true,
+   "abyss": false,
+   "boss": {
+    "kind": "bwanga",
+    "name": "布万加",
+    "lvl": 42,
+    "art": {
+     "base": "snBwanga",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 132,
+    "visualH": 152,
+    "bars": 41,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "guard",
+       "seq[blink,swipe,aoe/cross]"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "enrage"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "dash",
+     "guard",
+     "seq",
+     "swipe"
+    ],
+    "mechSet": [
+     "enrage",
+     "groggy",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "bantuElite",
+     "name": "班图精锐卫士",
+     "artBase": "snBantu"
+    }
+   ],
+   "preBoss": "tulusElite",
+   "bossAdds": 0,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_sn10"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "wit_gate",
+      0.64
+     ],
+     [
+      "old_wail",
+      0.58
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "布万加的修炼场",
+    "boss": "班图族长 布万加",
+    "look": "高大班图族长，持族长图腾",
+    "mechanics": [
+     "挥图腾眩晕击退",
+     "消失后背后击飞",
+     "起跳 2 秒后砸地（跳起躲）",
+     "长霸体"
+    ],
+    "rooms": "四勇士：马拉加（冰块）、莱里特拉里（旋风）、美杜莎莎（石化）、霍克伊（召鸟）",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "HK63, NEWTON"
+   },
+   "target": {
+    "mechanics": [
+     "四勇士车轮战",
+     "起跳砸地（跳起躲）",
+     "背后突现击飞"
+    ],
+    "primitives": [
+     "gauntlet",
+     "leap",
+     "facing"
+    ],
+    "art": "recolor ×4（snBantu）+ 新场景",
+    "complexity": "COMPLEX",
+    "block": "B5",
+    "rename": null
+   }
+  },
+  {
+   "id": "ice_palace",
+   "name": "冰雪宫殿",
+   "region": "snow",
+   "regionName": "万年雪山",
+   "lvl": [
+    41,
+    42
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "snPalace",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "rose",
+    "name": "冰雪女王洛丝",
+    "lvl": 43,
+    "art": {
+     "base": "snRose",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 124,
+    "visualH": 143,
+    "bars": 42,
+    "elem": "ice",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "roseShade",
+     "kruse"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "shot/homing",
+       "aoe/circle",
+       "blink",
+       "swipe"
+      ]
+     },
+     {
+      "at": 0.55,
+      "enterMechs": [
+       "clones"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones",
+       "laser"
+      ]
+     },
+     {
+      "at": 0.25,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": []
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "tether"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "laser",
+     "shot",
+     "swipe"
+    ],
+    "mechSet": [
+     "clones",
+     "groggy",
+     "hazard",
+     "tether"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "tulusElite",
+     "name": "图卢斯族精英战士",
+     "artBase": "tauArmored"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_sn12"
+   ],
+   "abyssLordOf": [
+    "abyss_snow"
+   ],
+   "sameBossAbyss": [
+    "abyss_snow"
+   ],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "siroco_coffin",
+      0.64
+     ],
+     [
+      "kartel_origin",
+      0.58
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "冰雪宫殿",
+    "boss": "冰雪女王 洛丝",
+    "look": "雪花少女，与冰晶王座融为一体",
+    "mechanics": [
+     "冰魔法",
+     "坐在王座上指挥",
+     "不能移动"
+    ],
+    "rooms": "雷剑克鲁斯（APC）、五宫女（混乱 / 召唤 / 回复加速 / 踢 / 击飞）、洛丝的壁钟",
+    "nameMatch": "一致",
+    "confidence": "确认（本体技能资料少）",
+    "src": "HK61"
+   },
+   "target": {
+    "mechanics": [
+     "王座固定 + 五宫女（先杀回复的）",
+     "壁钟：钟响时躲到王座后",
+     "克鲁斯连线（已有）"
+    ],
+    "primitives": [
+     "trait.rooted",
+     "gauntlet",
+     "form"
+    ],
+    "art": "NEW 形态（王座上的洛丝）",
+    "complexity": "COMPLEX",
+    "block": "B5",
+    "rename": null
+   }
+  },
+  {
+   "id": "skasa_nest",
+   "name": "斯卡萨之巢",
+   "region": "snow",
+   "regionName": "万年雪山",
+   "lvl": [
+    42,
+    42
+   ],
+   "rooms": 4,
+   "layout": "raid",
+   "theme": "snNest",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "skasa",
+    "name": "冰龙斯卡萨",
+    "lvl": 44,
+    "art": {
+     "base": "snSkasa",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "old_winter"
+    ],
+    "scale": 1.5,
+    "h": 140,
+    "visualH": 210,
+    "bars": 60,
+    "elem": "ice",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "babySkasa"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "laser",
+       "rain/hex",
+       "summon:babySkasa"
+      ]
+     },
+     {
+      "at": 0.7,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "aoe/circle"
+      ]
+     },
+     {
+      "at": 0.45,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     },
+     {
+      "at": 0.2,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": []
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "enrage"
+    ],
+    "skillUses": [
+     "aoe",
+     "laser",
+     "rain",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "enrage",
+     "groggy",
+     "hazard",
+     "invuln",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "aquiles",
+     "name": "冰影阿奎利斯",
+     "artBase": "wyvern"
+    }
+   ],
+   "preBoss": "aquiles",
+   "bossAdds": 0,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_sn13",
+    "s_sn_proof"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "neipera"
+    ],
+    "sameSkillSet": [
+     "darkelf_tomb"
+    ],
+    "mostSimilar": [
+     [
+      "neipera",
+      0.82
+     ],
+     [
+      "grand_fire",
+      0.73
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "斯卡萨之巢",
+    "boss": "冰龙斯卡萨",
+    "look": "巨大冰龙，蓝白",
+    "mechanics": [
+     "前爪拍地（跳起躲）",
+     "极寒龙息（多段）",
+     "吹气眩晕",
+     "龙蛋孵出幼龙"
+    ],
+    "rooms": "图卢斯精英、寒冰潜伏者",
+    "nameMatch": "一致",
+    "confidence": "确认（细节近似）",
+    "src": "HK62"
+   },
+   "target": {
+    "mechanics": [
+     "扇形龙息 + 破招窗口",
+     "龙蛋（不打掉就孵化）",
+     "起飞阶段：空中冰雨后落地",
+     "吹气（推开 + 眩晕）"
+    ],
+    "primitives": [
+     "cone",
+     "stagger",
+     "plant",
+     "form(fly)",
+     "pull"
+    ],
+    "art": "keep + sig",
+    "complexity": "COMPLEX",
+    "block": "P0.5",
+    "rename": null
+   }
+  },
+  {
+   "id": "fallen_bandits",
+   "name": "堕落的盗贼",
+   "region": "gent",
+   "regionName": "诺斯玛尔 + 根特",
+   "lvl": [
+    44,
+    45
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "nmTown",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "mozhen",
+    "name": "犬使魔震",
+    "lvl": 46,
+    "art": {
+     "base": "nmDogman",
+     "recolor": {
+      "hue": -90,
+      "sat": 1.3,
+      "bright": 0.7
+     }
+    },
+    "artSharedWith": [],
+    "scale": 1.3,
+    "h": 130,
+    "visualH": 169,
+    "bars": 45,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "quakeHound"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "aoe/ring",
+       "summon:quakeHound"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "buff/enrage",
+       "rain/hex"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "buff",
+     "dash",
+     "rain",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "invuln"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "dogmanHado",
+     "name": "犬人哈多",
+     "artBase": "nmDogman"
+    }
+   ],
+   "preBoss": "shiningSaji",
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_gt03",
+    "d_gt_bandit"
+   ],
+   "abyssLordOf": [
+    "abyss_norsemar"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "spider_cave",
+     "bilmark",
+     "wailing_cave"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "plague_source",
+      0.78
+     ],
+     [
+      "bilmark",
+      0.75
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "堕落的盗贼",
+    "boss": "犬使 摩震",
+    "look": "戴面具的犬使忍者",
+    "mechanics": [
+     "近战 + 3 向飞刀",
+     "替身草人（被打时换位并召猎犬）",
+     "猎犬群突击",
+     "让一件防具暂时失效"
+    ],
+    "rooms": "市政厅召盗贼、闪灵萨吉",
+    "nameMatch": "部分（魔 / 摩）",
+    "confidence": "确认",
+    "src": "HK64"
+   },
+   "target": {
+    "mechanics": [
+     "替身术：挨重击留草人闪走",
+     "猎犬群分道突击",
+     "破甲（防御下降）"
+    ],
+    "primitives": [
+     "trait.substitute",
+     "lanes"
+    ],
+    "art": "keep（精英 dogmanHado 改色拉开）+ sig",
+    "complexity": "SIMPLE",
+    "block": "B6",
+    "rename": "犬使魔震 → 犬使摩震"
+   }
+  },
+  {
+   "id": "hamelin",
+   "name": "「迷乱之村」哈穆林",
+   "region": "gent",
+   "regionName": "诺斯玛尔 + 根特",
+   "lvl": [
+    46,
+    47
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "nmHamelin",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "piper",
+    "name": "魔笛使者皮特",
+    "lvl": 48,
+    "art": {
+     "base": "nmPiper",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 116,
+    "visualH": 133,
+    "bars": 47,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "giantRat",
+     "maneater",
+     "piperShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "shot/homing",
+       "summon:giantRat",
+       "aoe/ring",
+       "blink"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones"
+      ]
+     },
+     {
+      "at": 0.25,
+      "enterMechs": [
+       "enrage"
+      ],
+      "summon": null,
+      "skills": []
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "shot",
+     "summon"
+    ],
+    "mechSet": [
+     "clones",
+     "enrage",
+     "groggy",
+     "invuln"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "ratmanSiu",
+     "name": "鼠头人西乌",
+     "artBase": "nmRatman"
+    }
+   ],
+   "preBoss": "rokusha",
+   "bossAdds": 2,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_gt05",
+    "s_gt_flute"
+   ],
+   "abyssLordOf": [
+    "abyss_norsemar"
+   ],
+   "sameBossAbyss": [
+    "abyss_norsemar"
+   ],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "iris_raid",
+      0.73
+     ],
+     [
+      "wit_gate",
+      0.55
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "「迷乱之村」哈穆林",
+    "boss": "魔笛使者 皮特",
+    "look": "吹笛小丑，身边鼠群",
+    "mechanics": [
+     "笛攻击",
+     "粉色蛾状物",
+     "倒数攻击",
+     "头顶音符橙 / 蓝切模式（蓝色带混乱并清召唤物）"
+    ],
+    "rooms": "食人鼠、疯狂盗贼",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "HK65"
+   },
+   "target": {
+    "mechanics": [
+     "橙 / 蓝音符双模式",
+     "倒数攻击（头顶 3-2-1）",
+     "蛾群追踪"
+    ],
+    "primitives": [
+     "stance",
+     "mark"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B6",
+    "rename": null
+   }
+  },
+  {
+   "id": "gent_outskirts",
+   "name": "根特外围",
+   "region": "gent",
+   "regionName": "诺斯玛尔 + 根特",
+   "lvl": [
+    48,
+    49
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "gtOut",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "bentink",
+    "name": "纵火犯本汀克",
+    "lvl": 50,
+    "art": {
+     "base": "gtBentink",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 120,
+    "visualH": 138,
+    "bars": 49,
+    "elem": "fire",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "shot/arc",
+       "aoe/circle",
+       "seq[blink,rain/hex]",
+       "swipe"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "explode"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "explode",
+     "rain",
+     "seq",
+     "shot",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "flameCorps",
+     "name": "炙炎魔团团员",
+     "artBase": "gtSoldier"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_gt08",
+    "s_gt_order"
+   ],
+   "abyssLordOf": [
+    "abyss_norsemar"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "shallow_haunt",
+     "lik_well",
+     "gent_east",
+     "sea_pirates"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "kartel_origin",
+      0.73
+     ],
+     [
+      "sea_pirates",
+      0.7
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "根特外围",
+    "boss": "纵火犯 本汀克",
+    "look": "防火服 + 喷火器",
+    "mechanics": [
+     "移动时滴汽油",
+     "汽油瓶 + 轰爆弹：油着火连环爆",
+     "喷火器吐息"
+    ],
+    "rooms": "卡勒特各兵种",
+    "nameMatch": "一致",
+    "confidence": "近似",
+    "src": "9GAME, 233"
+   },
+   "target": {
+    "mechanics": [
+     "汽油轨迹 + 点燃连爆",
+     "喷火器扇形"
+    ],
+    "primitives": [
+     "pool.ignite",
+     "cone"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B6",
+    "rename": null
+   }
+  },
+  {
+   "id": "gent_east",
+   "name": "根特东门",
+   "region": "gent",
+   "regionName": "诺斯玛尔 + 根特",
+   "lvl": [
+    49,
+    50
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "gtGate",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "suleide",
+    "name": "机动队长苏雷德",
+    "lvl": 51,
+    "art": {
+     "base": "gtSuleide",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 124,
+    "visualH": 143,
+    "bars": 50,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "rx78"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "dash",
+       "aoe/circle",
+       "laser",
+       "rain/hex"
+      ]
+     },
+     {
+      "at": 0.55,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "summon:rx78",
+       "seq[blink,dash,dash]"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "dash",
+     "laser",
+     "rain",
+     "seq",
+     "summon"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "kartelVanguard",
+     "name": "卡勒特强化先锋卫队",
+     "artBase": "gtSoldier"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_gt10",
+    "s_gt_order"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "shallow_haunt",
+     "lik_well",
+     "gent_outskirts",
+     "sea_pirates"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "kartel_origin",
+      0.58
+     ],
+     [
+      "old_wail",
+      0.58
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "根特东门",
+    "boss": "机动队长 苏雷德",
+    "look": "骑摩托的卡勒特队长",
+    "mechanics": [
+     "前冲 / 旋转摩托",
+     "竖前轮转轮（会跳）",
+     "激光和火箭",
+     "召 RX-78"
+    ],
+    "rooms": "暴风雷兄弟 APC、TMH 空投",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "ZL-dongmen"
+   },
+   "target": {
+    "mechanics": [
+     "旋转摩托冲撞",
+     "竖轮跳砸",
+     "火箭齐射"
+    ],
+    "primitives": [
+     "dash.spin",
+     "leap"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B6",
+    "rename": null
+   }
+  },
+  {
+   "id": "gent_south",
+   "name": "根特南门",
+   "region": "gent",
+   "regionName": "诺斯玛尔 + 根特",
+   "lvl": [
+    51,
+    52
+   ],
+   "rooms": 4,
+   "layout": "raid",
+   "theme": "gtGate",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "gt9600",
+    "name": "GT-9600",
+    "lvl": 53,
+    "art": {
+     "base": "gtMech",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.4,
+    "h": 150,
+    "visualH": 210,
+    "bars": 73,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "rx78"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "dash",
+       "rain/hex",
+       "swipe",
+       "mech:shield"
+      ]
+     },
+     {
+      "at": 0.65,
+      "enterMechs": [
+       "shield"
+      ],
+      "summon": null,
+      "skills": [
+       "aoe/circle"
+      ]
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone",
+       "summon:rx78"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "enrage"
+    ],
+    "skillUses": [
+     "aoe",
+     "dash",
+     "rain",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "enrage",
+     "groggy",
+     "safezone",
+     "shield"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "corroder",
+     "name": "腐蚀弹头团团员",
+     "artBase": "gtSoldier"
+    }
+   ],
+   "preBoss": "heavenCannon",
+   "bossAdds": 0,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_gt11"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [
+     "grand_fire",
+     "plague_source"
+    ],
+    "mostSimilar": [
+     [
+      "plague_source",
+      0.7
+     ],
+     [
+      "old_winter",
+      0.7
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "根特南门",
+    "boss": "GT-9600",
+    "look": "卡勒特战斗机甲",
+    "mechanics": [
+     "移动模式：前冲、四周乱射、导弹、冲击波",
+     "防御模式：大幅加防，锁定目标投量子爆弹，掀机体砸人"
+    ],
+    "rooms": "先锋队长巴希克、巨枪多里安、天堂炮、掩体",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "ZL-nanmen"
+   },
+   "target": {
+    "mechanics": [
+     "移动 / 防御双模式",
+     "量子爆弹锁定（跑开）"
+    ],
+    "primitives": [
+     "stance",
+     "mark"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B6",
+    "rename": null
+   }
+  },
+  {
+   "id": "bilmark",
+   "name": "比尔马克帝国试验场",
+   "region": "ancient",
+   "regionName": "远古",
+   "lvl": [
+    44,
+    45
+   ],
+   "rooms": 6,
+   "layout": "ancient",
+   "theme": "bmLab",
+   "hidden": true,
+   "abyss": false,
+   "boss": {
+    "kind": "mechKing",
+    "name": "牛头械王",
+    "lvl": 46,
+    "art": {
+     "base": "bmMechTau",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.3,
+    "h": 150,
+    "visualH": 195,
+    "bars": 46,
+    "elem": "fire",
+    "engine": "region-spec",
+    "hook": "mechKing",
+    "summons": [
+     "bmRobot",
+     "bmEye"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "aoe/line",
+       "dash"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": []
+     },
+     {
+      "at": 0.25,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "rain/bolt"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "dash",
+     "rain",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "invuln"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "tauCommander",
+     "name": "牛头统帅",
+     "artBase": "tauArmored"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 0,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_an02",
+    "s_an_hanik",
+    "s_an_hanik"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "spider_cave",
+     "fallen_bandits",
+     "wailing_cave"
+    ],
+    "sameSkillSet": [
+     "holy_war",
+     "old_winter"
+    ],
+    "mostSimilar": [
+     [
+      "holy_war",
+      0.86
+     ],
+     [
+      "fallen_bandits",
+      0.75
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "比尔马克帝国试验场",
+    "boss": "牛头械王",
+    "look": "机械改造牛头人，持斧",
+    "mechanics": [
+     "喷火眩晕接斧劈",
+     "扇形三道闪电",
+     "击飞抛掷",
+     "护盾无敌 + 3 机器人（不杀变牛头统帅）"
+    ],
+    "rooms": "伊凡房、牛头统帅房、哈尼克房",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "233"
+   },
+   "target": {
+    "mechanics": [
+     "喷火眩晕 → 斧劈（连招）",
+     "抓取抛掷",
+     "保护模式（已有）"
+    ],
+    "primitives": [
+     "cone"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B7",
+    "rename": null
+   }
+  },
+  {
+   "id": "wailing_cave",
+   "name": "悲鸣洞穴",
+   "region": "ancient",
+   "regionName": "远古",
+   "lvl": [
+    49,
+    50
+   ],
+   "rooms": 6,
+   "layout": "ancient",
+   "theme": "wcCave",
+   "hidden": true,
+   "abyss": false,
+   "boss": {
+    "kind": "bugKing",
+    "name": "虫王戮蛊",
+    "lvl": 51,
+    "art": {
+     "base": "wcBugKing",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 2.2,
+    "h": 130,
+    "visualH": 286,
+    "bars": 51,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": "bugKing",
+    "summons": [
+     "larva"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "aoe/line",
+       "shot/spread",
+       "aoe/circle",
+       "rain/hex",
+       "summon:larva"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": []
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": []
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "rain",
+     "shot",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "invuln"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "kain",
+     "name": "骷髅凯恩",
+     "artBase": "wcKain"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 0,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_an04",
+    "s_an_apophis",
+    "s_an_apophis"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "spider_cave",
+     "fallen_bandits",
+     "bilmark"
+    ],
+    "sameSkillSet": [
+     "neipera",
+     "law_gate"
+    ],
+    "mostSimilar": [
+     [
+      "spider_cave",
+      0.75
+     ],
+     [
+      "law_gate",
+      0.75
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "悲鸣洞穴",
+    "boss": "虫王 戮蛊",
+    "look": "巨型白虫",
+    "mechanics": [
+     "钻地突袭，出土旋转骨刺并反弹远程",
+     "粘液炸弹",
+     "吐幼虫 / 吞幼虫回血"
+    ],
+    "rooms": "布法罗队长、阿波菲斯、骷髅凯恩、20 只幼虫房",
+    "nameMatch": "一致",
+    "confidence": "近似（房间顺序）",
+    "src": "SKYIBIS"
+   },
+   "target": {
+    "mechanics": [
+     "出土骨刺风暴：反弹远程",
+     "粘液残留"
+    ],
+    "primitives": [
+     "trait.reflectRanged",
+     "pool"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B7",
+    "rename": null
+   }
+  },
+  {
+   "id": "sea_pirates",
+   "name": "列车上的海贼",
+   "region": "train",
+   "regionName": "海上列车",
+   "lvl": [
+    52,
+    53
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "trDeck",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "mobeni",
+    "name": "黑鳞莫贝尼",
+    "lvl": 54,
+    "art": {
+     "base": "trMobeni",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.2,
+    "h": 134,
+    "visualH": 161,
+    "bars": 53,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "crocPirate"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "seq[aoe/circle,aoe/circle,aoe/circle]",
+       "seq[aoe/circle,aoe/circle]",
+       "shot/spread"
+      ]
+     },
+     {
+      "at": 0.55,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": "crocPirate",
+      "skills": [
+       "seq[blink,aoe/circle]",
+       "summon:crocPirate"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "seq",
+     "shot",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "crocMate",
+     "name": "副船长鳄鱼",
+     "artBase": "dragonman"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tr03",
+    "d_tr_pirate",
+    "s_tr_mermaid"
+   ],
+   "abyssLordOf": [
+    "abyss_train"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "shallow_haunt",
+     "lik_well",
+     "gent_outskirts",
+     "gent_east"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "gent_outskirts",
+      0.7
+     ],
+     [
+      "shallow_haunt",
+      0.67
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "列车上的海贼",
+    "boss": "黑鳞莫贝尼",
+    "look": "鱼人系海盗船长（外形近似）",
+    "mechanics": [
+     "召鳄鱼鸟",
+     "插鳄鱼柱：被掐住不能动，过段时间爆炸",
+     "多段旋转斩",
+     "大跳",
+     "不吃冰冻"
+    ],
+    "rooms": "美人鱼、炮弹海龟；空空伊 10% 替换领主",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "GB:liechehaizei, DFO"
+   },
+   "target": {
+    "mechanics": [
+     "鳄鱼柱（定身 + 定时爆，可打掉）",
+     "大跳",
+     "空空伊：10% 换成稀有领主"
+    ],
+    "primitives": [
+     "plant",
+     "leap",
+     "bossAlt"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B8",
+    "rename": null
+   }
+  },
+  {
+   "id": "west_line",
+   "name": "夺回西部线",
+   "region": "train",
+   "regionName": "海上列车",
+   "lvl": [
+    53,
+    54
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "trCar",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "podir",
+    "name": "烈焰盾波迪尔",
+    "lvl": 55,
+    "art": {
+     "base": "trPodir",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.2,
+    "h": 130,
+    "visualH": 156,
+    "bars": 54,
+    "elem": "fire",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "steamBoiler"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "guard",
+       "dash",
+       "aoe/line",
+       "summon:steamBoiler"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "shield",
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "rain/hex",
+       "mech:shield"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "dash",
+     "guard",
+     "rain",
+     "summon"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard",
+     "shield"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "ktShield",
+     "name": "卡勒特盾卫",
+     "artBase": "gtSoldier"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tr05"
+   ],
+   "abyssLordOf": [
+    "abyss_train"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "secret_zone"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "secret_zone",
+      0.6
+     ],
+     [
+      "old_winter",
+      0.6
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "夺回西部线",
+    "boss": "烈焰盾 波迪尔",
+    "look": "火焰海龟 / 厚壳（外形近似）",
+    "mechanics": [
+     "火加速：无敌加速冲撞",
+     "瞬移后火扇风多段",
+     "全屏击飞加眩晕"
+    ],
+    "rooms": "独眼夏娜、蓝影马萨乔（冰分身）",
+    "nameMatch": "一致",
+    "confidence": "确认（外形近似）",
+    "src": "GB:xibuxian, DFO"
+   },
+   "target": {
+    "mechanics": [
+     "火加速（无敌冲撞，只能躲）",
+     "瞬移火扇",
+     "全屏重拳（跳起躲）"
+    ],
+    "primitives": [
+     "stance",
+     "cone"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B8",
+    "rename": null
+   }
+  },
+  {
+   "id": "heis",
+   "name": "雾都赫伊斯",
+   "region": "train",
+   "regionName": "海上列车",
+   "lvl": [
+    54,
+    55
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "trHeis",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "fladin",
+    "name": "范·弗拉丁",
+    "lvl": 56,
+    "art": {
+     "base": "trFladin",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.2,
+    "h": 126,
+    "visualH": 151,
+    "bars": 55,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "fladinShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "laser",
+       "swipe",
+       "aoe/circle",
+       "blink"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "clones"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones",
+       "rain/hex"
+      ]
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "laser",
+     "rain",
+     "swipe"
+    ],
+    "mechSet": [
+     "clones",
+     "groggy",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "sniperAlleg",
+     "name": "狙击手艾丽格",
+     "artBase": "gtSoldier"
+    }
+   ],
+   "preBoss": "pierre",
+   "bossAdds": 2,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tr07",
+    "s_tr_log"
+   ],
+   "abyssLordOf": [
+    "abyss_train"
+   ],
+   "sameBossAbyss": [
+    "abyss_train"
+   ],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "darkelf_tomb",
+      0.67
+     ],
+     [
+      "iris_raid",
+      0.58
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "雾都赫伊斯（隐藏）",
+    "boss": "范·弗拉丁",
+    "look": "卡勒特干部，机车帮头目",
+    "mechanics": [
+     "散弹枪",
+     "无线电叫暴走族扔炸弹",
+     "定时炸弹",
+     "乱射（高伤）"
+    ],
+    "rooms": "派普·乔（打掉舵轮才死）、狙击手艾丽格（红瞄准镜，躲砖堆）、兜风皮埃尔；雾",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "GB:heiz, 17173, DFO"
+   },
+   "target": {
+    "mechanics": [
+     "浓雾视野",
+     "狙击红点：躲到掩体后",
+     "暴走族分道飞车扔炸弹",
+     "定时炸弹"
+    ],
+    "primitives": [
+     "arena.fog",
+     "arena.cover",
+     "mark",
+     "lanes"
+    ],
+    "art": "keep + sig",
+    "complexity": "COMPLEX",
+    "block": "B8",
+    "rename": null
+   }
+  },
+  {
+   "id": "arden",
+   "name": "决战阿登高地",
+   "region": "train",
+   "regionName": "海上列车",
+   "lvl": [
+    55,
+    56
+   ],
+   "rooms": 4,
+   "layout": "raid",
+   "theme": "trArden",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "anzu",
+    "name": "黎明之眼 安祖·塞弗",
+    "lvl": 57,
+    "art": {
+     "base": "trAnzu",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.3,
+    "h": 134,
+    "visualH": 174,
+    "bars": 78,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "rx78"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "dash",
+       "laser",
+       "swipe",
+       "rain/hex"
+      ]
+     },
+     {
+      "at": 0.65,
+      "enterMechs": [
+       "element"
+      ],
+      "summon": null,
+      "skills": [
+       "summon:rx78",
+       "mech:shield"
+      ]
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone",
+       "seq[blink,dash,dash]"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "enrage"
+    ],
+    "skillUses": [
+     "blink",
+     "dash",
+     "laser",
+     "rain",
+     "seq",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "element",
+     "enrage",
+     "groggy",
+     "safezone",
+     "shield"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "haas",
+     "name": "双枪哈斯",
+     "artBase": "gtSoldier"
+    }
+   ],
+   "preBoss": "berner",
+   "bossAdds": 0,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tr08",
+    "s_tr_trek"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "gent_south",
+      0.62
+     ],
+     [
+      "king_ruins",
+      0.5
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "决战阿登高地（隐藏）",
+    "boss": "黎明之眼 安祖·赛弗",
+    "look": "人类步枪手，后变机械形态",
+    "mechanics": [
+     "枪托挑飞后扫射",
+     "霸体斜线突进",
+     "低血变身机械（变身无敌）：火箭感电、磁场黑洞 + 全图落雷、导弹"
+    ],
+    "rooms": "双枪哈斯、告密者特雷克（地雷束缚）",
+    "nameMatch": "一致（塞 / 赛）",
+    "confidence": "确认",
+    "src": "GB:aldan, DFO"
+   },
+   "target": {
+    "mechanics": [
+     "低血变身机械形态",
+     "磁场黑洞吸人 + 全图落雷",
+     "斜线突进"
+    ],
+    "primitives": [
+     "form",
+     "pull"
+    ],
+    "art": "NEW 形态（机械安祖）",
+    "complexity": "COMPLEX",
+    "block": "B8",
+    "rename": "安祖·塞弗 → 安祖·赛弗"
+   }
+  },
+  {
+   "id": "grand_fire",
+   "name": "格兰之火",
+   "region": "timegate",
+   "regionName": "时空之门",
+   "lvl": [
+    55,
+    56
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "tgFire",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "utara",
+    "name": "兽王乌塔拉",
+    "lvl": 57,
+    "art": {
+     "base": "tgUtara",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.25,
+    "h": 136,
+    "visualH": 170,
+    "bars": 56,
+    "elem": "fire",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "fireGoblin",
+     "fireSeed"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "aoe/ring",
+       "summon:fireGoblin"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "invuln",
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "rain/hex"
+      ]
+     },
+     {
+      "at": 0.25,
+      "enterMechs": [
+       "enrage"
+      ],
+      "summon": null,
+      "skills": []
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "dash",
+     "rain",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "enrage",
+     "groggy",
+     "hazard",
+     "invuln"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "fireChief",
+     "name": "焚烬的哥布林酋长",
+     "artBase": "goblinChief"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tg03"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [
+     "gent_south",
+     "plague_source"
+    ],
+    "mostSimilar": [
+     [
+      "neipera",
+      0.73
+     ],
+     [
+      "skasa_nest",
+      0.73
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "格兰之火",
+    "boss": "兽王 乌塔拉",
+    "look": "巨型有角兽人，红棕",
+    "mechanics": [
+     "咆哮把人吹向火堆",
+     "抛投眩晕",
+     "地锤 3~4 下全图",
+     "爆炸（打断也会炸）"
+    ],
+    "rooms": "纵火犯（火瓶空中打掉不燃）",
+    "nameMatch": "一致",
+    "confidence": "确认（没查到“灭火”机制）",
+    "src": "GB:huozai, DFO:The_Great_Blaze"
+   },
+   "target": {
+    "mechanics": [
+     "咆哮吹人：推向火堆",
+     "三连地锤（跳起躲）",
+     "必炸的蓄力爆炸（只能跑远）"
+    ],
+    "primitives": [
+     "pull",
+     "plant",
+     "stagger"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B9",
+    "rename": null
+   }
+  },
+  {
+   "id": "plague_source",
+   "name": "瘟疫之源",
+   "region": "timegate",
+   "regionName": "时空之门",
+   "lvl": [
+    55,
+    56
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "tgPlague",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "skelKnight",
+    "name": "骷髅骑士",
+    "lvl": 57,
+    "art": {
+     "base": "tgSkelKnight",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.2,
+    "h": 134,
+    "visualH": 161,
+    "bars": 56,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "plagueHeart",
+     "plagueSkel"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "aoe/line",
+       "rain/hex"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "summon:plagueSkel",
+       "aoe/cross"
+      ]
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "dash",
+     "rain",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "invuln",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "plagueHeadless",
+     "name": "染疫的无头骑士",
+     "artBase": "deHeadless"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tg05"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "holy_war"
+    ],
+    "sameSkillSet": [
+     "gent_south",
+     "grand_fire"
+    ],
+    "mostSimilar": [
+     [
+      "holy_war",
+      0.88
+     ],
+     [
+      "fallen_bandits",
+      0.78
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "瘟疫之源",
+    "boss": "骷髅骑士",
+    "look": "披甲骷髅持枪，暗紫",
+    "mechanics": [
+     "枪矛旋转（出血击飞）+ 召小怪",
+     "突进",
+     "暴走：黑暗闪电、地面蓝色残骸、降抗减速气场"
+    ],
+    "rooms": "重做后：小怪死留毒潭，2 分 30 秒内找针管解毒",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "GB:chuanranbing, DFO:Epidemic"
+   },
+   "target": {
+    "mechanics": [
+     "瘟疫倒计时：捡针管解毒",
+     "旋转枪矛",
+     "地面残骸"
+    ],
+    "primitives": [
+     "debuff",
+     "dash.spin",
+     "pool"
+    ],
+    "art": "keep + sig",
+    "complexity": "COMPLEX",
+    "block": "B9",
+    "rename": null
+   }
+  },
+  {
+   "id": "kartel_origin",
+   "name": "卡勒特之初",
+   "region": "timegate",
+   "regionName": "时空之门",
+   "lvl": [
+    56,
+    57
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "tgDesert",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "belit",
+    "name": "沙影贝利特",
+    "lvl": 58,
+    "art": {
+     "base": "tgBelit",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.2,
+    "h": 122,
+    "visualH": 146,
+    "bars": 57,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "belitShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "seq[blink,swipe]",
+       "dash",
+       "shot/spread",
+       "aoe/circle"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "clones"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones"
+      ]
+     },
+     {
+      "at": 0.35,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "rain/hex"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "dash",
+     "rain",
+     "seq",
+     "shot",
+     "swipe"
+    ],
+    "mechSet": [
+     "clones",
+     "groggy",
+     "hazard"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "desertRider",
+     "name": "沙漠骑手",
+     "artBase": "gtSuleide"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tg07"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "gent_outskirts",
+      0.73
+     ],
+     [
+      "wit_gate",
+      0.73
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "卡勒特之初",
+    "boss": "年轻的沙影 贝利特",
+    "look": "西部牛仔枪手，沙黄",
+    "mechanics": [
+     "旋风（可叠加、诱导）",
+     "爆头 + 肘击",
+     "抛沙",
+     "低血沙暴：沙中隐身 / 无敌"
+    ],
+    "rooms": "岩石不断生成沙暴和沙坑，毁掉两块岩石禁用沙暴",
+    "nameMatch": "部分",
+    "confidence": "确认",
+    "src": "GB:juecheng, DFO"
+   },
+   "target": {
+    "mechanics": [
+     "沙暴隐身（打掉两块岩石才停）",
+     "追踪旋风",
+     "爆头狙击"
+    ],
+    "primitives": [
+     "stance",
+     "plant",
+     "mark"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B9",
+    "rename": "沙影贝利特 → 年轻的沙影 贝利特"
+   }
+  },
+  {
+   "id": "holy_war",
+   "name": "暗黑圣战",
+   "region": "timegate",
+   "regionName": "时空之门",
+   "lvl": [
+    56,
+    57
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "tgHoly",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "nilbas",
+    "name": "尼尔巴斯·格拉西亚",
+    "lvl": 58,
+    "art": {
+     "base": "tgNilbas",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.2,
+    "h": 130,
+    "visualH": 156,
+    "bars": 57,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "ozmaCultist"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "aoe/cross",
+       "aoe/line"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "rain/hex"
+      ]
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "dash",
+     "rain",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "invuln",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "chaosPriest",
+     "name": "混沌祭司",
+     "artBase": "archbishop"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tg09",
+    "s_tg_gracia"
+   ],
+   "abyssLordOf": [
+    "abyss_timegate"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "plague_source"
+    ],
+    "sameSkillSet": [
+     "bilmark",
+     "old_winter"
+    ],
+    "mostSimilar": [
+     [
+      "plague_source",
+      0.88
+     ],
+     [
+      "bilmark",
+      0.86
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "暗黑圣战（已下架）",
+    "boss": "尼尔巴斯·格拉西亚",
+    "look": "堕落女牧师，黑色",
+    "mechanics": [
+     "地雷阵（X 轴爆炸浮空）",
+     "处刑：用大招时被处死",
+     "暴走龙吼霸体"
+    ],
+    "rooms": "护送 4 个牧师到第七房，沙皮罗助战；被污染灵魂碰到即死",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "GB:heise, DFO:Black_Crusade"
+   },
+   "target": {
+    "mechanics": [
+     "护送牧师（到了领主房就助战）",
+     "地雷阵",
+     "处刑：发光时别放大招"
+    ],
+    "primitives": [
+     "protect",
+     "lanes",
+     "stance"
+    ],
+    "art": "keep + sig",
+    "complexity": "COMPLEX",
+    "block": "B9",
+    "rename": null
+   }
+  },
+  {
+   "id": "secret_zone",
+   "name": "绝密区域",
+   "region": "timegate",
+   "regionName": "时空之门",
+   "lvl": [
+    57,
+    58
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "bmLab",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "cerberus",
+    "name": "地狱三头犬",
+    "lvl": 59,
+    "art": {
+     "base": "tgCerberus",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.35,
+    "h": 120,
+    "visualH": 162,
+    "bars": 58,
+    "elem": "fire",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "labHound"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "aoe/line",
+       "summon:labHound"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "seq[dash,dash,dash]"
+      ]
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "shield"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:shield"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "dash",
+     "seq",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard",
+     "shield"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "labWalker",
+     "name": "试验型战斗兵器",
+     "artBase": "gtMech"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tg10"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [
+     "west_line"
+    ],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "old_wail",
+      0.64
+     ],
+     [
+      "sea_pirates",
+      0.6
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "绝密区域",
+    "boss": "地狱三头犬 Cerberus",
+    "look": "三头犬，黑红，大型",
+    "mechanics": [
+     "霸体突进",
+     "出血咬",
+     "注视者之眼：站着不动持续掉血",
+     "召唤角壳"
+    ],
+    "rooms": "领主房左侧笼子到时放出大量哈尼克",
+    "nameMatch": "一致（中文名未核实）",
+    "confidence": "确认",
+    "src": "GB:jimi, DFO"
+   },
+   "target": {
+    "mechanics": [
+     "注视者之眼：必须一直跑",
+     "定时笼子（提前打坏）",
+     "三连扑咬"
+    ],
+    "primitives": [
+     "mark.move",
+     "plant"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B9",
+    "rename": null
+   }
+  },
+  {
+   "id": "old_wail",
+   "name": "昔日悲鸣",
+   "region": "timegate",
+   "regionName": "时空之门",
+   "lvl": [
+    57,
+    58
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "wcCave",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "kainPast",
+    "name": "凯恩",
+    "lvl": 59,
+    "art": {
+     "base": "wcKain",
+     "recolor": {
+      "hue": -15,
+      "sat": 1.25,
+      "bright": 0.85
+     }
+    },
+    "artSharedWith": [],
+    "scale": 1.55,
+    "h": 130,
+    "visualH": 202,
+    "bars": 58,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "siroShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "aoe/line",
+       "seq[blink,aoe/circle]"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "invuln",
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "summon:siroShade"
+      ]
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "dash",
+     "seq",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard",
+     "invuln",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "nightmareBlade",
+     "name": "噩梦中的剑士",
+     "artBase": "sandor"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tg11",
+    "s_tg_shade"
+   ],
+   "abyssLordOf": [
+    "abyss_timegate"
+   ],
+   "sameBossAbyss": [
+    "abyss_timegate"
+   ],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "sea_pirates",
+      0.64
+     ],
+     [
+      "plague_source",
+      0.64
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "昔日悲鸣",
+    "boss": "凯恩 Kane",
+    "look": "人类剑客刺客",
+    "mechanics": [
+     "飞刀",
+     "2 个幻影分身直线冲击",
+     "欲望的沼泽",
+     "频繁瞬移、蓝色减速气场",
+     "低血必杀连斩"
+    ],
+    "rooms": "异界之风：强制向左漂移",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "GB:old_beiming, DFO"
+   },
+   "target": {
+    "mechanics": [
+     "异界之风（场地推力）",
+     "幻影直线冲击",
+     "欲望沼泽"
+    ],
+    "primitives": [
+     "arena.wind",
+     "lanes",
+     "pool"
+    ],
+    "art": "recolor（同一个凯恩，可接受）+ sig",
+    "complexity": "SIMPLE",
+    "block": "B9",
+    "rename": null
+   }
+  },
+  {
+   "id": "old_winter",
+   "name": "凛冬",
+   "region": "timegate",
+   "regionName": "时空之门",
+   "lvl": [
+    58,
+    59
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "snRidge",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "youngSkasa",
+    "name": "年轻的斯卡萨",
+    "lvl": 60,
+    "art": {
+     "base": "snSkasa",
+     "recolor": {
+      "hue": 12,
+      "sat": 0.85,
+      "bright": 1.12
+     }
+    },
+    "artSharedWith": [
+     "skasa_nest"
+    ],
+    "scale": 1.1,
+    "h": 120,
+    "visualH": 132,
+    "bars": 59,
+    "elem": "ice",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "aoe/line",
+       "swipe",
+       "dash",
+       "rain/hex"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "shield",
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:shield"
+      ]
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "dash",
+     "rain",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard",
+     "safezone",
+     "shield"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "frostApe",
+     "name": "冰原巨猿",
+     "artBase": "snYeti"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tg12"
+   ],
+   "abyssLordOf": [
+    "abyss_timegate"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [
+     "bilmark",
+     "holy_war"
+    ],
+    "mostSimilar": [
+     [
+      "gent_south",
+      0.7
+     ],
+     [
+      "holy_war",
+      0.67
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "凛冬",
+    "boss": "年轻的斯卡萨",
+    "look": "冰蓝巨龙（年轻）",
+    "mechanics": [
+     "三次全图锤击",
+     "地面龙息扫整条 X 轴并留冰晶阵",
+     "空中龙息（有盲区，几乎必死）",
+     "免疫眩晕冰冻"
+    ],
+    "rooms": "希斯玛、斯皮拉齐幼龙",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "GB:lindong, DFO:Naissance"
+   },
+   "target": {
+    "mechanics": [
+     "地面龙息扫一整条纵深 + 冰晶",
+     "空中龙息：只有龙身下是安全区",
+     "三连锤击"
+    ],
+    "primitives": [
+     "lanes",
+     "plant",
+     "form(fly)"
+    ],
+    "art": "recolor + 缩小 + 新场景",
+    "complexity": "SIMPLE",
+    "block": "B9",
+    "rename": null
+   }
+  },
+  {
+   "id": "iris_raid",
+   "name": "谜之觉悟",
+   "region": "timegate",
+   "regionName": "时空之门",
+   "lvl": [
+    58,
+    59
+   ],
+   "rooms": 4,
+   "layout": "raid",
+   "theme": "tgRift",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "irisBard",
+    "name": "吟游诗人艾丽丝",
+    "lvl": 60,
+    "art": {
+     "base": "tgIris",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.3,
+    "h": 128,
+    "visualH": 166,
+    "bars": 83,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "riftGazer",
+     "irisBardShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "shot/homing",
+       "aoe/ring",
+       "rain/bolt",
+       "blink",
+       "summon:riftGazer"
+      ]
+     },
+     {
+      "at": 0.65,
+      "enterMechs": [
+       "clones"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones",
+       "laser"
+      ]
+     },
+     {
+      "at": 0.35,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "enrage"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "laser",
+     "rain",
+     "shot",
+     "summon"
+    ],
+    "mechSet": [
+     "clones",
+     "enrage",
+     "groggy",
+     "invuln",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "riftEcho",
+     "name": "过去的回响",
+     "artBase": "merkle"
+    }
+   ],
+   "preBoss": "riftKeeper",
+   "bossAdds": 0,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_tg13",
+    "s_tg_iris"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "hamelin",
+      0.73
+     ],
+     [
+      "siroco_coffin",
+      0.67
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "谜之觉悟",
+    "boss": "吟游诗人 艾丽丝",
+    "look": "少女歌者，人偶乐团",
+    "mechanics": [
+     "支配协奏曲：复活木偶；木偶全灭则领主大受伤（此时无敌）",
+     "水龙 / 火怪 / 雷鸣三首歌"
+    ],
+    "rooms": "玩具士兵、混沌心魔（变身成玩家）",
+    "nameMatch": "一致",
+    "confidence": "确认",
+    "src": "GB:juewu, DFO"
+   },
+   "target": {
+    "mechanics": [
+     "木偶乐团：全灭才破无敌，会复活",
+     "三首歌（换招 + 颜色）"
+    ],
+    "primitives": [
+     "gauntlet",
+     "stance"
+    ],
+    "art": "keep + sig",
+    "complexity": "SIMPLE",
+    "block": "B9",
+    "rename": null
+   }
+  },
+  {
+   "id": "law_gate",
+   "name": "法则之门",
+   "region": "siroco",
+   "regionName": "魔界 · 希洛克",
+   "lvl": [
+    60,
+    61
+   ],
+   "rooms": 6,
+   "layout": "standard",
+   "theme": "siroLaw",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "nex",
+    "name": "奈克斯",
+    "lvl": 62,
+    "art": {
+     "base": "nex",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 122,
+    "visualH": 140,
+    "bars": 62,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "hellHound"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "shot/homing",
+       "aoe/circle",
+       "summon:hellHound"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "shield"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:shield",
+       "rain/bolt"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "rain",
+     "shot",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "shield"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "jailer",
+     "name": "碎颅狱卒",
+     "artBase": "jailer"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon2",
+   "bossBgm": "boss",
+   "quests": [
+    "q_si03"
+   ],
+   "abyssLordOf": [
+    "abyss_siroco"
+   ],
+   "sameBossAbyss": [
+    "abyss_siroco"
+   ],
+   "dup": {
+    "sameMechSet": [
+     "frozen_heart"
+    ],
+    "sameSkillSet": [
+     "neipera",
+     "wailing_cave"
+    ],
+    "mostSimilar": [
+     [
+      "frozen_heart",
+      0.86
+     ],
+     [
+      "wailing_cave",
+      0.75
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "法则之境（破坏之门）",
+    "boss": "遗忘姓名的守门人",
+    "look": "人形守卫（外形近似）",
+    "mechanics": [
+     "领主吸收 1~4 个紫球，数量决定击杀顺序"
+    ],
+    "rooms": "四门同开",
+    "nameMatch": "不同（官方是守门人）",
+    "confidence": "机制确认",
+    "src": "QQNEWS, 163, NAMU"
+   },
+   "target": {
+    "mechanics": [
+     "紫球计数：按顺序打倒 / 打碎"
+    ],
+    "primitives": [
+     "order"
+    ],
+    "art": "换领主：用 gatekeeper 图",
+    "complexity": "COMPLEX",
+    "block": "B10",
+    "rename": "奈克斯 → 守门人（和痛苦之门对调）"
+   }
+  },
+  {
+   "id": "wit_gate",
+   "name": "知性之门",
+   "region": "siroco",
+   "regionName": "魔界 · 希洛克",
+   "lvl": [
+    60,
+    61
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "siroWit",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "assassin",
+    "name": "暗杀者",
+    "lvl": 62,
+    "art": {
+     "base": "assassin",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 112,
+    "visualH": 129,
+    "bars": 62,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "assassinShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "shot/spread",
+       "seq[blink,swipe,aoe/circle]"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "clones"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "enrage"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "dash",
+     "seq",
+     "shot",
+     "swipe"
+    ],
+    "mechSet": [
+     "clones",
+     "enrage",
+     "groggy"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "soulBinder",
+     "name": "灵魂拘束者",
+     "artBase": "voidcaster"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon3",
+   "bossBgm": "boss",
+   "quests": [
+    "q_si05"
+   ],
+   "abyssLordOf": [
+    "abyss_siroco"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "kartel_origin",
+      0.73
+     ],
+     [
+      "darkcity_gate",
+      0.67
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "知性之境",
+    "boss": "魅惑之哈妮尔 等",
+    "look": "（未查到）",
+    "mechanics": [
+     "四个副本连锁，通关一个会重置 / 强化另一个",
+     "降防、致盲、召怪"
+    ],
+    "rooms": "—",
+    "nameMatch": "不同",
+    "confidence": "近似",
+    "src": "163, NAMU"
+   },
+   "target": {
+    "mechanics": [
+     "魅惑（混乱）",
+     "连锁强化：精英活着领主变强"
+    ],
+    "primitives": [
+     "stance"
+    ],
+    "art": "keep（改名，外形近似）",
+    "complexity": "SIMPLE",
+    "block": "B10",
+    "rename": "暗杀者 → 魅惑之哈妮尔（近似）"
+   }
+  },
+  {
+   "id": "pain_gate",
+   "name": "痛苦之门",
+   "region": "siroco",
+   "regionName": "魔界 · 希洛克",
+   "lvl": [
+    60,
+    61
+   ],
+   "rooms": 7,
+   "layout": "long",
+   "theme": "siroPain",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "gatekeeper",
+    "name": "守门人",
+    "lvl": 62,
+    "art": {
+     "base": "gatekeeper",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.15,
+    "h": 132,
+    "visualH": 152,
+    "bars": 62,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "guard",
+       "aoe/cross",
+       "laser"
+      ]
+     },
+     {
+      "at": 0.5,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "element"
+    ],
+    "skillUses": [
+     "aoe",
+     "guard",
+     "laser",
+     "swipe"
+    ],
+    "mechSet": [
+     "element",
+     "groggy",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "hellHound",
+     "name": "魔界猎犬",
+     "artBase": "hound"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "dungeon",
+   "bossBgm": "boss",
+   "quests": [
+    "q_si07",
+    "s_si_jailer"
+   ],
+   "abyssLordOf": [
+    "abyss_siroco"
+   ],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "darkelf_tomb",
+      0.56
+     ],
+     [
+      "heis",
+      0.5
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "苦难之境",
+    "boss": "公义之奈克斯 + 慈悲之维塔",
+    "look": "奈克斯黑、维塔白（推断）",
+    "mechanics": [
+     "苏醒之路：强制读条才解除无敌",
+     "黑门移动地板 / 白门断层地板",
+     "死亡试炼：头顶掉球 + 20 秒读条"
+    ],
+    "rooms": "走位失败重置",
+    "nameMatch": "不同",
+    "confidence": "机制确认，外形近似",
+    "src": "QQNEWS, 163, NAMU"
+   },
+   "target": {
+    "mechanics": [
+     "黑白双领主",
+     "移动地板 / 断层地板",
+     "头顶掉球（接住）"
+    ],
+    "primitives": [
+     "duo",
+     "arena.tiles",
+     "mark"
+    ],
+    "art": "奈克斯 + 维塔（nex 白色换色）",
+    "complexity": "COMPLEX",
+    "block": "B10",
+    "rename": "守门人 → 奈克斯 & 维塔"
+   }
+  },
+  {
+   "id": "siroco_coffin",
+   "name": "无形棺柩",
+   "region": "siroco",
+   "regionName": "魔界 · 希洛克",
+   "lvl": [
+    61,
+    62
+   ],
+   "rooms": 4,
+   "layout": "raid",
+   "theme": "siroCoffin",
+   "hidden": false,
+   "abyss": false,
+   "boss": {
+    "kind": "siroco",
+    "name": "潜行者 希洛克",
+    "lvl": 63,
+    "art": {
+     "base": "siroco",
+     "recolor": null
+    },
+    "artSharedWith": [],
+    "scale": 1.5,
+    "h": 126,
+    "visualH": 189,
+    "bars": 88,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": "siroco",
+    "summons": [
+     "sirocoShade",
+     "luxi"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "seq[blink,swipe]",
+       "shot/homing",
+       "rain/hex",
+       "mech:clones"
+      ]
+     },
+     {
+      "at": 0.72,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "laser",
+       "aoe/cross",
+       "mech:safezone"
+      ]
+     },
+     {
+      "at": 0.45,
+      "enterMechs": [
+       "tether",
+       "hazard"
+      ],
+      "summon": null,
+      "skills": []
+     },
+     {
+      "at": 0.2,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "rain/bolt"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "enrage"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "laser",
+     "rain",
+     "seq",
+     "shot",
+     "swipe"
+    ],
+    "mechSet": [
+     "clones",
+     "enrage",
+     "groggy",
+     "hazard",
+     "invuln",
+     "safezone",
+     "tether"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "jailer",
+     "name": "碎颅狱卒",
+     "artBase": "jailer"
+    }
+   ],
+   "preBoss": "jailer",
+   "bossAdds": 0,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [
+    "q_si08",
+    "s_si_luxi"
+   ],
+   "abyssLordOf": [],
+   "sameBossAbyss": [],
+   "dup": {
+    "sameMechSet": [],
+    "sameSkillSet": [],
+    "mostSimilar": [
+     [
+      "iris_raid",
+      0.67
+     ],
+     [
+      "ice_palace",
+      0.64
+     ]
+    ]
+   },
+   "official": {
+    "dungeon": "无形棺柩",
+    "boss": "潜行者 希洛克（拉维切 / 莱斯特 / 吉里）",
+    "look": "无定形能量体；吉里可化动物",
+    "mechanics": [
+     "拉维切：左右次元，进紫色残影侧安全；精神支配",
+     "莱斯特：频繁无敌",
+     "吉里：化蛇后灵魂出窍",
+     "唤醒卢克西后希洛克虚弱 25 秒"
+    ],
+    "rooms": "三个意识之棺血量共享",
+    "nameMatch": "一致",
+    "confidence": "机制确认，外形近似",
+    "src": "QQNEWS, 17173, DFO:Sirocco"
+   },
+   "target": {
+    "mechanics": [
+     "三形态轮换（拉维切 / 莱斯特 / 吉里）",
+     "次元左右分边",
+     "凝视 / 卢克西（已有）"
+    ],
+    "primitives": [
+     "form",
+     "arena.tiles"
+    ],
+    "art": "form ×2（换色 + 缩放；吉里动物形态可选新图）",
+    "complexity": "COMPLEX",
+    "block": "B10",
+    "rename": null
+   }
+  },
+  {
+   "id": "abyss_gf",
+   "name": "格兰之森深渊",
+   "region": "abyss",
+   "regionName": "深渊派对",
+   "lvl": [
+    16,
+    19
+   ],
+   "rooms": 5,
+   "layout": "abyss",
+   "theme": "abyssGF",
+   "hidden": true,
+   "abyss": true,
+   "boss": {
+    "kind": "boneLord",
+    "name": "盗尸者 骨狱息",
+    "lvl": 20,
+    "art": {
+     "base": "boneLord",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "dark_thunder"
+    ],
+    "scale": 1.35,
+    "h": 120,
+    "visualH": 162,
+    "bars": 30,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": []
+   },
+   "elite": [
+    {
+     "kind": "tauBeast",
+     "name": "牛头巨兽",
+     "artBase": "tau"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_gf"
+   ],
+   "sameBossAbyss": null,
+   "abyssPool": {
+    "lords": [
+     "boneLord",
+     "flameMage",
+     "tauKing",
+     "catKing"
+    ],
+    "lordMechs": [
+     "groggy"
+    ],
+    "cycle": [
+     "safezone"
+    ]
+   }
+  },
+  {
+   "id": "abyss_sky",
+   "name": "天空之城深渊",
+   "region": "abyss",
+   "regionName": "深渊派对",
+   "lvl": [
+    23,
+    26
+   ],
+   "rooms": 5,
+   "layout": "abyss",
+   "theme": "abyssSky",
+   "hidden": true,
+   "abyss": true,
+   "boss": {
+    "kind": "sinEye",
+    "name": "罪恶之眼",
+    "lvl": 27,
+    "art": {
+     "base": "sinEye",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "floating_castle"
+    ],
+    "scale": 1.15,
+    "h": 118,
+    "visualH": 136,
+    "bars": 36,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "knight"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "hughes",
+     "name": "雷环休斯",
+     "artBase": "dragonman"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 3,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_sky"
+   ],
+   "sameBossAbyss": null,
+   "abyssPool": {
+    "lords": [
+     "sinEye",
+     "seghart",
+     "skyExpeller",
+     "platani"
+    ],
+    "lordMechs": [
+     "groggy"
+    ],
+    "cycle": [
+     "shield",
+     "safezone"
+    ]
+   }
+  },
+  {
+   "id": "abyss_spine",
+   "name": "第二脊椎深渊",
+   "region": "abyss",
+   "regionName": "深渊派对",
+   "lvl": [
+    29,
+    30
+   ],
+   "rooms": 5,
+   "layout": "abyss",
+   "theme": "abyssSpine",
+   "hidden": true,
+   "abyss": true,
+   "boss": {
+    "kind": "lotus",
+    "name": "长脚罗特斯",
+    "lvl": 31,
+    "art": {
+     "base": "lotus",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "second_spine"
+    ],
+    "scale": 1.25,
+    "h": 140,
+    "visualH": 175,
+    "bars": 30,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "babyOcto"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "blackOctopus",
+     "name": "巨型黑章鱼",
+     "artBase": "octopus"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_spine",
+    "abyss_forbidden"
+   ],
+   "sameBossAbyss": null,
+   "abyssPool": {
+    "lords": [
+     "lotus",
+     "yakshaKing",
+     "donnierEX",
+     "rodin"
+    ],
+    "lordMechs": [
+     "groggy",
+     "enrage"
+    ],
+    "cycle": [
+     "hazard",
+     "safezone"
+    ]
+   }
+  },
+  {
+   "id": "abyss_forbidden",
+   "name": "天帷禁地深渊",
+   "region": "abyss",
+   "regionName": "深渊派对",
+   "lvl": [
+    30,
+    30
+   ],
+   "rooms": 5,
+   "layout": "abyss",
+   "theme": "abyssForbidden",
+   "hidden": true,
+   "abyss": true,
+   "boss": {
+    "kind": "marcel",
+    "name": "审判者马塞尔",
+    "lvl": 31,
+    "art": {
+     "base": "marcel",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "forbidden_land"
+    ],
+    "scale": 1.15,
+    "h": 122,
+    "visualH": 140,
+    "bars": 30,
+    "elem": null,
+    "engine": "legacy-handwritten",
+    "hook": null,
+    "summons": [
+     "gblRevPriest"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "gblRevBishop",
+     "name": "复活的GBL主教",
+     "artBase": "gbl"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_forbidden"
+   ],
+   "sameBossAbyss": null,
+   "abyssPool": {
+    "lords": [
+     "marcel",
+     "lotus",
+     "gblArchbishop"
+    ],
+    "lordMechs": [
+     "groggy",
+     "enrage"
+    ],
+    "cycle": [
+     "hazard",
+     "shield"
+    ]
+   }
+  },
+  {
+   "id": "abyss_darkelf",
+   "name": "暗黑城深渊",
+   "region": "abyss",
+   "regionName": "深渊派对",
+   "lvl": [
+    37,
+    38
+   ],
+   "rooms": 5,
+   "layout": "abyss",
+   "theme": "abyssDarkelf",
+   "hidden": true,
+   "abyss": true,
+   "boss": {
+    "kind": "headlessKnight",
+    "name": "无头骑士",
+    "lvl": 39,
+    "art": {
+     "base": "deHeadless",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "darkcity_gate"
+    ],
+    "scale": 1.15,
+    "h": 128,
+    "visualH": 147,
+    "bars": 37,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "headlessKnightShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "seq[blink,dash,dash]"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "clones"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "blink",
+     "dash",
+     "seq",
+     "swipe"
+    ],
+    "mechSet": [
+     "clones",
+     "groggy"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "tinggao",
+     "name": "谨慎的仃高",
+     "artBase": "deElf"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_darkelf"
+   ],
+   "sameBossAbyss": null,
+   "dup": {
+    "sameMechSet": [
+     "darkcity_gate"
+    ],
+    "sameSkillSet": [
+     "darkcity_gate"
+    ],
+    "mostSimilar": [
+     [
+      "darkcity_gate",
+      1
+     ],
+     [
+      "wit_gate",
+      0.67
+     ]
+    ]
+   },
+   "abyssPool": {
+    "lords": [
+     "morgan",
+     "ekloso",
+     "spiz",
+     "headlessKnight"
+    ],
+    "lordMechs": [
+     "enrage"
+    ],
+    "cycle": [
+     "shield",
+     "safezone"
+    ]
+   }
+  },
+  {
+   "id": "abyss_snow",
+   "name": "万年雪山深渊",
+   "region": "abyss",
+   "regionName": "深渊派对",
+   "lvl": [
+    41,
+    42
+   ],
+   "rooms": 5,
+   "layout": "abyss",
+   "theme": "abyssSnow",
+   "hidden": true,
+   "abyss": true,
+   "boss": {
+    "kind": "rose",
+    "name": "冰雪女王洛丝",
+    "lvl": 43,
+    "art": {
+     "base": "snRose",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "ice_palace"
+    ],
+    "scale": 1.15,
+    "h": 124,
+    "visualH": 143,
+    "bars": 42,
+    "elem": "ice",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "roseShade",
+     "kruse"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "shot/homing",
+       "aoe/circle",
+       "blink",
+       "swipe"
+      ]
+     },
+     {
+      "at": 0.55,
+      "enterMechs": [
+       "clones"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones",
+       "laser"
+      ]
+     },
+     {
+      "at": 0.25,
+      "enterMechs": [
+       "hazard"
+      ],
+      "summon": null,
+      "skills": []
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy",
+     "tether"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "laser",
+     "shot",
+     "swipe"
+    ],
+    "mechSet": [
+     "clones",
+     "groggy",
+     "hazard",
+     "tether"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "tulusElite",
+     "name": "图卢斯族精英战士",
+     "artBase": "tauArmored"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_snow"
+   ],
+   "sameBossAbyss": null,
+   "dup": {
+    "sameMechSet": [
+     "ice_palace"
+    ],
+    "sameSkillSet": [
+     "ice_palace"
+    ],
+    "mostSimilar": [
+     [
+      "ice_palace",
+      1
+     ],
+     [
+      "siroco_coffin",
+      0.64
+     ]
+    ]
+   },
+   "abyssPool": {
+    "lords": [
+     "charlie",
+     "lik",
+     "seski",
+     "rose"
+    ],
+    "lordMechs": [
+     "enrage"
+    ],
+    "cycle": [
+     "hazard",
+     "safezone"
+    ]
+   }
+  },
+  {
+   "id": "abyss_norsemar",
+   "name": "诺斯玛尔深渊",
+   "region": "abyss",
+   "regionName": "深渊派对",
+   "lvl": [
+    47,
+    48
+   ],
+   "rooms": 5,
+   "layout": "abyss",
+   "theme": "abyssNorsemar",
+   "hidden": true,
+   "abyss": true,
+   "boss": {
+    "kind": "piper",
+    "name": "魔笛使者皮特",
+    "lvl": 49,
+    "art": {
+     "base": "nmPiper",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "hamelin"
+    ],
+    "scale": 1.15,
+    "h": 116,
+    "visualH": 133,
+    "bars": 47,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "giantRat",
+     "maneater",
+     "piperShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "shot/homing",
+       "summon:giantRat",
+       "aoe/ring",
+       "blink"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "invuln"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones"
+      ]
+     },
+     {
+      "at": 0.25,
+      "enterMechs": [
+       "enrage"
+      ],
+      "summon": null,
+      "skills": []
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "shot",
+     "summon"
+    ],
+    "mechSet": [
+     "clones",
+     "enrage",
+     "groggy",
+     "invuln"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "ratmanSiu",
+     "name": "鼠头人西乌",
+     "artBase": "nmRatman"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_norsemar"
+   ],
+   "sameBossAbyss": null,
+   "dup": {
+    "sameMechSet": [
+     "hamelin"
+    ],
+    "sameSkillSet": [
+     "hamelin"
+    ],
+    "mostSimilar": [
+     [
+      "hamelin",
+      1
+     ],
+     [
+      "iris_raid",
+      0.73
+     ]
+    ]
+   },
+   "abyssPool": {
+    "lords": [
+     "mozhen",
+     "piper",
+     "bentink"
+    ],
+    "lordMechs": [
+     "enrage"
+    ],
+    "cycle": [
+     "shield",
+     "safezone"
+    ]
+   }
+  },
+  {
+   "id": "abyss_train",
+   "name": "海上列车深渊",
+   "region": "abyss",
+   "regionName": "深渊派对",
+   "lvl": [
+    55,
+    56
+   ],
+   "rooms": 5,
+   "layout": "abyss",
+   "theme": "abyssTrain",
+   "hidden": true,
+   "abyss": true,
+   "boss": {
+    "kind": "fladin",
+    "name": "范·弗拉丁",
+    "lvl": 57,
+    "art": {
+     "base": "trFladin",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "heis"
+    ],
+    "scale": 1.2,
+    "h": 126,
+    "visualH": 151,
+    "bars": 55,
+    "elem": null,
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "fladinShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "laser",
+       "swipe",
+       "aoe/circle",
+       "blink"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "clones"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:clones",
+       "rain/hex"
+      ]
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "laser",
+     "rain",
+     "swipe"
+    ],
+    "mechSet": [
+     "clones",
+     "groggy",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "sniperAlleg",
+     "name": "狙击手艾丽格",
+     "artBase": "gtSoldier"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_train"
+   ],
+   "sameBossAbyss": null,
+   "dup": {
+    "sameMechSet": [
+     "heis"
+    ],
+    "sameSkillSet": [
+     "heis"
+    ],
+    "mostSimilar": [
+     [
+      "heis",
+      1
+     ],
+     [
+      "darkelf_tomb",
+      0.67
+     ]
+    ]
+   },
+   "abyssPool": {
+    "lords": [
+     "mobeni",
+     "podir",
+     "fladin"
+    ],
+    "lordMechs": [
+     "enrage"
+    ],
+    "cycle": [
+     "shield",
+     "safezone"
+    ]
+   }
+  },
+  {
+   "id": "abyss_timegate",
+   "name": "时空之门深渊",
+   "region": "abyss",
+   "regionName": "深渊派对",
+   "lvl": [
+    58,
+    59
+   ],
+   "rooms": 5,
+   "layout": "abyss",
+   "theme": "abyssTimegate",
+   "hidden": true,
+   "abyss": true,
+   "boss": {
+    "kind": "kainPast",
+    "name": "凯恩",
+    "lvl": 60,
+    "art": {
+     "base": "wcKain",
+     "recolor": {
+      "hue": -15,
+      "sat": 1.25,
+      "bright": 0.85
+     }
+    },
+    "artSharedWith": [
+     "old_wail"
+    ],
+    "scale": 1.55,
+    "h": 130,
+    "visualH": 202,
+    "bars": 58,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "siroShade"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "dash",
+       "aoe/line",
+       "seq[blink,aoe/circle]"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "invuln",
+       "hazard"
+      ],
+      "summon": null,
+      "skills": [
+       "summon:siroShade"
+      ]
+     },
+     {
+      "at": 0.3,
+      "enterMechs": [
+       "safezone"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:safezone"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "blink",
+     "dash",
+     "seq",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "hazard",
+     "invuln",
+     "safezone"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "nightmareBlade",
+     "name": "噩梦中的剑士",
+     "artBase": "sandor"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_timegate"
+   ],
+   "sameBossAbyss": null,
+   "dup": {
+    "sameMechSet": [
+     "old_wail"
+    ],
+    "sameSkillSet": [
+     "old_wail"
+    ],
+    "mostSimilar": [
+     [
+      "old_wail",
+      1
+     ],
+     [
+      "sea_pirates",
+      0.64
+     ]
+    ]
+   },
+   "abyssPool": {
+    "lords": [
+     "kainPast",
+     "youngSkasa",
+     "nilbas"
+    ],
+    "lordMechs": [
+     "enrage"
+    ],
+    "cycle": [
+     "shield",
+     "safezone"
+    ]
+   }
+  },
+  {
+   "id": "abyss_siroco",
+   "name": "魔界深渊",
+   "region": "abyss",
+   "regionName": "深渊派对",
+   "lvl": [
+    60,
+    61
+   ],
+   "rooms": 5,
+   "layout": "abyss",
+   "theme": "abyssSiroco",
+   "hidden": true,
+   "abyss": true,
+   "boss": {
+    "kind": "nex",
+    "name": "奈克斯",
+    "lvl": 62,
+    "art": {
+     "base": "nex",
+     "recolor": null
+    },
+    "artSharedWith": [
+     "law_gate"
+    ],
+    "scale": 1.15,
+    "h": 122,
+    "visualH": 140,
+    "bars": 62,
+    "elem": "dark",
+    "engine": "region-spec",
+    "hook": null,
+    "summons": [
+     "hellHound"
+    ],
+    "phases": [
+     {
+      "at": 1,
+      "enterMechs": [],
+      "summon": null,
+      "skills": [
+       "swipe",
+       "shot/homing",
+       "aoe/circle",
+       "summon:hellHound"
+      ]
+     },
+     {
+      "at": 0.6,
+      "enterMechs": [
+       "shield"
+      ],
+      "summon": null,
+      "skills": [
+       "mech:shield",
+       "rain/bolt"
+      ]
+     }
+    ],
+    "baseSkills": [],
+    "mechs": [
+     "groggy"
+    ],
+    "skillUses": [
+     "aoe",
+     "rain",
+     "shot",
+     "summon",
+     "swipe"
+    ],
+    "mechSet": [
+     "groggy",
+     "shield"
+    ]
+   },
+   "elite": [
+    {
+     "kind": "jailer",
+     "name": "碎颅狱卒",
+     "artBase": "jailer"
+    }
+   ],
+   "preBoss": null,
+   "bossAdds": 2,
+   "bgm": "abyss",
+   "bossBgm": "boss",
+   "quests": [],
+   "abyssLordOf": [
+    "abyss_siroco"
+   ],
+   "sameBossAbyss": null,
+   "dup": {
+    "sameMechSet": [
+     "frozen_heart",
+     "law_gate"
+    ],
+    "sameSkillSet": [
+     "neipera",
+     "wailing_cave",
+     "law_gate"
+    ],
+    "mostSimilar": [
+     [
+      "law_gate",
+      1
+     ],
+     [
+      "frozen_heart",
+      0.86
+     ]
+    ]
+   },
+   "abyssPool": {
+    "lords": [
+     "nex",
+     "assassin",
+     "gatekeeper"
+    ],
+    "lordMechs": [
+     "enrage"
+    ],
+    "cycle": [
+     "hazard",
+     "safezone"
+    ]
+   }
+  }
+ ]
+}

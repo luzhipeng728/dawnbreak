@@ -239,7 +239,9 @@ const coop = {
     if (!m.nid || this.state !== 'play') return;
     this.flushSpawns();   // 刚生成就出招的怪（召唤物）：生成信息要先到，不然队员那边找不到傀儡、这一招丢掉
     const D = m.def_, MA = D && D.msAll && def.msIdx !== undefined ? D.msAll[def.msIdx] : null, mi = MA && MA.act.onStart === def.onStart ? def.msIdx : undefined;   // 区域怪编译过的招式：按编号发（连招的每一步 / 反击也在内）
-    const i = D && D.attacks ? (mi !== undefined ? D.attacks.indexOf(MA) : D.attacks.findIndex(A => A.clip === def.clip && A.act.dur === def.dur)) : -1;
+    // 手写招式表的招式：monsterAI / msStart 出招时带着序号 aIdx（同片段同时长的两招不会认错，例：罪恶之眼的追踪光柱和激光都是 cast / 1.8 秒）；
+    // 别的地方直接 doAct 的（没有 aIdx）才按“片段 + 时长”找
+    const i = D && D.attacks ? (mi !== undefined ? D.attacks.indexOf(MA) : def.aIdx !== undefined && D.attacks[def.aIdx] ? def.aIdx : D.attacks.findIndex(A => A.clip === def.clip && A.act.dur === def.dur)) : -1;
     const tg = m.tgt && m.tgt.uid ? m.tgt.uid : this.me();
     // 自带 AI 的怪（龙之雕像等）的招式不在招式表里：告诉队员是哪个 AI 函数，队员那边用同一个函数现场出招（事件、投射物都一样）；外面又包了一层的（深渊领主）按 aiBase 往里找
     let f = i < 0 && mi === undefined && def.msPhase === undefined ? m.aiInner : null; while (f && f.aiBase) f = f.aiBase;

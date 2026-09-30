@@ -321,7 +321,8 @@ function msGateList(D, list, tok) {
 function msStart(m, A) {
   if (m.act) m.endAct(); m.setState('idle');
   const pl = game.player; if (pl) m.face = pl.x >= m.x ? 1 : -1;
-  m.doAct({ name: A.clip, clip: A.clip, ...A.act, events: (A.act.events || []).map(ev => ({ ...ev, done: false })), hits: A.act.hits && A.act.hits.map(h => ({ ...h })) });
+  const ai = m.def_ && m.def_.attacks ? m.def_.attacks.indexOf(A) : -1;
+  m.doAct({ name: A.clip, clip: A.clip, ...A.act, events: (A.act.events || []).map(ev => ({ ...ev, done: false })), hits: A.act.hits && A.act.hits.map(h => ({ ...h })), ...(ai >= 0 ? { aIdx: ai } : {}) });
   if (m.boss || m.elite || A.act.superArmor) warnMark(m, A.act.superArmor ? '#ff3a2a' : '#ffc02a');
   m.vx = m.vy = 0;
 }
@@ -1061,6 +1062,19 @@ function msFacingResolve(m, st, p) {
   if (ok) { fxText(p.mode === 'away' ? '避开了凝视' : '顶住了威压', t.x, t.y, t.z + 60, { col: '#e8d8ff', size: 11 }); MS_STATS.mech.facingSafe = (MS_STATS.mech.facingSafe || 0) + 1; msLog('solve', m, { id: 'facing' }); return; }
   if (p.status) addStatus(t, p.status, p.sdur, { src: m, force: true });
   msTrueHit(m, t, p.frac * msPunishK()); MS_STATS.mech.facingHit = (MS_STATS.mech.facingHit || 0) + 1; msLog('fail', m, { id: 'facing' });
+}
+// 测试工具（test/boss.mjs 的 mechs 部分）用的解法：BOSS_MECHS[id].test.solve(m, st, p, BH)，BH.gw(秒) 等游戏时间、BH.kill(怪) 打掉
+{
+  const hitN = (m, st, n, dmg = 5) => { for (let k = 0; k < n && !st.done; k++) { m.invul = 0; applyHit(game.player, m, { dmg, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); } };
+  const T = (id, solve) => { BOSS_MECHS[id].test = { solve }; };
+  T('stagger', async (m, st, p, BH) => { let n = 0; while (!st.done && n++ < 200) { hitN(m, st, 20); if (!st.done) await BH.gw(0.05); } await BH.gw(0.3); });
+  T('form', async (m, st, p, BH) => { if (p.dur) st.t = Math.max(st.t, p.dur - 0.2); else msMechEnd(m, st); await BH.gw(0.5); });
+  T('stance', async (m, st, p, BH) => { st.next = 0; await BH.gw(0.4); msMechEnd(m, st); });
+  T('duo', async (m, st, p, BH) => { for (const o of st.group.slice(1)) BH.kill(o); await BH.gw(0.4); msMechEnd(m, st); });
+  T('gauntlet', async (m, st, p, BH) => { for (let k = 0; k < 30 && !st.done; k++) { for (const o of st.cur) BH.kill(o); await BH.gw(0.4); } });
+  T('arena', async (m, st, p, BH) => { if (p.dur) st.t = Math.max(st.t, p.dur - 0.1); else msMechEnd(m, st); await BH.gw(0.3); });
+  T('protect', async (m, st, p, BH) => { for (const e of [...ents]) if (e.team === 'e' && e !== m && e !== st.obj && !e.dead && !(e.def_ && e.def_.msObj)) BH.kill(e); if (p.escort && st.obj) st.obj.x = p.escort.to === 'boss' ? m.x : msRoomW() - 100; await BH.gw(0.4); if (!st.done) msMechEnd(m, st); });
+  T('facing', async (m, st, p, BH) => { const pl = game.player, iv = setInterval(() => { const s = Math.sign(m.x - pl.x) || 1; pl.face = p.mode === 'away' ? -s : s; }, 16); try { await BH.gw(Math.max(0, p.windup - st.t) + 0.3); } finally { clearInterval(iv); } });
 }
 // 领主血条下面的机制提示（包一层 HUD.drawTarget，不改 ui/hud.js）
 function msBar(c, x, y, w, k, col, label) {

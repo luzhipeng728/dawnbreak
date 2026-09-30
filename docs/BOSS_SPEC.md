@@ -266,6 +266,7 @@ skasa_nest: { ..., bossTheme: 'snNestBoss', bossProps: [{ kind: 'bones', x: 0.2,
 | `bossPhaseSet(m, i)` | 直接进第 i 阶段（血量压到门槛下，进场机制照常启动），返回现在的阶段号 |
 | `msMechStart(m, spec)` / `msMechEnd(m, st)` | 启动 / 结束一个机制 |
 | `MS_EVENTS` | 数组，每条 `{ t 游戏秒, T 毫秒, ev, kind, nid, ... }`；`ev`: `cast`（id 技能名、sid 招式 id）\| `tele`（k 类型、r 半径）\| `mech`（id）\| `end`（id、res）\| `solve` / `fail`（id、why）\| `hurt`（dmg、src 机制、me 本机）\| `phase`（i）。最多 3000 条 |
+| `BOSS_MECHS[id].test.solve(m, st, p, BH)` | 新机制（stagger form stance duo gauntlet arena protect facing）自带的解法，test/boss.mjs 的 mechs 部分会用 |
 | `MS_STATS` | `cast[技能]`、`mech[机制]`、`mech[<机制>Solve / Fail]`、`plantBroken plantFuse poolIgnite wallStun backBreak onGetup grabBreak substitute duoDown facingHit facingSafe` |
 
-测试：`node test/boss_prims.mjs`（每个原语的挨打 / 生路 / 解开 / 失败）、`node test/region.mjs <区域> skills,mechs`（样品怪放全部技能、新机制跑一遍）、`node test/skasa_s1.mjs`（S1 总览图 + 实机 40 秒）、`node test/mp_bossprims.mjs`（组队同步）。
+测试：`node test/boss.mjs <地下城> [data,phases,skills,mechs,bot,coop]`（P0-T 的通用领主测试，逐招 / 逐机制 / 逐阶段 + 总览图）、`node test/boss_prims.mjs`（每个原语的挨打 / 生路 / 解开 / 失败）、`node test/region.mjs <区域> skills,mechs`（样品怪放全部技能、新机制跑一遍）、`node test/skasa_s1.mjs`（S1 总览图 + 实机 40 秒）、`node test/mp_bossprims.mjs`（组队同步）。

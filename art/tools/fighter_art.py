@@ -10,6 +10,8 @@
   fighter_art.py touch <表> <格>             单格返修（提示词在 TOUCH），原表备份到 sheets/_pre/
   fighter_art.py frames [表...] [--dry]      切帧 → art/final/spr/fighter/（只替换这些表的帧）+ 双拳 / 头部锚点 + 分割线；预览 <主仓库>/art/src/fighter/cut/（auto.png = 兜底拳头锚点，逐个看）
   fighter_art.py check                       体检：衣服闪烁 / 动作表逐格 / 头部比例 / 锚点，和三职业原装对比 → art/work/fighter_samples/check.json
+  fighter_art.py looks-walk [套装,...]       时装走路帧重切（B2 的 fighter_looks_art 只切 walk1~8；先按 looks_walk 的说明重出时装 walkreact 表）
+  fighter_art.py town [前缀]                 城镇走路 1 倍 / 4 倍对比图（格斗家 / 鬼剑士；先跑 node art/tools/fighter_shots.mjs --town）
   fighter_art.py class                       选角立绘 art/final/class/fighter.webp（原装立绘去白底）
   fighter_art.py review                      审图总览 → art/work/fighter_samples/（游戏内连拍先跑 node art/tools/fighter_shots.mjs）
 生图约定：同时最多 2 个请求（同一个 ChatGPT 账号别压），参考图直接传本地路径（local:），429 退避 65 秒。
@@ -86,8 +88,9 @@ COMBO = [('f_jab1', P(8, 22, 0, -18, -32, 65, 115, 15, 165, 0), 'jab start: the 
          ('f_grab', P(10, 26, 0, -20, -30, 80, 95, 84, 100, 0), 'grab: both arms reaching straight forward at chest height, both fists clenched as if clutching an enemy'),
          ('f_knee', P(-4, 112, 12, -6, -10, 45, 62, 50, 72, 6), 'knee strike: the near knee driven up high to chest height, both fists pulled down in front as if pulling the enemy onto the knee'),
          ('f_crouch', P(16, 72, -28, 52, -58, 40, 150, 20, 160, 0), 'crouch: squatting very low close to the ground, fists up in guard')]
-# 走：轻快的护架步（拳头一直护在胸前），腿按 poseguide 的步态（近侧腿第 1 帧在前）
-# 第一版写了“body at its lowest / highest”，模型把重心起伏画得太大（animfeel 头部每步跳 4.6、起伏 6.8，鬼剑士 0.5 / 0.8）→ 头整圈一样高
+# 走：日常放松的走路（玩家反馈“哪有日常这么走路的”：第一、二版一直是护在下巴前的拳架）→ 和鬼剑士 / 神枪手同一套步态（poseguide.pose_at）：
+# 身体直立、肩膀放松，两臂自然下垂、和腿反向摆（±26°，前臂微弯），拳头松握在胯旁；腿按 poseguide（近侧腿第 1 帧在前）
+# 写“body at its lowest / highest”模型会把重心起伏画得太大（animfeel 头部每步跳 4.6、起伏 6.8，鬼剑士 0.5 / 0.8）→ 头整圈一样高
 WALK_T = ['walk contact: near leg stepping forward on the heel, far leg stretched behind on its toes', 'walk: weight moving onto the near leg in front, legs almost straight',
           'walk passing: near leg straight under the body, far leg lifted with the knee bent passing forward', 'walk: standing on the near leg, far leg swinging forward in front',
           'walk contact MIRRORED: far leg stepping forward on the heel, near leg stretched behind on its toes', 'walk MIRRORED: weight moving onto the far leg in front, legs almost straight',
@@ -95,9 +98,16 @@ WALK_T = ['walk contact: near leg stepping forward on the heel, far leg stretche
 WALK_T = [t + '; the head stays at exactly the same height as in the other walk frames' for t in WALK_T]
 def walk_pose(ph):
     import poseguide as PG
-    L = PG.pose_at(ph, False); sw = 8 * math.cos(math.radians(ph))
-    return P(4, L['nth'], L['nsh'], L['fth'], L['fsh'], 40 - sw, 150, 16 + sw, 162, 0)
-WALK = [(f'walk{i + 1}', walk_pose(i * 45), WALK_T[i] + ', both fists kept up in a light guard in front of the chest') for i in range(8)]
+    L = PG.pose_at(ph, False)
+    return P(3, L['nth'], L['nsh'], L['fth'], L['fsh'], L['nua'], L['nfa'], L['fua'], L['ffa'], 0)
+def walk_arms(ph):
+    a = 26 * math.cos(math.radians(ph)); sw = lambda v: 'swung FORWARD' if v > 8 else 'swung BACK behind the hip' if v < -8 else 'hanging straight down at the side'
+    return f'the near fist {sw(-a)}, the far fist {sw(a)}'
+WALK_RELAX = ('a natural relaxed everyday walk, NOT a fighting guard: upright posture, shoulders relaxed, both arms hanging down loosely and swinging naturally opposite to the legs, '
+              'both fists loosely closed at hip level (never raised to the chest or chin)')
+WALK = [(f'walk{i + 1}', walk_pose(i * 45), f'{WALK_T[i]}; {walk_arms(i * 45)}; {WALK_RELAX}') for i in range(8)]
+STAND = P(2, 6, 6, -6, -6, 8, 20, -8, 4, 0)   # walk 表第 1 格：放松站直、两手下垂（拳架的参考格会把走路也带成拳架）
+STAND_T = 'standing upright and relaxed, both arms hanging loosely at the sides, fists loosely closed at hip level'
 REACT = [('hit1', P(-12, 14, -4, -12, -24, 70, 150, 50, 160, 0), 'hurt: flinching backward, eyes shut in pain, fists raised defensively'),
          ('hit2', P(-26, 20, 0, -8, -20, 20, 60, -20, 30, 0), 'hurt harder: knocked back with the upper body bent backward, arms thrown forward'),
          ('hit3', P(-38, 45, 20, -5, -10, 40, 80, -10, 40, 0), 'hit hard: knocked backward off balance, body bent far back, head thrown back, the near foot lifted off the ground'),
@@ -155,8 +165,9 @@ JOBS = [('fb_throw1', P(-12, 20, 0, -18, -30, 200, 220, 70, 100, 0), 'overhand t
 SHEETS = {   # 表名 → 16 格 [(帧名, 姿势, 说明)]；第 1 格 move 表当 idle，其它表只作比例参考
     'move': [('idle', IDLE, IDLE_T)] + RUN + JUMP + JKICK,
     'combo': [(None, IDLE, IDLE_T)] + COMBO,
-    # walk 表出了两版：第二版（头一样高）的走路格用，受击格把远侧拳的棒画成了嘴边的褐色棍子 → 受击格用第一版（原样另存成 fighter_react.png，只切受击格）
-    'walk': [(None, IDLE, IDLE_T)] + WALK + [(None, Q, t) for _, Q, t in REACT],
+    # walk 表第三版（放松走路，上线后按玩家反馈重画）：第 1 格放松站直，第 9~15 格是 walk1~7 的备份（同样的姿势再画一遍，哪一格坏了改名换上，不用重出）
+    # 受击格用 walk 表第一版（原样另存成 fighter_react.png，只切受击格；第二版的受击格把远侧拳的棒画成了嘴边的褐色棍子），前两版在 sheets/_pre/
+    'walk': [(None, STAND, STAND_T)] + WALK + [(None, Q, t) for _, Q, t in WALK[:7]],
     'react': [(None, IDLE, IDLE_T)] + [(None, Q, t) for _, Q, t in WALK] + REACT,
     'base2': [(None, IDLE, IDLE_T)] + DOWN + BASE2,
     'base3': [(None, IDLE, IDLE_T)] + BASE3,
@@ -383,10 +394,10 @@ def auto_hand(fn, ent, Q, side):
     return {'gx': round(float(tip[0]), 1), 'gy': round(float(tip[1]), 1), 'ang': round(math.atan2(d[1], d[0]), 3), 'len': 30.0, 'bk': 0.0, 'front': 1, 'side': side, 'auto': 1}
 
 HEAD_PX = 46   # 头部锚点周围这么大（帧像素）不找拳头：站姿头高约 80 像素，下巴在锚点下方约 40
-CYCLE_FILL = ('walk',)   # 这些循环片段缺的拳头锚点从同一圈里最近的帧抄（跑步两臂大幅摆动，不抄）
+CYCLE_FILL = ()   # 这些循环片段缺的拳头锚点从同一圈里最近的帧抄（只适合拳头不动的循环：以前的拳架走路；现在走 / 跑两臂都在摆，不抄）
 # 按绑带颜色补的锚点逐个看过（art/src/fighter/cut/auto.png）后，不对的写在这里（那只拳其实被身体挡住，找到的是另一只胳膊的皮肤）：'帧:n|f' → None = 不补
 HAND_FIX = {k: None for k in ('f_shoulder1:f', 'f_shoulder2:n', 'fn_thrust2:f', 'fs_elbow:f', 'f_crouch:f', 'f_high1:f', 'f_jab1:f', 'f_jab2:f', 'f_seal:n', 'tech:f', 'fg_piledrive:f',
-                              'f_flykick:f', 'f_knee:n', 'fb_chain2:f') + tuple(f'walk{i}:f' for i in range(1, 9))}   # 走路：后手护在下巴下，找到的都是下巴
+                              'f_flykick:f', 'f_knee:n', 'fb_chain2:f')}
 
 def hand_anchors(fr, name, meta):
     """wpn / wpn2 标上是哪只拳头（side：'n' 近侧 / 'f' 远侧，排序同 avatar_frames.finish）；没有棒的拳头按绑带颜色补一个锚点（auto: 1，只有握点和前臂方向，没有握拳轮廓）"""
@@ -570,6 +581,28 @@ def review():
     for r in rows: O.paste(r, ((Wd - r.width) // 2, y)); y += r.height + 12
     O.save(os.path.join(WORK, 'overview.jpg'), quality=82); print('审图', WORK, O.size)
 
+def looks_walk(sets):
+    """时装走路帧重切（走路重画以后）：用 B2 的 fighter_looks_art 切 walkreact 表，只切 walk1~8（受击格沿用已审过的旧帧）。
+    先：备份并删掉 art/src/avatar/fighter_base/ 的 fighter_walkreact.png、scale.json（缓存），fighter_looks_art.py composite，
+    fighter_looks_art.py sheets <套装>/walkreact,... --force（每套 1 张）"""
+    import fighter_looks_art as L
+    L.NAMES['walkreact'] = [f if f and f.startswith('walk') else None for f in L.NAMES['walkreact']]
+    L.cmd_frames(sets or L.SETS, ['walkreact'])
+
+def town(prefix=''):
+    """城镇走路对比（fighter_shots.mjs --town 先跑）：上一行格斗家、下一行鬼剑士 → <前缀>town_walk_1x.png（原始像素）、<前缀>town_walk_4x.png（前 4 格 ×4，最近邻）"""
+    tmp = os.path.join(WORK, '.town'); rows = []
+    for k in ('f', 's'):
+        L = sorted((f for f in os.listdir(tmp) if f.startswith(k)), key=lambda f: int(f[1:-4])); rows.append([Image.open(os.path.join(tmp, f)).convert('RGB') for f in L])
+    cw, ch = rows[0][0].size; n = min(len(r) for r in rows)
+    M = Image.new('RGB', (cw * n, ch * 2))
+    for r, row in enumerate(rows):
+        for i, im in enumerate(row[:n]): M.paste(im, (i * cw, r * ch))
+    M.save(os.path.join(WORK, f'{prefix}town_walk_1x.png'))
+    M.crop((0, 0, cw * 4, ch * 2)).resize((cw * 16, ch * 8), Image.NEAREST).save(os.path.join(WORK, f'{prefix}town_walk_4x.png'))
+    for f in os.listdir(tmp): os.remove(os.path.join(tmp, f))
+    os.rmdir(tmp); print(os.path.join(WORK, f'{prefix}town_walk_1x.png'))
+
 def check():
     """切完帧后的体检，和三职业原装同一把尺子（结果写 art/work/fighter_samples/check.json）：
     ① 衣服闪烁：avatar_flicker 的离群分（walk / run / 全部帧，每帧衣服颜色直方图对中位数）；② 动作表逐格：avatar_sheetflicker（相邻格直方图差、亮度抖动）；
@@ -624,6 +657,8 @@ def main():
     elif a.cmd == 'touch':
         name, idx = a.names[0], int(a.names[1]); touch(name, idx, touch_prompt(TOUCH[(name, idx)]))
     elif a.cmd == 'check': check()
+    elif a.cmd == 'town': town(a.names[0] if a.names else '')
+    elif a.cmd == 'looks-walk': looks_walk(a.names)
     elif a.cmd == 'class': class_art()
     elif a.cmd == 'review': review()
     else: raise SystemExit('cmd: guides | ref | design | sheets | frames | class | review')

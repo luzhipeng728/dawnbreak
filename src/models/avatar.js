@@ -37,6 +37,8 @@ class AvatarLayer {
   apply(look) {
     this.look = look; this.glow = vanityGlowRow(look.glow);   // 强化 / 增幅光效（game/vanity.js）
     this.A = look.wpn && WEAPON_IMG[look.wpn] || null; this.wim = this.A ? IMG['weapon/' + look.wpn] : null;
+    this.arm = this.A && SPR_DATA['farm_' + this.A.type] ? 'farm_' + this.A.type : null; this.armV = this.arm ? avArmVariant(look.wpn, this.A.type) : null;   // 格斗家：按帧重画的手臂层（没有就退回贴武器图）
+    if (this.arm && !IMG[`spr/${this.arm}/idle`] && !AV_ARM_LOAD[this.arm]) AV_ARM_LOAD[this.arm] = loadBundles(['spr:' + this.arm]);   // 换上武器就开始加载
     if (this.A && !this.wim) { const k = 'weapon/' + look.wpn; loadArtKey(k).then(() => { if (this.look === look) this.wim = IMG[k] || null; }); }
     const sk = look.set ? `${this.cls}@${look.set}` : null;
     if (sk !== this.setKey) {
@@ -60,11 +62,32 @@ class AvatarLayer {
   frame(m, f) {
     this.sync();
     const r = this.frame0(m, f); this.fr = r;
-    if (!this.A || !this.A.cover || !this.wim) return r;
+    const ov = this.armOf(f);
+    if (this.arm && !ov && avArmNone(this.arm, f)) return r;   // 手臂层做过这一帧、两只拳都被挡住：照原帧画（不贴武器）；没做过的帧退回贴武器图
+    if (!this.A || !(this.A.cover || ov) || !(this.wim || ov)) return r;
     const F = r ? r.F : m.S.frames[f], im = r ? r.im : m.img[f];
-    if (!F || !im || !(F.wpn || F.wpn2)) return r;
-    const o = avFists(im, F); if (!o) return r;
-    return (this.fr = { F, im: o.im, fit: o.fit });
+    if (!F || !im) return r;
+    const o = F.wpn || F.wpn2 ? avFists(im, F) : null;
+    return (this.fr = { F, im: o ? o.im : im, fit: o ? o.fit : undefined, ov, up: r ? r.up : undefined, src: r && ov ? r : null });
+  }
+  // 手臂层（art/final/spr/farm_<类型>，art/tools/fighter_arms_art.py）：这一帧有就用（按品级 / 装扮换色），分包没加载先按需加载
+  armOf(f) {
+    const k = this.arm; if (!k) return null;
+    const O = SPR_DATA[k].frames[f], im = O && IMG[`spr/${k}/${f}`];
+    if (!O) return null;
+    if (!im) { if (!AV_ARM_LOAD[k]) AV_ARM_LOAD[k] = loadBundles(['spr:' + k]); return null; }
+    return { O, im: this.armV ? avArmTint(im, this.armV) : im };
+  }
+  armDraw(c, ov, f) {
+    const { O } = ov, src = this.fr && this.fr.src, B = SPR_DATA.fighter.frames[f], bim = IMG['spr/fighter/' + f];
+    const sl = src && B && bim ? avSleeve(src.im, src.F, bim, B) : null;   // 时装：袖子盖在手套上面（袖口以下才露出手套）
+    let im = ov.im;
+    if (sl) { const [cv, x] = avScratch(im.width, im.height); x.drawImage(im, 0, 0); x.globalCompositeOperation = 'destination-out'; x.drawImage(sl, O.ax - src.F.ax, O.ay - src.F.ay); x.globalCompositeOperation = 'source-over'; im = cv; }
+    const P = { w: ov.im.width, h: ov.im.height, gx: 0, gy: ov.im.height / 2, tx: ov.im.width, ty: ov.im.height / 2, kind: 'glove' };   // 光效沿手臂层的横轴（vanityWeaponFx 当成一把武器画光晕 / 火花）
+    if (this.glow) { c.save(); c.translate(-O.ax, -O.ay + P.gy); vanityWeaponFx(c, this, {}, P, ov.im, 1, true); c.restore(); }
+    if (this.jw) { c.save(); c.translate(-O.ax, -O.ay + P.gy); jlWeapon(c, this, P, ov.im, 1); c.restore(); }
+    c.drawImage(im, 0, 0, P.w, P.h, -O.ax, -O.ay, P.w, P.h);
+    if (this.glow) { c.save(); c.translate(-O.ax, -O.ay + P.gy); vanityWeaponFx(c, this, {}, P, ov.im, 1, false); c.restore(); }
   }
   frame0(m, f) {
     const r = this.alt[f]; if (r !== undefined && !(r && r.dead)) return r;   // dead：拼好的画布被全局缓存挤掉了，重新拼
@@ -76,7 +99,7 @@ class AvatarLayer {
   // 钩子：帧之前（身后的武器、后脑的发饰）
   under(c, m, f, F) {
     jlUnder(c, this, m, f, F);   // 转职外观：身后的鬼影 / 残影 / 血焰 / 小鬼神；无敌半透明（models/job_fx.js）
-    const cover = this.A && this.A.cover, w = F.wpn, w2 = F.wpn2, back = x => x && (!x.front || (x.side === 'f' && !cover));   // 格斗家远侧拳（side 'f'）握着的武器（东方棍）画在身后；盖拳的在 over 里按拳头露出来的地方画
+    const cover = this.A && this.A.cover, w = F.wpn, w2 = F.wpn2, noPaste = (this.fr && this.fr.ov) || (this.arm && avArmNone(this.arm, f)), back = x => x && !noPaste && (!x.front || (x.side === 'f' && !cover));   // 格斗家远侧拳（side 'f'）握着的武器（东方棍）画在身后；盖拳的在 over 里按拳头露出来的地方画
     if (back(w2) && this.dual()) this.weapon(c, w2, F);
     if (back(w)) this.weapon(c, w, F);
     if (F.head && this.acc.length) this.accessories(c, F, true, f);
@@ -86,9 +109,12 @@ class AvatarLayer {
   over(c, m, f, F) {
     jlHair(c, this, m, f, F);   // 转职发色：紧贴在帧图上面（身前武器 / 头饰之前，models/job_fx.js）
     const w = F.wpn, w2 = F.wpn2, far = x => x && x.side === 'f';
-    if (w2 && w2.front && this.dual() && far(w2)) this.front(c, m, f, F, w2, 1);   // 远侧拳先画：近侧拳（最前面）的手套压在它上面
-    if (w && w.front) this.front(c, m, f, F, w, 0);
-    if (w2 && w2.front && this.dual() && !far(w2)) this.front(c, m, f, F, w2, 1);
+    if (this.fr && this.fr.ov) this.armDraw(c, this.fr.ov, f);   // 手臂层：两只手连同武器已经按这一帧画好（远侧手被身体挡着的部分本来就没画）
+    else if (!(this.arm && avArmNone(this.arm, f))) {
+      if (w2 && w2.front && this.dual() && far(w2)) this.front(c, m, f, F, w2, 1);   // 远侧拳先画：近侧拳（最前面）的手套压在它上面
+      if (w && w.front) this.front(c, m, f, F, w, 0);
+      if (w2 && w2.front && this.dual() && !far(w2)) this.front(c, m, f, F, w2, 1);
+    }
     if (F.head && this.acc.length) this.accessories(c, F, false, f);
     if (this.glow && this.glow.trail) vanityTrail(c, this, F, f);
     jlOver(c, this, m, f, F);   // 转职外观：鬼手 / 红眼 / 身前的火舌和鬼火
@@ -166,6 +192,67 @@ class AvatarLayer {
    ⑤ 远侧拳：遮罩 = 这只手露出来的像素（拳头 + 前臂 + 一圈描边）+ 空白处，手套只画在这里面 —— 头、身体、近侧手臂挡着的地方照样挡着，伸到身体外面的照画。
    每张帧图算一次（WeakMap，原装 / 时装 / 混搭拼帧都一样）；读不了像素（file:// 跨域）返回 null（退回按拳心一圈裁）。 */
 const AV_FISTS = new WeakMap(), AV_FIST_R2 = 17, AV_ARM_R = 32;
+/* 手臂层换色（品级 / 武器装扮不再单独生图）：手臂层按材质分两类 —— 有颜色的（皮革 / 布 / 漆，饱和度 ≥ 0.25）换成主色，发白发灰的（金属 / 袖口）往辅色靠；
+   绑带 / 皮肤、深色描边不动；保留明暗。每张图 × 款式算一次（WeakMap） */
+const AV_ARM_TINT = { r2: ['#8a5ae0', '#c8b8f0'], r3: ['#e0508e', '#ecd4e0'], r4: ['#e8a030', '#f4d060'], spring: ['#d8282a', '#f0c040'], summer: ['#3aa0f0', '#f4f8ff'],
+  holywing: ['#f4f0e6', '#f0c848'], flamedragon: ['#9a1a24', '#3a2228'], academy: ['#2a3a90', '#d0d4e8'], gothic: ['#2a2630', '#d8d8e8'] };
+const AV_ARM_LOAD = {}, AV_ARM_TC = new WeakMap(), avArmNone = (k, f) => !!(SPR_DATA[k].none && SPR_DATA[k].none.includes(f));
+/* 时装的袖子：原装这里是绑带 / 皮肤（小臂），时装这里是衣服 → 袖子，手臂层在这里不画（袖子盖住手套口）。躯干（原装是红马甲）不算，近侧手套在身体前面照画。
+   每张时装帧图算一次（WeakMap）；读不了像素 / 没有袖子返回 null */
+const AV_SLEEVE = new WeakMap();
+function avSleeve(im, F, bim, B) {
+  let o = AV_SLEEVE.get(im); if (o !== undefined) return o; o = null;
+  try {
+    const skin = (d, i) => { const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0; if (mx < 140 || sat < 0.07 || sat >= 0.45 || r < b || mx === mn) return false; let h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4; h *= 60; if (h < 0) h += 360; return h > 8 && h < 48; };
+    const W = im.width, H = im.height, [c0, x0] = offCanvas(W, H); x0.drawImage(im, 0, 0); const d = x0.getImageData(0, 0, W, H).data;
+    const bw = bim.width, bh = bim.height, [c1, x1] = offCanvas(bw, bh); x1.drawImage(bim, 0, 0); const e = x1.getImageData(0, 0, bw, bh).data;
+    const dx = Math.round(B.ax - F.ax), dy = Math.round(B.ay - F.ay), m = new Uint8Array(W * H), A = [F.wpn, F.wpn2].filter(Boolean);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x; if (d[i * 4 + 3] < 128 || skin(d, i * 4)) continue;
+      if (A.some(w => (x - w.gx) ** 2 + (y - w.gy) ** 2 < 225)) continue;   // 拳头一圈不算（袖子到不了拳头；时装表重画的拳头边缘和原装差几个像素，不能在手套上挖洞）
+      const bx = x + dx, by = y + dy; if (bx < 0 || by < 0 || bx >= bw || by >= bh) continue;
+      const j = (by * bw + bx) * 4; if (e[j + 3] < 128 || !skin(e, j)) continue;
+      m[i] = 1;
+    }
+    const md = new Uint8ClampedArray(W * H * 4), st = []; let n = 0;   // 只留成块的袖子（≥ 40 像素）：零星的描边差异不算
+    for (let i0 = 0; i0 < W * H; i0++) {
+      if (m[i0] !== 1) continue;
+      const blob = [i0]; m[i0] = 2; st.push(i0);
+      while (st.length) { const i = st.pop(), x = i % W; for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W]) if (j >= 0 && j < W * H && m[j] === 1) { m[j] = 2; blob.push(j); st.push(j); } }
+      if (blob.length >= 40) for (const i of blob) { md[i * 4 + 3] = 255; n++; }
+    }
+    if (n) { const [cv, x] = offCanvas(W, H); x.putImageData(new ImageData(md, W, H), 0, 0); o = cv; }
+  } catch (err) { o = null; }
+  AV_SLEEVE.set(im, o); return o;
+}
+function avArmVariant(key, type) {
+  if (!key || key === type) return null;
+  const r = /_r(\d)$/.exec(key); if (r) return AV_ARM_TINT['r' + r[1]] ? 'r' + r[1] : null;
+  if (key.startsWith('ep_')) return 'r4';
+  const sk = key.split('_')[0]; return AV_ARM_TINT[sk] ? sk : null;
+}
+function avArmTint(im, v) {
+  let M = AV_ARM_TC.get(im); if (!M) AV_ARM_TC.set(im, M = new Map());
+  let o = M.get(v); if (o) return o;
+  const W = im.width, H = im.height, [cv, x] = offCanvas(W, H); x.drawImage(im, 0, 0);
+  let d; try { d = x.getImageData(0, 0, W, H); } catch (e) { M.set(v, im); return im; }
+  const p = d.data, [m1, m2] = AV_ARM_TINT[v].map(hexRgb), cls = new Uint8Array(p.length / 4), L = [];
+  for (let i = 0; i < p.length; i += 4) {   // 1 = 有颜色的材质（换主色），2 = 金属 / 白（往辅色靠），0 = 不动
+    if (p[i + 3] < 10) continue;
+    const r = p[i], g = p[i + 1], b = p[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+    let h = 0; if (mx > mn) { h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4; h *= 60; if (h < 0) h += 360; }
+    if (mx < 60 || (mx >= 140 && sat >= 0.07 && sat < 0.45 && r >= b && h > 8 && h < 48)) continue;   // 描边 / 绑带皮肤不动
+    if (sat >= 0.25) { cls[i / 4] = 1; L.push(0.3 * r + 0.59 * g + 0.11 * b); } else if (mx >= 90) cls[i / 4] = 2;
+  }
+  L.sort((a, b) => a - b); const med = Math.max(20, L.length ? L[L.length >> 1] : 100);   // 主材质的中间亮度 → 对到主色（明暗按比例）
+  for (let i = 0; i < p.length; i += 4) {
+    const c = cls[i / 4]; if (!c) continue;
+    const l = 0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2];
+    if (c === 1) { const k = l / med, hi = Math.max(0, k - 1.1) * 0.7; for (let j = 0; j < 3; j++) p[i + j] = Math.min(255, m1[j] * Math.min(k, 1.2) + (255 - m1[j]) * hi); }
+    else for (let j = 0; j < 3; j++) p[i + j] = Math.min(255, p[i + j] * 0.4 + m2[j] * (l / 200) * 0.6);
+  }
+  x.putImageData(d, 0, 0); M.set(v, cv); return cv;
+}
 let AV_SCRATCH = null;
 function avScratch(w, h) {
   if (!AV_SCRATCH || AV_SCRATCH[0].width < w || AV_SCRATCH[0].height < h) AV_SCRATCH = offCanvas(Math.max(w, AV_SCRATCH ? AV_SCRATCH[0].width : 0), Math.max(h, AV_SCRATCH ? AV_SCRATCH[0].height : 0));

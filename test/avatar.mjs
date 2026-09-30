@@ -197,7 +197,7 @@ for (const cls of (await openLists()).classes) {
     await page.waitForTimeout(1500); const worn = (await look()).hash;   // 等剩下的图（武器 / 握拳遮罩等）都加载完，外观稳定后再记下来
     await page.evaluate(() => { save.write(); });
     await page.goto(`${URL_BASE}?town&cls=${cls}&mute`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 }); await page.evaluate(HELPERS);
-    await page.waitForFunction(() => __G.player && __G.player.model.av && (__G.player.model.av.sync(), __G.player.model.av.S2 && __G.player.model.av.acc.every(a => IMG['avatar/' + a.img])), null, { timeout: 10000 }).catch(() => {});
+    await page.waitForFunction(() => __G.player && __G.player.model.av && (__G.player.model.av.sync(), __G.player.model.av.S2 && __G.player.model.av.acc.every(a => IMG['avatar/' + a.img]) && (!__G.player.model.av.arm || IMG[`spr/${__G.player.model.av.arm}/idle`])), null, { timeout: 10000 }).catch(() => {});   // 格斗家拳上武器的手臂层分包也加载完
     L = await look(); ok(L.set === 'festival' && L.hash === worn, '刷新后外观不变', JSON.stringify({ set: L.set, S2: !!L.S2, same: L.hash === worn, acc: L.acc, wpn: L.wpn }));
     await page.evaluate(() => { inv.unwear('av_top'); });
     L = await look(); ok(L.parts && !L.parts.up && L.parts.low === 'festival' && L.parts.feet === 'festival' && L.hash !== worn, '脱下上衣 → 上身换回默认造型，下身、鞋仍是庆典（混搭）', JSON.stringify({ set: L.set, parts: L.parts }));

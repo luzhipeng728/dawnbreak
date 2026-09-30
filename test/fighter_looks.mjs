@@ -29,7 +29,7 @@ await page.evaluate(async ([TYPES, SETS]) => {
     eq(o = {}) {
       const e = {}, w = o.wpn;
       if (w) { const A = WEAPON_IMG[w], t = A ? A.type : w, sk = w.includes('_') && !/_r\d$/.test(w) ? w.split('_')[0] : null, r = /_r(\d)$/.exec(w);
-        e.weapon = { key: t, slot: 'weapon', kind: 'equip', wtype: t, rar: r ? +r[1] : 0, cls: WTYPES[t] ? WTYPES[t].cls : undefined, enh: o.enh || 0 };
+        e.weapon = { key: t + '_item', slot: 'weapon', kind: 'equip', wtype: t, rar: r ? +r[1] : 0, cls: WTYPES[t] ? WTYPES[t].cls : undefined, enh: o.enh || 0 };
         if (sk) e.av_weapon = { key: 'av_weapon_' + sk, skin: sk }; }
       if (o.set) { for (const s of ['av_top', 'av_bottom', 'av_shoes']) e[s] = { set: 'av_' + o.set }; for (const p of o.acc || []) e['av_' + p] = { key: `av_${p}_${o.set}`, set: 'av_' + o.set }; }
       return e;
@@ -145,6 +145,12 @@ const r3 = await page.evaluate(async ([TYPES, SKINS]) => {
   const bare = px({ wpn: null, set: null, acc: [] });
   for (const t of TYPES) { const d = px(__fl.look('fighter', null, { wpn: t })); let n = 0; for (let i = 0; i < d.length; i += 4) if (Math.abs(d[i] - bare[i]) + Math.abs(d[i + 1] - bare[i + 1]) + Math.abs(d[i + 2] - bare[i + 2]) + Math.abs(d[i + 3] - bare[i + 3]) > 60) n++; res.drawn.push([t, n]); }
   // 商店：格斗家武器货架有 5 类
+  // 手臂层（按帧重画的戴武器小臂 + 拳头，art/tools/fighter_arms_art.py）：5 类都有、帧齐全；拿拳套时站立帧真的走手臂层；稀有 / 装扮换了色
+  res.arm = TYPES.map(t => [t, SPR_DATA['farm_' + t] ? Object.keys(SPR_DATA['farm_' + t].frames).length : 0]);
+  await loadBundles(TYPES.map(t => 'spr:farm_' + t));
+  const am = __fl.model('fighter', __fl.look('fighter', null, { wpn: 'boxing' })), [acv, acx] = offCanvas(200, 260); __fl.drawAt(acx, am, 'idle', 100, 240, 1); res.armUsed = !!(am.av.fr && am.av.fr.ov);
+  const tintOf = k => { const mm = __fl.model('fighter', __fl.look('fighter', null, { wpn: k })); __fl.drawAt(acx, mm, 'idle', 100, 240, 1); return mm.av.fr && mm.av.fr.ov && mm.av.fr.ov.im; };
+  res.tint = new Set(['boxing', 'boxing_r2', 'boxing_r4', 'summer_boxing', 'gothic_boxing'].map(tintOf)).size;
   const T = SHOPS.fengzhen.tabs[0], goods = typeof T.goods === 'function' ? [10, 30, 60].flatMap(l => T.goods(l)) : T.goods;
   res.shop = new Set(goods.map(k => (ITEMS[k] || {}).wtype)).size;
   // 物品的武器图：普通 / 高级 → 类型外观，稀有~传说 → r2~r4
@@ -156,6 +162,8 @@ ok(!r3.cover.length, '手套 / 拳套 / 爪 / 臂铠盖住拳头（cover），�
 ok(!r3.noIcon.length, '图标：item_w_<类型> ×5、流沙 item_sand_<类型> ×5、w_fighter', JSON.stringify(r3.noIcon));
 ok(r3.drawn.every(([, n]) => n > 100), '每类武器都画在手上（站姿和空手相比变了的像素）', JSON.stringify(r3.drawn));
 ok(r3.shop === 5, `风振的格斗家武器货架有 ${r3.shop} 类`);
+ok(r3.arm.every(([, n]) => n >= 16) && r3.arm.some(([t, n]) => t === 'boxing' && n >= 85) && r3.armUsed, '拳上武器有按帧重画的手臂层（拳套 91 帧齐；其余类型没做完的帧退回贴武器图），站立帧用上了', JSON.stringify([r3.arm, r3.armUsed]));
+ok(r3.tint === 5, `品级 / 装扮给手臂层换色（5 种外观 = ${r3.tint} 张不同的图）`);
 
 console.log('4. 时装 / 配件 / 路人');
 const r4 = await page.evaluate(async SETS => {

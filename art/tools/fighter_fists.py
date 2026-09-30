@@ -15,8 +15,7 @@ from prep import components
 
 SPR = FA.SPR
 WORK = os.path.join(FA.HERE, 'work', 'fighter_b2')
-ACCEPT = {   # 帧 → (dx, dy[, ang]) 握点微调 / 指定方向（逐帧看过 fists_find.jpg；run5 / run8 / jump1 找到的是前臂，不收）
-    **{f'walk{i}': (0, 0) for i in range(1, 9)},   # 走路：护在下巴前的后手
+ACCEPT = {   # 帧 → (dx, dy[, ang]) 握点微调 / 指定方向（逐帧看过 fists_find.jpg；run5 / run8 / jump1 找到的是前臂，不收；走路 8 帧 B1 重画后两只拳都有锚点，已去掉）
     'run3': (0, 0), 'run4': (0, 0), 'run7': (0, 0),   # 跑步：往后甩的手
     'f_jab1': (0, 0), 'f_jab2': (-39, 25, -1.3),   # 刺拳的后手（f_jab2 找到的是出拳那只的前臂，挪到胸前的后手、拳面朝上）
     'fs_elbow': (0, 0),   # 肘击突进：B1 没有锚点，前面那只拳

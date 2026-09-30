@@ -1,7 +1,7 @@
 // 格斗家拳上武器近景对照（B2 修“双手”：手套盖不住拳头 / 远侧手套压在脸上）：node test/fighter_gloves.mjs [输出名=gloves] [帧,...]
 //   每行一种武器外观（5 类 × 普通 / 传说 + 满级角色实际拿到的那把），每列一个帧（站立 / 走 / 跑 / 刺拳 / 踢 / 转职姿势），4 倍放大，裁到两只拳头附近；
 //   第一行是空手（看原来的拳头在哪）。改前：GAME_URL=file://<旧构建>.html node test/fighter_gloves.mjs before
-//   输出 test/shots/fighter_looks/<名>.jpg
+//   输出 test/shots/fighter_looks/<名>.jpg；SET=summer 等 = 穿着这套时装
 import { launch, URL_BASE } from './lib.mjs';
 import fs from 'fs';
 import { execFileSync } from 'child_process';
@@ -18,9 +18,10 @@ const maxW = await page.evaluate(() => {
   return { key: k, wtype: ITEMS[k].wtype, rar: ITEMS[k].rar, name: ITEMS[k].name, art: weaponArtOf({ key: k, wtype: ITEMS[k].wtype, rar: ITEMS[k].rar, cls: 'fighter' }, 'fighter') };
 });
 console.log('满级格斗家（基础职业）拿到的武器：', JSON.stringify(maxW));
-const url = await page.evaluate(async ([FR, maxW, WL]) => {
+const url = await page.evaluate(async ([FR, maxW, WL, SET]) => {
   const W = WL || [null, maxW.art, 'knuckle', 'knuckle_r4', 'boxing', 'boxing_r4', 'claw', 'claw_r4', 'tonfa', 'tonfa_r4', 'gauntlet', 'gauntlet_r4', 'summer_boxing', 'gothic_gauntlet'];
-  const look = w => { if (!w) return { wpn: null, set: null, acc: [] }; const A = WEAPON_IMG[w]; return { wpn: w, set: null, acc: [], glow: null, job: null, parts: null, _t: A && A.type }; };
+  const look = w => { if (!w) return { wpn: null, set: SET, acc: [] }; const A = WEAPON_IMG[w]; return { wpn: w, set: SET, acc: [], glow: null, job: null, parts: null, _t: A && A.type }; };
+  if (SET) await loadBundles(['spr:fighter@' + SET]);
   for (const w of W) if (w) await loadArtKey('weapon/' + w);
   const Z = 4, CW = 250, CH = 210, LW = 120, TH = 22, S = SPR_DATA.fighter, res = S.res;
   const [cv, x] = offCanvas(LW + FR.length * CW, TH + W.length * CH);
@@ -41,7 +42,7 @@ const url = await page.evaluate(async ([FR, maxW, WL]) => {
   };
   draw(); await new Promise(r => setTimeout(r, 1500)); draw();
   return cv.toDataURL('image/png');
-}, [FR, maxW, WL]);
+}, [FR, maxW, WL, process.env.SET || null]);
 fs.writeFileSync(`${out}/${name}.png`, Buffer.from(url.split(',')[1], 'base64'));
 execFileSync('python3', ['-c', `from PIL import Image; Image.open('${out}/${name}.png').convert('RGB').save('${out}/${name}.jpg', quality=86)`]); fs.rmSync(`${out}/${name}.png`);
 console.log('  ', `${out}/${name}.jpg`, logs.filter(l => l.type === 'pageerror').length ? 'pageerror!' : '');

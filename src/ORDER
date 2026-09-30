@@ -124,6 +124,8 @@ content/quests/witch.js
 content/quests/fighter.js
 content/quests/sky.js
 content/quests/behemoth.js
+# 团本规则核心（RA1，docs/RAID_PLAN.md §3）：纯规则、不依赖别的文件；服务端 server/modules/raid.js 用 node:vm 跑同一个文件
+game/raid_core.js
 # 区域流水线（docs/REGION_PIPELINE.md）：怪物技能库 + 领主机制库 → defineRegion(spec) 生成器 → 每个区域一个纯数据 spec（+ 可选的领主自定义钩子）
 game/mon_skills.js
 # 领主差异化 P0（docs/BOSS_SPEC.md）：技能库第二批（leap cone lanes mark plant pool pull、冲刺变体）+ 特性钩子；要在 region.js 前面（样品怪 msLab 放全部技能）

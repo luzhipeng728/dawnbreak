@@ -168,6 +168,7 @@
 | S→C | `duel:asked` / `duel:declined` / `duel:cancelled` / `duel:note` | | |
 | C→S | `arena:join` / `arena:leave` / `arena:end` | cid, char, pool? / – / id, win, draw, abort? | 决斗场排位（`server/modules/arena.js`）：排队 / 退队 / 上报结果（abort 1 = 没开打→作废，2 = 中途离开→判负） |
 | S→C | `arena:queued` / `arena:left` / `arena:note` / `arena:match` / `arena:result` | rating, tier / why / text / id, ai, host, vs / id, win, draw, void, why, delta, rating, tier, reward | 真人对局随后收到 `room`（kind duel，`meta.arena` = 对局 id），走好友决斗的流程 |
+| 双向 | `raid:*` | 见下面「团本」一节 | 团本会话（`server/modules/raid.js`） |
 
 ### 组队刷图（`r` 里的 d.k）
 | 谁发 | k | 内容 |
@@ -243,3 +244,47 @@
 - **职业状态**（新文件 net/coop_fighter.js）：格斗家本人的 `p` 消息带 `ff = { b: 可见 BUFF, o: 念气珠位掩码, e: 风雷能量, q: 街霸 4 种投掷物的 [剩几个, 上限, 是否在装填] }`；影子按它增删 BUFF（影子上的 BUFF 不自己走时间，重放技能时加上的也以本人为准）、画念气珠 / 龙虎啸电光 / 焚步火焰 / 强拳红光，龙虎啸换普攻表（重放普攻时是虎爪），装填数照抄（重放投掷时强化 / 两连投的判断和本人一致）。念气罩本来就走 party_sync（`partyCast('fn_guard')`：每个人在自己那边生成罩子，站在里面各自无敌）。
 - **排位 AI 池**（server/modules/arena.js）：`AI_POOL` 23 种；`arena:join` 带 `pool`（客户端已开放的“职业:转职”列表，`openClasses / openJobs`），服务端 `aiPoolOf` 只从里面抽，不带（老客户端）= 原来 18 种 → 格斗家没开放时不会排到格斗家 AI。
 - 测试：`node test/mp_fighter.mjs [地下城] [等级] [转职]`（鬼剑士主机 + 柔道家队员：抓 / 扔 / 抓倒地 / 多抓、状态同步、念气罩、一起通关，约 1 分钟）；`node --disable-warning=ExperimentalWarning server/test/arena.mjs`（AI 池）。
+
+### 团本（RA1，10-01：`server/modules/raid.js` + `src/game/raid_core.js`，设计见 `docs/RAID_PLAN.md` §3）
+- **权威**：团本会话由服务端说了算；规则写在 `src/game/raid_core.js`（纯函数，不碰 DOM / 游戏全局 / 时钟，时间由参数传入，随机数带种子），浏览器按 `src/ORDER` 加载，服务端 `loadRaidCore()` 用 `node:vm` 跑**同一个文件**，离线单人（引导）在本地跑同一套。对外全局名只有 `RAID_DEFS` / `RAID_CORE` / `raidInit` / `raidEvent` / `raidTick`（const，重名直接报错）。
+  - `raidInit(raid, members, mode, now, opt)` → 会话 S（纯 JSON）；`raidEvent(S, ev, now)` → `{ S, fx, err, ack }`；`raidTick(S, now)` → `{ S, fx }`；`RAID_CORE.view / graph / scale / canStart / limits / consume / rollReward / shift`。
+  - 每条事件之前先按时间推进（计时、窗口、重生……），所以结果只取决于事件和它们的时间，和 tick 频率无关：`server/test/raid.mjs` 用同一串事件对比服务端 vm 和网页版脚本（dist/web 整个游戏一起加载）里的 `RAID_CORE`，逐步一致。
+- **团本定义** `RAID_DEFS.siroco`（规则参数只写在这里，服务端只加载这一个文件）：两个阶段（追逐战 25 分钟 / 讨伐战 20 分钟，引导 40 / 30），节点图（`need` 前置、`type` = main / buff / timer / order / sync / final、`solo` 必须分头、`together` 最终合流、`dg` 节点地下城 id、`guide` 引导图里去掉或覆盖），跨节点效果 `fx`，复活（全团每阶段 6 次 / 引导 3 次，每人每节点 2 次），侵蚀 60 / 10 秒，休整 120 秒，补位 180 秒，次数每天 1 / 每周 2，数值 `scale`，奖励 `rewards`（RA3 填内容）。
+  - 追逐战：`law_a` / `law_b`（顺序）→ `wit_dawn`（主线）+ `wit_night`（增益：哈妮尔受伤 +30%、免疫魅惑 90 秒，120 秒重生）→ `pain_mem`（主线）+ `pain_mirror`（倒计时 240 秒，到 0 → 记忆的碎片回满血 + 全团 −2 分钟；通关后修复 90 秒）→ `gate_l` / `gate_r`（同步：30 秒窗口，没同步复活 50%；血量差 > 25% 时血多的一边受伤 ×0.5）。
+  - 讨伐战：`sub_a` / `sub_b` → `con_hall`（主线）+ `con_mut`（增益：幻影破防 20 秒、受伤 ×1.6）→ `coffin`（最终合流，主机报存档点）。
+  - 引导图（单人，或普通模式只有 1 个人）：`law_a` → `wit_dawn` → `pain_mem` → `gate_l`（双领主 `raid_si_gate_duo`）/ `sub_a` → `con_hall` → `coffin`；普通模式 1 个人时用引导图但保留普通数值和奖励。
+- **状态机**：`lobby`（建团 / 加入 / 准备）→ `routes`（阶段进行中）→ 阶段目标节点都通关 → `rest`（休整，领 P1 奖励；团长可以提前开始）→ `routes`（讨伐战）→ 最终节点开放时 `final` → `cleared`；阶段限时到 = `failed`（timeout），全员离开 = `failed`（abandon），大厅 30 分钟没人开始 = `failed`（stale）。
+  - 节点状态：`locked` / `open` / `busy`（有人在打）/ `down`（同步节点等另一边）/ `cleared` / `cool`（增益重生、镜子修复）/ `off`（不再需要）。一个节点同一时间只有一次挑战（`run`）。
+  - **补位**：普通模式里队友离线超过 180 秒（或离开了团本）→ 顺序不限、镜子暂停、双生窗口 90 秒、最终战可以一个人进；回来后恢复。挑战里的人全都离线超过 180 秒、而队友在线 → 放出这个节点（离线的人回来补发的旧结果会被拒）。
+  - **防作弊（基本）**：只能进开放的节点、不能同时在两个节点、侵蚀中不能进；上报必须对上自己的挑战编号（一起打时 hp / down / clear / cp 只认主机）；领主倒下离进节点至少 `guard.minClear` 秒（20 秒 × 进场时的血量比例）；存档点掉血不能快过 `guard.maxDrop`（每秒 5%）；每次挑战的倒下只认一次，挑战结束后的上报被拒；`q` 序号重复的补发回 dup、不重复生效。
+- **HTTP**：`GET /api/raid?cid=&raid=siroco` → `{ raid, limits { dayLeft, weekLeft, ok, nextDay, nextWeek, … }, run（进行中的会话，没有是 null）, invite（队长建了普通团本、我还没加入）, defs, now }`。
+- **WS（C→S）**
+  | t | 字段 | 说明 |
+  |---|---|---|
+  | `raid:create` | raid, mode 'normal' \| 'guide', cid, char { name, cls, job, lvl } | 建团：普通模式要是队长（或没组队），队伍不超过 2 人；Lv60 起；队友收到 `raid:open` |
+  | `raid:join` | sid, cid, char | 加入（要和团长同队，大厅里） |
+  | `raid:ready` | on | 准备 |
+  | `raid:start` | – | 团长：大厅 → 追逐战（这时按角色扣每天 / 每周次数，用完的人本次是练习 `rw:false`）；休整中 = 提前开始下一阶段 |
+  | `raid:leave` | – | 离开（开始后 = 放弃，次数照扣；只剩 0 人 = 失败） |
+  | `raid:enter` | node, with?: [uid] | 进节点；`with` = 一起进（发的人要是队长、成员同队），随后自己发 `room:open { kind:'dungeon', meta: { raid: sid, node, run } }` |
+  | `raid:ev` | node, run, q, e, v | 实例上报（q = 这次挑战里自己的序号，从 1 递增；断线时排队、重连后原样补发）：`hp` v=0~1（主机，建议血量每掉 5% 报一次）/ `down` 领主倒下（决定性）/ `clear` 离开节点回营地（没报过 down 的先按 down 算，同步节点除外）/ `fail` v='retreat'\|'dead'\|'lost'（lost = 房间没了，不算侵蚀）/ `death` 倒下且不复活（侵蚀）/ `revive` 要一次复活 / `cp` v={ hp, ph }（最终战主机每 3 秒） |
+  | `raid:mark` | uid, node | 团长给队友标目标 |
+  | `raid:resume` | sid | 重连 / 刷新后要全量（连上时服务端也会自动发） |
+  | `raid:claim` | sid, phase | 领阶段奖励（阶段通关、不是练习、没领过；重复领返回同一份 `dup:true`） |
+- **WS（S→C）**
+  | t | 字段 | 说明 |
+  |---|---|---|
+  | `raid` | run（`RAID_CORE.view`）, now, resume? | 全量：建团 / 加入 / 换阶段 / 重连时 |
+  | `raid:d` | sid, now, set, nodes | 变化：`set` 里的字段整体替换，`nodes` 只含变了的节点（按 id 合并） |
+  | `raid:entered` | sid, run, node, name, type, dg, boss, host, by, scale { mode, guide, sub, hp, atk, mech, lvl, penalty, … }, buffs, cp, hpStart, order, orderTurn, sub, deadline | 进节点成功（一起进的人都收到）：按 dg 进图，按 scale 调怪，hpStart / cp 从存档点出生，buffs 是已经生效的跨节点效果 |
+  | `raid:ack` | sid, run, q, e, ok, res?（clear / down / heal / life / nolife）, dup?, code?, text? | 每条 `raid:ev` 的回执（客户端据此删掉排队的事件） |
+  | `raid:fx` | sid, kind, node, p | 落到实例里的效果：`buff` / `groggy`（p { id, p { dmgTaken, noCharm }, dur, until }）/ `unbuff` / `heal`（回满）/ `revive`（双生复活 p.hp）/ `window`（另一边倒了，p.until 前打倒你的）/ `done`（节点通关）/ `life`（复活结果 ok, left）/ `erosion`（p.until）/ `closed`（挑战结束：主机走了 / 没人在线）/ `time`（v 秒）/ `phase`（阶段开始 / 完成）/ `sub`（补位开关）/ `mark` |
+  | `raid:note` | sid, text, node?, code?, bad? | 提示（bad = 你的操作被拒，code 见上） |
+  | `raid:end` | sid, ok, why（clear / timeout / abandon / stale / disband / left / gone）, phases | 结束 |
+  | `raid:open` | sid, raid, mode, leader { id, name } | 队长建了普通团本，邀请你加入 |
+  | `raid:claimed` | sid, phase, reward { phase, cards: [{ key, n }] }, dup?, limits | 领奖结果；客户端按 sid + phase 只入账一次 |
+- **队伍**（`server/core/party.js` 加了 5 行）：队伍里有人在没结束的团本里时，不能移交队长；邀请 / 接受邀请只允许同一个团本的成员（大厅里没满 2 人时可以邀请新人）；在大厅里离队 / 被请离 = 离开团本。会话和队伍分开：队伍因掉线解散后会话还在，团本成员之间可以重新组队。
+- **持久化**：`raid_run`（整个会话 JSON；每次状态变化立即写，hp / cp 最多每秒一次；没结束的会话每秒更新心跳 `beat`）、`raid_claim`（会话 + 账号 + 角色 + 阶段唯一，存奖励结果）、`raid_week`（按账号 + 角色 + 团本：日编号 / 当天次数 / 周编号 / 本周次数；北京时间 06:00 换日、周四 06:00 换周）。服务端重启：读回没结束的会话，所有计时按停机时长（现在 − beat）顺延，成员先算离线，连上后自动收到 `raid { resume }`。模块可以导出 `stop(ctx)`（index.js 关闭时调用，团本用它把没写的变化写掉）。结束的会话在内存留 10 分钟、库里留 7 天。
+- **部署注意**：线上服务端目录里没有 `src/`，`loadRaidCore()` 依次找 `DNF_RAID_CORE` → 服务端 `lib/raid_core.js` → 仓库 `src/game/raid_core.js`；`tools/deploy.sh server` 要在同步 server 目录之后加一步 `rsync -az src/game/raid_core.js cc:/tmp/dawnbreak-server-src/lib/raid_core.js`（install.sh 会复制 lib/）。找不到时团本模块跳过加载（日志“模块加载失败 raid.js”），其余功能不受影响。
+- **测试参数**：`cfg.raidShift`（毫秒，平移团本时间）、`cfg.raidMinClear` / `cfg.raidMaxDrop`（覆盖防作弊阈值）；环境变量 `DNF_RAID_FAST=1` = 两个都关（给 RA2 的 `?raidfast` 浏览器测试用）。
+- 测试：`node --disable-warning=ExperimentalWarning server/test/raid.mjs`（约 5 秒，97 项：两人全流程、单人引导、每周次数、作弊、断线 / 重启恢复、网页版一致性）。

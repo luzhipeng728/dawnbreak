@@ -166,7 +166,7 @@
 | S→C | `room` / `room:closed` / `room:left` / `room:lag` / `r` | room, resume? / why / user / user, on / f, d | resume = 宽限期内重连回来 |
 | C→S | `duel:ask` / `duel:accept` / `duel:decline` / `duel:cancel` | to / from / from, why / to | 好友决斗邀请（20 秒过期） |
 | S→C | `duel:asked` / `duel:declined` / `duel:cancelled` / `duel:note` | | |
-| C→S | `arena:join` / `arena:leave` / `arena:end` | cid, char / – / id, win, draw, abort? | 决斗场排位（`server/modules/arena.js`）：排队 / 退队 / 上报结果（abort 1 = 没开打→作废，2 = 中途离开→判负） |
+| C→S | `arena:join` / `arena:leave` / `arena:end` | cid, char, pool? / – / id, win, draw, abort? | 决斗场排位（`server/modules/arena.js`）：排队 / 退队 / 上报结果（abort 1 = 没开打→作废，2 = 中途离开→判负） |
 | S→C | `arena:queued` / `arena:left` / `arena:note` / `arena:match` / `arena:result` | rating, tier / why / text / id, ai, host, vs / id, win, draw, void, why, delta, rating, tier, reward | 真人对局随后收到 `room`（kind duel，`meta.arena` = 对局 id），走好友决斗的流程 |
 
 ### 组队刷图（`r` 里的 d.k）
@@ -177,8 +177,8 @@
 | 队长 | `s`（20Hz） | ts 这些位置是队长哪一帧的（队长的 performance.now）、rk 房间、m [[id, x, y, z, 朝向, 状态, 血, 出招序号]]、d 伤害数字 |
 | 队长 | `spawn` / `ma` / `kill` / `room` / `clear` | 生成 / 怪物出招（招式下标、目标）/ 击杀（击杀者、最后一击）/ 换房间 / 清房（前后 4 种带序号 sq） |
 | 队长 | `sync` / `replay` | 重连对齐（当前房间、清过的房间、活着的怪）/ 补发错过的生成和击杀 |
-| 队员 | `hb` / `st` / `door` / `resync` | 命中打包（伤害、暴击、破招、受击反应）/ 异常状态 / 请求进门 / 请求补发 |
-| 所有人 | `p`（20Hz）/ `a` | 自己的位置（带 ts，同上）/ 状态 / 动画 / 血蓝 / 房间 / 出招（技能 id + 等级、普攻名、闪避……） |
+| 队员 | `hb` / `st` / `door` / `resync` | 命中打包（伤害、暴击、破招、受击反应；抓取 `g` 1 抓住 / 0 放开 / 2 投掷，见“男格斗家”）/ 异常状态 / 请求进门 / 请求补发 |
+| 所有人 | `p`（20Hz）/ `a` | 自己的位置（带 ts，同上）/ 状态 / 动画 / 血蓝 / 房间（格斗家多带 `ff` 职业状态）/ 出招（技能 id + 等级、普攻名、闪避……） |
 
 ### 好友决斗（`r` 里的 d.k）
 | 谁发 | k | 内容 |
@@ -236,3 +236,10 @@
   5. **性能**：延迟 120ms ≈ 回滚 7~8 帧，每帧最多重放 8 次 step；决斗 step 约 0.3ms（CPU ×4 时 1ms+），手机上吃紧。
 - **工作量**：确定性审计 + 动作系统改成可序列化 + 状态存取 + 不同步检测工具，按现在的代码量估 3~4 周，还会碰到所有职业的技能文件（15 个转职），回归面很大。
 - **结论：现在不值得。** 朋友之间往返 30~80ms，这次的本地预测已经把“自己按键到出招”降到一帧以内；回滚能额外解决的是“对手的动作晚一个来回”和“主机零延迟的优势”，代价是重写战斗层。以后真要做排位公平性，先做便宜的：主机自己的输入也延迟 `对方往返/2` 再执行（双方同样的输入延迟），再考虑回滚。
+
+### 男格斗家（09-30，B9：抓取 / 投掷的主机同步、职业状态、排位 AI 池）
+- **队员抓主机的怪**（net/coop.js 抓取段）：抓住的命中包多带 `gd`（这一下能抓倒地的）和 `gm`（这一下最多抓几个）；主机用同样的 `canGrab` 规则判（带上 grabDown），多抓时不再先放开前一个（追加到 `grabMore`）；主机抓不住回 `gbx`，队员只放开那一只（以前是全部放开）。
+- **投掷**（`throwArc`，柔道家抛投 / 浮空凌云踢、街霸……）：队员本地照常飞（飞行期间傀儡按本地物理走，不跟快照），同时发 `{ g: 2, x1, y1, h, du, dir }`；主机从怪现在的位置按同样的高度 / 时长飞到队员算好的落点（`other: false, hit: false`：撞人 / 落地伤害仍由队员的命中包结算），实测落点误差 0px。队友影子重放招式时不扔（`throwArc` 对影子直接返回），免得主机上和影子的重放各扔一次。
+- **职业状态**（新文件 net/coop_fighter.js）：格斗家本人的 `p` 消息带 `ff = { b: 可见 BUFF, o: 念气珠位掩码, e: 风雷能量, q: 街霸 4 种投掷物的 [剩几个, 上限, 是否在装填] }`；影子按它增删 BUFF（影子上的 BUFF 不自己走时间，重放技能时加上的也以本人为准）、画念气珠 / 龙虎啸电光 / 焚步火焰 / 强拳红光，龙虎啸换普攻表（重放普攻时是虎爪），装填数照抄（重放投掷时强化 / 两连投的判断和本人一致）。念气罩本来就走 party_sync（`partyCast('fn_guard')`：每个人在自己那边生成罩子，站在里面各自无敌）。
+- **排位 AI 池**（server/modules/arena.js）：`AI_POOL` 23 种；`arena:join` 带 `pool`（客户端已开放的“职业:转职”列表，`openClasses / openJobs`），服务端 `aiPoolOf` 只从里面抽，不带（老客户端）= 原来 18 种 → 格斗家没开放时不会排到格斗家 AI。
+- 测试：`node test/mp_fighter.mjs [地下城] [等级] [转职]`（鬼剑士主机 + 柔道家队员：抓 / 扔 / 抓倒地 / 多抓、状态同步、念气罩、一起通关，约 1 分钟）；`node --disable-warning=ExperimentalWarning server/test/arena.mjs`（AI 池）。

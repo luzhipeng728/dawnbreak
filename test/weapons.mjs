@@ -88,9 +88,15 @@ if (process.argv[2] === 'town') {
   await page.goto(`${URL_BASE}?art&m=sword`);
   await page.waitForFunction(() => window.__ART_READY, null, { timeout: 30000 });
   const r = await page.evaluate(async (WT) => {
-    const epics = Object.keys(ITEMS).filter(k => ITEMS[k].rar === 5 && ITEMS[k].slot === 'weapon');
+    // 配色变体（格斗家的具名史诗 / 领主神器，物品上写 pal）：不另画武器图，拿在手里 = <类型>_r4（领主神器 _r3）+ 换色；其余史诗要有专属图
+    const hex = c => /^#[0-9a-f]{6}$/i.test(c || '');
+    const palv = Object.keys(ITEMS).filter(k => ITEMS[k].pal && ITEMS[k].slot === 'weapon');
+    const epics = Object.keys(ITEMS).filter(k => ITEMS[k].rar === 5 && ITEMS[k].slot === 'weapon' && !ITEMS[k].pal);
     const tiers = WT.flatMap(t => [2, 3, 4].map(n => `${t}_r${n}`));
     const keys = [...WT, ...epics, ...tiers];
+    const palBad = palv.filter(k => { const D = ITEMS[k], base = `${D.wtype}_r${D.rar === 5 ? 4 : 3}`, art = weaponArtOf(makeItem(k), D.cls);
+      return !['main', 'trim', 'glow'].every(x => hex(D.pal[x])) || !WEAPON_IMG[base] || (art !== base && art !== k); }).map(k => `${k}→${weaponArtOf(makeItem(k), ITEMS[k].cls)}`);
+    const palSame = palv.filter((k, i) => palv.some((j, jj) => jj < i && ITEMS[j].wtype === ITEMS[k].wtype && ITEMS[j].rar === ITEMS[k].rar && ITEMS[j].pal.main === ITEMS[k].pal.main && ITEMS[j].pal.trim === ITEMS[k].pal.trim));
     const miss = keys.filter(k => !WEAPON_IMG[k] || !ASSET_SRC['weapon/' + k]);
     const skins = Object.values(WEAPON_SKINS), skinKeys = skins.flatMap(s => WT.map(t => `${s}_${t}`));   // 武器装扮：每款 15 种武器类型都要有图
     const missSkin = skinKeys.filter(k => !WEAPON_IMG[k] || !ASSET_SRC['weapon/' + k] || WEAPON_IMG[k].type !== k.slice(k.indexOf('_') + 1));
@@ -122,10 +128,11 @@ if (process.argv[2] === 'town') {
       for (let y = 0; y < F.h; y++) for (let x = 0; x < F.w; x++) if (d[(y * F.w + x) * 4 + 3] > 100) { tot++; if (Math.hypot(x - w.gx, y - w.gy) < 14) n++; }
       if (!n || tot < 80) hand.push(`${cls}/${f}/${k} 握点附近 ${n} 像素，武器共 ${tot}`);
     }
-    return { n: keys.length + skinKeys.length, epics: epics.length, miss, wrongType, bad, hand, skins, missSkin };
+    return { n: keys.length + skinKeys.length, epics: epics.length, miss, wrongType, bad, hand, skins, missSkin, palv: palv.length, palBad, palSame };
   }, WT);
   ok(r.miss.length === 0, `史诗 ${r.epics} 件 + 15 种类型 × 4 个品级外观都有武器图`, r.miss.join(' '));
   ok(r.wrongType.length === 0, '史诗武器图的类型和物品一致', r.wrongType.join(' '));
+  ok(r.palv >= 80 && !r.palBad.length && !r.palSame.length, `配色变体 ${r.palv} 件（格斗家具名史诗 / 领主神器）：拿在手里 = <类型>_r4 / _r3 + pal 换色，配色齐全、同类型同品级不撞色`, r.palBad.concat(r.palSame).join(' '));
   ok(r.missSkin.length === 0 && r.skins.length >= 6, `武器装扮 ${r.skins.length} 款（${r.skins.join(' / ')}）× 15 种武器类型都有图、类型对得上`, r.missSkin.join(' '));
   ok(r.bad.length === 0, `握点在武器上、长度合理（${r.n} 张）`, r.bad.join('；'));
   ok(r.hand.length === 0, '拿在手里：武器贴着手（三职业抽查）', r.hand.join('；'));

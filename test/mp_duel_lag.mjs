@@ -18,6 +18,7 @@ try {
   await B.click('.netask button:has-text("接受决斗")');
   ok(await until(B, () => netDuel.state === 'fight' && game.duel && game.duel.a, null, 20000), '进入决斗场');
   ok(await until(A, () => duel.state === 'fight', null, 10000), '开打');
+  await until(A, () => !(duel.guardT > 0), null, 10000); await until(B, () => !(game.duel.guardT > 0), null, 10000);   // 开局 3 秒倒计时（不能攻击）过了再测
   await A.evaluate(() => { duel.timer = 9999; window.__hostActs = []; const d = duel.b.doAct; duel.b.doAct = function (def, ex) { window.__hostActs.push({ t: performance.now(), k: (ex && ex.skill) || def.name }); return d.call(this, def, ex); }; });
   // 对方页面：按键时刻（keydown 的时间戳）→ 自己的角色开始出招后第一次画到屏幕上的时刻；每次出招都记下来（数一数有没有重播）
   await B.evaluate(() => {

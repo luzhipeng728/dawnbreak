@@ -47,7 +47,8 @@ try {
   const host = await H.evaluate(() => [duelFairSnap(duel.a), duelFairSnap(duel.b)]), guest = await G.evaluate(() => [duelFairSnap(game.duel.a), duelFairSnap(game.duel.b)]);
   const same = [host[1], guest[0], guest[1]].every(x => JSON.stringify(x) === JSON.stringify(host[0]));
   ok(same, '公正决斗：+12 史诗和新手装在决斗里的 HP / 攻击 / 防御 / 暴击 / 攻速 / 技能等级 / 装备特效完全一样（两端一致）', { host, guest });
-  ok(host[0].procs === 0 && host[0].sets === 0 && host[0].hpMax === 21000 && host[0].lvl === 30, '决斗里没有装备特效 / 套装，属性是天平值', host[0]);
+  const wantHp = await H.evaluate(() => Math.round(DUEL_BASE.sword.hp * DUEL_CFG.hpMul));
+  ok(host[0].procs === 0 && host[0].sets === 0 && host[0].hpMax === wantHp && host[0].lvl === 30, '决斗里没有装备特效 / 套装，属性是天平值', host[0]);
   await H.screenshot({ path: `${out}/02-duel-host.png` }); await G.screenshot({ path: `${out}/03-duel-guest.png` });
   await winFast(H);
   const res = [await until(A, () => window.__ar.length > 0, null, 20000), await until(B, () => window.__ar.length > 0, null, 20000)];
@@ -63,7 +64,7 @@ try {
   await A.evaluate(() => arena.join()); await B.evaluate(() => arena.join());
   ok(await until(B, () => arena.aiFight() && game.duel === duel, null, 15000), 'bob 没有再匹配到 alice，超时后匹配到 AI 对手并开打', await B.evaluate(() => ({ q: arena.q, cur: arena.cur, scene: game.scene, live: save.live, nd: netDuel.state, duel: !!game.duel, why: arena.canQueue() })), srv.app.ctx.db.all('SELECT id, a, b, ai IS NOT NULL AS ai, result, winner, created FROM arena_match'));
   const ai = await B.evaluate(() => ({ name: duel.b.name, a: duelFairSnap(duel.a), b: duelFairSnap(duel.b), cls: duel.b.cls }));
-  ok(/「AI」$/.test(ai.name) && ai.a.hpMax === 21000 && ai.b.lvl === 30 && ai.b.procs === 0, 'AI 对手：名字带「AI」，同样用公正属性', ai);
+  ok(/「AI」$/.test(ai.name) && ai.a.hpMax === await B.evaluate(() => Math.round(DUEL_BASE[duel.a.cls].hp * DUEL_CFG.hpMul)) && ai.b.lvl === 30 && ai.b.procs === 0, 'AI 对手：名字带「AI」，同样用公正属性', ai);
   await until(A, () => arena.aiFight(), null, 8000);
   const [aiRes] = await Promise.all([winFast(B), winFast(A)]);
   ok(aiRes && aiRes.winner === 0, 'bob 打赢 AI');

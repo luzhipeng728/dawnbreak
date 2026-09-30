@@ -269,14 +269,21 @@ const coop = {
   remoteGrab(uid, r) {
     const m = this.puppets.get(r.id), g = this.mates.get(uid);
     if (!m || m.dead || !g || !ents.includes(m)) return;
+    if (r.g === 2) {   // 投掷：从主机上怪现在的位置飞到队员算好的落点（伤害 / 撞人 / 落地伤害都由队员的命中包结算，这里只飞）
+      if (m.heldBy) releaseHeld(m);
+      const R = game.room, x1 = clamp(+r.x1 || m.x, R ? R.x0 + m.w : -1e9, R ? R.x1 - m.w : 1e9);
+      _coopThrowArc(g, m, { dx: 0, dir: r.dir < 0 ? -1 : 1, h: clamp(+r.h || 90, 0, 400), dur: clamp(+r.du || 0.45, 0.05, 3), other: false, hit: false });
+      if (m.thrown) { m.thrown.x1 = x1; m.thrown.y1 = clamp(+r.y1 || m.y, 4, DEPTH - 4); }
+      this.stats.throws = (this.stats.throws || 0) + 1; return;
+    }
     if (r.g) {
-      const h = { grabBoss: !!r.bw, grabMaxW: clamp(+r.mw || 2.2, 0.5, 9) };
+      const h = { grabBoss: !!r.bw, grabMaxW: clamp(+r.mw || 2.2, 0.5, 9), grabDown: !!r.gd, grabMax: clamp(Math.round(+r.gm || 1), 1, 8) };
       if (m.heldBy === g) return;
       if (m.heldBy || !canGrab(g, m, h)) {
         const S = this.stats; S.grabRej = S.grabRej || []; if (S.grabRej.length < 20) S.grabRej.push({ id: m.nid, st: m.st, held: !!m.heldBy, prot: +(m.grabProt || 0).toFixed(2), noGrab: !!m.noGrab, boss: !!m.boss, w: m.weight });
         this.send({ k: 'gbx', id: m.nid }, uid); return;
       }
-      if (g.grabbed && g.grabbed !== m) dropGrab(g);
+      if (g.grabbed && g.grabbed !== m && !(h.grabMax > 1 && grabsOf(g).length < h.grabMax)) dropGrab(g);   // 单抓：换目标；多抓：追加到 grabMore
       startGrab(g, m, h); this.stats.grabs = (this.stats.grabs || 0) + 1;
     } else if (m.heldBy === g) releaseHeld(m);
   },
@@ -486,7 +493,7 @@ const coop = {
         else if (d.k === 'room') this.onRoom(d);
         else if (d.k === 'clear') this.onClear(d);
         else if (d.k === 'sync') this.onSync(d);
-        else if (d.k === 'gbx') { const t = this.puppets.get(d.id); if (t && t.heldBy === game.player) dropGrab(game.player); }   // 主机那边抓不住（领主 / 刚被抓过等）：本地也放开
+        else if (d.k === 'gbx') { const t = this.puppets.get(d.id); if (t && t.heldBy === game.player) releaseHeld(t); }   // 主机那边抓不住（领主 / 刚被抓过等）：本地也放开这一个（一次抓多个时其余的照常）
         else if (d.k === 'replay') this.onReplay(d);
       }
     }
@@ -714,11 +721,23 @@ spawnMonster = function (kind, x, y, o) {
 };
 function netIsGuest() { return coop.isGuest(); }
 // 队员的抓取：抓住 / 放开（含投掷）都按顺序排进命中包，主机照做
-const _coopStartGrab = startGrab, _coopReleaseHeld = releaseHeld, _coopThrowGrab = throwGrab;
+// 格斗家（B9）：抓倒地（gd）、一次抓多个（gm = 这一下最多抓几个，主机不再先放开前一个）、throwArc 投掷（g: 2，主机按同一条弧线飞，落点 / 高度 / 时长一样）
+const _coopStartGrab = startGrab, _coopReleaseHeld = releaseHeld, _coopThrowGrab = throwGrab, _coopThrowArc = throwArc;
 const coopGrabMine = (a, t) => coop.role === 'guest' && coop.state === 'play' && t && t.puppet && a === game.player;
-startGrab = function (a, t, h) { _coopStartGrab(a, t, h); if (coopGrabMine(a, t) && t.heldBy === a) coop.hitQ.push({ id: t.nid, g: 1, bw: h && h.grabBoss ? 1 : 0, mw: h && h.grabMaxW !== undefined ? h.grabMaxW : 2.2 }); };
+startGrab = function (a, t, h) { _coopStartGrab(a, t, h); if (coopGrabMine(a, t) && t.heldBy === a) coop.hitQ.push({ id: t.nid, g: 1, bw: h && h.grabBoss ? 1 : 0, mw: h && h.grabMaxW !== undefined ? h.grabMaxW : 2.2, gd: h && h.grabDown ? 1 : 0, gm: h ? grabCap(h) : 1 }); };
 releaseHeld = function (t) { const a = t.heldBy; _coopReleaseHeld(t); if (coopGrabMine(a, t)) coop.hitQ.push({ id: t.nid, g: 0 }); };
 throwGrab = function (a, h) { const t = a.grabbed; if (coopGrabMine(a, t)) coop.hitQ.push({ id: t.nid, g: 0 }); return _coopThrowGrab(a, h); };
+// 队友影子重放招式时不扔主机的怪（主机上的怪只听队员发来的 g: 2，免得和影子的重放各扔一次、时间对不上）；队员自己扔傀儡：本地照常飞（预测），并把弧线发给主机
+throwArc = function (a, t, o = {}) {
+  if (a && a.ghost) return null;
+  const mine = coopGrabMine(a, t), r = _coopThrowArc(a, t, o);
+  if (mine && r && t.thrown) {
+    const A = t.thrown, now = performance.now();
+    coop.hitQ.push({ id: t.nid, g: 2, x1: Math.round(A.x1), y1: Math.round(A.y1), h: Math.round(A.h), du: +A.dur.toFixed(3), dir: A.dir < 0 ? -1 : 1 });
+    t.pred = Math.max(t.pred || 0, now + A.dur * 1000 + 350); t.predMax = Math.max(t.predMax || 0, now + A.dur * 1000 + 4000);   // 飞行中按本地物理走，不跟快照
+  }
+  return r;
+};
 // 队员给傀儡上的异常状态（灼烧 / 眩晕等）：转给主机结算，本地只保留表现（持续伤害由主机扣）
 const _coopAddStatus = addStatus;
 addStatus = function (t, kind, dur, o = {}) {

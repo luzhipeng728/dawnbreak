@@ -5,7 +5,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import WebSocket from 'ws';
 import { start } from '../index.js';
-import { expect, tierOf, REWARD } from '../modules/arena.js';
+import { expect, tierOf, REWARD, AI_POOL, aiPoolOf } from '../modules/arena.js';
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'dnf-arena-'));
 const app = await start({ port: 0, db: path.join(tmp, 't.db'), invites: ['T'], admins: [], graceMs: 600,
@@ -123,6 +123,20 @@ try {
   const r1s = await got(ca.c, m => m.t === 'arena:result', 3000);
   ok(r1s && !r1s.win && !r1s.void && r1s.delta < 0, '只有一方报了结果：等一会儿按它结算', r1s);
   bo.c.send({ t: 'room:close', why: 'end' });
+
+  // ---- AI 对手的职业池：只从客户端上报的已开放列表里抽（格斗家没开放时老职业玩家不会排到）----
+  const F5 = ['fighter:', 'fighter:nenmaster', 'fighter:striker', 'fighter:brawler', 'fighter:grappler'];
+  ok(aiPoolOf(undefined).length === 18 && aiPoolOf(undefined).every(([c]) => c !== 'fighter'), '老客户端（没带 pool）：原来的 18 种，不含格斗家', aiPoolOf(undefined).length);
+  ok(aiPoolOf([...F5, 'sword:blade', 'bogus:x', 'fighter:nope']).length === 6 && aiPoolOf(['fighter:grappler']).every(([c, j]) => c === 'fighter' && j === 'grappler'), '带 pool：只认 AI_POOL 里有的“职业:转职”，其余忽略');
+  ok(Object.values(AI_POOL).flat().length === 23 && AI_POOL.fighter.length === 5, 'AI_POOL 23 种（格斗家未转职 + 4 转职）');
+  const seen = new Set();
+  for (let i = 0; i < 6; i++) {
+    da.c.send({ t: 'arena:join', cid: 'c1', char: { name: 'x' + da.id, cls: 'fighter', job: 'grappler' }, pool: F5 });
+    const m = await got(da.c, x => x.t === 'arena:match', 5000); if (!m) break;
+    seen.add(m.vs.cls + ':' + (m.vs.job || '')); await sleep(350); da.c.send({ t: 'arena:end', id: m.id, win: false }); await got(da.c, x => x.t === 'arena:result');
+  }
+  ok(seen.size >= 2 && [...seen].every(k => F5.includes(k)), `上报只开放格斗家：AI 对手都是格斗家（${[...seen].join(' / ')}）`, [...seen]);
+  ok(A.row(da.id, 'c1').cls === 'fighter' && A.row(da.id, 'c1').job === 'grappler', '格斗家排位按上报的职业 / 转职记（不会记成鬼剑士）', A.row(da.id, 'c1'));
 
   // ---- 排行榜（rank 模块）+ 当天状态 ----
   const lb = await api('GET', '/api/rank?board=arena', null, bo.token);

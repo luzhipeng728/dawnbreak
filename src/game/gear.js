@@ -52,7 +52,8 @@ const canAmplify = it => !!it && it.kind === 'equip' && SLOTS.includes(it.slot) 
 const hasOtherworld = it => canAmplify(it) && (it.lvl || 1) >= 15 && (it.rar || 0) >= 2;
 const ampStatVal = (it, lv = it.enh || 0) => lv > 0 ? Math.round((1 + (it.lvl || 1) * 0.09) * AMP_RAR[it.rar || 0] * AMP_MUL[Math.min(AMP_MAX, lv)]) : 0;
 // 职业的主属性（增幅券缺省按它赋予红字）
-const mainStatOf = (cls = game.player && game.player.cls) => ((CLASSES[cls] || {}).dmgType || (cls === 'mage' ? 'mag' : 'phys')) === 'mag' ? 'int' : 'str';
+// 转职的伤害类型优先（气功师 / 街霸 / 机械师是魔法职业 → 智力）
+const mainStatOf = (cls = game.player && game.player.cls, job = game.job) => { const C = CLASSES[cls] || {}, J = job && C.jobs && C.jobs[job]; return ((J && J.dmgType) || C.dmgType || (cls === 'mage' ? 'mag' : 'phys')) === 'mag' ? 'int' : 'str'; };
 // 失败结果（官方经典规则）：冲 +5~+7 失败掉 1 级；冲 +8~+10 失败归零；冲 +11 起失败装备破碎（用增幅保护券：不碎、不归零，只掉 1 级）
 function ampFailResult(it) {
   const e = it.enh || 0, to = e + 1;

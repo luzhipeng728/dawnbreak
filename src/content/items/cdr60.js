@@ -21,7 +21,7 @@ function cdr60ExchangeKeys(cls = game.player ? game.player.cls : 'sword', job = 
   const M = typeof masteryOf === 'function' ? masteryOf(cls, job) : null, D = k => ITEMS[k];
   const acc = CDR60.sand.filter(k => !D(k).atype && D(k).slot !== 'weapon');
   const armor = CDR60.sand.filter(k => D(k).atype).sort((a, b) => (D(b).atype === M) - (D(a).atype === M));
-  const weapon = CDR60.sand.filter(k => D(k).slot === 'weapon' && D(k).cls === cls);
+  const weapon = CDR60.sand.filter(k => D(k).slot === 'weapon' && D(k).cls === cls && wtypeJobOk(D(k).wtype, job));
   return [...CDR60.legend, ...acc, ...armor, ...weapon];
 }
 {

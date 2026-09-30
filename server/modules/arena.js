@@ -1,7 +1,7 @@
 /* 决斗场（排位赛）：自动匹配 + 段位积分（Elo）+ 没人时 AI 补位 + 每日胜利奖励；排行榜在 rank.js 的 arena 榜
    积分按角色（user_id + cid，cid = 角色创建时间，和 rank.js 一样）；防刷规则按账号
    WS（客户端 → 服务端）：
-     arena:join { cid, char { name, cls, job } }   进入匹配队列（在城镇里、不在地下城 / 决斗房间里）
+     arena:join { cid, char { name, cls, job }, pool? }   进入匹配队列（在城镇里、不在地下城 / 决斗房间里）；pool = 客户端已开放的 ['cls:job', …]，AI 对手只从里面抽
      arena:leave                                    退出队列
      arena:end { id, win, draw, abort? }            本局结果（abort 1 = 没能开打 → 作废，2 = 中途离开 → 判负）（真人：双方各报一次，一致才算；只有一方报了就等 cfg.arenaReportMs 后按它算；AI：客户端报）
    WS（服务端 → 客户端）：
@@ -10,7 +10,7 @@
      arena:result { id, win, draw, void, why, delta, rating, tier, ai, reward }
    规则（docs/NETWORK.md「决斗场排位」）：
      - 匹配：积分差在范围内（100 起，每等 1 秒 +30，最多 600）；不和自己、不和 cfg.arenaRematchMs 内刚打过的账号再匹配；断线 / 进地下城就移出队列
-     - AI 补位：等了 cfg.arenaAiMs（默认 4 秒）还没有真人，就给一个 AI 对手（18 种职业 / 转职随机，名字像玩家，积分在你附近，难度按段位）
+     - AI 补位：等了 cfg.arenaAiMs（默认 4 秒）还没有真人，就给一个 AI 对手（23 种职业 / 转职里、这个客户端已开放的随机，名字像玩家，积分在你附近，难度按段位）
      - AI 局只给一半积分，而且白金（1500）以上赢 AI 不再加分——天梯上半段只能靠打真人（防刷）
      - 逃跑：真人对局开打（cfg.arenaForfeitMs）之后掉线 / 离开 = 判负；开打前取消不计；双方报的结果对不上 = 作废
      - AI 局超过 cfg.arenaAiTimeout 还没报结果 / 重新排队时还有没报完的 AI 局 = 判负 */
@@ -22,9 +22,13 @@ export const TIERS = [[0, '青铜'], [1100, '白银'], [1300, '黄金'], [1500, 
 export const tierOf = r => { let t = TIERS[0][1]; for (const [lo, n] of TIERS) if (r >= lo) t = n; return t; };
 export const REWARD = { gold: 2000, aiGold: 1000, goldWins: 10, cera: 5, ceraCap: 30, first: { gold: 5000, cera: 20 } };
 const DEF = { arenaAiMs: 4_000, arenaRematchMs: 300_000, arenaReportMs: 15_000, arenaForfeitMs: 30_000, arenaMinMs: 5_000, arenaAiTimeout: 360_000 };   // 4 秒没真人就配 AI；一局定胜负，最短有效 5 秒
-// AI 对手的职业：3 个基础职业 + 15 个转职 = 18 种
-export const AI_POOL = { sword: [null, 'blade', 'berserker', 'asura', 'soulbender', 'ghostblade'], gun: [null, 'ranger', 'launcher', 'spitfire', 'mechanic', 'paramedic'], mage: [null, 'elemental', 'battlemage', 'summoner', 'witch', 'enchantress'] };
-const ALL18 = Object.entries(AI_POOL).flatMap(([c, js]) => js.map(j => [c, j]));
+// AI 对手的职业：4 个基础职业 + 19 个转职 = 23 种（男格斗家 B9）。没开放的职业不能抽给还不认识它的玩家：
+// 客户端排队时带上自己这边已开放的“职业:转职”列表（arena:join 的 pool），只从里面抽；老客户端不带 = 原来的 18 种
+export const AI_POOL = { sword: [null, 'blade', 'berserker', 'asura', 'soulbender', 'ghostblade'], gun: [null, 'ranger', 'launcher', 'spitfire', 'mechanic', 'paramedic'], mage: [null, 'elemental', 'battlemage', 'summoner', 'witch', 'enchantress'],
+  fighter: [null, 'nenmaster', 'striker', 'brawler', 'grappler'] };
+const ALL = Object.entries(AI_POOL).flatMap(([c, js]) => js.map(j => [c, j]));
+const LEGACY = ALL.filter(([c]) => c !== 'fighter');
+export const aiPoolOf = list => { const S = new Set(Array.isArray(list) ? list.slice(0, 64).map(String) : []); const L = ALL.filter(([c, j]) => S.has(c + ':' + (j || ''))); return L.length ? L : LEGACY; };
 const W1 = ['夜', '风', '影', '月', '雪', '星', '烈', '寒', '墨', '苍', '白', '赤', '紫', '青', '孤', '醉', '狂', '暗', '轻', '碎', '冷', '天'];
 const W2 = ['刃', '殇', '歌', '羽', '枫', '痕', '魂', '梦', '光', '尘', '澜', '斩', '翼', '泪', '神', '瞳', '歌', '寂'];
 const WORD = ['剑舞', '倾城', '无双', '残月', '星辰', '流光', '落雪', '破晓', '天涯', '轮回', '逍遥', '战神', '狂刀', '幽冥', '霜华', '绯夜', '浮生', '一念', '清风', '南城'];
@@ -123,7 +127,7 @@ export default {
     }
     function startAi(a) {
       queue.delete(a.uid);
-      const [cls, job] = pick(ALL18), rating = Math.max(FLOOR, a.rating + Math.round((Math.random() - 0.5) * 120));
+      const [cls, job] = pick(a.aiPool || LEGACY), rating = Math.max(FLOOR, a.rating + Math.round((Math.random() - 0.5) * 120));
       const ai = { name: aiName(), cls, job, lvl: aiLevel(a.rating), rating };
       const M = openMatch(a, null, ai);
       ctx.sendTo(a.uid, { t: 'arena:match', id: M.id, ai: true, host: true, vs: { ...ai, tier: tierOf(rating) }, rating: a.rating });
@@ -179,7 +183,7 @@ export default {
         ctx.db.run(`INSERT INTO arena (user_id, cid, user_name, char_name, cls, job, updated) VALUES (?,?,?,?,?,?,?)
           ON CONFLICT(user_id, cid) DO UPDATE SET user_name = excluded.user_name, char_name = excluded.char_name, cls = excluded.cls, job = excluded.job`, me, cid, c.user.name, char.name, char.cls, char.job, now(ctx));
         const rating = row(me, cid).rating;
-        queue.set(me, { uid: me, name: c.user.name, cid, char, rating, t0: Date.now(), conn: c.cid });
+        queue.set(me, { uid: me, name: c.user.name, cid, char, rating, t0: Date.now(), conn: c.cid, aiPool: aiPoolOf(msg.pool) });
         c.send({ t: 'arena:queued', rating, tier: tierOf(rating), n: queue.size, aiAfter: C('arenaAiMs') });
       },
       report(c, msg) {

@@ -18,6 +18,9 @@ run bulk      node test/bulk.mjs
 run gear      node test/gear.mjs
 run gear60    node test/gear60.mjs core
 run gear60mig node test/gear60.mjs migrate
+run gear60job node test/gear60.mjs jobs
+run gear60pow node test/gear60.mjs power
+run gear60con node test/gear60.mjs content
 run gearsim   node test/gear_sim.mjs 20
 run cdr60     node test/cdr60.mjs
 run quests    node test/quests.mjs
@@ -49,6 +52,8 @@ run fgrappler node test/fighter_grappler.mjs   # 柔道家（B7）：登记、28
 run grappler  node test/grappler.mjs   # 柔道家机制：抓轰炮 / 暴力抓取 / 滑行 / 连环 / 二觉预约 / 领主不卡死
 run brawler   node test/brawler.mjs   # 格斗家 B6 街霸：投掷物装填 / 强化投掷 / 两连投 / 异常加伤 / 抓取 / 锁链 / 三个觉醒
 run fbrawler  node test/fighter_brawler.mjs
+run fpvp      node test/fighter_pvp.mjs   # 格斗家 B9：决斗表登记、AI 用得出各转职全部主动技能（霹雳旋踢 / 空中技）、抓取公平（抓取保护 / 强制硬直 ≤1 秒）
+run flaunch   node test/fighter_launch.mjs   # 格斗家上线整条流程：建 4 个转职、3 个转职打通地下城、决斗、存档往返（没开放时原样保留）、选角显示
 run flooks    node test/fighter_looks.mjs   # 格斗家外观（B2）：转职动作片段、转职外观 / 头饰 / 道服色、拳上武器 50 张 + 图标、6 套时装、配件、路人
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
@@ -81,8 +86,11 @@ run bhmroute  node test/behemoth_route.mjs
 run region    node test/region.mjs siroco   # 区域流水线：数据 / 技能库 / 机制库 / 怪物 / 场景 / 任务 / 机器人通关（约 25 分钟）
 run duel      node test/duel.mjs sword:gun,gun:mage,mage:sword 3
 run pvpbal    node test/pvp_balance.mjs 4 all
+run duelrules node test/duel_rules.mjs   # 决斗规则单测：HP 倍率、开局 3 秒倒计时、开局冷却、追加浮空 / 一级·二级保护 / 倒地·二次浮空 / 平推 / 硬直 / 时间保护 / 错位、指令缓冲
+run duelstats node test/duel_stats.mjs 2 all   # 决斗节奏：一局用时、连招段数 / 时长 / 伤害占比（只打印，不判失败）
 run juggle    node test/juggle.mjs
 run mobile    node test/mobile.mjs
+run mobilef   node test/mobile_fighter.mjs   # 格斗家手机操作：4 个转职的按键布局 / 状态键、空中 C、蹲伏、前踢、鹰踏、跑攻中 X、装填角标、风雷能量条
 run botrun    env SPEED=3 node test/botrun.mjs lorien:3:0:sword,lorien_deep:4:0:gun,dark_woods:6:0:mage,dark_woods_deep:8:0:sword,thunder_ruins:10:0:gun,venom_ruins:11:0:mage,graca:14:0:sword,blazing_graca:16:0:gun,frozen_woods:12:0:mage,dark_thunder:19:0:sword,dragon_tower:15:0:gun,puppet_hall:16:0:mage,golem_tower:17:0:sword,dark_corridor:19:0:gun,lord_palace:21:0:mage,floating_castle:22:0:sword
 run serverapi node server/test/api.mjs
 run restore   node --disable-warning=ExperimentalWarning server/test/restore.mjs
@@ -100,6 +108,7 @@ run webflow   env WEB=1 node test/flow.mjs
 # 联机（本机临时服务端 + 2~3 个无头页面，测完即关）
 run mptown    node test/mp_town.mjs
 run mpcoop    node test/mp_coop.mjs 2
+run mpfighter node test/mp_fighter.mjs   # 组队：柔道家队员抓 / 扔主机的怪（抓倒地、多抓、throwArc 落点一致）、格斗家状态同步到影子、念气罩、一起通关
 run mpdrop    node test/mp_coop_drop.mjs
 run mpduel    node test/mp_duel.mjs
 run duellag   env MAXMS=33 node test/mp_duel_lag.mjs 4 0,120   # 决斗：对方按键到自己出招（本地模拟，往返 120ms 下 ≤ 33ms）、不重播、位置一致

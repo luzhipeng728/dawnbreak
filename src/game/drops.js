@@ -24,7 +24,8 @@ const dropLvl = (t, dg) => { const L = dg ? dg.def.lvl : [t.lvl, t.lvl]; return 
 // opt：{ abyss（深渊派对：可出深渊专属，且偏向接近 lvl 的）, lo（最低等级） }
 function rollEpic(lvl, opt = {}) {
   const cls = game.player ? game.player.cls : 'sword';
-  const pool = EPICS.filter(E => { const D = ITEMS[E.key]; return D && E.lvl <= lvl + 3 && E.lvl >= (opt.lo || 0) && (!E.cls || E.cls === cls) && !D.noDrop && (opt.abyss || !D.abyss); });
+  // wtypeJobOk：转职专用的武器（拳套只有散打）不掉给别的转职
+  const pool = EPICS.filter(E => { const D = ITEMS[E.key]; return D && E.lvl <= lvl + 3 && E.lvl >= (opt.lo || 0) && (!E.cls || E.cls === cls) && wtypeJobOk(D.wtype, game.job) && !D.noDrop && (opt.abyss || !D.abyss); });
   if (!pool.length) return null;
   // 越接近目标等级越容易出（深渊派对里更集中）
   const w = pool.map(E => 1 / (1 + Math.abs(lvl - E.lvl) * (opt.abyss ? 0.18 : 0.08)));
@@ -33,8 +34,8 @@ function rollEpic(lvl, opt = {}) {
   return makeItem(pool[0].key);
 }
 // 商城组的史诗自选礼盒用：单件史诗（不含套装部件、深渊专属），等级 ≤ lvl + 3，武器只列本职业
-function epicChoiceKeys(lvl = game.lvl, cls = game.player ? game.player.cls : 'sword') {
-  return EPICS.filter(E => { const D = ITEMS[E.key]; return D && !D.set && !D.abyss && !D.noDrop && E.lvl <= lvl + 3 && (!E.cls || E.cls === cls); }).map(E => E.key);
+function epicChoiceKeys(lvl = game.lvl, cls = game.player ? game.player.cls : 'sword', job = game.job) {
+  return EPICS.filter(E => { const D = ITEMS[E.key]; return D && !D.set && !D.abyss && !D.noDrop && E.lvl <= lvl + 3 && (!E.cls || E.cls === cls) && wtypeJobOk(D.wtype, job); }).map(E => E.key);
 }
 // 没配掉落表的地下城（新加的地下城）：按推荐等级自动生成——等级段内的套装部件和史诗，领主小几率掉落
 function autoDropTable(def) {

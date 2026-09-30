@@ -210,6 +210,11 @@ otherSet('set_ow_ranger', '爆裂信徒', 'ranger', 'g_multi', ['爆裂信徒的
 otherSet('set_ow_launcher', '歼灭突击', 'launcher', 'gl_cannon', ['歼灭突击的项链', '歼灭突击的手镯', '歼灭突击的戒指'], 1.5, 0.3, { str: 25, stagger: 30 }, '枪炮师的歼灭火力。官方异界套：加农炮冷却 -1.5 秒、攻击 +30%。');
 otherSet('set_ow_elemental', '元素的低语', 'elemental', 'mg_hole', ['元素低语项链', '元素低语手镯', '元素低语戒指'], 4, 0.15, { int: 25, elemAll: 10 }, '元素师的元素之力。（本作原创：湮灭黑洞冷却 -4 秒）');
 otherSet('set_ow_battlemage', '炫纹大师', 'battlemage', 'bm_press', ['炫纹大师的项链', '炫纹大师的手镯', '炫纹大师的戒指'], 3, 0.15, { int: 20, str: 20, aspd: 0.03 }, '战斗法师的炫纹奥义。（本作原创：炫纹强压冷却 -3 秒）');
+// 格斗家（B8 二期）：套装名和招牌技能取官方男格斗家的异界套（远古 3），效果按本作口径（冷却 + 施放后 2 秒增伤）
+otherSet('set_ow_nenmaster', '雷霆之啸', 'nenmaster', 'fn_tiger', ['雷霆之啸项链', '雷霆之啸手镯', '雷霆之啸戒指'], 1.5, 0.25, { int: 25, light: 10 }, '气功师的念兽之力。官方异界套：念兽·龙虎啸攻击力 +50%、移动速度 +4%。');
+otherSet('set_ow_striker', '邪灵之息', 'striker', 'fs_spin', ['邪灵之息项链', '邪灵之息手镯', '邪灵之息戒指'], 10, 0.15, { str: 25, crit: 0.03 }, '散打的邪灵拳意。官方异界套：旋风碎心踢攻击力 +80%、冷却时间 -20%。');
+otherSet('set_ow_brawler', '诡秘之地', 'brawler', 'fb_mount', ['诡秘之地项链', '诡秘之地手镯', '诡秘之地戒指'], 4, 0.15, { int: 25, mcrit: 0.03 }, '街霸的暗街秘术。官方异界套：伏虎霸王拳冷却时间 -25%。');
+otherSet('set_ow_grappler', '璇龙夺魄', 'grappler', 'fg_rolling', ['璇龙夺魄项链', '璇龙夺魄手镯', '璇龙夺魄戒指'], 5, 0.2, { str: 25, hpPct: 0.05 }, '柔道家的璇龙之技。官方异界套：地狱风火轮踢飞攻击力 +70%、冲击波范围 +100%。');
 /* ---------------- 原有神器套装的 5 件特效（本作追加：让神器套装也有自己的玩法，数值比史诗套装低一档） ---------------- */
 const artifactProc = (id, P) => { const B = SETS[id] && SETS[id].bonus[5]; if (B) B.proc = P; };
 artifactProc('set_knight', { on: 'hurt', chance: 0.1, cd: 20, act: 'shield', amt: 0.12, dur: 6, name: '骑士之盾', desc: '被击时 10% 几率举起骑士之盾：6 秒内吸收最多 12% HP 上限的伤害（冷却 20 秒）' });

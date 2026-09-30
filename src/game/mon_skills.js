@@ -190,7 +190,7 @@ function msBuff(e, p) {
   for (const t of L) {
     fxAura(t, col, 0.9);
     if (p.kind === 'heal') { const h = Math.round(t.hpMax * p.amt); t.hp = Math.min(t.hpMax, t.hp + h); addNumber(h, t.x, t.y, t.z + 30, { heal: true }); continue; }
-    if (p.kind === 'shield') { t.msShieldHp = Math.round(t.hpMax * p.amt); t.msShieldT = game.t + p.dur; msShieldFx(t); continue; }
+    if (p.kind === 'shield') { t.msShieldHp = Math.round(t.hpMax * p.amt); t.msShieldT = game.t + p.dur; msBuffShieldFx(t); continue; }
     const k = 'ms_' + p.kind; if (t[k]) continue;
     const atk = t.atk, spd = t.speed; t[k] = true;
     if (p.kind === 'enrage') { t.atk = Math.round(atk * (1 + p.amt)); t.speed = spd * 1.2; } else t.speed = spd * (1 + p.amt);
@@ -198,7 +198,7 @@ function msBuff(e, p) {
     game.after(p.dur, () => { if (t.dead) return; t.atk = atk; t.speed = spd; t[k] = false; });
   }
 }
-function msShieldFx(t) {
+function msBuffShieldFx(t) {   // 怪物给同伴加的护盾（buff kind shield）；和下面领主机制的 msShieldFx 同名会被覆盖，所以单独起名
   addFx({ x: t.x, y: t.y + 0.5, z: 0, dur: 1e9, ent: t, update() { const E = this.ent; this.x = E.x; this.y = E.y + 0.5; if (E.dead || !(E.msShieldHp > 0) || game.t > E.msShieldT) { E.msShieldHp = 0; this.t = this.dur; } },
     draw(c) { const E = this.ent, H = E.h * (E.scale || 1), X = sx(E.x), Y = sy(E.y, E.z); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.3 + 0.08 * Math.sin(game.t * 5); c.strokeStyle = '#8ad8ff'; c.lineWidth = 2; c.beginPath(); c.ellipse(X, Y - H * 0.5, H * 0.42, H * 0.62, 0, 0, TAU); c.stroke(); c.restore(); } });
 }

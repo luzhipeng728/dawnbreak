@@ -18,7 +18,14 @@ addStyle(`
 const BULK_DEF = { rar: [0, 1], worse: true, keepSet: true, keepEnh: true };
 const bulkPrefs = () => ({ ...BULK_DEF, ...(uiPref('bulk') || {}) });
 const bulkSkip = new Set();   // 预览里被单独取消的物品 id（关窗口时清空）
+function titleCandidates(P = bulkPrefs()) {
+  const worn = new Set(Object.values(inv.equip).filter(Boolean).map(e => e.key)), best = {};
+  const all = inv.items.filter(it => it.kind === 'equip' && it.slot === 'title' && canSell(it) && P.rar.includes(it.rar || 0));
+  if (P.keepOne) for (const it of all) if (!best[it.key] || avScore(it) > avScore(best[it.key])) best[it.key] = it;
+  return all.filter(it => !(P.keepOne && (best[it.key] === it || worn.has(it.key))));
+}
 function bulkCandidates(mode, P = bulkPrefs()) {
+  if (mode === 'tsell') return titleCandidates(P);
   return inv.items.filter(it => {
     if (it.kind !== 'equip' || it.slot === 'title' || (typeof isAvatar === 'function' && isAvatar(it))) return false;   // 称号、时装不参与
     if (mode === 'sell' ? !canSell(it) : !canDisassemble(it)) return false;
@@ -45,9 +52,9 @@ function avBulkCandidates(P = avBulkPrefs()) {
 }
 Object.assign(menus, {
   w_bulk(mode = 'sell') {
-    const av = mode === 'avsell', sell = mode === 'sell' || av;
-    const el = itemWin('bulk', av ? '一键出售时装' : sell ? '一键出售' : '一键分解', el => {
-      const P = av ? avBulkPrefs() : bulkPrefs(), save2 = p => { setPref(av ? 'avbulk' : 'bulk', p); el._render(); };
+    const av = mode === 'avsell', ti = mode === 'tsell', sell = mode === 'sell' || av || ti;
+    const el = itemWin('bulk', av ? '一键出售时装' : ti ? '一键出售称号' : sell ? '一键出售' : '一键分解', el => {
+      const P = av ? avBulkPrefs() : ti ? { ...bulkPrefs(), keepOne: bulkPrefs().keepOne !== false } : bulkPrefs(), save2 = p => { setPref(av ? 'avbulk' : 'bulk', p); el._render(); };
       const rars = av
         ? h('div', { class: 'rars' }, AV_CATS.map(([k, name]) => {
           const on = P.cats.includes(k);
@@ -59,11 +66,12 @@ Object.assign(menus, {
         }));
       const opt = (k, txt) => h('label', { class: 'opt', onclick: e => { e.preventDefault(); sfx.click(); save2({ ...P, [k]: !P[k] }); } }, itemCheckBox(P[k], () => {}), txt);
       const opts = av ? h('div', { class: 'opts' }, opt('keepOne', '同一种留 1 件（留最好的；身上穿着的也算）'), opt('keepOrb', '保留附魔过的'))
+        : ti ? h('div', { class: 'opts' }, opt('keepOne', '同名称号留 1 件（留最好的；身上戴着的也算）'))
         : h('div', { class: 'opts' }, opt('worse', '只处理比身上差的（▼ 和别的职业的 ×）'), opt('keepSet', '保留套装部件'), opt('keepEnh', '保留强化过的'));
       const cand = av ? avBulkCandidates(P) : bulkCandidates(mode, P), list = cand.filter(it => !bulkSkip.has(it.id));
       const grid = h('div', { class: 'igrid', 'data-sk': 'bulk' });
       for (const it of cand) grid.append(itemSlot(it, { chk: !bulkSkip.has(it.id), dim: bulkSkip.has(it.id), cmp: true, onClick: () => { bulkSkip.has(it.id) ? bulkSkip.delete(it.id) : bulkSkip.add(it.id); sfx.click(); el._render(); } }));
-      if (!cand.length) grid.append(h('div', { class: 'ihint', style: 'grid-column:1 / -1;padding:1em' }, '没有符合条件的装备'));
+      if (!cand.length) grid.append(h('div', { class: 'ihint', style: 'grid-column:1 / -1;padding:1em' }, ti ? '没有符合条件的称号' : '没有符合条件的装备'));
       const high = list.filter(it => (it.rar || 0) >= 3 || (av && avCat(it) === 'sky')).length;
       let sum;
       if (sell) {
@@ -78,7 +86,7 @@ Object.assign(menus, {
       const go = h('button', { class: 'btn big' + (list.length ? '' : ' off'), onclick: () => {
         if (!list.length) { sfx.error(); return; }
         const run = () => {
-          if (sell) { const g = sellItems(list); if (g) toastMsg(`一键出售 ${list.length} 件装备，获得 ${fmtNum(g)} G`, '#ffd23a'); }
+          if (sell) { const g = sellItems(list); if (g) toastMsg(`一键出售 ${list.length} 件${ti ? '称号' : '装备'}，获得 ${fmtNum(g)} G`, '#ffd23a'); }
           else { const r = disassemble(list); if (r) toastMsg(`一键分解 ${r.n} 件装备：${Object.entries(r.mats).map(([k, n]) => `${(ITEMS[k] || {}).name || k}×${n}`).join('、')}`, '#bfe8ff'); }
           bulkSkip.clear(); itemsRefresh();
         };
@@ -102,7 +110,7 @@ Object.assign(menus, {
     const el = w0.call(this, arg);
     const add = () => { const bar = el.querySelector('.ibar'); if (!bar || bar.querySelector('.bulkbtn')) return;
       const b = (txt, mode) => h('button', { class: 'btn sm bulkbtn', onclick: () => { sfx.click(); bulkSkip.clear(); if (menus.isOpen('bulk')) menus.close('bulk'); menus.open('bulk', mode); } }, txt);
-      if (IW.invTab === 'avatar') bar.append(b('一键出售', 'avsell')); else bar.append(b('一键出售', 'sell'), b('一键分解', 'dis')); };
+      if (IW.invTab === 'avatar') bar.append(b('一键出售', 'avsell')); else if (IW.invTab === 'title') bar.append(b('一键出售', 'tsell')); else bar.append(b('一键出售', 'sell'), b('一键分解', 'dis')); };
     add(); const r0 = el._render; el._render = () => { r0(); add(); };
     return el;
   };

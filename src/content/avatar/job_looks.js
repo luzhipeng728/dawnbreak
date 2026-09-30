@@ -209,7 +209,8 @@ const JOB_LOOKS = {
     col: '#ff5a2a', outfit: '#f2eee4', acc: ['job_striker_band'],
     motes: { img: 'dot', col: '#ff8a3a', n: 3, h: 1.8, rise: 18, life: 0.9, y0: 0.06, a: 0.9 },
     states: [
-      { id: 'burn', name: '烈焰焚步', on: jlBuff('fs_awaken'), demo: jlDemo('fs_awaken'), fx: { burn: { col: '#ff6a1a', n: 8, h: 30 }, motes: { img: 'dot', col: '#ffb040', n: 7, h: 2.2, rise: 34, life: 1 } } },
+      { id: 'burn', name: '烈焰焚步', on: jlBuff('fs_awaken'), demo: jlDemo('fs_awaken'), fx: { burn: { col: '#ff6a1a', n: 12, h: 40 }, aura: { col: '#ff7a2a', a: 0.4, haze: 0.3 }, motes: { img: 'dot', col: '#ffb040', n: 10, h: 2.4, rise: 40, life: 1 } } },
+      { id: 'tyrant', name: '极武皇（二觉外观：身边火焰气场）', on: e => e && (jlBuff('fs_tyrantDemo')(e) || (e === game.player && game.job === 'striker' && typeof tierUnlocked === 'function' && tierUnlocked(2))) && !(e.buffs && e.buffs.fs_awaken) ? 1 : 0, demo: jlDemo('fs_tyrantDemo'), fx: { aura: { col: '#ff8a3a', a: 0.2, haze: 0.15 } } },
       { id: 'armor', name: '霸体护甲', on: jlBuff('fs_sa'), demo: jlDemo('fs_sa'), fx: { aura: { col: '#ffc83a', a: 0.35, haze: 0.2 } } },
     ],
   },

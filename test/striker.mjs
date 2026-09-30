@@ -143,6 +143,35 @@ if (MODES.includes('mech')) {
   report('炼狱坠星腿 / 焚火逐日拳：锁定周围最强的敌人（领主 / 精英）', L.mortal < 60 && L.mortalHit && L.awk3 < 110 && L.awk3Hit, { mortal: L.mortal, awk3: L.awk3 });
   report('范围：冲膝冲击波打到身后 300px、旋风碎心踢打到身后、飞燕旋风把 300px 的敌人扫过来', L.close.front && L.close.far && L.close.knock > 300 && L.spin.back && L.spin.front && L.whirl.hit && L.whirl.pulled > 30, { close: L.close, spin: L.spin, whirl: L.whirl });
   report('闪电之舞：周围敌人都被踢并赶到一处，终结后解除强制硬直；极武霸皇踢打到前方 420px', L.dance.all && L.dance.spread < 120 && !L.danceHold && L.awk2.every(Boolean), { dance: L.dance, hold: L.danceHold, awk2: L.awk2 });
+  // 6) 一觉：自动学会（0 SP、随角色等级升级、自动进技能栏）、一键加点也会学、怒吼变身、全身着火、技能变成带火的强化版、双重施放的终结有时停
+  const W = await page.evaluate(() => {
+    const { p, run, reset, mob } = T, o = {}, f = save.data.flags, lv0 = game.lvl, bar0 = [...game.skillBar];
+    const clear = () => { for (const id of ['fs_awaken', 'fs_dual', 'fs_awaken2', 'fs_burn']) delete game.skillLv[id]; game.skillBar = game.skillBar.map(() => null); };
+    const tick = () => { p._psvT = 0; tickPassives(p, 0.3); };
+    clear(); f.awaken = false; f.awaken2 = false; game.lvl = 23; tick(); o.locked = !game.skillLv.fs_awaken;
+    f.awaken = true; tick(); o.auto = { awk: game.skillLv.fs_awaken, dual: game.skillLv.fs_dual, burn: game.skillLv.fs_burn, awk2: game.skillLv.fs_awaken2 || 0, bar: ['fs_awaken', 'fs_dual'].every(id => game.skillBar.includes(id)), sp: SKILLS.fs_awaken.sp };
+    game.lvl = 21; clear(); tick(); o.lv21 = game.skillLv.fs_awaken;
+    f.awaken2 = true; game.lvl = 27; tick(); o.awk2 = { lv: game.skillLv.fs_awaken2, bar: game.skillBar.includes('fs_awaken2') };
+    clear(); const sp0 = game.sp; game.sp = 0; if (typeof skillAutoLearn === 'function') skillAutoLearn(); o.oneClick = game.skillLv.fs_awaken || 0; game.sp = sp0;
+    o.cmd = cmdTextOf('fs_awaken'); o.desc = /一次觉醒/.test(SKILLS.fs_awaken.desc) && /自动学会/.test(SKILLS.fs_awaken.desc);
+    game.lvl = lv0; game.skillBar = bar0; f.awaken3 = true; for (const id of classSkills('fighter', 'striker')) game.skillLv[id] = Math.max(1, Math.min(SKILLS[id].maxLv || 5, 5));
+    // 怒吼变身
+    reset(); const m = mob(150); castSkill(p, 'fs_awaken'); T.until(() => !(game.timeStop > 0), 120); o.preBuff = !p.buffs.fs_awaken;
+    T.until(() => p.buffs.fs_awaken, 60); o.shake = +cam.shake.toFixed(1); o.clip = p.clipName; o.roarHit = T.dmg(m) > 0;
+    T.until(() => !p.act, 200); o.knock = Math.round(m.x - p.x); tick(); const A = p.buffs.fs_awaken;
+    const J = JOB_LOOKS.striker.states.find(x => x.id === 'burn');
+    o.fire = { t: Math.round(A.t), mspd: A.mspd, look: J.on(p), feet: !!(p._fsFeet && fxList.includes(p._fsFeet)), icon: !!IMG['icon/fs_awaken'] };
+    // 走 150px：身后留下燃烧的脚印
+    const n0 = p._fsPrints || 0; for (let i = 0; i < 30; i++) { p.x += 5; run(1); } o.prints = (p._fsPrints || 0) - n0;
+    // 焚步里放碎骨：起手喷火、命中处爆火（强化版）
+    const b = p.buffs; reset(true); p.buffs = b; const m2 = mob(80); castSkill(p, 'fs_bone'); o.fireAct = !!(p.act && p.act.fsFire); run(20); o.fireHit = !!(p.act && p.act._fsFx && p.act._fsFx.has(m2.id));
+    // 双重施放：大脚打中后有时停
+    T.reset(true); p.buffs = b; castSkill(p, 'fs_dual'); run(30); mob(160); castSkill(p, 'fs_dragon'); let ts = 0; for (let i = 0; i < 90; i++) { run(1); ts = Math.max(ts, game.timeStop || 0); } o.dualStop = ts > 0.1;
+    return o;
+  });
+  report('一觉「烈焰焚步」：完成一觉任务自动学会（0 SP、Lv21 1 级 / Lv23 3 级）并放进技能栏，双重施放 / 烈焰燃烧一起给；一觉前不给；二觉「极武霸皇踢」同样自动学会；一键加点也会学', W.locked && W.auto.awk === 3 && W.auto.dual === 1 && W.auto.burn === 1 && !W.auto.awk2 && W.auto.bar && W.auto.sp === 0 && W.lv21 === 1 && W.awk2.lv >= 1 && W.awk2.bar && W.oneClick >= 1 && W.cmd === '↑↑↓↓+Z' && W.desc, W);
+  report('一觉变身：蓄力 → 怒吼（镜头震动、震飞周围敌人）→ 全身着火（外观层火焰 + 双脚 / 双拳火 + BUFF 图标与剩余时间、移速 +10%），走路留下燃烧脚印', W.preBuff && W.shake > 10 && W.clip === 'fsRoar' && W.roarHit && W.knock > 150 && W.fire.t > 40 && W.fire.mspd === 0.1 && W.fire.look === 1 && W.fire.feet && W.fire.icon && W.prints >= 4, { shake: W.shake, clip: W.clip, knock: W.knock, fire: W.fire, prints: W.prints });
+  report('焚步中的技能是带火的强化版（起手喷火、命中爆火）；双重施放的终结有时停', W.fireAct && W.fireHit && W.dualStop, { act: W.fireAct, hit: W.fireHit, stop: W.dualStop });
   noErr(logs, 'mech');
   await browser.close();
 }
@@ -169,6 +198,37 @@ if (MODES.includes('shots')) {
   await page.evaluate(() => { for (const id of ['#ui', '#dom']) { const el = document.querySelector(id); if (el) el.style.visibility = ''; } });
   // 最后一张拍 HUD 左下角的 BUFF 图标（柔化次数 ×n、霸体护甲）
   await shot('8-hud-shift', () => { const { p, run, reset, mob } = T; reset(); castSkill(p, 'fs_sa'); run(50); p._fsm = null; mob(80); castSkill(p, 'fs_elbow'); run(6); canCancelInto(p, 'fs_bone'); castSkill(p, 'fs_bone'); run(6); canCancelInto(p, 'fs_close'); castSkill(p, 'fs_close'); run(8); p._psvT = 0; tickPassives(p, 0.3); run(2); return { x: 260, y: 610 }; });
+  // 一觉变身连拍（蓄力 → 怒吼 → 喷火 → 全身着火 → 跑动脚印 → 强化版碎骨 → 双重施放终结）+ 官方视频截图，拼成一张对照图
+  const tdir = 'test/shots/striker2'; fs.mkdirSync(tdir, { recursive: true }); for (const f of fs.readdirSync(tdir)) if (/^t\d/.test(f)) fs.rmSync(`${tdir}/${f}`);
+  await page.evaluate(() => { for (const id of ['#ui', '#dom']) { const el = document.querySelector(id); if (el) el.style.visibility = 'hidden'; } T.reset(); T.mob(170); T.mob(240, {}, 40); castSkill(T.p, 'fs_awaken'); T.until(() => !(game.timeStop > 0), 120); });
+  const tshot = async (name, f) => { const pos = await page.evaluate(f); await page.waitForTimeout(120); await page.screenshot({ path: `${tdir}/${name}.png`, clip: { x: Math.max(0, Math.min(1280 - 480, pos.x - 220)), y: Math.max(0, Math.min(720 - 330, pos.y - 250)), width: 480, height: 330 } }); };
+  await tshot('t1-gather', () => { T.until(() => T.p.actT > 0.18, 60); return T.at(); });
+  await tshot('t2-roar', () => { T.until(() => T.p.act && T.p.act.roar, 60); T.run(4); return T.at(); });
+  await tshot('t3-erupt', () => { T.run(22); return T.at(); });
+  await tshot('t4-onfire', () => { T.until(() => !T.p.act, 200); T.run(30); return T.at(); });
+  await tshot('t5-footprints', () => { const p = T.p; for (let i = 0; i < 36; i++) { p.x -= 6; p.face = -1; T.run(1); } p.face = 1; T.run(2); return T.at(); });
+  await tshot('t6-bone-fire', () => { const p = T.p, b = p.buffs; T.reset(true); p.buffs = b; T.mob(80); T.mob(160, {}, 30); castSkill(p, 'fs_bone'); T.run(16); return T.at(); });
+  await tshot('t7-dual-finish', () => { const p = T.p, b = p.buffs; T.reset(true); p.buffs = b; castSkill(p, 'fs_dual'); T.run(30); T.mob(170); castSkill(p, 'fs_dragon'); T.until(() => p.act && p.act.fsDualDone, 90); for (let i = 0; i < 40 && !(game.timeStop > 0); i++) T.run(1); T.until(() => !(game.timeStop > 0), 40); T.run(6); return T.at(); });
+  await page.evaluate(() => { for (const id of ['#ui', '#dom']) { const el = document.querySelector(id); if (el) el.style.visibility = ''; } });
+  await tshot('t8-hud-buff', () => { T.run(2); return { x: 240, y: 610 }; });
+  try {
+    const tf = fs.readdirSync(tdir).filter(f => /^t\d.*\.png$/.test(f)).sort().map(f => `${tdir}/${f}`);
+    execFileSync('python3', ['-c', `
+import sys, os
+from PIL import Image, ImageDraw, ImageFont
+out_p, off, fs = sys.argv[1], sys.argv[2], sys.argv[3:]; W, H = 480, 330; cols = 4; rows = (len(fs) + cols - 1) // cols
+O = Image.open(off).convert('RGB') if os.path.exists(off) else None; oh = int(O.height * W * cols / O.width) if O else 0
+out = Image.new('RGB', (W * cols, (H + 26) * rows + oh + 30), (24, 22, 30)); d = ImageDraw.Draw(out)
+try: font = ImageFont.truetype('/System/Library/Fonts/STHeiti Medium.ttc', 18)
+except Exception: font = None
+for i, f in enumerate(fs):
+    im = Image.open(f).convert('RGB'); x, y = (i % cols) * W, (i // cols) * (H + 26)
+    out.paste(im, (x, y + 26)); d.text((x + 8, y + 3), '本作 ' + f.split('/')[-1][:-4], fill=(255, 220, 150), font=font)
+if O:
+    y = (H + 26) * rows; d.text((8, y + 5), '官方视频截图（DFO / 预告片，i.ytimg.com）', fill=(150, 220, 255), font=font); out.paste(O.resize((W * cols, oh)), (0, y + 30))
+out.save(out_p, quality=82)`, 'test/shots/striker_transform.jpg', `${tdir}/official_frames.jpg`, ...tf]);
+    report('一觉变身连拍 + 官方截图对照 test/shots/striker_transform.jpg', fs.existsSync('test/shots/striker_transform.jpg'), { n: tf.length });
+  } catch (e) { report('一觉变身连拍', false, String(e).slice(0, 200)); }
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.png')).sort();
   try {
     execFileSync('python3', ['-c', `

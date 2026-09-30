@@ -18,6 +18,9 @@ run bulk      node test/bulk.mjs
 run gear      node test/gear.mjs
 run gear60    node test/gear60.mjs core
 run gear60mig node test/gear60.mjs migrate
+run gear60job node test/gear60.mjs jobs
+run gear60pow node test/gear60.mjs power
+run gear60con node test/gear60.mjs content
 run gearsim   node test/gear_sim.mjs 20
 run cdr60     node test/cdr60.mjs
 run quests    node test/quests.mjs

@@ -73,6 +73,8 @@ const ex0 = await ev(() => ({ keys: cdr60ExchangeKeys(), shown: document.querySe
 check(ex0.shown === ex0.keys.length && ex0.keys.length === 40 && ex0.keys.slice(0, 5).join() === lib.legend.join() && ex0.keys.includes('sand_katana') && !ex0.keys.includes('sand_revolver'),
   `列出 ${ex0.shown} 件（传说 5 + 流沙首饰 / 特殊 5 + 流沙防具 25 + 本职业武器 5）`, ex0);
 check(ex0.cost[0] === 40 && ex0.cost[1] === 20, `价格：传说 ${ex0.cost[0]}、神器 ${ex0.cost[1]} 宇宙灵魂`);
+const exF = await ev(() => Object.fromEntries(openJobs('fighter').map(j => [j, cdr60ExchangeKeys('fighter', j).filter(k => ITEMS[k].slot === 'weapon')])));
+check(Object.entries(exF).every(([j, ks]) => ks.length === (j === 'striker' ? 5 : 4) && ks.includes('sand_boxing') === (j === 'striker')), `格斗家：流沙武器按转职能装的列（拳套只给散打）${Object.entries(exF).map(([j, ks]) => `${j} ${ks.length}`).join(' ')}`, exF);
 const buy = async key => {
   const i = ex0.keys.indexOf(key);
   await page.click(`[data-win=abyss] .exgrid .islot >> nth=${i}`); await wait(120);

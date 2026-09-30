@@ -336,7 +336,7 @@ Object.assign(menus, {
       if (T.kind === 'enh' || T.kind === 'amp') {
         const targets = cashTicketTargets(T), list = h('div', { class: 'igrid ctk-list', 'data-sk': 'tk' });
         for (const it of targets) list.append(itemSlot(it, { cmp: false, sel: CTK.target === it, onClick: () => { CTK.target = it; sfx.click(); el._render(); } }));
-        const statSel = T.kind === 'amp' && CTK.target && !CTK.target.dim ? (() => { const s = h('select', {}, [['str', '力量'], ['int', '智力'], ['vit', '体力'], ['spr', '精神']].map(([k, n]) => h('option', { value: k }, `异次元属性：${n}`))); s.value = CTK.stat || (game.player.cls === 'mage' ? 'int' : 'str'); CTK.stat = s.value; s.addEventListener('change', () => { CTK.stat = s.value; }); return s; })() : null;
+        const statSel = T.kind === 'amp' && CTK.target && !CTK.target.dim ? (() => { const s = h('select', {}, [['str', '力量'], ['int', '智力'], ['vit', '体力'], ['spr', '精神']].map(([k, n]) => h('option', { value: k }, `异次元属性：${n}`))); s.value = CTK.stat || mainStatOf(); CTK.stat = s.value; s.addEventListener('change', () => { CTK.stat = s.value; }); return s; })() : null;
         return [h('div', { class: 'cash-note' }, `${ITEMS[arg.key].desc}${T.kind === 'amp' && typeof ampSetLevel !== 'function' ? '（增幅系统还没开放）' : ''}`), list,
           targets.length ? null : h('div', { class: 'dim small' }, '身上和背包里没有可以使用的装备'), statSel,
           h('div', { class: 'row', style: 'gap:.4em' }, h('button', { class: 'btn' + (CTK.target ? '' : ' off'), style: CTK.target ? '' : 'opacity:.45;pointer-events:none', onclick: () => {

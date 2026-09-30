@@ -52,14 +52,21 @@ function duelFairSnap(p) {
 { const rs0 = recalcStats; recalcStats = function (p) { if (p && p.fighter && game.pvp && game.duel && p.kit) return; return rs0(p); }; }
 // 决斗里所有觉醒都能放（不看觉醒任务）
 { const tu0 = tierUnlocked; tierUnlocked = function (n) { return game.pvp && game.duel ? true : tu0(n); }; }
-// 决斗里的控制上限（docs/PVP.md「抓取 / 强制硬直」）：强制硬直 hold（格斗家组，无视霸体）最长 1 秒，结束后 1.5 秒内不能再被 hold（和抓取保护一样）；束缚最长 3 秒。地下城不受影响
 // 格斗家的持续伤害（街霸的毒 / 出血、气功师的感电追加）在决斗里也吃 PVP.dmg 和职业修正（updateStatus 直接扣血，不走 applyHit；老职业的没改，免得动已调好的平衡）
-const PVP_CTRL = { hold: 1.0, holdProt: 1.5, bind: 3 };
+// 硬控（2026-09-30 线上反馈“靠近阿修罗一直被打在地上站不起来”后统一）：时长封顶（cap），结束后同一种 prot 秒内挂不上、生效中也不会被续长；
+// 倒地 / 起身中挂的硬控直接无效（不拖延起身）；束缚最长 3 秒；开局倒计时中异常状态一律无效
+const PVP_CTRL = { cap: { stun: 1.2, freeze: 1.5, sleep: 2, root: 2, hold: 1.0 }, prot: 2.5, bind: 3 };
+const duelLying = t => t.st === 'down' || t.st === 'getup' || !!(t.cmb && t.cmb.landed && t.st === 'air');
 { const as0 = addStatus; addStatus = function (t, kind, dur, o = {}) {
   if (game.pvp && game.duel && t && t.fighter) {
     if (game.duel.state === 'fight' && game.duel.guardT > 0) return;   // 开局倒计时：异常状态一律无效
-    if (kind === 'hold') { if (game.t < (t.pvpHoldProt || 0)) return; dur = Math.min(dur, PVP_CTRL.hold); t.pvpHoldProt = game.t + dur + PVP_CTRL.holdProt; }
-    else if (kind === 'bind') dur = Math.min(dur, PVP_CTRL.bind);
+    const cap = PVP_CTRL.cap[kind];
+    if (cap !== undefined) {
+      if (duelLying(t)) return;
+      const I = t.pvpImm || (t.pvpImm = {});
+      if ((t.status && t.status[kind]) || game.t < (I[kind] || 0)) return;
+      dur = Math.min(dur, cap); I[kind] = game.t + dur + PVP_CTRL.prot;
+    } else if (kind === 'bind') dur = Math.min(dur, PVP_CTRL.bind);
     const s = o.src; if (s && s.cls === 'fighter' && (o.dps || o.hitDmg)) { const k = PVP.dmg * (1 + (s.dmgUp || 0)) * (t.dmgTaken ?? 1); o = { ...o, dps: (o.dps || 0) * k, hitDmg: (o.hitDmg || 0) * k }; }
   }
   return as0(t, kind, dur, o);
@@ -68,10 +75,10 @@ const PVP_CTRL = { hold: 1.0, holdProt: 1.5, bind: 3 };
 const PVP_SKILL = { awaken: 0.5, grab: 0.8, summon: 0.8, burst: 0.85, aoe: 0.9 };
 // 职业（转职）整体修正：AI 循环赛（node test/pvp_balance.mjs 6 all 6）自动调出来的，1 = 不修正；数组 = [造成伤害, 受到伤害]（未转职技能太少，只加伤害追不上）
 const PVP_JOB = {
-  'sword:': [1.45, 0.55], 'sword:blade': 0.92, 'sword:berserker': 0.58, 'sword:asura': [0.31, 1.35], 'sword:soulbender': 0.54, 'sword:ghostblade': 0.83,
-  'gun:': [2.2, 0.65], 'gun:ranger': 1.38, 'gun:launcher': 1.3, 'gun:spitfire': 1.0, 'gun:mechanic': 0.8, 'gun:paramedic': 1.62,
-  'mage:': 2.0, 'mage:elemental': 1.19, 'mage:battlemage': 1.15, 'mage:summoner': 1.4, 'mage:witch': 1.17, 'mage:enchantress': 1.14,
-  'fighter:': [1.53, 0.6], 'fighter:nenmaster': [0.32, 1.3], 'fighter:striker': 0.81, 'fighter:brawler': 0.45, 'fighter:grappler': 0.7,
+  'sword:': [1.39, 0.55], 'sword:blade': 0.92, 'sword:berserker': 0.61, 'sword:asura': [0.39, 1.35], 'sword:soulbender': 0.56, 'sword:ghostblade': 0.85,
+  'gun:': [2.05, 0.65], 'gun:ranger': 1.39, 'gun:launcher': 1.26, 'gun:spitfire': 1.08, 'gun:mechanic': 0.79, 'gun:paramedic': 1.49,
+  'mage:': 1.94, 'mage:elemental': 1.14, 'mage:battlemage': 1.07, 'mage:summoner': 1.33, 'mage:witch': 1.42, 'mage:enchantress': 1.25,
+  'fighter:': [1.62, 0.6], 'fighter:nenmaster': [0.37, 1.3], 'fighter:striker': 0.92, 'fighter:brawler': 0.46, 'fighter:grappler': 0.77,
 };
 for (const id in SKILLS) {
   const S = SKILLS[id]; if (!S || S.passive) continue;
@@ -82,10 +89,11 @@ for (const id in SKILLS) {
 /* ---- 连招保护（docs/PVP.md §5，官方决斗场的五种保护；阈值都按“原 HP”= hpMax / hpMul 算）----
    平推（红）stand：站着挨打累计 22% → 强制击倒；浮空（蓝）air1 / air2：浮空中累计 20% → 一级保护（重力 ×1.6、再挑空 ×0.55，之后每 5% 再加一级），
    累计 30% → 二级保护（重力 ×2.8、挑不起来，只能收尾）——都不会在空中强制受身，落地后还能追击；
-   倒地（黄）down：倒地后（第一次落地之后，被再挑起来的“二次浮空”也算）累计 20% → 强制起身 + 无敌 0.7 秒；
-   硬直保护：同一轮每多挨一下硬直 −2.5%（最低 60%，combat.js PVP.stunDecay）；时间保护 lockMax：连续不能行动超过 7 秒（觉醒定格不算），下一下直接受身脱出；
+   倒地（黄）down：倒地后（第一次落地之后，被再挑起来的“二次浮空”也算）累计 20% → 强制起身 + 无敌 0.7 秒；倒地时间 downMax：第一次落地后最多躺 1.6 秒（追击托起也算），到点强制起身 + 无敌 wakeInvul 0.8 秒；
+   硬直保护：同一轮每多挨一下硬直 −2.5%（最低 60%，combat.js PVP.stunDecay）；时间保护 lockMax：连续不能行动超过 3.2 秒（觉醒定格、被抓不算）立刻受身 / 起身脱出；
+   倒地 / 起身无敌中：没有追击判定（downHit）的攻击打不到（周期性的波动 / 场地 / 召唤物不会再把人托起、重置倒地时间），无敌中什么都打不中；
    受击状态：浮空中挨打 ×0.85、倒地挨打 ×0.9（官方“状态保护”）；以上都在对方能行动 1 秒后清零（combat.js COMBAT.protReset） */
-const PVP_PROT = { stand: 0.22, air1: 0.2, air2: 0.3, airStep: 0.05, down: 0.2, lockMax: 7, airDmg: 0.85, downDmg: 0.9 };
+const PVP_PROT = { stand: 0.22, air1: 0.2, air2: 0.3, airStep: 0.05, down: 0.2, downMax: 1.6, wakeInvul: 0.8, lockMax: 3.2, airDmg: 0.85, downDmg: 0.9 };
 Object.assign(PVP, { airProt: PVP_PROT.air1 / DUEL_CFG.hpMul, airStep: PVP_PROT.airStep / DUEL_CFG.hpMul, downProt: PVP_PROT.down / DUEL_CFG.hpMul, standProt: PVP_PROT.stand / DUEL_CFG.hpMul });
 JUGGLE.pvpRecover = 99;   // 不再到顶强制空中受身（二级保护后落地、倒地保护接手；时间保护兜底）
 const duelProtHp = p => p.hpMax / DUEL_CFG.hpMul;
@@ -113,11 +121,15 @@ const duelGuardFree = id => { const S = SKILLS[id]; return !!S && !S.awaken && (
 }; }
 { const da0 = Ent.prototype.doAct; Ent.prototype.doAct = function (def, extra) { if (def && def.basic && duelGuardOn(this)) return; return da0.call(this, def, extra); }; }
 // 命中：倒计时中不算；时间保护（连续不能行动太久：这一下改成受身脱出）；受击状态修正（浮空 ×0.85、倒地 ×0.9）；二次浮空（第一次落地之后被再挑起来的伤害也算倒地保护）
-function duelEscape(t) {
-  if (t.st === 'down' || t.st === 'getup') { t.startGetup(true); t.invul = Math.max(t.invul, PVP.getupInvul); }
-  else if (t.st === 'air' || t.z > 2) airRecover(t);
+const DUEL_HARD = ['stun', 'freeze', 'sleep', 'root', 'hold'];
+const duelClearHard = t => { if (t.status) for (const k of DUEL_HARD) delete t.status[k]; };
+function duelEscape(t, why = '连招保护') {
+  duelClearHard(t);
+  if (t.st === 'down') { t.startGetup(true); t.invul = Math.max(t.invul, PVP_PROT.wakeInvul); }
+  else if (t.st === 'getup') t.invul = Math.max(t.invul, PVP_PROT.wakeInvul);
+  else if (t.st === 'air' || t.z > 2) { airRecover(t); t.vz = Math.min(t.vz, -480); }   // 空中：受身并直接落下（不再在空中飘着算时间）
   else { t.stun = 0; t.invul = Math.max(t.invul, 0.5); }
-  t.pvpLockT = 0; fxText('连招保护', t.x, t.y, t.z + 40, { col: '#9fe8ff', size: 11 }); fxAura(t, '#9fe8ff', 0.5);
+  t.pvpLockT = 0; t.pvpDownT = 0; fxText(why, t.x, t.y, t.z + 40, { col: '#9fe8ff', size: 11 }); fxAura(t, '#9fe8ff', 0.5);
 }
 /* ---- 决斗系数的口径统一（所有职业）：投射物 / 召唤物按“放出它的那个技能”的决斗系数算（原来按命中那一刻主人正在做的动作，
    主人放完觉醒去普攻，之前的子弹就变成 ×1；跟随型召唤物自己出手时根本不吃 PVP.dmg）---- */
@@ -131,14 +143,16 @@ const PVP_SUMMON = { 'mage:summoner': 3.0 };
 const duelSumPvp = s => { const S = s && s.fromSkill && SKILLS[s.fromSkill], o = s && s.owner; return (S && S.pvp !== undefined ? S.pvp : PVP_SKILL.summon) * ((o && PVP_SUMMON[o.cls + ':' + ((o.kit && o.kit.job) || '')]) || 1); };
 { const ah0 = applyHit; applyHit = function (a, t, h, opt) {
   if (game.pvp && game.duel && a && t && t.fighter && !t.ghost && !a.fighter && a.summon && a.owner && a.owner.fighter && a.owner.team !== t.team) {   // 跟随型召唤物出手：按决斗伤害算
-    if (game.duel.guardT > 0) return false;
+    if (game.duel.guardT > 0 || t.invul > 0 || t.st === 'getup' || (t.st === 'down' && !h.downHit && !h.grabDown)) return false;
     h = { ...h, dmg: (h.dmg ?? 1) * PVP.dmg * duelSumPvp(a) * (1 + (a.owner.dmgUp || 0)) / (1 + (a.dmgUp || 0)) };
     return ah0(a, t, h, opt);
   }
   if (!(game.pvp && game.duel && a && t && a.fighter && t.fighter && a.team !== t.team && !a.ghost && !t.ghost)) return ah0(a, t, h, opt);
   if (game.duel.guardT > 0) return false;
+  if (t.invul > 0 || (t.st === 'getup') || (t.st === 'down' && !h.downHit && !h.grabDown)) return false;   // 起身 / 无敌中打不中；倒地的只有追击判定打得到（直接调 applyHit 的波动 / 场地以前绕过了这条）
   if (duelSumCtx && h && h.pvp === undefined) h = { ...h, pvp: duelSumPvp(duelSumCtx) };   // 场地 / 附着型召唤物（summonHit 以主人的名义打）
   if ((t.pvpLockT || 0) > PVP_PROT.lockMax && t.st !== 'held') { duelEscape(t); return false; }
+  if (duelLying(t) && (t.pvpDownT || 0) > PVP_PROT.downMax) { duelEscape(t, '起身'); return false; }
   const st0 = t.st, air0 = st0 === 'air' || t.z > 2, m0 = t.dmgTakenMul, c = t.cmb, dmg0 = c.dmg;
   t.dmgTakenMul = (m0 || 1) * (air0 ? PVP_PROT.airDmg : st0 === 'down' ? PVP_PROT.downDmg : 1);
   let r; try { r = ah0(a, t, h, opt); } finally { t.dmgTakenMul = m0; }
@@ -169,7 +183,7 @@ const duel = {
   resetRound() {
     projs.length = 0; groundFx.length = 0; game.timeStop = 0; game.cutin = null; game.slowmo = false;
     [[this.a, 330, 1], [this.b, 790, -1]].forEach(([p, x, f]) => {
-      Object.assign(p, { x, y: DEPTH / 2, z: 0, vx: 0, vy: 0, vz: 0, face: f, dead: false, hp: p.hpMax, mp: p.mpMax, invul: 0, superArmor: 0, stun: 0, hitstop: 0, act: null, status: {}, buffs: {}, cool: {}, chasers: [], rot: 0, reboundCd: 0, bsCd: 0, charges: {}, burning: false, pvpHoldProt: 0, pvpLockT: 0 });
+      Object.assign(p, { x, y: DEPTH / 2, z: 0, vx: 0, vy: 0, vz: 0, face: f, dead: false, hp: p.hpMax, mp: p.mpMax, invul: 0, superArmor: 0, stun: 0, hitstop: 0, act: null, status: {}, buffs: {}, cool: {}, chasers: [], rot: 0, reboundCd: 0, bsCd: 0, charges: {}, burning: false, pvpLockT: 0, pvpDownT: 0, pvpImm: {} });
       if (p.brain) p.brain.reset();
       p.grabbed = null; p.heldBy = null; p.deadT = 0; p.remove = false; if (!ents.includes(p)) ents.push(p); p.setState('idle'); p.play('idle', true); resetCmb(p); applyBuffs(p);
       duelStartCd(p);   // 大技能 / 觉醒开局就在冷却（技能栏上直接显示）
@@ -186,8 +200,17 @@ const duel = {
       if (this.guardT > 0) { this.guardT -= dt; if (this.guardT <= 0) { this.guardT = 0; this.say('开始!', 0.8); sfx.boom(0.6); } }
       else this.timer -= dt;
       for (const p of [A, B]) {   // 时间保护：连续不能行动的时间（觉醒定格不算）；二次浮空：这一轮连招第一次落地之后的伤害都算倒地保护
-        if (game.timeStop <= 0) p.pvpLockT = !p.dead && !(p.free || p.st === 'act') ? (p.pvpLockT || 0) + dt : 0;
         if (p.st === 'down' && p.cmb.hits > 0) p.cmb.landed = true;
+        if (game.timeStop <= 0 && !p.dead) {
+          p.pvpLockT = !(p.free || p.st === 'act' || p.techHold) ? (p.pvpLockT || 0) + dt : 0;   // 受身蹲伏（自己选择多蹲一会儿、无敌）不算被锁
+          p.pvpDownT = p.st === 'down' || (p.cmb.landed && p.st === 'air') ? (p.pvpDownT || 0) + dt : 0;   // 被抓着（held）不算，抓取有自己的上限
+          if (p.st === 'getup') duelClearHard(p);   // 起身时身上的硬控作废（不会起来又被钉住）
+          if (p.pvpDownT > PVP_PROT.downMax && !p.recoverLand && (p.st === 'down' || p.st === 'air')) duelEscape(p, '起身');   // 倒地最多躺 downMax 秒（被追击托起 / 二次浮空也算，空中的直接受身落下）
+          else if (p.pvpLockT > PVP_PROT.lockMax && p.st !== 'held' && p.st !== 'getup' && !p.recoverLand) duelEscape(p);   // 时间保护：到点直接脱出，不等下一下
+          else if (p.pvpLockT > PVP_PROT.lockMax && p.st === 'held') { releaseHeld(p); duelEscape(p); }   // 被抓着也一样（抓取觉醒抓得再久，到点也放开）
+          if (p.recoverLand && p.st === 'air' && p.z <= 1 && ((p.pvpLockT || 0) > 0.3 || p.pvpDownT > PVP_PROT.downMax)) { p.recoverLand = false; p.vz = 0; p.z = 0; p.startGetup(true); }   // 受身中却贴着地“浮空”（技能把人按在地上）：直接起身
+          else if (p.pvpLockT > PVP_PROT.lockMax && p.recoverLand && (p.st === 'air' || p.z > 2)) p.vz = Math.min(p.vz, -320);   // 已经在受身落地的：别在空中飘
+        }
       }
       for (const p of [A, B]) if (!p.burning && !p.dead && p.hp < p.hpMax * 0.25) { p.burning = true; p.buffs.burn_mode = { t: 999, atk: 0.15, taken: -0.1 }; fxText('燃斗模式', p.x, p.y, p.z + 20, { col: '#ff7a3a', size: 14, dur: 1.2 }); fxAura(p, '#ff6a2a', 1); }
       if (A.dead || B.dead || this.timer <= 0) this.ko(A.dead && B.dead ? -1 : A.dead ? 1 : B.dead ? 0 : (Math.abs(A.hp / A.hpMax - B.hp / B.hpMax) < 1e-6 ? -1 : A.hp / A.hpMax > B.hp / B.hpMax ? 0 : 1));   // 时间到：剩余 HP 比例高的赢，一样就平局

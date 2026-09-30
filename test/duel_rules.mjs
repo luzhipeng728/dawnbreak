@@ -3,7 +3,7 @@
 //   guard   开局 3 秒倒计时：能走、能放 BUFF；普攻 / 伤害技能 / 命中 / 异常状态无效；AI 也守规矩；计时器倒计时结束才走；联机主机快照带 gd
 //   startcd 开局冷却：觉醒 30 / 40 / 45 秒、决斗冷却 ≥14 秒的大技能整段冷却（最多 42 秒）、8~14 秒的一半、小技能 / BUFF 没有；技能栏直接显示
 //   juggle  追加浮空（下落中再挑起、一次比一次低）、一级 / 二级保护（重力变大、二级挑不起来、不强制空中受身）、落地后还能追击直到倒地保护（强制起身 + 无敌）、
-//           二次浮空（落地后再挑起的伤害也算倒地保护）、平推保护、硬直衰减、时间保护（连续不能行动 7 秒）、错位（纵深超出判定打不到，击退不改纵深）、受击状态修正
+//           二次浮空（落地后再挑起的伤害也算倒地保护）、平推保护、硬直衰减、时间保护（连续不能行动 3.2 秒）、错位（纵深超出判定打不到，击退不改纵深）、受击状态修正
 //   buffer  指令缓冲各职业一致：动作结束前 0.3 秒内按的技能键会在动作结束后放出，更早按的作废
 // 用法：node test/duel_rules.mjs [hp,guard,startcd,juggle,buffer]
 import { launch, URL_BASE } from './lib.mjs';
@@ -158,7 +158,7 @@ if (parts.includes('juggle')) {
   ok(r.second.landed && r.second.recover && r.second.down >= 0.19, `二次浮空：落地后再挑起来的伤害也算倒地保护（${(r.second.down * 100).toFixed(0)}%），超过就落地受身`, r.second);
   ok(r.stand.st === 'air' && r.stand.pct < 0.22 && r.stand.pctAfter >= 0.22, `平推保护：站着挨打到原 HP 的 ~22% 强制击倒（${r.stand.n} 下）`, r.stand);
   ok(r.stun.tenth < r.stun.first && r.stun.last >= r.stun.min - 0.005 && r.stun.last < r.stun.tenth, `硬直衰减：第 1 下 ${r.stun.first}s → 第 10 下 ${r.stun.tenth}s → 第 20 下 ${r.stun.last}s（最低 60%）`, r.stun);
-  ok(r.lock && r.lock.t >= 6.9 && r.lock.t < 7.6 && r.lock.invul > 0, `时间保护：连续不能行动 ${r.lock && r.lock.t} 秒后下一下直接脱出（无敌 ${r.lock && r.lock.invul}s）`, r.lock);
+  ok(r.lock && r.lock.t >= 3.1 && r.lock.t < 3.7 && r.lock.invul > 0, `时间保护：连续不能行动 ${r.lock && r.lock.t} 秒就脱出（上限 3.2 秒，无敌 ${r.lock && r.lock.invul}s）`, r.lock);
   ok(!r.z.far && r.z.near && Math.abs(r.z.dy) < 1 && r.z.dx > 20, `错位：纵深超出判定（±20 + 身体厚度）打不到、偏 10 打得到，击退只沿横向（横移 ${r.z.dx}px、纵深变化 ${r.z.dy}）`, r.z);
   ok(Math.abs(r.state.a - 0.85) < 0.02 && Math.abs(r.state.d - 0.9) < 0.02, `受击状态修正：浮空 ×${r.state.a}、倒地 ×${r.state.d}`, r.state);
 }

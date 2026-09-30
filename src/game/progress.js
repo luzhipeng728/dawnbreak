@@ -30,14 +30,20 @@ function gainExp(n) {
   game.exp += Math.round(n * (1 + (p && p.expUp || 0)));
   while (game.exp >= expNeed(game.lvl) && game.lvl < MAX_LVL) { game.exp -= expNeed(game.lvl); game.lvl++; onLevelUp(); }
 }
+// SP：原作第 n 级得 28+n；本作 ×SP_MUL，Lv60 时能把所有技能（含转职、觉醒）学满（最贵的转职约 1.84 万，Lv60 共 2.1 万）
+const SP_MUL = 6;
+const spOfLv = n => SP_MUL * (28 + n);
+const spTotalAt = (lvl, mul = SP_MUL) => { let s = 150; for (let l = 2; l <= (lvl || 1); l++) s += mul * (28 + l); return s; };
+// 老角色按新规则补发：d.spMul 记着发放时用的倍率（没有 = 1），补上差额，只补一次
+function spMigrate(d) { const m = d.spMul || 1; if (m < SP_MUL) { d.sp = (d.sp || 0) + spTotalAt(d.lvl, SP_MUL) - spTotalAt(d.lvl, m); d.spMul = SP_MUL; } }
 function onLevelUp() {
   const p = game.player;
-  game.sp = (game.sp || 0) + 28 + game.lvl;   // 原作：第 n 级获得 28+n 点 SP
+  game.sp = (game.sp || 0) + spOfLv(game.lvl);
   sfx.levelUp();
   if (p) { recalcStats(p); p.hp = p.hpMax; p.mp = p.mpMax;
     (fxAura(p, '#ffd23a', 1.6), fxBurst(p.x, p.y, p.z + 60, 200, '#ffd23a'));
   }
-  toastMsg(`等级提升到 Lv.${game.lvl}！获得 SP ${28 + game.lvl}${game.lvl >= MAX_LVL ? '（已达到满级）' : ''}`, '#ffe070');
+  toastMsg(`等级提升到 Lv.${game.lvl}！获得 SP ${spOfLv(game.lvl)}${game.lvl >= MAX_LVL ? '（已达到满级）' : ''}`, '#ffe070');
   bus.emit('levelUp', { lvl: game.lvl });
 }
 // 勇者加成：整体降低难度（2026-09-27 调整）

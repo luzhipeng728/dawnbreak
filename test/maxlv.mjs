@@ -13,7 +13,7 @@ const r = await page.evaluate(() => {
   const ok2 = inv.useItem(inv.items.find(i => i.key === 'tk_maxlv'));
   return { ok1, after, ok2, left: inv.count('tk_maxlv') };
 });
-let sp = 0; for (let l = 31; l <= 60; l++) sp += 28 + l;
+let sp = 0; for (let l = 31; l <= 60; l++) sp += 6 * (28 + l);   // SP_MUL = 6
 check(r.after.lvl === 60, `升到 Lv.${r.after.lvl}`);
 check(r.after.sp === sp, `SP ${r.after.sp}（应为 ${sp}）`);
 check(r.after.n === 1 && r.after.ev === 1 && r.after.hpUp, '券扣 1 张、升级事件只发 1 次、属性重算', JSON.stringify(r.after));

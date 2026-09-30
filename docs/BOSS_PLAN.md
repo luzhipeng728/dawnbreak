@@ -525,3 +525,18 @@ defineBossKit('tauKing', { mechs: [{ use: 'groggy', max: 80 }],
 - P0-C 交付前：本文的 json 由一个临时脚本生成，做法是把 `src/ORDER` 的文件拼起来，照 `tools/item_catalog.mjs` 的方式在 vm 里跑，再读 DUNGEONS / MON / MON_ART / REGIONS / ABYSS / QUESTS。
 - P0-C 交付后：改用 `node tools/boss_inventory.mjs`，官方对照和目标从这份 json 里保留。
 - json 字段：`dungeons[].boss`（kind、art.base / recolor、artSharedWith、visualH、phases、mechSet、skillUses、signature）、`dup`（sameMechSet、sameSkillSet、mostSimilar）、`official`、`target`、`abyssLordOf`、`quests`。
+
+## 7. 主线程定稿（2026-09-30）
+- 决策 D1~D9 全部按建议执行（希洛克四门按官方对调；招牌动作表先做 1 张样板再批量；深渊改成区域词条；普通难度惩罚打折；老领主只挂 `defineBossKit` 覆盖层）。
+- 用户要求：子智能体不要开太多，按区域一个。原计划 3 + 12 + 1 块合并成下面 8 块，区域块等 P0 合并后再开：
+
+| 块 | 合并自 | 模型 | 说明 |
+|---|---|---|---|
+| P0-E 引擎 + 技能 | P0-A + P0-B | Opus | 一个负责人写全部原语、特性、`defineBossKit`、多领主结算、组队同步；顺带做 S1 机制样板（斯卡萨之巢） |
+| P0-T 工具 + 测试 | P0-C | Opus | `test/boss.mjs`、`tools/boss_inventory.mjs`（查重）、`region_art.py` 的 sig / forms；跑 59 个领主基线，定验收用时区间 |
+| ART 美术队列 | ART | Opus | 唯一生图的块，一次一张；先出 S2 美术样板（利库），审过再按区域顺序批量 |
+| R1 西部 | B1 格兰之森 + B2 天空之城 + B3 天帷巨兽 + B7 远古 | Sonnet 5.5 | 几乎全 SIMPLE；悬空城双眼若原语不够，交回 P0-E |
+| R2 暗精灵 + 雪山 | B4 + B5 | Opus | COMPLEX 为主 |
+| R3 诺斯玛尔 + 根特 + 深渊 + 领主曲 | B6 + B11 + B12 | Sonnet 5.5 | 全 SIMPLE；深渊词条等 R2 / R4 / R5 的钩子合并后做 |
+| R4 海上列车 + 时空之门 | B8 + B9 | Opus | |
+| R5 希洛克 | B10（含 D1 四门对调） | Opus | |

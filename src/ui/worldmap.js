@@ -2,8 +2,8 @@
    世界地图（窗口名 worldmap，快捷键 N 由界面组分配）
    - 按场景的 map 坐标画出各城镇 / 区域和它们之间的道路，标出当前位置
    - 点一个地点：右侧列出这里的 NPC、地下城（推荐等级、隐藏地下城是否已出现、是否通关过）
-   - 区域移动（官方：赫顿玛尔的诺羽、西海岸的马琳）：去过的城镇可以直接传送
-       通过区域移动 NPC 打开（{ travel: true }）→ 任何地方都能传；按 N 打开 → 只有站在城镇里时能传
+   - 区域移动（官方：赫顿玛尔的诺羽、西海岸的马琳）：所有城镇都可以直接传送
+       任何时候都能传（城镇 / 区域地图里按 N 或找 NPC），不需要去过、不看等级；只有地下城里不能用
    ===================================================================== */
 NPC_SERVICES.travel ??= { label: '区域移动', run: N => { if (menus.isOpen('worldmap')) menus.close('worldmap'); menus.open('worldmap', { travel: true, npc: N }); } };
 const WORLDMAP_Y0 = -8, WORLDMAP_H = 76;   // 地图坐标的纵向范围 -8 ~ 68（横向 0~100）；负数留给最北边的天空之城 / 天帷巨兽
@@ -19,9 +19,6 @@ function travelBlocked(id, arg) {
   if (game.scene !== 'town') return '只能在城镇或区域地图里使用';
   if (!S || S.kind !== 'town') return '只能传送到城镇';
   if (here && here.id === id) return '你就在这里';
-  if (!(save.data.seen || {})[id]) return '还没有去过这里';
-  if (!arg.travel && here && here.kind !== 'town') return '在城镇里才能传送（或找诺羽 / 马琳）';
-  if (here && !reachableScenes(here.id).has(id)) return '等级不够，还不能前往';
   return '';
 }
 Object.assign(menus, {
@@ -85,7 +82,7 @@ Object.assign(menus, {
       } }, '区域移动'), why ? h('div', { class: 'small dim' }, why) : null));
     }
     const body = h('div', { class: 'wm' }, map, info);
-    const el = this.win(arg.npc ? `${arg.npc.name} · 区域移动` : '世界地图', h('div', {}, body, h('div', { class: 'small dim wm-legend' }, '● 城镇　◆ 区域地图　点击地点查看详情；去过的城镇可以区域移动')), { w: 62 });
+    const el = this.win(arg.npc ? `${arg.npc.name} · 区域移动` : '世界地图', h('div', {}, body, h('div', { class: 'small dim wm-legend' }, '● 城镇　◆ 区域地图　点击地点查看详情；任何城镇都可以直接区域移动')), { w: 62 });
     el._arg = arg; return el;
   },
 });

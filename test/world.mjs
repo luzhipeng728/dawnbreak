@@ -121,11 +121,11 @@ await shot('worldmap-plaza');
 await page.click('.wm-go .btn'); await wait(1500);
 ok(await page.evaluate(() => world.S.id) === 'hm_plaza', '世界地图区域移动到中央广场');
 await shot('travel-arrive');
-// 在区域地图里按 N 打开：不能传送；通过诺羽打开：可以传送
+// 区域移动没有前置：区域地图里按 N 也能传送
 await enter('gf_forest'); await closeAll(); await wait(300);
 await page.keyboard.down('KeyN'); await wait(60); await page.keyboard.up('KeyN'); await wait(300);
 await page.click('.wm-node[data-id="elvenguard"]'); await wait(300);
-ok(await page.evaluate(() => !!document.querySelector('.wm-go .btn.off')), '区域地图里按 N 打开时不能传送');
+ok(await page.evaluate(() => !!document.querySelector('.wm-go .btn:not(.off)')), '区域地图里按 N 打开也能传送');
 await closeAll();
 await enter('hm_plaza'); await closeAll(); await wait(300);
 await page.evaluate(() => { const e = world.npcs.find(x => x.npc.id === 'nuoyu'); game.player.x = e.x - 40; game.player.y = e.y; }); await wait(200);
@@ -139,6 +139,10 @@ if (hasTravel) {
   ok(await page.evaluate(() => world.S.id) === 'west_coast', '诺羽区域移动到西海岸');
 }
 await closeAll();
+{
+  const r = await page.evaluate(() => { save.data.seen = {}; const far = Object.keys(SCENES).filter(id => SCENES[id].kind === 'town' && id !== world.S.id).map(id => [id, travelBlocked(id, {})]); return far; });
+  ok(r.length && r.every(([, w]) => w === ''), '区域移动没有前置：没去过 / 不用 NPC 也能传到任何城镇', JSON.stringify(r.filter(([, w]) => w)));
+}
 
 console.log('· 隐藏地下城的门现身');
 await page.evaluate(() => { (save.data.questDone ??= {}).q_hidden_frozen = true; save.data.hiddenSeen = {}; });

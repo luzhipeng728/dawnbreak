@@ -43,6 +43,7 @@ Object.assign(CLIPS.fighter, {
   fsStomp: { dur: 0.5, keys: [k(0, POSE.fAxeUp, 'hold'), k(0.2, POSE.fAxeDown, 'out'), k(0.5, POSE.fAxeDown)] },
   fsDive: { dur: 0.3, keys: [k(0, POSE.fsDive)] },
   fsBuff: { dur: 0.7, keys: [k(0, POSE.crouch, 'hold'), k(0.18, POSE.roar, 'out'), k(0.7, POSE.roar)] },
+  fsRoar: { dur: 0.9, keys: [k(0, POSE.crouch, 'hold'), k(0.08, POSE.roar, 'out'), k(0.9, POSE.roar)] },
 });
 const FS_ANIMS = {
   fsElbow: fsTl([['fs_elbow', 0]], fsTl([['f_shoulder1', 0], ['f_shoulder2', 0.05]], [['run3', 0]])),
@@ -57,7 +58,8 @@ const FS_ANIMS = {
   fsUp: fsTl([['f_high1', 0], ['f_high2', 0.06]], [['idle', 0]]),
   fsStomp: fsTl([['f_axe1', 0], ['f_axe2', 0.2]], fsTl([['f_stomp', 0]], [['jump3', 0]])),
   fsDive: fsTl([['fs_divepunch', 0]], fsTl([['f_dive', 0]], [['jump3', 0]])),
-  fsBuff: fsTl([['f_focus', 0]], [['charge', 0]]),
+  fsBuff: fsTl([['f_quake', 0], ['f_focus', 0.3]], fsTl([['f_focus', 0]], [['charge', 0]])),
+  fsRoar: fsTl([['f_focus', 0]], [['charge', 0]]),   // 怒吼：握拳绷紧全身（官方动作像 KOF 神武的爆进），靠特效炸开
 };
 
 /* ---- 小工具 ---- */
@@ -102,14 +104,46 @@ function fsBlastFx(x, y, z, size = 200) {
   fxSpr('explosion', x, y, z, { w: size, dur: 0.5, grow: [0.5, 1.15] }); fxShock(x, y, size * 0.9, FS_FIRE); fxDust(x, y, 8, size * 0.12, '#8a5a3a');
   for (let i = 0; i < 5; i++) fsGroundFire(x + rnd(-size * 0.4, size * 0.4), y + rnd(-20, 20), rnd(0.5, 0.9), rnd(26, 40));
 }
-// 双脚缠火（烈焰焚步变身）：跟着人画，BUFF 没了自己结束；换场景特效被清掉时 passives 里补回来
+// 烈焰焚步变身中：双脚缠着大火、双拳冒火、火星往上飘，移动时每走一步留下燃烧的脚印（官方：双脚着火 + 地面火痕）；
+// 全身的火焰轮廓由转职外观层画（content/avatar/job_looks.js 散打的“烈焰焚步”状态）。跟着人画，BUFF 没了自己结束；换场景特效被清掉时 passives 里补回来
 function fsFeetFx(p) {
   if (p._fsFeet && fxList.includes(p._fsFeet)) return;
-  p._fsFeet = addFx({ ent: p, x: p.x, y: p.y + 0.4, z: 0, dur: 1e6, update() { const E = this.ent; this.x = E.x; this.y = E.y + 0.4; if (!E.buffs.fs_awaken || E.dead || E.remove) this.dur = this.t; },
+  p._fsFeet = addFx({ ent: p, x: p.x, y: p.y + 0.4, z: 0, dur: 1e6, px: p.x, py: p.y, step: 0, foot: 0, emb: [],
+    update(dt) { const E = this.ent; if (!E.buffs.fs_awaken || E.dead || E.remove) { this.dur = this.t; return; }
+      const d = Math.hypot(E.x - this.px, E.y - this.py); this.px = E.x; this.py = E.y; this.x = E.x; this.y = E.y + 0.4;
+      if (E.z < 4 && d < 60) { this.step += d; if (this.step > 24) { this.step = 0; this.foot ^= 1; E._fsPrints = (E._fsPrints || 0) + 1; fsGroundFire(E.x - E.face * (4 + this.foot * 10), E.y + (this.foot ? 3 : -3), 0.8, 24); } }   // 燃烧的脚印
+      if (Math.random() < 0.5) this.emb.push({ x: E.x + rnd(-16, 16), z: E.z + rnd(0, 70), vz: rnd(40, 110), life: rnd(0.4, 0.8), t: 0 });
+      for (const m of this.emb) { m.t += dt || 1 / 60; m.z += m.vz * (dt || 1 / 60); } this.emb = this.emb.filter(m => m.t < m.life); },
     draw(c) { const E = this.ent, t = this.t; c.save(); c.globalCompositeOperation = 'lighter';
-      for (const [dx, ph] of [[-9, 0], [10, 2]]) { const X = sx(E.x + dx * E.face), Y = sy(E.y, E.z) + 3; c.globalAlpha = 0.85; jlCell(c, 'jv_flame', FS_FIRE, Math.floor(t * 16) + ph, X, Y, 30 + Math.sin(t * 20 + ph) * 4, 1.05);
-        c.globalAlpha = 0.5; jlCell(c, 'jv_flame', '#ffd23a', Math.floor(t * 16) + ph + 1, X, Y, 18, 0.9); }
+      for (const [dx, ph] of [[-9, 0], [10, 2]]) { const X = sx(E.x + dx * E.face), Y = sy(E.y, E.z) + 3; c.globalAlpha = 0.9; jlCell(c, 'jv_flame', FS_FIRE, Math.floor(t * 16) + ph, X, Y, 44 + Math.sin(t * 20 + ph) * 6, 1.15);
+        c.globalAlpha = 0.6; jlCell(c, 'jv_flame', '#ffd23a', Math.floor(t * 16) + ph + 1, X, Y, 26, 0.95); }
+      for (const [dx, dz, ph] of [[18, 62, 1], [-3, 58, 3]]) { const X = sx(E.x + dx * E.face), Y = sy(E.y, E.z + dz); c.globalAlpha = 0.7; jlCell(c, 'jv_flame', FS_FIRE, Math.floor(t * 18) + ph, X, Y + 8, 22 + Math.sin(t * 17 + ph) * 3, 1); }   // 双拳冒火
+      c.fillStyle = '#ffb040'; for (const m of this.emb) { c.globalAlpha = 0.9 * (1 - m.t / m.life); c.fillRect(sx(m.x) - 1.5, sy(E.y, m.z) - 1.5, 3, 3); }
       c.restore(); } });
+}
+// 怒吼的声音：低沉的锯齿波嘶吼 + 噪声爆裂 + 低频轰鸣（没有录音素材，用合成器拼）
+function fsRoarSfx(k = 1) {
+  if (!sfx.ok) return;
+  sfx.tone('sawtooth', 210, 80, 1.1 * k, 0.22, { attack: 0.03 }); sfx.tone('square', 105, 48, 1.2 * k, 0.12, { attack: 0.03 }); sfx.tone('sawtooth', 320, 150, 0.8 * k, 0.08, { attack: 0.05 });
+  sfx.noise('lowpass', 1600, 320, 1.1 * k, 0.32, 0.9); sfx.noise('bandpass', 900, 260, 0.9 * k, 0.22, 2.5); sfx.boom(1.3);
+}
+// 怒吼：身上炸开地狱火 —— 三圈冲击波、火柱、四周喷出的火舌、地面裂开的火
+function fsRoarFx(e, big = 1) {
+  cam.shake = Math.max(cam.shake, 18 * big); cam.flash = 0.16 * big; cam.flashCol = '#ff9a4a';
+  fsBlastFx(e.x, e.y, 40, 300 * big); fxSpr('pillar', e.x, e.y, 0, { h: 330 * big, ay: 1, dur: 0.9, col: FS_FIRE, grow: [0.4, 1.1] }); fxSpr('lava', e.x, e.y, 0, { h: 220 * big, ay: 1, dur: 0.7, grow: [0.6, 1.2] });
+  for (let i = 0; i < 3; i++) game.after(i * 0.1, () => fxShock(e.x, e.y, (300 + i * 130) * big, i === 1 ? '#ffd23a' : FS_FIRE));
+  addFx({ ent: e, x: e.x, y: e.y + 0.8, z: 0, dur: 0.9, draw(c) { const E = this.ent, k = this.t / this.dur, a = k < 0.1 ? k / 0.1 : 1 - (k - 0.1) / 0.9; c.save(); c.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 10; i++) { const ang = i / 10 * TAU + 0.3, r = (30 + 90 * easeOut(k)) * big, X = sx(E.x + Math.cos(ang) * r), Y = sy(E.y + Math.sin(ang) * r * 0.35, E.z);
+      c.globalAlpha = 0.85 * a; jlCell(c, 'jv_flame', i % 3 ? FS_FIRE : '#ffd23a', i + Math.floor(this.t * 20), X, Y + 4, (70 + 30 * Math.sin(i * 1.7)) * (0.7 + 0.5 * a) * big, 1.2); }
+    c.restore(); } });
+}
+// 双重施放的强化终结：时停一下 + 火柱 + 三连爆（伤害合计 = 一次同等威力的追加攻击）
+function fsDualFinish(a, x, y, dmg, name, o = {}) {
+  game.timeStop = Math.max(game.timeStop || 0, 0.22); cam.shake = 16; cam.flash = 0.3; cam.flashCol = '#ffc080'; sfx.boom(1.5); fsRoarSfx(0.5);
+  fxText(name, x, y, 150, { col: '#ffb040', size: 18, dur: 0.9 }); fxSpr('pillar', x, y, 0, { h: 360, ay: 1, dur: 0.8, col: FS_FIRE, grow: [0.4, 1.15] });
+  for (let i = 0; i < 3; i++) game.after(0.05 + i * 0.1, () => { if (a.dead) return; fsBlastFx(x + a.face * (i * 50 - 30), y, 40 + i * 30, 240 + i * 60);
+    for (const t of ents) if (hittable(a, t) && (!o.front || (t.x - x) * a.face > -60) && Math.abs(t.x - x) < (o.r || 220) && Math.abs(t.y - y) < 80)
+      applyHit(a, t, { dmg: dmg * [0.4, 0.3, 0.3][i], knock: i === 2 ? 420 : 60, launch: i === 2 ? 380 : 120, hs: i === 2 ? 0.14 : 0.05, big: i === 2 ? 2.4 : 1.4, sure: true, downHit: true, snd: 'fire', col: '#ffb070', box: null }, { proj: true, src: { x: x - a.face * 20, y, z: 0, face: a.face } }); });
 }
 // 拳上的红光（强拳持续中）
 function fsFistFx(p) {
@@ -165,7 +199,14 @@ FIGHTER_HOOKS.onCast.push((p, id, act, how) => {
   if ((S.job === FS || fsMA(p, id)) && !FS_NOCDR.has(id)) m *= 1 - 0.01 * skLv(p, 'fs_glove');
   if (B && fsMA(p, id) && !FS_NOCDR.has(id)) m *= 0.85;
   if (m !== 1 && p.cool[id] > 0) p.cool[id] *= m;
-  if (act && B && fsMA(p, id)) act.recMul = Math.min(act.recMul || 1, 1 - B.rec);
+  if (act && B && fsMA(p, id)) { act.recMul = Math.min(act.recMul || 1, 1 - B.rec); act.fsFire = true;   // 焚步强化版：起手脚下喷火、带火的残影
+    fxSpr('explosion', p.x, p.y, p.z + 10, { w: 90, dur: 0.3, grow: [0.4, 1] }); fsGroundFire(p.x, p.y, 0.6, 36); fxAfterimage(p, '#ff8a3a'); }
+});
+// 焚步强化版的每一下都带火：命中处爆出火焰（每个动作每个目标一次；火焰只是特效，伤害仍是无属性物理）
+FIGHTER_HOOKS.onHit.push((p, t, h) => {
+  const a = p.act; if (!fsOn(p) || !a || !a.fsFire || t.dead) return;
+  const done = a._fsFx || (a._fsFx = new Set()); if (done.has(t.id)) return; done.add(t.id);
+  fxSpr('explosion', t.x, t.y, t.z + 50, { w: 110, dur: 0.32, grow: [0.5, 1.1] }); fsGroundFire(t.x, t.y, 0.5, 30); sfx.hit('fire', false);
 });
 // 烈焰燃烧：焚步期间技能 MP 消耗减少（包在 B0 的臂铠 MP 修正外面）
 { const mp0 = CLASSES.fighter.mpMul; CLASSES.fighter.mpMul = (p, id) => (mp0 ? mp0(p, id) : 1) * (fsOn(p) && p.buffs.fs_awaken && skLv(p, 'fs_burn') ? 1 - Math.min(0.5, 0.1 + 0.03 * skLv(p, 'fs_burn')) : 1); }
@@ -353,8 +394,7 @@ defSkill('fs_dragon', { name: '瞬影连环踢', cls: 'fighter', job: FS, lvReq:
     hits: [HB(0.16, 0.46, [-60, 112, 46, 0, 125], skillDmg(20, 2, lv), { max: 1, knock: 460, launch: 240, airLift: 260, hs: 0.16, shake: 9, big: 2.4, heavy: true, critBonus: 0.1, snd: 'blunt', col: '#fff0c0',
       onHit: (a, t) => { const A = a.act; if (!A || A.skill !== 'fs_dragon') return; fxBurst(t.x, t.y, t.z + 60, 240, '#fff0c0'); cam.flash = 0.08; cam.flashCol = '#fff6e0';
         if (A.fsDual && !A.fsDualDone) { A.fsDualDone = true; fsDualHit(a); const x = t.x, y = t.y;
-          game.after(0.08, () => { if (a.dead) return; fsBlastFx(x, y, 60, 260); cam.shake = 12; sfx.boom(1.2); fxText('双重施放!', x, y, 120, { col: '#ffb040', size: 13 });
-            for (const o of ents) if (hittable(a, o) && Math.abs(o.x - x) < 180 && Math.abs(o.y - y) < 70) applyHit(a, o, { dmg: skillDmg(22, 2.2, skLv(a, 'fs_dragon') || 1), knock: 300, launch: 300, hs: 0.12, big: 2, sure: true, downHit: true, snd: 'fire', col: '#ffb070', box: null }, { proj: true, src: { x: x - a.face * 20, y, z: 0, face: a.face } }); }); } } })],
+          game.after(0.08, () => { if (!a.dead) fsDualFinish(a, x, y, skillDmg(22, 2.2, skLv(a, 'fs_dragon') || 1), '双重施放 · 爆碎!', { r: 200 }); }); } } })],
     onLand: e => { const a = e.act; if (e.actT < 0.3) { e.vz = 0; e.z = 0.5; e.vz = 60; return; } if (a.landed) return; a.landed = true; a.fsNoShift = false; e.vx *= 0.2; a.dur = e.actT + 0.32; e.play('land', true); fxDust(e.x, e.y, 6, 16); } }) });
 
 /* ---- 一次觉醒：武极（官方 48~70 级 → 本作 21~25 级）---- */
@@ -362,24 +402,33 @@ defSkill('fs_burn', { name: '烈焰燃烧', cls: 'fighter', job: FS, tier: 1, lv
   desc: '【一觉被动】把体内的力量更有效地燃烧：物理攻击力提高；烈焰焚步持续时间变长，焚步期间技能 MP 消耗减少。',
   infoExtra: lv => [['物理攻击力', '+' + pct(0.005 * lv)], ['焚步持续', '+' + (3 + 6 * lv) + ' 秒'], ['焚步中 MP 消耗', '−' + pct(Math.min(0.5, 0.1 + 0.03 * lv))]] });
 const fsBurnDur = p => (game.pvp ? 20 : 50) + (skLv(p, 'fs_burn') ? 3 + 6 * skLv(p, 'fs_burn') : 0);
-defSkill('fs_awaken', { name: '烈焰焚步', cls: 'fighter', job: FS, tier: 1, lvReq: 21, maxLv: 3, mp: 150, cd: 135, pvp: 0.45, type: 'phys', awaken: true, col: '#ff4a1a',
-  desc: '【觉醒 · 变身型 BUFF】唤来地狱之火缠住双脚，发动时周围炸开一圈火焰。持续期间：武术技能冷却 −15%、后摇减少，技能 / 普攻攻击力提高，敌人硬直时间变长，柔化肌肉恢复快 1 秒，走过的地面燃起火焰灼伤敌人。持续 50 秒（烈焰燃烧加长）。焚步中可以用双重施放。',
+// 烈焰焚步（韩 화염의 각 / 英 Suju Inferno）：一觉「武极」的觉醒技 = 变身型 BUFF。完成一觉任务自动学会（0 SP、等级随角色等级涨，fsAutoAwaken），
+// 发动：蓄力 → 仰天怒吼（“크아아아!!”）→ 全身炸出地狱火（冲击波 / 火柱 / 震退）→ 之后一直全身着火：双脚大火、双拳冒火、燃烧的脚印，所有武术技能变成带火的强化版
+const FS_AWK_LV = lv => ({ dmg: 0.04 + 0.03 * (lv - 1), rec: Math.min(0.5, 0.02 + 0.05 * (lv + 2)) });
+defSkill('fs_awaken', { name: '烈焰焚步', cls: 'fighter', job: FS, tier: 1, lvReq: 21, maxLv: 3, sp: 0, mp: 150, cd: 135, pvp: 0.45, type: 'phys', awaken: true, col: '#ff4a1a',
+  desc: '【一次觉醒「武极」的觉醒技 · 变身】完成一次觉醒任务时自动学会（不花 SP，等级随角色等级提升），并自动放进技能栏（↑↑↓↓+Z）。发动时仰天怒吼，全身炸出地狱之火，把周围的敌人震飞；之后 50 秒（烈焰燃烧加长）全身燃烧（双脚缠着大火、双拳冒火、走过的地方留下燃烧的脚印灼伤敌人），所有散打武术技能变成带火的强化版：冷却 −15%、后摇减少、技能 / 普攻攻击力提高、敌人硬直时间 173%，柔化肌肉恢复快 1 秒，移动速度 +10%（火焰只是特效，伤害是无属性物理）。焚步中还能用「双重施放」让下一记 瞬影连环踢 / 烈火强拳 / 炼狱坠星腿 威力翻倍——这就是一觉的决胜一击。',
   pow: lv => skillDmg(8, 2, lv), ai: { kind: 'buff' },
-  infoExtra: lv => [['技能攻击力', '+' + pct(0.04 + 0.03 * (lv - 1))], ['后摇减少', pct(0.02 + 0.05 * (lv + 2))], ['武术技能冷却', '−15%'], ['持续', '50 秒 + 烈焰燃烧']],
-  act: lv => ({ name: 'fs_awaken', clip: 'fsBuff', dur: 0.95, noCounter: true, invul: true, superArmor: true,
-    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '烈焰焚步', who: cutinWho(e) }; game.timeStop = 0.8; sfx.awaken(); },
-    events: [evAt(0.22, e => { cam.shake = 12; cam.flash = 0.2; cam.flashCol = '#ffb070'; sfx.boom(1.3); fxText('喝啊啊啊!', e.x, e.y, e.z + 40, { col: '#ffb040', size: 14 });
-      e.buffs.fs_awaken = { t: fsBurnDur(e), dmg: 0.04 + 0.03 * (lv - 1), stagger: 60, rec: Math.min(0.5, 0.02 + 0.05 * (lv + 2)), lv, col: '#ff4a1a' };
-      fsFeetFx(e); fsBlastFx(e.x, e.y, 20, 320); fxSpr('lava', e.x, e.y, 0, { h: 200, ay: 1, dur: 0.6, grow: [0.6, 1.1] });
-      blast(e, e.x, e.y, 260, { dmg: skillDmg(8, 2, lv), launch: 420, knock: 200, hs: 0.1, big: 1.6, downHit: true, sure: true, snd: 'fire', col: '#ffb070' }, { zMax: 180 }); })] }) });
+  infoExtra: lv => [['技能 / 普攻攻击力', '+' + pct(FS_AWK_LV(lv).dmg)], ['后摇减少', pct(FS_AWK_LV(lv).rec)], ['武术技能冷却', '−15%'], ['敌人硬直', '173%'], ['移动速度', '+10%'], ['持续', '50 秒 + 烈焰燃烧'], ['发动时震飞', pct(skillDmg(8, 2, lv))]],
+  act: lv => ({ name: 'fs_awaken', clip: 'fsBuff', dur: 1.3, noCounter: true, invul: true, superArmor: true,
+    onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '烈焰焚步', who: cutinWho(e) }; game.timeStop = 0.8; sfx.awaken(); sfx.charge(); fxDust(e.x, e.y, 8, 20, '#8a5a3a');
+      for (let i = 0; i < 3; i++) fxCharge(e, '#ff8a3a', 4); },
+    update: e => { const a = e.act;
+      if (!a.roar && e.actT < 0.3 && Math.random() < 0.6) fxCharge(e, '#ffb040', 2);                     // 蓄力：火星往身上聚
+      if (a.roar && e.actT < 1.05) { cam.shake = Math.max(cam.shake, 6); if (Math.floor(e.actT / 0.08) !== a.k) { a.k = Math.floor(e.actT / 0.08); fsGroundFire(e.x + rnd(-60, 60), e.y + rnd(-20, 20), 0.6, rnd(40, 70)); } } },
+    onEnd: e => { e.scale = e._fsScale0 || e.scale; },
+    events: [evAt(0.3, e => { const a = e.act; a.roar = true; e.play('fsRoar', true); e._fsScale0 = e.scale || 1; e.scale = e._fsScale0 * 1.08; game.after(0.5, () => { e.scale = e._fsScale0; }); fsRoarSfx(); fxText('喝啊啊啊啊——!!', e.x, e.y, e.z + 70, { col: '#ff8a3a', size: 20, dur: 1.1 });
+      const L = FS_AWK_LV(lv); e.buffs.fs_awaken = { t: fsBurnDur(e), dmg: L.dmg, stagger: 60, rec: L.rec, mspd: 0.1, lv, col: '#ff4a1a' };
+      fsFeetFx(e); fsRoarFx(e); fxAura(e, FS_FIRE, 1.2);
+      blast(e, e.x, e.y, 280, { dmg: skillDmg(8, 2, lv), launch: 420, knock: 300, hs: 0.1, big: 1.6, downHit: true, sure: true, snd: 'fire', col: '#ffb070' }, { zMax: 180 }); })] }) });
 defSkill('fs_dual', { name: '双重施放', cls: 'fighter', job: FS, tier: 1, lvReq: 21, maxLv: 1, sp: 0, mp: 0, cd: 135, type: 'phys', col: '#ff6a1a', icon: 'awaken', pre: { fs_awaken: 1 },
-  desc: '【烈焰焚步中才能用】让体内的地狱火瞬间爆开：下一次 瞬影连环踢 / 烈火强拳 / 炼狱坠星腿（哪个先放用在哪个）追加一段同等威力的攻击。放出强化的技能时就消耗掉；学了千锤百炼后可以在别的技能施放中使用，而且强化的技能打中才消耗。',
+  desc: '【一次觉醒 · 焚步中才能用】（韩 이중개방，完成一次觉醒任务时和烈焰焚步一起自动学会、放进技能栏，↓↓↑↑+Z）再吼一声，让体内的地狱火瞬间爆开：下一次 瞬影连环踢 / 烈火强拳 / 炼狱坠星腿（哪个先放用在哪个）追加一段同等威力的火焰终结（时停 + 火柱三连爆），一招翻盘。放出强化的技能时就消耗掉；学了千锤百炼后可以在别的技能施放中使用，而且强化的技能打中才消耗。',
   ai: { kind: 'buff' },
   req: p => !p.buffs.fs_awaken ? '需要烈焰焚步' : (!skLv(p, 'fs_limit') && p.st === 'act' && p.act && !p.act.basic) ? '施放中不能用' : true,
   instant: (lv, p, extra) => {
     p.buffs.fs_dual = { t: Math.max(5, p.buffs.fs_awaken ? p.buffs.fs_awaken.t : 30), col: '#ff6a1a' };
-    sfx.boom(0.7); sfx.buff(); fxAura(p, FS_FIRE, 0.9); fxSpr('explosion', p.x, p.y, p.z + 50, { w: 150, dur: 0.4, grow: [0.4, 1.1] }); fxText('开放!', p.x, p.y, p.z + 30, { col: '#ffb040', size: 13 });
-    if (!skLv(p, 'fs_limit') && !(p.st === 'act' && p.act)) p.doAct({ name: 'fs_dual', clip: 'fsBuff', dur: 0.4, noCounter: true, superArmor: true }, extra); } });
+    fsRoarSfx(0.6); sfx.buff(); fxAura(p, FS_FIRE, 0.9); fxSpr('explosion', p.x, p.y, p.z + 50, { w: 190, dur: 0.45, grow: [0.4, 1.2] }); fxShock(p.x, p.y, 260, FS_FIRE); cam.shake = Math.max(cam.shake, 9);
+    fxText('二重开放!', p.x, p.y, p.z + 60, { col: '#ffb040', size: 16, dur: 0.8 });
+    if (!skLv(p, 'fs_limit') && !(p.st === 'act' && p.act)) p.doAct({ name: 'fs_dual', clip: 'fsRoar', dur: 0.45, noCounter: true, superArmor: true }, extra); } });
 // 飞燕旋风：快速回旋踢把前方的敌人扫到一起，再强力一击；按住 → 向前跃起施放
 defSkill('fs_whirl', { name: '飞燕旋风', cls: 'fighter', job: FS, tier: 1, lvReq: 23, mp: 50, cd: 20, type: 'phys', col: '#4ab8ff', icon: 'spin', cmdNote: '只能用快捷栏（官方没有指令）',
   desc: '一连串快速回旋踢把前方大范围的敌人扫到一处，再补上强力的一击。按住 → 施放时向前跃起。范围大，清怪好用。',
@@ -456,12 +505,11 @@ defSkill('fs_cannon', { name: '烈火强拳', cls: 'fighter', job: FS, tier: 2, 
       fxBurst(e.x + e.face * 90, e.y, e.z + 62, 240, '#ff8a4a'); fxShock(e.x + e.face * 90, e.y, 200, '#ff8a4a');
       const hit = instantHit(e, { box: [-20, 150, 52, 0, 140], dmg, knock: 560, launch: 320, airLift: 300, hs: 0.16, big: 2.4, shake: 8, heavy: true, snd: 'blunt', col: '#ffd0a0' });
       for (const t of a.drag) if (hittable(e, t) && Math.abs(t.x - e.x) > 170) applyHit(e, t, { dmg: dmg * 0.08, stun: 0.4, knock: 200, hs: 0.03, sure: true, snd: 'blunt', col: '#ffd0a0' }, { src: e });   // 拖到最后没被拳打到的
-      if (a.fsDual && hit) { fsDualHit(e); game.after(0.14, () => { if (e.dead) return; const x = e.x + e.face * 110; fsBlastFx(x, e.y, 60, 300); cam.shake = 14; sfx.boom(1.3); fxText('Buster!', x, e.y, 130, { col: '#ffb040', size: 14 });
-        for (const o of ents) if (hittable(e, o) && (o.x - e.x) * e.face > -40 && Math.abs(o.x - e.x) < 320 && Math.abs(o.y - e.y) < 70) applyHit(e, o, { dmg: skillDmg(24, 2.4, lv), knock: 400, launch: 360, hs: 0.14, big: 2.2, sure: true, downHit: true, snd: 'fire', col: '#ffb070', box: null }, { proj: true, src: e }); }); }
+      if (a.fsDual && hit) { fsDualHit(e); game.after(0.14, () => { if (!e.dead) fsDualFinish(e, e.x + e.face * 130, e.y, skillDmg(24, 2.4, lv), 'Buster!', { r: 260, front: true }); }); }
       a.dur = e.actT + 0.45; } }) });
 // 极武霸皇踢：电光般左右来回出拳把前方的敌人聚到一点，最后全身力量聚到脚尖，一记贯穿前方的飞踢
-defSkill('fs_awaken2', { name: '极武霸皇踢', cls: 'fighter', job: FS, tier: 2, lvReq: 27, maxLv: 3, mp: 200, cd: 170, pvp: 0.45, type: 'phys', awaken: true, col: '#ffc01a',
-  desc: '【二次觉醒】电光石火般在敌人左右两侧来回各打出一拳，把前方大范围的敌人聚到一点，然后把全身的力量集中到脚尖，一记贯穿前方的飞踢（大部分伤害在飞踢，“爆碎”）。全程无敌。',
+defSkill('fs_awaken2', { name: '极武霸皇踢', cls: 'fighter', job: FS, tier: 2, lvReq: 27, maxLv: 3, sp: 0, mp: 200, cd: 170, pvp: 0.45, type: 'phys', awaken: true, col: '#ffc01a',
+  desc: '【二次觉醒「极武皇」的觉醒技】完成二次觉醒任务时自动学会（不花 SP）并放进技能栏（↓↑→→+Z）。电光石火般在敌人左右两侧来回各打出一拳，把前方大范围的敌人聚到一点，然后把全身的力量集中到脚尖，一记贯穿前方的飞踢（大部分伤害在飞踢，“爆碎”）。全程无敌。',
   pow: lv => skillDmg(30, 8, lv), ai: { kind: 'awaken', r: [0, 460], dy: 110 },
   act: lv => ({ name: 'fs_awaken2', clip: 'fsPunch', dur: 2.3, superArmor: true, noCounter: true, invul: true,
     onStart: e => { game.cutin = { t: 0, dur: 1.0, name: '极武霸皇踢', who: cutinWho(e, 2) }; game.timeStop = 0.9; sfx.awaken(); const a = e.act, R = game.room;
@@ -503,9 +551,9 @@ defSkill('fs_mortal', { name: '炼狱坠星腿', cls: 'fighter', job: FS, tier: 
       const T = skillDmg(26.5, 2.65, lv); fsBlastFx(e.x, e.y, 20, 340); fxShock(e.x, e.y, 520, '#ff5a3a');
       const k = instantHit(e, { box: [-60, 70, 50, -20, 160], dmg: T * 0.45, knock: 80, launch: 260, hs: 0.12, big: 2, sure: true, downHit: true, snd: 'blunt', col: '#ffd0a0' });
       blast(e, e.x, e.y, 330, { dmg: T * 0.55, launch: 380, knock: 260, hs: 0.12, big: 1.8, downHit: true, snd: 'fire', col: '#ffb070' }, { zMax: 220 });
-      if (a.fsDual) game.after(0.35, () => { if (e.dead || e.act !== a) return; e.play('fsPunch', true); sfx.swing(true); cam.shake = 14; sfx.boom(1.2); const x = e.x + e.face * 120; fsBlastFx(x, e.y, 60, 280); fxText('双重施放!', x, e.y, 130, { col: '#ffb040', size: 13 });
-        let n = 0; for (const o of ents) if (hittable(e, o) && (o.x - e.x) * e.face > -20 && Math.abs(o.x - e.x) < 340 && Math.abs(o.y - e.y) < 80) { n++; applyHit(e, o, { dmg: T, knock: 440, launch: 340, hs: 0.14, big: 2.2, sure: true, downHit: true, snd: 'fire', col: '#ffb070', box: null }, { src: e }); }
-        if (n) fsDualHit(e); });
+      if (a.fsDual) game.after(0.35, () => { if (e.dead || e.act !== a) return; e.play('fsPunch', true); sfx.swing(true);
+        const n = ents.filter(o => hittable(e, o) && (o.x - e.x) * e.face > -20 && Math.abs(o.x - e.x) < 340 && Math.abs(o.y - e.y) < 80).length;   // 官方：终结拳只打前方
+        fsDualFinish(e, e.x + e.face * 150, e.y, T, '双重施放 · 终结拳!', { r: 200, front: true }); if (n) fsDualHit(e); });
       else if (k) fsDualHit(e); } }) });
 // 焚火逐日拳：瞬移到周围最强的敌人身边，豁出一切连续全力出拳，一记回旋踢，最后一记“灭火”重拳
 defSkill('fs_awaken3', { name: '焚火逐日拳', cls: 'fighter', job: FS, tier: 3, lvReq: 30, maxLv: 3, mp: 300, cd: 270, pvp: 0.45, type: 'phys', awaken: true, col: '#ff2a1a',
@@ -528,10 +576,22 @@ defSkill('fs_awaken3', { name: '焚火逐日拳', cls: 'fighter', job: FS, tier:
         hit(1 - 7 * P - 0.12, { launch: 520, knock: 420, airLift: 0, hs: 0.2, big: 2.6, critBonus: 0.1 }); } },
     onEnd: e => { const a = e.act; if (a && a.feet) a.feet.dur = a.feet.t; } }) });
 
+/* ---- 觉醒自动学会（官方 DFO：烈焰焚步完成一觉任务自动获得、0 SP、等级随角色等级提升；双重施放、极武霸皇踢同样 0 SP 自动学会；烈焰燃烧自动给 1 级）---- */
+const FS_AUTO = [['fs_awaken', 1, true], ['fs_dual', 1, true], ['fs_burn', 1, false], ['fs_awaken2', 2, true]];
+function fsAutoAwaken(p) {
+  if (p.kit || !game.skillLv || !game.skillBar || (typeof isHuman === 'function' && !isHuman(p))) return;
+  const got = [];
+  for (const [id, tier, grow] of FS_AUTO) { const S = SKILLS[id]; if (!S || !tierUnlocked(tier) || game.lvl < S.lvReq) continue;
+    const cur = game.skillLv[id] || 0, want = grow ? Math.min(S.maxLv || 1, 1 + Math.floor((game.lvl - S.lvReq) / (S.lvStep || 1))) : 1;
+    if (cur >= want) continue; game.skillLv[id] = want;
+    if (!cur) { got.push(S.name); if (!S.passive && !game.skillBar.includes(id)) { const k = game.skillBar.indexOf(null); if (k >= 0) game.skillBar[k] = id; } } }
+  if (got.length) { toastMsg(`觉醒：自动学会 ${got.join('、')}（主动技能已放进技能栏）`, '#ffb040'); if (typeof save !== 'undefined' && save.write) save.write(); }
+}
+
 /* ---- 被动效果（每 0.25 秒刷新；hide = 不在 HUD 上显示图标）---- */
 CLASSES.fighter.passives.push(p => {
   if (!fsOn(p)) { for (const id of ['fs_shift', 'fs_aim', 'fs_burn', 'fs_fire', 'fs_limit']) setPassive(p, id, false); return; }
-  fsPatchBase();
+  fsPatchBase(); fsAutoAwaken(p);
   if (game.pvp && p._fsDuel !== game.duel) { p._fsDuel = game.duel; p._fsDuelT = game.t; }
   const sh = skLv(p, 'fs_shift'); if (sh) { const s = fsShiftOf(p); setPassive(p, 'fs_shift', true, { dmg: 0.0625 + 0.0075 * sh, lab: '×' + s.n, col: '#3ab8d8' }); } else setPassive(p, 'fs_shift', false);
   const aim = skLv(p, 'fs_aim'); setPassive(p, 'fs_aim', aim > 0, { crit: 0.02 + 0.008 * aim, hide: true });

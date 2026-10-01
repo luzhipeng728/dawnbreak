@@ -194,7 +194,7 @@ defSkill('pa_awaken2', { name: '永堕：混沌弑神', cls: 'priest', job: PA, 
           for (let i = 0; i < 8; i++) fxSpr('crossx', e.x + rnd(-120, 120), e.y + rnd(-40, 40), rnd(40, 160), { w: rnd(20, 40), dur: 0.5, col: '#ff3a5a', rot: rnd(0, TAU), grow: [0.3, 1] }); area(U, { stun: 0.6, knock: 0 }); pull(); }
         if (a.rel && a.n < 12 && !a.skip && k >= a.t0 + 0.3 + a.n * 0.12) { a.n++; e.play(a.n % 2 ? 'paSlash' : 'paSlash2', true); e.animT = 0.05; sfx.swing(a.n % 3 === 0); pull();
           paClawFx(e.x + e.face * 90, e.y, e.z + rnd(40, 100), a.n % 2 ? e.face : -e.face, 1.6, a.n % 2 ? '#ff4a9a' : PA_COL.claw); area(U * 0.72, { stun: 0.5, knock: 0, hs: 0.03 }); paGain(e, 11, 'keep'); cam.shake = Math.max(cam.shake, 4); }
-        if (a.rel && !a.up && (a.n >= 12 || a.skip) && k >= a.t0 + 0.3 + a.n * 0.12) { a.up = true; a.upT = k; e.play('upper', true); paClawFx(e.x + e.face * 90, e.y, e.z + 120, e.face, 2.2); area(U * 1.8, { launch: 560, knock: 20, hs: 0.1 }); sfx.swing(true); }
+        if (a.rel && !a.up && (a.n >= 12 || a.skip) && k >= a.t0 + 0.3 + a.n * 0.12) { a.up = true; a.upT = k; e.play('paUpper', true); paClawFx(e.x + e.face * 90, e.y, e.z + 120, e.face, 2.2); area(U * 1.8, { launch: 560, knock: 20, hs: 0.1 }); sfx.swing(true); }
         if (a.up && !a.fin && k >= a.upT + 0.45) { a.fin = true; const I = e.pad, held = I && (I.is('attack') || I.is(a.key || 'cmd')), extra = held ? Math.min(100, paHalf(e) ? 100 : paE(e)) : 0; if (extra && !paHalf(e)) e._paE -= extra; const mul = 1 + 0.35 * extra / 100;
           cam.shake = 22; cam.flash = 0.2; cam.flashCol = '#ff4a8a'; sfx.boom(1.8); fxText('混沌弑神!', e.x, e.y, e.z + 160, { col: '#ff80c0', size: 22, dur: 1.1 });
           for (const r of [0.8, -0.8]) fxSpr('crossx', e.x + e.face * 150, e.y, 150, { w: 380, h: 60, dur: 0.6, col: '#ff3a6a', rot: r, grow: [0.4, 1.2] });
@@ -261,7 +261,7 @@ function paRaptureDo(p) {
 defSkill('pa_rapture', { name: '化魔', cls: 'priest', job: PA, lvReq: 15, lvFrom: 'p_rapture', maxLv: 1, hidden: true, mp: 0, cd: 8, type: 'mag', col: '#b04a6a', icon: 'p_rapture',
   desc: '复仇者的化魔：没有施放动作（其他技能施放中也能用）；第一次手动施放以后每 8 秒自动施放。每次：消耗 3% 最大 HP、回复 6% 最大 MP，恶魔能量 +65 以上，魔化持续 +7.3 秒、魔化冷却 −21 秒，必定触发幻听。',
   instant: (lv, p, extra) => { p._paAuto = 1; paRaptureDo(p); p.cool.p_rapture = p.cool.pa_rapture; sfx.charge();
-    if (!(p.st === 'act' && p.act && !p.act.basic)) p.doAct({ name: 'p_rapture', clip: 'rapture', dur: 0.25, noCounter: true }, { ...extra, skill: 'p_rapture' }); } });   // 站着施放时做一个很短的动作（队友那边的影子也能看到）；技能中施放没有动作
+    if (!(p.st === 'act' && p.act && !p.act.basic)) p.doAct({ name: 'p_rapture', clip: 'paPray', dur: 0.25, noCounter: true }, { ...extra, skill: 'p_rapture' }); } });   // 站着施放时做一个很短的动作（队友那边的影子也能看到）；技能中施放没有动作
 // 改形：复仇者按化魔键 = pa_rapture；魔化中空斩打键 = 恶魔之爪（S.morph 包一层；基础技能还没定义时跳过）
 function paMorph(id, to) { const S = SKILLS[id]; if (!S || S._paMorph) return; const m0 = S.morph; S._paMorph = true; S.morph = p => (paOn(p) && to(p)) || (m0 ? m0(p) : null); }
 function paPatchBase() { paMorph('p_rapture', () => 'pa_rapture'); paMorph('p_launcher', p => paDemon(p) ? 'pa_claw' : null); }

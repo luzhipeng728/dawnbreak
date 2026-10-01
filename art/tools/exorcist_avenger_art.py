@@ -9,14 +9,15 @@
   exorcist_avenger_art.py job <job> / jobprep <job>   转职立绘 → art/final/job/<转职>.webp
   exorcist_avenger_art.py parts <job> / partsprep <job>  驱魔：五只式神一张表；复仇者：恶魔翼 + 角 + 恶魔镰刀一张表 → art/final/fx/<pe|pa>_*.webp
   exorcist_avenger_art.py review             图标 / 插图 / 立绘 / 部件总览 → art/work/priest_jobs/<job>.jpg
-人物参考：男圣职者原装立绘（主仓库 art/src/priest_ref.png：蜂蜜金短发、蓝眼睛）；驱魔 = 道袍 + 符咒 / 念珠 + 战斧，复仇者 = 暗色重甲 + 镰刀（魔化时恶魔角 / 翼）。
+人物参考：男圣职者选角立绘 art/final/class/priest.webp（原图 art/src/priest_ref.png：蜂蜜金短发、蓝眼睛）；驱魔 = 道袍 + 符咒 / 念珠 + 战斧，复仇者 = 暗色重甲 + 镰刀（魔化时恶魔角 / 翼）。
 生图约定：同时最多 1 个请求（全队共用接口），429 退避 65 秒；已存在的输出跳过。纯绿 #00FF00 / 品红 #FF00FF 是流水线标记色，不能用。
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(__file__))
 import combatgen as C
 
-REF = os.path.join(C.SRC, 'priest_ref.png')
+# 人物参考：选角立绘 art/final/class/priest.webp（蜂蜜金发的原装设计）；这一版的插图 / 立绘是用它的原图 art/src/priest_ref.png（同一张设计图）出的
+REF = os.path.join(C.HERE, 'final', 'class', 'priest.webp') if os.path.exists(os.path.join(C.HERE, 'final', 'class', 'priest.webp')) else os.path.join(C.SRC, 'priest_ref.png')
 FACE = 'honey-blond short messy hair, calm blue eyes, the same young male priest face as the reference'
 LOOK = {
     'exorcist': ('a young male exorcist priest in cute chibi anime style: ' + FACE + ', a long crimson-red taoist-style exorcist robe with a white inner collar, wide sleeves and gold trim, '

@@ -41,12 +41,16 @@ bus.on('dungeonEnter', () => { const p = game.player; if (p && paOn(p)) p._paE =
 Object.assign(CLIPS.priest, {
   paSlash: HUMAN_CLIPS.atk2, paSlash2: HUMAN_CLIPS.atk3, paGrab: CLIPS.priest.grab, paStab: HUMAN_CLIPS.dash, paRoar: CLIPS.priest.rapture,
   paHunch: CLIPS.priest.rapture, paExecute: CLIPS.priest.throw, paDive: HUMAN_CLIPS.jatk, paCast: CLIPS.priest.cast,
+  paJab: CLIPS.priest.jab, paStraight: CLIPS.priest.straight, paUpper: CLIPS.priest.upper, paSmash: CLIPS.priest.thrust, paPray: CLIPS.priest.pray,
 });
 const PA_ANIMS = {
   paSlash: paTl([['pa_slash1', 0], ['pa_slash2', 0.08]], [['idle', 0]]), paSlash2: paTl([['pa_slash1', 0], ['pa_slash2', 0.12]], [['idle', 0]]),
   paGrab: paTl([['pa_grab', 0]], [['idle', 0]]), paStab: paTl([['pa_stab', 0]], [['run3', 0]]), paRoar: paTl([['pa_roar', 0]], [['charge', 0]]),
   paHunch: paTl([['pa_hunch', 0]], [['charge', 0]]), paExecute: paTl([['pa_execute', 0]], [['idle', 0]]), paDive: paTl([['pa_dive', 0]], [['jump3', 0]]),
   paCast: paTl([['pa_grab', 0]], [['charge', 0]]),
+  // 拳 / 上勾 / 砸地 / 祈祷：用原装的基础技能帧（docs/PRIEST_ART.md §7.3）
+  paJab: paTl([['p_jab1', 0], ['p_jab2', 0.05]], [['idle', 0]]), paStraight: paTl([['p_jab1', 0], ['p_jabEnd', 0.05]], [['idle', 0]]),
+  paUpper: paTl([['p_hookDash', 0], ['p_hook', 0.06]], [['idle', 0]]), paSmash: paTl([['p_hand1', 0], ['p_hand2', 0.08]], [['jump5', 0]]), paPray: paTl([['p_pray1', 0]], [['charge', 0]]),
 };
 
 /* ---- 特效构件 ---- */
@@ -145,9 +149,9 @@ function paDrawGauge(c) {
 /* ---- 普攻：人形（恶魔之力：2 拳 + 2 镰，第 3、4 段有最下段 / 对空判定，身后也打得到）/ 半魔化 / 魔化（爪 4 段 × 2 下，范围很大）---- */
 const paGainHit = v => (a, t) => { if (a.fighter) paGain(a, v); };
 const PA_ACTS_HUMAN = {
-  atk1: { name: 'atk1', clip: 'jab', dur: 0.32, basic: true, speed: 'aspd', type: 'mag', chain: [0.12, 0.32], next: 'atk2', move: [[0.02, 0.08, 80]],
+  atk1: { name: 'atk1', clip: 'paJab', dur: 0.32, basic: true, speed: 'aspd', type: 'mag', chain: [0.12, 0.32], next: 'atk2', move: [[0.02, 0.08, 80]],
     hits: [HB(0.05, 0.11, [0, 105, 36, 30, 115], 0.8, { type: 'mag', stun: 0.3, knock: 30, hs: 0.05, snd: 'blunt', onHit: paGainHit(4) })], events: [evAt(0.04, e => pPunch(e, 70))] },
-  atk2: { name: 'atk2', clip: 'straight', dur: 0.34, basic: true, speed: 'aspd', type: 'mag', chain: [0.13, 0.34], next: 'atk3', move: [[0.02, 0.08, 80]],
+  atk2: { name: 'atk2', clip: 'paStraight', dur: 0.34, basic: true, speed: 'aspd', type: 'mag', chain: [0.13, 0.34], next: 'atk3', move: [[0.02, 0.08, 80]],
     hits: [HB(0.06, 0.12, [0, 110, 36, 30, 115], 0.9, { type: 'mag', stun: 0.32, knock: 40, hs: 0.05, snd: 'blunt', onHit: paGainHit(4) })], events: [evAt(0.05, e => pPunch(e, 90, true))] },
   atk3: { name: 'atk3', clip: 'paSlash', dur: 0.42, basic: true, speed: 'aspd', type: 'mag', chain: [0.18, 0.42], next: 'atk4', move: [[0.02, 0.1, 90]],
     hits: [HB(0.1, 0.18, [0, 145, 42, -10, 175], 1.2, { type: 'mag', launch: 380, knock: 20, hs: 0.06, downHit: true, snd: 'slash', col: '#d0a0ff', onHit: paGainHit(4) }),
@@ -167,11 +171,11 @@ const PA_ACTS_HUMAN = {
 // 半魔化：1、2 段一下两记勾拳（各半伤），3 段上勾，4 段下砸；跳攻可以连续
 const paHook = (t0, dmg, o = {}) => HB(t0, t0 + 0.05, [0, 115, 40, 20, 125], dmg, { type: 'mag', stun: 0.32, knock: 30, hs: 0.04, snd: 'blunt', col: '#c080ff', ...o });
 const PA_ACTS_HALF = { ...PA_ACTS_HUMAN,
-  atk1: { name: 'atk1', clip: 'jab', dur: 0.34, basic: true, speed: 'aspd', type: 'mag', chain: [0.14, 0.34], next: 'atk2', move: [[0.02, 0.08, 90]], hits: [paHook(0.04, 0.45), paHook(0.12, 0.45)],
+  atk1: { name: 'atk1', clip: 'paJab', dur: 0.34, basic: true, speed: 'aspd', type: 'mag', chain: [0.14, 0.34], next: 'atk2', move: [[0.02, 0.08, 90]], hits: [paHook(0.04, 0.45), paHook(0.12, 0.45)],
     events: [evAt(0.04, e => paClawFx(e.x + e.face * 70, e.y, e.z + 70, e.face, 0.7)), evAt(0.12, e => paClawFx(e.x + e.face * 80, e.y, e.z + 60, e.face, 0.7))] },
-  atk2: { name: 'atk2', clip: 'straight', dur: 0.34, basic: true, speed: 'aspd', type: 'mag', chain: [0.14, 0.34], next: 'atk3', move: [[0.02, 0.08, 90]], hits: [paHook(0.04, 0.5), paHook(0.12, 0.5)],
+  atk2: { name: 'atk2', clip: 'paStraight', dur: 0.34, basic: true, speed: 'aspd', type: 'mag', chain: [0.14, 0.34], next: 'atk3', move: [[0.02, 0.08, 90]], hits: [paHook(0.04, 0.5), paHook(0.12, 0.5)],
     events: [evAt(0.04, e => paClawFx(e.x + e.face * 70, e.y, e.z + 70, -e.face, 0.7)), evAt(0.12, e => paClawFx(e.x + e.face * 80, e.y, e.z + 60, e.face, 0.7))] },
-  atk3: { name: 'atk3', clip: 'upper', dur: 0.4, basic: true, speed: 'aspd', type: 'mag', chain: [0.16, 0.4], next: 'atk4', move: [[0.02, 0.08, 90]], hits: [paHook(0.07, 1.3, { launch: 480, box: [0, 125, 42, 0, 160] })],
+  atk3: { name: 'atk3', clip: 'paUpper', dur: 0.4, basic: true, speed: 'aspd', type: 'mag', chain: [0.16, 0.4], next: 'atk4', move: [[0.02, 0.08, 90]], hits: [paHook(0.07, 1.3, { launch: 480, box: [0, 125, 42, 0, 160] })],
     events: [evAt(0.07, e => paClawFx(e.x + e.face * 70, e.y, e.z + 80, e.face, 1))] },
   atk4: { name: 'atk4', clip: 'paSlash2', dur: 0.52, basic: true, speed: 'aspd', type: 'mag', move: [[0.04, 0.12, 110]], hits: [paHook(0.14, 1.8, { down: true, knock: 160, hs: 0.09, big: 1.4, box: [0, 135, 44, -10, 170] })],
     events: [evAt(0.14, e => { paClawFx(e.x + e.face * 80, e.y, e.z + 60, e.face, 1.3); fxShock(e.x + e.face * 80, e.y, 140, PA_COL.dark); })] },
@@ -185,7 +189,7 @@ const PA_ACTS_DEMON = {
     hits: [paDClaw(0.06, 0.5, { airLift: 120 }), paDClaw(0.14, 0.5, { airLift: 120 })], events: [paDFx(0.06, 1.2), paDFx(0.14, 1.2, true)] },
   atk2: { name: 'atk2', clip: 'paSlash2', dur: 0.42, basic: true, speed: 'aspd', type: 'mag', chain: [0.17, 0.42], next: 'atk3',
     hits: [paDClaw(0.06, 0.75, { launch: 300 }), paDClaw(0.15, 0.75, { airLift: 160 })], events: [paDFx(0.06, 1.3), paDFx(0.15, 1.3, true)] },
-  atk3: { name: 'atk3', clip: 'upper', dur: 0.48, basic: true, speed: 'aspd', type: 'mag', chain: [0.2, 0.48], next: 'atk4',
+  atk3: { name: 'atk3', clip: 'paUpper', dur: 0.48, basic: true, speed: 'aspd', type: 'mag', chain: [0.2, 0.48], next: 'atk4',
     hits: [paDClaw(0.08, 1.56, { launch: 420 }), paDClaw(0.17, 1.56, { knock: 420, launch: 360, big: 1.5 })], events: [paDFx(0.08, 1.5, false, 90), paDFx(0.17, 1.6, true, 90)] },
   atk4: { name: 'atk4', clip: 'paSlash2', dur: 0.6, basic: true, speed: 'aspd', type: 'mag',
     hits: [paDClaw(0.12, 1.72, { stun: 0.6 }), paDClaw(0.22, 1.72, { down: true, knock: 140, hs: 0.1, shake: 4, big: 1.7 })],
@@ -326,7 +330,7 @@ defSkill('pa_mine', { name: '裂地锤', cls: 'priest', job: PA, lvReq: 16, mp: 
   act: (lv, p) => { const D = paDemon(p), T = skillDmg(2.6, 0.26, lv), R3 = D && skLv(p, 'pa_righteous');
     const pillar = (e, x, y, d, big, dark) => { fxSpr('rock', x, y, 30, { w: big ? 60 : 44, h: big ? 150 : 110, dur: 0.5, add: false, grow: [0.3, 1], ay: 1 }); if (dark) fxSpr('aura', x, y, 0, { h: big ? 200 : 150, w: 70, ay: 1, dur: 0.4, col: PA_COL.dark, grow: [0.3, 1] });
       fxDust(x, y, 4, 16); sfx.hit('blunt', false); areaHit(e, x, y, big ? 62 : 48, 0, { dmg: d, type: 'mag', launch: 260, knock: 70, hs: 0.04, downHit: true, snd: 'blunt', col: '#d0b0ff' }, { zMax: 150 }); };
-    return { name: 'pa_mine', clip: 'thrust', dur: D ? 0.75 : 0.5, noCounter: true, type: 'mag',
+    return { name: 'pa_mine', clip: 'paSmash', dur: D ? 0.75 : 0.5, noCounter: true, type: 'mag',
       events: [evAt(0.08, e => { cam.shake = Math.max(cam.shake, 3); fxDust(e.x + e.face * 30, e.y, 5, 10); }),
         ...(D ? [0, 1, 2, 3].map(i => evAt(R3 ? 0.14 : 0.12 + i * 0.07, e => { const d = T / 8 * 1.6, xs = R3 ? [[0, 0], [0, -1], [0, 1]] : [[0, 0]];
             for (const [, dy] of xs) { const x = e.x + e.face * (80 + i * 75), y = e.y + dy * (40 + i * 18); pillar(e, x, y, d, true, true); game.after(0.18, () => { if (e.dead) return; paBoom(x, y, 40, 120); areaHit(e, x, y, 70, 0, { dmg: d, type: 'mag', launch: 300, knock: 90, hs: 0.04, downHit: true, snd: 'blunt', col: '#d0b0ff' }, { zMax: 170 }); }); } }))
@@ -424,7 +428,7 @@ defSkill('pa_authority', { name: '黑暗权能', cls: 'priest', job: PA, lvReq: 
   desc: '（2023 重做）一拳砸地放出暗黑冲击波（打中的敌人强制硬直）→ 横斩一记，在空中画出逆十字 → 沿着斩痕爆炸（解除硬直）。三段的范围各不相同，要贴近了放。按住技能键额外消耗 60 恶魔能量，爆炸伤害 +11%。魔化：手背长出刃爪，旋身抓挠后爆炸，攻击力 +35%、范围更大。',
   pow: lv => skillDmg(12, 1.2, lv), infoExtra: () => [['三段', '冲击波 25% / 横斩 30% / 爆炸 45%'], ['按住', '−60 能量，爆炸 +11%']], ai: { kind: 'aoe', r: [0, 200], dy: 70 },
   act: (lv, p) => { const T = skillDmg(12, 1.2, lv) * paDmg(p, 'pa_authority'), D = paDemon(p), s = D ? 1.3 : 1;
-    return { name: 'pa_authority', clip: 'thrust', dur: 1.2, noCounter: true, superArmor: true, type: 'mag',
+    return { name: 'pa_authority', clip: 'paSmash', dur: 1.2, noCounter: true, superArmor: true, type: 'mag',
       events: [evAt(0.12, e => { const x = e.x + e.face * 60; cam.shake = Math.max(cam.shake, 5); sfx.boom(0.6); fxShock(x, e.y, 240 * s, PA_COL.dark); fxDust(x, e.y, 5, 16);
           blast(e, x, e.y, 150 * s, { dmg: T * 0.25, type: 'mag', stun: 0.6, knock: 0, hs: 0.05, downHit: true, snd: 'blunt', col: '#d0a0ff', onHit: (a, t) => addStatus(t, 'hold', 1.2, { src: a }) }, { zMax: 120 }); }),
         evAt(0.42, e => { e.play(D ? 'paSlash2' : 'paSlash', true); sfx.swing(true); if (D) { paClawFx(e.x + e.face * 90, e.y, 70, e.face, 1.8); paClawFx(e.x + e.face * 90, e.y, 70, -e.face, 1.8); }

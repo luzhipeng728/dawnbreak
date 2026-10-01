@@ -25,12 +25,17 @@ const peLvl = p => (p && (p.kit ? p.lvl : game.lvl)) || game.lvl || 1;
 Object.assign(CLIPS.priest, {
   peSummon: CLIPS.priest.pray, peSeal: CLIPS.priest.cast, peThrow: CLIPS.priest.throw, peCharge: CLIPS.priest.rapture,
   peSpin: CLIPS.sword.spin, peSweep: HUMAN_CLIPS.atk2, pePlant: CLIPS.sword.a3slam, peThrust: HUMAN_CLIPS.dash, peSwing: HUMAN_CLIPS.atk3, peLeap: CLIPS.priest.leap,
+  peA1: HUMAN_CLIPS.atk1, peA2: HUMAN_CLIPS.atk2, peA3: HUMAN_CLIPS.atk3, peDash: HUMAN_CLIPS.dash, peJatk: HUMAN_CLIPS.jatk, peGrab: CLIPS.priest.grab,
 });
 const PE_ANIMS = {
   peSummon: peTl([['pe_summon', 0]], [['charge', 0]]), peSeal: peTl([['pe_seal', 0]], [['charge', 0]]), peThrow: peTl([['pe_throw', 0]], [['idle', 0]]),
   peCharge: peTl([['pe_charge', 0]], [['charge', 0]]), peSpin: peTl([['pe_spin', 0]], [['idle', 0]]), peSweep: peTl([['pe_sweep', 0]], [['idle', 0]]),
   pePlant: peTl([['pe_plant', 0]], [['jump5', 0]]), peThrust: peTl([['pe_thrust', 0]], [['run3', 0]]), peSwing: peTl([['pe_charge', 0], ['pe_plant', 0.14]], [['charge', 0], ['jump5', 0.14]]),
   peLeap: peTl([['pe_charge', 0]], [['jump2', 0]]),
+  // 驱魔震慑的战斧普攻 / 星落打的抓取：用原装的普攻 / 基础技能帧（docs/PRIEST_ART.md §7.2 / 7.3）
+  peA1: peTl([['a1_1', 0], ['a1_2', 0.05], ['a1_3', 0.12]], [['idle', 0]]), peA2: peTl([['a2_1', 0], ['a2_2', 0.05], ['a2_3', 0.14]], [['idle', 0]]),
+  peA3: peTl([['a3_1', 0], ['a3_2', 0.2]], [['idle', 0]]), peDash: peTl([['dash1', 0], ['dash2', 0.06]], [['run3', 0]]), peJatk: peTl([['jatk1', 0], ['jatk2', 0.06]], [['jump2', 0]]),
+  peGrab: peTl([['p_grab', 0], ['p_tiger', 0.3]], [['idle', 0]]),
 };
 
 /* ---- 特效构件 ---- */
@@ -91,23 +96,23 @@ pePatchBase();
 /* ---- 普攻：驱魔震慑（战斧 3 段 + 跑攻 + 跳攻；每一下出招前短霸体、把敌人往身前带；第 3 段可以蓄力）---- */
 const peGather = (dx = 90, k = 0.35) => (a, t) => pePull(t, a.x + a.face * dx, a.y, k);
 const PE_ACTS = {
-  atk1: { name: 'atk1', dur: 0.4, basic: true, speed: 'aspd', chain: [0.16, 0.4], next: 'atk2', superArmor: [0, 0.12], move: [[0.02, 0.1, 110]],
+  atk1: { name: 'atk1', clip: 'peA1', dur: 0.4, basic: true, speed: 'aspd', chain: [0.16, 0.4], next: 'atk2', superArmor: [0, 0.12], move: [[0.02, 0.1, 110]],
     hits: [HB(0.1, 0.17, [0, 150, 46, 20, 125], 1.05, { stun: 0.34, knock: 20, hs: 0.06, snd: 'blunt', onHit: peGather() })],
     events: [slashAt(0.09, { a0: -0.4, a1: 0.9, r: 110, w: 24, off: [16, 60], col: PE_COL.axe, heavy: true })] },
-  atk2: { name: 'atk2', dur: 0.42, basic: true, speed: 'aspd', chain: [0.17, 0.42], next: 'atk3', superArmor: [0, 0.12], move: [[0.02, 0.08, 80]],
+  atk2: { name: 'atk2', clip: 'peA2', dur: 0.42, basic: true, speed: 'aspd', chain: [0.17, 0.42], next: 'atk3', superArmor: [0, 0.12], move: [[0.02, 0.08, 80]],
     hits: [HB(0.1, 0.18, [0, 150, 46, 0, 110], 1.15, { launch: 430, knock: 10, hs: 0.06, snd: 'blunt', onHit: peGather(80) })],
     events: [slashAt(0.09, { a0: 1.3, a1: -1.4, r: 112, w: 24, off: [16, 44], col: PE_COL.axe, heavy: true })] },
   // 过顶重砸：按住 X 蓄力（最多 0.8 秒，伤害 +50%），砸地出冲击波
-  atk3: { name: 'atk3', dur: 0.6, basic: true, speed: 'aspd', key: 'attack', superArmor: [0, 0.26], move: [[0.04, 0.14, 120]],
+  atk3: { name: 'atk3', clip: 'peA3', dur: 0.6, basic: true, speed: 'aspd', key: 'attack', superArmor: [0, 0.26], move: [[0.04, 0.14, 120]],
     charge: { at: 0.1, max: 0.8, min: 0, dmg: 0.5, update: e => { if (Math.random() < 0.35) fxCharge(e, PE_COL.fire, 1); } },
     hits: [HB(0.2, 0.27, [0, 150, 48, 0, 140], 1.4, { stun: 0.55, knock: 60, hs: 0.09, shake: 3, heavy: true, big: 1.3, snd: 'blunt', onHit: peGather(100, 0.5) })],
     events: [slashAt(0.18, { a0: -2.6, a1: 1.1, r: 120, w: 28, off: [14, 64], col: PE_COL.axe, heavy: true, squash: 0.85 }),
       evAt(0.24, e => { const x = e.x + e.face * 110, k = (e.act && e.act.chargeK) || 0; peSlamFx(x, e.y, 150 + 60 * k, PE_COL.fire, 0.8 + k);
         blast(e, x, e.y, 120 + 50 * k, { dmg: 0.6 * (1 + k * 0.5), knock: 110, launch: 260, hs: 0.05, downHit: true, snd: 'blunt' }, { zMax: 90 }); })] },
-  dash: { name: 'dash', dur: 0.5, basic: true, speed: 'aspd', move: [[0, 0.28, 420]], noCounter: true, superArmor: [0, 0.2],
+  dash: { name: 'dash', clip: 'peDash', dur: 0.5, basic: true, speed: 'aspd', move: [[0, 0.28, 420]], noCounter: true, superArmor: [0, 0.2],
     hits: [HB(0.06, 0.28, [0, 130, 44, 10, 120], 1.35, { stun: 0.6, knock: 90, hs: 0.07, shake: 2, snd: 'blunt', onHit: peGather(110, 0.25) })],
     events: [evAt(0.03, e => { fxStreak({ x: e.x - e.face * 10, y: e.y, z: e.z + 58, face: e.face, len: 120, w: 16, col: PE_COL.axe, dur: 0.22 }); fxDust(e.x - e.face * 12, e.y, 3, 8); sfx.swing(true); })] },
-  jatk: { name: 'jatk', dur: 0.38, basic: true, speed: 'aspd', airOnly: true, lowGrav: 0.75,
+  jatk: { name: 'jatk', clip: 'peJatk', dur: 0.38, basic: true, speed: 'aspd', airOnly: true, lowGrav: 0.75,
     hits: [HB(0.07, 0.2, [0, 125, 44, -50, 90], 1.1, { stun: 0.36, knock: 40, hs: 0.05, airLift: 150, snd: 'blunt' })],
     events: [slashAt(0.06, { a0: -1.7, a1: 1.4, r: 100, w: 22, off: [10, 40], col: PE_COL.axe, heavy: true })] },
 };
@@ -178,7 +183,7 @@ defSkill('pe_star', { name: '星落打', cls: 'priest', job: PE, lvReq: 17, mp: 
   desc: '抓住身前的一个敌人（霸体的也能抓；抓不动的领主原地挨打），小跳一下把周围的敌人吸过来，再抡圆了巨兵把他扔出去，砸到身边的敌人。按住技能键 = 扔得更高；方向键：不按 = 砸进前方地面、按 → = 平着扔远、按 ↑ = 斜着扔高。抓住以后全程无敌。可以在普攻中、落凤锤砸地后施放。需要空斩打 Lv1。',
   pow: lv => skillDmg(5.6, 0.56, lv), infoExtra: () => [['抓取', '1 个（能抓霸体）'], ['无敌', '抓住以后']], ai: { kind: 'grab', r: [0, 120], dy: 30 },
   act: (lv, p) => { const T = skillDmg(5.6, 0.56, lv);
-    return { name: 'pe_star', clip: 'grab', dur: 0.5, noCounter: true,
+    return { name: 'pe_star', clip: 'peGrab', dur: 0.5, noCounter: true,
       hits: [HB(0.06, 0.2, [0, 125, 42, 0, 130], T * 0.1, { grab: true, grabInvul: true, stun: 0.5, knock: 20, hs: 0.05, snd: 'blunt',
         onGrabFail: (a, t) => { if (!a.act || a.act.skill !== 'pe_star' || a.act.fail) return; a.act.fail = t; a.act.dur = a.actT + 0.7; } })],
       onGrab: (e, t) => { const a = e.act; if (a.gT !== undefined) return; a.gT = e.actT; a.dur = e.actT + 1.0; t.heldClip = 'hit2'; e.vz = 260; e.z = Math.max(e.z, 1); e.play('peCharge', true); sfx.swing(false); },

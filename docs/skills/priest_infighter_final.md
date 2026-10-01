@@ -14,6 +14,7 @@ docs/SKILLS_OFFICIAL_priest.md 的蓝拳一节是旧版技能表，这次以 N /
 | 俯冲 / 摆动派生 | 俯冲中 X / ↑X / ↓X = 直拳 / 翔拳 / 腹拳；摆动中 X = 破碎之锤；技巧精通后交叉可用；俯冲和摆动互相取消（N / D） | `links` + `onInput`；直接从技能栏放派生技能时先自动小冲 / 小撤一步（本作方便，写在规格 why 里） | 一致 |
 | 觉醒自动学会 | 一 / 二 / 三觉完成任务时自动获得、0 SP、等级随角色等级；干涸之泉一觉时给 Lv1（D） | `PI_AUTO`：泯灭神击、干涸之泉 Lv1、制裁：怒火疾风、正义执行 0 SP 自动学会并进技能栏（测试覆盖） | 一致 |
 | 觉醒取消 | 觉醒技可以从任何技能切入 | `awkcancel` 30 个技能全部切入，挡住 0 | 一致 |
+| 动作帧 | — | `PI_ANIMS` 直接用 P-art 的真帧（docs/PRIEST_ART.md §7.4 的 pm_ 前缀：pm_duck / pm_sway / pm_jab / pm_straight / pm_upper / pm_rush1~2 / pm_counter + 基础帧 p_hookDash / p_slamUp / p_slamDown / p_pray1~2；技能 id 用 pi_、帧名用 pm_ 不冲突）；插着巨兵时手里的十字架不画（矢量模型藏部件，精灵模型包外观层的 weapon） | — |
 | 插图 | 三个觉醒技都有插图 | `art/final/cutin/monk{,2,3}.webp`（轻装 + 拳带 / 拳头十字，金发圣职者脸）；转职立绘 `art/final/job/monk.webp` | 一致 |
 
 ## 技能

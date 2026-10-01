@@ -15,6 +15,7 @@ docs/SKILLS_OFFICIAL_priest.md 的圣骑士一节是上一个代理的调研：�
 | 独立攻击 | 圣骑士的攻击技能算独立攻击（N） | `PRIEST_HOOKS.mod` 对圣骑士把 type 改成 `indep` | 一致 |
 | 觉醒自动学会 | 一 / 二 / 三觉完成任务时自动获得觉醒技、0 SP、等级随角色等级（D） | `PC_AUTO`：完成觉醒 flag 后 0 SP 自动学会并放进技能栏；战斗路线下信仰之翼学会但不占栏（放不出），惩罚进栏；三觉技能等级随角色等级；一键加点也会学（测试 W） | 一致 |
 | 觉醒取消 | 觉醒技可以从任何技能切入 | 引擎保证；`awkcancel` 23 个技能切入 22（天怒在空中不切），挡住 0 | 一致 |
+| 动作帧 | — | `PC_ANIMS` 直接用 P-art 的真帧（docs/PRIEST_ART.md §7.4：pc_raise / pc_heal / pc_wall / pc_spear1~2 / pc_hammer1~2 / pc_judge + 基础帧 p_pray1~2 / p_focus / dash1~2 / p_up1~2 / p_slamUp / p_slamDown），全部在 `SPR_DATA.priest`；`CLIPS.priest.pc*` 只给矢量模型 | — |
 | 插图 | 三个觉醒技都有插图 | `art/final/cutin/crusader{,2,3}.webp`（重甲 + 盾 / 十字，金发圣职者脸），`cutinWho(e, tier)` 取图；转职立绘 `art/final/job/crusader.webp` | 一致 |
 
 ## 技能

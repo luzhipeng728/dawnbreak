@@ -6,7 +6,7 @@
    - 守护路线（纯辅助）：守护徽章 / 荣誉祝福 / 圣光守护 / 生命源泉（免死复活）/ 圣愈之风 / 快速愈合 / 灵魂牺牲 / 冥想 / 信念光环 / 神圣洗礼；
      队伍效果走 net/party_sync.js：partyCast('buff' | 'shield' | 'heal' | 'cleanse')，单体用 d.to；单刷时守护恩赐给独立攻击力 + 冷却缩减（官方单刷专用效果）
    攻击技能大多是光属性独立攻击（官方「마법 독립 공격」）；基础技能（空斩打 / 虎袭 / 直拳冲击……）在圣骑士下也按独立攻击算（PRIEST_HOOKS.mod）
-   动作：矢量占位用下面的 CLIPS.priest.pc*；精灵帧（P-art 的 pc_raise / pc_heal / pc_wall / pc_spear1~2 / pc_hammer1~2 / pc_judge）出了自动换（pcTl）
+   动作：精灵帧用 P-art 的 pc_raise / pc_heal / pc_wall / pc_spear1~2 / pc_hammer1~2 / pc_judge + 基础帧（docs/PRIEST_ART.md §7，PC_ANIMS）；CLIPS.priest.pc* 是矢量模型用的同名片段
    ===================================================================== */
 const PCJ = 'crusader';
 const PC_COL = { holy: '#ffe38a', light: '#fff4c0', white: '#fffaf0', blue: '#9fd8ff', heal: '#8ff0b0', gold: '#ffd24a', bolt: '#fff38a', guard: '#a8d8ff' };
@@ -22,7 +22,6 @@ function pcGuard(p) {
 const pcBattle = p => pcOn(p) && !pcGuard(p);
 const pcNeedGuard = p => pcGuard(p) || '需要开启守护恩赐（守护路线）';
 const pcNeedBattle = p => !pcGuard(p) || '守护路线下不能用（勇气恩赐专用）';
-const pcTl = (tl, fb) => typeof SPR_DATA !== 'undefined' && SPR_DATA.priest && SPR_DATA.priest.frames && SPR_DATA.priest.frames[tl[0][0]] ? tl : fb;
 const pcPad = p => p.pad || { dx: () => 0, dy: () => 0, is: () => false, buffered: () => false, consume: () => {} };
 const pcMovable = t => !t.boss && !(hasSA(t) && t.st !== 'hit' && t.st !== 'air');
 
@@ -60,22 +59,13 @@ Object.assign(CLIPS.priest, {
   pcSlam: { dur: 0.5, keys: [k(0, POSE.jAtkW, 'hold'), k(0.08, POSE.fQuake, 'out'), k(0.5, POSE.fQuake)] },
   pcFloat: { dur: 0.6, keys: [k(0, P(POSE.pcRaise, { g: 0 }))] },
 });
-// 精灵帧（P-art docs/PRIEST_ART.md §7.3 / 7.4）：有帧就用，没有退回通用帧
+// 精灵帧（P-art docs/PRIEST_ART.md §7.3 / 7.4，帧已全部在 SPR_DATA.priest）
 const PC_ANIMS = {
-  pcRaise: pcTl([['pc_raise', 0]], pcTl([['p_pray1', 0], ['p_pray2', 0.15]], [['charge', 0]])),
-  pcHeal: pcTl([['pc_heal', 0]], pcTl([['p_bless', 0]], [['charge', 0]])),
-  pcWall: pcTl([['pc_wall', 0]], pcTl([['p_guard', 0]], [['idle', 0]])),
-  pcThrow: pcTl([['pc_spear1', 0], ['pc_spear2', 0.12]], [['idle', 0]]),
-  pcAim: pcTl([['pc_spear1', 0]], [['charge', 0]]),
-  pcHammer: pcTl([['pc_hammer1', 0], ['pc_hammer2', 0.18]], pcTl([['a3_1', 0], ['a3_2', 0.18]], [['idle', 0]])),
-  pcKneel: pcTl([['pc_judge', 0]], [['tech', 0]]),
-  pcPray: pcTl([['p_pray1', 0], ['p_pray2', 0.15]], [['charge', 0]]),
-  pcCast: pcTl([['p_focus', 0]], [['charge', 0]]),
-  pcDash: pcTl([['dash1', 0], ['dash2', 0.06]], [['run3', 0]]),
-  pcUpper: pcTl([['p_up1', 0], ['p_up2', 0.08]], [['idle', 0]]),
-  pcLeap: pcTl([['p_slamUp', 0]], [['jump2', 0]]),
-  pcSlam: pcTl([['p_slamDown', 0]], [['jump5', 0]]),
-  pcFloat: pcTl([['pc_raise', 0]], [['jump2', 0]]),
+  pcRaise: [['pc_raise', 0]], pcHeal: [['pc_heal', 0]], pcWall: [['pc_wall', 0]],
+  pcThrow: [['pc_spear1', 0], ['pc_spear2', 0.12]], pcAim: [['pc_spear1', 0]],
+  pcHammer: [['pc_hammer1', 0], ['pc_hammer2', 0.18]], pcKneel: [['pc_judge', 0]],
+  pcPray: [['p_pray1', 0], ['p_pray2', 0.15]], pcCast: [['p_focus', 0]], pcDash: [['dash1', 0], ['dash2', 0.06]],
+  pcUpper: [['p_up1', 0], ['p_up2', 0.08]], pcLeap: [['p_slamUp', 0]], pcSlam: [['p_slamDown', 0]], pcFloat: [['pc_raise', 0]],
 };
 
 /* ---- 特效构件（复用 art/final/fx，运行时染色） ---- */

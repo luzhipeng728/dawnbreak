@@ -6,12 +6,11 @@
      插着巨兵时普攻变成拳击 4 连（刺拳 → 刺拳 → 直拳 → 上勾拳）+ 跑攻上段钩拳；除神圣反击外的转职技能都要先插巨兵；空斩打 / 落凤锤插着巨兵时不能用
    - 俯冲（Z）/ 摆动（↓↓+C）：0.25 秒无敌的前冲 / 后撤，互相取消；俯冲中 X / ↑X / ↓X = 俯冲直拳 / 翔拳 / 腹拳，摆动中 X = 破碎之锤（技巧精通后互通）
    - 神圣反击：祈祷架势中正面挨打 → 受到的伤害 −90%，冲上去一记腹拳反击；幻影化身：影子分身追加打击；干涸之泉（一觉）：神击技能之间互相取消（3.5 秒一次）
-   动作：矢量占位用 CLIPS.priest.pi*；精灵帧（P-art 的 pm_duck / pm_sway / pm_jab / pm_straight / pm_upper / pm_rush1~2 / pm_counter）出了自动换（piTl）
+   动作：精灵帧用 P-art 的 pm_duck / pm_sway / pm_jab / pm_straight / pm_upper / pm_rush1~2 / pm_counter + 基础帧（docs/PRIEST_ART.md §7，PI_ANIMS）；CLIPS.priest.pi* 是矢量模型用的同名片段
    ===================================================================== */
 const PIJ = 'monk';
 const PI_COL = { fist: '#9fd8ff', hot: '#cfeaff', holy: '#ffe38a', gold: '#ffd24a', shadow: '#5a5a9a', nuke: '#ffa04a' };
 const piOn = p => !!p && p.cls === 'priest' && jobOf(p) === PIJ;
-const piTl = (tl, fb) => typeof SPR_DATA !== 'undefined' && SPR_DATA.priest && SPR_DATA.priest.frames && SPR_DATA.priest.frames[tl[0][0]] ? tl : fb;
 const piPad = p => p.pad || { dx: () => 0, dy: () => 0, is: () => false, buffered: () => false, consume: () => {} };
 const piMovable = t => !t.boss && !(hasSA(t) && t.st !== 'hit' && t.st !== 'air');
 const piScene = () => game.scene === 'dungeon' || game.scene === 'test';
@@ -45,10 +44,12 @@ function piWillFx(p) {
       c.strokeStyle = '#d4b45e'; c.lineWidth = 2; c.strokeRect(-26, -84, 52, 12); c.strokeRect(-9, -122, 18, 60);
       c.fillStyle = '#3a7ae0'; c.beginPath(); c.moveTo(0, -86); c.lineTo(6, -78); c.lineTo(0, -70); c.lineTo(-6, -78); c.closePath(); c.fill(); c.restore(); } });
 }
-// 巨兵插在地上时，矢量占位模型手里的十字架不画（精灵外观层的隐藏由外观接入，看 p.piWill）
+// 巨兵插在地上时手里的十字架不画：矢量模型藏掉手上的部件，精灵模型包一层外观层（models/avatar.js）的 weapon
 function piHideHandCross(p) {
-  const m = p.model; if (!m || !m.parts || m._piHide) return; m._piHide = true;
-  for (const part of m.parts) if (part.bone === 'wF' && part.z === 17 && part.when) { const w0 = part.when; part.when = () => w0() && !(piOn(p) && piWillOn(p)); }
+  const m = p.model; if (!m || m._piHide) return; m._piHide = true;
+  const off = () => piOn(p) && piWillOn(p);
+  if (m.parts) for (const part of m.parts) if (part.bone === 'wF' && part.z === 17 && part.when) { const w0 = part.when; part.when = () => w0() && !off(); }
+  const av = m.av; if (av && av.weapon) { const w0 = av.weapon; av.weapon = function (...a) { if (!off()) return w0.apply(this, a); }; }
 }
 
 /* ---- 矢量占位的姿势 / 片段（格斗家的拳姿势） ---- */
@@ -73,21 +74,10 @@ Object.assign(CLIPS.priest, {
   piSlam: { dur: 0.45, keys: [k(0, POSE.jAtkW, 'hold'), k(0.08, POSE.fQuake, 'out'), k(0.45, POSE.fQuake)] },
 });
 const PI_ANIMS = {
-  piJab: piTl([['pm_jab', 0]], piTl([['p_jab1', 0], ['p_jab2', 0.05]], [['idle', 0]])),
-  piStraight: piTl([['pm_straight', 0]], piTl([['p_jab1', 0], ['p_jabEnd', 0.05]], [['idle', 0]])),
-  piUpper: piTl([['pm_upper', 0]], piTl([['p_hookDash', 0], ['p_hook', 0.06]], [['idle', 0]])),
-  piHook: piTl([['p_hookDash', 0], ['pm_straight', 0.1]], [['run3', 0]]),
-  piDuck: piTl([['pm_duck', 0]], [['tech', 0]]),
-  piSway: piTl([['pm_sway', 0]], [['jump4', 0]]),
-  piBody: piTl([['pm_duck', 0], ['pm_jab', 0.06]], [['tech', 0]]),
-  piCounter: piTl([['pm_counter', 0]], piTl([['p_pray1', 0]], [['charge', 0]])),
-  piChop: piTl([['p_slamUp', 0], ['p_slamDown', 0.12]], [['idle', 0]]),
-  piRush: piTl([['pm_rush1', 0]], null) ? { fps: 16, frames: ['pm_rush1', 'pm_rush2'] } : [['idle', 0]],
-  piSpin: piTl([['pm_straight', 0]], [['idle', 0]]),
-  piPlant: piTl([['p_slamDown', 0]], [['jump5', 0]]),
-  piPray: piTl([['p_pray1', 0], ['p_pray2', 0.15]], [['charge', 0]]),
-  piLeap: piTl([['p_slamUp', 0]], [['jump2', 0]]),
-  piSlam: piTl([['p_slamDown', 0]], [['jump5', 0]]),
+  piJab: [['pm_jab', 0]], piStraight: [['pm_straight', 0]], piUpper: [['pm_upper', 0]], piHook: [['p_hookDash', 0], ['pm_straight', 0.1]],
+  piDuck: [['pm_duck', 0]], piSway: [['pm_sway', 0]], piBody: [['pm_duck', 0], ['pm_jab', 0.06]], piCounter: [['pm_counter', 0]],
+  piChop: [['p_slamUp', 0], ['p_slamDown', 0.12]], piRush: { fps: 16, frames: ['pm_rush1', 'pm_rush2'] }, piSpin: [['pm_straight', 0]],
+  piPlant: [['p_slamDown', 0]], piPray: [['p_pray1', 0], ['p_pray2', 0.15]], piLeap: [['p_slamUp', 0]], piSlam: [['p_slamDown', 0]],
 };
 
 /* ---- 特效构件 ---- */

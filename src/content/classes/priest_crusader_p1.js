@@ -137,7 +137,7 @@ defSkill('pc_punish', { name: '惩罚', cls: 'priest', job: PCJ, tier: 2, lvReq:
       onInput: (e, I) => { const a = e.act; if (I.buffered('jump') && a.n > 0 && !a.fall) { I.consume('jump'); a.skip = true; return true; } return false; },
       update: e => { const a = e.act;
         if (!a.fall) { e.z = Math.min(150, e.actT * 420); e.vz = 0; e.vx = 0; }
-        while (!a.fall && !a.skip && a.n < 24 && e.actT >= 0.4 + 2.3 * Math.pow(a.n / 24, 0.8)) { a.n++; const F = ents.filter(t => foe(e, t) && !t.dead && Math.abs(t.x - a.cx) < 340 && Math.abs(t.y - a.cy) < 100), aim = F.length && Math.random() < 0.75 ? F[Math.floor(Math.random() * F.length)] : null;   // 大部分激光落在范围里的敌人身上（官方：总有两三发打偏）
+        while (!a.fall && !a.skip && a.n < 24 && e.actT >= 0.4 + 2.3 * Math.pow(a.n / 24, 0.8)) { a.n++; const F = ents.filter(t => foe(e, t) && !t.dead && Math.abs(t.x - a.cx) < 340 && Math.abs(t.y - a.cy) < 100), aim = F.length && a.n % 8 !== 0 ? F[Math.floor(Math.random() * F.length)] : null;   // 大部分激光落在范围里的敌人身上（固定三发打偏，避免随机导致段数波动）
           const x = aim ? aim.x + rnd(-30, 30) : a.cx + rnd(-320, 320), y = clamp(aim ? aim.y + rnd(-12, 12) : a.cy + rnd(-80, 80), 4, DEPTH - 4);
           pcBeamFx(x, y); if (a.n % 3 === 0) sfx.hit('crit', false);
           for (const t of ents) if (foe(e, t) && !t.dead && pcMovable(t) && Math.abs(t.x - a.cx) < 380) { t.x = lerp(t.x, a.cx, 0.04); t.y = lerp(t.y, a.cy, 0.04); }

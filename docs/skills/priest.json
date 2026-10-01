@@ -50,6 +50,16 @@
     "p_rapture",
     "p_emblem"
    ],
+   "crusader": [
+    "pc_revenge", "pc_mace", "pc_spear", "pc_light", "pc_sign", "pc_honor", "pc_fountain", "pc_wind",
+    "pc_cross", "pc_wall", "pc_sphere", "pc_haptism", "pc_hammer", "pc_judge", "pc_awaken", "pc_splitter",
+    "pc_doom", "pc_flash", "pc_sanct", "pc_jupiter", "pc_awaken2", "pc_punish", "pc_astrape", "pc_awaken3"
+   ],
+   "monk": [
+    "pi_will", "pi_duck", "pi_sway", "pi_dstraight", "pi_dupper", "pi_dbody", "pi_crush", "pi_side",
+    "pi_gorgeous", "pi_counter", "pi_chop", "pi_shadow", "pi_mgjab", "pi_cork", "pi_heavenly", "pi_hurricane",
+    "pi_awaken", "pi_gatling", "pi_demo", "pi_nuke", "pi_atomic", "pi_awaken2", "pi_furious", "pi_awaken3"
+   ],
    "exorcist": [
     "pe_gale",
     "pe_lotus",

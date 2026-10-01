@@ -1,5 +1,5 @@
 // 圣职者（男）骨架（B0）+ 基础职业（docs/CLASS_PLAN_PRIEST.md）测试。node test/priest.mjs [switch,ids,party,base,smoke]（默认全部，约 1 分钟）
-//   switch 开放开关：ready:false 选角“即将开放”、转职窗口 / 决斗 / 掉落 / 商店都没有；?priest=1（或 ?dev=priest）只开放圣职者，?fighter=1 不会带出圣职者；没开放的圣职者角色原样保留
+//   switch 开放开关：圣职者和 4 个转职默认开放，选角 / 转职 / 掉落 / 商店可用；?priest=1（或 ?dev=priest）用于测试跳转
 //   ids    id 预留表 / 4 个转职登记（精通 / 伤害类型 / 觉醒名）/ 5 种武器 / 动画契约（每个片段都有骨骼片段）/ 指令表
 //   party  队伍原语：hot（持续回复）、life（免死一次）、d.to 单体施放只给目标、partyPick 挑 HP 最低的队员
 //   base   11 个基础技能：放得出 / 打得中 / 冷却 = 官方 / MP = 官方；官方指令；虎袭抓取冲刺扔出；跑攻 X 接勾拳追击；取消例外；治疗 / 净化 / 化魔 / 武器手感
@@ -17,10 +17,10 @@ const BASE = ['p_launcher', 'p_smasher', 'p_lucky', 'p_second', 'p_slowheal', 'p
 if (MODES.includes('switch')) {
   const { browser, page, logs } = await launch({ width: 1280, height: 720 });
   await page.goto(`${URL_BASE}?mute`); await ready(page);
-  const off = await page.evaluate(async () => {
+  const on = await page.evaluate(async () => {
     menus.open('newgame'); await new Promise(r => setTimeout(r, 200));
     const card = document.querySelector('#newgame .clscard[data-cls="priest"]');
-    const out = { open: clsOpen('priest'), classes: openClasses(), card: !!card, off: card && card.classList.contains('off'), txt: card && card.textContent, jobs: jobsOf('priest'), fighterOpen: clsOpen('fighter') };
+    const out = { open: clsOpen('priest'), classes: openClasses(), card: !!card, off: card && card.classList.contains('off'), txt: card && card.textContent, jobs: Object.keys(jobsOf('priest') || {}), fighterOpen: clsOpen('fighter') };
     card.click(); await new Promise(r => setTimeout(r, 100)); out.sel = menus.ngCls; menus.close('newgame');
     out.drop = Array.from({ length: 300 }, () => rollEquip({ slot: 'weapon', lvl: 20, cls: 'sword' })).filter(it => it && it.cls === 'priest').length;
     out.shopLinus = SHOPS.linus.tabs[0].goods(20).filter(k => ITEMS[k].cls === 'priest').length;
@@ -28,20 +28,16 @@ if (MODES.includes('switch')) {
     out.crowd = crowdCls().includes('priest');
     return out;
   });
-  report('没开放：选角“即将开放”、点不了、不在已开放列表、转职窗口没有方向、武器不掉落不上架、歌兰蒂斯不挂商店、不上街',
-    !off.open && off.card && off.off && off.txt.includes('即将开放') && off.sel !== 'priest' && !off.classes.includes('priest') && off.jobs === null && off.drop === 0 && off.shopLinus === 0 && off.grandis.job && !off.grandis.shop && off.grandis.jobFor === 'priest' && !off.crowd && off.fighterOpen, off);
-  // 没开放的圣职者角色（例：?priest=1 建的）：原样保留、选角“需要更新”
+  report('默认开放：选角可选、4 个转职可见、武器掉落 / 商店已接入',
+    on.open && on.card && !on.off && on.sel === 'priest' && on.classes.includes('priest') && on.jobs.join() === 'crusader,monk,exorcist,avenger' && on.drop > 0 && on.shopLinus > 0 && on.grandis.job && on.grandis.shop && on.grandis.jobFor === 'priest' && on.fighterOpen, on);
+  // 已开放的圣职者旧存档：可以正常打开并保留角色关键数据
   const kept = await page.evaluate(() => {
     const c = { v: 9, cls: 'priest', name: '开发圣职者', lvl: 12, job: null, skillLv: { p_launcher: 3 }, equip: {}, inv: [], cera: 7 };
     save.live = false; save.newGame('sword', '剑士'); const d = JSON.parse(localStorage.getItem(save.key)); d.chars.push(c); localStorage.setItem(save.key, JSON.stringify(d));
     save.loadAll(); save.persist(); const after = JSON.parse(localStorage.getItem(save.key)); const pc = after.chars.find(x => x.cls === 'priest');
-    return { kept: !!pc && JSON.stringify(pc) === JSON.stringify(c), open: charOpen(pc), n: after.chars.length };
+    return { kept: !!pc && pc.name === c.name && pc.lvl === c.lvl && pc.skillLv.p_launcher === 3, open: charOpen(pc), n: after.chars.length };
   });
-  report('没开放的圣职者角色：读写原样保留（不升级、不改数据），charOpen = false', kept.kept && !kept.open, kept);
-  // ?fighter=1 只开放格斗家（不会把没开放的圣职者带出来）
-  await page.goto(`${URL_BASE}?mute&fighter=1`); await ready(page);
-  const f1 = await page.evaluate(() => ({ priest: clsOpen('priest'), fighter: clsOpen('fighter') }));
-  report('?fighter=1 不开放圣职者', !f1.priest && f1.fighter, f1);
+  report('已开放的圣职者旧存档：关键数据保留、可正常打开', kept.kept && kept.open, kept);
   for (const q of ['priest=1', 'dev=priest']) {
     await page.goto(`${URL_BASE}?mute&${q}`); await ready(page);
     const on = await page.evaluate(async () => {
@@ -77,9 +73,9 @@ if (MODES.includes('ids')) {
       clips: clips.length, noClip, cmdIds, cmdTxt, base4: CLASS_BASE4.priest, armor: masteryOf('priest', null), res: C.res || null, sprCls: SPR_PLAYER_CLS.includes('priest'), shells: typeof PRIEST_HOOKS === 'object' && Object.keys(PRIEST_HOOKS).length };
   }, BASE);
   report('11 个基础技能 id = 预留表；初始技能 空斩打 / 虎袭；前缀没有和别的职业撞', r.skills.join() === BASE.join() && r.start.join() === 'p_launcher,p_smasher' && Object.values(r.clash).every(a => a.length === 0), { skills: r.skills, clash: r.clash });
-  report('4 个转职登记：圣骑士 板甲 / 蓝拳 轻甲 / 驱魔 板甲 / 复仇者 重甲，伤害类型、三次觉醒名、ready:false；转职 id 不和别的职业撞',
+  report('4 个转职登记：圣骑士 板甲 / 蓝拳 轻甲 / 驱魔 板甲 / 复仇者 重甲，伤害类型、三次觉醒名、ready:true；转职 id 不和别的职业撞',
     r.jobs.crusader[1] === 'plate' && r.jobs.monk[1] === 'light' && r.jobs.exorcist[1] === 'plate' && r.jobs.avenger[1] === 'heavy' && r.jobs.avenger[2] === 'mag' && r.jobs.monk[2] === 'phys'
-    && Object.values(r.jobs).every(j => j[3] && j[4] && j[5] && j[6] === false) && r.jobClash.length === 0, r.jobs);
+    && Object.values(r.jobs).every(j => j[3] && j[4] && j[5] && j[6] === true) && r.jobClash.length === 0, r.jobs);
   report('5 种巨兵（十字架 / 念珠 / 图腾 / 镰刀 / 战斧），初始十字架，导师歌兰蒂斯，转职前重甲，四维 6/4/6/6',
     r.wt.join() === 'cross,rosary,totem,scythe,battleaxe' && r.wOk && r.start0 === 'cross' && r.mentor === 'grandis' && r.armor === 'heavy' && r.base4.str[0] === 6 && r.base4.spr[0] === 6, { wt: r.wt, base4: r.base4 });
   report('动画契约：SPR_ANIMS.priest 每个片段都有矢量占位的骨骼片段；指令表的技能都存在；指令文字', r.sprCls && r.clips >= 30 && r.noClip.length === 0 && r.cmdIds.length === 0

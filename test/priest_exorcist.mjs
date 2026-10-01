@@ -29,7 +29,7 @@ const R = await page.evaluate(JOB => {
   return { reg: [J.armor, J.dmgType, J.awaken, J.awaken2, J.awaken3, J.awakenName, J.awakenName2, J.awakenName3, J.art, J.ready], n: J.skills.length, bad, cmd, out,
     art: { job: !!IMG['job/exorcist'] || ASSET_SRC['job/exorcist'] !== undefined, cutin: ['exorcist', 'exorcist2', 'exorcist3'].every(k => !!IMG['cutin/' + k]), icons: J.skills.filter(id => !IMG['icon/' + id]) } };
 }, JOB);
-report('转职登记：板甲 / 物理、觉醒技 pe_awaken{,2,3}、觉醒名（四座千泰门的一觉 = 龙斗士，三觉 = 光启·驱魔师）、ready:false', R.reg.join() === 'plate,phys,pe_awaken,pe_awaken2,pe_awaken3,龙斗士,真龙星君,光启·驱魔师,job/exorcist,false', R.reg);
+report('转职登记：板甲 / 物理、觉醒技 pe_awaken{,2,3}、觉醒名（四座千泰门的一觉 = 龙斗士，三觉 = 光启·驱魔师）、ready:true', R.reg.join() === 'plate,phys,pe_awaken,pe_awaken2,pe_awaken3,龙斗士,真龙星君,光启·驱魔师,job/exorcist,true', R.reg);
 report(`技能 id 都是 pe_ 前缀、都有定义、都属于驱魔师（${R.n} 个）`, !R.bad.length && R.n >= 26, R.bad);
 const WANT = { pe_lotus: '↓→+Space', pe_gale: '→↑+Z', pe_star: '↑↑+Z', pe_suzaku: '↑→→+Z', pe_genbu: '↑→+Z', pe_byakko: '↓←+Z', pe_chaos: '↓↓+Z', pe_spin: '←↓→+Z', pe_atomic: '→←→+Z',
   pe_awaken: '↑↑↓↓+Z', pe_seiryu: '←↓→+Space', pe_quake: '→←↑→+Z', pe_seven: '↓↑→+Z', pe_pentacle: '←→→+Z', pe_awaken2: '↓↑→→+Z', pe_blitz: '↑↓→→+Z', pe_awaken3: '←→→↑+Z' };

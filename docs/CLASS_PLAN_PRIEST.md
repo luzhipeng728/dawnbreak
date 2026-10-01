@@ -12,8 +12,8 @@
 | 项 | 结论 |
 |---|---|
 | 能不能照抄格斗家的接法 | 能，而且大部分接入点已经通用（格斗家 B0 把测试列表、存档、开关都改成读 `CLASSES`）。圣职者 B0 只剩**一次性登记**（§1），没有要重构的地方 |
-| 存档 | 已通用：没开放 / 不认识职业的角色原样保留（`save.js charOpen`），`test/priest.mjs switch` 验过（`test/fighter.mjs save` 本来就拿 `priest` 当“未知职业”的样本，现在它是 ready:false，结果不变） |
-| 开关 | `CLASSES.priest.ready = false`、4 个 `J.ready = false`；开发测试 **`?priest=1`**（或 `?dev=priest`）只开放圣职者（`?fighter=1` 从“全部强制开放”改成“只开放格斗家”，见 common.js `DEV_OPEN`）。上线 = 删掉那几项 `ready: false` |
+| 存档 | 已通用：不认识职业的角色原样保留（`save.js charOpen`）；男圣职开放后旧角色可正常迁移读取，`test/priest.mjs switch` 验证关键数据不丢 |
+| 开关 | `CLASSES.priest.ready = true`、4 个 `J.ready = true`，已正式开放；`?priest=1`（或 `?dev=priest`）仍可用于测试跳转 |
 | 导师 | **歌兰蒂斯**（本作已有，赫顿玛尔市政街 · 大圣堂，`grandis`）：加了 `job` 服务 + `jobFor: 'priest'`；圣职者开放后挂出“大圣堂的巨兵库”（`shop:grandis`） |
 | 武器 | 5 种巨兵，手持；不改普攻动作，只改攻速 / 距离 / 硬直（`PRIEST_FEEL`）；**不装武器按十字架算** |
 | 防具精通 | 转职前 **重甲**（已有 `CLASS_ARMOR.priest`）；圣骑士 **板甲**、蓝拳圣使 **轻甲**、驱魔师 **板甲**（现版驱魔物理 / 魔法合一、主流物理战斧；旧版物理板甲 / 魔法布甲）、复仇者 **重甲**（namu 精通页 + 国服资料站） |
@@ -101,7 +101,7 @@
 | **P-gear** 装备 / 任务 / 指南 | `JOB_CHAINS.priest` + 4 条转职任务线 + 觉醒台词（歌兰蒂斯）、官方武器名、具名史诗 `epics60_w_priest.js` + 掉落 / 深渊登记 + 图标、异界套装、文档 | `quests/priest.js`、`quests/job.js` 的 priest 段、`epics60_w_priest.js`、GEAR / PLAYER_GUIDE | 二期 40~70 | P-core；史诗外观跟 P-art 的武器风格 |
 | **P-duel** 决斗 / AI / 联机 / 手机 / 上线 | `DUEL_BASE` / `PVP_JOB`（`pvp_balance.mjs` 循环赛，循环赛网址要加 `priest=1`）、`fighter_ai.js` 圣职者分支（圣骑士 BUFF / 治疗时机、蓝拳贴身、驱魔中距离、复仇者变身）、服务端 `AI_POOL` + `LEGACY`、`net/coop_priest.js`、手机按键、上线清单 | `duel.js` 的 priest 行、`fighter_ai.js` 的 priest 分支、`server/modules/arena.js`、`net/coop_priest.js` | 0 | 转职块合并后调平衡 |
 
-上线顺序：P-core（ready:false，可以直接部署）→ P-art 原装帧 + 武器 → `CLASSES.priest.ready` → 每个转职合并后开 `J.ready` → 时装 → P-duel 平衡 → 进排位 AI 池（服务端先部署）。
+上线顺序：P-core（ready:false，可以直接部署）→ P-art 原装帧 + 武器 → `CLASSES.priest.ready` → 每个转职合并后开 `J.ready` → 时装 → P-duel 平衡 → 进排位 AI 池（服务端先部署）。本次四个转职、原装帧和技能审计均已完成，主线程已执行公开开关；P-duel / AI 池仍按后续块推进。
 
 ### 4.1 B0 交付的接口（给转职块）
 - **开关**：`clsOpen / jobOpen(J, cls) / openClasses / openJobs`；开发网址 `?priest=1` / `?dev=priest`（测试房间 `?test&cls=priest&priest=1&mobs=0`）；`devOpenParams(q)` 把本页的开放开关带到跳转网址。

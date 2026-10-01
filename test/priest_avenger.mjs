@@ -32,7 +32,7 @@ const R = await page.evaluate(JOB => {
     art: { job: ASSET_SRC['job/avenger'] !== undefined, cutin: ['avenger', 'avenger2', 'avenger3'].every(k => !!IMG['cutin/' + k]), fx: ['pa_wings', 'pa_horns', 'pa_demon', 'pa_lightscythe', 'pa_lightwing'].filter(k => !IMG['fx/' + k]),
       icons: J.skills.filter(id => !IMG['icon/' + (SKILLS[id].icon || id)]) } };
 }, JOB);
-report('转职登记：重甲 / 魔法、觉醒技 pa_awaken{,2,3}、觉醒名、ready:false', R.reg.join() === 'heavy,mag,pa_awaken,pa_awaken2,pa_awaken3,末日审判者,永生者,神启·复仇者,job/avenger,false', R.reg);
+report('转职登记：重甲 / 魔法、觉醒技 pa_awaken{,2,3}、觉醒名、ready:true', R.reg.join() === 'heavy,mag,pa_awaken,pa_awaken2,pa_awaken3,末日审判者,永生者,神启·复仇者,job/avenger,true', R.reg);
 report(`技能 id 都是 pa_ 前缀、都有定义、都属于复仇者（${R.n} 个）`, !R.bad.length && R.n >= 28, R.bad);
 const WANT = { pa_meta: '↓→+Space', pa_render: '↓→↑←+Space', pa_mine: '→↑+Z', pa_cutter: '↑←↓→+Space', pa_thorn: '↑↑+Z', pa_wheel: '↑→+Z', pa_fist: '↓↓+Z', pa_reaper: '↓←+Z', pa_authority: '→←→+Z',
   pa_fall: '→↓+Space', pa_awaken: '↑↑↓↓+Z', pa_execute: '←→+Z', pa_barrier: '↓↓+X', pa_gate: '→←↓→+Z', pa_disaster: '→←↑→+Z', pa_howl: '↓↑→+Z', pa_smite: '↓→→+Z', pa_awaken2: '↓↑→→+Z', pa_stream: '↑→→+Z', pa_awaken3: '←↑→↓+Z' };

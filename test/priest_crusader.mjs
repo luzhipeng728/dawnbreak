@@ -1,5 +1,5 @@
 // 圣职者转职测试：圣骑士（crusader，P-crusader）。node test/priest_crusader.mjs（约 20 秒）
-// 查：转职登记（板甲 / 独立攻击 / 三次觉醒 / ready:false）、技能 id 都是 pc_ 前缀且有定义、每个主动技能对着木桩放得出来（战斗路线 + 守护路线各跑一遍）、
+// 查：转职登记（板甲 / 独立攻击 / 三次觉醒 / ready:true）、技能 id 都是 pc_ 前缀且有定义、每个主动技能对着木桩放得出来（战斗路线 + 守护路线各跑一遍）、
 //     冷却 = 表里的值（?rawcd）、MP = 表里的值、伤害类技能打得中、指令文字、不报错。完整机制 + 截图 + 联机：node test/crusader.mjs
 import { launch, URL_BASE } from './lib.mjs';
 const JOB = 'crusader';
@@ -39,7 +39,7 @@ const R = await page.evaluate(JOB => {
   tryAll(false); tryAll(true);
   return { reg: !!J, ready: J.ready, armor: J.armor, dmg: J.dmgType, aw: [J.awaken, J.awaken2, J.awaken3], names: [J.awakenName, J.awakenName2, J.awakenName3], art: J.art, n: J.skills.length, stray, undef, cmdless, routeDefault, bad, okN: Object.keys(ok).length };
 }, JOB);
-report('转职登记（板甲、伤害 mag / 技能独立攻击、ready:false、转职立绘）', R.reg && R.armor === 'plate' && R.dmg === 'mag' && R.ready === false && R.art === 'job/crusader', { armor: R.armor, dmg: R.dmg, ready: R.ready });
+report('转职登记（板甲、伤害 mag / 技能独立攻击、ready:true、转职立绘）', R.reg && R.armor === 'plate' && R.dmg === 'mag' && R.ready === true && R.art === 'job/crusader', { armor: R.armor, dmg: R.dmg, ready: R.ready });
 report('觉醒：天启者 天启之珠 / 神思者 神圣洗礼：信仰之翼 / 神启·圣骑士 生命礼赞：神威', R.aw.join() === 'pc_awaken,pc_awaken2,pc_awaken3' && R.names.join() === '天启者,神思者,神启·圣骑士', { aw: R.aw, names: R.names });
 report(`技能 id 都是 pc_ 前缀、都有定义（${R.n} 个），主动技能都有指令`, !R.stray.length && !R.undef.length && !R.cmdless.length && R.n >= 30, { stray: R.stray, undef: R.undef, cmdless: R.cmdless });
 report('转职后默认战斗路线（守护恩赐关闭）', R.routeDefault === false, { guard: R.routeDefault });

@@ -1,5 +1,5 @@
 // 圣职者转职测试：蓝拳圣使（转职 id monk，技能前缀 pi_ = Infighter，P-infighter）。node test/priest_infighter.mjs（约 15 秒）
-// 查：转职登记（轻甲 / 物理 / 三次觉醒 / ready:false）、技能 id 都是 pi_ 前缀且有定义、每个主动技能对着木桩放得出来、冷却 = 表里的值（?rawcd，
+// 查：转职登记（轻甲 / 物理 / 三次觉醒 / ready:true）、技能 id 都是 pi_ 前缀且有定义、每个主动技能对着木桩放得出来、冷却 = 表里的值（?rawcd，
 //     插着巨兵时转职技能冷却 −10%，觉醒除外）、MP = 表里的值、伤害类技能打得中、指令文字、进测试房间自动插好巨兵、不报错。完整机制 + 截图：node test/infighter.mjs
 import { launch, URL_BASE } from './lib.mjs';
 const JOB = 'monk';
@@ -34,7 +34,7 @@ const R = await page.evaluate(JOB => {
   return { reg: !!J, ready: J.ready, armor: J.armor, dmg: J.dmgType, aw: [J.awaken, J.awaken2, J.awaken3], names: [J.awakenName, J.awakenName2, J.awakenName3], art: J.art, n: J.skills.length, stray, undef, cmdless, willAuto, bad, okN: Object.keys(ok).length,
     cmd: { duck: cmdTextOf('pi_duck'), sway: cmdTextOf('pi_sway'), ds: cmdTextOf('pi_dstraight'), chop: cmdTextOf('pi_chop'), demo: cmdTextOf('pi_demo'), awk3: cmdTextOf('pi_awaken3') } };
 }, JOB);
-report('转职登记（轻甲、物理、ready:false、转职立绘 job/monk）', R.reg && R.armor === 'light' && R.dmg === 'phys' && R.ready === false && R.art === 'job/monk', { armor: R.armor, dmg: R.dmg, ready: R.ready });
+report('转职登记（轻甲、物理、ready:true、转职立绘 job/monk）', R.reg && R.armor === 'light' && R.dmg === 'phys' && R.ready === true && R.art === 'job/monk', { armor: R.armor, dmg: R.dmg, ready: R.ready });
 report('觉醒：神之手 泯灭神击 / 正义仲裁者 制裁：怒火疾风 / 神启·蓝拳圣使 正义执行', R.aw.join() === 'pi_awaken,pi_awaken2,pi_awaken3' && R.names.join() === '神之手,正义仲裁者,神启·蓝拳圣使', { aw: R.aw, names: R.names });
 report(`技能 id 都是 pi_ 前缀、都有定义（${R.n} 个），主动技能都有指令`, !R.stray.length && !R.undef.length && !R.cmdless.length && R.n >= 30, { stray: R.stray, undef: R.undef, cmdless: R.cmdless, cmd: R.cmd });
 report('进测试房间自动插好巨兵（意念驱动）', R.willAuto, { will: R.willAuto });

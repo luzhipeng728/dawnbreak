@@ -1,13 +1,13 @@
 /* =====================================================================
    职业：圣职者（男，key `priest`）—— B0 骨架 + 基础职业（计划见 docs/CLASS_PLAN_PRIEST.md，逐技能对照 docs/skills/priest_base_final.md，规格 docs/skills/priest.json）
-   现状：ready:false（选角显示“即将开放”；开发测试用网址 ?priest=1 或 ?dev=priest 强制开放，见 content/classes/common.js clsOpen）；美术到位前是矢量占位模型
+   现状：已上线（选角 / 转职 / 武器 / 商店默认开放；?priest=1 或 ?dev=priest 仍可用于测试跳转）；美术到位前是矢量占位模型
          （鬼剑士骨架换色、拿巨型十字架），精灵帧到位后自动换成 SpriteModel（content/sprites.js，片段名 = SPR_ANIMS.priest）。
    武器：5 种“巨兵”（十字架 / 念珠 / 图腾 / 镰刀 / 战斧）是拿在手上的武器（和鬼剑士 / 魔法师一样的手持武器图和 wpn 握点），不改普攻动作，只改攻速 / 距离 / 硬直（PRIEST_FEEL）。
    普攻：巨兵 3 连击（横扫 → 回扫 → 重砸）；跑攻 = 滑步猛击（按 X 接勾拳追击）；跳攻 = 空中下劈。
    基础技能（官方现版 11 个，namu 2026 / wiki.dfo.world）：空斩打（Z）、虎袭（→↓+Z，抓取冲刺）、直拳冲击（→+Z）、勾拳追击（跑攻中 X）、缓慢愈合（→+Space，单体持续回复）、
              净化（↓↓+Space，全队解除异常）、恶魔之手（↓→+Z）、纯白之刃（↑→+Z，只有圣骑士）、落凤锤（↑↓+Z）、化魔（↓→+C）、升天阵（↓↑+Z）
    取消：普攻 → 攻击技能随时；例外（官方）：直拳冲击只有蓝拳圣使、升天阵 / 落凤锤只有驱魔师能在普攻中取消（S.noForce(p)）
-   转职（这里登记 CLASSES.priest.jobs.<id> 的名字 / 精通 / 伤害类型 / 觉醒名，J.ready:false 做完再开；技能和动作写在各自的文件）：
+   转职（这里登记 CLASSES.priest.jobs.<id> 的名字 / 精通 / 伤害类型 / 觉醒名；四个转职已完成并开放，技能和动作写在各自的文件）：
      圣骑士 priest_crusader.js（pc_）、蓝拳圣使 priest_monk.js（pi_）、驱魔师 priest_exorcist.js（pe_）、复仇者 priest_avenger.js（pa_）
    分工：本文件归基础职业块（P-core）；转职块只改自己的文件，往 PRIEST_HOOKS / PRIEST_ACT_PICK 里登记，不改这里。给转职用的构件：
      pMod(p, id)（转职改基础技能：PRIEST_HOOKS.mod 返回 { dmg, range, type, jump, pull }）、pReq(id)（PRIEST_HOOKS.req：意念驱动中不能用空斩打 / 落凤锤等）、
@@ -248,7 +248,7 @@ defSkill('p_emblem', { name: '升天阵', cls: 'priest', lvReq: 16, sp: 20, mp: 
           blast(e, x, e.y, R, { dmg: skillDmg(2.9, 0.29, lv) * M.dmg, type: M.type || 'mag', elem: 'light', launch: 400, knock: M.pull ? -140 : 20, hs: 0.07, downHit: true, col: P_COL.light, big: 1.2 }, { zMax: 90 }); })] }; } });
 
 /* ---- 职业定义 ---- */
-CLASSES.priest = { name: '圣职者', ready: false, hp0: 1900, hpPer: 155, mp0: 760, mpPer: 44, atk0: 480, atkPer: 58, def0: 320, defPer: 30, crit: 0.07, speed: 155, runSpeed: 285,
+CLASSES.priest = { name: '圣职者', ready: true, hp0: 1900, hpPer: 155, mp0: 760, mpPer: 44, atk0: 480, atkPer: 58, def0: 320, defPer: 30, crit: 0.07, speed: 155, runSpeed: 285,
   desc: '侍奉神明、挥舞巨兵的男圣职者：以十字架、念珠、图腾、镰刀、战斧为武器，基础技能兼顾近战挑空、抓取冲撞与治疗净化。转职后可以成为圣骑士、蓝拳圣使、驱魔师或复仇者。',
   model: () => buildSwordsman(PAL_PRIEST, { weapon: 'cross', hair: 'short', hat: null, scarf: false, pauldron: true, coatTail: true }),
   acts: PRIEST_ACTS, slashCol: '#ffe3a0', dmgType: 'phys', airMax: 1,
@@ -259,16 +259,16 @@ CLASSES.priest = { name: '圣职者', ready: false, hp0: 1900, hpPer: 155, mp0: 
   // 4 个转职（官方现版，docs/CLASS_PLAN_PRIEST.md §2）：技能 / 动作 / 觉醒技由各转职块写进自己的文件（skills.push / Object.assign），这里只登记元数据
   jobs: {
     crusader: { name: '圣骑士', role: '辅助 / 神圣审判（独立攻击）', armor: 'plate', dmgType: 'mag', growth: { int: 1.05, vit: 1.06, spr: 1.08 },
-      awakenName: '天启者', awakenName2: '神思者', awakenName3: '神启·圣骑士', ready: false,
+      awakenName: '天启者', awakenName2: '神思者', awakenName3: '神启·圣骑士', ready: true,
       desc: '以十字架与神圣之力守护同伴的圣职者：全队祝福、治疗、复活与护盾，也能用圣光审判敌人。', skills: [], anims: {} },
     monk: { name: '蓝拳圣使', role: '近身拳击 · 物理', armor: 'light', dmgType: 'phys', growth: { str: 1.1, vit: 1.04 },
-      awakenName: '神之手', awakenName2: '正义仲裁者', awakenName3: '神启·蓝拳圣使', ready: false,
+      awakenName: '神之手', awakenName2: '正义仲裁者', awakenName3: '神启·蓝拳圣使', ready: true,
       desc: '把巨兵插在地上（意念驱动），赤手空拳贴身连打的圣职者：俯冲 / 摆动闪避、神圣反击、技能互相取消的连击。', skills: [], anims: {} },
     exorcist: { name: '驱魔师', role: '巨兵 · 式神（物理）', armor: 'plate', dmgType: 'phys', growth: { str: 1.08, int: 1.03, vit: 1.04 },
-      awakenName: '龙斗士', awakenName2: '真龙星君', awakenName3: '神启·驱魔师', ready: false,
+      awakenName: '龙斗士', awakenName2: '真龙星君', awakenName3: '神启·驱魔师', ready: true,
       desc: '挥舞战斧、念珠等巨兵，召唤式神（朱雀 / 玄武 / 白虎 / 苍龙 / 黄龙）降妖除魔的圣职者。', skills: [], anims: {} },
     avenger: { name: '复仇者', role: '暗属性魔法 · 恶魔化', armor: 'heavy', dmgType: 'mag', growth: { int: 1.1, vit: 1.03 },
-      awakenName: '末日审判者', awakenName2: '永生者', awakenName3: '神启·复仇者', ready: false,
+      awakenName: '末日审判者', awakenName2: '永生者', awakenName3: '神启·复仇者', ready: true,
       desc: '以镰刀和体内的恶魔之力战斗的圣职者：积攒恶魔能量，半魔化 / 魔化成末日审判者，暗属性魔法伤害。', skills: [], anims: {} },
   }, passives: [] };
 CLASSES.priest.passives.push(p => {

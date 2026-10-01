@@ -60,17 +60,18 @@ const coop = {
   rk(r = this.dg && this.dg.room) { return r ? r.gx + ',' + r.gy : ''; },
   /* ---------------- 进图 ---------------- */
   // 队长：从地下城门口开始
-  lead(id, diff) {
+  // meta：附加到房间上的信息（团本一起进的节点：{ raid, node, run }，net/raid.js）；def.raid 的节点不耗疲劳
+  lead(id, diff, meta) {
     const def = DUNGEONS[id]; if (!def) return false;
     save.daily();
-    if (save.data.fatigue < def.rooms) { toastMsg(`疲劳值不足：${def.name} 至少需要 ${def.rooms} 点疲劳`, '#ff6a6a'); sfx.error(); return false; }
+    if (!def.raid && save.data.fatigue < def.rooms) { toastMsg(`疲劳值不足：${def.name} 至少需要 ${def.rooms} 点疲劳`, '#ff6a6a'); sfx.error(); return false; }
     const cost = coopEntryCost(() => typeof def.beforeEnter === 'function' ? def.beforeEnter(diff) : true);
     if (cost === false) return false;
     const others = netParty.others().filter(m => m.online);
     this.reset(); this.entryCost = cost; this.role = 'host'; this.state = 'prep'; this.def = def; this.diff = diff; this.hostId = this.me();
     const seed = (Math.random() * 1e9) | 0, tmp = genLayout(def, seed);
     this.prep = { id, diff, seed, rs: tmp.rooms.map(() => (Math.random() * 1e9) | 0), resp: new Map(), mem: others.map(m => m.id) };
-    net.send({ t: 'room:open', kind: 'dungeon', meta: { id, diff } });
+    net.send({ t: 'room:open', kind: 'dungeon', meta: { ...meta, id, diff } });
     this.waitDialog();
     this.waitT = setTimeout(() => this.goNow(), 25000);
     // 服务端没有建好房间（例如刚好不再是队长 / 网络断了）：别一直卡在等待框
@@ -109,7 +110,7 @@ const coop = {
     if (!def) return no('没有这个地下城（请刷新页面更新版本）');
     if (game.scene !== 'town' || !game.player || !save.live || game.duel) return no(game.scene === 'dungeon' ? '正在别的地下城里' : '现在不在城镇里');
     save.daily();
-    if (save.data.fatigue < def.rooms) return no(`疲劳不足（需要 ${def.rooms}）`);
+    if (!def.raid && save.data.fatigue < def.rooms) return no(`疲劳不足（需要 ${def.rooms}）`);
     const cost = coopEntryCost(() => typeof def.beforeEnter === 'function' ? def.beforeEnter(d.diff) : true);
     if (cost === false) return no('没有入场道具');
     if (d.boss && MON[d.boss.kind]) def.boss = { ...d.boss };   // 深渊领主等“进图时随机”的设定以队长为准（素材也按它加载）

@@ -87,7 +87,9 @@ try {
   ok(rec && rec.wn === 2 && K.consume('siroco', rec, tt + 2 * 86400e3, 480) === null && K.limits('siroco', rec, tt + 2 * 86400e3, 480).weekLeft === 0, '一周 2 次：第三天没有次数了');
   ok(K.limits('siroco', rec, tt + 7 * 86400e3, 480).weekLeft === 2 && K.limits('siroco', rec, tt + 2 * 86400e3, 480).nextWeek === thu6 + 7 * 86400e3, '下周四 06:00 次数恢复（nextWeek 时间正确）');
   const r1 = K.rollReward(K.init('siroco', [{ uid: 1 }], 'guide', 0, { seed: 1 }), 1, 1, () => 0.99), r2 = K.rollReward(K.init('siroco', [{ uid: 1 }], 'normal', 0, { seed: 1 }), 1, 2, () => 0);
-  ok(r1.cards.length === 1 && r1.cards[0].key === 'raid_petal' && r1.cards[0].n === 2 && r2.cards.length === 2 && r2.cards[0].n === 8 && r2.cards[1].n === 12, '奖励：P1 一张 / P2 两张；引导模式货币 ×0.6', [r1, r2]);
+  ok(r1.cards.length === 2 && r1.cards[0].key === 'raid_petal' && r1.cards[0].n === 2 && r1.cards[1].key === 'raid_immaterial' && r1.cards[1].n === 2
+    && r2.cards.length === 2 && r2.cards[0].key === 'raid_petal' && r2.cards[0].n === 12 && r2.cards[1].key === 'raid_immaterial' && r2.cards[1].n === 2,
+  '奖励：P1 / P2 各含花瓣与独立材料；引导模式货币 ×0.6', [r1, r2]);
 
   // ================= 两人全流程 =================
   // 测试时钟固定到某个周四 18:00（北京时间）：后面按天 / 按周平移时，不会因为今天是几号而跨周

@@ -282,6 +282,659 @@
    ],
    "cd": 5
   },
+  "pc_revenge": {
+   "official": "→↓+Space；施放 0.5s；无限持续的 BUFF：攻击时 100%（间隔 0.2s）、被魔法 / 物理攻击 80% / 42% 落下雷击（被打时 10% 感电 5s）；学了神罚之锤后不能手动施放、施放神罚之锤时自动施放；CD 10s；满级 1",
+   "src": "https://wiki.dfo.world/view/Revenge_of_Light；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 PtEXzKqLlUk",
+   "en": "Revenge of Light",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 10,
+   "learn": {
+    "pc_jupiter": 0
+   }
+  },
+  "pc_mace": {
+   "official": "↑→→+Space（DFO）；瞬间施放；勇气恩赐专用 BUFF（无限）：普攻变战槌 3 连（第 3 下 / 空斩打出冲击波）、技能攻击 +2n%、攻速 / 移速 / 施放速度 / 命中提高；CD 7s（namu 现版；DFO 旧值 5s）",
+   "src": "https://wiki.dfo.world/view/Holy_Ghost_Mace；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 qg7YrSz_GzI",
+   "en": "Holy Ghost Mace",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 7
+  },
+  "pc_spear": {
+   "official": "→↑+Z（男）；瞬间施放、可按住蓄力 0.3s；投矛贯穿（最多 10 / 满蓄 16），被贯穿的敌人拖到落点强制硬直，矛落地后爆炸；神之代行者：直接满蓄、矛更大、再按引爆；CD 6.6s",
+   "src": "https://wiki.dfo.world/view/Spear_of_Victory；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 vDqGAdlwroQ",
+   "en": "Spear of Victory",
+   "conf": "高",
+   "hits": [
+    2,
+    3
+   ],
+   "launch": true,
+   "reach": [
+    300,
+    450
+   ],
+   "cd": 6.6
+  },
+  "pc_light": {
+   "official": "→↑+Space（男）；施放 0.7s；守护路线；选 1200px 内一名队员，8 秒护盾 = 圣骑士 HP × (7+0.5n)%；CD 15s",
+   "src": "https://wiki.dfo.world/view/Light_of_Divinity；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 qt2Xp2QDwME",
+   "en": "Light of Divinity",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 15,
+   "set": {
+    "pcRoute": "guard"
+   }
+  },
+  "pc_sign": {
+   "official": "↓→+Space；施放 0.5s；守护路线；900px 内队员 300 秒防御 / 体精 / HP·MP 上限提高；CD 10s",
+   "src": "https://wiki.dfo.world/view/Sign_of_Protection；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Sign of Protection",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 10,
+   "set": {
+    "pcRoute": "guard"
+   }
+  },
+  "pc_honor": {
+   "official": "←→→+Space；施放 0.5s；守护路线；900px 内队员（不含自己）物 / 魔 / 独立攻击、力智、命中提高，自己技能攻击提高；300 秒；CD 10s",
+   "src": "https://wiki.dfo.world/view/Divine_Invocation；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Divine Invocation",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 10,
+   "set": {
+    "pcRoute": "guard"
+   }
+  },
+  "pc_fountain": {
+   "official": "↑↑→+Space；施放 0.8s；守护路线；选 1200px 内一名队友（不含自己）200 秒 HP 回复提高 + 死亡时复活（24.5+0.5n%）；组队才能用、决斗场不能用、活着时 12 次；CD 60s",
+   "src": "https://wiki.dfo.world/view/Fountain_of_Life；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 7VNo4J1CQis",
+   "en": "Fountain of Life",
+   "conf": "高",
+   "cd": 60,
+   "why": {
+    "cast": "单刷（体检环境）官方也放不出：需要队友；联机效果见 node test/crusader.mjs coop"
+   }
+  },
+  "pc_wind": {
+   "official": "→←→+Space；施放 0.5s；守护路线；900px 内队员 1 秒内回复 HP / MP (24+n)%，护盾 = 圣骑士 HP 23%（约 5s）；施放中跳跃键取消；CD 60s",
+   "src": "https://wiki.dfo.world/view/Healing_Wind；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 Etqo8GxVPEo",
+   "en": "Healing Wind",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 60,
+   "set": {
+    "pcRoute": "guard"
+   }
+  },
+  "pc_cross": {
+   "official": "↓↓→+Z；瞬间施放；投出十字架，打中爆炸并在圣骑士脚下生成五芒星阵（15 秒全速度 +5%；守护路线阵里的队友也加）；神之代行者变大、命中处也有 BUFF；CD 8s",
+   "src": "https://wiki.dfo.world/view/Crashing_Cross；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Crashing Cross",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "launch": true,
+   "reach": [
+    70,
+    170
+   ],
+   "cd": 8
+  },
+  "pc_wall": {
+   "official": "←→+Z；施放 0.5s；前方生成缓慢前进的圣力墙（生成 / 接触时各打一次），敌人和远程攻击过不去、队友能过；5 秒；CD 8s；前置 纯白之刃",
+   "src": "https://wiki.dfo.world/view/Deflection_Wall；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 JWK1jK8nIdk",
+   "en": "Deflection Wall",
+   "conf": "高",
+   "hits": [
+    1,
+    3
+   ],
+   "reach": [
+    170,
+    300
+   ],
+   "cd": 8,
+   "learn": {
+    "pc_pwall": 0
+   }
+  },
+  "pc_sphere": {
+   "official": "→→+Z；施放 0.5s；缓慢前进的光球 3 秒，0.2 秒一段共 15 段，消失时 300px 内眩晕 6 秒；按→ 生成更远；神圣琉璃球（被动开关）：碰到就爆；CD 14.4s",
+   "src": "https://wiki.dfo.world/view/Flash_Sphere；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 4RkMnSzr8Ec",
+   "en": "Flash Sphere",
+   "conf": "高",
+   "hits": [
+    13,
+    15
+   ],
+   "cd": 14.4,
+   "learn": {
+    "pc_shrapnel": 0
+   },
+   "at": 150
+  },
+  "pc_haptism": {
+   "official": "→↓+Z（DFO；和虎袭同指令，冷却长的优先）；瞬间施放、没有霸体 / 无敌；光柱 → 砸地 → 爆炸（13.99 : 27.96 : 106.75），爆炸时把周围的敌人吸过来；可取消普攻；CD 10s",
+   "src": "https://wiki.dfo.world/view/Haptism；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Haptism",
+   "conf": "高",
+   "hits": [
+    3,
+    3
+   ],
+   "behind": true,
+   "pull": true,
+   "sa": "none",
+   "cd": 10
+  },
+  "pc_hammer": {
+   "official": "→↓→+Z；瞬间施放（挥锤速度吃施放速度）、挥锤时霸体；前方很宽、身后也有一点判定；锤子打中几率忏悔（敌人互相攻击；领主减半、决斗场无效），冲击波不忏悔；CD 14.4s",
+   "src": "https://wiki.dfo.world/view/Hammer_of_Repentance；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 8-kXw6RRxCs",
+   "en": "Hammer of Repentance",
+   "conf": "高",
+   "hits": [
+    2,
+    3
+   ],
+   "behind": true,
+   "sa": "part",
+   "reach": [
+    170,
+    300
+   ],
+   "cd": 14.4
+  },
+  "pc_judge": {
+   "official": "←↓→+Z；施放 0.6s；前方法阵落下 16 把光之刃（0.07s 一段），之后正义天使投出长矛（刃 : 矛 ≈ 1 : 1）；落刃中跳跃键立即召唤天使；全程霸体；CD 45s",
+   "src": "https://wiki.dfo.world/view/Righteous_Judgment；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 cQi0NKnH6Kg",
+   "en": "Righteous Judgment",
+   "conf": "高",
+   "hits": [
+    17,
+    17
+   ],
+   "sa": "full",
+   "reach": [
+    300,
+    300
+   ],
+   "cd": 45
+  },
+  "pc_awaken": {
+   "official": "↑↑↓↓+Z；施放 1s，无敌；天空打开，落雷和光之矛 12 段；守护路线：33 秒队员力智（不含自己）/ 攻速 / 移速 / 施放速度提高；勇气恩赐：不给祝福、冷却 135s、覆盖全画面；CD 160s",
+   "src": "https://wiki.dfo.world/view/Apocalypse_(Male_Crusader)；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Apocalypse (Male Crusader)",
+   "conf": "高",
+   "hits": [
+    8,
+    16
+   ],
+   "invul": "full",
+   "cd": 160
+  },
+  "pc_splitter": {
+   "official": "→←↓→+Z；瞬间施放；带神圣之力冲刺 240px（3 段）后巨兵上挑（46.46×3 : 309.11）；瞬移判定能穿薄墙；CD 30s",
+   "src": "https://wiki.dfo.world/view/Miracle_Splitter；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Miracle Splitter",
+   "conf": "高",
+   "hits": [
+    4,
+    4
+   ],
+   "launch": true,
+   "dx": [
+    200,
+    280
+   ],
+   "cd": 30
+  },
+  "pc_doom": {
+   "official": "↓↓↓+Z；瞬间施放；投出远古神圣之矛，把贴身敌人推向落点，矛垂直落下：落地 / 砸地 / 爆炸 3 段（17.48 : 72.52 : 204.94×3）；CD 40s",
+   "src": "https://wiki.dfo.world/view/Doom_Spear；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Doom Spear",
+   "conf": "高",
+   "hits": [
+    5,
+    5
+   ],
+   "launch": true,
+   "reach": [
+    300,
+    300
+   ],
+   "cd": 40
+  },
+  "pc_flash": {
+   "official": "→←→+Z；施放 0.5s；（被动）体精提高；选 1800px 内一名队员：他身上爆炸（对队友 +150%）、受到伤害 −20%（0.8s）、他和自己的守护徽章 / 荣誉祝福 +70 秒；勇气恩赐：只能对自己；CD 20s",
+   "src": "https://wiki.dfo.world/view/Divine_Flash；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 SNLC4nK3wZ8",
+   "en": "Divine Flash",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "launch": true,
+   "cd": 20
+  },
+  "pc_sanct": {
+   "official": "↓↑→+Z；瞬间施放，约 1 秒内方向键挪法阵、再按提前放下；法阵闪 5 次：把阵上的敌人推出去并伤害、回复阵里队员 HP 并解除异常，最后一次最高、纵向范围大；法阵在场时再按立即引爆；CD 40s",
+   "src": "https://wiki.dfo.world/view/Holy_Sanctuary；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 Q2AkEpzp4P0",
+   "en": "Holy Sanctuary",
+   "conf": "高",
+   "hits": [
+    2,
+    5
+   ],
+   "cd": 40
+  },
+  "pc_jupiter": {
+   "official": "↓→→+Z；瞬间施放（前半段无敌）；永久装备神罚之锤：技能攻击 +(32+2n)%、普攻改写（光属性、独立攻击，第 3 下 / 空斩打圣光冲击、跑攻圣光雷枪 3 段）、落凤锤变雷霆重击、光之复仇自动施放；CD 45s",
+   "src": "https://wiki.dfo.world/view/Thunder_Hammer:_Jupiter；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Thunder Hammer: Jupiter",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "invul": "part",
+   "cd": 45
+  },
+  "pc_awaken2": {
+   "official": "↓↑→→+Z；施放 0.5s；守护路线的二觉觉醒技：圣力（50s，最多 5 层）随辅助技能 / 攻击命中叠加，每层荣誉祝福效果提高；对队友放神圣之光 = 信仰（延长圣力）；勇气恩赐不能用；和惩罚共用冷却；CD 170s",
+   "src": "https://wiki.dfo.world/view/Ascension；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）；视频 fNS2onOaXUc",
+   "en": "Ascension",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "invul": "full",
+   "cd": 170,
+   "set": {
+    "pcRoute": "guard"
+   }
+  },
+  "pc_punish": {
+   "official": "↑↑+Z；施放 0.5s，无敌；升空后对下方降下 24 段激光（越来越密、把敌人吸进范围），激光落完或按跳跃键落地终结爆炸；和神圣洗礼共用冷却；CD 170s",
+   "src": "https://wiki.dfo.world/view/Punishment_(Male_Crusader)；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Punishment (Male Crusader)",
+   "conf": "高",
+   "hits": [
+    15,
+    26
+   ],
+   "invul": "full",
+   "sa": "full",
+   "cd": 170
+  },
+  "pc_astrape": {
+   "official": "↑↓→→+Z；瞬间施放；只能在装备神罚之锤时用：划十字展开光之翼，高跳下劈：裂地冲击波 + 光之爆炸（1215 : 810）；按→ 跳得更远；展开光翼时 900px 内队员信仰延长（神圣洗礼中）；CD 60s（体检里另算光之复仇的落雷 0–2 段）",
+   "src": "https://wiki.dfo.world/view/Holy_Rage:_Astrape；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Holy Rage: Astrape",
+   "conf": "高",
+   "hits": [
+    2,
+    4
+   ],
+   "launch": true,
+   "cd": 60,
+   "pre": [
+    "pc_jupiter"
+   ]
+  },
+  "pc_awaken3": {
+   "official": "←↑→↓+Z；瞬间施放，无敌；释放生命之圣遗物：8 段同等伤害；联动天启之珠 = 神圣太阳 + 43 秒天启之珠 BUFF（8+n% 强化）；联动惩罚 = 20 秒额外 BUFF；勇气恩赐固定审判演出、无 BUFF；和联动的觉醒共用冷却；CD 270s",
+   "src": "https://wiki.dfo.world/view/Final_Judgment；namu 크루세이더(던전앤파이터)/남자/스킬（2026-08）",
+   "en": "Final Judgment",
+   "conf": "高",
+   "hits": [
+    8,
+    8
+   ],
+   "invul": "full",
+   "cd": 270
+  },
+  "pi_will": {
+   "official": "↑↓+Space；瞬间施放；把巨兵插进地面：周围 150px 硬直，750px 光环里暴击伤害 / 物理暴击 / 命中提高、冷却 −10%（觉醒除外，离开后保留 30s）；除神圣反击外的转职技能都要插着巨兵；按住技能键收回；进地下城 / 换房间自动插；CD 5s",
+   "src": "https://wiki.dfo.world/view/Will_Driver；namu 인파이터(던전앤파이터)/남자/스킬（2026）",
+   "en": "Will Driver",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "cd": 5
+  },
+  "pi_duck": {
+   "official": "意念驱动中按 Z；瞬间施放；压低身子前冲 150px（0.5s，↑↓ 斜着冲），0.25s 无敌，最下段判定；中途跳跃键停下；和摆动互相取消；CD 0.7s；MP 1",
+   "src": "https://wiki.dfo.world/view/Ducking_Dash；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 DBscnDhwon8",
+   "en": "Ducking Dash",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "dx": [
+    130,
+    200
+   ],
+   "invul": "part",
+   "cd": 0.7
+  },
+  "pi_sway": {
+   "official": "↓↓+C；瞬间施放；后仰后撤 150px（↑↓ 斜着退），0.25s 无敌；和俯冲互相取消；摆动中 X = 破碎之锤；CD 0.7s；MP 1",
+   "src": "https://wiki.dfo.world/view/Sway；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 swqfE7zJQrw",
+   "en": "Sway",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "dx": [
+    -200,
+    -130
+   ],
+   "invul": "part",
+   "cd": 0.7
+  },
+  "pi_dstraight": {
+   "official": "俯冲中 X（技巧精通后摆动中也行）；直拳打退（2020 起不再打得很远）；技巧精通追加 5%×2；CD 3.5s",
+   "src": "https://wiki.dfo.world/view/Ducking_Straight_Punch；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 BBiDosjz6-U",
+   "en": "Ducking Straight Punch",
+   "conf": "高",
+   "hits": [
+    1,
+    3
+   ],
+   "launch": false,
+   "cd": 3.5,
+   "why": {
+    "dx": "直接按技能栏时先自动小冲一步（本作方便；官方要先俯冲）"
+   }
+  },
+  "pi_dupper": {
+   "official": "俯冲中 ↑+X；上勾拳挑空（浮空力 80%），最下段到最上段都能打；技巧精通追加 5%×2；CD 3.5s",
+   "src": "https://wiki.dfo.world/view/Ducking_Uppercut；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 W-jv-OXjSFg",
+   "en": "Ducking Uppercut",
+   "conf": "高",
+   "hits": [
+    1,
+    3
+   ],
+   "launch": true,
+   "cd": 3.5
+  },
+  "pi_dbody": {
+   "official": "俯冲中 ↓+X；腹拳长硬直、几率眩晕，不倒地；技巧精通：霸体 + 追加 10%；绝对正义：打中后俯冲 / 摆动取消后摇；CD 3.5s",
+   "src": "https://wiki.dfo.world/view/Ducking_Body_Blow；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 i06JiibDX_I",
+   "en": "Ducking Body Blow",
+   "conf": "高",
+   "hits": [
+    1,
+    2
+   ],
+   "launch": false,
+   "down": false,
+   "cd": 3.5
+  },
+  "pi_crush": {
+   "official": "→↑+Z；瞬间施放；一拳砸地（直接 397% + 冲击波 3575%），冲击波轻轻挑起；可取消普攻；CD 5s",
+   "src": "https://wiki.dfo.world/view/Divine_Crush；namu 인파이터(던전앤파이터)/남자/스킬（2026）",
+   "en": "Divine Crush",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "cd": 5
+  },
+  "pi_side": {
+   "official": "←→+Z；瞬间施放；伸得很远的弹击拳（3073%），再按技能键 / 攻击键追加贴地一击把敌人拽过来（768%）；可取消普攻；CD 4s",
+   "src": "https://wiki.dfo.world/view/Sidewind；namu 인파이터(던전앤파이터)/남자/스킬（2026）",
+   "en": "Sidewind",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "acts": [
+    2,
+    2
+   ],
+   "reach": [
+    300,
+    300
+   ],
+   "cd": 4,
+   "presses": [
+    0.3
+   ]
+  },
+  "pi_gorgeous": {
+   "official": "→→+Z；瞬间施放；刺拳 / 直拳 / 摆拳 3 连（1556 : 1901 : 2304），连打中霸体；摆拳后俯冲 / 摆动取消；技巧精通加距离、追加 3%；CD 7s",
+   "src": "https://wiki.dfo.world/view/Exquisite_Combo；namu 인파이터(던전앤파이터)/남자/스킬（2026）",
+   "en": "Exquisite Combo",
+   "conf": "高",
+   "hits": [
+    3,
+    6
+   ],
+   "sa": "part",
+   "cd": 7
+  },
+  "pi_counter": {
+   "official": "↓↓+Z；祈祷架势，正面挨打时受到的伤害 −90% 并冲出腹拳反击（俯冲腹拳 + 自身）；技巧精通：再按主动冲出；不用插巨兵；CD 6s",
+   "src": "https://wiki.dfo.world/view/Sacred_Counter；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 TBAe-BWpwb4",
+   "en": "Sacred Counter",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 6
+  },
+  "pi_chop": {
+   "official": "摆动中 X（技巧精通后俯冲中也行）；向前冲出下劈钩拳，敌人撞地弹起时出冲击波；下劈前霸体；绝对正义：改为落点插巨兵神圣爆炸；CD 6s",
+   "src": "https://wiki.dfo.world/view/Chopping_Hammer；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 kEIITibH_HA",
+   "en": "Chopping Hammer",
+   "conf": "高",
+   "hits": [
+    1,
+    2
+   ],
+   "launch": true,
+   "cd": 6,
+   "why": {
+    "dx": "直接按技能栏时先小撤一步再冲（本作方便；官方要先摆动）"
+   }
+  },
+  "pi_shadow": {
+   "official": "←→+Space；施放 0.5s；影子分身追加打击（原伤害 5+1.5n%），要插着巨兵，收回时解除；无限持续（决斗场 10s）；CD 5s",
+   "src": "https://wiki.dfo.world/view/Shadow_Clone；namu 인파이터(던전앤파이터)/남자/스킬（2026）",
+   "en": "Shadow Clone",
+   "conf": "高",
+   "hits": [
+    0,
+    0
+   ],
+   "cd": 5
+  },
+  "pi_mgjab": {
+   "official": "↑→→+Z；瞬间施放；刺拳连打 15 下（连按更快、Z 直接终结）+ 下砸终结 + 攻击键追加上勾拳；连打中霸体；技巧精通吸怪；CD 10s",
+   "src": "https://wiki.dfo.world/view/Machine_Gun_Jab；namu 인파이터(던전앤파이터)/남자/스킬（2026）",
+   "en": "Machine Gun Jab",
+   "conf": "高",
+   "hits": [
+    16,
+    17
+   ],
+   "launch": true,
+   "sa": "part",
+   "cd": 10
+  },
+  "pi_cork": {
+   "official": "↑→+Z；瞬间施放；旋风把敌人吸到拳前控制（704%×10）+ 下砸终结（10577%）；俯冲 / 摆动中可用；霸体；CD 20s",
+   "src": "https://wiki.dfo.world/view/Corkscrew_Blow；namu 인파이터(던전앤파이터)/남자/스킬（2026）",
+   "en": "Corkscrew Blow",
+   "conf": "高",
+   "hits": [
+    11,
+    11
+   ],
+   "sa": "full",
+   "cd": 20
+  },
+  "pi_heavenly": {
+   "official": "↓→→+Z；瞬间施放；右钩拳 / 左钩拳 / 直拳（3860 : 5033 : 7886），纵深聚怪、硬直大；直拳后俯冲 / 摆动取消；CD 16s",
+   "src": "https://wiki.dfo.world/view/Heavenly_Combo；namu 인파이터(던전앤파이터)/남자/스킬（2026）",
+   "en": "Heavenly Combo",
+   "conf": "高",
+   "hits": [
+    3,
+    3
+   ],
+   "cd": 16
+  },
+  "pi_hurricane": {
+   "official": "←↓→+Z；瞬间施放；吸周围 936px（namu）的敌人，左右钩拳 10 下（2620%）+ 上勾拳（11235%）；前后移动、连按加速、跳跃键直接上勾拳；前后都有判定；CD 45s",
+   "src": "https://wiki.dfo.world/view/Hurricane_'n'_Roll；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 S3XQgmKluPU",
+   "en": "Hurricane 'n' Roll",
+   "conf": "高",
+   "hits": [
+    11,
+    11
+   ],
+   "launch": true,
+   "behind": true,
+   "sa": "full",
+   "cd": 45
+  },
+  "pi_awaken": {
+   "official": "↑↑↓↓+Z；瞬间施放；右钩拳 / 左钩拳 / 下劈 / 冲刺直拳（9047 : 13983 : 18094 : 41125），最后一拳可蓄；无敌；幻影化身中 ×1.1；CD 135s（namu；DFO 145）",
+   "src": "https://wiki.dfo.world/view/Big_Bang_Punch；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 9ohdkD-19zc",
+   "en": "Big Bang Punch",
+   "conf": "高",
+   "hits": [
+    4,
+    4
+   ],
+   "invul": "full",
+   "cd": 135
+  },
+  "pi_gatling": {
+   "official": "→←↓→+Z；瞬间施放；双拳连打 10 下 + 下砸 + 爆炸（2330×10 : 5827 : 9714）；连按加速、跳跃键终结；技巧精通吸怪；CD 35s",
+   "src": "https://wiki.dfo.world/view/Gattling_Punch；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 vu7yTRObV2E",
+   "en": "Gattling Punch",
+   "conf": "高",
+   "hits": [
+    12,
+    12
+   ],
+   "launch": true,
+   "cd": 35
+  },
+  "pi_demo": {
+   "official": "Space（DFO）；瞬间施放；向上强力钩拳（44201%，连霸体一起拎起：抓取判定）+ 冲击波挑高（4910%）；俯冲 / 摆动中可用；CD 40s",
+   "src": "https://wiki.dfo.world/view/Demolition_Punch；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 iKNJLYZgRmY",
+   "en": "Demolition Punch",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "launch": true,
+   "cd": 40
+  },
+  "pi_nuke": {
+   "official": "→←→+Z；瞬间施放；致命重拳（64869%），打中才出冲击波打后面（27801%）；干涸之泉能取消进来、放出后不能取消；CD 40s",
+   "src": "https://wiki.dfo.world/view/Nuclear_Punch；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 GNGgFQgCJrQ",
+   "en": "Nuclear Punch",
+   "conf": "高",
+   "hits": [
+    1,
+    1
+   ],
+   "reach": [
+    450,
+    450
+   ],
+   "cd": 40
+  },
+  "pi_atomic": {
+   "official": "←→→+Z；瞬间施放；上勾拳挑起 + 几乎同时往下猛砸（21103 : 84415）；俯冲 / 摆动中施放更快；CD 50s",
+   "src": "https://wiki.dfo.world/view/Atomic_Chopper；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 6G1OE0mTlgQ",
+   "en": "Atomic Chopper",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "bounce": true,
+   "cd": 50
+  },
+  "pi_awaken2": {
+   "official": "↓↑→→+Z；施放 0.5s；跳起砸地后在 600px 内的敌人之间穿梭连打 19 下，消失聚怪，再现身 2 下直接打击 + 覆盖全画面的大爆炸（4975×19 : 7255×2 : 109892）；无敌；CD 170s（namu；DFO 180）",
+   "src": "https://wiki.dfo.world/view/Wrath_of_God；namu 인파이터(던전앤파이터)/남자/스킬（2026）；视频 Nj7ksNskP8w",
+   "en": "Wrath of God",
+   "conf": "高",
+   "hits": [
+    19,
+    26
+   ],
+   "invul": "full",
+   "cd": 170
+  },
+  "pi_furious": {
+   "official": "↑↓→→+Z；瞬间施放；下砸冲击波挑起（34561%）→ 高速移动聚怪连打 15 下（2591%）→ 钩拳终结（86404%）；连按加速、跳跃键终结；CD 60s",
+   "src": "https://wiki.dfo.world/view/Furious_Judgment；namu 인파이터(던전앤파이터)/남자/스킬（2026）",
+   "en": "Furious Judgment",
+   "conf": "高",
+   "hits": [
+    17,
+    17
+   ],
+   "launch": true,
+   "sa": "full",
+   "cd": 60
+  },
+  "pi_awaken3": {
+   "official": "←↑→↓+Z；瞬间施放；巨兵化为雷米迪奥斯的圣座，圣域里的敌人被拉到面前跪地控制，神圣拳铠上勾拳执行正义（219090 : 328636）；无敌；和联动的觉醒共用冷却；CD 270s（namu；DFO 290）",
+   "src": "https://wiki.dfo.world/view/Justice_Execution:_Lemidios_Constellation；namu 인파이터(던전앤파이터)/남자/스킬（2026）",
+   "en": "Justice Execution: Lemidios Constellation",
+   "conf": "高",
+   "hits": [
+    2,
+    2
+   ],
+   "launch": true,
+   "invul": "full",
+   "cd": 270
+  },
   "pe_gale": {
    "official": "→↑+Z：霸体肩撞冲刺（不能转向，攻速越快冲得越远），肩撞 355% : 冲击波 532%，15% 眩晕 1 秒；固定 1 级、随基础精通成长；可取消普攻、落凤锤后可接；CD 4（DFO 4.5）",
    "src": "https://wiki.dfo.world/view/Gale_Smash；namu 퇴마사(던전앤파이터)/스킬（2026-09）；df.nexon.com 2024-06-20 驱魔大改公告",

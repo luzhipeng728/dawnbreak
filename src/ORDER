@@ -58,7 +58,9 @@ content/classes/fighter_grappler_p1.js
 # 圣职者（男，docs/CLASS_PLAN_PRIEST.md）：B0 骨架 + 基础职业 + 4 个转职空壳（ready:false），之后各块只改自己的文件
 content/classes/priest.js
 content/classes/priest_crusader.js
-content/classes/priest_monk.js
+content/classes/priest_crusader_p1.js
+content/classes/priest_infighter.js
+content/classes/priest_infighter_p1.js
 content/classes/priest_exorcist.js
 content/classes/priest_exorcist_p1.js
 content/classes/priest_avenger.js

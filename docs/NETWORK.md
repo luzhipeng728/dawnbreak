@@ -288,3 +288,11 @@
 - **部署注意**：线上服务端目录里没有 `src/`，`loadRaidCore()` 依次找 `DNF_RAID_CORE` → 服务端 `lib/raid_core.js` → 仓库 `src/game/raid_core.js`；`tools/deploy.sh server` 要在同步 server 目录之后加一步 `rsync -az src/game/raid_core.js cc:/tmp/dawnbreak-server-src/lib/raid_core.js`（install.sh 会复制 lib/）。找不到时团本模块跳过加载（日志“模块加载失败 raid.js”），其余功能不受影响。
 - **测试参数**：`cfg.raidShift`（毫秒，平移团本时间）、`cfg.raidMinClear` / `cfg.raidMaxDrop`（覆盖防作弊阈值）；环境变量 `DNF_RAID_FAST=1` = 两个都关（给 RA2 的 `?raidfast` 浏览器测试用）。
 - 测试：`node --disable-warning=ExperimentalWarning server/test/raid.mjs`（约 5 秒，97 项：两人全流程、单人引导、每周次数、作弊、断线 / 重启恢复、网页版一致性）。
+- **客户端（RA2，10-01：`src/net/raid.js` 的 `raidNet` + `src/ui/raid.js`）**
+  - 入口：暗黑城阿甘左的服务「团本」（`NPC_SERVICES.raid`，往 `NPCS.agonzo.services` 追加）→ 团本窗口（次数 `GET /api/raid`、建团 / 加入 / 准备 / 开始、练习说明）；门槛 Lv60 + 希洛克主线。营地 v1 就是暗黑城（`RAID_CAMP`），节点打完 / 倒下都回这里并自动打开情况板。
+  - 攻坚情况板 `menus.open('raidboard')`（城镇里按 R / 点顶上的团本条）；局内 HUD 画在 UI 画布左上（组队时在队伍血条下面）；阶段结算 `raidres`（领奖后翻牌）。
+  - 进节点：`raid:entered` → 单独进 = 本地 `new Dungeon(def)`；一起进 = 队长 `coop.lead(dg, 0, { raid, node, run })`（coop.js 的最小钩子：`lead` 第三个参数进 `room:open` 的 meta；`def.raid` 的地下城不查疲劳）。包装（不改 dungeon.js）：`Dungeon.prototype.start / spawnRoom / bossDown / go / revive / fail`、`save.useFatigue`、`killEnt`、`rollDrop`（练习不掉装备）、`menus.w_result`（节点没有翻牌，按钮“返回营地”）。
+  - 领主（`raidNet.bossSetup`）：团本数值（`dg.D`）、`?raidfast` 血量 ×0.05、`hpStart` / 存档点血量、效果用 `msMulSet(b, 'raid_<id>', 受伤倍率)`、破防 = `aiCd`。顺序 / 同步节点的领主打空时先按住（1 血、无敌、不动）报 `down`，按 ack / fx（clear / done / heal / revive）或会话状态（`reconcile`）真的倒下或起来。RA3 的 `raidLink` 接管时，把 `b.raidHold` 关掉、效果改走自己的机制即可。
+  - 上报队列：`raidNet.queue`（没回执的 `raid:ev`，重连 `netOpen` 时补发、`localStorage['dawnbreak_raid_<uid>']` 防刷新丢失；刷新后发现自己还挂在节点里 → 报 `fail lost`）。离线（没登录）：本地 `RAID_CORE` 跑引导，会话存 `save.data.raidRun`，次数 `save.data.raidWeek`；领奖入账记 `save.data.raidGot[sid:phase]`（只入账一次），物品还没登记（RA3）先记 `save.data.raidOwed`，登记后回城自动发。
+  - 节点地下城：RA3 定义了 `DUNGEONS['raid_si_*']` 就用真的；没有的按 `RAID_FALLBACK_DG`（net/raid.js 顶上）复制现有希洛克地图（不进门、没有原掉落表）。
+  - 测试：`node test/raid_ui.mjs`（单人引导在线 + 离线手机版，约 2 分钟）、`node test/mp_raid.mjs`（两人普通全流程：错序 / 跨节点 BUFF / 镜子到 0 / 断线补发 / 双生 / 一起进最终战 / 领奖一次，约 2 分钟）；截图 `test/shots/raid/`。

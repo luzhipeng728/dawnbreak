@@ -256,7 +256,7 @@ function cashUseTicket(tk, target, sel = {}) {
   if (!inv.items.includes(tk)) return { err: '券已经不在背包里了' };
   if (T.kind === 'enh') {
     if (!target || !cashTicketTargets(T).includes(target)) return { err: '这件装备不能使用' };
-    inv.take(tk.key, 1); target.enh = T.lvl; if (save.data) save.data.enhPity = 0;
+    inv.take(tk.key, 1); target.enh = T.lvl; if (save.data) save.data.enhPity = Math.floor((save.data.enhPity || 0) / 2);
   } else if (T.kind === 'amp') {
     if (typeof ampSetLevel !== 'function') return { err: '增幅系统尚未开放' };
     if (!target) return { err: '请选择装备' };

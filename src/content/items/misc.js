@@ -54,6 +54,7 @@ defineItem('m_diamond', { kind: 'mat', name: '金刚石', rar: 3, price: 2500, c
 defineItem('m_soul', { kind: 'mat', name: '灵魂之石', rar: 5, price: 15000, col: '#e080ff', icon: 'item_mat_soul', desc: '分解史诗装备得到的结晶，寄宿着装备的灵魂。' });
 /* ---- 希洛克攻坚战 ---- */
 defineItem('raid_petal', { kind: 'mat', name: '紫英花瓣', rar: 4, price: 1200, sellMul: 0.05, col: '#d8a0ff', icon: 'item_raid_petal', noSell: true, desc: '希洛克幻界中凝结的紫色花瓣。完成攻坚阶段后获得，可用于后续团本兑换。' });
+defineItem('raid_immaterial', { kind: 'mat', name: '无形之息', rar: 4, price: 1800, sellMul: 0.05, col: '#b98cff', icon: 'item_raid_immaterial', noSell: true, desc: '无形之棺中凝结的融合材料，可在攻坚商店兑换希洛克融合装备。' });
 /* ---- 称号（帕丽丝出售 / 任务奖励）：slot 'title'，没有耐久，不能强化 ----
    任务组发称号：giveItem(makeItem('title_xxx')) */
 const defineTitle = (key, def) => defineItem(key, { kind: 'equip', slot: 'title', icon: def.rar >= 4 ? 'item_title3' : def.rar >= 3 ? 'item_title' : 'item_title2', durMax: 0, noEnhance: true, noDisassemble: true, ...def });

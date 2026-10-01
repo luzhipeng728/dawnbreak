@@ -66,7 +66,7 @@ const RAID_DEFS = {
         coffin: { name: '真·意识之棺', type: 'final', area: 3, pos: [0.85, 0.5], need: ['con_hall'], together: true, cp: true, dg: 'raid_si_coffin', boss: 'siroco' },
       } },
     ],
-    rewards: { cur: 'raid_petal', p1: [{ cur: [3, 4] }], p2: [{ cur: [8, 10] }, { cur: [12, 16] }] },
+    rewards: { cur: 'raid_petal', p1: [{ cur: [3, 4] }, { key: 'raid_immaterial', n: [1, 2] }], p2: [{ cur: [12, 16] }, { table: [[82, { key: 'raid_immaterial', n: [2, 4] }], [18, { pick: ['raid_si_immateriality_1', 'raid_si_immateriality_2', 'raid_si_immateriality_3', 'raid_si_immateriality_4', 'raid_si_immateriality_5', 'raid_si_subconscious_1', 'raid_si_subconscious_2', 'raid_si_subconscious_3', 'raid_si_subconscious_4', 'raid_si_subconscious_5', 'raid_si_phantasm_1', 'raid_si_phantasm_2', 'raid_si_phantasm_3', 'raid_si_phantasm_4', 'raid_si_phantasm_5'], n: 1, gear: true }]] }] },
   },
 };
 

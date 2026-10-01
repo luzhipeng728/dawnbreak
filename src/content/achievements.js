@@ -40,7 +40,7 @@ function defineAch(id, def) {
 
 /* ---- 写定义用的小工具 ---- */
 const achQuestN = type => () => Object.values(QUESTS).filter(q => q.type === type).length;
-const achDgIds = (pred) => Object.values(DUNGEONS).filter(d => d && !d.abyss && pred(d)).map(d => d.id);
+const achDgIds = (pred) => Object.values(DUNGEONS).filter(d => d && !d.abyss && !d.raid && pred(d)).map(d => d.id);
 const ACH_AREA = {
   lorien: ['lorien', 'lorien_deep'],
   gf: ['dark_woods', 'dark_woods_deep', 'thunder_ruins', 'venom_ruins', 'graca', 'blazing_graca'],
@@ -102,7 +102,7 @@ defineAch('abyss30', { cat: 'fight', tier: 3, name: '深渊行者', desc: '累�
 defineAch('death10', { cat: 'fight', tier: 1, name: '屡败屡战', desc: '在地下城里倒下 10 次（没关系，站起来就好）', val: X => X.c.death || 0, n: 10, reward: R(30, { items: [['coin', 2]] }) });
 // 讨伐：每个地下城的领主一个成就（天帷巨兽合并后自动出现）
 for (const D of Object.values(DUNGEONS)) {
-  if (!D || D.abyss || !D.boss || !MON[D.boss.kind]) continue;
+  if (!D || D.abyss || D.raid || !D.boss || !MON[D.boss.kind]) continue;
   const nm = MON[D.boss.kind].name;
   defineAch('boss_' + D.id, { cat: 'fight', tier: D.hidden || D.lvl[0] >= 20 ? 2 : 1, name: `讨伐：${nm}`, desc: `在${D.name}击败领主${nm}`, val: X => X.bossK(D.boss.kind, D.id), reward: R(D.hidden || D.lvl[0] >= 20 ? 150 : Math.min(100, 30 + D.lvl[0] * 4)) });
 }
@@ -193,7 +193,7 @@ defineAch('area_gf', { cat: 'explore', tier: 2, name: '格兰之森的解放者'
 defineAch('area_sky', { cat: 'explore', tier: 2, name: '登上天空之城', desc: '通关天空之城的全部普通地下城', val: X => X.clearedOf(ACH_AREA.sky), n: ACH_AREA.sky.length, reward: R(300) });
 if (achHas(ACH_AREA.behemoth).length === ACH_AREA.behemoth.length) defineAch('area_behemoth', { cat: 'explore', tier: 3, name: '征服天帷巨兽', desc: '通关天帷巨兽的全部普通地下城', val: X => X.clearedOf(ACH_AREA.behemoth), n: ACH_AREA.behemoth.length, reward: R(600) });
 const ACH_HIDDEN = () => achDgIds(d => d.hidden);
-for (const D of Object.values(DUNGEONS)) if (D && D.hidden && !D.abyss) defineAch('hid_' + D.id, { cat: 'explore', tier: D.lvl[0] >= 20 ? 3 : 2, name: `秘境：${D.name}`, desc: `通关隐藏地下城「${D.name}」`, val: X => (X.cleared(D.id) ? 1 : 0), reward: R(D.lvl[0] >= 20 ? 500 : 250), hidden: true });
+for (const D of Object.values(DUNGEONS)) if (D && D.hidden && !D.abyss && !D.raid) defineAch('hid_' + D.id, { cat: 'explore', tier: D.lvl[0] >= 20 ? 3 : 2, name: `秘境：${D.name}`, desc: `通关隐藏地下城「${D.name}」`, val: X => (X.cleared(D.id) ? 1 : 0), reward: R(D.lvl[0] >= 20 ? 500 : 250), hidden: true });
 defineAch('hiddenDgAll', { cat: 'explore', tier: 3, name: '阿拉德漫游者', desc: '通关全部隐藏地下城', val: X => X.clearedOf(ACH_HIDDEN()), n: () => ACH_HIDDEN().length, reward: R(800, { title: 'title_ach_explorer' }) });
 defineAch('firstLord', { cat: 'explore', tier: 2, name: '天空之城的见证者', desc: '通关城主宫殿', val: X => (X.cleared('lord_palace') ? 1 : 0), reward: R(200) });
 defineAch('seria', { cat: 'explore', tier: 1, name: '回到原点', desc: '回到赛丽亚的房间', val: X => (X.seenId('seria_room') ? 1 : 0), reward: R(20), hidden: true });

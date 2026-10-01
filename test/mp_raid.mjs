@@ -173,7 +173,7 @@ try {
   ok((await Promise.all([A, B].map(P => until(P, () => raidNet.S.st === 'cleared' && menus.isOpen('result'), null, 15000)))).every(Boolean), '最终领主倒下：团本通关（两边都看到结算）');
   ok((await Promise.all([backToCamp(A), backToCamp(B)])).every(Boolean), '两人回营地');
   ok((await Promise.all([claim(A, 2), claim(B, 2)])).every(Boolean), '两人各领 P2 奖励（翻 2 张）');
-  const own = await Promise.all([A, B].map(P => P.evaluate(async () => { const o = save.data.raidOwed.raid_petal; raidNet.claim(2); raidNet.claim(1); await new Promise(r => setTimeout(r, 800)); const r = await raidNet.fetch(); return { o, o2: save.data.raidOwed.raid_petal, got: Object.keys(save.data.raidGot).length, lim: r.limits }; })));
+  const own = await Promise.all([A, B].map(P => P.evaluate(async () => { const count = () => inv.items.filter(x => x.key === 'raid_petal').reduce((n, x) => n + x.n, 0); const o = count(); raidNet.claim(2); raidNet.claim(1); await new Promise(r => setTimeout(r, 800)); const r = await raidNet.fetch(); return { o, o2: count(), got: Object.keys(save.data.raidGot).length, lim: r.limits }; })));
   ok(own.every(x => x.o === x.o2 && x.o >= 3 + 8 + 12 && x.got === 2), '重复领：奖励只入账一次（每人 P1 + P2）', own);
   ok(own.every(x => x.lim.dayLeft === 0 && x.lim.weekLeft === 1), '次数 −1：今天 0 / 本周剩 1', own.map(x => x.lim));
   await A.evaluate(() => { menus.closeAll(); menus.show('raidboard'); }); await sleep(300);

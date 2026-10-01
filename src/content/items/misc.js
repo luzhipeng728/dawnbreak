@@ -52,6 +52,8 @@ defineItem('m_cosmos', { kind: 'mat', name: '宇宙灵魂', rar: 4, price: 5000,
 defineItem('m_otherworld', { kind: 'mat', name: '浓密的异界精髓', rar: 3, price: 3000, sellMul: 0.1, col: '#6ad0a0', icon: 'item_m_otherworld', src: '深渊派对的深渊领主', desc: '异界气息浓缩成的精髓。可以在歌兰蒂斯处兑换异界套装。' });
 defineItem('m_diamond', { kind: 'mat', name: '金刚石', rar: 3, price: 2500, col: '#bfefff', icon: 'item_mat_diamond', desc: '分解传说以上的装备得到的宝石，价值不菲。' });
 defineItem('m_soul', { kind: 'mat', name: '灵魂之石', rar: 5, price: 15000, col: '#e080ff', icon: 'item_mat_soul', desc: '分解史诗装备得到的结晶，寄宿着装备的灵魂。' });
+/* ---- 希洛克攻坚战 ---- */
+defineItem('raid_petal', { kind: 'mat', name: '紫英花瓣', rar: 4, price: 1200, sellMul: 0.05, col: '#d8a0ff', icon: 'item_raid_petal', noSell: true, desc: '希洛克幻界中凝结的紫色花瓣。完成攻坚阶段后获得，可用于后续团本兑换。' });
 /* ---- 称号（帕丽丝出售 / 任务奖励）：slot 'title'，没有耐久，不能强化 ----
    任务组发称号：giveItem(makeItem('title_xxx')) */
 const defineTitle = (key, def) => defineItem(key, { kind: 'equip', slot: 'title', icon: def.rar >= 4 ? 'item_title3' : def.rar >= 3 ? 'item_title' : 'item_title2', durMax: 0, noEnhance: true, noDisassemble: true, ...def });

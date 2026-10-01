@@ -11,16 +11,16 @@
    - 节点不耗疲劳；复活要先向会话要次数（revive → life）；倒下且不复活 = death（侵蚀）；打完 / 倒下都回营地（v1 = 暗黑城）并打开情况板
    - 界面在 ui/raid.js（入口窗口、攻坚情况板、局内 HUD、阶段结算）
    ===================================================================== */
-// ---- 临时对照（RA3 定义了真的 DUNGEONS['raid_si_*'] 以后这张表自动不用，届时可以删掉）：团本节点地下城 → 现有的希洛克地图 ----
+// ---- 兼容对照：旧版本或热更新漏文件时仍能安全进入；正式 RA3 节点优先使用 DUNGEONS['raid_si_*'] ----
 const RAID_FALLBACK_DG = {
   raid_si_law: 'pain_gate', raid_si_dawn: 'wit_gate', raid_si_night: 'wit_gate', raid_si_memory: 'pain_gate', raid_si_mirror: 'law_gate',
   raid_si_gate_l: 'law_gate', raid_si_gate_r: 'law_gate', raid_si_gate_duo: 'law_gate',
   raid_si_sub: 'siroco_coffin', raid_si_con: 'siroco_coffin', raid_si_mutant: 'wit_gate', raid_si_coffin: 'siroco_coffin',
 };
 const RAID_CAMP = { scene: 'siroco_town', x: 1040, y: 60 };   // 营地：v1 就是暗黑城（阿甘左旁边）
-const RAID_ITEM_NAME = { raid_petal: '紫英花瓣' };   // RA3 还没登记物品时显示用的名字
+const RAID_ITEM_NAME = { raid_petal: '紫英花瓣' };   // 兼容旧存档里尚未登记的奖励 key
 const RAID_TZ = 480;   // 每天 / 每周次数按北京时间（和服务端一致）
-// 节点地下城：RA3 的真节点直接用；还没有的按临时对照表复制一份现有地图（不耗疲劳、领主等级按团本、没有原地图的掉落表 / 剧情怪）
+// 节点地下城：正式 RA3 定义直接用；仅在旧客户端缺少节点定义时回退到兼容地图。
 function raidNodeDef(dg, e) {
   const real = DUNGEONS[dg];
   if (real && !real.raidFallback) {

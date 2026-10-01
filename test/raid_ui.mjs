@@ -1,6 +1,6 @@
 // 团本界面 + 客户端流程（RA2）：1 个客户端，单人引导从头打到尾（本地服务端 DNF_RAID_FAST=1 + 页面 ?raidfast：节点直达领主、领主血量 ×0.05）
 // 在线：阿甘左「团本」窗口（列表 / 次数）→ 单人引导建团 → 开始 → 攻坚情况板点节点 → 单独进 → 机器人打第一个领主 → 返回营地自动打开情况板 →
-//       复活要全团次数（3 → 2）→ 倒下 = 侵蚀（进不了节点）→ 追逐战完成 → 阶段结算领奖（翻 1 张，货币 ×0.6，物品没登记先记账）→ 团长提前开始讨伐战 →
+//       复活要全团次数（3 → 2）→ 倒下 = 侵蚀（进不了节点）→ 追逐战完成 → 阶段结算领奖（翻 1 张，货币 ×0.6 后进入背包）→ 团长提前开始讨伐战 →
 //       最终战（存档点上报）→ 团本通关 → 领 P2（2 张）→ 重复领不重复入账 → 次数 今天 0 / 本周剩 1
 // 离线（手机横屏模拟，不登录）：本地规则核心跑引导全流程，刷新页面接着打，领奖只入账一次
 // 截图：test/shots/raid/*.png（入口窗口、大厅、情况板、局内 HUD、阶段结算、手机版情况板）
@@ -43,6 +43,11 @@ try {
   ok(await uiRegister(A, srv.url + '?raidfast&', 'alice'), 'alice 注册');
   ok(await uiCreateChar(A, 0, '阿丽'), 'alice 建角色进城');
   ok(await A.evaluate(PREP) === 60, 'Lv60、希洛克主线已完成');
+  const content = await A.evaluate(() => {
+    const ids = ['raid_si_law', 'raid_si_dawn', 'raid_si_night', 'raid_si_memory', 'raid_si_mirror', 'raid_si_gate_l', 'raid_si_gate_r', 'raid_si_gate_duo', 'raid_si_sub', 'raid_si_con', 'raid_si_mutant', 'raid_si_coffin'];
+    return { nodes: ids.filter(id => DUNGEONS[id] && DUNGEONS[id].raid && !DUNGEONS[id].raidFallback).length, total: ids.length, petal: ITEMS.raid_petal && ITEMS.raid_petal.name };
+  });
+  ok(content.nodes === content.total && content.petal === '紫英花瓣', 'RA3：12 个真实团本节点和紫英花瓣已登记', content);
   ok(await toCamp(A), '到暗黑城（营地）');
   ok(await openRaidNpc(A), '阿甘左「团本」→ 团本窗口（列表 + 次数）');
   const lim0 = await A.evaluate(() => raidNet.limits);
@@ -115,13 +120,13 @@ try {
   await A.screenshot({ path: `${out}/06-result-p1.png` });
   await A.click('[data-win="raidres"] [data-act="claim"]');
   ok(await until(A, () => { const k = raidNet.S.sid + ':1'; return !!raidNet.claims[k] && document.querySelectorAll('[data-win="raidres"] .card.flip').length === 1; }, null, 6000), '领 P1 奖励：翻开 1 张');
-  const own1 = await A.evaluate(() => ({ owed: { ...(save.data.raidOwed || {}) }, got: Object.keys(save.data.raidGot || {}).length, rw: raidNet.claims[raidNet.S.sid + ':1'] }));
-  ok(own1.owed.raid_petal === 2 && own1.got === 1, '引导货币 ×0.6（3~4 → 2 花瓣）；物品还没登记（RA3）先记账', own1);
+  const own1 = await A.evaluate(() => ({ petals: inv.items.filter(x => x.key === 'raid_petal').reduce((n, x) => n + x.n, 0), owed: { ...(save.data.raidOwed || {}) }, got: Object.keys(save.data.raidGot || {}).length, rw: raidNet.claims[raidNet.S.sid + ':1'] }));
+  ok(own1.petals === 2 && !own1.owed.raid_petal && own1.got === 1, '引导货币 ×0.6（3~4 → 2 花瓣）直接进入背包', own1);
   await sleep(700);
   await A.screenshot({ path: `${out}/07-result-p1-flip.png` });
   await A.evaluate(() => raidNet.claim(1));
   await sleep(600);
-  ok((await A.evaluate(() => save.data.raidOwed.raid_petal)) === 2, '重复领：服务端返回同一份（dup），不重复入账');
+  ok((await A.evaluate(() => inv.items.filter(x => x.key === 'raid_petal').reduce((n, x) => n + x.n, 0))) === 2, '重复领：服务端返回同一份（dup），不重复入账');
   await A.click('[data-win="raidres"] [data-act="close"]');
   await A.evaluate(() => menus.show('raidboard'));
   await A.click('[data-win="raidboard"] [data-act="next"]');
@@ -148,8 +153,8 @@ try {
   ok(await until(A, () => document.querySelectorAll('[data-win="raidres"] .card.flip').length === 2, null, 6000), '领 P2 奖励：翻开 2 张');
   await sleep(800);
   await A.screenshot({ path: `${out}/09-result-final.png` });
-  const fin = await A.evaluate(async () => { const r = await raidNet.fetch(); return { lim: r && r.limits, owed: save.data.raidOwed.raid_petal, got: Object.keys(save.data.raidGot).length }; });
-  ok(fin.lim && fin.lim.dayLeft === 0 && fin.lim.weekLeft === 1 && fin.owed >= 2 + 2 + 3 && fin.got === 2, '次数：今天 0 / 本周剩 1；两阶段奖励都入账一次', fin);
+  const fin = await A.evaluate(async () => { const r = await raidNet.fetch(); return { lim: r && r.limits, petals: inv.items.filter(x => x.key === 'raid_petal').reduce((n, x) => n + x.n, 0), got: Object.keys(save.data.raidGot).length }; });
+  ok(fin.lim && fin.lim.dayLeft === 0 && fin.lim.weekLeft === 1 && fin.petals >= 2 + 2 + 3 && fin.got === 2, '次数：今天 0 / 本周剩 1；两阶段奖励都入账一次', fin);
   await A.click('[data-win="raidres"] [data-act="close"]');
   await A.evaluate(() => menus.show('raidboard'));
   await A.screenshot({ path: `${out}/10-board-cleared.png` });
@@ -190,7 +195,7 @@ try {
   ok((await M.evaluate(() => raidNet.S.sid)) === sid, '同一个会话');
   await M.evaluate(() => { menus.closeAll(); raidNet.claim(1); });
   await sleep(500);
-  ok((await M.evaluate(() => save.data.raidOwed.raid_petal)) === 2, '离线：刷新后再领不重复入账');
+  ok((await M.evaluate(() => inv.items.filter(x => x.key === 'raid_petal').reduce((n, x) => n + x.n, 0))) === 2, '离线：刷新后再领不重复入账');
   await M.evaluate(() => { if (menus.isOpen('raidres')) menus.close('raidres'); menus.show('raidboard'); });
   await M.click('[data-win="raidboard"] [data-act="next"]');
   ok(await until(M, () => raidNet.S.phase === 2 && raidNet.S.st === 'routes', null, 5000), '离线：讨伐战');

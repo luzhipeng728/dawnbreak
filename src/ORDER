@@ -156,6 +156,8 @@ content/regions/timegate.js
 # 希洛克（Lv60）的入口在时空之门的场景上：要放在 timegate.js 后面
 content/regions/siroco_bosses.js
 content/regions/siroco.js
+# 希洛克团本节点（RA3）：每个攻坚节点使用独立地图定义；raid:true 让节点跳过疲劳与普通副本入口
+content/raids/siroco_raid.js
 # 装备深化：深渊派对（深渊地下城、深渊柱与两轮派对、额外掉落、资格 / 每日任务、NPC 功能入口）；要在 ui/worldmap.js 的内容校验之前
 content/abyss.js
 content/music_bosses.js

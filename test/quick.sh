@@ -5,13 +5,16 @@
 #   - 慢的全量测试（bestiary / botrun / sky / behemoth / world / 全转职 classes / duel……）只在大阶段合并后由主线程跑 test/all.sh
 # 用法：sh test/quick.sh          新增的职业测试放进 g2（文件不存在时自动跳过）
 cd "$(dirname "$0")/.." || exit 1
-# 全局锁（和 test/affected.mjs 共用）：同一时间只跑一套测试，别的排队，避免几个智能体同时开十几个浏览器把电脑卡死
-LOCK=${TMPDIR:-/tmp}/dawnbreak-tests.lock; said=
-while ! mkdir "$LOCK" 2>/dev/null; do
-  pid=$(cat "$LOCK/pid" 2>/dev/null); if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then rm -rf "$LOCK"; continue; fi
-  [ -z "$said" ] && echo "另一套测试正在跑（pid $pid），排队等它结束……" && said=1; sleep 5
+# 并发名额（和 test/affected.mjs、boss.mjs 共用，test/testlock.mjs）：默认同时 3 套测试，名额满了排队
+N=${TEST_SLOTS:-3}; said=; LOCK=
+while [ -z "$LOCK" ]; do
+  i=1; while [ $i -le $N ]; do d=${TMPDIR:-/tmp}/dawnbreak-tests.slot.$i
+    if mkdir "$d" 2>/dev/null; then echo $$ > "$d/pid"; LOCK=$d; break; fi
+    pid=$(cat "$d/pid" 2>/dev/null); if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then rm -rf "$d"; continue; fi
+    i=$((i + 1)); done
+  [ -z "$LOCK" ] && { [ -z "$said" ] && echo "测试名额（$N 个）都在用，排队等……" && said=1; sleep 3; }
 done
-echo $$ > "$LOCK/pid"; trap 'rm -rf "$LOCK"' EXIT INT TERM
+trap 'rm -rf "$LOCK"' EXIT INT TERM
 node build.mjs | tail -1
 [ -d server/node_modules ] || npm ci --prefix server --no-audit --no-fund >/dev/null 2>&1
 LOG=test/shots/quick; mkdir -p $LOG; rm -f $LOG/summary-*.txt

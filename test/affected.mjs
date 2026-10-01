@@ -8,7 +8,7 @@
 //   J=1 node test/affected.mjs             并行数（默认 2）
 // 规则表在下面 RULES：路径（正则）→ 测试。改了测试文件本身就跑它；只改 docs / 图片说明不跑测试。
 // 改了核心文件（CORE）时会多跑冒烟测试，并提示合并前再跑一次 sh test/quick.sh。
-// 和 quick.sh 共用一把全局锁（/tmp/dawnbreak-tests.lock）：同一时间只有一套测试在跑，别的会排队等。
+// 和 quick.sh、boss.mjs 共用并发名额（test/testlock.mjs，默认同时 3 套，TEST_SLOTS 可改），名额满了排队。
 import { execFileSync, spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -108,20 +108,8 @@ function pick(files) {
   return { tests: [...tests.values()], why, core };
 }
 
-// ---- 全局锁：同一时间只跑一套测试 ----
-const LOCK = path.join(os.tmpdir(), 'dawnbreak-tests.lock');
-const alive = pid => { try { process.kill(pid, 0); return true; } catch (e) { return false; } };
-async function lock() {
-  let said = false;
-  for (;;) {
-    try { fs.mkdirSync(LOCK); fs.writeFileSync(path.join(LOCK, 'pid'), String(process.pid)); return; } catch (e) { /* 已被占用 */ }
-    const pid = +(fs.readFileSync(path.join(LOCK, 'pid'), 'utf8').trim() || 0);
-    if (pid && !alive(pid)) { fs.rmSync(LOCK, { recursive: true, force: true }); continue; }
-    if (!said) { console.log(`另一套测试正在跑（pid ${pid}），排队等它结束……`); said = true; }
-    await new Promise(r => setTimeout(r, 5000));
-  }
-}
-const unlock = () => { try { if (+fs.readFileSync(path.join(LOCK, 'pid'), 'utf8') === process.pid) fs.rmSync(LOCK, { recursive: true, force: true }); } catch (e) { /* 已释放 */ } };
+// ---- 并发名额（test/testlock.mjs，默认同时 3 套）----
+import { acquireSlot } from './testlock.mjs';
 
 // ---- 跑 ----
 const { base, files } = changedFiles();
@@ -132,8 +120,8 @@ for (const t of tests) console.log(`  - ${t.name.padEnd(18)} ← ${why.get(t.nam
 if (!tests.length) { console.log('没有要跑的测试（只改了文档 / 说明）'); process.exit(0); }
 if (flag('--dry')) process.exit(0);
 
-await lock();
-process.on('exit', unlock); process.on('SIGINT', () => process.exit(130));
+await acquireSlot();
+process.on('SIGINT', () => process.exit(130));
 if (!flag('--no-build')) { const b = run('node', ['build.mjs']).split('\n').pop(); console.log(b || '构建失败'); if (!b) process.exit(1); }
 const LOG = 'test/shots/affected'; fs.mkdirSync(LOG, { recursive: true });
 const J = Math.max(1, +(process.env.J || 2)), t0 = Date.now(), res = [];

@@ -12,7 +12,7 @@
 // 页面报错 = 失败。每个领主出一张总览图（每招 / 每个机制 / 每个阶段一格）：test/shots/boss/<地下城>.jpg；数据：test/shots/boss/<地下城>.json（各部分分开写，重跑只覆盖跑过的部分）
 // --strict：再按 §4.5 验收（招牌 ≥2、每个伤害招式有预警且 0.9~1.6 秒、机器人用时在带内 / 被击上限（这次跑的几个职业取平均，验收用 BOTCLS=all）、0 死亡、每个阶段和机制在一场里都触发过）
 // 环境变量：SPEED（默认 3）、BOTCLS（默认按地下城轮换职业；all = 每个开放职业各打一次；或 sword,gun）、GEAR / ENH / LV（同 region.mjs）、LIMIT（机器人游戏时间上限秒）、COOPLV
-// 低优先级（nice 10）跑；all / 区域 / 超过 3 个图 / bot / coop 先拿全局测试锁（$TMPDIR/dawnbreak-tests.lock，和 quick.sh、test/affected.mjs 同一把，排队等），在它们里面跑时不重复拿；BOSS_NOLOCK=1 跳过
+// 低优先级（nice 10）跑；all / 区域 / 超过 3 个图 / bot / coop 先占一个测试并发名额（test/testlock.mjs，和 quick.sh、affected.mjs 共用，默认同时 3 套），在它们里面跑时不重复占；BOSS_NOLOCK=1 跳过
 // P0-E 合进来以后自动用上：monForceSkill(m, id 或 spec)、bossPhaseSet(m, i)、MS_EVENTS（预警 / 机制事件）、BOSS_MECHS[id].test.solve(m, st, p, BH)（新机制自己的解法，可选）
 import fs from 'fs';
 import os from 'os';
@@ -57,24 +57,9 @@ const speed = +(process.env.SPEED || 3);
 // 低优先级跑（浏览器子进程继承）；大一点的跑法（all / 区域 / 超过 3 个图 / 机器人 / 组队）先拿全局测试锁（和 quick.sh、test/affected.mjs 同一把），
 // 已经在拿着锁的测试套件里（锁的 pid 是自己的祖先进程）就不再拿，免得自己等自己
 try { if (os.getPriority() < 10) os.setPriority(10); } catch (e) { /* 改不了优先级就照常跑 */ }
-const LOCK = path.join(os.tmpdir(), 'dawnbreak-tests.lock');
-const ancestors = () => { const L = []; let p = process.ppid; for (let i = 0; i < 12 && p > 1; i++) { L.push(p); try { p = +execFileSync('ps', ['-o', 'ppid=', '-p', String(p)], { encoding: 'utf8' }).trim(); } catch (e) { break; } } return L; };
-const alive = pid => { try { process.kill(pid, 0); return true; } catch (e) { return false; } };
 const big = target.split(',').some(x => /^(all|legacy|region)$/.test(x) || fs.existsSync(`src/content/regions/${x}.js`)) || target.split(',').length > 3 || parts.includes('bot') || parts.includes('coop');
-let myLock = false;
-if (big && !process.env.BOSS_NOLOCK) {
-  let said = false;
-  for (;;) {
-    try { fs.mkdirSync(LOCK); fs.writeFileSync(path.join(LOCK, 'pid'), String(process.pid)); myLock = true; break; } catch (e) { /* 已被占用 */ }
-    let pid = 0; try { pid = +(fs.readFileSync(path.join(LOCK, 'pid'), 'utf8').trim() || 0); } catch (e) { /* 刚被释放 */ }
-    if (pid && ancestors().includes(pid)) break;
-    if (pid && !alive(pid)) { fs.rmSync(LOCK, { recursive: true, force: true }); continue; }
-    if (!said) { console.log(`另一套测试正在跑（pid ${pid}），排队等它结束……`); said = true; }
-    await new Promise(r => setTimeout(r, 5000));
-  }
-}
-const unlock = () => { if (!myLock) return; try { if (+fs.readFileSync(path.join(LOCK, 'pid'), 'utf8') === process.pid) fs.rmSync(LOCK, { recursive: true, force: true }); } catch (e) { /* 已释放 */ } };
-process.on('exit', unlock); process.on('SIGINT', () => process.exit(130)); process.on('SIGTERM', () => process.exit(143));
+if (big && !process.env.BOSS_NOLOCK) await (await import('./testlock.mjs')).acquireSlot();   // 并发名额（默认同时 3 套）
+process.on('SIGINT', () => process.exit(130)); process.on('SIGTERM', () => process.exit(143));
 let fail = 0, warnN = 0;
 const check = (ok, msg) => { if (!ok) { fail++; console.log('✗', msg); } return ok; };
 const soft = (ok, msg) => { if (!ok) { if (STRICT) { fail++; console.log('✗', msg); } else { warnN++; console.log('⚠', msg); } } return ok; };

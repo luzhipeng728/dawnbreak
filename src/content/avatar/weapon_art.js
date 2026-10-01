@@ -440,3 +440,25 @@ const WEAPON_IMG = {
   "tonfa_r3": {"w": 210, "h": 112, "gx": 159.4, "gy": 75.4, "tx": 209.7, "ty": 75.4, "size": 16.8, "kind": "tonfa", "type": "tonfa"},
   "tonfa_r4": {"w": 210, "h": 137, "gx": 159.0, "gy": 92.6, "tx": 209.8, "ty": 92.6, "size": 16.9, "kind": "tonfa", "type": "tonfa"}
 };
+// 圣职者专用武器原画暂按现有长杆 / 重兵器图做握点兼容别名，先保证装备和武器装扮能随帧绘制。
+const PRIEST_WEAPON_ART_ALIASES = { cross: 'staff', rosary: 'rod', totem: 'club', scythe: 'spear', battleaxe: 'greatsword' };
+for (const [t, base] of Object.entries(PRIEST_WEAPON_ART_ALIASES)) {
+  const A = WEAPON_IMG[base]; if (!A) continue;
+  WEAPON_IMG[t] = { ...A, type: t };
+  if (ASSET_SRC[`weapon/${base}`]) {
+    ASSET_SRC[`weapon/${t}`] = ASSET_SRC[`weapon/${base}`];
+    ASSET_BUNDLE[`weapon/${t}`] = ASSET_BUNDLE[`weapon/${base}`];
+  }
+  for (const skin of ['spring', 'summer', 'holywing', 'flamedragon', 'academy', 'gothic']) {
+    const src = `${skin}_${base}`, dst = `${skin}_${t}`, S = WEAPON_IMG[src];
+    if (!S || !ASSET_SRC[`weapon/${src}`]) continue;
+    WEAPON_IMG[dst] = { ...S, type: t };
+    ASSET_SRC[`weapon/${dst}`] = ASSET_SRC[`weapon/${src}`]; ASSET_BUNDLE[`weapon/${dst}`] = ASSET_BUNDLE[`weapon/${src}`];
+  }
+  for (const rarity of [2, 3, 4]) {
+    const src = `${base}_r${rarity}`, dst = `${t}_r${rarity}`, S = WEAPON_IMG[src];
+    if (!S || !ASSET_SRC[`weapon/${src}`]) continue;
+    WEAPON_IMG[dst] = { ...S, type: t };
+    ASSET_SRC[`weapon/${dst}`] = ASSET_SRC[`weapon/${src}`]; ASSET_BUNDLE[`weapon/${dst}`] = ASSET_BUNDLE[`weapon/${src}`];
+  }
+}

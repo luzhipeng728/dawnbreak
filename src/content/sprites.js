@@ -96,15 +96,15 @@ const SPR_ANIMS = {
     flykick: fAnim([['f_flykick', 0]], [['jump2', 0]]), palm: fAnim([['f_palm1', 0]]), palm2: fAnim([['f_palm2', 0]]), focus: fAnim([['f_focus', 0]], [['charge', 0]]), seal: fAnim([['f_seal', 0]], [['charge', 0]]),
     quake: fAnim([['f_quake', 0]]), smash: fAnim([['f_smash', 0]]) },
   // 圣职者（男）：B0 定的片段名契约（docs/CLASS_PLAN_PRIEST.md §3），美术块按这些帧名出帧（art/final/spr/priest/<帧>.webp），没出之前用通用帧兜底（出了第一帧整条自动换）。
-  // 巨兵是拿在手上的武器（帧里画绿色占位棒、切帧记 wpn 握点，和鬼剑士 / 魔法师一样）；职业自己的帧一律 p_ 前缀，转职的帧用 pc_ / pi_ / pe_ / pa_ 前缀写进各自的 J.anims
+  // 巨兵是拿在手上的武器（帧里画绿色占位棒、切帧记 wpn 握点，和鬼剑士 / 魔法师一样）；基础普攻沿用通用帧名，其余职业帧用 p_ 前缀，转职帧用 pc_ / pi_ / pe_ / pa_ 前缀写进各自的 J.anims
   priest: { ...BASE_ANIMS,
-    atk1: pAnim([['p_a1_1', 0], ['p_a1_2', 0.06]]), atk2: pAnim([['p_a2_1', 0], ['p_a2_2', 0.06]]), atk3: pAnim([['p_a3_1', 0], ['p_a3_2', 0.14]]),
-    dash: pAnim([['p_dash1', 0], ['p_dash2', 0.08]], [['run3', 0]]), jatk: pAnim([['p_jatk1', 0], ['p_jatk2', 0.06]], [['jump2', 0]]),
-    up: pAnim([['p_up1', 0], ['p_up2', 0.08]]), upper: pAnim([['p_jab1', 0], ['p_upper', 0.06]]),
-    grab: pAnim([['p_grab', 0]]), carry: pAnim([['p_carry', 0]], [['run3', 0]]), throw: pAnim([['p_carry', 0], ['p_throw', 0.06]]),
-    jab: pAnim([['p_jab1', 0], ['p_jab2', 0.05]]), straight: pAnim([['p_jab1', 0], ['p_straight', 0.05]]),
-    pray: pAnim([['p_pray', 0]], [['charge', 0]]), cast: pAnim([['p_cast', 0]], [['charge', 0]]), cross: pAnim([['p_cross1', 0], ['p_cross2', 0.08]]),
-    leap: pAnim([['p_leap', 0]], [['jump2', 0]]), thrust: pAnim([['p_leap', 0], ['p_thrust', 0.06]], [['jump5', 0]]), rapture: pAnim([['p_rapture', 0]], [['charge', 0]]) },
+    atk1: pAnim([['a1_1', 0], ['a1_2', 0.06]]), atk2: pAnim([['a2_1', 0], ['a2_2', 0.06]]), atk3: pAnim([['a3_1', 0], ['a3_2', 0.14]]),
+    dash: pAnim([['dash1', 0], ['dash2', 0.08]], [['run3', 0]]), jatk: pAnim([['jatk1', 0], ['jatk2', 0.06]], [['jump2', 0]]),
+    up: pAnim([['p_up1', 0], ['p_up2', 0.08]]), upper: pAnim([['p_jab1', 0], ['p_jabEnd', 0.06]]),
+    grab: pAnim([['p_grab', 0]]), carry: pAnim([['p_tiger', 0]], [['run3', 0]]), throw: pAnim([['p_tiger', 0], ['p_grab', 0.06]]),
+    jab: pAnim([['p_jab1', 0], ['p_jab2', 0.05]]), straight: pAnim([['p_jab1', 0], ['p_jabEnd', 0.05]]),
+    pray: pAnim([['p_pray1', 0], ['p_pray2', 0.15]], [['charge', 0]]), cast: pAnim([['p_focus', 0]], [['charge', 0]]), cross: pAnim([['p_guard', 0], ['p_focus', 0.08]]),
+    leap: pAnim([['p_slamUp', 0]], [['jump2', 0]]), thrust: pAnim([['p_slamUp', 0], ['p_slamDown', 0.06]], [['jump5', 0]]), rapture: pAnim([['p_focus', 0]], [['charge', 0]]) },
   monster: { ...BASE_ANIMS, run: seq('run', 8, 15), jumpUp: [['jump', 0]], jumpFall: [['jump', 0]], land: [['low1', 0]], back: [['jump', 0]],
     hit2: [['hit2', 0]], airUp: [['air', 0]], air: [['air', 0]], bounceUp: [['down', 0], ['air', 0.1]], down: [['down', 0]], held: [['hit2', 0]], tech: [['getup', 0]],
     club: [['atk1', 0], ['atk2', 0.15], ['atk3', 0.42], ['atk4', 0.6]], throw: [['atk1', 0], ['atk2', 0.15], ['atk3', 0.45], ['atk4', 0.6]],

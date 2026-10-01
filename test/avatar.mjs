@@ -201,7 +201,7 @@ for (const cls of (await openLists()).classes) {
     L = await look(); ok(L.set === 'festival' && L.hash === worn, '刷新后外观不变', JSON.stringify({ set: L.set, S2: !!L.S2, same: L.hash === worn, acc: L.acc, wpn: L.wpn }));
     await page.evaluate(() => { inv.unwear('av_top'); });
     L = await look(); ok(L.parts && !L.parts.up && L.parts.low === 'festival' && L.parts.feet === 'festival' && L.hash !== worn, '脱下上衣 → 上身换回默认造型，下身、鞋仍是庆典（混搭）', JSON.stringify({ set: L.set, parts: L.parts }));
-    ok(['sword', 'fighter'].includes(cls) ? L.acc.length === 3 : L.acc.length === 1, ['sword', 'fighter'].includes(cls) ? '帽子 / 发饰 / 眼镜仍然戴着' : '默认造型自带帽子：上身不是时装时只剩眼镜');
+    ok(['sword', 'fighter', 'priest'].includes(cls) ? L.acc.length === 3 : L.acc.length === 1, ['sword', 'fighter', 'priest'].includes(cls) ? '帽子 / 发饰 / 眼镜仍然戴着' : '默认造型自带帽子：上身不是时装时只剩眼镜');
     await page.evaluate(() => { for (const s of ['av_bottom', 'av_shoes', 'av_hat', 'av_hair']) inv.unwear(s); });
     L = await look(); ok(!L.set && !L.parts && L.acc.length === 1, '只剩眼镜（眼镜没有身体帧）→ 身体换回原样，眼镜仍然戴着', JSON.stringify({ set: L.set, acc: L.acc }));
   }

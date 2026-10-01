@@ -81,6 +81,17 @@ if (MODES.includes('ids')) {
   report('动画契约：SPR_ANIMS.priest 每个片段都有矢量占位的骨骼片段；指令表的技能都存在；指令文字', r.sprCls && r.clips >= 30 && r.noClip.length === 0 && r.cmdIds.length === 0
     && r.cmdTxt.p_launcher === 'Z' && r.cmdTxt.p_smasher === '→↓+Z' && r.cmdTxt.p_lucky === '→+Z' && r.cmdTxt.p_second === '跑攻中 X' && r.cmdTxt.p_slowheal === '→+Space' && r.cmdTxt.p_cure === '↓↓+Space'
     && r.cmdTxt.p_grab === '↓→+Z' && r.cmdTxt.p_purity === '↑→+Z' && r.cmdTxt.p_phoenix === '↑↓+Z' && r.cmdTxt.p_rapture === '↓→+C' && r.cmdTxt.p_emblem === '↓↑+Z', { clips: r.clips, noClip: r.noClip, cmd: r.cmdTxt });
+  const visual = await page.evaluate(async () => {
+    const want = { atk1: ['a1_1', 'a1_2'], atk2: ['a2_1', 'a2_2'], atk3: ['a3_1', 'a3_2'], dash: ['dash1', 'dash2'], jatk: ['jatk1', 'jatk2'] };
+    const actual = Object.fromEntries(Object.entries(want).map(([k]) => [k, SPR_ANIMS.priest[k].map(([f]) => f)]));
+    const missing = Object.values(actual).flat().filter(f => !SPR_DATA.priest.frames[f]);
+    const look = lookFromEquip('priest', { weapon: { key: 'cross_1_0', wtype: 'cross', cls: 'priest' } });
+    await loadBundles(['spr:priest']); const m = new SpriteModel('priest', SPR_FALLBACK, SPR_ANIMS.priest); avatarSetLook(m, look); await loadArtKey('weapon/' + look.wpn); m.av.sync();
+    return { actual, missing, av: !!m.av, wpn: look.wpn, wim: !!m.av.wim, first: m.frameOf({ __c: 'atk1', __t: 0 }), second: m.frameOf({ __c: 'atk1', __t: 0.1 }) };
+  });
+  report('攻击帧和武器外观：普攻引用实际帧、圣职者挂外观层、十字架可见', visual.actual.atk1.join() === 'a1_1,a1_2' && visual.actual.atk2.join() === 'a2_1,a2_2'
+    && visual.actual.atk3.join() === 'a3_1,a3_2' && visual.actual.dash.join() === 'dash1,dash2' && visual.actual.jatk.join() === 'jatk1,jatk2'
+    && !visual.missing.length && visual.av && visual.wpn && visual.wim && visual.first === 'a1_1' && visual.second === 'a1_2', visual);
   noErr(logs, 'ids');
   await browser.close();
 }

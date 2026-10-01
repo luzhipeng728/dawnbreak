@@ -60,7 +60,9 @@ content/classes/priest.js
 content/classes/priest_crusader.js
 content/classes/priest_monk.js
 content/classes/priest_exorcist.js
+content/classes/priest_exorcist_p1.js
 content/classes/priest_avenger.js
+content/classes/priest_avenger_p1.js
 engine/touch.js
 game/drops.js
 game/progress.js

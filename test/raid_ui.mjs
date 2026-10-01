@@ -20,6 +20,14 @@ async function openRaidNpc(P) {
   await P.click('[data-win="npc"] button:text-is("团本")');
   return until(P, () => menus.isOpen('raid') && !!document.querySelector('[data-win="raid"] .rcard .lim b'), null, 8000);
 }
+async function openRaidGlobal(P) {
+  await P.evaluate(() => { menus.closeAll(); document.querySelector('#menubar button[title="团本"]')?.click(); });
+  return until(P, () => menus.isOpen('raid') && !!document.querySelector('[data-win="raid"] .rcard .lim b'), null, 8000);
+}
+async function openRaidTouch(P) {
+  await P.click('#touch .tcol:has-text("团本")');
+  return until(P, () => menus.isOpen('raid') && !!document.querySelector('[data-win="raid"] .rcard .lim b'), null, 8000);
+}
 async function enterNode(P, id, together) {
   if (!(await P.evaluate(() => menus.isOpen('raidboard')))) await P.evaluate(() => menus.show('raidboard'));
   if ((await P.evaluate(() => raidUi.sel)) !== id) await P.click(`[data-win="raidboard"] .rbnode[data-node="${id}"]`);
@@ -48,6 +56,8 @@ try {
     return { nodes: ids.filter(id => DUNGEONS[id] && DUNGEONS[id].raid && !DUNGEONS[id].raidFallback).length, total: ids.length, petal: ITEMS.raid_petal && ITEMS.raid_petal.name };
   });
   ok(content.nodes === content.total && content.petal === '紫英花瓣', 'RA3：12 个真实团本节点和紫英花瓣已登记', content);
+  ok(await openRaidGlobal(A), '全局任务栏「团本」：不去暗黑城也能打开团本窗口');
+  await A.evaluate(() => menus.close('raid'));
   ok(await toCamp(A), '到暗黑城（营地）');
   ok(await openRaidNpc(A), '阿甘左「团本」→ 团本窗口（列表 + 次数）');
   const lim0 = await A.evaluate(() => raidNet.limits);
@@ -178,7 +188,7 @@ try {
   await M.evaluate(PREP);
   ok(await M.evaluate(() => raidNet.local()), '没登录 = 本地模式');
   await toCamp(M);
-  ok(await openRaidNpc(M), '离线：团本窗口（本地次数）');
+  ok(await openRaidTouch(M), '离线触屏：左侧任务栏「团本」打开窗口（本地次数）');
   await M.click('[data-win="raid"] [data-act="guide"]');
   await until(M, () => raidNet.S && raidNet.S.st === 'lobby', null, 5000);
   await M.click('[data-win="raid"] [data-act="start"]');

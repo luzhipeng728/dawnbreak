@@ -340,6 +340,12 @@ Object.assign(menus, {
 });
 NPC_SERVICES.raid = { label: '团本', run: N => menus.open('raid', N) };
 if (NPCS.agonzo && !NPCS.agonzo.services.includes('raid')) NPCS.agonzo.services.push('raid');
+UI_WIN.raid = 'raid'; UI_ACTIONS.add('raid');
+if (typeof MB_WIN !== 'undefined') MB_WIN.raid = 'raid';
+if (typeof MENUBAR !== 'undefined' && !MENUBAR.some(b => b[0] === 'raid')) {
+  const i = MENUBAR.findIndex(b => b[0] === 'pvp');
+  MENUBAR.splice(i >= 0 ? i : MENUBAR.length, 0, ['raid', '团本']);
+}
 bus.on('raidChange', () => raidUi.refresh());
 bus.on('raidClaimed', () => raidUi.refresh());
 bus.on('raidStarted', () => { if (game.scene !== 'town') return; if (menus.isOpen('raid')) menus.close('raid'); menus.show('raidboard'); });

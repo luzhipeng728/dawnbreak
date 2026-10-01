@@ -4,7 +4,7 @@
    右：大攻击键（按住 = 连续普攻）；跳跃在左下（倒地时点一下 = 受身，按住往下滑 = 后跳）；后跳单独一个键在上方
        10 个技能扇形排在攻击键周围（技能栏 s0..s9：点一下直接放，不用搓指令；按住 = 蓄力 / 持续类技能）
        滑屏键：按住往 上 / 右 / 下 / 左 滑 = 技能栏 s10..s13，点一下 = 上次滑的那个；觉醒键（金框，技能栏里的觉醒技能，最多 2 个）
-   左上一列：菜单 / 物品 / 技能 / 任务 / HP / MP 药水；城镇里只留摇杆、攻击、跳跃
+   左上一列：菜单 / 物品 / 技能 / 任务 / 团本 / HP / MP 药水；城镇里只留摇杆、攻击、跳跃
    冷却转圈、MP 不足变蓝、装填次数每 0.1 秒刷新一次（不每帧写 DOM）；尺寸单位 U = 屏幕高度的 1%（最多 4.6px），避开刘海 / 底部横条
    设置 → 手机按钮：大小 / 透明度 / 左右互换 / 固定摇杆 / 拖动编辑位置（uiPref touchSize / touchAlpha / touchSwap / touchStickFixed / touchPos）
    打开任何窗口时隐藏虚拟按键（按住的键全部松开）
@@ -81,8 +81,8 @@ const touch = {
       bind(b, 'buffcol', () => { if (b._id) this.castQ = b._id; }, null);
       el.appendChild(b); return b;
     });
-    // ---- 左上一列：菜单 / 药水 ----
-    this.col = [['菜单', '', () => uiKey('menu')], ['物品', '', () => uiKey('inv')], ['技能', '', () => uiKey('skills')], ['任务', '', () => uiKey('quests')], ['HP', 'pot hp', ...keyOf('i0')], ['MP', 'pot mp', ...keyOf('i1')]]
+    // ---- 左上一列：菜单 / 窗口 / 药水 ----
+    this.col = [['菜单', '', () => uiKey('menu')], ['物品', '', () => uiKey('inv')], ['技能', '', () => uiKey('skills')], ['任务', '', () => uiKey('quests')], ['团本', '', () => uiKey('raid')], ['HP', 'pot hp', ...keyOf('i0')], ['MP', 'pot mp', ...keyOf('i1')]]
       .map(([t, cls, down, up]) => { const b = bind(h('div', { class: 'tbtn tcol ' + cls }, t), null, down, up); el.appendChild(b); return b; });
     // ---- 编辑布局 ----
     this.editBar = h('div', { class: 'tedit hidden' }, h('span', {}, '拖动按钮调整位置'),

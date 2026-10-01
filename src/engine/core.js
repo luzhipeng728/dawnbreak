@@ -32,7 +32,7 @@ const KEYMAP_DEFAULT = {
   s0: ['KeyA'], s1: ['KeyS'], s2: ['KeyD'], s3: ['KeyF'], s4: ['KeyG'], s5: ['KeyH'], s12: ['ShiftLeft'],   /* 第 7 格：左 Shift（Mac 的 Option 键当技能键不好用；删闪避后 Shift 空出来了） */
   s6: ['KeyQ'], s7: ['KeyW'], s8: ['KeyE'], s9: ['KeyR'], s10: ['KeyT'], s11: ['KeyY'], s13: ['KeyV'],
   i0: ['Digit1'], i1: ['Digit2'], i2: ['Digit3'], i3: ['Digit4'], i4: ['Digit5'], i5: ['Digit6'],
-  inv: ['KeyI'], status: ['KeyM'], skills: ['KeyK'], quests: ['KeyL', 'F1'], map: ['KeyN'], settings: ['KeyO'], pvp: ['KeyP'],
+  inv: ['KeyI'], status: ['KeyM'], skills: ['KeyK'], quests: ['KeyL', 'F1'], map: ['KeyN'], settings: ['KeyO'], raid: ['BracketLeft'], pvp: ['KeyP'],
   menu: ['Escape'], confirm: ['Enter', 'NumpadEnter'],
   uiMode: ['Tab'], dropNames: ['ControlLeft'], hideRank: ['End'], tipDetail: ['Backquote'], shot: ['F12'],
 };
@@ -43,13 +43,13 @@ const KEY_GROUPS = [
   ['战斗', ['attack', 'jump', 'cmd', 'cmdB']],
   ['技能栏', ['s0', 's1', 's2', 's3', 's4', 's5', 's12', 's6', 's7', 's8', 's9', 's10', 's11', 's13']],
   ['消耗品栏', ['i0', 'i1', 'i2', 'i3', 'i4', 'i5']],
-  ['窗口', ['inv', 'status', 'skills', 'quests', 'map', 'settings', 'pvp']],
+  ['窗口', ['inv', 'status', 'skills', 'quests', 'map', 'settings', 'raid', 'pvp']],
   ['其他', ['confirm', 'uiMode', 'dropNames', 'hideRank', 'tipDetail', 'shot']],
 ];
 const ACTION_NAME = { left: '向左', right: '向右', up: '向上（纵深）', down: '向下（纵深）', attack: '普通攻击 / 拾取', jump: '跳跃', cmd: '指令键（Z 类技能）', cmdB: '指令键 2（Space 类技能）',
   s0: '技能栏 1', s1: '技能栏 2', s2: '技能栏 3', s3: '技能栏 4', s4: '技能栏 5', s5: '技能栏 6', s12: '技能栏 7', s6: '扩展技能栏 1', s7: '扩展技能栏 2', s8: '扩展技能栏 3', s9: '扩展技能栏 4', s10: '扩展技能栏 5', s11: '扩展技能栏 6', s13: '扩展技能栏 7',
   i0: '消耗品 1', i1: '消耗品 2', i2: '消耗品 3', i3: '消耗品 4', i4: '消耗品 5', i5: '消耗品 6',
-  inv: '物品栏', status: '个人信息', skills: '技能', quests: '任务', map: '地图', settings: '游戏设置', pvp: '决斗场', menu: '系统菜单',
+  inv: '物品栏', status: '个人信息', skills: '技能', quests: '任务', map: '地图', settings: '游戏设置', raid: '团本', pvp: '决斗场', menu: '系统菜单',
   confirm: '确认', uiMode: '切换界面显示', dropNames: '显示掉落物名称', hideRank: '隐藏实时评价', tipDetail: '说明详细 / 简略', shot: '截图' };
 const KEY_FIXED = new Set(['menu']);   // Esc 固定，避免把自己锁在菜单外
 const KEY_SHARE = {};   // 可以共用同一个键的动作（官方 Z 和 Space 是两个不同的指令键，现在没有共用）

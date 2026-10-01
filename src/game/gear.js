@@ -82,6 +82,7 @@ function ampConvert(it, r01 = Math.random()) {
   game.gold -= c.gold; inv.take('amp_purify', c.purify);
   const pool = DIM_STATS.filter(k => k !== it.dim), old = it.dim || null;
   it.dim = pool[Math.min(pool.length - 1, Math.floor(r01 * pool.length))];
+  if (save.data) save.data.enhPity = 0;
   if (game.player) recalcStats(game.player);
   bus.emit('amplify', { item: it, convert: true, ok: true, lvl: it.enh || 0, from: it.enh || 0, old });
   save.write();
@@ -127,6 +128,7 @@ function ampSetLevel(it, n, { stat, convert } = {}) {
   if (!canAmplify(it) || n < 0 || n > AMP_MAX) return false;
   if (!it.dim) { if ((it.enh || 0) > 0 && !convert) return false; it.dim = DIM_STATS.includes(stat) ? stat : mainStatOf(); }
   if ((it.enh || 0) >= n) return false;
+  if (save.data) save.data.enhPity = 0;
   const from = it.enh || 0; it.enh = n;
   if (game.player) recalcStats(game.player);
   bus.emit('amplify', { item: it, ok: true, lvl: n, from, ticket: true });

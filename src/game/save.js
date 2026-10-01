@@ -15,7 +15,7 @@ const save = {
   defaults(cls = 'sword', name = '勇士') {
     return { v: SAVE_V, cls, name, job: null, lvl: 1, exp: 0, sp: 150, gold: 1500, skillLv: {}, skillBar: Array(SKILL_SLOTS).fill(null), inv: [], equip: {}, quick: [null, null, null, null, null, null], storage: [],
       fatigue: FATIGUE_MAX, day: dayKey(), coins: 5, unlocked: {}, best: {}, weak: 0, clears: 0, created: Date.now(), playTime: 0, quests: {}, questDone: {}, loc: null, seen: {}, titles: [], buyback: [],
-      opts: { music: 0.6, sfx: 0.9 } };
+      opts: { music: 0.6, sfx: 0.9 }, enhPity: 0 };
   },
   // 读取全部角色；返回是否至少有一个角色
   loadAll() {

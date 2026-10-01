@@ -442,9 +442,15 @@ function repairAll(verbose, list = repairList()) {
    加成：武器 → 攻击力、防具 → 物理防御、首饰 → 魔法防御、特殊装备 → 四维 */
 const ENH_MAX = Infinity;   // 2026-10-01 用户：强化 / 增幅不设上限，越高越强，各凭本事（+16 以后成功率继续下降，最低 1%）
 const ENH_RATE = [1, 1, 1, 0.95, 0.9, 0.8, 0.75, 0.621, 0.537, 0.414, 0.339, 0.28, 0.207, 0.173, 0.136, 0.101];
+// 内部隐藏机制：只有冲 +10 及以上才积累当前角色的连续失败连击；档位越高单次增幅越大，连败按三角数递增，最多 10 次后必成。
+const ENH_PITY_START = 10, ENH_PITY_HARD = 10;
 const ENH_BONUS = [0, 0.03, 0.06, 0.1, 0.14, 0.19, 0.25, 0.32, 0.4, 0.5, 0.62, 0.8, 1.0, 1.25, 1.55, 1.9, 2.3];
 const enhBonus = e => e <= 0 ? 0 : e < ENH_BONUS.length ? ENH_BONUS[e] : 2.3 * Math.pow(1.18, e - 16);   // +16 以后每级 ×1.18
 const enhRate = e => e < ENH_RATE.length ? ENH_RATE[e] : Math.max(0.01, 0.101 * Math.pow(0.85, e - 15));   // 冲 +N+1 的成功率
+const enhPityCount = () => { const n = typeof save !== 'undefined' && save.data ? save.data.enhPity : 0; return Math.max(0, Math.min(ENH_PITY_HARD, Math.floor(Number.isFinite(n) ? n : 0))); };
+const enhPityStep = e => e < ENH_PITY_START ? 0 : Math.min(0.08, 0.02 + Math.max(0, e - 5) * 0.005);
+const enhPityRate = it => { const e = Number.isFinite(it && it.enh) ? it.enh : 0, n = enhPityCount(); if (e < ENH_PITY_START || n >= ENH_PITY_HARD) return n >= ENH_PITY_HARD && e >= ENH_PITY_START ? 1 : enhRate(e); return Math.min(1, enhRate(e) + enhPityStep(e) * n * (n + 1) / 2); };
+const setEnhPity = n => { if (typeof save !== 'undefined' && save.data) save.data.enhPity = Math.max(0, Math.min(ENH_PITY_HARD, Math.floor(n))); };
 const canEnhance = it => it && it.kind === 'equip' && it.slot !== 'title' && !isAvatar(it) && !it.dim && !(ITEMS[it.key] && ITEMS[it.key].noEnhance);   // 带异次元属性（增幅）的装备不能再强化（game/gear.js）
 const enhCost = it => ({ gold: Math.round((it.lvl * 24 + 60) * Math.pow(1.42, it.enh) * (1 + it.rar * 0.3)), crystal: Math.max(1, Math.round((it.lvl + 4) * 0.35 * Math.pow(1.25, it.enh))) });
 // 失败后的结果：{ lvl（失败后的强化等级）, broken }
@@ -474,21 +480,23 @@ function tryEnhance(it, useGuard, rnd01 = Math.random()) {
   if (game.gold < cost.gold) return { err: '金币不足' };
   if (inv.count('crystal') < cost.crystal) return { err: '无色小晶块不足' };
   game.gold -= cost.gold; inv.take('crystal', cost.crystal);
-  const from = it.enh;
+  const from = it.enh, pity = enhPityCount(), rate = enhPityRate(it);
   let res;
-  if (rnd01 < enhRate(it.enh)) { it.enh++; res = { ok: true, from, lvl: it.enh }; }
+  if (rnd01 < rate) { it.enh++; setEnhPity(0); res = { ok: true, from, lvl: it.enh, rate, pity: 0 }; }
   else {
+    setEnhPity(from >= ENH_PITY_START ? pity + 1 : pity);
     const f = enhFailResult(it);
     if (f.broken && useGuard && inv.take('guard', 1)) { it.enh = 0; res = { ok: false, from, lvl: 0, guard: true }; }
     else if (f.broken) res = { ok: false, from, lvl: from, broken: true };
     else { it.enh = f.lvl; res = { ok: false, from, lvl: it.enh }; }
+    res.rate = rate; res.pity = enhPityCount();
   }
   if (res.broken) {   // 装备破碎：从身上 / 背包里移除，返还一点无色小晶块
     for (const s of SLOTS) if (inv.equip[s] === it) delete inv.equip[s];
     inv.remove(it); res.refund = Math.max(1, Math.round(it.lvl * 2 + cost.crystal * 0.5)); giveItem(makeItem('crystal', res.refund));
   }
   if (game.player) recalcStats(game.player);
-  bus.emit('enhance', { item: it, ok: res.ok, lvl: res.lvl, broken: !!res.broken });
+  bus.emit('enhance', { item: it, ok: res.ok, lvl: res.lvl, broken: !!res.broken, rate: res.rate, pity: enhPityCount() });
   if (res.ok && res.lvl >= 10) toastMsg(`【公告】勇士 ${save.data ? save.data.name : ''} 将 ${it.name} 强化到了 +${res.lvl}！`, '#ffd23a');
   save.write();
   return res;

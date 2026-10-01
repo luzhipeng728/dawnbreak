@@ -147,6 +147,25 @@ const grd = await ev(() => { const a = rollEquip({ slot: 'head', lvl: 10, rar: 1
 check(grd.guard && grd.enh === 0 && grd.kept && grd.used === 1, '保护券：不破碎、强化归零、券消耗 1 张', JSON.stringify(grd));
 const evt = await ev(() => { let got = null; const off = bus.on('enhance', e => { got = e; }); tryEnhance(inv.equip.weapon, false, 0); off(); return got && { ok: got.ok, lvl: got.lvl }; });
 check(evt && evt.ok, 'bus 发出 enhance 事件', JSON.stringify(evt));
+const pity = await ev(() => {
+  if (typeof enhPityRate !== 'function' || typeof enhPityStep !== 'function') return { missing: true };
+  const w = inv.equip.weapon, fodder = rollEquip({ slot: 'weapon', lvl: 10, rar: 1 });
+  inv.add(fodder); save.data.enhPity = 0; fodder.enh = 10;
+  const fail = tryEnhance(fodder, false, 0.999999); fodder.enh = 10;
+  const step10 = enhPityStep(10), boosted10 = enhPityRate({ enh: 10 });
+  const fail2 = tryEnhance(fodder, false, 0.999999); fodder.enh = 11;
+  const boosted11 = enhPityRate({ enh: 11 }), step11 = enhPityStep(11);
+  save.data.enhPity = 4; const low = rollEquip({ slot: 'weapon', lvl: 10, rar: 1 }); inv.add(low); low.enh = 9;
+  const lowRate = enhPityRate(low), lowFail = tryEnhance(low, false, 0.999999), lowPity = save.data.enhPity;
+  w.enh = 15; save.data.enhPity = ENH_PITY_HARD;
+  const hardRate = enhPityRate(w), hard = tryEnhance(w, false, 0.999999);
+  return { failPity: fail.pity, fail2Pity: fail2.pity, step10, boosted10, base10: enhRate(10), step11, boosted11, base11: enhRate(11), lowRate, lowBase: enhRate(9), lowFail: lowFail.ok, lowPity, hardRate, hardOk: hard.ok, hardLvl: hard.lvl, hardPity: save.data.enhPity };
+});
+check(!pity.missing && pity.failPity === 1 && Math.abs(pity.boosted10 - (pity.base10 + pity.step10)) < 1e-9, '+10 后垫子失败，下一次强化吃到隐藏递增加成', JSON.stringify(pity));
+check(pity.fail2Pity === 2 && pity.boosted11 > pity.base11 + pity.step11 && pity.lowRate === pity.lowBase && !pity.lowFail && pity.lowPity === 4, '连续失败时后续加成继续递增，+10 以下不享受加成', JSON.stringify(pity));
+check(pity.hardRate === 1 && pity.hardOk && pity.hardLvl === 16 && pity.hardPity === 0, '连续失败达到硬保底后下一次必定成功并清零', JSON.stringify(pity));
+await ev(() => itemsRefresh());
+check(!(await page.isVisible('[data-win=enhance] .enhpity')), '隐藏保底不在强化窗口明示');
 await ev(() => { Math.random = window.__rnd; });
 
 /* ---------- 5. 分解 ---------- */
@@ -237,13 +256,13 @@ await closeAll();
 
 /* ---------- 9. 刷新后数据仍在 ---------- */
 step('刷新后数据仍在');
-await ev(() => { inv.equip.weapon.enh = 6; inv.storage.push(makeItem('elixir', 2)); save.write(); });
-const before = await ev(() => ({ gold: game.gold, lvl: game.lvl, weapon: inv.equip.weapon.name, enh: inv.equip.weapon.enh, title: inv.count('title_hero'), items: inv.items.length, storage: inv.storage.map(x => x.key + x.n).join(), bb: save.data.buyback.length }));
+await ev(() => { inv.equip.weapon.enh = 6; save.data.enhPity = 4; inv.storage.push(makeItem('elixir', 2)); save.write(); });
+const before = await ev(() => ({ gold: game.gold, lvl: game.lvl, weapon: inv.equip.weapon.name, enh: inv.equip.weapon.enh, pity: save.data.enhPity, title: inv.count('title_hero'), items: inv.items.length, storage: inv.storage.map(x => x.key + x.n).join(), bb: save.data.buyback.length }));
 await page.goto(`${URL_BASE}?town&cls=${cls}&mute`);
 await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 30000 });
 await wait(400);
-const after = await ev(() => { inv.ensure(); bank.loadedKey = null; bank.load(); return { gold: game.gold, lvl: game.lvl, weapon: inv.equip.weapon.name, enh: inv.equip.weapon.enh, title: inv.count('title_hero'), items: inv.items.length, storage: inv.storage.map(x => x.key + x.n).join(), bb: save.data.buyback.length, bankGold: bank.gold }; });
-check(JSON.stringify({ ...after, bankGold: undefined }) === JSON.stringify({ ...before, bankGold: undefined }), '刷新后金币 / 装备 / 强化 / 背包 / 仓库 / 回购都在', JSON.stringify(after));
+const after = await ev(() => { inv.ensure(); bank.loadedKey = null; bank.load(); return { gold: game.gold, lvl: game.lvl, weapon: inv.equip.weapon.name, enh: inv.equip.weapon.enh, pity: save.data.enhPity, title: inv.count('title_hero'), items: inv.items.length, storage: inv.storage.map(x => x.key + x.n).join(), bb: save.data.buyback.length, bankGold: bank.gold }; });
+check(JSON.stringify({ ...after, bankGold: undefined }) === JSON.stringify({ ...before, bankGold: undefined }), '刷新后金币 / 装备 / 强化保底 / 背包 / 仓库 / 回购都在', JSON.stringify(after));
 check(after.bankGold === 12345, '刷新后账号金库金币仍在');
 await closeAll(); await ev(() => { menus.open('status'); menus.open('inv'); }); await wait(300); await shot('14-after-reload');
 

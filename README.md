@@ -7,6 +7,7 @@
 **一个在浏览器里直接玩的《地下城与勇士》(DNF) 复刻：横版格斗、刷图、装备、转职、觉醒、组队、决斗场，Q 版画风。**
 
 [![在线试玩](https://img.shields.io/badge/play-online-e0a83a?style=flat-square)](https://dnf.cc.l-hate.com)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-2ea44f?style=flat-square)](https://github.com/luzhipeng728/dawnbreak/pulls)
 ![vanilla JS](https://img.shields.io/badge/vanilla-JavaScript-f7df1e?style=flat-square&logo=javascript&logoColor=black)
 ![no framework](https://img.shields.io/badge/framework-none-555?style=flat-square)
 ![Node](https://img.shields.io/badge/Node.js-%E2%89%A5%2022.13-339933?style=flat-square&logo=node.js&logoColor=white)
@@ -29,8 +30,23 @@
 > **这个项目是在 Claude Opus 5.5 的一个周额度限制内做出来的，1 天完成。**
 > 从玩法、约 500 件装备、三大职业的全部技能，到美术流水线、联机服务端和测试，都由 AI 智能体协作完成；人负责提需求、看效果、定方向。
 
+## 欢迎一起维护：你的 PR 可能明天就会上线
+
+这个游戏欢迎所有人共同维护。无论是修一个 bug、调整手感，还是增加职业、技能、副本、装备、美术、界面、测试或文档，都请大胆提交 PR。**不用担心改动太小，也不需要先等维护者分配任务**；只要它能让游戏变得更好，就值得提交。
+
+每个 PR 都会进入我们的本地自动审核流程，包括构建、相关测试、代码检查和实际试玩。发现问题时，我们会在 PR 里给出具体反馈并一起把它完善；通过审核后由维护者合并和部署。状态合适的改动，**最快第二天就可能出现在[在线版](https://dnf.cc.l-hate.com)**。
+
+参与很简单：
+
+1. Fork 仓库，新建分支并完成你的改动。
+2. 至少运行 `node build.mjs` 和与改动相关的测试；不确定该跑什么，可以直接在 PR 里说明。
+3. 提交 PR，写清楚解决了什么、怎么验证；如果还没完全做完，也欢迎先开 Draft PR 一起讨论。
+
+### [查看或提交 Pull Request →](https://github.com/luzhipeng728/dawnbreak/pulls)
+
 ## 目录
 
+- [欢迎一起维护](#欢迎一起维护你的-pr-可能明天就会上线)
 - [截图](#截图)
 - [特色](#特色)
 - [快速开始](#快速开始本地运行)
@@ -406,7 +422,7 @@ docs/           设计与开发文档
 - [ ] 跑动动画帧重绘、转职插图更新
 - [ ] 更多区域与副本
 
-欢迎提 Issue 反馈 bug、手感问题和“和官方不一样”的地方，最好附上职业 / 转职、技能名和复现步骤。提 PR 前请先跑 `sh test/quick.sh`，提交信息用 Conventional Commits（`feat(scope): …` / `fix(scope): …`）。
+欢迎提 Issue 反馈 bug、手感问题和“和官方不一样”的地方，最好附上职业 / 转职、技能名和复现步骤；更欢迎直接提交 PR。项目会在本地自动审核每个 PR，审核通过的功能最快次日就可能更新到线上。提交前建议跑 `sh test/quick.sh`；如果完整回归暂时跑不了，请在 PR 里写明已运行的检查。提交信息使用 Conventional Commits（`feat(scope): …` / `fix(scope): …`）。
 
 ## 致谢
 

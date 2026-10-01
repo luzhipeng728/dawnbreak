@@ -66,7 +66,8 @@ function monsterAI(m, dt) {
   if (p.dead) { m.setState('idle'); m.vx = m.vy = 0; return; }
   const spd = m.speed * (m.status && m.status.slow ? 0.5 : 1);
   if (D.coward) { cowardAI(m, dt, dx, spd); return; }
-  m.face = dx >= 0 ? 1 : -1;
+  // 目标贴身或与实体重叠时保留当前朝向，避免边缘 / 卡位时每帧左右翻面。
+  if (Math.abs(dx) > Math.max(12, m.w * 0.8)) m.face = dx >= 0 ? 1 : -1;
   // 领主残血狂暴：出手更频繁
   if (m.boss && !m.enraged && m.hp < m.hpMax * 0.3) { m.enraged = true; fxText('狂暴！', m.x, m.y, m.z + 40, { col: '#ff3a2a', size: 16, dur: 1.2 }); sfx.boom(0.6); m.speed *= 1.2; }
   const rage = m.enraged ? 0.85 : 1;
@@ -94,7 +95,7 @@ function monsterAI(m, dt) {
   if (m.think <= 0 && !(m.status && m.status.confuse) && !cloaked(p)) {
     m.think = rnd(0.35, 0.9);
     const want = D.pref + rnd(-10, 20);
-    m.goalX = p.x - Math.sign(dx || 1) * want + rnd(-15, 15);
+    m.goalX = p.x - Math.sign(dx || m.face) * want + rnd(-15, 15);
     m.goalY = clamp(p.y + (Math.random() < 0.25 ? rnd(-40, 40) : 0), 8, DEPTH - 8);
     if (Math.random() < 0.15) { m.goalX = m.x + rnd(-60, 60); }
     const R = game.room; if (R) m.goalX = clamp(m.goalX, R.x0 + 30, R.x1 - 30);

@@ -167,7 +167,7 @@ function msRain(e, p) {
 defineMonSkill('grab', { clip: 'club', sa: true, desc: '抓取 / 投掷', defaults: { reach: 62, hold: 0.8, dmg: 0.5, throwDmg: 1.5, windup: 0.5 }, range: p => [0, p.reach - 6], cd: [6, 8],
   act: p => ({ dur: p.windup + p.hold + 0.55,
     hits: [{ t0: p.windup, t1: p.windup + 0.12, box: [0, p.reach, 20, 0, 110], grab: true, grabMaxW: 4, dmg: p.dmg, stun: 0.2, knock: 0, hs: 0.05, snd: 'blunt' }],
-    events: [evAt(p.windup + p.hold, e => { if (!e.grabbed) return; e.play('slam', true); throwGrab(e, { dmg: p.throwDmg, launch: 320, knock: 220, down: true, snd: 'blunt', shake: 5, ...(p.elem ? { elem: p.elem } : {}) }); })] }) });
+    events: [evAt(p.windup + p.hold, e => { if (!e.grabbed) return; e.play(p.clip || 'slam', true); throwGrab(e, { dmg: p.throwDmg, launch: 320, knock: 220, down: true, snd: 'blunt', shake: 5, ...(p.elem ? { elem: p.elem } : {}) }); })] }) });
 // 召唤小怪：kind 怪物 id，n 只，场上同种少于 max 才会放
 defineMonSkill('summon', { clip: 'roar', sa: true, desc: '召唤', defaults: { kind: null, n: 2, max: 3, lvlOff: -1 }, range: [0, 900], dy: 900, cd: [16, 22],
   cond: p => () => skyAlive(p.kind) < p.max,

@@ -39,8 +39,8 @@ function piWillDraw(c, t) {
   const fillp = (pts, style) => { poly(pts); c.fillStyle = style; c.fill(); };
   const steelX = (x0, x1) => {
     const g = c.createLinearGradient(x0, 0, x1, 0);
-    g.addColorStop(0, '#8d97a4'); g.addColorStop(0.10, '#eef2f6'); g.addColorStop(0.20, '#c5ced8');
-    g.addColorStop(0.55, '#7b8592'); g.addColorStop(0.82, '#454d5a'); g.addColorStop(1, '#2a3038');
+    g.addColorStop(0, '#9aa3b0'); g.addColorStop(0.08, '#f7f9fc'); g.addColorStop(0.16, '#c5ced8');
+    g.addColorStop(0.48, '#6e7886'); g.addColorStop(0.75, '#3a424c'); g.addColorStop(1, '#1e242c');
     return g;
   };
   const steelY = (y0, y1) => {
@@ -51,7 +51,7 @@ function piWillDraw(c, t) {
   const crease = (x0, y0, x1, y1) => { c.strokeStyle = 'rgba(10,12,16,.55)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
   c.save(); c.filter = 'blur(2.4px)'; c.fillStyle = 'rgba(16,10,8,.55)'; c.beginPath(); c.ellipse(10, 16, 36, 8, 0.05, 0, TAU); c.fill(); c.restore();
   c.fillStyle = 'rgba(36,24,16,.55)'; c.beginPath(); c.ellipse(2, 10, 32, 9, 0, 0, TAU); c.fill();
-  fillp([[11, -156], [17.6, -153], [17.6, -16], [11, -18]], (() => { const g = c.createLinearGradient(11, 0, 18, 0); g.addColorStop(0, '#5a6370'); g.addColorStop(0.4, '#2c333c'); g.addColorStop(1, '#14181e'); return g; })());
+  fillp([[11, -156], [23, -151], [23, -14], [11, -18]], (() => { const g = c.createLinearGradient(11, 0, 23, 0); g.addColorStop(0, '#6a7382'); g.addColorStop(0.35, '#2a313a'); g.addColorStop(1, '#101318'); return g; })());
   fillp([[-14, -156], [-10, -156], [-10, -18], [-14, -18]], (() => { const g = c.createLinearGradient(-14, 0, -10, 0); g.addColorStop(0, '#b7c2ce'); g.addColorStop(1, '#f4f7fb'); return g; })());
   fillp([[-11, -154], [11, -154], [11, -18], [-11, -18]], steelX(-11, 11));
   crease(11, -154, 11, -18);
@@ -73,9 +73,9 @@ function piWillDraw(c, t) {
   c.restore();
   const arm = dir => {
     const Q = [[0, -126], [46, -126], [54, -120], [54, -104], [46, -98], [0, -98]].map(([x, y]) => [dir * x, y]);
-    const top = [Q[0], Q[1], Q[2]], topUp = top.map(([x, y], i) => [x + dir * 0.6, y - 4 + (i === 2 ? 1.5 : 0)]);
-    fillp([Q[2], Q[3], [Q[3][0] + dir * 5.2, Q[3][1] + 1.6], [Q[2][0] + dir * 5.2, Q[2][1] + 1.2]], (() => { const g = c.createLinearGradient(Q[2][0], 0, Q[2][0] + dir * 5.2, 0); g.addColorStop(0, '#66707e'); g.addColorStop(1, '#161a20'); return g; })());
-    fillp([top[0], top[1], top[2], topUp[2], topUp[1], topUp[0]], (() => { const g = c.createLinearGradient(0, -130, 0, -122); g.addColorStop(0, '#fbfcfe'); g.addColorStop(1, '#b4bec9'); return g; })());
+    const top = [Q[0], Q[1], Q[2]], topUp = top.map(([x, y], i) => [x + dir * 0.8, y - 7 + (i === 2 ? 2 : 0)]);
+    fillp([Q[2], Q[3], [Q[3][0] + dir * 9, Q[3][1] + 2.4], [Q[2][0] + dir * 9, Q[2][1] + 1.6]], (() => { const g = c.createLinearGradient(Q[2][0], 0, Q[2][0] + dir * 9, 0); g.addColorStop(0, '#66707e'); g.addColorStop(1, '#12161c'); return g; })());
+    fillp([top[0], top[1], top[2], topUp[2], topUp[1], topUp[0]], (() => { const g = c.createLinearGradient(0, -134, 0, -122); g.addColorStop(0, '#fbfcfe'); g.addColorStop(1, '#a8b2be'); return g; })());
     c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(top[0][0], top[0][1]); c.lineTo(top[1][0], top[1][1]); c.lineTo(top[2][0], top[2][1]); c.stroke();
     fillp(Q, steelY(-126, -98));
     c.save(); poly(Q); c.clip();
@@ -115,10 +115,10 @@ function piWillDraw(c, t) {
   band(-13, -5, 26, 5, [[0, '#6a4e1a'], [0.22, '#ffe7b4'], [0.6, '#b18434'], [1, '#46320e']], '#2e220c');
   fillp([[-4.5, 0], [4.5, 0], [5.6, 2], [5.6, 11], [4.5, 11], [-4.5, 11]], steelX(-4.5, 5.6));
   const stone = (pts, lit, body) => { fillp(pts.map(([x, y]) => [x - 1.6, y - 1.5]), lit); fillp(pts, body); };
-  stone([[-30, 6], [-18, 2], [-8, 8], [-14, 16], [-28, 14]], '#a08068', '#6a5342');
-  stone([[-12, 4], [2, 1], [8, 8], [0, 14], [-10, 12]], '#b09078', '#5c4636');
-  stone([[6, 3], [20, 1], [28, 8], [16, 15], [4, 11]], '#8d6e56', '#3f3126');
-  stone([[-6, 10], [8, 12], [14, 18], [-2, 20], [-10, 16]], '#4a3a2c', '#241910');
+  stone([[-36, 6], [-20, 1], [-8, 9], [-16, 18], [-34, 16]], '#a08068', '#6a5342');
+  stone([[-14, 3], [4, -1], [12, 8], [2, 16], [-12, 14]], '#c4a488', '#5c4636');
+  stone([[8, 2], [26, -1], [36, 9], [22, 18], [4, 12]], '#8d6e56', '#3f3126');
+  stone([[-8, 12], [10, 14], [18, 22], [-4, 24], [-14, 18]], '#4a3a2c', '#241910');
   c.fillStyle = 'rgba(255,232,204,.4)'; c.beginPath(); c.ellipse(-22, 4, 3.2, 1.2, -0.5, 0, TAU); c.fill(); c.beginPath(); c.ellipse(2, 2, 3.6, 1.2, 0.3, 0, TAU); c.fill();
   c.strokeStyle = 'rgba(20,12,8,.8)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-16, 6); c.lineTo(-8, 12); c.lineTo(-1, 8); c.moveTo(10, 5); c.lineTo(18, 11); c.stroke();
   c.fillStyle = 'rgba(62,42,26,.5)'; c.beginPath(); c.ellipse(-9, -2, 2.4, 1.2, 0.4, 0, TAU); c.fill(); c.beginPath(); c.ellipse(7, 0, 1.8, 1, -0.3, 0, TAU); c.fill();
@@ -129,11 +129,11 @@ function piWillDraw(c, t) {
     c.beginPath(); c.arc(x, y, 1.45, 0, TAU); c.fillStyle = g; c.fill();
   };
   rivet(-42, -112); rivet(42, -112); rivet(0, -140); rivet(0, -70);
-  c.beginPath(); c.arc(1.3, -110.4, 15, 0, TAU); c.fillStyle = '#1a1e24'; c.fill();
-  const md = c.createRadialGradient(-5, -120, 2, 1, -110, 15);
-  md.addColorStop(0, '#f4f7fb'); md.addColorStop(0.5, '#8b95a3'); md.addColorStop(1, '#343b46');
-  c.beginPath(); c.arc(0, -112, 14, 0, TAU); c.fillStyle = md; c.fill();
-  const gx = 0, gy = -112, R = 6.4;
+  c.beginPath(); c.arc(1.6, -110.2, 17, 0, TAU); c.fillStyle = '#1a1e24'; c.fill();
+  const md = c.createRadialGradient(-6, -122, 2, 1, -110, 17);
+  md.addColorStop(0, '#f7f9fc'); md.addColorStop(0.45, '#8b95a3'); md.addColorStop(1, '#2c333c');
+  c.beginPath(); c.arc(0, -112, 16, 0, TAU); c.fillStyle = md; c.fill();
+  const gx = 0, gy = -112, R = 8;
   c.beginPath(); c.ellipse(gx + 1.2, gy + 2.2, R + 3.6, R + 3.2, 0, 0, TAU); c.fillStyle = '#2a200e'; c.fill();
   const bz = c.createRadialGradient(gx - 2.2, gy - 2.4, 0.8, gx + 0.6, gy + 0.8, R + 3.3);
   bz.addColorStop(0, '#fff6d8'); bz.addColorStop(0.42, '#e2b65c'); bz.addColorStop(1, '#5c4214');

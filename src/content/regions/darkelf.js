@@ -205,8 +205,7 @@ defineRegion({
           { use: 'swipe', clip: 'bite', reach: 170, width: 38, windup: 0.95, dmg: 1.3, down: true, cd: [2.2, 3.2], w: 2 },
           { use: 'pool', id: 'fog', clip: 'sigB', zone: 'poison', at: 'front', r: 120, windup: 1.0, linger: 7, dmg: 0.8, col: '#b0d060', cd: [9, 12], w: 1.4, say: '邪龙吐出了毒雾——别站在雾里！' },
           { use: 'summon', id: 'victims', clip: 'sigA', kind: 'spizVictim', n: 3, max: 4, cd: [12, 15], w: 1.2, say: '邪龙的牺牲者——在它们扑上来之前打倒！' },
-          { use: 'lanes', id: 'chains', kind: 'wave', lanes: 5, hit: 4, windup: 1.1, speed: 900, dmg: 1.2, col: '#a8a8c0', cd: [11, 14], w: 1, say: '锁链横扫——站进没亮的那一排！', then: { use: 'hold', dur: 2.0, clip: 'roar', col: '#a8a8c0' } },
-          { use: 'laser', windup: 1.2, dur: 1.2, sweep: 60, dmg: 0.45, col: '#b070ff', cd: [8, 10], say: '龙息！' }] },
+          { use: 'lanes', id: 'chains', kind: 'wave', lanes: 5, hit: 4, windup: 1.1, speed: 900, dmg: 1.2, col: '#a8a8c0', cd: [11, 14], w: 1, say: '锁链横扫——站进没亮的那一排！', then: { use: 'hold', dur: 2.0, clip: 'roar', col: '#a8a8c0' } }] },
         { at: 0.6, enter: { col: '#e8d8ff', mechs: [DE_SPIZ_ROAR] },
           skills: [{ use: 'mech', mech: DE_SPIZ_ROAR, cd: [24, 30], w: 0.8 },
             { use: 'pull', id: 'roar', mode: 'out', r: 320, force: 240, windup: 1.0, dur: 0.8, status: 'stun', sdur: 1, dmg: 0.5, col: '#e8d8ff', cd: [13, 16], say: '邪龙的吼叫——眩晕！' }] },
@@ -230,8 +229,7 @@ defineRegion({
       phases: [
         { at: 1, skills: [
           { use: 'swipe', clip: 'slam', reach: 112, width: 32, windup: 0.95, dmg: 1.3, down: true, status: 'stun', sdur: 1, cd: [2.4, 3.4], w: 2 },
-          { use: 'dash', clip: 'charge', len: 380, speed: 640, windup: 1.0, dmg: 1.3, status: 'stun', sdur: 1, cd: [7, 9] },
-          { use: 'pull', id: 'titanRoar', mode: 'out', r: 300, force: 260, windup: 1.0, dur: 0.8, status: 'stun', sdur: 1.2, dmg: 0.5, col: '#ffb070', cd: [12, 15], say: '泰坦的怒吼——眩晕！' }] },
+          { use: 'pull', id: 'titanRoar', mode: 'out', r: 300, force: 260, windup: 1.0, dur: 0.8, status: 'stun', sdur: 1.2, dmg: 0.5, col: '#ffb070', cd: [12, 15], w: 1.4, say: '泰坦的怒吼——眩晕！' }] },
         { at: 0.4, enter: { col: '#ffb070', mechs: [{ use: 'stance', every: [999, 999], modes: [{ id: 'iron', name: '钢铁之躯', col: '#ffb070', dmgTaken: 0.75, say: '泰坦进入了钢铁之躯——受到的伤害降低！' }] }] } },
       ] },
     atlas: { name: '阿特拉斯', lvl: 35, size: [22, 16, 150], weight: 6, speed: 75, elem: 'fire', art: ['deGiant', { hue: 190, sat: 0.5, bright: 0.8 }], scale: 1.05, pref: 150, traits: { sa: 'cast' },
@@ -254,21 +252,19 @@ defineRegion({
             { use: 'aoe', sig: '三连震', clip: 'sigA', shape: 'circle', at: 'self', r: 190, windup: 1.0, dmg: 1.1, jump: true, col: '#c8a0ff' },
             { use: 'aoe', sig: '三连震', clip: 'sigA', shape: 'circle', at: 'self', r: 250, windup: 0.6, dmg: 1.1, jump: true, col: '#c8a0ff' },
             { use: 'aoe', sig: '三连震', clip: 'sigA', shape: 'circle', at: 'self', r: 310, windup: 0.6, dmg: 1.2, jump: true, col: '#c8a0ff' }] },
-          { use: 'aoe', clip: 'sigB', shape: 'cross', at: 'target', hw: 26, windup: 1.2, dmg: 1.3, col: '#c8a0ff', cd: [7, 9], say: '裂地锤' },
-          { use: 'dash', clip: 'charge', len: 380, speed: 700, windup: 1.0, dmg: 1.3, cd: [6, 8] }] },
+          { use: 'aoe', clip: 'sigB', shape: 'cross', at: 'target', hw: 26, windup: 1.2, dmg: 1.3, col: '#c8a0ff', cd: [7, 9], w: 1.3, say: '裂地锤' }] },
         { at: 0.6, enter: { say: '波罗丁唤醒了炎与冰的骑士之力——站进相反颜色的法阵再打！', mechs: [{ use: 'element', modes: ['fire', 'ice'], every: 12, mul: 0.4 }] } },
-        { at: 0.3, enter: { col: '#c8a0ff', mechs: [DE_BORO_UNDYING] }, skills: [{ use: 'rain', kind: 'bolt', n: 6, r: 44, windup: 1.1, dmg: 1.1, col: '#c8a0ff', cd: [7, 9] }] },
+        { at: 0.3, enter: { col: '#c8a0ff', mechs: [DE_BORO_UNDYING] } },
       ] },
     // 无头骑士（官方 HK70）：全程霸体；影之梦魇沿纵深奔袭（留一排缺口）；冲撞把人顶到墙边多段；低血满图狂奔回血（输出检查）↔ 喘息；濒死几秒打不动
-    // 美术：官方是骑着黑色梦魇的轮廓，新形象写在 art.chars.deHeadless.forms.rider（美术队列出图后把 art 换成 deHeadless_rider，现在的步战图给瘟疫之源的精英用）
-    headlessKnight: { name: '无头骑士', lvl: 37, power: 1.5, size: [16, 14, 128], speed: 125, elem: 'dark', art: 'deHeadless', scale: 1.15, pref: 150, hook: 'headless', traits: { sa: 'always' },
+    // 骑乘图已接上，步战 deHeadless 仍留给瘟疫精英。
+    headlessKnight: { name: '无头骑士', lvl: 37, power: 1.5, size: [16, 14, 128], speed: 125, elem: 'dark', art: 'deHeadless_rider', scale: 1.15, pref: 150, hook: 'headless', traits: { sa: 'always' },
       mechs: [{ use: 'groggy', max: 120, dur: 5 }],
       phases: [
         { at: 1, skills: [
           { use: 'swipe', n: 2, reach: 108, width: 24, windup: 0.95, dmg: 1.1, cd: [1.8, 2.6], w: 2 },
           { use: 'dash', id: 'ram', clip: 'sigA', carry: true, speed: 760, windup: 1.0, hw: 26, dmg: 1.3, col: '#b890ff', cd: [8, 11], w: 1.4, say: '冲锋——别被顶到墙上！' },
-          { use: 'lanes', id: 'nightmare', clip: 'sigB', kind: 'runner', runner: 'nightmareShade', lanes: 5, hit: 4, speed: 900, windup: 1.1, dmg: 1.3, col: '#b890ff', cd: [12, 15], w: 1.2, say: '影之梦魇奔袭——站进没亮的那一排！', then: { use: 'hold', dur: 2.0, clip: 'roar', col: '#b890ff' } },
-          { use: 'seq', cd: [10, 13], w: 1, steps: [{ use: 'blink', to: 'away', dist: 260 }, { use: 'dash', len: 480, speed: 820, windup: 0.9, dmg: 1.2, col: '#b890ff' }] }] },
+          { use: 'lanes', id: 'nightmare', clip: 'sigB', kind: 'runner', runner: 'nightmareShade', lanes: 5, hit: 4, speed: 900, windup: 1.1, dmg: 1.3, col: '#b890ff', cd: [12, 15], w: 1.2, say: '影之梦魇奔袭——站进没亮的那一排！', then: { use: 'hold', dur: 2.0, clip: 'roar', col: '#b890ff' } }] },
         { at: 0.6, enter: { say: '无头骑士召来了更多的梦魇！', col: '#b890ff' },
           skills: [{ use: 'lanes', id: 'nightmare2', kind: 'runner', runner: 'nightmareShade', lanes: 6, hit: 5, speed: 950, windup: 1.1, dmg: 1.2, col: '#b890ff', cd: [16, 20], w: 1, say: '梦魇群奔袭——只剩一排缺口！', then: { use: 'hold', dur: 1.9, clip: 'roar', col: '#b890ff' } }] },
         { at: 0.35, enter: { col: '#b890ff', mechs: [DE_HEADLESS_GALLOP] } },
@@ -279,15 +275,14 @@ defineRegion({
       mechs: [{ use: 'groggy', max: 120, dur: 7, mul: 1.6 }],
       phases: [
         { at: 1, skills: [
-          { use: 'swipe', n: 2, reach: 116, width: 28, windup: 0.95, dmg: 1.1, cd: [1.8, 2.6], w: 2 },
-          { use: 'shot', mode: 'homing', n: 4, spread: 60, speed: 260, turn: 1.8, dmg: 0.9, status: 'poison', cd: [5, 7], say: '瘟疫之种', col: '#c0a0ff' },
-          { use: 'pull', id: 'engulf', clip: 'sigA', mode: 'in', r: 420, force: 230, windup: 1.1, dur: 1.4, dmg: 0.4, col: '#b890ff', cd: [13, 16], w: 1.3, say: '流体吞噬——往外跑！',
+          { use: 'swipe', n: 2, reach: 116, width: 28, windup: 0.95, dmg: 1.1, cd: [1.8, 2.6], w: 1.6 },
+          { use: 'pull', id: 'engulf', clip: 'sigA', mode: 'in', r: 420, force: 230, windup: 1.1, dur: 1.4, dmg: 0.4, col: '#b890ff', cd: [13, 16], w: 1.4, say: '流体吞噬——往外跑！',
             then: { use: 'aoe', shape: 'circle', at: 'self', r: 160, windup: 0.9, dmg: 1.5, status: 'poison', col: '#b890ff' } },
           { use: 'pool', id: 'spores', clip: 'sigB', zone: 'poison', at: 'target', n: 3, scatter: 160, r: 70, windup: 1.1, linger: 7, dmg: 0.8, col: '#c8b860', cd: [10, 13], w: 1.2, say: '瘟疫孢子——别站在毒雾里！' },
           { use: 'summon', kind: 'fierceZombie', n: 2, max: 3, cd: [16, 20], w: 0.7, say: '被感染的人们……' }] },
         { at: 0.72, enter: { col: '#d8c880', mechs: [DE_NEIPERA_PRIESTS] } },
         { at: 0.5, enter: { col: '#d8c880', mechs: [DE_NEIPERA_BURST] },
-          skills: [{ use: 'mech', mech: DE_NEIPERA_BURST, cd: [24, 30], w: 0.7 }, { use: 'rain', kind: 'bolt', n: 6, r: 44, interval: 0.28, windup: 1.1, dmg: 1.1, col: '#b890ff', cd: [8, 10] }] },
+          skills: [{ use: 'mech', mech: DE_NEIPERA_BURST, cd: [24, 30], w: 0.7 }] },
         { at: 0.28, enter: { col: '#c0a0ff', mechs: [DE_DIREGIE_SPLIT] } },
       ] },
   },
@@ -464,7 +459,7 @@ defineRegion({
       deHeadless: { h: 128, boss: true, hold: 'holding a long black lance', desc: 'The Headless Knight, guardian of the Dark City gate: a tall armored knight with no head, violet ghost fire flickering from the empty neck of the armor, heavy black plate armor with silver crescent moon trims, a long tattered dark violet cape, a round shield on the back, holding a long black lance.',
         atk: 'the long black lance', cast: 'raising the lance high with ghost fire flaring', low: 'leaning forward low with the lance couched for a charge',
         sig: ['wall ram: lance couched low under the arm, body leaning far forward in a full-speed charge', 'nightmare stampede: raising the lance high and sweeping it forward to command, cape whipping back'],
-        // 新形象（BOSS_PLAN §3.3 必须出新图）：官方是骑着黑色梦魇的无头骑士。出图后领主改用 deHeadless_rider，现在的步战图留给瘟疫之源的精英
+        // 领主已用 deHeadless_rider。步战 deHeadless 留给瘟疫之源的精英。
         forms: { rider: { h: 170, cycle: 'trot', hold: 'holding a long black lance', desc: 'The Headless Knight riding a huge black nightmare horse, guardian of the Dark City gate: a tall armored knight with no head and violet ghost fire flickering from the empty neck, heavy black plate armor with silver crescent moon trims, a long tattered dark violet cape, a long black lance couched under the arm; the nightmare horse is jet black with a flaming violet mane and tail, glowing violet eyes, black barding with silver crescent trims.',
           atk: 'the long black lance thrust forward from horseback', cast: 'the horse rearing up on its hind legs while the knight raises the lance', low: 'the horse galloping low with the lance couched for a charge',
           sig: ['wall ram: the horse at full gallop, the knight leaning forward with the lance couched', 'nightmare stampede: the horse rearing up, the knight raising the lance high to command'] } } },

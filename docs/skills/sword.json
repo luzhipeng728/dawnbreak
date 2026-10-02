@@ -122,7 +122,10 @@
    "launch": false,
    "down": true,
    "sa": "part",
-   "invul": "part",
+   "invul": "full",
+   "why": {
+    "invul": "官方写明起跳阶段无敌；本作实现无敌窗口为 0~1.6s，审计按动作有效时长约 1.83s 计算为 0.85，按工具分档归 full"
+   },
    "dx": [
     60,
     260
@@ -488,7 +491,10 @@
     15,
     60
    ],
-   "invul": "part",
+   "invul": "full",
+   "why": {
+    "invul": "官方写明起跳阶段无敌；本作实现无敌窗口为 0~1.6s，审计按动作有效时长约 1.83s 计算为 0.85，按工具分档归 full"
+   },
    "cd": 35,
    "src2": "https://namu.wiki/w/%EC%9B%A8%ED%8E%80%EB%A7%88%EC%8A%A4%ED%84%B0(%EB%8D%98%EC%A0%84%EC%95%A4%ED%8C%8C%EC%9D%B4%ED%84%B0)/%EC%8A%A4%ED%82%AC"
   },

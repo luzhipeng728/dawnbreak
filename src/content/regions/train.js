@@ -1,11 +1,11 @@
 /* =====================================================================
    区域：天界 · 海上列车（官方 70 版本 Lv65~74；满级 60 后放在 Lv52~56）
    官方依据：天界的海上列车重新运行，卡勒特雇佣的「铁鳞海贼团」（突变的海洋生物 / 鱼人海盗）不断袭击铁道车站，想控制所有海上列车。
-     区域在天界「鲁夫特悬空海港」。地下城：列车上的海贼（领主黑鳞莫贝尼：召唤鳄鱼、旋转多段、插鳄鱼图腾定身后爆炸、大跳跃、远程；
-     蓝色人鱼回血 / 水柱追踪 / 泡沫护甲，副船长鳄鱼扔标枪、舱门里跳出鳄鱼，海盗船开炮）、夺回西部线（烈焰盾波迪尔，车厢里的油桶会爆）、
-     雾都赫伊斯（范·弗拉丁；中途兜风皮埃尔 / 派普·乔 / 狙击手艾丽格；满图雾气、机枪扫射前摇长）、
-     决战阿登高地（攻坚，黎明之眼 安祖·塞弗；中途双枪哈斯 / 狂徒伯纳 / 告密者特雷克）。
-   本作原创：鲁夫特港站长哈兰德、各招式与机制组合（图腾 = 定身 + 延时爆炸、过热的锅炉、探照灯光圈、黎明 / 黄昏属性切换）、
+     区域在天界「鲁夫特悬空海港」。地下城：列车上的海贼（领主黑鳞莫贝尼：召唤鳄鱼、鳄鱼图腾定身后爆炸、起跳砸地、远程标枪；
+     蓝色人鱼回血 / 水柱追踪 / 泡沫护甲，副船长鳄鱼扔标枪、舱门里跳出鳄鱼，海盗船开炮；约一成换成小人鱼空空）、夺回西部线（烈焰盾波迪尔：无敌冲锋、身后喷火、跳躲开重拳）、
+     雾都赫伊斯（范·弗拉丁；中途兜风皮埃尔 / 派普·乔 / 狙击手艾丽格；满图雾气、掩体、皮埃尔冲车道、炸弹）、
+     决战阿登高地（攻坚，黎明之眼 安祖·赛弗：突刺、黑洞再落雷、低血机械武装；中途双枪哈斯 / 狂徒伯纳 / 告密者特雷克）。
+   本作原创：鲁夫特港站长哈兰德、各招式与机制组合（图腾 = 定身 + 延时爆炸、过热的锅炉、雾里的掩体、机械武装）、
      史诗「黎明之眼」、深渊专属「铁鳞海贼团的宝藏」。
    入口：天界之门（x 1700 往上，Lv.52）→ 鲁夫特悬空海港 → 海上铁道（四个地下城 + 深渊）
    ===================================================================== */
@@ -56,9 +56,9 @@ defineRegion({
         { use: 'buff', clip: 'cast', kind: 'shield', target: 'allies', r: 260, amt: 0.25, dur: 6, cd: [12, 15], say: '泡沫护甲！' }] },
     kongkong: { name: '小人鱼空空', tier: 'swarm', arch: 'swarm', size: [12, 10, 70], scale: 0.7, speed: 150, elem: 'ice', art: ['trMermaid', { hue: -150, sat: 1.2, bright: 1.1 }],
       skills: [{ use: 'swipe', reach: 52, dmg: 0.7, cd: [1.2, 2.2] }, { use: 'shot', mode: 'straight', speed: 360, dmg: 0.6, cd: [3, 4], col: '#8ae0ff' }] },
-    crocPirate: { name: '鳄鱼海贼', tier: 'brute', arch: 'aggressive', size: [16, 12, 110], weight: 2, art: ['dragonman', { hue: -45, sat: 0.65, bright: 0.75 }],
+    crocPirate: { name: '鳄鱼海贼', tier: 'brute', arch: 'aggressive', size: [16, 12, 110], weight: 2, art: 'trCroc',
       skills: [{ use: 'swipe', clip: 'bite', n: 2, reach: 80, dmg: 1.05, cd: [1.8, 2.8], w: 2 }, { use: 'shot', clip: 'throw', mode: 'straight', speed: 560, dmg: 0.95, cd: [4, 6], col: '#d8c8a0', say: '标枪！' }] },
-    crocMate: { name: '副船长鳄鱼', tier: 'elite', arch: 'aggressive', size: [17, 13, 118], scale: 1.2, art: ['dragonman', { hue: -90, sat: 0.7, bright: 0.55 }], traits: { sa: 'cast' },
+    crocMate: { name: '副船长鳄鱼', tier: 'elite', arch: 'aggressive', size: [17, 13, 118], scale: 1.2, art: ['trCroc', { sat: 0.85, bright: 0.75 }], traits: { sa: 'cast' },
       skills: [{ use: 'swipe', n: 3, reach: 90, dmg: 1.05, cd: [1.6, 2.4], w: 2 }, { use: 'shot', clip: 'throw', mode: 'spread', n: 3, spread: 36, speed: 560, dmg: 0.9, cd: [4, 6], say: '标枪齐射！' },
         { use: 'summon', kind: 'crocPirate', n: 2, max: 3, cd: [14, 18], say: '舱门里的，都出来！' }] },
     pirateCannon: { name: '海盗船炮', tier: 'normal', arch: 'guard', size: [24, 16, 80], weight: 8, speed: 30, hardness: 40, art: ['dragonCannon', { hue: 170, sat: 0.6, bright: 0.7 }], traits: { sa: 'always', immune: ['stun', 'freeze'] },
@@ -68,9 +68,9 @@ defineRegion({
       skills: [{ use: 'shot', mode: 'straight', speed: 480, dmg: 0.85, cd: [1.6, 2.6], w: 2.5, col: '#ffd070' }, { use: 'shot', mode: 'spread', n: 3, spread: 30, speed: 460, dmg: 0.7, cd: [4, 6] }, { use: 'swipe', dmg: 0.8, reach: 56, cd: [2, 3] }] },
     ktFlamer: { name: '卡勒特火焰兵', tier: 'normal', arch: 'aggressive', size: [14, 12, 104], elem: 'fire', art: ['gtSoldier', { hue: -35, sat: 2.6, bright: 0.9 }], traits: { sa: 'cast' },
       skills: [{ use: 'aoe', shape: 'line', at: 'front', len: 220, hw: 30, windup: 0.8, dmg: 1.0, status: 'burn', col: '#ff7a3a', cd: [4, 6], w: 1.5, say: '火焰喷射！' }, { use: 'swipe', dmg: 0.9, reach: 60, cd: [1.8, 2.8], w: 2 }] },
-    ktShield: { name: '卡勒特盾卫', tier: 'brute', arch: 'guard', size: [17, 13, 116], scale: 1.1, weight: 3, hardness: 40, art: ['gtSoldier', { hue: 90, sat: 0.3, bright: 1.15 }], traits: { sa: 'cast' },
+    ktShield: { name: '卡勒特盾卫', tier: 'brute', arch: 'guard', size: [17, 13, 116], scale: 1.1, weight: 3, hardness: 40, art: 'gtShield', traits: { sa: 'cast' },
       skills: [{ use: 'guard', dur: 2.4, reduce: 0.85, cd: [6, 8], w: 1.5, counter: { use: 'aoe', shape: 'line', at: 'front', len: 150, hw: 30, windup: 0.4, dmg: 1.15, knock: 300 } }, { use: 'swipe', clip: 'slam', reach: 88, dmg: 1.15, down: true, cd: [2.4, 3.4], w: 2 }] },
-    ktGunner: { name: '卡勒特机枪手', tier: 'elite', arch: 'kiter', size: [15, 12, 110], scale: 1.15, art: ['gtSoldier', { hue: 40, sat: 2.0, bright: 0.75 }],
+    ktGunner: { name: '卡勒特机枪手', tier: 'elite', arch: 'kiter', size: [15, 12, 110], scale: 1.15, art: 'gtGunner',
       skills: [{ use: 'laser', windup: 1.6, dur: 1.4, sweep: 40, dmg: 0.5, col: '#ffd070', cd: [5, 7], w: 1.5, say: '机枪扫射！' }, { use: 'shot', mode: 'spread', n: 5, spread: 50, speed: 460, dmg: 0.6, cd: [4, 6] }] },
     steamBoiler: { name: '过热的锅炉', tier: 'swarm', arch: 'guard', size: [22, 14, 90], weight: 99, speed: 1, art: ['furnace', { hue: -20, sat: 0.8, bright: 0.85 }], traits: { immune: ['stun', 'freeze'] },
       skills: [{ use: 'explode', range: [0, 260], dy: 90, r: 120, windup: 2.6, dmg: 1.4, cd: [1, 2], say: '锅炉要炸了！快打坏它！', col: '#ff8a3a' }] },
@@ -80,7 +80,7 @@ defineRegion({
     pipeJoe: { name: '派普·乔', tier: 'elite', arch: 'aggressive', size: [18, 14, 120], scale: 1.25, weight: 4, art: ['gtSoldier', { hue: -30, sat: 1.6, bright: 0.7 }], traits: { sa: 'cast' },
       skills: [{ use: 'swipe', clip: 'slam', n: 2, reach: 96, width: 30, dmg: 1.15, down: true, cd: [2, 3], w: 2 }, { use: 'grab', reach: 66, hold: 0.8, throwDmg: 1.4, cd: [7, 9], say: '抓住你了！' },
         { use: 'aoe', shape: 'circle', at: 'target', r: 90, windup: 1.2, dmg: 0.8, status: 'blind', sdur: 2, col: '#b8b8c0', cd: [8, 10], say: '烟斗的浓烟' }] },
-    sniperAlleg: { name: '狙击手艾丽格', tier: 'elite', arch: 'kiter', size: [14, 12, 106], art: ['gtSoldier', { hue: -150, sat: 1.8, bright: 1.0 }],
+    sniperAlleg: { name: '狙击手艾丽格', tier: 'elite', arch: 'kiter', size: [14, 12, 106], art: 'gtSniper',
       skills: [{ use: 'laser', windup: 1.4, dur: 0.4, hw: 12, dmg: 1.4, col: '#ff6a6a', cd: [4.5, 6], w: 2, say: '瞄准……' }, { use: 'shot', mode: 'straight', speed: 720, dmg: 0.9, cd: [2, 3] }, { use: 'blink', to: 'away', dist: 240, cd: [8, 11], w: 0.6 }] },
     // 阿登高地的中途精英
     haas: { name: '双枪哈斯', tier: 'elite', arch: 'kiter', size: [14, 12, 108], art: ['gtSoldier', { hue: 120, sat: 1.9, bright: 0.85 }],
@@ -90,62 +90,76 @@ defineRegion({
     trek: { name: '告密者特雷克', tier: 'elite', arch: 'kiter', size: [14, 12, 100], art: ['nmBandit', { hue: -110, sat: 1.0, bright: 0.9 }],
       skills: [{ use: 'shot', clip: 'throw', mode: 'arc', n: 2, r: 60, dmg: 0.8, status: 'blind', sdur: 1.5, cd: [4, 5.5], w: 2, col: '#a0a0b0', say: '烟雾弹！' }, { use: 'summon', kind: 'rx78', n: 2, max: 3, cd: [12, 16], say: '长官！在这里！' },
         { use: 'blink', to: 'away', dist: 260, cd: [7, 10], w: 0.8 }] },
+    // 领主机制物件，不进房间怪表。图腾定身到被打掉或引信结束；炸弹到点爆炸。
+    crocPillar: { name: '鳄鱼图腾', tier: 'swarm', size: [16, 12, 110], obj: { shape: 'totem', col: '#6a8a48', h: 110 } },
+    fladinBomb: { name: '弗拉丁的炸弹', tier: 'swarm', size: [16, 12, 70], obj: { shape: 'barrel', col: '#c45a28', h: 70 } },
   },
 
   bosses: {
-    mobeni: { name: '黑鳞莫贝尼', lvl: 53, size: [20, 15, 134], weight: 5, speed: 100, art: 'trMobeni', scale: 1.2, pref: 120, traits: { sa: 'cast' },
+    // 莫贝尼：鳄鱼图腾定在脚下并延时爆炸（打掉就解定身）；起跳砸地要在落地瞬间跳；免疫冰冻。空空伊是 sea_pirates 的 10% 替换，沿用小人鱼空空的招。
+    mobeni: { name: '黑鳞莫贝尼', lvl: 53, size: [20, 15, 134], weight: 5, speed: 100, art: 'trMobeni', scale: 1.2, pref: 120, traits: { sa: 'cast', immune: ['freeze'] },
       mechs: [{ use: 'groggy', max: 100, dur: 6 }],
       phases: [
-        { at: 1, skills: [{ use: 'swipe', clip: 'slam', n: 2, reach: 110, width: 34, dmg: 1.15, cd: [1.8, 2.6], w: 2 },
-          { use: 'seq', cd: [8, 10], w: 1.2, say: '旋转锚链！', steps: [{ use: 'aoe', shape: 'circle', at: 'self', r: 130, windup: 0.6, dmg: 0.7 }, { use: 'aoe', shape: 'circle', at: 'self', r: 130, windup: 0.3, dmg: 0.7 }, { use: 'aoe', shape: 'circle', at: 'self', r: 150, windup: 0.3, dmg: 0.9, knock: 320 }] },
-          { use: 'seq', cd: [10, 13], say: '鳄鱼图腾！', steps: [{ use: 'aoe', clip: 'throw', shape: 'circle', at: 'target', r: 60, windup: 0.7, dmg: 0.6, status: 'root', sdur: 1.6, col: '#8aa05a' }, { use: 'aoe', shape: 'circle', at: 'target', r: 120, windup: 1.5, dmg: 1.4, col: '#ff8a3a' }] },
-          { use: 'shot', clip: 'throw', mode: 'spread', n: 3, spread: 40, speed: 460, dmg: 0.9, cd: [5, 7] }] },
-        { at: 0.55, enter: { say: '铁鳞海贼团，全员开炮！', col: '#ffb050', summon: { kind: 'crocPirate', n: 2 }, mechs: [{ use: 'hazard', kind: 'debris', every: 4, n: 3, col: '#ffb050' }] },
-          skills: [{ use: 'seq', cd: [9, 12], say: '大跳跃！', steps: [{ use: 'blink', to: 'front', dist: 60 }, { use: 'aoe', shape: 'circle', at: 'self', r: 150, windup: 0.5, dmg: 1.3, down: true }] },
-            { use: 'summon', kind: 'crocPirate', n: 2, max: 3, cd: [16, 20], say: '上来吧，小的们！' }] },
+        { at: 1, skills: [
+          { use: 'swipe', clip: 'slam', n: 2, reach: 110, width: 34, dmg: 1.15, cd: [1.8, 2.6], w: 1.6 },
+          { use: 'dash', id: 'spin', spin: true, len: 300, speed: 460, windup: 0.9, hw: 40, dmg: 1.15, cd: [7, 9], w: 1.6, say: '旋转斩——他转起来了，别贴着站！' },
+          { use: 'plant', id: 'totem', clip: 'sigB', kind: 'crocPillar', n: 1, at: 'target', root: true, fuse: 4.2, hits: 4, onFuse: 'explode', r: 120, dmg: 1.5, max: 2, label: '图腾', col: '#8aa05a', cd: [12, 15], w: 1.3, say: '鳄鱼图腾——被定住了，先打掉它！' },
+          { use: 'leap', id: 'slam', clip: 'sigA', crouch: 0.25, up: 0.35, track: 0.55, fall: 0.45, r: 160, hover: 560, jump: true, dmg: 1.7, col: '#8aa05a', cd: [10, 13], w: 1.4, say: '起跳砸地——落地的瞬间跳起来！' }] },
+        { at: 0.55, enter: { say: '铁鳞海贼团，全员开炮！', col: '#ffb050', summon: { kind: 'crocPirate', n: 2 } },
+          skills: [{ use: 'summon', kind: 'crocPirate', n: 2, max: 4, cd: [16, 20], say: '上来吧，小的们！' }] },
       ] },
+    // 波迪尔：冲锋前先无敌（dash 本身没有无敌参数，所以用一段撑秒无敌再接冲锋）；闪到身后喷扇形火；全屏重拳用跳躲开。
     podir: { name: '烈焰盾波迪尔', lvl: 54, size: [20, 15, 130], weight: 6, speed: 90, elem: 'fire', art: 'trPodir', scale: 1.2, pref: 110, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }],
       phases: [
-        { at: 1, skills: [{ use: 'guard', dur: 2.6, reduce: 0.85, cd: [8, 10], w: 1.2, say: '烈焰盾！', counter: { use: 'aoe', shape: 'line', at: 'front', len: 260, hw: 36, windup: 0.4, dmg: 1.2, status: 'burn', col: '#ff7a3a' } },
-          { use: 'dash', len: 360, speed: 720, windup: 0.7, dmg: 1.25, knock: 360, cd: [5, 7], w: 1.5, say: '盾击！' },
-          { use: 'aoe', shape: 'line', at: 'front', len: 300, hw: 38, windup: 0.9, dmg: 1.15, status: 'burn', col: '#ff7a3a', cd: [5, 7], say: '火焰长枪' },
-          { use: 'summon', kind: 'steamBoiler', n: 2, max: 3, cd: [14, 18], say: '把锅炉烧到过热！' }] },
-        { at: 0.5, enter: { say: '车厢着火了！打破波迪尔的烈焰盾！', col: '#ff7a3a', mechs: [{ use: 'shield', hp: 0.05, dur: 14, punish: 'nova', onBreak: 'groggy', col: '#ff9a4a' }, { use: 'hazard', kind: 'fire', every: 3.5, n: 2, col: '#ff6a2a' }] },
-          skills: [{ use: 'rain', kind: 'hex', n: 5, r: 50, windup: 1.2, dmg: 1.1, col: '#ff6a2a', cd: [8, 10], say: '火雨！' },
-            { use: 'mech', mech: { use: 'shield', hp: 0.04, dur: 12, punish: 'nova', onBreak: 'groggy', col: '#ff9a4a' }, cd: [24, 30], say: '烈焰盾，再次展开！' }] },
+        { at: 1, skills: [
+          { use: 'aoe', shape: 'line', at: 'front', len: 280, hw: 34, windup: 0.9, dmg: 1.1, status: 'burn', col: '#ff7a3a', cd: [4, 6], w: 1.6, say: '火焰长枪' },
+          { use: 'seq', id: 'fireCharge', clip: 'sigA', cd: [9, 12], w: 1.4, say: '烈焰冲锋——他无敌了，躲开这一撞！', steps: [
+            { use: 'mech', mech: { use: 'invuln', until: 'survive', survive: 2.6, hide: false, col: '#ff7a3a', say: '波迪尔点着了自己——这下打不动！' } },
+            { use: 'dash', len: 520, speed: 780, windup: 0.95, dmg: 1.4, status: 'burn', knock: 380, col: '#ff7a3a' }] },
+          { use: 'seq', id: 'blinkCone', clip: 'sigB', cd: [8, 11], w: 1.3, say: '波迪尔闪到身后喷火——绕开扇形！', steps: [
+            { use: 'blink', to: 'behind', dist: 80, col: '#ff7a3a' },
+            { use: 'cone', ang: 70, len: 340, windup: 0.95, dur: 1.1, tick: 0.2, dmg: 0.32, status: 'burn', col: '#ff7a3a' }] },
+          { use: 'aoe', id: 'punch', clip: 'slam', shape: 'circle', at: 'self', r: 320, windup: 1.05, dmg: 1.35, jump: true, down: true, col: '#ff7a3a', cd: [11, 14], w: 1.2, say: '烈焰重拳——跳起来！' }] },
+        { at: 0.5, enter: { say: '波迪尔的冲锋更猛了——无敌的时候别硬接！', col: '#ff7a3a' } },
       ] },
+    // 弗拉丁：整场雾 + 掩体。被瞄准要躲到掩体后面（和施法者、自己不在一条纵深）。皮埃尔沿纵深冲。炸弹打掉就没事。
     fladin: { name: '范·弗拉丁', lvl: 55, size: [16, 13, 126], speed: 105, art: 'trFladin', scale: 1.2, pref: 190, traits: { sa: 'cast' },
-      mechs: [{ use: 'groggy', max: 100, dur: 6 }],
+      mechs: [{ use: 'groggy', max: 100, dur: 6 },
+        { use: 'arena', kind: 'fog', r: 220, dur: 0, col: '#c8ccd4', say: '赫伊斯的雾笼罩了全场——视野变窄了！' },
+        { use: 'arena', kind: 'cover', n: 3, cover: 'msCover', dur: 0 }],
       phases: [
-        { at: 1, skills: [{ use: 'laser', windup: 1.5, dur: 1.4, sweep: 45, dmg: 0.55, col: '#ffd070', cd: [6, 8], w: 1.6, say: '机枪扫射！' },
-          { use: 'swipe', n: 3, reach: 86, dmg: 1.0, cd: [2, 3], w: 1.5 },
-          { use: 'aoe', shape: 'circle', at: 'target', r: 90, n: 2, scatter: 140, windup: 1.2, dmg: 0.9, status: 'blind', sdur: 2, col: '#c8ccd4', cd: [8, 10], say: '浓雾弹' },
-          { use: 'blink', to: 'away', dist: 260, cd: [7, 10], w: 0.8 }] },
-        { at: 0.6, enter: { say: '在雾里，你分得清哪个是我吗？', col: '#c8ccd4', mechs: [{ use: 'clones', n: 3, dur: 12, punish: 'nova' }] },
-          skills: [{ use: 'mech', mech: { use: 'clones', n: 3, dur: 12, punish: 'nova' }, cd: [24, 30], say: '雾中幻影' }, { use: 'rain', kind: 'hex', n: 4, r: 48, windup: 1.2, dmg: 1.1, col: '#ffb050', cd: [9, 12] }] },
-        { at: 0.3, enter: { say: '探照灯！站进光里，不然在雾里被打成筛子！', col: '#fff0a0', mechs: [{ use: 'safezone', mode: 'zone', n: 2, r: 70, windup: 3.4, frac: 0.4, say: '全方位扫射——站进探照灯的光圈！', col: '#fff0a0' }] },
-          skills: [{ use: 'mech', mech: { use: 'safezone', mode: 'zone', n: 2, r: 70, windup: 3.4, frac: 0.4, say: '全方位扫射——站进探照灯的光圈！', col: '#fff0a0' }, cd: [22, 28] }] },
+        { at: 1, skills: [
+          { use: 'laser', windup: 1.5, dur: 1.2, sweep: 40, dmg: 0.5, col: '#ffd070', cd: [6, 8], w: 1.5, say: '机枪扫射——看到细线就躲开！' },
+          { use: 'swipe', n: 2, reach: 86, dmg: 1.0, cd: [2, 3], w: 1.5 },
+          { use: 'lanes', id: 'ride', clip: 'sigA', kind: 'runner', runner: 'pierre', lanes: 4, hit: 3, speed: 900, windup: 1.1, dmg: 1.25, col: '#ffd070', cd: [11, 14], w: 1.3, say: '兜风皮埃尔冲过来了——站进没亮的那一排！' },
+          { use: 'mark', id: 'snipe', clip: 'sigB', mode: 'cover', delay: 1.6, cover: 'msCover', dmg: 1.6, cd: [9, 12], w: 1.3, say: '被瞄准了——躲到掩体后面！', col: '#ff6a6a' },
+          { use: 'plant', id: 'bombs', kind: 'fladinBomb', n: 2, at: 'spots', fuse: 5, hits: 3, onFuse: 'explode', r: 100, dmg: 1.25, max: 4, label: '炸弹', col: '#ff8a3a', cd: [13, 16], w: 1, say: '炸弹——引信走完会炸，先拆掉！' }] },
       ] },
-    anzu: { name: '黎明之眼 安祖·塞弗', tier: 'raid', lvl: 56, power: 0.85, size: [18, 14, 134], weight: 7, speed: 100, art: 'trAnzu', scale: 1.3, pref: 150, traits: { sa: 'cast', immune: ['stun', 'freeze'] },
+    // 人形：步枪、枪托挑飞后扫射、斜向突刺。低血机械武装换掉这套招，换成火箭感电、黑洞落雷、导弹。
+    anzu: { name: '黎明之眼 安祖·赛弗', tier: 'raid', lvl: 56, power: 0.85, size: [18, 14, 134], weight: 7, speed: 100, art: 'trAnzu', scale: 1.3, pref: 150, traits: { sa: 'cast', immune: ['stun', 'freeze'] },
       mechs: [{ use: 'groggy', max: 130, dur: 6, mul: 1.6 }, { use: 'enrage', t: 300 }],
       phases: [
-        { at: 1, skills: [{ use: 'dash', len: 440, speed: 820, windup: 0.7, dmg: 1.3, cd: [4, 6], w: 1.5, say: '突刺！' },
-          { use: 'laser', windup: 1.2, dur: 1.2, sweep: 50, dmg: 0.55, col: '#ffd890', cd: [7, 9], say: '黎明之光' },
-          { use: 'swipe', n: 3, reach: 104, width: 32, dmg: 1.1, cd: [2, 3], w: 2 },
-          { use: 'rain', kind: 'hex', n: 5, r: 50, windup: 1.2, dmg: 1.1, col: '#ffb050', cd: [8, 10], say: '炮兵，开火！' }] },
-        { at: 0.65, enter: { say: '黎明之眼睁开了——黎明与黄昏，你挡得住哪一边？', col: '#ffd890', mechs: [{ use: 'element', modes: ['light', 'dark'], every: 12, mul: 0.6, r: 95 }] },
-          skills: [{ use: 'summon', kind: 'rx78', n: 3, max: 5, cd: [14, 18], say: 'RX-78，追击！' },
-            { use: 'mech', mech: { use: 'shield', hp: 0.04, dur: 12, punish: 'nova', onBreak: 'groggy', col: '#ffd890', say: '黎明护盾！' }, cd: [24, 30] }] },
-        { at: 0.3, enter: { say: '全军——阿登高地一步也不许退！', col: '#ff6a4a', mechs: [{ use: 'safezone', mode: 'far', r: 240, windup: 3.2, frac: 0.4, say: '黎明炮击——离安祖远一点！' }] },
-          skills: [{ use: 'mech', mech: { use: 'safezone', mode: 'far', r: 240, windup: 3.2, frac: 0.4, say: '黎明炮击——离安祖远一点！' }, cd: [24, 30] },
-            { use: 'seq', cd: [14, 18], steps: [{ use: 'blink', to: 'away', dist: 300 }, { use: 'dash', len: 520, speed: 900, windup: 0.5, dmg: 1.3 }, { use: 'dash', len: 520, speed: 900, windup: 0.4, dmg: 1.3 }] }] },
+        { at: 1, skills: [
+          { use: 'shot', id: 'rifle', mode: 'straight', speed: 540, dmg: 0.85, cd: [1.5, 2.3], w: 2, col: '#ffd890' },
+          { use: 'seq', id: 'butt', cd: [6, 8], w: 1.5, say: '枪托挑飞——接着扫射，别站成一条线！', steps: [
+            { use: 'swipe', reach: 96, windup: 0.45, dmg: 1.05, launch: 300 },
+            { use: 'shot', mode: 'spread', n: 5, spread: 26, speed: 500, dmg: 0.5, col: '#ffd890' }] },
+          { use: 'dash', id: 'thrust', clip: 'sigA', len: 480, speed: 860, windup: 0.95, dmg: 1.35, cd: [5, 7], w: 1.5, say: '突刺——别站在直线上！', col: '#ffd890' }] },
+        { at: 0.35, enter: { say: '安祖·赛弗展开了机械武装！', col: '#ffd890', mechs: [{ use: 'form', name: '机械武装', art: 'trAnzu_mech', dur: 0, scale: 1.12, invulT: 1.2, col: '#e8d8a0', say: '机械武装——火箭、黑洞、导弹！',
+          skills: [
+            { use: 'shot', id: 'rocket', clip: 'sigA', mode: 'homing', n: 3, spread: 40, speed: 280, turn: 1.6, dmg: 0.75, status: 'shock', sdur: 2, col: '#ffd890', cd: [5, 7], w: 1.6, say: '火箭感电——拐弯躲开！' },
+            { use: 'seq', id: 'hole', clip: 'sigB', cd: [12, 15], w: 1.4, say: '磁场黑洞——先被吸过去，再躲开落雷！', steps: [
+              { use: 'pull', mode: 'in', r: 460, force: 260, windup: 1.0, dur: 1.3, dmg: 0.3, col: '#2a2438' },
+              { use: 'rain', kind: 'bolt', n: 7, r: 42, spread: 280, windup: 0.9, dmg: 1.0, col: '#ffd890' }] },
+            { use: 'rain', id: 'missiles', kind: 'hex', n: 6, r: 48, spread: 300, windup: 1.15, dmg: 1.05, col: '#ffb050', cd: [8, 11], w: 1.3, say: '导弹齐射——看落点躲开！' },
+          ] }] } },
       ] },
   },
 
   items: {
     epics: [
-      { key: 'ep_tr_dawneye', slot: 'stone', lvl: 56, name: '黎明之眼', fx: { dmgUp: 0.075, light: 11, crit: 0.03 }, desc: '卡勒特总指挥安祖·塞弗的机械义眼。据说它看得见黎明前最暗的那一刻。',
+      { key: 'ep_tr_dawneye', slot: 'stone', lvl: 56, name: '黎明之眼', fx: { dmgUp: 0.075, light: 11, crit: 0.03 }, desc: '卡勒特总指挥安祖·赛弗的机械义眼。据说它看得见黎明前最暗的那一刻。',
         look: 'a round golden mechanical eye gem with a glowing warm amber iris, brass gears and tiny rivets around it, set in a sunburst shaped gold frame' },
     ],
     sets: [
@@ -161,19 +175,19 @@ defineRegion({
   },
 
   dungeons: {
-    sea_pirates: { name: '列车上的海贼', lvl: [52, 53], theme: 'trDeck', layout: 'standard', mobs: [['seaPirate', 3], ['spearPirate', 2], ['bleedPirate', 1.5], ['blueMermaid', 1], ['kongkong', 1], ['crocPirate', 1], ['pirateCannon', 0.6]], elite: 'crocMate', boss: 'mobeni', bgm: 'dungeon2', bossBgm: 'boss',
-      gate: { x: 520, col: '120,190,255' }, desc: '铁鳞海贼团跳上了海上列车。蓝色人鱼会给海贼回血、套上泡沫护甲——先打人鱼。黑鳞莫贝尼插下鳄鱼图腾时会把你定住，图腾随后爆炸。',
+    sea_pirates: { name: '列车上的海贼', lvl: [52, 53], theme: 'trDeck', layout: 'standard', mobs: [['seaPirate', 3], ['spearPirate', 2], ['bleedPirate', 1.5], ['blueMermaid', 1], ['kongkong', 1], ['crocPirate', 1], ['pirateCannon', 0.6]], elite: 'crocMate', boss: 'mobeni', bossAlt: { kind: 'kongkong', chance: 0.1, say: '稀有领主 空空伊 出现了！' }, bgm: 'dungeon2', bossBgm: 'boss',
+      gate: { x: 520, col: '120,190,255' }, desc: '铁鳞海贼团跳上了海上列车。蓝色人鱼会给海贼回血、套上泡沫护甲——先打人鱼。黑鳞莫贝尼的旋转斩会多段打中贴身的人；鳄鱼图腾会把你定在脚下再爆炸，先打掉图腾；它起跳砸地时，在落地的瞬间跳起来。',
       drops: { boss: [['ep_tr_dawneye', 0.006]], mats: [['crystal', 0.12, 10], ['m_bone', 0.03, 2], ['c_blue', 0.02, 1]] } },
     west_line: { name: '夺回西部线', lvl: [53, 54], theme: 'trCar', layout: 'long', mobs: [['ktMarine', 3], ['ktFlamer', 2], ['ktShield', 1.2], ['kartelMedic', 1], ['steamBoiler', 0.8], ['seaPirate', 1]], elite: 'ktShield', boss: 'podir', bgm: 'dungeon', bossBgm: 'boss',
-      gate: { x: 1160, col: '255,170,110' }, desc: '卡勒特占领了西部线的列车。车厢里过热的锅炉会爆炸——趁它读条打坏它，或者跑远。烈焰盾波迪尔举盾时别打正面；血量过半后他的烈焰盾要尽快打破。',
+      gate: { x: 1160, col: '255,170,110' }, desc: '卡勒特占领了西部线的列车。车厢里过热的锅炉会爆炸——趁它读条打坏它，或者跑远。烈焰盾波迪尔冲锋前会点着自己、打不动，躲开这一撞；他闪到身后喷火时绕开扇形；烈焰重拳要跳起来。',
       drops: { boss: [['ep_tr_dawneye', 0.008]], mats: [['crystal', 0.12, 10], ['c_red', 0.03, 2], ['m_iron', 0.03, 2]] } },
     heis: { name: '雾都赫伊斯', lvl: [54, 55], theme: 'trHeis', layout: 'long', mobs: [['ktMarine', 2.5], ['ktGunner', 1], ['ktFlamer', 1.5], ['kartelMedic', 1], ['pipeJoe', 0.3], ['pierre', 0]], elite: 'sniperAlleg', boss: 'fladin', bgm: 'dungeon3', bossBgm: 'boss',
       preBoss: { kind: 'pierre', say: '兜风皮埃尔：雾里兜风，最痛快了！' },
-      gate: { x: 1800, col: '220,225,235' }, desc: '满城的浓雾挡住了视线。机枪手扫射前会先瞄准很久，看到细线就躲开。范·弗拉丁会在雾里分出幻影；最后的全方位扫射，站进探照灯的光圈。',
+      gate: { x: 1800, col: '220,225,235' }, desc: '满城的浓雾挡住了视线。机枪手扫射前会先瞄准很久，看到细线就躲开。范·弗拉丁的雾里有掩体，被瞄准就躲到掩体后面；皮埃尔沿亮着的纵深冲过来，站进没亮的那一排；炸弹在引信走完前拆掉。',
       drops: { boss: [['ep_tr_dawneye', 0.01]], mats: [['crystal', 0.12, 10], ['m_elem2', 0.01, 1], ['m_iron', 0.03, 2]] } },
     arden: { name: '决战阿登高地', lvl: [55, 56], bossLvl: 57, theme: 'trArden', layout: 'raid', mobs: [['ktMarine', 2], ['ktFlamer', 1.5], ['ktShield', 1], ['ktGunner', 0.6], ['kartelMedic', 1], ['trek', 0.4], ['berner', 0]], elite: 'haas', boss: 'anzu', bossAdds: 0,
       bgm: 'abyss', bossBgm: 'boss', preBoss: { kind: 'berner', say: '狂徒伯纳挡在了阿登高地的山口！' },
-      gate: { x: 2440, col: '255,210,140' }, desc: '【攻坚】卡勒特的总指挥「黎明之眼」安祖·塞弗亲自坐镇阿登高地。他睁开黎明之眼后会在黎明 / 黄昏之间切换——站进相克颜色的法阵里打；“黎明炮击”时离他远一点。',
+      gate: { x: 2440, col: '255,210,140' }, desc: '【攻坚】卡勒特的总指挥「黎明之眼」安祖·赛弗亲自坐镇阿登高地。他用步枪射击，枪托挑飞之后接着扫射；突刺沿直线，别站在他面前。血量很低时展开机械武装：火箭带电，黑洞把人吸进去再落雷，导弹看落点躲开。',
       drops: { boss: [['ep_tr_dawneye', 0.04]], mats: [['crystal', 0.14, 12], ['m_soul', 0.004, 1], ['m_diamond', 0.01, 1]] } },
   },
 
@@ -212,22 +226,22 @@ defineRegion({
       talk: { offer: ['鱼人、人鱼、还有鳄鱼……铁鳞海贼团什么怪物都有。', '蓝色的人鱼会给同伴回血、套上泡沫护甲，先打她们。'], doing: ['海盗船会从海上开炮，看到地上的圈就躲开。'], done: ['车顶清干净了！可是船长……那条黑鳞的鳄鱼还在。'] } },
     { t: 'boss', dungeon: 'sea_pirates', name: '黑鳞莫贝尼', lvl: 53, reward: { exp: 0.1, gold: 6000 },
       desc: '打倒铁鳞海贼团的船长——黑鳞莫贝尼。',
-      talk: { offer: ['莫贝尼会插下鳄鱼图腾把你定住，图腾过一会儿就会爆炸。', '被定住的时候拼命挣扎！'], doing: ['它血量过半以后，海盗船会一起开炮。'], done: ['莫贝尼倒下了……可它身上有一封卡勒特的信。', '“西部线的列车，交给波迪尔。”'] } },
+      talk: { offer: ['莫贝尼会把鳄鱼图腾插在你脚下，定住你，过一会儿爆炸——先打掉图腾。', '它起跳砸地的时候，在落地的瞬间跳起来。'], doing: ['它还会把鳄鱼海贼叫上来。冰冻对它没用。'], done: ['莫贝尼倒下了……可它身上有一封卡勒特的信。', '“西部线的列车，交给波迪尔。”'] } },
     { t: 'clear', dungeon: 'west_line', name: '夺回西部线', lvl: 53, reward: { exp: 0.09, gold: 5000 },
       desc: '卡勒特占领了西部线的列车。通关「夺回西部线」。',
       talk: { offer: ['西部线的列车被卡勒特占了，车厢里全是他们的兵。', '车上的锅炉被他们烧到过热，随时会炸——看到它读条，要么打坏，要么跑远。'], doing: ['先打医疗兵。'], done: ['车厢夺回来了！可是车头那里……有一面烧着的盾。'] } },
     { t: 'boss', dungeon: 'west_line', name: '烈焰盾波迪尔', lvl: 54, reward: { exp: 0.1, gold: 6000 },
       desc: '打倒卡勒特的指挥官——烈焰盾波迪尔。',
-      talk: { offer: ['波迪尔举盾的时候别打正面，他会反击。', '血量过半以后，他的烈焰盾一定要打破。'], doing: ['车厢着火的时候别站在火里。'], done: ['西部线夺回来了！', '俘虏说，卡勒特的指挥部在雾都赫伊斯。'] } },
+      talk: { offer: ['波迪尔冲锋前会先把自己点着，那一会儿打不动，躲开这一撞。', '他闪到你身后喷火，绕开那道扇形；全屏重拳要跳起来。'], doing: ['车厢里的锅炉过热会炸，趁读条打坏，或者跑远。'], done: ['西部线夺回来了！', '俘虏说，卡勒特的指挥部在雾都赫伊斯。'] } },
     { t: 'clear', dungeon: 'heis', name: '雾都赫伊斯', lvl: 54, reward: { exp: 0.09, gold: 5000 },
       desc: '卡勒特的指挥部藏在满城浓雾的赫伊斯。通关「雾都赫伊斯」。',
       talk: { offer: ['赫伊斯一年到头都是雾，什么都看不清。', '卡勒特的机枪手瞄准得很久——看到细线就躲。'], doing: ['兜风皮埃尔、派普·乔、狙击手艾丽格……都是范·弗拉丁的手下。'], done: ['雾里……有一个拿着拐杖的男人。'] } },
     { t: 'boss', dungeon: 'heis', name: '范·弗拉丁', lvl: 55, reward: { exp: 0.11, gold: 7000 },
       desc: '打倒赫伊斯的卡勒特指挥官——范·弗拉丁。',
-      talk: { offer: ['范·弗拉丁会在雾里分出幻影，打中真身幻影就散了。', '最后他会全方位扫射——站进探照灯的光圈里。'], doing: ['雾里别乱跑。'], done: ['范·弗拉丁说，卡勒特的总指挥“黎明之眼”在阿登高地等着你。'] } },
+      talk: { offer: ['雾里有掩体。被瞄准的时候躲到掩体后面，别和他站在同一条纵深。', '皮埃尔会沿亮着的几排冲过来，站进没亮的那一排；地上的炸弹先拆掉。'], doing: ['机枪扫射前会先亮细线。'], done: ['范·弗拉丁说，卡勒特的总指挥“黎明之眼”在阿登高地等着你。'] } },
     { t: 'raid', dungeon: 'arden', name: '黎明之眼', lvl: 55, reward: { exp: 0.16, gold: 9000, coins: 2 },
-      desc: '卡勒特的总指挥「黎明之眼」安祖·塞弗在阿登高地集结了全部兵力。打倒他。',
-      talk: { offer: ['阿登高地是卡勒特最后的据点。双枪哈斯、狂徒伯纳、告密者特雷克都在路上。', '安祖睁开黎明之眼以后，会在黎明和黄昏之间切换——站进相克颜色的法阵里打他。'], doing: ['“黎明炮击”的时候离他远一点。'], done: ['黎明之眼……闭上了。', '卡勒特的军队撤出了天界的海上！'] } },
+      desc: '卡勒特的总指挥「黎明之眼」安祖·赛弗在阿登高地集结了全部兵力。打倒他。',
+      talk: { offer: ['阿登高地是卡勒特最后的据点。双枪哈斯、狂徒伯纳、告密者特雷克都在路上。', '安祖的突刺沿直线，别站在他面前；黑洞会先把人吸过去，再躲开落雷。'], doing: ['血量很低的时候他会展开机械武装，一直打到倒下。'], done: ['黎明之眼……闭上了。', '卡勒特的军队撤出了天界的海上！'] } },
     { t: 'handin', to: 'harland', name: '海上列车的守护者', lvl: 56, reward: { exp: 0.08, gold: 6000, items: [{ key: 'ep_tr_dawneye', n: 1 }] },
       desc: '回鲁夫特悬空海港，把好消息告诉站长哈兰德。',
       talk: { offer: ['阿登高地拿下了。'], done: ['这是安祖的机械义眼，“黎明之眼”——你留着吧。', '对了，灯塔那边这几天一直有奇怪的光……像是一扇门。', '——天界篇 · 海上列车 · 完——'] } },

@@ -18,13 +18,13 @@ if (mode === 'fast') {
     const need = []; for (let l = 1; l < 60; l++) need.push(expNeed(l));
     let lo = 0, hi = 0; for (let l = 1; l < 30; l++) lo += expNeed(l); for (let l = 30; l < 60; l++) hi += expNeed(l);
     game.lvl = 30; game.exp = 0; const sp0 = game.sp; gainExp(hi);
-    const r = { cap: MAX_LVL, lvl: game.lvl, sp: game.sp - sp0, mono: need.every((v, i) => !i || v > need[i - 1]), jump30: +(expNeed(30) / expNeed(29)).toFixed(3), jump31: +(expNeed(31) / expNeed(30)).toFixed(3), ratio: +(hi / lo).toFixed(2) };
+    let spWant = 0; for (let l = 31; l <= 60; l++) spWant += spOfLv(l);
+    const r = { cap: MAX_LVL, lvl: game.lvl, sp: game.sp - sp0, spWant, mono: need.every((v, i) => !i || v > need[i - 1]), jump30: +(expNeed(30) / expNeed(29)).toFixed(3), jump31: +(expNeed(31) / expNeed(30)).toFixed(3), ratio: +(hi / lo).toFixed(2) };
     const x0 = game.exp; gainExp(1e7); r.stay = game.lvl === 60 && game.exp === x0;
     return r;
   });
-  let spWant = 0; for (let l = 31; l <= 60; l++) spWant += 6 * (28 + l);   // SP_MUL = 6
   ok(e.cap === 60 && e.lvl === 60, 'Lv30 靠经验一路升到 Lv60', e);
-  ok(e.sp === spWant, `31~60 每级照常发 SP（共 ${spWant}）`, e.sp);
+  ok(e.sp === e.spWant, `31~60 每级照常发 SP（共 ${e.spWant}）`, e.sp);
   ok(e.stay, '满级后经验不再增加、不再升级');
   ok(e.mono && e.jump30 < 1.1 && e.jump31 < 1.1, '经验曲线单调，Lv30 前后平滑', e);
   // 2. 属性：同一身装备，Lv30 → 60 属性一路涨

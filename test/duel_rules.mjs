@@ -33,12 +33,12 @@ if (parts.includes('hp')) {
   const r = await ev(() => {
     const out = {};
     for (const c of ['sword', 'gun', 'mage', 'fighter']) { const { A, B } = __T.start(c, null, 'sword'); out[c] = { hp: A.hpMax, base: DUEL_BASE[c].hp, ai: B.hpMax, mp: A.mpMax }; }
-    out.mul = DUEL_CFG.hpMul; out.air = +(PVP.airProt * DUEL_CFG.hpMul).toFixed(3); out.down = +(PVP.downProt * DUEL_CFG.hpMul).toFixed(3); out.stand = +(PVP.standProt * DUEL_CFG.hpMul).toFixed(3);
+    out.mul = DUEL_CFG.hpMul; out.air = PVP.airProt; out.air2 = PVP_PROT.air2; out.down = PVP.downProt; out.stand = PVP.standProt; out.cap = PVP.hitCap;
     return out;
   });
   ok(['sword', 'gun', 'mage', 'fighter'].every(c => r[c].hp === Math.round(r[c].base * r.mul)) && r.sword.ai === Math.round(DUEL_BASE_SWORD() * r.mul), `决斗 HP ×${r.mul}（4 个职业、AI 一样）`, r);
   function DUEL_BASE_SWORD() { return r.sword.base; }
-  ok(r.air === 0.2 && r.down === 0.2 && r.stand === 0.22, '保护阈值按原 HP 算（平推 22% / 浮空 20% / 倒地 20%）：连招长度不因为 HP 变多而变长', r);
+  ok(r.air === 0.2 && r.air2 === 0.3 && r.down === 0.15 && r.stand === 0.2 && r.cap === 0.05, '保护按血条：一段 20% 加速下落，二段 30% 砸地，扫地再 15%，平推 20%，单下不超过 5%', r);
   const pve = await ev(async () => { const P = makePlayer('sword'); game.lvl = 30; const pvp0 = game.pvp; game.pvp = false; game.duel = null; recalcStats(P); const hp = P.hpMax; game.pvp = pvp0; game.duel = duel; return { hp, isPvp: isPvp(P, duel.b) }; });
   ok(pve.hp > 0 && pve.hp < 21000 * 1.5, `地下城不受影响：Lv30 鬼剑士 recalcStats 的 HP ${pve.hp}（不乘决斗倍率）`, pve);
 }
@@ -112,13 +112,19 @@ if (parts.includes('juggle')) {
   const r = await ev(() => {
     const out = {};
     const fresh = () => { const { A, B } = __T.start('sword', null, 'gun'); __T.toFight(true); B.x = A.x + 60; B.y = A.y; B.face = -1; A.face = 1; A.atk = A.matk = 2000; A.crit = A.mcrit = 0; A.critDmg = 1; A.dmgUp = 0; B.dmgTaken = 1; B.evade = 0; resetCmb(B); return { A, B }; };
-    const base = B => B.hpMax / DUEL_CFG.hpMul;
+    const base = B => B.hpMax;   // 保护百分比是血条上能看到的最大 HP
     const fall = (B, n = 400) => { for (let i = 0; i < n && (B.z > 0.5 || B.st === 'air'); i++) __T.run(1); };
     // 追加浮空：挑空 → 下落中再挑 ×3，每次挑起的初速度一次比一次小（同一轮连招里递减）
     { const { A, B } = fresh(); const vz = [];
       applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); vz.push(Math.round(B.vz));
       for (let k = 0; k < 3; k++) { let top = 0, falling = false; for (let i = 0; i < 300; i++) { __T.run(1); top = Math.max(top, B.z); if (B.vz < 0 && B.z < top * 0.7) { falling = true; break; } } if (!falling) break; applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); vz.push(Math.round(B.vz)); }
       out.relaunch = { vz, lv: duelAirLv(B) }; }
+    // 上挑之后人停在站立技能打得到的高度，整段浮空都能接上，不是挑完就飞出判定
+    { const { A, B } = fresh(); const lv = A.kit.lv.upslash || 1;
+      applyHit(A, B, { dmg: skillDmg(1.8, 0.18, lv), launch: 520 + lv * 6, knock: 40, box: [0, 100, 34, 0, 125], sure: true });
+      const hb = { box: [0, 92, 32, 18, 100] }; let maxZ = 0, connect = 0, frames = 0;
+      for (let i = 0; i < 200 && (B.st === 'air' || B.z > 0.5); i++) { __T.run(1); frames++; maxZ = Math.max(maxZ, B.z); A.x = B.x - 40; A.y = B.y; if (overlaps(atkBox(A, hb), B)) connect++; }
+      out.float = { maxZ: Math.round(maxZ), connect, frames, vz: Math.round(520 + lv * 6) }; }
     // 一级 / 二级保护：按原 HP 的 20% / 30%；重力变大；二级后挑空几乎没用；不强制空中受身；落地后追击直到倒地保护
     { const { A, B } = fresh(); applyHit(A, B, { dmg: 0.05, launch: 700, sure: true }); __T.run(10);
       const g0 = airGravity(B); let n = 0; const hitAir = () => { applyHit(A, B, { dmg: 3, airLift: 160, sure: true }); n++; };
@@ -128,17 +134,17 @@ if (parts.includes('juggle')) {
       const lv2 = { n, air: +(B.cmb.airDmg / base(B)).toFixed(3), g: +(airGravity(B) / g0).toFixed(2) };
       B.vz = -10; applyHit(A, B, { dmg: 0.02, launch: 700, sure: true }); lv2.relaunchVz = Math.round(B.vz); lv2.recover = !!B.recoverLand;
       fall(B); lv2.landSt = B.st;
-      let otg = 0; const d0 = B.cmb.downDmg; for (let i = 0; i < 40 && B.st === 'down'; i++) { if (applyHit(A, B, { dmg: 2, downHit: true, sure: true, stun: 0.3 }) !== false) otg++; __T.run(3); if (B.st !== 'down' && B.st !== 'air') break; if (B.st === 'air') fall(B); }
+      let otg = 0; const d0 = B.cmb.downDmg; for (let i = 0; i < 40 && B.st === 'down'; i++) { if (applyHit(A, B, { dmg: 2, downHit: true, sure: true, stun: 0.3 }) !== false) otg++; __T.run(1); if (B.st !== 'down' && B.st !== 'air') break; if (B.st === 'air') { B.z = 0; B.vz = 0; B.bounced = true; B.setState('down'); B.cmb.landed = true; B.downTime = 9; B.stT = 0.2; } }
       out.prot = { lv1, lv2, otg, downPct: +((B.cmb.downDmg || 0) / base(B)).toFixed(3), afterSt: B.st, invul: +B.invul.toFixed(2), fullDown: +(PVP.downProt * B.hpMax / base(B)).toFixed(2) }; }
     // 二次浮空：落地后再挑起，伤害算倒地保护，超过就落地站起（受身）
     { const { A, B } = fresh(); applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); fall(B); const st = B.st; B.cmb.hits = Math.max(1, B.cmb.hits); __T.run(1);
       applyHit(A, B, { dmg: 0.05, launch: 500, downHit: true, sure: true }); let n = 0; while (!B.recoverLand && n < 60 && !B.dead) { B.z = Math.max(B.z, 60); applyHit(A, B, { dmg: 2, airLift: 120, sure: true }); n++; }
       out.second = { st, landed: !!B.cmb.landed, recover: !!B.recoverLand, n, down: +(B.cmb.downDmg / base(B)).toFixed(3) }; }
-    // 平推保护：站着挨打累计 22%（原 HP）→ 强制击倒
+    // 平推保护：站着挨打累计血条的 20% → 强制击倒
     { const { A, B } = fresh(); let n = 0, d = 0; while (B.st !== 'air' && n < 80) { B.stun = 0; B.setState('idle'); d = B.cmb.dmg; applyHit(A, B, { dmg: 2, stun: 0.3, sure: true }); n++; } out.stand = { n, st: B.st, pct: +(d / base(B)).toFixed(3), pctAfter: +(B.cmb.dmg / base(B)).toFixed(3) }; }
     // 硬直衰减：同一轮每多挨一下硬直 −2.5%，最低 60%
     { const { A, B } = fresh(); const S = []; for (let k = 0; k < 20; k++) { B.setState('idle'); applyHit(A, B, { dmg: 0.001, stun: 0.4, sure: true }); S.push(+B.stun.toFixed(3)); } out.stun = { first: S[0], tenth: S[9], last: S[19], min: +(S[0] * PVP.stunMin / (1 - PVP.stunDecay)).toFixed(3) }; }
-    // 时间保护：连续不能行动超过 7 秒，下一下直接脱出
+    // 时间保护：连续不能行动超过 lockMax，下一下直接脱出
     { const { A, B } = fresh(); let t = 0, esc = null; for (let i = 0; i < 60 * 12; i++) { if (i % 12 === 0) { const r = applyHit(A, B, { dmg: 0.0005, stun: 0.5, sure: true }); if (r === false && !esc) { esc = { t: +t.toFixed(2), lock: +(B.pvpLockT || 0).toFixed(2), invul: +B.invul.toFixed(2) }; break; } } __T.run(1); t += 1 / 60; } out.lock = esc; }
     // 错位：判定纵深 ±20 → 对方偏 30 打不到、偏 10 打得到；击退不改纵深
     { const { A, B } = fresh(); A.face = 1; B.x = A.x + 50; B.y = A.y + 20 + B.d + 6; const hb = { t0: 0, t1: 1, box: [0, 90, 20, 0, 120], dmg: 1, stun: 0.3, knock: 200 }; const box = atkBox(A, hb);
@@ -147,20 +153,33 @@ if (parts.includes('juggle')) {
     // 受击状态修正：同一下，浮空中 ×0.85、倒地 ×0.9
     { const one = st => { const { A, B } = fresh(); A.crit = 0; if (st === 'air') { B.z = 60; B.setState('air'); } if (st === 'down') B.setState('down'); const hp = B.hp; const orig = Math.random; Math.random = () => 0.5; try { applyHit(A, B, { dmg: 1, sure: true, downHit: true }); } finally { Math.random = orig; } return hp - B.hp; };
       const s = one('stand'), a = one('air'), d = one('down'); out.state = { s, a: +(a / s).toFixed(3), d: +(d / s).toFixed(3) }; }
+    // 扫地：低段打得到倒地的人并托起来；高段打空；受身蹲伏之后打不中
+    { const { A, B } = fresh(); B.setState('down'); B.downTime = 3; B.stT = 0.2; B.cmb.landed = true; B.cmb.hits = 1; const hp = B.hp;
+      const low = applyHit(A, B, { dmg: 0.35, box: [0, 92, 32, 0, 90], stun: 0.25, sure: true });
+      const lowSt = B.st, lowDmg = hp - B.hp;
+      B.setState('down'); B.z = 0; B.vz = 0; B.invul = 0; B.stT = 0.2; B.downTime = 3;
+      const high = applyHit(A, B, { dmg: 0.35, box: [0, 80, 30, 70, 140], stun: 0.25, sure: true });
+      B.setState('down'); B.z = 0; B.vz = 0; B.invul = 0; B.stT = 0.2; B.downTime = 3; B.mp = 50; B.reboundCd = 0; B.pad.tap('jump'); B.pad.frame(game.t);
+      const teched = tryTech(B); const techHit = applyHit(A, B, { dmg: 1, downHit: true, box: [0, 90, 32, 0, 80], sure: true });
+      out.sweep = { low: low !== false, lowSt, lowDmg, high: high !== false, tech: teched, techSt: B.st, techInv: B.invul > 0, techHit: techHit !== false }; }
     return out;
   });
   const t = r.relaunch.vz;
   ok(t.length >= 4 && t.slice(1).every((v, i) => v > 0 && v < t[i]), `追加浮空：下落中再挑起来 ${t.length - 1} 次，挑起的初速度一次比一次小（${t.join(' → ')}）`, r.relaunch);
+  const F = r.float;
+  ok(F && F.maxZ >= 50 && F.maxZ <= 110 && F.connect >= 45 && F.connect > F.frames * 0.6, `上挑后最高 ${F && F.maxZ}px，站立普攻在 ${F && F.connect}/${F && F.frames} 帧里打得到`, F);
   const P = r.prot;
-  ok(P.lv1.air >= 0.2 && P.lv1.air < 0.27 && P.lv1.g > 1.3, `一级保护：浮空中累计原 HP 的 ${(P.lv1.air * 100).toFixed(1)}% 开始，重力 ×${P.lv1.g}`, P.lv1);
-  ok(P.lv2.air >= 0.3 && P.lv2.air < 0.37 && P.lv2.g > P.lv1.g && P.lv2.relaunchVz < 150 && !P.lv2.recover, `二级保护：累计 ${(P.lv2.air * 100).toFixed(1)}%，重力 ×${P.lv2.g}，再挑空只有 ${P.lv2.relaunchVz}（挑不起来）、不强制空中受身`, P.lv2);
-  ok(P.lv2.landSt === 'down' && P.otg >= 2 && P.downPct >= 0.19 && (P.afterSt === 'getup' || P.afterSt === 'idle') && P.invul > 0, `到底：落地后还能追击 ${P.otg} 下，倒地保护（原 HP 的 ${(P.downPct * 100).toFixed(0)}%）后强制起身 + 无敌 ${P.invul} 秒`, P);
-  ok(r.second.landed && r.second.recover && r.second.down >= 0.19, `二次浮空：落地后再挑起来的伤害也算倒地保护（${(r.second.down * 100).toFixed(0)}%），超过就落地受身`, r.second);
-  ok(r.stand.st === 'air' && r.stand.pct < 0.22 && r.stand.pctAfter >= 0.22, `平推保护：站着挨打到原 HP 的 ~22% 强制击倒（${r.stand.n} 下）`, r.stand);
+  ok(P.lv1.air >= 0.2 && P.lv1.air < 0.27 && P.lv1.g > 1.3, `一段保护：浮空累计血条的 ${(P.lv1.air * 100).toFixed(1)}% 开始加速下落，重力 ×${P.lv1.g}`, P.lv1);
+  ok(P.lv2.air >= 0.3 && P.lv2.air < 0.4 && P.lv2.g > P.lv1.g && P.lv2.relaunchVz < 0 && !P.lv2.recover, `二段保护：累计 ${(P.lv2.air * 100).toFixed(1)}% 直接砸地（vz ${P.lv2.relaunchVz}），重力 ×${P.lv2.g}，不在空中受身`, P.lv2);
+  ok(P.lv2.landSt === 'down' && P.otg >= 2 && P.downPct >= 0.15 && (P.afterSt === 'getup' || P.afterSt === 'idle') && P.invul > 0, `砸地之后还能扫地 ${P.otg} 下，再掉血条的 ${(P.downPct * 100).toFixed(0)}% 才强制起身 + 无敌 ${P.invul} 秒`, P);
+  ok(r.second.landed && r.second.recover && r.second.down >= 0.15, `扫地再托起来的伤害也算倒地保护（${(r.second.down * 100).toFixed(0)}%），超过就落地起身`, r.second);
+  ok(r.stand.st === 'air' && r.stand.pct < 0.2 && r.stand.pctAfter >= 0.2, `平推保护：站着挨打到血条的 20% 强制击倒（${r.stand.n} 下）`, r.stand);
   ok(r.stun.tenth < r.stun.first && r.stun.last >= r.stun.min - 0.005 && r.stun.last < r.stun.tenth, `硬直衰减：第 1 下 ${r.stun.first}s → 第 10 下 ${r.stun.tenth}s → 第 20 下 ${r.stun.last}s（最低 60%）`, r.stun);
-  ok(r.lock && r.lock.t >= 3.1 && r.lock.t < 3.7 && r.lock.invul > 0, `时间保护：连续不能行动 ${r.lock && r.lock.t} 秒就脱出（上限 3.2 秒，无敌 ${r.lock && r.lock.invul}s）`, r.lock);
+  ok(r.lock && r.lock.t >= 7.2 && r.lock.t < 8.3 && r.lock.invul > 0, `时间保护：连续不能行动 ${r.lock && r.lock.t} 秒就脱出（上限 7.5 秒，一整套浮空加扫地放得下）`, r.lock);
   ok(!r.z.far && r.z.near && Math.abs(r.z.dy) < 1 && r.z.dx > 20, `错位：纵深超出判定（±20 + 身体厚度）打不到、偏 10 打得到，击退只沿横向（横移 ${r.z.dx}px、纵深变化 ${r.z.dy}）`, r.z);
   ok(Math.abs(r.state.a - 0.85) < 0.02 && Math.abs(r.state.d - 0.9) < 0.02, `受击状态修正：浮空 ×${r.state.a}、倒地 ×${r.state.d}`, r.state);
+  const S = r.sweep;
+  ok(S && S.low && S.lowDmg > 0 && S.lowSt === 'air' && !S.high && S.tech && S.techSt === 'getup' && S.techInv && !S.techHit, `扫地：低段打得中并托起（${S && S.lowSt}），高段打空，受身蹲伏后无敌打不中`, S);
 }
 
 if (parts.includes('buffer')) {

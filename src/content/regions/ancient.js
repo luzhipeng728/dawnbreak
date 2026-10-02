@@ -75,21 +75,24 @@ defineRegion({
       mechs: [{ use: 'groggy', max: 110, dur: 5 }],
       phases: [
         { at: 1, skills: [{ use: 'swipe', clip: 'axe', reach: 120, width: 34, windup: 0.6, dmg: 1.1, launch: 620, cd: [2.4, 3.4], w: 2, say: '' },
-          { use: 'aoe', shape: 'line', at: 'front', len: 300, hw: 34, windup: 0.8, dmg: 0.9, status: 'stun', sdur: 1.4, col: '#ff8a3a', cd: [6, 8], say: '喷火！', then: { use: 'swipe', clip: 'axe', reach: 130, width: 36, windup: 0.5, dmg: 1.6, down: true } },
-          { use: 'dash', clip: 'charge', len: 420, speed: 720, windup: 0.8, dmg: 1.2, cd: [6, 8] }] },
+          { use: 'aoe', id: 'fireAxe', shape: 'line', at: 'front', len: 300, hw: 34, windup: 0.8, dmg: 0.9, status: 'stun', sdur: 1.4, col: '#ff8a3a', cd: [6, 8], w: 1.6, say: '喷火——接着是斧劈，别站在前面！', then: { use: 'swipe', clip: 'axe', reach: 130, width: 36, windup: 0.5, dmg: 1.6, down: true } },
+          { use: 'grab', id: 'hurl', clip: 'slam', reach: 110, windup: 0.85, hold: 0.7, dmg: 0.4, throwDmg: 1.8, cd: [8, 11], w: 1.4, say: '抓起来——扔出去！' }] },
+        // 起身三道落雷、罪恶之眼、机器人超时变统帅都在 ancient_rooms.js 的钩子里，这里不再叠一套落雷
         { at: 0.6, enter: { say: '启动保护模式！', col: '#8ad8ff', mechs: [{ use: 'invuln', until: 'adds', kind: 'bmRobot', n: 3, hide: false }] } },
-        { at: 0.25, enter: { say: '启动保护模式！', col: '#8ad8ff', mechs: [{ use: 'invuln', until: 'adds', kind: 'bmRobot', n: 4, hide: false }] },
-          skills: [{ use: 'rain', kind: 'bolt', n: 5, r: 44, windup: 1.0, dmg: 1.0, status: 'shock', col: '#fff38a', cd: [8, 10] }] },
+        { at: 0.25, enter: { say: '启动保护模式！', col: '#8ad8ff', mechs: [{ use: 'invuln', until: 'adds', kind: 'bmRobot', n: 4, hide: false }] } },
       ] },
-    bugKing: { name: '虫王戮蛊', lvl: 51, size: [46, 22, 130], weight: 8, speed: 75, elem: 'dark', art: 'wcBugKing', scale: 2.2, pref: 170, hook: 'bugKing', traits: { sa: 'cast' },   // 远古最难的最终领主：画面约 240 高、300 长
-      mechs: [{ use: 'groggy', max: 110, dur: 5 }],
+    // 钻地破土和幼虫爬回洞口回血在钩子里。骨刺架势反弹远程；粘液留在地上。
+    bugKing: { name: '虫王戮蛊', lvl: 51, size: [46, 22, 130], weight: 8, speed: 75, elem: 'dark', art: 'wcBugKing', scale: 2.2, pref: 170, hook: 'bugKing', traits: { sa: 'cast' },
+      mechs: [{ use: 'groggy', max: 110, dur: 5 },
+        { use: 'stance', every: [12, 16], modes: [
+          { id: 'crawl', name: '爬行', col: '#b070ff', skills: ['bite', 'slime', 'larva'] },
+          { id: 'spikes', name: '骨刺', col: '#e8d0ff', reflect: 'ranged', say: '骨刺竖起来了——远程打它会被弹回来！', skills: ['spikes'] }] }],
       phases: [
-        { at: 1, skills: [{ use: 'swipe', clip: 'bite', reach: 190, width: 44, dmg: 1.2, cd: [2, 3], w: 2 },
-          { use: 'aoe', shape: 'line', at: 'front', len: 480, hw: 40, windup: 0.9, dmg: 1.0, status: 'poison', col: '#b07aff', cd: [6, 8], say: '喷毒' },
-          { use: 'shot', mode: 'spread', n: 5, spread: 90, speed: 320, dmg: 0.8, cd: [5, 7], say: '甩针' },
-          { use: 'aoe', shape: 'circle', at: 'self', r: 220, windup: 1.0, dmg: 1.2, jump: true, cd: [8, 11], say: '转圈——跳起来！' },
-          { use: 'rain', kind: 'hex', n: 4, r: 50, windup: 1.2, dmg: 1.0, col: '#5a2a6a', cd: [9, 12], say: '黑色炸弹' },
-          { use: 'summon', kind: 'larva', n: 3, max: 6, cd: [14, 18], w: 0.8, say: '吐出幼虫' }] },
+        { at: 1, skills: [
+          { use: 'swipe', id: 'bite', clip: 'bite', reach: 190, width: 44, dmg: 1.2, cd: [2, 3], w: 2 },
+          { use: 'pool', id: 'slime', zone: 'poison', at: 'target', n: 2, r: 86, windup: 1.0, linger: 7, dmg: 0.7, col: '#7a4a9a', cd: [8, 11], w: 1.4, say: '粘液——别踩进去！' },
+          { use: 'aoe', id: 'spikes', clip: 'slam', shape: 'circle', at: 'self', r: 240, windup: 1.05, dmg: 1.3, jump: true, col: '#e8d0ff', cd: [7, 10], w: 1.6, say: '旋转骨刺——跳起来！' },
+          { use: 'summon', id: 'larva', kind: 'larva', n: 3, max: 6, cd: [14, 18], w: 0.8, say: '吐出幼虫' }] },
         { at: 0.6, enter: { say: '虫王钻进了地下——别让幼虫爬到它身边！', col: '#d0a0ff', mechs: [{ use: 'invuln', until: 'adds', kind: 'larva', n: 6 }] } },
         { at: 0.3, enter: { say: '虫王又钻进了地下！', col: '#d0a0ff', mechs: [{ use: 'invuln', until: 'adds', kind: 'larva', n: 8 }] } },
       ] },
@@ -110,12 +113,12 @@ defineRegion({
     bilmark: { name: '比尔马克帝国试验场', lvl: [44, 45], bossLvl: 46, theme: 'bmLab', layout: 'ancient', hidden: true, unlock: { quest: 'q_an01' },
       mobs: [['bloodCat', 3], ['fickleCat', 1], ['tauCalf', 1], ['ivan', 1], ['ivanColonel', 0], ['hanik', 0]], elite: 'tauCommander', boss: 'mechKing', bossAdds: 0, bgm: 'dungeon3', bossBgm: 'boss',
       gate: { scene: 'gf_lorien', x: 1980, col: '255,190,110' },
-      desc: '【远古】洛兰深处的帝国秘密试验场（俗称「牛头 / 机械牛」）。伊凡房：清光柱子召唤的伊凡，路障才会炸开；统帅房：先拆掉召唤小牛的柱子；牛头械王倒地起身会朝前方落三道雷，「保护模式」时必须在限时内打掉机器人，否则它们会变成牛头统帅。',
+      desc: '【远古】洛兰深处的帝国秘密试验场（俗称「牛头 / 机械牛」）。伊凡房：清光柱子召唤的伊凡，路障才会炸开；统帅房：先拆掉召唤小牛的柱子。牛头械王喷火眩晕后接斧劈，还会把人抓起来扔掉；倒地起身朝前方落三道雷。「保护模式」时必须在限时内打掉机器人，否则它们会变成牛头统帅。',
       drops: { boss: [['ep_an_bullcore', 0.05]], mats: [['crystal', 0.12, 10], ['m_iron', 0.05, 2], ['m_obsidian', 0.008, 1]] } },
     wailing_cave: { name: '悲鸣洞穴', lvl: [49, 50], bossLvl: 51, theme: 'wcCave', layout: 'ancient', hidden: true, unlock: { quest: 'q_an03' },
       mobs: [['jungleZombie', 3], ['graveDigger', 1], ['larva', 1], ['fabroMember', 1], ['fabroCaptain', 0], ['adultBug', 0]], elite: 'kain', boss: 'bugKing', bossAdds: 0, bgm: 'abyss', bossBgm: 'boss',
       gate: { scene: 'darkelf_field', x: 3780, col: '200,150,255' },
-      desc: '【远古】暗黑城地下的虫王巢穴（俗称「虫穴」）。紫色法阵里的怪打不到——引出来或打碎法阵；先杀法布罗队长；限时打掉魔剑阿波菲斯；幼虫会互相吞噬变成成虫，爬到虫王身边会被吃掉给它回血。',
+      desc: '【远古】暗黑城地下的虫王巢穴（俗称「虫穴」）。紫色法阵里的怪打不到——引出来或打碎法阵；先杀法布罗队长；限时打掉魔剑阿波菲斯。虫王会钻地找人，出土时跳起来或跑远；骨刺亮起时远程会被弹回来，粘液别踩。幼虫爬到虫王身边会被吃掉给它回血。',
       drops: { boss: [['ep_an_bugfang', 0.05], ['ep_gs_apophis', 0.03], ['ep_an_bullcore', 0.01]], mats: [['crystal', 0.12, 10], ['m_bone', 0.05, 2], ['m_soul', 0.004, 1]] } },
   },
 

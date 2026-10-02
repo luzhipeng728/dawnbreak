@@ -30,12 +30,50 @@ function gainExp(n) {
   game.exp += Math.round(n * (1 + (p && p.expUp || 0)));
   while (game.exp >= expNeed(game.lvl) && game.lvl < MAX_LVL) { game.exp -= expNeed(game.lvl); game.lvl++; onLevelUp(); }
 }
-// SP：原作第 n 级得 28+n；本作 ×SP_MUL，Lv60 时能把所有技能（含转职、觉醒）学满（最贵的转职约 1.84 万，Lv60 共 2.1 万）
-const SP_MUL = 6;
-const spOfLv = n => SP_MUL * (28 + n);
-const spTotalAt = (lvl, mul = SP_MUL) => { let s = 150; for (let l = 2; l <= (lvl || 1); l++) s += mul * (28 + l); return s; };
-// 老角色按新规则补发：d.spMul 记着发放时用的倍率（没有 = 1），补上差额，只补一次
-function spMigrate(d) { const m = d.spMul || 1; if (m < SP_MUL) { d.sp = (d.sp || 0) + spTotalAt(d.lvl, SP_MUL) - spTotalAt(d.lvl, m); d.spMul = SP_MUL; } }
+// SP：原作第 n 级得 28+n。本作先按 ×SP_LEGACY_MUL 发，再保证每一级结束时，累计 SP 够把
+// 「当前等级能学的技能」全部加满（取所有职业里最贵的那个；初始技能和转职自动学会的 1 级不花钱）。
+// 不够的那一级一次补上。老存档记 d.spVer，按当时的倍率补差额，只补一次，不会倒扣。
+const SP_LEGACY_MUL = 6, SP_VER = 2;
+const spPay = (S, lv) => { const n = typeof S.spCost === 'function' ? S.spCost(lv) : S.sp; return Math.max(0, Math.round(n) || 0); };
+function skillSpToMax(cls, job, L) {
+  const C = CLASSES[cls]; if (!C) return 0;
+  const J = job && C.jobs && C.jobs[job], free = new Set([...(C.start || []), ...((J && J.auto) || [])]);
+  const ids = new Set(classSkills(cls, job || null));
+  for (const id of COMMON_SKILLS) ids.add(id);   // 后跳-强化在 sprites.js 里才挂上职业技能表，算 SP 时直接算进去
+  let cost = 0;
+  for (const id of ids) {
+    const S = SKILLS[id]; if (!S) continue;
+    const cap = skillMaxLv(S);
+    let lv = 0, c = 0;
+    while (lv < cap && skillLvReq(S, lv + 1) <= L) { c += spPay(S, lv); lv++; }
+    if (free.has(id) && lv >= 1) c -= spPay(S, 0);
+    if (c > 0) cost += c;
+  }
+  return cost;
+}
+function spPeakAt(L) {
+  let m = 0;
+  for (const cls of Object.keys(CLASSES)) {
+    const jobs = Object.keys((CLASSES[cls].jobs) || {});
+    if (!jobs.length) m = Math.max(m, skillSpToMax(cls, null, L));
+    for (const j of jobs) m = Math.max(m, skillSpToMax(cls, j, L));
+  }
+  return m;
+}
+const SP_NEED = (() => {
+  const a = [0, Math.max(150, spPeakAt(1))];
+  for (let L = 2; L <= MAX_LVL; L++) a[L] = Math.max(a[L - 1] + SP_LEGACY_MUL * (28 + L), spPeakAt(L));
+  return a;
+})();
+const spLegacyTotal = (lvl, mul = 1) => { let s = 150; for (let l = 2; l <= (lvl || 1); l++) s += mul * (28 + l); return s; };
+const spTotalAt = lvl => SP_NEED[Math.max(1, Math.min(MAX_LVL, lvl | 0))] || 150;
+const spOfLv = n => n <= 1 ? 0 : spTotalAt(n) - spTotalAt(n - 1);
+function spMigrate(d) {
+  if ((d.spVer || 0) >= SP_VER) return;
+  const old = spLegacyTotal(d.lvl || 1, d.spMul || 1), now = spTotalAt(d.lvl || 1);
+  if (now > old) d.sp = (d.sp || 0) + (now - old);
+  d.spVer = SP_VER;
+}
 function onLevelUp() {
   const p = game.player;
   game.sp = (game.sp || 0) + spOfLv(game.lvl);

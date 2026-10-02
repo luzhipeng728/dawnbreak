@@ -191,6 +191,11 @@ class FighterBrain {
     // ---- 对手倒地：枪手低射追击，其他职业站位等起身 ----
     // 压起身：对方蹲伏（无敌）就退开等它起来；对方快要自己起身时贴上去出招（受身蹲伏躲得掉）
     if (o.st === 'getup' && o.techHold) { if (adx < 140) P.hold(dir > 0 ? 'left' : 'right'); return; }
+    // 对方倒地还不蹲：贴上去扫地（低段普攻），有时补一记下段技能把人再托起来
+    if (o.st === 'down' && adx < 130 && ady < 28 && o.stT > 0.05 && (o.lastHitBy === p || (o.cmb && o.cmb.hits > 0))) {
+      if (Math.random() < 0.4) { const id = this.pickSkill(['launch', 'otg', 'burst'], adx, ady, false); if (id && this.cast(id, dir)) return; }
+      P.hold(dir > 0 ? 'right' : 'left'); P.tap('attack'); return;
+    }
     if (o.st === 'down' && adx < 120 && ady < 18 && o.stT > (o.downTime || 0.7) - 0.22 && Math.random() < L.aggr) { P.hold(dir > 0 ? 'right' : 'left'); P.tap('attack'); this.meaty = (this.meaty || 0) + 1; return; }
     if (oDown) { if (p.cls === 'gun' && adx < 300 && ady < 16 && o.st === 'down' && Math.random() < 0.5) { P.hold(dir > 0 ? 'right' : 'left'); P.hold('down'); P.tap('attack'); } else this.move(o, dx, dy, adx, ady, dir); return; }
     // ---- 立回：在距离内按欲望出手 ----

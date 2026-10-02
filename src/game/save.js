@@ -5,6 +5,43 @@
 const FATIGUE_MAX = 156;
 const dayKey = () => { const d = new Date(Date.now() - 6 * 3600 * 1000); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 const SAVE_V = 5, MAX_CHARS = 6;
+// 项目自定义的“征服者契约”规则：账号范围，允许角色穿戴高于自身等级最多 10 级的装备。
+// 这是本作对会员装备便利的映射，不把它当作官方 VIP 奖励；竞技场始终使用角色等级限制。
+const CONQUEROR_LEVEL_BONUS = 10;
+function conquerorUntil() {
+  const A = (save && save.acct) || {};
+  const C = A.contracts || {};
+  return Math.max(Number(A.conquerorUntil) || 0, Number(C.conquerorUntil) || 0);
+}
+function conquerorActive(now = Date.now()) { return conquerorUntil() > now; }
+function equipLevelCap(level = game && game.lvl || 1, scene = game && game.scene) {
+  const base = Math.max(1, Number(level) || 1);
+  // PvP / duel never inherits the PvE contract bonus.
+  return scene === 'duel' || (game && (game.pvp || game.duel)) ? base : (conquerorActive() ? base + CONQUEROR_LEVEL_BONUS : base);
+}
+function canEquipLevel(level, scene = game && game.scene) { return Number(level) <= equipLevelCap(game && game.lvl || 1, scene); }
+function activateConquerorContract(days = 30, now = Date.now()) {
+  const n = Number(days);
+  if (!Number.isFinite(n) || n <= 0) return false;
+  const A = save.acct || (save.acct = {}), C = A.contracts || (A.contracts = {});
+  const until = Math.max(conquerorUntil(), now) + Math.round(n * 86400000);
+  C.conquerorUntil = until;
+  A.conquerorUntil = until; // 扁平字段便于旧版本 / 服务端读取
+  return until;
+}
+function expireOverlevelEquipment() {
+  if (!save.data || conquerorActive() || !inv || !inv.equip) return 0;
+  let moved = 0;
+  for (const slot of Object.keys(inv.equip)) {
+    const it = inv.equip[slot];
+    if (!it || !it.kind || canEquipLevel(it.lvl)) continue;
+    delete inv.equip[slot];
+    // 装备不能因契约到期而丢失；装备栏满时仍放入角色背包，背包规则允许装备超容量保留。
+    inv.items.push(it); moved++;
+  }
+  if (moved && typeof recalcStats === 'function' && game.player) recalcStats(game.player);
+  return moved;
+}
 const DUNGEON_ALIAS = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
 /* 存档结构：{ v, cur, chars: [角色数据...] }，每个角色独立保存等级 / 背包 / 任务 / 位置等（官方的角色选择）
    不认识 / 还没开放的职业的角色（新版本加的职业、网址 ?fighter=1 建的格斗家、ready:false）：原样留在 chars 里——不升级、不改数据、写回时照抄，
@@ -80,12 +117,12 @@ const save = {
       const C = CLASSES[d.cls];
       d.skillLv = {}; for (const id of C.start) d.skillLv[id] = 1;
       d.skillBar = C.bar.slice(0, 12); while (d.skillBar.length < 12) d.skillBar.push(null);
-      d.sp = 150; for (let l = 2; l <= (d.lvl || 1); l++) d.sp += 28 + l;   // 与 onLevelUp 的 SP 发放一致
+      d.sp = 150; for (let l = 2; l <= (d.lvl || 1); l++) d.sp += 28 + l;   // 先按原作 28+n 洗点，下面 spMigrate 补到当前曲线
       if (d.opts) d.opts.cmdLock = {};
       this.skillReset = true;
     }
     if ((d.v || 1) < 5) this.migrateV5(d);
-    spMigrate(d);   // SP 改成每级 ×SP_MUL：老角色补发差额（game/progress.js）
+    spMigrate(d);   // 补到「每一级都能加满技能」的 SP 曲线（game/progress.js）
     if (typeof g60MigrateChar === 'function') g60MigrateChar(d);   // 装备 2.0：官方史诗回到官方等级 → 等级不够的补发继承装备（content/items/gear60_api.js，按 d.g60m 只处理一次）
     if (!Array.isArray(d.skillBar)) d.skillBar = [];
     while (d.skillBar.length < SKILL_SLOTS) d.skillBar.push(null);   // 技能栏 14 格（旧存档 12 格）
@@ -102,7 +139,8 @@ const save = {
     d.skillBar = Array(SKILL_SLOTS).fill(null);
     old.forEach((id, i) => { if (i < SKILL_SLOTS && id && ok.has(id) && SKILLS[id] && !SKILLS[id].passive && !d.skillBar.includes(id)) d.skillBar[i] = id; });
     for (const id of C.start) if (!d.skillBar.includes(id)) { const k = d.skillBar.indexOf(null); if (k >= 0) d.skillBar[k] = id; }
-    d.sp = 150; for (let l = 2; l <= (d.lvl || 1); l++) d.sp += 28 + l;   // 与 onLevelUp 的 SP 发放一致
+    d.sp = 150; for (let l = 2; l <= (d.lvl || 1); l++) d.sp += 28 + l;   // 先按原作 28+n 洗点，spMigrate 再补到当前曲线
+    d.spMul = 1; delete d.spVer;
     if (d.opts) d.opts.cmdLock = {};
     this.skillReset = true;
   },
@@ -110,11 +148,12 @@ const save = {
     const d = this.data; this.live = true;
     game.lvl = d.lvl; game.exp = d.exp; game.sp = d.sp; game.gold = d.gold; game.skillLv = d.skillLv; game.skillBar = d.skillBar; game.job = d.job || null;
     inv.items = d.inv || []; inv.equip = d.equip || {}; inv.quick = d.quick || inv.quick; inv.storage = d.storage || [];
+    expireOverlevelEquipment();
   },
   newGame(cls, name) {
     this.loadAll();   // 先读出已有角色，新角色追加在后面，不覆盖
     this.data = this.defaults(cls, name || CLASSES[cls].name);
-    this.data.spMul = SP_MUL;   // 新角色一开始就按新规则拿 SP（不能放进 defaults：老存档读档时先铺 defaults，会跳过补发）
+    this.data.spVer = SP_VER;   // 新角色一开始就按当前 SP 曲线拿（不能放进 defaults：老存档读档时先铺 defaults，会跳过补发）
     this.cur = -1;
     const C = CLASSES[cls];
     for (const id of C.start) this.data.skillLv[id] = 1;

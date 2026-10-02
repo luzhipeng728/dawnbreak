@@ -156,7 +156,7 @@ Object.assign(menus, {
       const lock = S.job && S.job !== game.job || game.lvl < (S.lvReq || 1);
       return h('div', { class: 'ski2' + (id === sel ? ' sel' : '') + (lock ? ' lock' : ''), onclick: () => { if (this.skSel !== id) { this.skSel = id; sfx.click(); rf(); } } },
         icon(id),
-        h('div', { class: 'd' }, h('b', {}, S.name), h('div', { class: 'small' }, `Lv.${lv}/${skillMaxLv(S)}`, lv < skillMaxLv(S) ? h('span', { class: 'dim' }, ` · 需 Lv.${skLvReq(S, lv + 1)}`) : null, skPreOnly(upWhy) ? h('span', { style: 'color:#ffb08a' }, ' · 缺前置') : null)),
+        h('div', { class: 'd' }, h('b', { title: S.name }, S.name), h('div', { class: 'small' }, `Lv.${lv}/${skillMaxLv(S)}`, lv < skillMaxLv(S) ? h('span', { class: 'dim' }, ` · 需 Lv.${skLvReq(S, lv + 1)}`) : null, skPreOnly(upWhy) ? h('span', { style: 'color:#ffb08a' }, ' · 缺前置') : null)),
         h('div', { class: 'pm' },
           h('button', { class: 'btn pmb' + (upWhy && !skPreOnly(upWhy) ? ' off' : ''), title: skPreOnly(upWhy) ? `${upWhy}：点 + 先自动学会前置` : upWhy || `升级（SP ${skCost(S, lv)}）`, onclick: ev => { ev.stopPropagation(); this.skSel = id; if (skillUp(id)) rf(); } }, '+'),
           h('button', { class: 'btn pmb' + (dnWhy ? ' off' : ''), title: dnWhy || '降级（返还 SP）', onclick: ev => { ev.stopPropagation(); this.skSel = id; if (skillDown(id)) rf(); } }, '−')));
@@ -167,20 +167,23 @@ Object.assign(menus, {
       const S = SKILLS[sel], lv = game.skillLv[sel] || 0, upWhy = skillUpBlock(sel), cmd = skCmd(sel);
       const cur = skillInfo(sel, lv), nxt = lv < skillMaxLv(S) ? skillInfo(sel, lv + 1) : [];
       const kv = (arr, col) => arr.map(([k, v]) => h('div', { class: 'kv' }, h('span', {}, k), h('b', { style: col ? `color:${col}` : '' }, String(v))));
-      detail.append(...[
-        h('div', { class: 'row' }, icon(sel, 64), h('div', { class: 'col', style: 'gap:.1em' }, h('b', { class: 'sknm' }, S.name), h('span', { class: 'small dim' }, `${S.awaken ? '觉醒技能' : S.passive ? '被动技能' : '主动技能'}${S.type ? ' · ' + (SK_TYPE[S.type] || S.type) : ''} · Lv.${lv}/${skillMaxLv(S)}`))),
-        h('div', { class: 'small', style: 'line-height:1.5' }, S.desc || ''),
+      const skBody = h('div', { class: 'skbody' }, ...[
+        h('div', { class: 'row skhd' }, icon(sel, 64), h('div', { class: 'col', style: 'gap:.1em;min-width:0' }, h('b', { class: 'sknm' }, S.name), h('span', { class: 'small dim' }, `${S.awaken ? '觉醒技能' : S.passive ? '被动技能' : '主动技能'}${S.type ? ' · ' + (SK_TYPE[S.type] || S.type) : ''} · Lv.${lv}/${skillMaxLv(S)}`))),
+        h('div', { class: 'small skdesc' }, S.desc || ''),
         !S.passive ? h('div', { class: 'kv' }, h('span', {}, 'MP / 冷却'), h('b', {}, `${S.mp ?? 0} / ${skCdText(S)}`)) : null,
         cmd ? h('div', { class: 'kv' }, h('span', {}, '指令'), h('b', { class: 'gold' }, cmd, cmdLocked(sel) ? h('span', { style: 'color:#ff8a8a' }, '（已锁定）') : null)) : null,
         Object.keys(S.pre || {}).length ? h('div', { class: 'kv' }, h('span', {}, '前置技能'), h('b', {}, Object.entries(S.pre).map(([p, l]) => `${SKILLS[p] ? SKILLS[p].name : p} Lv.${l}`).join('、'))) : null,
         cur.length ? h('div', { class: 'sksec' }, h('div', { class: 'small dim' }, `当前 Lv.${lv}`), kv(cur)) : null,
         lv < skillMaxLv(S) ? h('div', { class: 'sksec' }, h('div', { class: 'small dim' }, `下一级 Lv.${lv + 1} · 需要等级 ${skLvReq(S, lv + 1)} · SP ${skCost(S, lv)}`), kv(nxt, '#8aff9a')) : h('div', { class: 'small gold' }, '已达到最高等级'),
-        h('div', { class: 'row', style: 'margin-top:auto' },
+      ].filter(Boolean));
+      const why = upWhy && upWhy !== '已满级' ? h('div', { class: 'small', style: 'color:#ff9a8a' }, upWhy) : null;
+      detail.append(...[skBody,
+        h('div', { class: 'skacts' },
           h('button', { class: 'btn' + (upWhy && !skPreOnly(upWhy) ? ' off' : ''), onclick: () => { if (skillUp(sel)) rf(); } }, skPreOnly(upWhy) ? '学前置并学习' : lv ? '升级' : '学习'),
           h('button', { class: 'btn' + (skillDownBlock(sel) ? ' off' : ''), onclick: () => { if (skillDown(sel)) rf(); } }, '降级'),
           cmd ? h('button', { class: 'btn', onclick: () => { toggleCmdLock(sel); rf(); } }, cmdLocked(sel) ? '解锁指令' : '锁定指令') : null,
-          S.switchOpt ? h('button', { class: 'btn', onclick: () => { toggleSwitchOpt(sel); rf(); } }, ((save.data.opts.swOff || {})[sel] ? '开启' : '关闭') + S.switchOpt) : null),
-        upWhy && upWhy !== '已满级' ? h('div', { class: 'small', style: 'color:#ff9a8a' }, upWhy) : null].filter(Boolean));
+          S.switchOpt ? h('button', { class: 'btn sksw', onclick: () => { toggleSwitchOpt(sel); rf(); } }, switchBtnText(sel)) : null),
+        why].filter(Boolean));
     }
     // 技能栏预览（可以拖进来、点键位设置、右键清空）
     const bar = h('div', { class: 'skbar' }, [0, 1, 2, 3, 4, 5, 12, 6, 7, 8, 9, 10, 11, 13].map(i => {   // 两排各 7 格：第 7 格是 s12 / s13
@@ -196,17 +199,23 @@ Object.assign(menus, {
     }));
     const reset = () => this.ask({ title: '重置技能', text: '把所有技能降回初始等级，并返还全部 SP？', okText: '重置', danger: true, ok: () => { resetSkills(); rf(); } });
     const body = h('div', { class: 'col skwin' }, tabs,
-      h('div', { class: 'row', style: 'align-items:stretch;gap:.8em' }, list, detail),
+      h('div', { class: 'row skmain' }, list, detail),
       h('div', { class: 'row small dim', style: 'justify-content:space-between' }, h('span', {}, '技能栏：拖入技能 / 选中技能后点格子；拖出或右键清空'), h('span', { class: 'row', style: 'gap:.4em' }, h('button', { class: 'btn', 'data-autolearn': 1, style: 'font-size:.9em;padding:.2em .8em;background:linear-gradient(180deg,#c8902a,#7a4a10);border-color:#ffd070', title: '按学习等级从低到高自动升级所有能学的技能（前置会先学）', onclick: () => { if (skillAutoLearn()) rf(); } }, '一键加点'), h('button', { class: 'btn', style: 'font-size:.9em;padding:.2em .8em', onclick: reset }, '重置技能'))),
       bar);
     return this.win('技能', body, { w: 54 });
   },
 });
+function switchBtnText(id) {   // 长说明用技能自己的 switchLabel；短开关仍是「关闭 / 开启」+ switchOpt
+  const S = SKILLS[id]; if (!S) return '';
+  const off = !!((save.data && save.data.opts && save.data.opts.swOff) || {})[id];
+  if (typeof S.switchLabel === 'function') return S.switchLabel(off);
+  return (off ? '开启' : '关闭') + (S.switchOpt || '');
+}
 function toggleSwitchOpt(id) {   // 官方「可开关」技能（萨亚冰冻、恐惧光环减速）：save.data.opts.swOff[id] = 关
   if (!save.data) return;
   const O = (save.data.opts.swOff = save.data.opts.swOff || {});
   if (O[id]) delete O[id]; else O[id] = true;
-  toastMsg(`${SKILLS[id].name}：${SKILLS[id].switchOpt}${O[id] ? '已关闭' : '已开启'}`, '#bfe8ff'); sfx.click(); save.write();
+  toastMsg(`${SKILLS[id].name}：${switchBtnText(id)}`, '#bfe8ff'); sfx.click(); save.write();
 }
 function toggleCmdLock(id) {
   if (!save.data) return;
@@ -225,25 +234,33 @@ function resetSkills() {
   save.write(); sfx.buff(); toastMsg(`技能已重置，返还 SP ${fmtNum(back)}`, '#8aff9a');
 }
 addStyle(`
-.skwin{gap:.55em}
+.skwin{gap:.55em;min-width:0;max-width:100%}
+.win:has(.skwin)>.bd{overflow-x:hidden;overflow-y:auto}
 .win.compact{width:30em!important}.win.compact .skdetail{display:none}
-.sktabs{display:flex;gap:.3em;align-items:flex-end;border-bottom:.1em solid #5a4a36}
+.sktabs{display:flex;gap:.3em;align-items:flex-end;border-bottom:.1em solid #5a4a36;min-width:0}
 .sktab{padding:.35em 1em;border:.1em solid #5a4a36;border-bottom:0;border-radius:.3em .3em 0 0;background:#1a1420;color:#b8a888;cursor:pointer;font-weight:800;font-size:.95em}
 .sktab.on{background:linear-gradient(180deg,#5a4020,#2a1c10);color:#ffe8a8}
 .sksp{font-size:1.1em;padding-bottom:.2em}
-.sklist2{flex:1;display:grid;grid-template-columns:repeat(2,1fr);gap:.35em;max-height:23em;overflow:auto;align-content:start;padding-right:.2em}
-.ski2{display:flex;gap:.45em;align-items:center;padding:.3em;border:.1em solid #3a3040;border-radius:.25em;background:#16121a;cursor:pointer}
+.skmain{align-items:stretch;gap:.8em;min-width:0;max-width:100%}
+.sklist2{flex:1.2 1 0;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35em;max-height:26em;overflow-x:hidden;overflow-y:auto;align-content:start;padding-right:.2em}
+.ski2{display:flex;gap:.45em;align-items:center;padding:.3em;border:.1em solid #3a3040;border-radius:.25em;background:#16121a;cursor:pointer;min-width:0;overflow:hidden}
 .ski2:hover{border-color:#8a6a3a}.ski2.sel{border-color:#ffd23a;background:#2a2014}.ski2.lock .skic,.ski2.lock .d{opacity:.5}
 .ski2 .d{flex:1;min-width:0;line-height:1.3}.ski2 .d b{color:#ffe8a8;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .skic{position:relative;width:2.9em;height:2.9em;flex:none;border:.1em solid #6a5436;border-radius:.2em;overflow:hidden;cursor:grab;touch-action:none}
 .skic img{width:100%;height:100%;display:block}.skic.unl img{filter:grayscale(.85) brightness(.7)}
 .skic .lock{position:absolute;right:0;top:0;font-size:.55em;padding:0 .2em;background:#a02020;color:#fff;font-weight:900}
 .skic .pas{position:absolute;left:0;bottom:0;right:0;font-size:.5em;text-align:center;background:rgba(0,0,0,.7);color:#9fe0ff}
-.pm{display:flex;flex-direction:column;gap:.15em}.pmb{padding:0 .5em;min-width:1.8em;font-size:1em;line-height:1.3}
-.skdetail{width:19em;flex:none;display:flex;flex-direction:column;gap:.4em;padding:.5em .6em;border:.1em solid #3a3040;border-radius:.25em;background:#120e16;min-height:20em}
-.skdetail .sknm{font-size:1.25em;color:#ffe070}
+.pm{display:flex;flex-direction:column;gap:.15em;flex:none}.pmb{padding:0 .5em;min-width:1.8em;font-size:1em;line-height:1.3}
+.skdetail{flex:0.9 1 22em;width:auto;min-width:0;max-width:46%;display:flex;flex-direction:column;gap:.35em;padding:.5em .6em;border:.1em solid #3a3040;border-radius:.25em;background:#120e16;min-height:16em;max-height:32em;overflow:hidden}
+.skbody{flex:1;min-height:0;overflow-x:hidden;overflow-y:auto;display:flex;flex-direction:column;gap:.4em}
+.skdetail .skhd{min-width:0;align-items:flex-start}
+.skdetail .sknm{font-size:1.12em;color:#ffe070;line-height:1.35}
 .skdetail .skic{width:3.4em;height:3.4em}
-.kv{display:flex;justify-content:space-between;gap:.6em;font-size:.88em}.kv b{color:#ffe8a8;text-align:right}
+.skdesc{line-height:1.55}
+.kv{display:flex;justify-content:space-between;gap:.6em;font-size:.88em;min-width:0}.kv b{color:#ffe8a8;text-align:right;min-width:0;overflow-wrap:anywhere}
+.skacts{display:flex;flex-wrap:wrap;gap:.4em;flex:none;align-items:center}
+.skacts>.btn{flex:0 0 auto;white-space:nowrap}
+.skacts>.sksw{flex:1 1 100%;white-space:normal;height:auto;line-height:1.35;text-align:center;padding:.45em .7em}
 .sksec{border-top:.08em solid #3a3040;padding-top:.3em;display:flex;flex-direction:column;gap:.15em}
 .skempty{flex:1;padding:2em 1em;text-align:center;line-height:1.7}
 .skbar{display:grid;grid-template-columns:repeat(7,3.1em);grid-auto-rows:3.1em;gap:.3em;justify-content:center;padding:.4em;border:.1em solid #3a3040;border-radius:.25em;background:#0e0b12}

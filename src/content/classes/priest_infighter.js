@@ -2,7 +2,7 @@
    圣职者转职：蓝拳圣使（男，转职 id monk，技能前缀 pi_ = Infighter）—— 转职技能（官方 Lv15~45 → 本作 15~20）；觉醒三段见 priest_infighter_p1.js
    官方现版（namu 인파이터(던전앤파이터)/남자/스킬 2026、wiki.dfo.world 各技能页、国服官网 2020 三觉专题）；逐技能对照 docs/skills/priest_infighter_final.md
    手感核心：
-   - 意念驱动：巨兵插在地上（进地下城 / 换房间自动插在脚下；按住技能键收回），750px 光环里暴击伤害 / 暴击率提高、技能冷却 −10%；
+   - 意念驱动：巨兵插在地上（进地下城 / 换房间 / 决斗开局自动插在脚下；按住技能键收回，收回后本房间不再自动插），750px 光环里暴击伤害 / 暴击率提高、技能冷却 −10%；
      插着巨兵时普攻变成拳击 4 连（刺拳 → 刺拳 → 直拳 → 上勾拳）+ 跑攻上段钩拳；除神圣反击外的转职技能都要先插巨兵；空斩打 / 落凤锤插着巨兵时不能用
    - 俯冲（Z）/ 摆动（↓↓+C）：0.25 秒无敌的前冲 / 后撤，互相取消；俯冲中 X / ↑X / ↓X = 俯冲直拳 / 翔拳 / 腹拳，摆动中 X = 破碎之锤（技巧精通后互通）
    - 神圣反击：祈祷架势中正面挨打 → 受到的伤害 −90%，冲上去一记腹拳反击；幻影化身：影子分身追加打击；干涸之泉（一觉）：神击技能之间互相取消（3.5 秒一次）
@@ -23,26 +23,135 @@ function piPlant(p, x, y, quiet) {
   if (!quiet) { fxShock(p.piWill.x, p.piWill.y, 150, PI_COL.fist); fxDust(p.piWill.x, p.piWill.y, 6, 20); sfx.thud(0.8); }
 }
 function piRetrieve(p) { if (!p.piWill) return; fxSpr('burst', p.piWill.x, p.piWill.y, 60, { w: 90, dur: 0.3, col: PI_COL.fist }); p.piWill = null; p.piWillOff = game.room; delete p.buffs.pi_shadow; fxText('收回巨兵', p.x, p.y, p.z + 30, { col: PI_COL.hot, size: 11 }); sfx.swing(false); }
-// 转职技能的前提：巨兵插着；地下城 / 测试房间里没插且这个房间没手动收回过 → 自动插在脚下（官方：进地下城 / 换房间自动插好；决斗场开局拿在手上）
+// 转职技能的前提：巨兵插着。地下城 / 测试房 / 决斗场没插、且这个房间没手动收回过 → 自动插在脚下。
+// 决斗每一局开始重新插（上一局收回的不算到下一局）。
 function piEnsureWill(p) {
+  if (game.duel && p._piDuelRound !== game.duel.round) { p._piDuelRound = game.duel.round; p.piWillOff = null; p.piWill = null; }
   if (piWillOn(p)) return true;
-  if (!game.pvp && piScene() && p.piWillOff !== game.room && !p.dead) { piPlant(p, p.x - p.face * 30, p.y, true); return true; }
+  if (piScene() && p.piWillOff !== game.room && !p.dead) { piPlant(p, p.x - p.face * 30, p.y, true); return true; }
   return false;
 }
 const piNeedWill = p => piEnsureWill(p) || '需要意念驱动（先把巨兵插在地上）';
-// 插在地上的巨兵：程序画的巨型十字架（银杆 + 金边 + 蓝宝石）+ 脚下光环；750px 光环范围画一圈很淡的地面光圈
+// 插在地上的巨兵。纯笔画的锻银十字架：顶面、右侧厚度、凹槽、金箍和穹顶蓝宝石，下端榫头埋进砸开的石块。不贴图。脚下淡光环只标 750px 范围。
+function piWillDraw(c, t) {
+  const pulse = 0.5 + 0.5 * Math.sin(t * 2.2);
+  const poly = pts => { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); };
+  const fillp = (pts, style) => { poly(pts); c.fillStyle = style; c.fill(); };
+  const steelX = (x0, x1) => {
+    const g = c.createLinearGradient(x0, 0, x1, 0);
+    g.addColorStop(0, '#8d97a4'); g.addColorStop(0.10, '#eef2f6'); g.addColorStop(0.20, '#c5ced8');
+    g.addColorStop(0.55, '#7b8592'); g.addColorStop(0.82, '#454d5a'); g.addColorStop(1, '#2a3038');
+    return g;
+  };
+  const steelY = (y0, y1) => {
+    const g = c.createLinearGradient(0, y0, 0, y1);
+    g.addColorStop(0, '#e7edf3'); g.addColorStop(0.18, '#c3ccd6'); g.addColorStop(0.55, '#7e8896'); g.addColorStop(1, '#3a424c');
+    return g;
+  };
+  const crease = (x0, y0, x1, y1) => { c.strokeStyle = 'rgba(10,12,16,.55)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
+  c.save(); c.filter = 'blur(2.4px)'; c.fillStyle = 'rgba(16,10,8,.55)'; c.beginPath(); c.ellipse(10, 16, 36, 8, 0.05, 0, TAU); c.fill(); c.restore();
+  c.fillStyle = 'rgba(36,24,16,.55)'; c.beginPath(); c.ellipse(2, 10, 32, 9, 0, 0, TAU); c.fill();
+  fillp([[11, -156], [17.6, -153], [17.6, -16], [11, -18]], (() => { const g = c.createLinearGradient(11, 0, 18, 0); g.addColorStop(0, '#5a6370'); g.addColorStop(0.4, '#2c333c'); g.addColorStop(1, '#14181e'); return g; })());
+  fillp([[-14, -156], [-10, -156], [-10, -18], [-14, -18]], (() => { const g = c.createLinearGradient(-14, 0, -10, 0); g.addColorStop(0, '#b7c2ce'); g.addColorStop(1, '#f4f7fb'); return g; })());
+  fillp([[-11, -154], [11, -154], [11, -18], [-11, -18]], steelX(-11, 11));
+  crease(11, -154, 11, -18);
+  c.save();
+  poly([[-11, -154], [11, -154], [11, -18], [-11, -18]]); c.clip();
+  const bounce = c.createLinearGradient(0, -70, 0, -16);
+  bounce.addColorStop(0, 'rgba(90,56,30,0)'); bounce.addColorStop(1, 'rgba(92,58,32,.32)');
+  c.fillStyle = bounce; c.fillRect(-11, -70, 22, 54);
+  const recess = (x, y, w, h) => {
+    c.save(); c.beginPath(); c.roundRect(x, y, w, h, 1.4); c.clip();
+    const g = c.createLinearGradient(x, y, x + w, y + h);
+    g.addColorStop(0, 'rgba(8,10,14,.32)'); g.addColorStop(0.25, 'rgba(8,10,14,.08)'); g.addColorStop(1, 'rgba(255,255,255,.07)');
+    c.fillStyle = g; c.fillRect(x, y, w, h);
+    c.strokeStyle = 'rgba(255,255,255,.32)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(x + 1.2, y + 0.8); c.lineTo(x + w - 1.2, y + 0.8); c.stroke();
+    c.restore();
+  };
+  recess(-6.2, -148, 12.4, 24); recess(-6.2, -104, 12.4, 80);
+  c.strokeStyle = 'rgba(30,22,16,.32)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(-2, -62); c.lineTo(3, -46); c.moveTo(5, -38); c.lineTo(1, -26); c.stroke();
+  c.restore();
+  const arm = dir => {
+    const Q = [[0, -126], [46, -126], [54, -120], [54, -104], [46, -98], [0, -98]].map(([x, y]) => [dir * x, y]);
+    const top = [Q[0], Q[1], Q[2]], topUp = top.map(([x, y], i) => [x + dir * 0.6, y - 4 + (i === 2 ? 1.5 : 0)]);
+    fillp([Q[2], Q[3], [Q[3][0] + dir * 5.2, Q[3][1] + 1.6], [Q[2][0] + dir * 5.2, Q[2][1] + 1.2]], (() => { const g = c.createLinearGradient(Q[2][0], 0, Q[2][0] + dir * 5.2, 0); g.addColorStop(0, '#66707e'); g.addColorStop(1, '#161a20'); return g; })());
+    fillp([top[0], top[1], top[2], topUp[2], topUp[1], topUp[0]], (() => { const g = c.createLinearGradient(0, -130, 0, -122); g.addColorStop(0, '#fbfcfe'); g.addColorStop(1, '#b4bec9'); return g; })());
+    c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(top[0][0], top[0][1]); c.lineTo(top[1][0], top[1][1]); c.lineTo(top[2][0], top[2][1]); c.stroke();
+    fillp(Q, steelY(-126, -98));
+    c.save(); poly(Q); c.clip();
+    const ao = c.createLinearGradient(0, 0, dir * 16, 0);
+    ao.addColorStop(0, 'rgba(0,0,0,.16)'); ao.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = ao; c.fillRect(Math.min(0, dir * 16), -128, 16, 32);
+    c.beginPath(); c.roundRect(dir > 0 ? 18 : -50, -120, 30, 14, 1.2); c.clip();
+    c.fillStyle = 'rgba(8,10,14,.22)'; c.fillRect(dir > 0 ? 18 : -50, -120, 30, 14);
+    c.restore();
+    c.strokeStyle = '#c6a25a'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(dir * 20, -119); c.lineTo(dir * 46, -119); c.stroke();
+    c.strokeStyle = 'rgba(40,28,10,.45)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(dir * 20, -118); c.lineTo(dir * 46, -118); c.stroke();
+    crease(Q[2][0], Q[2][1], Q[3][0], Q[3][1]);
+  };
+  arm(1); arm(-1);
+  const fillet = (x, y, dx, dy) => {
+    c.beginPath(); c.moveTo(x, y + dy); c.lineTo(x, y); c.lineTo(x + dx, y); c.quadraticCurveTo(x, y, x, y + dy); c.closePath();
+    c.fillStyle = steelY(Math.min(y, y + dy), Math.max(y, y + dy)); c.fill();
+  };
+  fillet(11, -126, 14, -14); fillet(-11, -126, -14, -14); fillet(11, -98, 14, 14); fillet(-11, -98, -14, 14);
+  fillp([[0, -184], [8, -156], [14.2, -153], [3.6, -180]], (() => { const g = c.createLinearGradient(2, 0, 14, 0); g.addColorStop(0, '#4e5560'); g.addColorStop(1, '#16191e'); return g; })());
+  fillp([[0, -184], [-8, -156], [8, -156]], (() => { const g = c.createLinearGradient(-8, -184, 8, -156); g.addColorStop(0, '#fbfcfe'); g.addColorStop(0.35, '#d5dce4'); g.addColorStop(1, '#6a7380'); return g; })());
+  c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(-0.6, -178); c.lineTo(-2.2, -160); c.stroke();
+  fillp([[-13, -158], [11, -158], [16.4, -155], [16.4, -150], [11, -150], [-13, -150]], '#4a3814');
+  fillp([[-12, -157], [10, -157], [10, -151], [-12, -151]], (() => { const g = c.createLinearGradient(-12, 0, 10, 0); g.addColorStop(0, '#7a5c28'); g.addColorStop(0.28, '#fff0c4'); g.addColorStop(0.62, '#c49840'); g.addColorStop(1, '#5a4016'); return g; })());
+  fillp([[-12, -157], [10, -157], [11.2, -160.2], [-11, -160.2]], '#f8e7bc');
+  const band = (x, y, w, h, stops, side) => {
+    c.fillStyle = side; c.beginPath(); c.moveTo(x + w, y); c.lineTo(x + w + 5.2, y + 1.4); c.lineTo(x + w + 5.2, y + h + 1.4); c.lineTo(x + w, y + h); c.closePath(); c.fill();
+    const top = c.createLinearGradient(0, y - 3, 0, y); top.addColorStop(0, '#f4f7fb'); top.addColorStop(1, '#9aa6b4'); c.fillStyle = top;
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x + w, y); c.lineTo(x + w + 1.2, y - 3.2); c.lineTo(x + 1.2, y - 3.2); c.closePath(); c.fill();
+    const g = c.createLinearGradient(x, 0, x + w, 0); stops.forEach(([s, col]) => g.addColorStop(s, col)); c.fillStyle = g; c.fillRect(x, y, w, h);
+    crease(x + w, y, x + w, y + h);
+  };
+  band(-15, -18, 30, 6, [[0, '#59616e'], [0.12, '#f2f5f8'], [0.4, '#8c97a4'], [1, '#2a3038']], '#14181e');
+  band(-17, -12, 34, 7, [[0, '#343a44'], [0.22, '#6e7886'], [0.7, '#3a424c'], [1, '#1a1e24']], '#10141a');
+  c.strokeStyle = 'rgba(0,0,0,.4)'; c.lineWidth = 1; c.beginPath(); c.moveTo(-16, -8.6); c.lineTo(16, -8.6); c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(-16, -11.4); c.lineTo(16, -11.4); c.stroke();
+  band(-13, -5, 26, 5, [[0, '#6a4e1a'], [0.22, '#ffe7b4'], [0.6, '#b18434'], [1, '#46320e']], '#2e220c');
+  fillp([[-4.5, 0], [4.5, 0], [5.6, 2], [5.6, 11], [4.5, 11], [-4.5, 11]], steelX(-4.5, 5.6));
+  const stone = (pts, lit, body) => { fillp(pts.map(([x, y]) => [x - 1.6, y - 1.5]), lit); fillp(pts, body); };
+  stone([[-30, 6], [-18, 2], [-8, 8], [-14, 16], [-28, 14]], '#a08068', '#6a5342');
+  stone([[-12, 4], [2, 1], [8, 8], [0, 14], [-10, 12]], '#b09078', '#5c4636');
+  stone([[6, 3], [20, 1], [28, 8], [16, 15], [4, 11]], '#8d6e56', '#3f3126');
+  stone([[-6, 10], [8, 12], [14, 18], [-2, 20], [-10, 16]], '#4a3a2c', '#241910');
+  c.fillStyle = 'rgba(255,232,204,.4)'; c.beginPath(); c.ellipse(-22, 4, 3.2, 1.2, -0.5, 0, TAU); c.fill(); c.beginPath(); c.ellipse(2, 2, 3.6, 1.2, 0.3, 0, TAU); c.fill();
+  c.strokeStyle = 'rgba(20,12,8,.8)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-16, 6); c.lineTo(-8, 12); c.lineTo(-1, 8); c.moveTo(10, 5); c.lineTo(18, 11); c.stroke();
+  c.fillStyle = 'rgba(62,42,26,.5)'; c.beginPath(); c.ellipse(-9, -2, 2.4, 1.2, 0.4, 0, TAU); c.fill(); c.beginPath(); c.ellipse(7, 0, 1.8, 1, -0.3, 0, TAU); c.fill();
+  const rivet = (x, y) => {
+    c.beginPath(); c.arc(x + 0.55, y + 0.6, 1.9, 0, TAU); c.fillStyle = '#1c160e'; c.fill();
+    const g = c.createRadialGradient(x - 0.5, y - 0.6, 0.15, x + 0.2, y + 0.2, 1.7);
+    g.addColorStop(0, '#fff8dc'); g.addColorStop(0.35, '#e6c068'); g.addColorStop(1, '#5e4414');
+    c.beginPath(); c.arc(x, y, 1.45, 0, TAU); c.fillStyle = g; c.fill();
+  };
+  rivet(-42, -112); rivet(42, -112); rivet(0, -140); rivet(0, -70);
+  c.beginPath(); c.arc(1.3, -110.4, 15, 0, TAU); c.fillStyle = '#1a1e24'; c.fill();
+  const md = c.createRadialGradient(-5, -120, 2, 1, -110, 15);
+  md.addColorStop(0, '#f4f7fb'); md.addColorStop(0.5, '#8b95a3'); md.addColorStop(1, '#343b46');
+  c.beginPath(); c.arc(0, -112, 14, 0, TAU); c.fillStyle = md; c.fill();
+  const gx = 0, gy = -112, R = 6.4;
+  c.beginPath(); c.ellipse(gx + 1.2, gy + 2.2, R + 3.6, R + 3.2, 0, 0, TAU); c.fillStyle = '#2a200e'; c.fill();
+  const bz = c.createRadialGradient(gx - 2.2, gy - 2.4, 0.8, gx + 0.6, gy + 0.8, R + 3.3);
+  bz.addColorStop(0, '#fff6d8'); bz.addColorStop(0.42, '#e2b65c'); bz.addColorStop(1, '#5c4214');
+  c.beginPath(); c.arc(gx, gy, R + 2.5, 0, TAU); c.fillStyle = bz; c.fill();
+  c.beginPath(); c.arc(gx, gy, R + 0.4, 0, TAU); c.strokeStyle = 'rgba(40,28,8,.7)'; c.lineWidth = 0.9; c.stroke();
+  const gg = c.createRadialGradient(gx - R * 0.32, gy - R * 0.38, R * 0.05, gx + R * 0.2, gy + R * 0.25, R * 1.05);
+  gg.addColorStop(0, '#ffffff'); gg.addColorStop(0.16, '#b7e4ff'); gg.addColorStop(0.42, '#1c6ed2'); gg.addColorStop(0.78, '#0a2a6e'); gg.addColorStop(1, '#071433');
+  c.beginPath(); c.arc(gx, gy, R, 0, TAU); c.fillStyle = gg; c.fill();
+  c.beginPath(); c.ellipse(gx - 1.5, gy - 2.3, 2.1, 1.05, -0.6, 0, TAU); c.fillStyle = 'rgba(255,255,255,.92)'; c.fill();
+  c.beginPath(); c.ellipse(gx + 1.8, gy + 1.6, 1.6, 0.7, 0.8, 0, TAU); c.fillStyle = 'rgba(180,220,255,.35)'; c.fill();
+  c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.10 + pulse * 0.06; c.fillStyle = '#7eb6ff'; c.beginPath(); c.arc(gx, gy, R + 5, 0, TAU); c.fill(); c.restore();
+}
 function piWillFx(p) {
   if (p._piWillFx && fxList.includes(p._piWillFx)) return;
   p._piWillFx = addFx({ ent: p, x: 0, y: 0, z: 0, dur: 1e9, update() { const W = this.ent.piWill; if (!W || W.room !== game.room || this.ent.remove) { this.dur = this.t; return; } this.x = W.x; this.y = W.y + 0.2; },
     draw(c) { const W = this.ent.piWill; if (!W) return; const X = sx(W.x), Y = sy(W.y, 0), t = this.t;
-      c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.1; c.strokeStyle = '#9fd8ff'; c.lineWidth = 2; c.beginPath(); c.ellipse(X, Y, 750, 750 * GR, 0, 0, TAU); c.stroke();
-      c.globalAlpha = 0.45 + 0.15 * Math.sin(t * 3); drawSpr(c, fxTint('rune', '#9fd8ff'), X, Y, 130, 130 * GR, { ground: true, rot: t * 0.8 }); c.restore();
-      c.save(); c.translate(X, Y); c.rotate(-0.08);
-      c.fillStyle = '#6a4a36'; c.fillRect(-4, -10, 8, 16); c.fillStyle = '#d8dde8'; c.strokeStyle = '#2a2a38'; c.lineWidth = 1.5;
-      c.fillRect(-4, -96, 8, 90); c.strokeRect(-4, -96, 8, 90);
-      c.fillStyle = '#e8ecf4'; c.fillRect(-26, -84, 52, 12); c.strokeRect(-26, -84, 52, 12); c.fillRect(-9, -122, 18, 60); c.strokeRect(-9, -122, 18, 60);
-      c.strokeStyle = '#d4b45e'; c.lineWidth = 2; c.strokeRect(-26, -84, 52, 12); c.strokeRect(-9, -122, 18, 60);
-      c.fillStyle = '#3a7ae0'; c.beginPath(); c.moveTo(0, -86); c.lineTo(6, -78); c.lineTo(0, -70); c.lineTo(-6, -78); c.closePath(); c.fill(); c.restore(); } });
+      c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.09; c.strokeStyle = '#9fd8ff'; c.lineWidth = 2; c.beginPath(); c.ellipse(X, Y, 750, 750 * GR, 0, 0, TAU); c.stroke(); c.restore();
+      c.save(); c.translate(X, Y); c.rotate(-0.025); piWillDraw(c, t); c.restore(); } });
 }
 // 巨兵插在地上时手里的十字架不画：矢量模型藏掉手上的部件，精灵模型包一层外观层（models/avatar.js）的 weapon
 function piHideHandCross(p) {
@@ -126,7 +235,7 @@ defSkill('pi_parry', { name: '急速闪避', cls: 'priest', job: PIJ, lvReq: 17,
   infoExtra: lv => [['起手回避', '75%（' + (0.6 + 0.1 * lv).toFixed(1) + ' 秒）'], ['躲开后暴击率', '+10% × 4 层']] });
 const piWillVal = lv => ({ critDmg: 0.013 + 0.02 * lv, crit: 0.05 + 0.015 * lv });
 defSkill('pi_will', { name: '意念驱动', cls: 'priest', job: PIJ, lvReq: 15, maxLv: 10, sp: 15, mp: 5, cd: 5, type: 'phys', buff: true, noHitCheck: true, col: '#9fd8ff',
-  desc: '【转职时自动学会 Lv1】把巨兵插进地面：周围 150px 的敌人硬直；巨兵周围 750px 的光环里暴击伤害、物理暴击率、命中率提高，技能冷却 −10%（觉醒除外；离开光环后效果保留 30 秒）。插着巨兵时普攻变成拳击，除神圣反击外的转职技能都要插着巨兵才能用；空斩打 / 落凤锤不能用。已经插着时：点一下 = 在脚下重新插（破碎之锤的动作），按住技能键 = 收回巨兵（幻影化身随之解除）。进地下城 / 换房间时自动插在脚下（决斗场开局拿在手上）。',
+  desc: '【转职时自动学会 Lv1】把巨兵插进地面：周围 150px 的敌人硬直；巨兵周围 750px 的光环里暴击伤害、物理暴击率、命中率提高，技能冷却 −10%（觉醒除外；离开光环后效果保留 30 秒）。插着巨兵时普攻变成拳击，除神圣反击外的转职技能都要插着巨兵才能用；空斩打 / 落凤锤不能用。已经插着时：点一下 = 在脚下重新插（破碎之锤的动作），按住技能键 = 收回巨兵（幻影化身随之解除）。进地下城、换房间、决斗开局都会自动插在脚下；按住收回后，这个房间里不再自动插。',
   ai: { kind: 'buff' }, infoExtra: lv => [['暴击伤害', '+' + pct(piWillVal(lv).critDmg)], ['暴击率', '+' + pct(piWillVal(lv).crit)], ['技能冷却', '−10%'], ['光环', '750px'], ['硬直范围', '150px']],
   act: (lv, p) => { const re = piWillOn(p);
     return { name: 'pi_will', clip: 'piPlant', dur: re ? 0.4 : 0.45, noCounter: true,

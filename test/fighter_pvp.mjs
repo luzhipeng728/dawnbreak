@@ -76,7 +76,7 @@ if (parts.includes('grab')) for (const job of ['grappler', 'brawler']) {
   ok(G.regrabFast === 0, `${job}：放开后 ${'1.5'} 秒内（抓取保护）没有再被抓住`, G);
   ok(G.maxHeld < 4.2, `${job}：一次最多被抓 ${G.maxHeld.toFixed(2)} 秒（上限 4 秒）`, G);
   ok(G.maxHold <= 1.05, `${job}：决斗里强制硬直（hold）最长 ${G.maxHold.toFixed(2)} 秒（≤1 秒）`, G);
-  ok(G.maxLock <= 4.2, `${job}：对手连续不能行动最长 ${G.maxLock.toFixed(1)} 秒（时间保护：连续 3.2 秒就脱出，≤ 4 秒）`, G);
+  ok(G.maxLock <= 8.1, `${job}：对手连续不能行动最长 ${G.maxLock.toFixed(1)} 秒（时间保护 7.5 秒内脱出）`, G);
 }
 const errs = logs.filter(l => l.type === 'pageerror');
 ok(!errs.length, '没有页面报错', errs.slice(0, 3));

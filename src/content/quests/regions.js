@@ -321,7 +321,7 @@ defineRegionQuests('siroco', { chapter: '第七章 · 支线', scene: 'siroco_to
       reward: { exp: 0.06, gold: 9000, items: [QI('m_contra', 5)] } },
     { id: 's_si_luxi', name: '卢克西的记忆', lvl: 60, pre: 'q_si09',
       desc: '希洛克吞下的记忆里有卢克西的一部分。在「无形棺柩」讨伐希洛克，带回卢克西的记忆碎片。',
-      goals: [{ type: 'collect', key: 'q_si_luxi', item: '卢克西的记忆碎片', icon: 'q_si_memory', from: 'siroco', boss: true, dungeon: 'siroco_coffin', rate: 1, rar: 3, desc: '淡紫色的晶片，里面映着一个女人回头微笑的样子。' }],
+      goals: [{ type: 'collect', key: 'q_si_luxi', item: '卢克西的记忆碎片', icon: 'q_si_memory', from: 'sirocoLord', boss: true, dungeon: 'siroco_coffin', rate: 1, rar: 3, desc: '淡紫色的晶片，里面映着一个女人回头微笑的样子。' }],
       talk: { offer: ['希洛克每次被打倒，都会吐出一点它吞下去的记忆。', '卢克西的记忆……只要一片就好。'], doing: ['别相信你看到的第一个希洛克。'], done: ['……她在笑。', '谢谢你。这些你拿去——我已经用不上了。'] },
       reward: { exp: 0.08, gold: 12000, items: [QI('m_cosmos', 3)] } },
   ],

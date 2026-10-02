@@ -168,7 +168,7 @@ const GR = 0.45;   // 地面圆形在屏幕上的纵向压缩比（绘制与判�
 const inGround = (t, x, y, r) => Math.hypot(t.x - x, (t.y - y) / GR) < r + t.w;
 function areaHit(owner, x, y, r, z, h, o = {}) {
   const fake = { x: x - owner.face * 10, y, z, face: owner.face };
-  for (const t of ents) if (t.team !== owner.team && !t.dead && t.invul <= 0 && !t.remove && inGround(t, x, y, r) && t.z < z + (o.zMax ?? 30) && (t.st !== 'down' || h.downHit)) { applyHit(owner, t, { ...h, box: null }, { proj: true, src: fake }); if (o.status) addStatus(t, o.status, o.sdur || 2, { dps: o.dps ? owner.atk * o.dps : 0, src: owner }); }
+  for (const t of ents) if (t.team !== owner.team && !t.dead && t.invul <= 0 && !t.remove && inGround(t, x, y, r) && t.z < z + (o.zMax ?? 30) && (t.st !== 'down' || h.downHit || (game.pvp && t.fighter && pvpOtg(h)))) { applyHit(owner, t, t.st === 'down' && !h.box ? { ...h, box: [0, r, r, 0, 24] } : h, { proj: true, src: fake }); if (o.status) addStatus(t, o.status, o.sdur || 2, { dps: o.dps ? owner.atk * o.dps : 0, src: owner }); }
 }
 function lightningStrike(g) {
   cam.shake = Math.max(cam.shake, 3); sfx.boom(0.4); sfx.hit('crit', false);

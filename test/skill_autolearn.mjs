@@ -1,4 +1,4 @@
-// 一键加点 / 自动学前置 / SP ×SP_MUL（老角色补发差额，只补一次；新角色不重复补）
+// 一键加点 / 自动学前置 / 升级 SP 够把每个职业当前能学的技能加满（老角色补差额，只补一次；新角色不重复补）
 // 用法：node test/skill_autolearn.mjs
 import { launch, URL_BASE } from './lib.mjs';
 const { browser, page, logs } = await launch({ width: 1280, height: 720 });
@@ -7,16 +7,31 @@ const ready = () => page.waitForFunction(() => window.__READY, null, { timeout: 
 
 await page.goto(`${URL_BASE}?mute`); await ready();
 const mig = await page.evaluate(() => {
-  const c = { ...save.defaults('sword', '老角色'), v: SAVE_V, lvl: 60, sp: 777 }; delete c.spMul;
+  const c = { ...save.defaults('sword', '老角色'), v: SAVE_V, lvl: 60, sp: 777 }; delete c.spMul; delete c.spVer;
   localStorage.setItem(save.key, JSON.stringify({ v: SAVE_V, cur: 0, chars: [c], acct: {} }));
-  save.live = false; save.loadAll(); const a = save.chars[save.chars.length - 1]; const sp1 = a.sp, mul = a.spMul; save.persist();
+  save.live = false; save.loadAll(); const a = save.chars[save.chars.length - 1]; const sp1 = a.sp, ver = a.spVer; save.persist();
   save.loadAll(); const sp2 = save.chars[save.chars.length - 1].sp;
-  return { sp1, sp2, mul, want: 777 + spTotalAt(60, SP_MUL) - spTotalAt(60, 1), newMul: (() => { save.newGame('gun', '新角色'); return save.data.spMul; })() };
+  save.newGame('gun', '新角色');
+  return { sp1, sp2, ver, want: 777 + spTotalAt(60) - spLegacyTotal(60, 1), newVer: save.data.spVer, newSp: save.data.sp };
 });
-ok(mig.sp1 === mig.want && mig.sp2 === mig.sp1 && mig.mul === 6, `老角色 Lv60 补发 SP 差额 ${mig.want - 777}，只补一次`, mig);
-ok(mig.newMul === 6, '新角色一开始就按新规则（不会被重复补发）', mig);
+ok(mig.sp1 === mig.want && mig.sp2 === mig.sp1 && mig.ver === 2, `老角色 Lv60 补发 SP 差额 ${mig.want - 777}，只补一次`, mig);
+ok(mig.newVer === 2 && mig.newSp === 150, '新角色一开始就按新规则（不会被重复补发）', mig);
+const fit = await page.evaluate(() => {
+  const bad = [];
+  let tight = null;
+  for (const cls of Object.keys(CLASSES)) for (const job of Object.keys(CLASSES[cls].jobs || {})) {
+    for (let L = 1; L <= 60; L++) {
+      const cost = skillSpToMax(cls, job, L), sp = spTotalAt(L);
+      if (cost > sp) bad.push({ cls, job, L, cost, sp });
+      const gap = sp - cost;
+      if (!tight || gap < tight.gap) tight = { cls, job, name: CLASSES[cls].jobs[job].name, L, cost, sp, gap };
+    }
+  }
+  return { bad: bad.slice(0, 6), nBad: bad.length, tight, at60: spTotalAt(60) };
+});
+ok(!fit.nBad, `每个职业 1~60 级的累计 SP 都够加满当前能学的技能（Lv60 共 ${fit.at60}）`, fit);
 
-const jobs = { sword: ['blade', 'berserker'], mage: ['summoner'], fighter: ['striker', 'grappler'] };
+const jobs = { sword: ['blade', 'berserker'], mage: ['summoner'], fighter: ['striker', 'grappler'], priest: ['monk', 'crusader'] };
 for (const [cls, list] of Object.entries(jobs)) for (const job of list) {
   await page.goto(`${URL_BASE}?test&cls=${cls}&mobs=0&mute`); await ready();
   const r = await page.evaluate(job => {
@@ -28,6 +43,19 @@ for (const [cls, list] of Object.entries(jobs)) for (const job of list) {
   }, job);
   ok(r.n > 0 && !r.notMax.length && r.left >= 0, `${cls}:${job} Lv60 一键加点：全部学满，剩 SP ${r.left}`, r);
 }
+await page.goto(`${URL_BASE}?test&cls=${fit.tight.cls}&mobs=0&mute`); await ready();
+const mid = await page.evaluate(t => {
+  game.lvl = t.L; game.job = t.job; game.player.cls = t.cls;
+  Object.assign((save.data.flags ??= {}), { awaken: true, awaken2: true, awaken3: true });
+  const C = CLASSES[t.cls], J = C.jobs[t.job];
+  game.skillLv = {}; for (const id of C.start || []) game.skillLv[id] = 1; for (const id of (J.auto || [])) game.skillLv[id] = 1;
+  game.sp = spTotalAt(t.L);
+  skillAutoLearn();
+  const { base, job: Js } = skillPages();
+  const notMax = [...base, ...Js].filter(id => { const S = SKILLS[id], lv = game.skillLv[id] || 0; return lv < skillMaxLv(S) && skillLvReq(S, lv + 1) <= t.L; });
+  return { left: game.sp, notMax };
+}, fit.tight);
+ok(!mid.notMax.length && mid.left >= 0, `${fit.tight.cls}:${fit.tight.job} Lv${fit.tight.L}（最紧的一级）一键加点全部学满，剩 SP ${mid.left}`, mid);
 
 await page.goto(`${URL_BASE}?test&cls=fighter&mobs=0&mute`); await ready();
 const pre = await page.evaluate(() => {

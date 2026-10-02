@@ -236,7 +236,7 @@ NM('nm_ap_curio', 'mobeni', { wtype: 'autopistol', lvl: 55, name: '库里欧的�
   desc: '枪匠库里欧一脉相传的手枪。（官方 60 版 Lv55 神器自动手枪；本作列车上的海贼、黑鳞莫贝尼掉落）' });
 NM('nm_rf_dawn', 'anzu', { wtype: 'rifle', lvl: 55, name: '黎明之瞳', fx: { dmgUp: 0.08, light: 24 },
   proc: { on: 'crit', chance: 0.06, cd: 1.5, act: 'strike', mul: 1.6, elem: 'light', vis: 'holy', name: '黎明！', desc: '暴击时 6% 几率追加 160% 光属性伤害（冷却 1.5 秒）。' },
-  desc: '「黎明之眼」安祖·塞弗的狙击步枪。（官方 60 版 Lv55 神器步枪「黎明之眼」，和魔法石重名，本作改名；阿登高地的安祖·塞弗掉落）' });
+  desc: '「黎明之眼」安祖·赛弗的狙击步枪。（官方 60 版 Lv55 神器步枪「黎明之眼」，和魔法石重名，本作改名；阿登高地的安祖·赛弗掉落）' });
 NM('nm_hc_brood', 'utara', { wtype: 'handcannon', lvl: 55, name: '暴戾冥思者', fx: { dmgUp: 0.08, fire: 24, stagger: 30 },
   proc: { chance: 0.05, cd: 2, act: 'strike', mul: 1.6, aoe: 130, elem: 'fire', vis: 'fire', name: '暴戾！', desc: '攻击时 5% 几率轰出暴戾之炮：周围敌人受到 160% 火属性伤害（冷却 2 秒）。' },
   desc: '冥思越久，开火时越暴戾。（官方 60 版 Lv55 神器手炮；本作格兰之火的兽王乌塔拉掉落）' });

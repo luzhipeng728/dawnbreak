@@ -148,7 +148,7 @@ defSkill('pi_furious', { name: '正义铁拳', cls: 'priest', job: PIJ, tier: 3,
 // 正义执行：雷米迪奥斯的圣座（三觉）：划十字，巨兵移到身后；跃起，巨兵化为雷米迪奥斯的圣座；落地把周围宣告为圣域，敌人被拉到面前跪地忏悔（控制）；
 // 在圣域中心的告解所祈祷，圣座现出真正的形态——神圣拳铠；注入神的意志一记上勾拳执行正义（2 段，1 : 1.5）
 defSkill('pi_awaken3', { name: '正义执行：雷米迪奥斯的圣座', cls: 'priest', job: PIJ, tier: 3, lvReq: 30, maxLv: 3, sp: 0, mp: 300, cd: 270, pvp: 0.45, type: 'phys', awaken: true, col: '#ffe070', req: p => { const r = piNeedWill(p); if (r !== true) return r; const L = piLinkOf(p); return (p.cool[L] || 0) > 0 ? `联动的${SKILLS[L].name}冷却中` : true; },
-  switchOpt: '联动泯灭神击（关闭 = 联动制裁：怒火疾风）',
+  switchOpt: '联动觉醒', switchLabel: off => off ? '当前联动：制裁：怒火疾风（点击改为泯灭神击）' : '当前联动：泯灭神击（点击改为制裁：怒火疾风）',
   desc: '【三次觉醒「神启·蓝拳圣使」的觉醒技】完成三次觉醒任务时自动学会（不花 SP）并放进技能栏（←↑→↓+Z）。划下十字，把插着的巨兵移到身后，握住它跃起——巨兵化为光之圣遗物「雷米迪奥斯的圣座」；落地把周围宣告为圣域：圣域里的敌人被拉到面前双膝跪地忏悔（控制），你在圣域中心的告解所祈祷，圣座现出真正的形态——神圣拳铠，注入神的意志一记上勾拳执行正义（2 段，第 2 段更重，覆盖大范围）。全程无敌。和联动的觉醒共用冷却（默认联动泯灭神击，技能窗口里可以改成联动制裁：怒火疾风）。',
   pow: lv => skillDmg(44, 12, lv), ai: { kind: 'awaken', r: [0, 600], dy: 200 },
   act: lv => { const T = skillDmg(44, 12, lv);
@@ -190,7 +190,7 @@ CLASSES.priest.passives.push(p => {
   const ids = ['pi_body', 'pi_tech', 'pi_dry', 'pi_death', 'pi_one', 'pi_will'];
   if (!piOn(p)) { for (const id of ids) setPassive(p, id, false); return; }
   piAutoAwaken(p); piHideHandCross(p);
-  if (!game.pvp && piScene() && !p.dead) piEnsureWill(p);
+  if (piScene() && !p.dead) piEnsureWill(p);
   if (piWillOn(p)) piWillFx(p);
   const L = id => skLv(p, id);
   setPassive(p, 'pi_body', L('pi_body') > 0, { mspd: 0.15, aspd: 0.1, hide: true });

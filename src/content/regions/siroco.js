@@ -64,6 +64,7 @@ defineRegion({
       skills: [{ use: 'laser', windup: 1.1, dur: 1.0, sweep: 70, dmg: 0.45, cd: [6, 8], w: 1.4 }, { use: 'shot', mode: 'spread', n: 3, spread: 60, speed: 300, dmg: 0.8, cd: [4, 5.5] }] },
     luxi: { name: '被操纵的卢克西', tier: 'elite', arch: 'aggressive', size: [13, 12, 108], speed: 120, elem: 'fire', art: ['assassin', { hue: 100, only: [200, 300], sat: 1.3 }], traits: { sa: 'cast' },
       skills: [{ use: 'swipe', n: 3, dmg: 0.9, reach: 80, cd: [1.8, 2.8], w: 2 }, { use: 'dash', len: 380, speed: 720, windup: 0.75, dmg: 1.2, cd: [4, 6] }, { use: 'rain', kind: 'hex', n: 3, r: 46, windup: 1.2, dmg: 1.0, col: '#ff7a3a', cd: [8, 11] }] },
+    lawOrb: { name: '紫球', tier: 'swarm', size: [16, 12, 70], obj: { shape: 'crystal', col: '#b070ff', h: 70 }, traits: { hitHp: 4 } },   // 法则之门的顺序球，不进任何地下城的小兵名单
   },
 
   /* ---- 领主：mechs 出场就有的机制 | phases 按血量切阶段（at = 血量比例），enter = 进阶段时的动作 | hook = 自定义钩子（content/regions/siroco_bosses.js）---- */
@@ -111,6 +112,57 @@ defineRegion({
         { at: 0.2, enter: { say: '无形之棺在崩塌！', mechs: [{ use: 'hazard', kind: 'shrink', minW: 620, speed: 20 }] },
           skills: [{ use: 'rain', kind: 'bolt', n: 7, r: 44, interval: 0.25, windup: 1.0, dmg: 1.1, col: '#c8a0ff', cd: [7, 9] }] },
       ] },
+    // 故事关领主是另一套 kind（lawWarden / witCharm / painNex+painVita / sirocoLord）。上面四个旧 kind 会被团本浅拷贝，attacks / mechs / hook 不要改。
+    lawWarden: { name: '遗忘姓名的守门人', lvl: 62, size: [20, 15, 132], weight: 5, speed: 80, art: 'gatekeeper', pref: 110, hook: 'lawWarden', traits: { sa: 'cast' },
+      mechs: [{ use: 'groggy', max: 110, dur: 6 }],
+      phases: [
+        { at: 1, skills: [{ use: 'swipe', clip: 'slam', reach: 120, width: 34, windup: 0.7, dmg: 1.3, down: true, sa: true, cd: [2.2, 3.2], w: 2 },
+          { use: 'hold', id: 'lawCall', clip: 'sigA', sig: '召出紫球', dur: 1.1, phase: 99, cd: [999, 999] },
+          { use: 'cone', clip: 'sigB', ang: 78, len: 360, windup: 1.0, dur: 0.9, dmg: 0.4, col: '#c080ff', cd: [7, 10], w: 1.5, say: '裁决横扫——绕到侧面！' }] },
+      ] },
+    witCharm: { name: '魅惑之哈妮尔', lvl: 62, size: [14, 12, 112], speed: 125, elem: 'dark', art: 'assassin', pref: 90,
+      mechs: [{ use: 'groggy', max: 100, dur: 6 }, SI_WIT_STANCE,
+        // 精英不在领主房。invuln until adds 会另刷一波并全程无敌，enrage 只是计时。用 tether guard 召一只灵魂拘束者近似：它活着伤害 ×0.4，打倒后破招。
+        { use: 'tether', kind: 'soulBinder', mode: 'guard', mul: 0.4, hp: 0.14, onBreak: 'groggy', say: '灵魂拘束者还活着——哈妮尔受到的伤害降低了，先打倒拘束者！', col: '#c080ff' }],
+      phases: [
+        { at: 1, skills: [{ use: 'swipe', n: 2, reach: 86, dmg: 0.85, cd: [2.2, 3.2], w: 1.2 },
+          { use: 'dash', id: 'witDash', len: 340, speed: 840, windup: 0.65, dmg: 1.1, status: 'bleed', sdur: 3, cd: [5, 7], w: 1.5, say: '刃舞突刺——出血了！' },
+          { use: 'swipe', id: 'witSeq', n: 4, reach: 94, windup: 0.32, gap: 0.18, dmg: 0.7, cd: [7, 10], w: 1.6, say: '刃舞连斩！' }] },
+      ] },
+    painVita: { name: '慈悲之维塔', lvl: 62, size: [16, 14, 122], elem: 'light', art: ['nex', { sat: 0.15, bright: 1.5 }], variantOf: 'nex', scale: 0.96, pref: 140,
+      mechs: [{ use: 'groggy', max: 100, dur: 6 }],
+      phases: [
+        { at: 1, skills: [
+          { use: 'buff', id: 'mercy', kind: 'heal', target: 'allies', r: 560, amt: 0.05, cd: [9, 12], w: 1.3, say: '慈悲——同伴恢复了体力！' },
+          { use: 'pool', id: 'whiteMist', zone: 'slow', at: 'target', n: 2, r: 80, windup: 1.0, linger: 6, dmg: 0.4, col: '#f4f4ff', cd: [8, 11], w: 1.3, say: '白雾沉下来了——别站进去！' },
+          { use: 'rain', clip: 'sigB', kind: 'hex', n: 4, r: 42, windup: 1.2, dmg: 1.0, col: '#f4f4ff', cd: [7, 10], w: 1.7, say: '头顶的白球落下了——散开！' }] },
+      ] },
+    painNex: { name: '公义之奈克斯', lvl: 62, size: [16, 14, 122], elem: 'dark', art: 'nex', scale: 1.32, pref: 150,
+      mechs: [{ use: 'groggy', max: 100, dur: 6 },
+        { use: 'duo', with: ['painVita'], hp: 0.75, window: 0, onPartnerDown: 'enrage', say: '公义与慈悲一起现身了！' },
+        { use: 'arena', kind: 'tiles', cols: 6, hot: 0.45, every: 6, warn: 1.2, frac: 0.05, tick: 0.55, col: '#ff4a3a', say: '断层地板——闪烁的地砖马上塌，站到暗的格子上！' }],
+      phases: [
+        { at: 1, skills: [{ use: 'swipe', id: 'chain', clip: 'slam', n: 2, reach: 120, width: 28, windup: 0.55, gap: 0.28, dmg: 1.05, cd: [2.2, 3.2], w: 1.6, say: '锁链抽打！' },
+          { use: 'mark', clip: 'sigA', mode: 'burst', delay: 1.5, r: 110, n: 1, dmg: 1.4, col: '#2a2a32', cd: [8, 11], w: 1.6, say: '头顶的黑球——散开！' }] },
+        { at: 0.6, enter: { say: '奈克斯苏醒了——撑过这几秒！', col: '#e8e8ff',
+          // 官方苏醒是交互读条，机制库没有可打断的读条。用 invuln until survive（留在场上、伤害无效）近似：撑过这几秒才解开。
+          mechs: [{ use: 'invuln', until: 'survive', survive: 8, hide: false, col: '#e8e8ff', say: '苏醒读条——她现在无敌，撑过这几秒！' }] },
+          skills: [{ use: 'aoe', clip: 'sigB', shape: 'circle', at: 'self', r: 200, windup: 1.0, dmg: 1.15, col: '#e8e8ff', cd: [10, 14], w: 1.4, say: '链子爆开了！' }] },
+      ] },
+    sirocoLord: { name: '潜行者 希洛克', tier: 'raid', lvl: 63, size: [18, 15, 126], speed: 105, elem: 'dark', art: 'siroco', pref: 120, hook: 'sirocoLord', scale: 1.5,
+      mechs: [{ use: 'groggy', max: 120, dur: 8, mul: 1.6 }],
+      phases: [
+        { at: 1, skills: [{ use: 'cone', id: 'wisp', ang: 48, len: 340, windup: 0.95, dur: 0.9, dmg: 0.36, col: '#c8a0ff', cd: [6, 8], w: 1.5, say: '残影吐息——绕到侧面！' },
+          { use: 'pull', id: 'dominate', mode: 'in', r: 400, force: 210, windup: 1.05, dur: 1.3, status: 'slow', sdur: 1.6, dmg: 0.3, col: '#c8a0ff', cd: [11, 14], w: 1.3, say: '精神支配——往外挣开！' },
+          { use: 'lanes', id: 'faces', kind: 'wave', lanes: 4, hit: 3, windup: 1.1, dmg: 1.15, col: '#c8a0ff', cd: [10, 13], w: 1.3, say: '脸孔排过来了——站进没亮的那一排！' },
+          { use: 'hold', id: 'lordFace', clip: 'sigA', sig: '三张脸孔', dur: 1.0, phase: 99, cd: [999, 999] },
+          { use: 'hold', id: 'lordGaze', clip: 'sigB', sig: '凝视', dur: 1.2, phase: 99, cd: [999, 999] },
+          { use: 'mech', id: 'formParkLavice', mech: SI_LAVICE, phase: 99, cd: [999, 999] },
+          { use: 'mech', id: 'formParkLester', mech: SI_LESTER, phase: 99, cd: [999, 999] },
+          { use: 'mech', id: 'formParkGiri', mech: SI_GIRI, phase: 99, cd: [999, 999] }] },
+        { at: 0.55, enter: { say: '卢克西被希洛克操纵了——先打倒卢克西！', col: '#ff9ab0', mechs: [{ use: 'tether', kind: 'luxi', mode: 'guard', mul: 0.35, hp: 0.12, onBreak: 'groggy' }] } },
+        { at: 0.25, enter: { say: '无数张脸孔叠在了一起' } },
+      ] },
   },
 
   /* ---- 史诗（Lv60；原来是 Lv30、比当时的 Lv30 史诗略强一档，见 docs/REGION_PIPELINE.md 的数值说明）；look = 图标描述 ---- */
@@ -145,18 +197,18 @@ defineRegion({
 
   /* ---- 地下城：layout 房间模板 short / standard / long / raid | gate = 区域地图上门的位置 | drops 领主掉落 ---- */
   dungeons: {
-    law_gate: { name: '法则之门', lvl: [60, 61], theme: 'siroLaw', layout: 'standard', mobs: [['phantomBlade', 3], ['hellHound', 2], ['voidCaster', 2], ['burstShade', 1]], elite: 'jailer', boss: 'nex', bgm: 'dungeon2', bossBgm: 'boss',
-      gate: { x: 620, col: '160,140,255' }, desc: '希洛克幻界的第一道门。奈克斯的锁链球会追着你；她读条“全屏抓取”时跳起来就能躲。血量过半后她会张开护盾——打破护盾她就会破招。',
+    law_gate: { name: '法则之门', lvl: [60, 61], theme: 'siroLaw', layout: 'standard', mobs: [['phantomBlade', 3], ['hellHound', 2], ['voidCaster', 2], ['burstShade', 1]], elite: 'jailer', boss: 'lawWarden', bgm: 'dungeon2', bossBgm: 'boss',
+      gate: { x: 620, col: '160,140,255' }, desc: '希洛克幻界的第一道门。遗忘姓名的守门人会召出四颗紫球——按头顶的 1、2、3、4 打碎，打错会重置并受罚；顺序对了它会破招。裁决横扫要绕到侧面。',
       drops: { boss: [['ep_si_nex', 0.02], ['ep_si_bracelet', 0.012], ['ep_ss_fate', 0.008], ['ep_rd_meow', 0.008]], mats: [['crystal', 0.12, 10], ['m_diamond', 0.008, 1], ['m_soul', 0.002, 1]] } },
-    wit_gate: { name: '知性之门', lvl: [60, 61], theme: 'siroWit', layout: 'long', mobs: [['phantomStalker', 3], ['voidCaster', 2], ['soulBinder', 2], ['gazer', 1.5]], elite: 'soulBinder', boss: 'assassin', bgm: 'dungeon3', bossBgm: 'boss',
-      gate: { x: 1280, col: '140,200,255' }, desc: '幻象组成的图书馆。暗杀者又快又狠，冲刺前地上会出现红线；她分出影子时，打中本体影子就会散掉，打影子会被炸。',
+    wit_gate: { name: '知性之门', lvl: [60, 61], theme: 'siroWit', layout: 'long', mobs: [['phantomStalker', 3], ['voidCaster', 2], ['soulBinder', 2], ['gazer', 1.5]], elite: 'soulBinder', boss: 'witCharm', bgm: 'dungeon3', bossBgm: 'boss',
+      gate: { x: 1280, col: '140,200,255' }, desc: '幻象组成的图书馆。魅惑之哈妮尔会在魅惑和刃舞之间换招，魅惑时方向会乱。灵魂拘束者还活着时她受到的伤害会降低——先打倒拘束者。',
       drops: { boss: [['ep_si_ring', 0.012], ['ep_si_nex', 0.01], ['ep_ls_millennium', 0.008], ['ep_kt_andra', 0.008]], mats: [['crystal', 0.12, 10], ['c_blue', 0.03, 2], ['m_elem2', 0.01, 1]] } },
-    pain_gate: { name: '痛苦之门', lvl: [60, 61], theme: 'siroPain', layout: 'long', mobs: [['jailer', 2], ['hellHound', 2], ['burstShade', 2], ['gazer', 1.5], ['phantomBlade', 1]], elite: 'hellHound', boss: 'gatekeeper', bgm: 'dungeon', bossBgm: 'boss',
-      gate: { x: 1940, col: '255,120,110' }, desc: '魔界的地下监狱。守门人会在光和暗之间切换——站进相反颜色的法阵里打才有效（亮破暗，暗破亮）；“幻灭”读条时站进白色光圈。',
+    pain_gate: { name: '痛苦之门', lvl: [60, 61], theme: 'siroPain', layout: 'long', mobs: [['jailer', 2], ['hellHound', 2], ['burstShade', 2], ['gazer', 1.5], ['phantomBlade', 1]], elite: 'hellHound', boss: 'painNex', bgm: 'dungeon', bossBgm: 'boss',
+      gate: { x: 1940, col: '255,120,110' }, desc: '魔界的地下监狱。公义之奈克斯用锁链抽打，头顶黑球落下前要散开；慈悲之维塔会给同伴回血，脚下留白雾，白球从天上掉下来。闪烁的地砖是会塌的断层。奈克斯苏醒读条时无敌，撑过那几秒才会解开。',
       drops: { boss: [['ep_si_gate', 0.02], ['ep_si_neck', 0.012], ['ep_hc_aqua', 0.008], ['ep_sup_paris', 0.008]], mats: [['crystal', 0.12, 10], ['c_red', 0.03, 2], ['m_obsidian', 0.006, 1]] } },
-    siroco_coffin: { name: '无形棺柩', lvl: [61, 62], bossLvl: 63, theme: 'siroCoffin', layout: 'raid', mobs: [['phantomStalker', 2], ['soulBinder', 1.5], ['gazer', 1.5], ['jailer', 1], ['burstShade', 1]], elite: 'jailer', boss: 'siroco', bossAdds: 0,
+    siroco_coffin: { name: '无形棺柩', lvl: [61, 62], bossLvl: 63, theme: 'siroCoffin', layout: 'raid', mobs: [['phantomStalker', 2], ['soulBinder', 1.5], ['gazer', 1.5], ['jailer', 1], ['burstShade', 1]], elite: 'jailer', boss: 'sirocoLord', bossAdds: 0,
       bgm: 'abyss', bossBgm: 'boss', preBoss: { kind: 'jailer', say: '狱卒守着希洛克的幻界……' },
-      gate: { x: 2620, col: '200,150,255' }, desc: '【攻坚】希洛克的幻界。她会隐入黑暗（击破记忆碎片逼她现身）、操纵卢克西（先打倒卢克西，希洛克会破招）、分出暗影，还会用“凝视”——看到提示就背对她。',
+      gate: { x: 2620, col: '200,150,255' }, desc: '【攻坚】希洛克的幻界。本体会喷残影、把人往身边拖，脸孔还会排成一列扫过来。她在拉维切（左右次元）、莱斯特（频繁无敌）和吉里（换色缩小、扑击吐息）之间轮换。看到「凝视」就背对她；卢克西被连上时先打倒卢克西。',
       drops: { boss: [['ep_si_neck', 0.04], ['ep_si_bracelet', 0.04], ['ep_si_ring', 0.04], ['ep_si_gate', 0.02], ['ep_si_nex', 0.02], ['lg_karo_eye', 0.02]], mats: [['crystal', 0.14, 12], ['m_soul', 0.004, 1], ['m_diamond', 0.012, 1]] } },
   },
 
@@ -243,13 +295,17 @@ defineRegion({
       gazer: { h: 70, hold: null, fly: true, hover: 30, desc: 'An abyss gazer monster: a floating round eyeball demon the size of a big pumpkin, one huge violet iris eye, dark purple leathery skin with small bat wings, a few short curling tentacles hanging below, a tiny toothy mouth under the eye. No legs, hovering in the air.',
         atk: 'its tentacles lashing forward', cast: 'opening its huge eye wide and glowing', low: 'squinting its eye and diving forward low' },
       nex: { h: 122, boss: true, hold: 'with spiked chain balls floating around her', desc: 'Nex, a boss of the Siroco raid: an elegant demon noblewoman with long silver hair, glowing teal eyes, a black and dark teal gothic dress with a high collar, heavy iron chains wrapped around both arms ending in spiked chain balls, a small dark crown.',
-        atk: 'the chain on her arm whipping forward', cast: 'spreading both arms as the chains rise', low: 'leaning forward low with the chains dragging' },
+        atk: 'the chain on her arm whipping forward', cast: 'spreading both arms as the chains rise', low: 'leaning forward low with the chains dragging',
+        sig: ['falling orbs: spreading both arms so the spiked chain balls rise overhead, then snapping the arms down as the balls drop straight onto the ground', 'awakening: kneeling with the chains pulled tight around the body, then standing as the chains burst outward and the small crown flares'] },
       assassin: { h: 112, boss: true, hold: 'holding two short curved daggers', desc: "The Assassin, a boss of the Siroco raid: an agile female assassin in a tight black and dark violet suit, a black half mask over the lower face, long dark ponytail, a long flowing violet scarf, light armor plates on the shoulders and shins, holding a short curved dagger in each hand.",
-        atk: 'the two curved daggers', cast: 'crossing both daggers in front of her face', low: 'dashing forward very low with both daggers held back' },
+        atk: 'the two curved daggers', cast: 'crossing both daggers in front of her face', low: 'dashing forward very low with both daggers held back',
+        sig: ['charm: crossing both daggers under the chin and leaning forward as the violet scarf whips out like a kiss of light', 'confusion spin: dropping low and spinning with both daggers extended, the scarf wrapping tight and then snapping open'] },
       gatekeeper: { h: 132, boss: true, hold: 'holding a halberd and a tower shield', desc: 'The Gatekeeper, a boss of the Siroco raid: a giant armored guardian knight, heavy plate armor whose left half is polished gold-white and right half is black-violet, a closed helmet with a glowing visor, a tall tower shield painted half light and half dark, holding a long halberd.',
-        atk: 'the long halberd', cast: 'raising the tower shield high as it glows', low: 'crouching behind the tower shield' },
+        atk: 'the long halberd', cast: 'raising the tower shield high as it glows', low: 'crouching behind the tower shield',
+        sig: ['calling the orbs: planting the halberd, raising the half-light half-dark shield, and lifting the free hand as four violet orbs bloom in a row in front of the visor', 'judgement sweep: winding the halberd far behind the hip, then sweeping it in a huge horizontal arc that leans the whole armor into the swing'] },
       siroco: { h: 126, boss: true, hold: 'with clawed shadowy hands', desc: 'Siroco the Stalker, the fifth apostle of the demon realm: a tall mysterious woman with very long flowing black-violet hair, pale grey skin, glowing violet eyes, a tattered black hooded cloak covered with many small white porcelain masks, shadowy wisps at the hem instead of feet, long dark clawed gloves, calm and eerie.',
-        atk: 'her clawed shadowy hands', cast: 'raising both hands as masks swirl around her', low: 'gliding forward low with claws reaching out' },
+        atk: 'her clawed shadowy hands', cast: 'raising both hands as masks swirl around her', low: 'gliding forward low with claws reaching out',
+        sig: ['three faces: one hand covering the face while the porcelain masks on the cloak lift and the body leans into a new silhouette, the other clawed hand reaching forward', 'gaze: opening both violet eyes wide and raising both clawed hands as the many small masks turn to look straight ahead'] },
     },
     gates: {
       law_gate: 'a gothic black stone gate with heavy iron chains and floating stone scales of judgement on top, indigo runes, an indigo portal',

@@ -300,7 +300,7 @@ defSkill('fb_vulcan', { name: '狂·霸王拳', cls: 'fighter', job: FB_JOB, lvR
   pow: lv => skillDmg(7.6, 0.76, lv), infoExtra: () => [['异常加成', '每个 +20% 攻击 / +10% 冲击波范围（最多 3 个）']] });
 
 /* ---- 强化投掷（←→+C）：无动作施放，只强化下一次投掷 ---- */
-defSkill('fb_strong', { name: '强化投掷', cls: 'fighter', job: FB_JOB, lvReq: 15, maxLv: 1, sp: 30, mp: 15, cd: 0.1, type: 'mag', col: '#d8a030', noForce: true,
+defSkill('fb_strong', { name: '强化投掷', cls: 'fighter', job: FB_JOB, lvReq: 15, maxLv: 1, sp: 30, mp: 15, cd: 0.1, type: 'mag', col: '#d8a030', noForce: true, noHitCheck: true,
   desc: '只强化下一次投掷（毒瓶 / 毒针 / 砖块 / 罗网 / 爆破污桶 / 逆道·爆狱），多消耗投掷物：\n· 毒瓶（2 个）：扔到空中炸开，洒下一片毒区（中毒 + 灼伤）；按住 ↓ 扔到脚下\n· 毒针（4 根）：扇形一次扔出 4 根\n· 砖块（3 块）：跳起来举起大岩石扔出，空中按 ←→ 调落点\n· 罗网（2 张）：扇形扔出，把罩住的敌人拉到身前\n· 爆破污桶：改成一脚踢出铁桶（不耗投掷物）\n强化投掷优先于后街战术的两连投。学会后备口袋后，普攻和转职技能中也能按。',
   req: p => { if (p.buffs && p.buffs.fb_strong) return '已强化'; if (p.st === 'act' && p.act && !(hasSkill(p, 'fb_pocket') && (p.act.basic || (p.act.skill && SKILLS[p.act.skill] && SKILLS[p.act.skill].job === FB_JOB)))) return '动作中不能用'; return true; },
   ai: { kind: 'buff' },

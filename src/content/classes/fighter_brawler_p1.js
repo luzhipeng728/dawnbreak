@@ -138,7 +138,7 @@ defSkill('fb_cavein', { name: '飞沙走石', cls: 'fighter', job: FB_JOB, tier:
       events: [evAt(0.14, e => { sfx.swing(true); const x0 = e.x, y0 = e.y, f = e.face;
         addFx({ x: x0, y: y0 + 0.6, z: 0, dur: 0.5, draw(c) { const k = Math.min(1, this.t / 0.15), X = sx(x0 + f * 10), Y = sy(y0, 72); fbDrawChain(c, X, Y, X + f * 120 * k, Y - 300 * k, { end: 'hook', s: 1.2 }); } });
         game.after(0.2, () => { cam.shake = Math.max(cam.shake, 5); sfx.boom(0.6);
-          for (let i = 0; i < 14; i++) game.after(0.1 + i * 0.09, () => { if (e.dead) return; const x = x0 + f * rnd(60, 460), y = clamp(y0 + rnd(-60, 60), 6, DEPTH - 6), w = rnd(22, 40);
+          for (let i = 0; i < 14; i++) game.after(0.1 + i * 0.09, () => { if (e.dead) return; const x = i === 7 ? x0 + f * 260 : x0 + f * rnd(60, 460), y = i === 7 ? y0 : clamp(y0 + rnd(-60, 60), 6, DEPTH - 6), w = rnd(22, 40);
             addFx({ x, y: y + 0.5, z: 0, dur: 0.22, draw(c) { const k = easeIn(this.t / this.dur); fbDrawRock(c, sx(this.x), sy(this.y, 360 * (1 - k)), w, k * 6); } });
             game.after(0.22, () => { fxDust(x, y, 3, 12, '#a89a8a'); sfx.hit('blunt', false);
               fbArea(e, x, y, 55, { dmg: D * 0.03, stun: 0.4, knock: 10, hs: 0.03, sure: true, col: '#d8c8a8', downHit: true, onHit: (q, t) => fbAbn(q, t, 'stun', 1.5) }, { zMax: 200 }); }); });

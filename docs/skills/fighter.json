@@ -1061,6 +1061,354 @@
    "invul": "full",
    "job": "nenmaster"
   },
+  "fg_overgrab": {
+   "name": "暴力抓取",
+   "src": "https://wiki.dfo.world/view/Overwhelming_Grab",
+   "conf": "中",
+   "official": "技能页：暴力抓取；冷却 5s；主动技能",
+   "cd": 5,
+   "hits": [0, 0],
+   "job": "grappler"
+  },
+  "fg_fling": {
+   "name": "抛投",
+   "src": "https://wiki.dfo.world/view/Fling",
+   "conf": "中",
+   "official": "技能页：抛投；冷却 7s；主动技能",
+   "cd": 7,
+   "hits": [2, 3],
+   "job": "grappler"
+  },
+  "fg_tackle": {
+   "name": "野蛮冲撞",
+   "src": "https://wiki.dfo.world/view/Shoulder_Tackle",
+   "conf": "中",
+   "official": "技能页：野蛮冲撞；冷却 8s；主动技能",
+   "cd": 8,
+    "hits": [1, 2],
+    "why": { "hits": "当前实现包含肩撞本体与被撞飞目标落地的两段伤害；官方技能描述强调撞飞/连锁碰撞，单木桩测得 2 段" },
+   "job": "grappler"
+  },
+  "fg_breakdown": {
+   "name": "无情摔击",
+   "src": "https://wiki.dfo.world/view/Break_Down",
+   "conf": "中",
+   "official": "技能页：无情摔击；冷却 10s；主动技能",
+   "cd": 10,
+   "hits": [2, 3],
+   "job": "grappler"
+  },
+  "fg_necksnap": {
+   "name": "折颈",
+   "src": "https://wiki.dfo.world/view/Neck_Snap",
+   "conf": "中",
+   "official": "技能页：折颈；冷却 9s；主动技能",
+   "cd": 9,
+   "hits": [1, 1],
+   "job": "grappler"
+  },
+  "fg_snapshot": {
+   "name": "霹雳旋踢",
+   "src": "https://wiki.dfo.world/view/Snap_Shot",
+   "conf": "中",
+   "official": "技能页：霹雳旋踢；冷却 12s；主动技能",
+   "cd": 12,
+   "hits": [1, 2],
+   "why": { "hits": "官方只对倒地目标生效；通用审计木桩默认站立，需专项倒地场景验证" },
+   "job": "grappler"
+  },
+  "fg_airsteiner": {
+   "name": "空绞锤",
+   "src": "https://wiki.dfo.world/view/Air_Steiner",
+   "conf": "中",
+   "official": "技能页：空绞锤；冷却 7s；主动技能",
+   "cd": 7,
+   "hits": [2, 3],
+   "job": "grappler"
+  },
+  "fg_slamkick": {
+   "name": "浮空凌云踢",
+   "src": "https://wiki.dfo.world/view/Slam_Kick",
+   "conf": "中",
+   "official": "技能页：浮空凌云踢；冷却 15s；主动技能",
+   "cd": 15,
+   "hits": [3, 3],
+   "job": "grappler"
+  },
+  "fg_magnum": {
+   "name": "疾波猛坠",
+   "src": "https://wiki.dfo.world/view/Magnumsault",
+   "conf": "中",
+   "official": "技能页：疾波猛坠；冷却 15s；主动技能",
+   "cd": 15,
+   "hits": [7, 7],
+   "job": "grappler"
+  },
+  "fg_rolling": {
+   "name": "地狱风火轮",
+   "src": "https://wiki.dfo.world/view/Rolling_Spike",
+   "conf": "中",
+   "official": "技能页：地狱风火轮；冷却 25s；主动技能",
+   "cd": 25,
+   "hits": [4, 6],
+   "job": "grappler"
+  },
+  "fg_cannonspike": {
+   "name": "裂石破天",
+   "src": "https://wiki.dfo.world/view/Wild_Cannon_Spike",
+   "conf": "中",
+   "official": "技能页：裂石破天；冷却 40s；主动技能",
+   "cd": 40,
+   "hits": [2, 3],
+   "job": "grappler"
+  },
+  "fg_awaken": {
+   "name": "死亡旋律",
+   "src": "https://wiki.dfo.world/view/Rhythmic_Assault",
+   "conf": "中",
+   "official": "技能页：死亡旋律；冷却 135s；主动技能",
+   "cd": 135,
+   "hits": [7, 10],
+   "job": "grappler"
+  },
+  "fg_pierce": {
+   "name": "彗星冲击",
+   "src": "https://wiki.dfo.world/view/Pierce",
+   "conf": "中",
+   "official": "技能页：彗星冲击；冷却 25s；主动技能",
+   "cd": 25,
+   "hits": [2, 2],
+   "job": "grappler"
+  },
+  "fg_fury": {
+   "name": "武莲华",
+   "src": "https://wiki.dfo.world/view/Focused_Fury",
+   "conf": "中",
+   "official": "技能页：武莲华；冷却 45s；主动技能",
+   "cd": 45,
+   "hits": [13, 15],
+   "job": "grappler"
+  },
+  "fg_blacktornado": {
+   "name": "黑震旋风",
+   "src": "https://wiki.dfo.world/view/Black_Tornado",
+   "conf": "中",
+   "official": "技能页：黑震旋风；冷却 40s；主动技能",
+   "cd": 40,
+   "hits": [7, 9],
+   "job": "grappler"
+  },
+  "fg_stormdiver": {
+   "name": "疾风闪电",
+   "src": "https://wiki.dfo.world/view/Technique:_Storm_Diver",
+   "conf": "中",
+   "official": "技能页：疾风闪电；冷却 45s；主动技能",
+   "cd": 45,
+   "hits": [3, 4],
+   "job": "grappler"
+  },
+  "fg_awaken2": {
+   "name": "一字传承·极义震天",
+   "src": "https://wiki.dfo.world/view/Sole_Bearer:_Quaking_Tiger",
+   "conf": "中",
+   "official": "技能页：一字传承·极义震天；冷却 170s；主动技能",
+   "cd": 170,
+   "hits": [10, 12],
+   "job": "grappler"
+  },
+  "fg_basalt": {
+   "name": "黑震流·殒灭",
+   "src": "https://wiki.dfo.world/view/Basaltic_Twister",
+   "conf": "中",
+   "official": "技能页：黑震流·殒灭；冷却 60s；主动技能",
+   "cd": 60,
+   "hits": [15, 18],
+   "job": "grappler"
+  },
+  "fg_awaken3": {
+   "name": "黑震流·山岳崩颓",
+   "src": "https://wiki.dfo.world/view/Volcanic_Dynamo",
+   "conf": "中",
+   "official": "技能页：黑震流·山岳崩颓；冷却 270s；主动技能",
+   "cd": 270,
+   "hits": [7, 9],
+   "job": "grappler"
+  },
+  "fb_strong": {
+   "name": "强化投掷",
+   "src": "https://wiki.dfo.world/view/Strengthened_Throw",
+   "conf": "中",
+   "official": "技能页：强化投掷；冷却 0.1s；主动技能",
+   "cd": 0.1,
+   "hits": [0, 0],
+   "job": "brawler"
+  },
+  "fb_poison": {
+   "name": "毒瓶投掷",
+   "src": "https://wiki.dfo.world/view/Poison_Throw",
+   "conf": "中",
+   "official": "技能页：毒瓶投掷；再投间隔 2s、装填冷却 7s；主动技能",
+   "cd": 2,
+   "reload": 7,
+   "hits": [1, 1],
+   "job": "brawler"
+  },
+  "fb_backstreet": {
+   "name": "后街战术",
+   "src": "https://wiki.dfo.world/view/Backstreet_Fighting_Trick",
+   "conf": "中",
+   "official": "技能页：后街战术；冷却 5s；主动技能",
+   "cd": 5,
+   "hits": [0, 0],
+   "job": "brawler"
+  },
+  "fb_hook": {
+   "name": "擒月炎",
+   "src": "https://wiki.dfo.world/view/Explosive_Hook",
+   "conf": "中",
+   "official": "技能页：擒月炎；冷却 5.5s；主动技能",
+   "cd": 5.5,
+   "hits": [3, 4],
+   "job": "brawler"
+  },
+  "fb_needle": {
+   "name": "毒针投掷",
+   "src": "https://wiki.dfo.world/view/Needle_Throw",
+   "conf": "中",
+   "official": "技能页：毒针投掷；再投间隔 3s、装填冷却 6s；主动技能",
+   "cd": 3,
+   "reload": 6,
+   "hits": [1, 4],
+   "job": "brawler"
+  },
+  "fb_brick": {
+   "name": "砖块投掷",
+   "src": "https://wiki.dfo.world/view/Block_Throw",
+   "conf": "中",
+   "official": "技能页：砖块投掷；再投间隔 4s、装填冷却 7s；主动技能",
+   "cd": 4,
+   "reload": 7,
+   "hits": [1, 2],
+   "job": "brawler"
+  },
+  "fb_taunt": {
+   "name": "挑衅",
+   "src": "https://wiki.dfo.world/view/Taunt",
+   "conf": "中",
+   "official": "技能页：挑衅；冷却 5s；主动技能",
+   "cd": 5,
+   "hits": [0, 0],
+   "job": "brawler"
+  },
+  "fb_tackle": {
+   "name": "螺旋滑铲",
+   "src": "https://wiki.dfo.world/view/Ground_Tackle",
+   "conf": "中",
+   "official": "技能页：螺旋滑铲；冷却 20s；主动技能",
+   "cd": 20,
+   "hits": [2, 3],
+   "job": "brawler"
+  },
+  "fb_net": {
+   "name": "罗网投掷",
+   "src": "https://wiki.dfo.world/view/Net_Throw",
+   "conf": "中",
+   "official": "技能页：罗网投掷；冷却 17s；主动技能",
+   "cd": 17,
+   "hits": [1, 1],
+   "job": "brawler"
+  },
+  "fb_mine": {
+   "name": "毒雷引爆",
+   "src": "https://wiki.dfo.world/view/Venom_Mine",
+   "conf": "中",
+   "official": "技能页：毒雷引爆；冷却 24s；主动技能",
+   "cd": 24,
+   "hits": [2, 2],
+   "job": "brawler"
+  },
+  "fb_lariat": {
+   "name": "极恶飞锁",
+   "src": "https://wiki.dfo.world/view/Vicious_Lariat",
+   "conf": "中",
+   "official": "技能页：极恶飞锁；冷却 40s；主动技能",
+   "cd": 40,
+   "hits": [8, 9],
+   "job": "brawler"
+  },
+  "fb_awaken": {
+   "name": "天崩地裂",
+   "src": "https://wiki.dfo.world/view/Thousand_Hands",
+   "conf": "中",
+   "official": "技能页：天崩地裂；冷却 135s；主动技能",
+   "cd": 135,
+   "hits": [9, 12],
+   "job": "brawler"
+  },
+  "fb_barrel": {
+   "name": "爆破污桶",
+   "src": "https://wiki.dfo.world/view/Dirty_Barrel",
+   "conf": "中",
+   "official": "技能页：爆破污桶；冷却 20s；主动技能",
+   "cd": 20,
+   "hits": [1, 2],
+   "job": "brawler"
+  },
+  "fb_chain": {
+   "name": "千锁乱舞",
+   "src": "https://wiki.dfo.world/view/Blood_Rage_Chain",
+   "conf": "中",
+   "official": "技能页：千锁乱舞；冷却 50s；主动技能",
+   "cd": 50,
+   "hits": [4, 4],
+   "job": "brawler"
+  },
+  "fb_chaindrive": {
+   "name": "暗街夺命锁",
+   "src": "https://wiki.dfo.world/view/Chain_Drive",
+   "conf": "中",
+   "official": "技能页：暗街夺命锁；冷却 40s；主动技能",
+   "cd": 40,
+   "hits": [6, 8],
+   "job": "brawler"
+  },
+  "fb_cavein": {
+   "name": "飞沙走石",
+   "src": "https://wiki.dfo.world/view/Cave-in",
+   "conf": "中",
+    "official": "技能页：飞沙走石；冷却 45s；大量碎石后落下一块大石头，主动技能",
+    "cd": 45,
+    "hits": [1, 3],
+    "why": { "hits": "官方描述为大量碎石加最后大石头，单木桩命中数随落点取样变化；当前实现测得 3 次，按代表性上限记录" },
+   "job": "brawler"
+  },
+  "fb_awaken2": {
+   "name": "燃火轰天炮",
+   "src": "https://wiki.dfo.world/view/Upgraded_Poison_Mine:_Firelock",
+   "conf": "中",
+   "official": "技能页：燃火轰天炮；冷却 170s；主动觉醒技能",
+   "cd": 170,
+   "hits": [4, 6],
+   "job": "brawler"
+  },
+  "fb_roadtohell": {
+   "name": "逆道·爆狱",
+   "src": "https://wiki.dfo.world/view/Road_to_Hell",
+   "conf": "中",
+   "official": "技能页：逆道·爆狱；冷却 60s；主动技能",
+   "cd": 60,
+   "hits": [3, 5],
+   "job": "brawler"
+  },
+  "fb_awaken3": {
+   "name": "逆道·幽链之界",
+   "src": "https://wiki.dfo.world/view/Bad_Ending",
+   "conf": "中",
+   "official": "技能页：逆道·幽链之界；冷却 270s；主动技能",
+   "cd": 270,
+   "hits": [15, 18],
+   "job": "brawler"
+  },
   "fb_mount": {
    "noAwk": "骑乘捶打全程无敌的抓取演出，中途切走会让被骑的敌人残留抓取状态"
   },

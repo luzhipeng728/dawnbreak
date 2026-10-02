@@ -289,7 +289,8 @@ const inv = {
   canWear(it, quiet) {
     const fail = msg => { if (!quiet) { toastMsg(msg, '#ff6a6a'); sfx.error(); } return false; };
     if (!it || it.kind !== 'equip') return fail('不能装备');
-    if (it.lvl > game.lvl) return fail(`需要等级 ${it.lvl}`);
+    const cap = typeof equipLevelCap === 'function' ? equipLevelCap(game.lvl, game.scene) : game.lvl;
+    if (it.lvl > cap) return fail(`需要等级 ${it.lvl}（当前可装备至 Lv.${cap}）`);
     if (it.slot === 'weapon' && it.cls && game.player && it.cls !== game.player.cls) return fail(`${CLASSES[it.cls] ? CLASSES[it.cls].name : ''}专用武器，无法装备`);
     if (it.slot === 'weapon' && !wtypeJobOk(it.wtype, game.job)) return fail(`${wtypeJobText(it.wtype)}专用武器，无法装备`);
     return true;

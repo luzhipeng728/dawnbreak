@@ -40,8 +40,10 @@ for (const item of list) {
     const SS = (SPEC[cls] || {}).skills || {}, pre = (SS[`${id}@${job}`] || SS[id] || {}).pre;
     if (pre) { await page.evaluate(pre => { const p = game.player; p.buffs = {}; p.cool = {}; if (typeof summonsOf === 'function') for (const s of summonsOf(p) || []) dismissOne(s, 'round'); for (const k of pre) { p.setState('idle'); p.act = null; castSkill(p, k, false, null); } }, pre);
       await page.waitForTimeout(700); await page.waitForFunction(() => game.player.st !== 'act' && !(game.timeStop > 0), null, { timeout: 5000 }).catch(() => { }); await page.waitForTimeout(300); }   // 前置是觉醒召唤（卡西利亚斯等）时要等召唤兽真正出场
-    const setup = await page.evaluate(({ id, keep }) => {
+    const setup = await page.evaluate(({ id, job, keep }) => {
       const p = game.player; p.x = 380; p.y = 100; p.z = 0; p.vz = 0; p.face = 1; p.setState('idle'); p.act = null; p.cool = {}; if (!keep) p.buffs = {}; p.chasers = [];
+      // 蓝拳的基础空斩打 / 落凤锤在意念驱动插着时按官方规则禁用；连拍时收回巨兵，测试它们的可施放形态。
+      if (job === 'monk' && (id === 'p_launcher' || id === 'p_phoenix')) { p.piWill = null; p.piWillOff = game.room; }
       for (let i = 0; i < game.skillBar.length; i++) game.skillBar[i] = null; game.skillBar[0] = id; __dummy(); projs.length = 0; window.__hits = 0;
       if (typeof summonsOf === 'function' && !keep) for (const s of summonsOf(p) || []) dismissOne(s, 'round');   // 有前置时保留前置放出的召唤兽（咒令类技能要它在场）
       p.summonMode = null;   // 上一行技能留下的“伺机而动 / 跟随 / 集火”开关不带到下一行
@@ -54,11 +56,16 @@ for (const item of list) {
       const a0 = typeof S.act === 'function' ? (() => { try { return S.act(game.skillLv[id] || 1); } catch (e) { return {}; } })() : {};
       const noHit = !!(S.buff || S.summon || S.move || S.noHitCheck || a0.guard || S.debuffOnly || S.from || S.after || /guard|plemon|silver/.test(id));
       return { instant: !!S.instant, icon, buff: noHit };
-    }, { id, keep: !!pre });
+    }, { id, job, keep: !!pre });
     if (setup.pre) { rows.push({ id, name, flags: ['-前置条件'], frames: [] }); continue; }
     if (SKILLS_AIR_DELAY.has(id)) await page.waitForTimeout(160);
+    const accepted = await page.evaluate(id => {
+      const S = SKILLS[id], ids = [id];
+      if (S && S.morph) { try { const mid = typeof S.morph === 'function' ? S.morph(game.player) : S.morph; if (mid) ids.push(mid); } catch (e) { /* morph is optional */ } }
+      return ids;
+    }, id);
     await page.keyboard.down('KeyA'); await page.waitForTimeout(40); await page.keyboard.up('KeyA');
-    await page.waitForFunction(id => game.player.act && game.player.act.skill === id, id, { timeout: 600 }).catch(() => { });
+    await page.waitForFunction(ids => game.player.act && ids.includes(game.player.act.skill), accepted, { timeout: 600 }).catch(() => { });
     const info = await page.evaluate(({ cls }) => { const a = game.player.act; return a ? { skill: a.skill, dur: a.dur || 0.6, clip: a.clip || null, hasClip: !a.clip || !!(CLIPS[cls] && CLIPS[cls][a.clip]) } : null; }, { cls });
     const span = await page.evaluate(id => (SKILLS[id] && SKILLS[id].shotSpan) || 0, id), dur = Math.min(3.8, Math.max(0.4, span, info ? info.dur : 0.8)), t0 = await page.evaluate(() => game.t);
     const frames = [];
@@ -73,7 +80,7 @@ for (const item of list) {
     await page.waitForTimeout(1800);
     const after = await page.evaluate(() => { const p = game.player, R = game.room; if (game.timeStop > 0) return { st: 'timestop' }; return { st: p.st, z: p.z, out: R ? p.x < R.x0 - 5 || p.x > R.x1 + 5 : false, hits: window.__hits }; });
     const flags = [];
-    const cast = info && info.skill === id;
+    const cast = info && accepted.includes(info.skill);
     if (!cast && !setup.instant) flags.push('✗放不出' + (info ? `(出的是 ${info.skill})` : ''));
     if (!['idle', 'jump', 'walk', 'run', 'act', 'timestop'].includes(after.st) || after.z > 4 || after.out) flags.push(`✗卡住[${after.st}${after.z > 4 ? ' 浮空' : ''}${after.out ? ' 出界' : ''}]`);
     if ((cast || setup.instant) && !setup.buff && !after.hits) flags.push('✗没打中');

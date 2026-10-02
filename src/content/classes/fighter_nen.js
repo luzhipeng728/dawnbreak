@@ -482,7 +482,9 @@ function fnCloneSpawn(e, lv) {
   for (let i = 0; i < n; i++) {
     const q = spawnProj({ owner: e, x: fnClampX(e.x + e.face * (40 + i * 26)), y: clamp(e.y + (i - (n - 1) / 2) * 22, 6, DEPTH - 6), z: 0, face: e.face, life: 7, w: 16, d: 14, h: 96, pierce: false,
       hit: fnHit('fn_blast', { dmg: 0.1, stun: 0.4, knock: 20, hs: 0.02 }),
-      update(q, dt) { const t = nearestFoe(e, 520, o => Math.abs(o.x - q.x) < 520); if (t) { const dx = t.x - q.x, dy = t.y - q.y, l = Math.hypot(dx, dy) || 1; q.vx = dx / l * 230; q.vy = dy / l * 120; q.face = Math.sign(dx) || q.face; } else { q.vx = damp(q.vx, 0, 6, dt); q.vy = damp(q.vy, 0, 6, dt); } },
+      update(q, dt) { const t = nearestFoe(e, 520, o => Math.abs(o.x - q.x) < 520); if (t) { const dx = t.x - q.x, dy = t.y - q.y, l = Math.hypot(dx, dy) || 1; q.vx = dx / l * 230; q.vy = dy / l * 120; q.face = Math.sign(dx) || q.face; } else { q.vx = damp(q.vx, 0, 6, dt); q.vy = damp(q.vy, 0, 6, dt); }
+        if (q.hit) { const B = { x0: q.x - q.w, x1: q.x + q.w, y0: q.y - q.d, y1: q.y + q.d, z0: q.z, z1: q.z + q.h }; for (const o of ents) if (canHit(e, o, q.hit) && overlaps(B, o)) { q.boomed = true; q.hit = null; q.culled = true; q.t = q.life; fnCloneBoom(e, q.x, q.y, lv); break; } }
+      },
       onHitT(q) { q.boomed = true; },
       onEnd(q) { if (q.culled) return; if (q.boomed) fnCloneBoom(e, q.x, q.y, lv); else fxBurst(q.x, q.y, 50, 60, NEN_COL); },
       draw(c, q) { const X = sx(q.x), Y = sy(q.y, 0), a = q.t < 0.15 ? q.t / 0.15 : q.life - q.t < 0.4 ? (q.life - q.t) / 0.4 : 1;

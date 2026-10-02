@@ -1,7 +1,7 @@
 # 柔道家（男格斗家 grappler，B7）逐技能对齐
 
 代码：`src/content/classes/fighter_grappler.js`（通用构件 + Lv15~20 + 膝击 / 金刚碎的柔道家版本 + 转职登记）、`fighter_grappler_p1.js`（一觉 ~ 三觉）。
-测试：`node test/grappler.mjs [mech,boss,shots]`（机制 / 领主回退 / 实机截图）、`node test/fighter_grappler.mjs`（登记 + 逐个能放）。连拍：`node test/skillshots.mjs fighter:grappler`；机制体检：`node test/skillaudit.mjs fighter:grappler`（规格文件 docs/skills/fighter.json 是 B0 的共享文件，这里没填，量出的数在 `test/shots/audit/fighter-grappler.json`）。
+测试：`node test/grappler.mjs [mech,boss,shots]`（机制 / 领主回退 / 实机截图）、`node test/fighter_grappler.mjs`（登记 + 逐个能放）。连拍：`node test/skillshots.mjs fighter:grappler`；机制体检：`node test/skillaudit.mjs fighter:grappler --compare`（`docs/skills/fighter.json` 已补齐 19 个主动技能的规格，量测结果在 `test/shots/audit/fighter-grappler.json`）。规格中的冷却、机制和技能清单已用 DFO World Wiki / Nexon 男柔道家资料复核。
 
 ## 依据
 - 文字：docs/SKILLS_OFFICIAL_fighter.md §3.3 / §7（namu 2026-07 现版 + 国服名）；wiki.dfo.world 30 个技能页（`curl -A Mozilla`，男版表；页里的等级表比现版旧，只取机制 / 段数 / 冷却 / 指令）。

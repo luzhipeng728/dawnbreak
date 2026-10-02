@@ -182,7 +182,7 @@ defSkill('pc_astrape', { name: '神罚之锤：天怒', cls: 'priest', job: PCJ,
           areaHit(e, bx, e.y, 240, 0, { dmg: D.boom, type: 'indep', elem: 'light', launch: 460, knock: 160, hs: 0.14, big: 2, sure: true, downHit: true, col: '#fff38a' }, { zMax: 260 }); }); } }; } });
 // 生命礼赞：神威（三觉）：划十字向神祈祷，释放生命之圣遗物的力量：8 段同等伤害的神圣之光覆盖全画面；
 // 联动天启之珠（默认）：圣遗物化为神圣太阳，守护路线给全队天启之珠 BUFF ×(1.08+1%/级)、43 秒；联动惩罚：和天启之珠 BUFF 叠加 20 秒（23%+1%/级）；战斗路线固定「审判」演出、不给 BUFF
-defSkill('pc_awaken3', { name: '生命礼赞：神威', cls: 'priest', job: PCJ, tier: 3, lvReq: 30, maxLv: 3, sp: 0, mp: 300, cd: 270, pvp: 0.45, type: 'indep', elem: 'light', awaken: true, col: '#bfe8ff', switchOpt: '联动天启之珠（关闭 = 联动惩罚）',
+defSkill('pc_awaken3', { name: '生命礼赞：神威', cls: 'priest', job: PCJ, tier: 3, lvReq: 30, maxLv: 3, sp: 0, mp: 300, cd: 270, pvp: 0.45, type: 'indep', elem: 'light', awaken: true, col: '#bfe8ff', switchOpt: '联动觉醒', switchLabel: off => off ? '当前联动：惩罚（点击改为天启之珠）' : '当前联动：天启之珠（点击改为惩罚）',
   desc: '【三次觉醒「神启·圣骑士」的觉醒技】完成三次觉醒任务时自动学会（不花 SP）并放进技能栏（←↑→↓+Z）。以圣十字之名向神祈祷，释放生命之圣遗物蕴含的力量：神圣之光与雷米迪奥斯的权能覆盖整个画面，对敌人造成 8 段同等的伤害（伤害在演出后段才落下）。和联动的觉醒共用冷却：放了三觉，联动的觉醒一起进冷却；联动的觉醒冷却中三觉不能用。默认联动天启之珠（技能窗口里可以改成联动惩罚）。守护路线：联动天启之珠 = 圣遗物化为神圣太阳，全队 43 秒天启之珠 BUFF（效果 ×108%+）；联动惩罚 = 20 秒额外的天启之珠 BUFF（23%+）。战斗路线：固定「审判」演出，不给 BUFF。全程无敌。',
   pow: lv => skillDmg(44, 12, lv), ai: { kind: 'awaken', r: [0, 700], dy: 200 },
   req: p => { const L = pcLinkOf(p); return (p.cool[L] || 0) > 0 ? `联动的${SKILLS[L].name}冷却中` : true; },

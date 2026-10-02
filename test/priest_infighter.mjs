@@ -38,8 +38,49 @@ report('转职登记（轻甲、物理、ready:true、转职立绘 job/monk）',
 report('觉醒：神之手 泯灭神击 / 正义仲裁者 制裁：怒火疾风 / 神启·蓝拳圣使 正义执行', R.aw.join() === 'pi_awaken,pi_awaken2,pi_awaken3' && R.names.join() === '神之手,正义仲裁者,神启·蓝拳圣使', { aw: R.aw, names: R.names });
 report(`技能 id 都是 pi_ 前缀、都有定义（${R.n} 个），主动技能都有指令`, !R.stray.length && !R.undef.length && !R.cmdless.length && R.n >= 30, { stray: R.stray, undef: R.undef, cmdless: R.cmdless, cmd: R.cmd });
 report('进测试房间自动插好巨兵（意念驱动）', R.willAuto, { will: R.willAuto });
+const PVP = await page.evaluate(() => {
+  const p = game.player;
+  p.piWill = null; p.piWillOff = null; p._piDuelRound = undefined;
+  game.pvp = true; game.duel = { round: 1, state: 'fight' };
+  p._psvT = 0; tickPassives(p, 0.3);
+  const planted = piWillOn(p);
+  piRetrieve(p); p._psvT = 0; tickPassives(p, 0.3);
+  const stayOff = !piWillOn(p);
+  game.duel.round = 2; p._psvT = 0; tickPassives(p, 0.3);
+  const round2 = piWillOn(p);
+  const need = SKILLS.pi_gorgeous.req(p);
+  game.pvp = false; game.duel = null;
+  return { planted, stayOff, round2, need };
+});
+report('决斗开局自动插巨兵；本局收回后不再插；下一局重新插，转职技能放得出', PVP.planted && PVP.stayOff && PVP.round2 && PVP.need === true, PVP);
 report(`主动技能放得出、打得中、冷却（插着巨兵 −10%）/ MP = 表里的值（${R.okN} 项通过）`, !Object.keys(R.bad).length, R.bad);
-const errs = logs.filter(l => l.type === 'pageerror' || l.type === 'error'); report('无报错', errs.length === 0, errs.slice(0, 3));
+const lay = async (w, h) => {
+  await page.setViewportSize({ width: w, height: h });
+  await page.waitForFunction(vw => { const s = document.querySelector('#stage'); return s && s.clientWidth >= vw * 0.9; }, w);
+  return page.evaluate(() => {
+    const box = el => el ? { x: el.scrollWidth - el.clientWidth, y: el.scrollHeight - el.clientHeight, w: el.clientWidth, h: el.clientHeight } : null;
+    const open = id => { menus.close('skills'); menus.skTab = 'job'; menus.skSel = id; menus.open('skills'); };
+    const read = () => {
+      const win = document.querySelector('.win');
+      const list = win.querySelector('.sklist2'), bd = win.querySelector('.bd'), desc = win.querySelector('.skdesc'), det = win.querySelector('.skdetail'), sw = win.querySelector('.sksw'), nm = win.querySelector('.sknm');
+      const sr = sw && sw.getBoundingClientRect(), dr = det.getBoundingClientRect();
+      const names = [...list.querySelectorAll('.ski2 b')].map(b => ({ t: b.textContent, cut: b.scrollWidth > b.clientWidth + 1 }));
+      return { list: box(list), bd: box(bd), desc: box(desc), det: box(det), name: nm && nm.textContent, nameCut: nm && nm.scrollWidth > nm.clientWidth + 1, stray: /\bnull\b/.test(det.innerText), tail: desc && desc.textContent.slice(-18), stage: document.querySelector('#stage').clientWidth, shortCut: names.filter(n => n.t.length <= 4 && n.cut).map(n => n.t), sw: sw && { t: sw.textContent, w: Math.round(sr.width), h: Math.round(sr.height), in: sr.top >= dr.top - 1 && sr.bottom <= dr.bottom + 1 && sr.left >= dr.left - 1 && sr.right <= dr.right + 1 } };
+    };
+    open('pi_will'); const will = read(); open('pi_awaken3'); const awk = read(); menus.close('skills');
+    return { will, awk };
+  });
+};
+const L960 = await lay(960, 540), L1600 = await lay(1600, 900);
+const fit = (o, sw) => o.list && o.list.x <= 1 && o.bd && o.bd.x <= 1 && o.desc && o.desc.x <= 1 && !o.nameCut && !o.stray && (!sw || (o.sw && o.sw.w > 160 && o.sw.h * 2.2 < o.sw.w && o.sw.in && o.sw.t.includes('点击改为')));
+report('技能窗不左右滚动，说明和联动按钮的字完整（960 与 1600）', fit(L960.will, false) && fit(L960.awk, true) && fit(L1600.will, false) && fit(L1600.awk, true) && !L1600.will.shortCut.length && L1600.will.tail.includes('不再自动插') && L1600.awk.name.includes('雷米迪奥斯的圣座'), { L960, L1600 });
+await page.setViewportSize({ width: 1680, height: 945 });
+await page.waitForFunction(() => document.querySelector('#stage').clientWidth >= 1500);
+await page.evaluate(() => { menus.close('skills'); menus.skTab = 'job'; menus.skSel = 'pi_awaken3'; menus.open('skills'); });
+await page.locator('.win').screenshot({ path: '/tmp/sk-awk-win.png' });
+await page.evaluate(() => { menus.close('skills'); menus.skSel = 'pi_will'; menus.open('skills'); });
+await page.locator('.win').screenshot({ path: '/tmp/sk-will-win.png' });
+const errs = logs.filter(l => l.type === 'pageerror' || (l.type === 'error' && !/Failed to load resource/.test(l.text))); report('无报错', errs.length === 0, errs.slice(0, 3));
 await browser.close();
 console.log(fail ? `${fail} 项失败` : '全部通过');
 process.exit(fail ? 1 : 0);

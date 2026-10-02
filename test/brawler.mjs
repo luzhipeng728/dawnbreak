@@ -176,7 +176,7 @@ if (MODES.includes('awaken')) {
       out[id] = { cut, inv, frames: n, dmg: h0 - m.hp > 0, zone: id === 'fb_awaken' ? SUMMONS.some(s => s.skey === 'fb_firezone' && !s.gone) : undefined, needle: id === 'fb_awaken' ? chargesOf(p, 'fb_needle').n : undefined };
     }
     // 燃火轰天炮：压制时 3 个异常 → 伤害 ×1.75 左右
-    const r0 = Math.random; const aw2 = pre => { T.reset(); p.mcrit = p.crit = p.baseCrit = 0; const m = T.dummy(160); if (pre) { addStatus(m, 'poison', 30); addStatus(m, 'bleed', 30); addStatus(m, 'slow', 30); } const h0 = m.hp; Math.random = (() => { let s = 11; return () => (s = (s * 16807) % 2147483647) / 2147483647; })(); T.cast('fb_awaken2'); T.run(200); return h0 - m.hp; };
+    const r0 = Math.random; const aw2 = pre => { T.reset(); p.mcrit = p.crit = p.baseCrit = 0; const m = T.dummy(160); if (pre) { addStatus(m, 'poison', 30); addStatus(m, 'bleed', 30); addStatus(m, 'slow', 30); } const h0 = m.hp; Math.random = () => 0.5; T.cast('fb_awaken2'); T.run(200); return h0 - m.hp; };
     const a = aw2(false), b = aw2(true); Math.random = r0; out.aw2 = +(b / a).toFixed(2);
     return out;
   });

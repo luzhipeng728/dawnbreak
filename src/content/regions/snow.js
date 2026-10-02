@@ -32,7 +32,7 @@ const SN_BWANGA_TRIAL = { use: 'gauntlet', boss: 'watch', gap: 1.5, col: '#ffd07
     { kind: 'bantuHokey', name: '勇士霍克伊', hp: 1, say: '勇士霍克伊——先打掉他的猎鹰！' }] };
 const SN_BWANGA_ROAR = { use: 'safezone', mode: 'near', r: 120, windup: 3.2, frac: 0.35, col: '#ffd070', say: '战吼——贴近布万加！' };
 // 洛丝走下王座（最后一个阶段）：钩子解开 rooted，只放这个形态自带的招式
-const SN_ROSE_RISE = { use: 'form', name: '走下王座', scale: 1.08, dur: 0, invulT: 1.5, col: '#d8f0ff', say: '洛丝离开了王座——梦境化成了现实！',
+const SN_ROSE_RISE = { use: 'form', name: '走下王座', art: 'snRose', scale: 1.08, dur: 0, invulT: 1.5, col: '#d8f0ff', say: '洛丝离开了王座——梦境化成了现实！',
   skills: [{ use: 'blink', to: 'away', dist: 240, cd: [6, 8], w: 1 },
     { use: 'aoe', shape: 'circle', at: 'target', r: 72, n: 4, scatter: 160, windup: 1.1, dmg: 1.1, status: 'freeze', sdur: 1.2, col: '#bfe6ff', cd: [5, 7], w: 1.5 },
     { use: 'cone', ang: 80, len: 380, windup: 1.0, dur: 1.0, tick: 0.25, dmg: 0.35, status: 'freeze', sdur: 0.8, col: '#bfe6ff', cd: [7, 9], w: 1.3, say: '冰雪吐息——绕到侧面！' },
@@ -105,9 +105,9 @@ defineRegion({
       skills: [{ use: 'swipe', clip: 'axe', reach: 96, width: 30, windup: 0.6, dmg: 1.3, down: true, cd: [2.2, 3.4], w: 2 }, { use: 'dash', clip: 'charge', len: 380, speed: 680, windup: 0.8, dmg: 1.3, cd: [5, 7] }] },
     bullEmuli: { name: '野蛮牛族勇士艾穆利', tier: 'elite', arch: 'guard', size: [18, 14, 120], weight: 3, art: ['tauArmored', { hue: 30, sat: 0.8 }], traits: { sa: 'cast' },
       skills: [{ use: 'swipe', clip: 'axe', reach: 96, width: 30, windup: 0.6, dmg: 1.3, down: true, cd: [2.2, 3.4], w: 2 }, { use: 'aoe', shape: 'circle', at: 'self', r: 140, windup: 1.1, dmg: 1.2, jump: true, cd: [8, 10], say: '践踏！' }] },
-    tulusWarrior: { name: '图卢斯族战士', tier: 'brute', arch: 'aggressive', size: [16, 13, 112], weight: 2.5, art: ['tau', { hue: -150, sat: 0.6, bright: 1.1 }],
+    tulusWarrior: { name: '图卢斯族战士', tier: 'brute', arch: 'aggressive', size: [16, 13, 112], weight: 2.5, art: 'snTulus',
       skills: [{ use: 'swipe', n: 2, reach: 84, dmg: 1.1, cd: [1.8, 2.8], w: 2 }, { use: 'dash', clip: 'charge', len: 320, speed: 640, windup: 0.8, dmg: 1.2, cd: [5, 7] }] },
-    tulusElite: { name: '图卢斯族精英战士', tier: 'elite', arch: 'guard', size: [18, 14, 120], weight: 3, art: ['tauArmored', { hue: -120, sat: 0.9, bright: 1.1 }], traits: { sa: 'cast' },
+    tulusElite: { name: '图卢斯族精英战士', tier: 'elite', arch: 'guard', size: [18, 14, 120], weight: 3, art: 'snTulusElite', traits: { sa: 'cast' },
       skills: [{ use: 'swipe', clip: 'axe', reach: 96, width: 30, windup: 0.6, dmg: 1.3, down: true, cd: [2.2, 3.4], w: 2 }, { use: 'guard', dur: 2.2, reduce: 0.85, cd: [8, 11] }, { use: 'aoe', shape: 'cross', at: 'target', hw: 22, windup: 1.2, dmg: 1.2, cd: [8, 11] }] },
     // 野兽与雪山的魔物
     iceTiger: { name: '寒冰虎', tier: 'normal', arch: 'aggressive', size: [18, 13, 72], weight: 1.2, speed: 130, elem: 'ice', art: 'snTiger', noGrab: false,
@@ -116,9 +116,9 @@ defineRegion({
       skills: [{ use: 'swipe', clip: 'slam', reach: 84, width: 28, windup: 0.6, dmg: 1.2, down: true, cd: [2, 3], w: 2 }, { use: 'grab', reach: 66, hold: 0.8, throwDmg: 1.5, cd: [7, 9] }] },
     snowballRului: { name: '雪球噜噜伊', tier: 'caster', arch: 'kiter', size: [14, 12, 76], scale: 0.72, art: ['snYeti', { hue: 30, sat: 0.4, bright: 1.15 }],
       skills: [{ use: 'swipe', dmg: 0.8, reach: 56, cd: [2, 3] }, { use: 'shot', clip: 'throw', mode: 'arc', r: 50, dmg: 0.9, status: 'slow', cd: [3.2, 4.5], w: 2 }, { use: 'shot', clip: 'throw', mode: 'straight', speed: 340, dmg: 0.8, cd: [4, 6] }] },
-    iceSprite: { name: '冰精灵史苏克', tier: 'flier', arch: 'flier', size: [14, 12, 80], elem: 'ice', art: ['deGhost', { hue: -40, sat: 1.3, bright: 1.2 }], traits: { immune: ['freeze'] },
+    iceSprite: { name: '冰精灵史苏克', tier: 'flier', arch: 'flier', size: [14, 12, 80], elem: 'ice', art: 'snIceWisp', traits: { immune: ['freeze'] },
       skills: [{ use: 'shot', mode: 'spread', n: 3, spread: 50, speed: 260, dmg: 0.75, status: 'slow', cd: [4, 5.5], w: 1.4 }, { use: 'aoe', shape: 'circle', at: 'target', r: 62, windup: 1.1, dmg: 0.95, status: 'freeze', sdur: 1.2, cd: [7, 9] }] },
-    iceLurker: { name: '寒冰潜伏者', tier: 'flier', arch: 'flier', size: [14, 12, 84], elem: 'ice', art: ['deGhost', { hue: -70, sat: 0.9, bright: 0.7 }],
+    iceLurker: { name: '寒冰潜伏者', tier: 'flier', arch: 'flier', size: [14, 12, 84], elem: 'ice', art: ['snIceWisp', { sat: 0.7, bright: 0.75 }],
       skills: [{ use: 'seq', cd: [5, 7], w: 1.5, steps: [{ use: 'blink', to: 'behind', dist: 60 }, { use: 'swipe', n: 2, dmg: 0.9, windup: 0.3 }] }, { use: 'shot', mode: 'homing', speed: 220, dmg: 0.8, cd: [4, 5.5] }] },
     foamSpider: { name: '泡沫蜘蛛', tier: 'normal', arch: 'aggressive', size: [18, 13, 60], art: ['deSpider', { hue: 150, sat: 0.6, bright: 1.2 }],
       skills: [{ use: 'swipe', clip: 'bite', reach: 62, dmg: 0.95, cd: [1.4, 2.4], w: 2 }, { use: 'shot', mode: 'spread', n: 3, spread: 50, speed: 250, dmg: 0.6, status: 'slow', cd: [5, 7], col: '#e8f4ff' }] },
@@ -152,6 +152,7 @@ defineRegion({
     kuniTotemRed: { name: '库尼红图腾', tier: 'swarm', size: [16, 12, 110], obj: { shape: 'totem', col: '#ff6a5a', h: 110 } },
     kuniTotemBlue: { name: '库尼蓝图腾', tier: 'swarm', size: [16, 12, 110], obj: { shape: 'totem', col: '#6ab0ff', h: 110 } },
     iceBlock: { name: '冰块', tier: 'swarm', size: [20, 12, 70], obj: { shape: 'block', col: '#bfe6ff', h: 70 } },
+    iceCart: { name: '投冰车', tier: 'swarm', size: [26, 16, 64], obj: { shape: 'block', col: '#d8e8f4', h: 64, w: 40 } },   // 利库的投冰车：旁边的哥布林死了，车跟着坏
     // 班图四勇士（布万加的修炼场车轮战）：班图战士的四种染色，各带一个招牌
     bantuMalaga: { name: '勇士马拉加', tier: 'elite', arch: 'aggressive', size: [15, 12, 112], scale: 1.08, elem: 'ice', art: ['snBantu', { hue: -110, sat: 0.7, bright: 1.15 }], traits: { sa: 'cast' },
       skills: [{ use: 'swipe', n: 2, reach: 90, windup: 0.6, dmg: 1.0, cd: [1.8, 2.8], w: 2 },
@@ -197,13 +198,18 @@ defineRegion({
         { at: 0.7, enter: { col: '#8ad8ff', mechs: [SN_CHARLIE_HEART] } },
         { at: 0.35, enter: { say: '查理的心脏在发光——打碎守护它的冰晶！', col: '#bfe6ff', mechs: [SN_CHARLIE_SHIELD] }, skills: [{ use: 'mech', mech: SN_CHARLIE_SHIELD, cd: [26, 32], w: 0.7 }] },
       ] },
+    // 利库（官方 HK59）：霜之新星冻结身边、霸体抓取、中距离前冲最危险、投冰车（打倒操作的哥布林车就坏）、不断召石头怪
     lik: { name: '寒冰巨人利库', lvl: 38, size: [22, 16, 150], weight: 6, speed: 70, elem: 'ice', art: 'snLik', scale: 1.3, pref: 110, traits: { sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }],
       phases: [
-        { at: 1, skills: [{ use: 'swipe', clip: 'slam', reach: 124, width: 34, windup: 0.7, dmg: 1.4, down: true, sa: true, cd: [2, 3], w: 2 }, { use: 'grab', reach: 84, hold: 0.9, throwDmg: 1.6, cd: [8, 10] },
-          { use: 'aoe', shape: 'cross', at: 'target', hw: 26, windup: 1.2, dmg: 1.3, status: 'freeze', sdur: 1, cd: [7, 9], say: '冰裂！' }] },
-        { at: 0.5, enter: { say: '利库召来了暴风雪！', col: '#e8f4ff', mechs: [{ use: 'hazard', kind: 'debris', every: 4, n: 3, col: '#bfe6ff' }] },
-          skills: [{ use: 'summon', kind: 'frostGolem', n: 1, max: 2, cd: [18, 24] }, { use: 'rain', kind: 'hex', n: 5, r: 48, windup: 1.2, dmg: 1.1, col: '#bfe6ff', cd: [8, 10] }] },
+        { at: 1, skills: [
+          { use: 'swipe', clip: 'slam', reach: 124, width: 34, windup: 0.7, dmg: 1.3, down: true, sa: true, cd: [2.4, 3.4], w: 1.4 },
+          { use: 'grab', id: 'iceGrab', clip: 'sigA', reach: 100, windup: 0.9, hold: 0.85, dmg: 0.45, throwDmg: 1.8, cd: [7, 10], w: 1.6, say: '霸体抓取——被抓住就甩出去！' },
+          { use: 'aoe', id: 'nova', clip: 'sigB', shape: 'circle', at: 'self', r: 210, windup: 1.15, dmg: 1.25, status: 'freeze', sdur: 1.6, jump: true, col: '#e8f4ff', cd: [9, 12], w: 1.5, say: '霜之新星——跳起来，不然会被冻在原地！' },
+          { use: 'dash', id: 'charge', clip: 'charge', len: 480, speed: 860, windup: 0.85, dmg: 1.5, cd: [5, 7], w: 1.7, say: '前冲——贴上去，或者拉开，别停在中间！' },
+          { use: 'plant', id: 'cart', kind: 'iceCart', operator: 'frostGoblin', n: 1, at: 'spots', fuse: 14, hits: 8, onFuse: 'explode', r: 120, dmg: 1.3, max: 1, label: '投冰车', col: '#d0e8ff', cd: [16, 20], w: 1.2, say: '投冰车开来了——先打倒驾驶的哥布林！' }] },
+        { at: 0.5, enter: { say: '石头裂开了——冰霜石巨人爬出来了！', col: '#e8f4ff' },
+          skills: [{ use: 'summon', kind: 'frostGolem', n: 2, max: 3, cd: [16, 22], say: '再来几个！' }] },
       ] },
     // 野兽师鲁乌格 + 冰齿沙凡特（官方 HK58，双领主）：上勾拳、召寒冰虎、加攻速；沙凡特出血飞跃、爪击突进；两个被远程打到都会霸体（逼近战）
     ruug: { name: '野兽师鲁乌格', lvl: 39, power: 1.3, variantOf: 'avalancheRabina', size: [15, 12, 116], speed: 110, art: ['snBantu', { hue: -60, sat: 1.1, bright: 0.85 }], scale: 1.3, pref: 140, traits: { saVsRanged: 1.2 },
@@ -245,21 +251,19 @@ defineRegion({
           { use: 'swipe', clip: 'club', n: 2, reach: 108, width: 30, windup: 0.95, dmg: 1.2, status: 'stun', sdur: 0.7, knock: 260, cd: [2, 3], w: 2 },
           { use: 'leap', id: 'slam', clip: 'sigA', crouch: 0.2, up: 0.3, track: 0.6, fall: 0.5, r: 170, hover: 600, jump: true, dmg: 1.8, col: '#ffd070', cd: [11, 14], w: 1.4, say: '起跳砸地——落地的瞬间跳起来！' },
           { use: 'seq', id: 'backstab', clip: 'sigB', cd: [9, 12], w: 1.3, say: '布万加消失了——小心背后！', steps: [{ use: 'blink', to: 'behind', dist: 70, col: '#ffd070' }, { use: 'swipe', clip: 'slam', reach: 100, windup: 0.6, dmg: 1.3, launch: 380 }] },
-          { use: 'dash', clip: 'charge', len: 420, speed: 740, windup: 1.0, dmg: 1.3, col: '#ffd070', cd: [6, 8] },
           { use: 'guard', dur: 2.4, reduce: 0.85, cd: [11, 14], counter: { use: 'aoe', shape: 'circle', at: 'self', r: 150, windup: 0.9, dmg: 1.4, col: '#ffd070' } }] },
         { at: 0.5, enter: { say: '布万加：“拿出你的勇气，证明你是真正的勇士！”', col: '#ffd070', mechs: [SN_BWANGA_ROAR] }, skills: [{ use: 'mech', mech: SN_BWANGA_ROAR, cd: [24, 30], w: 0.7 }] },
       ] },
     // 冰雪女王洛丝（官方 HK61）：和冰晶王座融为一体、不能移动，坐在王座上指挥（rooted）；雷剑克鲁斯把她当成恋人守护她（连线）；
     // 五宫女（回复宫女会给女王回血，先打它）；洛丝的壁钟（钟响时躲到王座后，钩子 roseClock）；最后走下王座（form）
-    // 美术：王座上的形态写在 art.chars.snRose.forms.throne（美术队列出图后领主平时用 snRose_throne，走下王座的 form 换回 snRose）
-    rose: { name: '冰雪女王洛丝', lvl: 42, power: 1.7, size: [15, 12, 124], speed: 95, elem: 'ice', art: 'snRose', scale: 1.15, pref: 220, hook: 'roseClock', traits: { rooted: true, sa: 'cast' },
+    // 平时坐在王座上（snRose_throne）；走下王座的 form 换回站立的 snRose
+    rose: { name: '冰雪女王洛丝', lvl: 42, power: 1.7, size: [15, 12, 124], speed: 95, elem: 'ice', art: 'snRose_throne', scale: 1.15, pref: 220, hook: 'roseClock', traits: { rooted: true, sa: 'cast' },
       mechs: [{ use: 'groggy', max: 110, dur: 6 }, { use: 'tether', kind: 'kruse', mode: 'guard', mul: 0.35, hp: 0.22, onBreak: 'groggy', say: '雷剑克鲁斯把洛丝当成了恋人——先打倒克鲁斯！', col: '#ffe070' }],
       phases: [
         { at: 1, skills: [
           { use: 'shot', mode: 'homing', n: 3, spread: 60, speed: 250, turn: 2.0, dmg: 0.9, status: 'slow', cd: [4, 5.5], w: 1.6, say: '冰晶', col: '#bfe6ff' },
           { use: 'aoe', shape: 'circle', at: 'target', r: 70, n: 3, scatter: 140, windup: 1.2, dmg: 1.1, status: 'freeze', sdur: 1.2, cd: [7, 9], col: '#bfe6ff' },
-          { use: 'laser', windup: 1.2, dur: 1.2, sweep: 70, dmg: 0.5, col: '#bfe6ff', cd: [8, 10] },
-          { use: 'aoe', shape: 'circle', at: 'self', r: 150, windup: 1.0, dmg: 1.2, status: 'freeze', sdur: 1, col: '#bfe6ff', cd: [6, 8], say: '别靠近王座！' },
+          { use: 'aoe', shape: 'circle', at: 'self', r: 150, windup: 1.0, dmg: 1.2, status: 'freeze', sdur: 1, col: '#bfe6ff', cd: [6, 8], w: 1.3, say: '别靠近王座！' },
           { use: 'summon', id: 'maidHeal', clip: 'sigA', kind: 'maidHeal', n: 1, max: 1, cd: [16, 20], w: 1.2, say: '回复宫女，照顾好我——先打倒她！' },
           { use: 'summon', kind: 'maidKick', n: 2, max: 2, cd: [14, 18], w: 0.8, say: '宫女们，保护女王！' }] },
         { at: 0.55, enter: { say: '洛丝唤来了更多的宫女！', col: '#d8f0ff' },
@@ -274,9 +278,8 @@ defineRegion({
       mechs: [{ use: 'groggy', max: 130, dur: 7, mul: 1.6 }, { use: 'enrage', t: 300 }],
       phases: [
         { at: 1, skills: [
-          { use: 'aoe', id: 'claw', clip: 'sigA', shape: 'circle', at: 'front', r: 150, windup: 1.0, dmg: 1.4, jump: true, down: true, follow: false, cd: [5, 7], w: 1.6, say: '前爪拍地——跳起来！', col: '#bfe6ff' },
-          { use: 'swipe', clip: 'bite', reach: 140, width: 36, dmg: 1.2, down: true, cd: [2.5, 3.5], w: 1.2 },
-          { use: 'cone', id: 'breath', clip: 'sigB', ang: 56, len: 380, windup: 1.0, dur: 1.4, tick: 0.2, dmg: 0.32, status: 'freeze', sdur: 0.8, cd: [8, 10], w: 1.4, say: '极寒龙息——绕到侧面！', col: '#bfe6ff' },
+          { use: 'aoe', id: 'claw', clip: 'sigA', shape: 'circle', at: 'front', r: 150, windup: 1.0, dmg: 1.4, jump: true, down: true, follow: false, cd: [4.5, 6.5], w: 1.8, say: '前爪拍地——跳起来！', col: '#bfe6ff' },
+          { use: 'cone', id: 'breath', clip: 'sigB', ang: 56, len: 380, windup: 1.0, dur: 1.4, tick: 0.2, dmg: 0.32, status: 'freeze', sdur: 0.8, cd: [8, 10], w: 1.5, say: '极寒龙息——绕到侧面！', col: '#bfe6ff' },
           { use: 'pull', id: 'blow', mode: 'out', r: 340, force: 320, windup: 0.9, dur: 1.1, status: 'stun', sdur: 0.9, dmg: 0.4, cd: [13, 16], say: '吹气！', col: '#e8f4ff' },
           { use: 'plant', id: 'eggs', kind: 'skasaEgg', n: 3, at: 'spots', fuse: 12, hp: 0.012, onFuse: 'hatch:babySkasa', max: 3, cd: [22, 26], w: 0.8, label: '孵化', say: '斯卡萨产下了龙蛋——在孵化前打碎！', col: '#bfe6ff' }] },
         { at: 0.7, enter: { col: '#bfe6ff', mechs: [SKASA_CHARGE] },
@@ -310,7 +313,7 @@ defineRegion({
       gate: { x: 420, col: '170,220,255' }, desc: '被冰龙变成冰霜巨人的少年查理，和他的玩具士兵们。火箭拳是一条直线，往上下躲开；坚硬的玩具只能一下一下地敲碎。之后玩具士兵会走向查理的心脏——别让它们碰到，否则查理会回血；心脏被冰晶护住时，打碎冰晶他就会破招。',
       drops: { boss: [['ep_sn_charlie', 0.03]], mats: [['crystal', 0.1, 8], ['c_white', 0.02, 1], ['m_cloth', 0.03, 2]] } },
     lik_well: { name: '利库天井', lvl: [37, 38], theme: 'snRidge', layout: 'long', mobs: [['bantuWarrior', 3], ['frostGoblin', 2], ['foamSpider', 1.5], ['stormGolem', 0.7], ['thunderGolem', 0.7], ['frostGolem', 0.7]], elite: 'catapultCommander', boss: 'lik', bossTheme: 'snLikBoss', bgm: 'dungeon3', bossBgm: 'boss',
-      gate: { x: 900, col: '200,230,255' }, desc: '冰封的天井里，寒冰巨人利库守着班图族的冰壁。他的冰裂会冻住人；血量过半后会召来暴风雪和冰霜石巨人。',
+      gate: { x: 900, col: '200,230,255' }, desc: '冰封的天井里，寒冰巨人利库守着班图族的冰壁。霜之新星会冻住身边的人，跳起来能躲开；前冲在中距离最疼，贴上去或者拉开。霸体抓取会把人甩出去。投冰车要先打倒驾驶的哥布林。血量过半后会召来冰霜石巨人。',
       drops: { boss: [['ep_sn_charlie', 0.012]], mats: [['crystal', 0.1, 8], ['m_iron', 0.03, 2], ['c_blue', 0.02, 1]] } },
     ridge: { name: '山脊', lvl: [38, 39], theme: 'snRidge', layout: 'standard', mobs: [['bantuWarrior', 3], ['frostGoblin', 2], ['iceTiger', 2], ['iceSprite', 1]], elite: 'bullBastur', boss: 'ruug', bgm: 'dungeon', bossBgm: 'boss',
       preBoss: { kind: 'bullEmuli', say: '野蛮牛族勇士艾穆利挡住了去路！' },
@@ -389,7 +392,7 @@ defineRegion({
       talk: { offer: ['我们用冰龙的气息把雪山上的怪物冻成了冰壁。可是冰壁在融化……利库天井最危险。'], doing: ['石巨人会架起架势，看准了再打。'], done: ['冰壁后面醒来的是寒冰巨人利库。'] } },
     { t: 'boss', dungeon: 'lik_well', lvl: 38, name: '寒冰巨人利库', reward: { exp: 0.1, gold: 3000 },
       desc: '打倒利库天井深处的寒冰巨人利库。',
-      talk: { offer: ['利库的冰裂会把人冻住。看到地上的十字就走开。'], doing: ['它召来暴风雪的时候，注意头顶。'], done: ['利库倒下了。……白色废墟那边，雪魈们也不安分了。'] } },
+      talk: { offer: ['利库的霜之新星会把身边的人冻住，跳起来能躲开。', '他往前冲的时候，别停在半路。投冰车要先打驾驶的哥布林。'], doing: ['被他抓住就会甩出去。石头裂开以后，冰霜石巨人会爬出来。'], done: ['利库倒下了。……白色废墟那边，雪魈们也不安分了。'] } },
     { t: 'clear', dungeon: 'white_ruins', lvl: 39, name: '白色废墟', reward: { exp: 0.09, gold: 2500 },
       desc: '通关被雪魈占据的「白色废墟」。',
       talk: { offer: ['白色废墟是古代部族的遗迹，现在是雪魈的窝。'], doing: ['噜噜伊会在远处扔雪球。'], done: ['雪魈们的头领……是一只巨大的猿。'] } },
@@ -432,7 +435,7 @@ defineRegion({
       snRose: { h: 124, boss: true, holes: false, outline: '#2a4a7a', hold: 'holding a slender ice crystal scepter', desc: 'Rose the Snow Queen, a boss of the Ice Palace: an elegant cold beautiful woman made from snow given a human body, pale blue skin, long flowing white hair with ice crystal ornaments, an ice crown, a long modest high-collared gown of layered pale blue and white frost fabric with long sleeves, holding a slender ice crystal scepter.',
         atk: 'the ice crystal scepter', cast: 'raising the scepter as her gown flutters', low: 'gliding forward low with the scepter pointed',
         sig: ['summon maidens: raising the ice scepter high with one hand and sweeping the other hand out in a regal command', 'blizzard breath: leaning forward and blowing a long freezing breath over the scepter held flat in front of her lips'],
-        // 新形态（BOSS_PLAN §3.3 必须出新图）：官方的洛丝和冰晶王座融为一体、不能移动。出图后领主平时用 snRose_throne（不走路：参考图 + act + more），最后走下王座时换回 snRose
+        // 领主平时用 snRose_throne。走下王座的 form 换回站立的 snRose。
         forms: { throne: { h: 170, sheets: ['act', 'more'], desc: 'Rose the Snow Queen seated on (merged with) a tall glittering ice crystal throne: an elegant cold beautiful woman made from snow given a human body, pale blue skin, long flowing white hair with ice crystal ornaments, an ice crown, a long high-collared gown of layered pale blue and white frost fabric whose hem melts into the throne; the throne has tall jagged crystal spires and frozen roses. She never stands up.',
           atk: 'pointing the ice scepter forward from the throne', cast: 'raising the scepter high from the throne as the spires glow', low: 'leaning forward on the throne with the scepter pointed down' } } },
       snBwanga: { h: 132, boss: true, hold: 'holding a huge spiked iron club', desc: 'Bwanga, the chief of the Bantu tribes and one of the four sword saints: a huge muscular cheerful man with tanned skin, wild long dark hair and a thick beard, a big bear pelt cloak with the head as a hood, heavy fur and leather armor with tribal bone ornaments, bracers, holding a huge spiked iron club on his shoulder.',

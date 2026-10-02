@@ -42,7 +42,7 @@ if (parts.includes('asura')) {
   const dm = Math.max(...r.map(x => x.downMax)), lm = Math.max(...r.map(x => x.lockMax));
   console.log('  狂战士走进阿修罗（4 局 × 45 秒）：' + JSON.stringify(r));
   ok(dm <= LIM.down + 0.35, `一直往阿修罗身上走：每次倒地最多躺 ${dm} 秒就起身（上限 ${LIM.down} 秒）`, r);
-  ok(lm <= 4.2, `连续不能行动最长 ${lm} 秒（≤ 4 秒）`, r);
+  ok(lm <= LIM.lock + 0.6, `连续不能行动最长 ${lm} 秒（上限 ${LIM.lock} 秒）`, r);
   ok(r.every(x => x.getups >= 1), '每局都能站起来', r);
 }
 

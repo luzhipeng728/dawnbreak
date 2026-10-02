@@ -271,7 +271,7 @@ defSkill('fg_tackle', { name: '野蛮冲撞', cls: 'fighter', job: GJ, lvReq: 17
           fxStreak({ x: e.x - e.face * 20, y: e.y, z: e.z + 50, face: e.face, len: a.full ? 200 : 140, w: 16, col: '#ffcf8a', dur: 0.25 }); sfx.swing(true); } },
       move: [[0.03, 0.3, 540]],
       update: e => { if (e.actT > 0.03 && e.actT < 0.3 && Math.random() < 0.6) fxDust(e.x - e.face * 12, e.y, 1, 6); },
-      hits: [HB(0.04, 0.32, [-4, 72, 38, 0, 110], P, { knock: 220, down: true, downLift: 170, hs: 0.08, shake: 3, heavy: true, big: 1.4, snd: 'blunt', col: FG_COL.hit, onHit: (a, t) => fgTackleFly(a, t, P) })],
+      hits: [HB(0.04, 0.32, [-20, 130, 38, 0, 110], P, { max: 1, knock: 220, down: true, downLift: 170, hs: 0.08, shake: 3, heavy: true, big: 1.4, snd: 'blunt', col: FG_COL.hit, onHit: (a, t) => fgTackleFly(a, t, P) })],
       links: chain ? FG_CHAIN : undefined, hitCancel: true, linkFrom: 0.08, onEnd: fgChainEnd };
   } });
 

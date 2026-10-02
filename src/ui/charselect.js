@@ -105,7 +105,7 @@ Object.assign(menus, {
       if (!d || dOff || (d.lvl || 1) >= MAX_LVL || !(save.acct && save.acct.maxlv > 0)) return; sfx.click();
       this.ask({ title: '一键满级', okText: '使用',
         text: `给 <b class="gold">${escHtml(d.name)}</b>（Lv.${d.lvl}）使用 1 张一键满级券，直接升到 Lv.${MAX_LVL}？（剩 ${save.acct.maxlv} 张，账号共享）`,
-        ok: () => { const from = d.lvl || 1; save.acct.maxlv--; for (let l = from + 1; l <= MAX_LVL; l++) d.sp = (d.sp || 0) + 28 + l; d.lvl = MAX_LVL; d.exp = 0; save.persist(); toastMsg(`${d.name} 一键满级：Lv.${from} → Lv.${MAX_LVL}`, '#ffe070'); this.refresh('charselect'); } });
+        ok: () => { const from = d.lvl || 1; save.acct.maxlv--; for (let l = from + 1; l <= MAX_LVL; l++) d.sp = (d.sp || 0) + spOfLv(l); d.lvl = MAX_LVL; d.exp = 0; save.persist(); toastMsg(`${d.name} 一键满级：Lv.${from} → Lv.${MAX_LVL}`, '#ffe070'); this.refresh('charselect'); } });
     };
     const el = h('div', { id: 'charsel', 'data-block': '1' },
       h('div', { class: 'cshd' }, h('div', { class: 'logo' }, '选择角色'), h('div', { class: 'small dim' }, `角色位 ${chars.length}/${MAX_CHARS}`)),

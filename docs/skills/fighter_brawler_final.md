@@ -1,6 +1,6 @@
 # 街霸（男格斗家 brawler，B6）逐技能对齐（第一版实装）
 
-代码：`src/content/classes/fighter_brawler.js`（转职 ~ 20 级）、`fighter_brawler_p1.js`（一觉之后）；美术脚本 `art/tools/fighter_brawler_art.py`；测试 `test/brawler.mjs`、`test/fighter_brawler.mjs`。
+代码：`src/content/classes/fighter_brawler.js`（转职 ~ 20 级）、`fighter_brawler_p1.js`（一觉之后）；美术脚本 `art/tools/fighter_brawler_art.py`；测试 `test/brawler.mjs`、`test/fighter_brawler.mjs`。`docs/skills/fighter.json` 已补齐 20 个主动技能的规格；投掷物同时记录官方“再投间隔”和“装填冷却”，并用 DFO World Wiki / Nexon 资料复核。
 `J.ready` 仍是 `false`（等 B1 出帧、主线程开放）；开发测试用 `?fighter=1`。
 
 ## 来源与方法

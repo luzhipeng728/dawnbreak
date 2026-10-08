@@ -50,4 +50,8 @@ const rate = 10 * N.pt.hit + N.pt.launch / 0.9;   // 每秒点数
 { const S = J.session(); J.hit(S, N, { kind: 'launch', w: 1 }); J.land(S); const p = S.pts; J.hit(S, N, { kind: 'launch', w: 1, ground: true }); ok(S.phase === 'air2' && S.pts > p, '倒地后再挑：进入二次浮空（air2），浮空点数接着累计', S); }
 // 会话是纯 JSON
 { const S = J.session(); J.hit(S, N, { kind: 'launch', w: 1 }); J.otg(S, N, 3); ok(JSON.stringify(JSON.parse(JSON.stringify(S))) === JSON.stringify(S), '会话状态是纯 JSON（可以同步 / 存档）'); }
+// 调试显示（?jugdbg）的快照：点数 / 保护线按重量缩放，等级、重力和会话一致；没有会话也能画（全是 0）
+{ const S = J.session(); J.hit(S, B, { kind: 'launch', w: 4 }); for (let i = 0; i < 40 && S.lv < 1; i++) J.hit(S, B, { kind: 'air', w: 4 }); const I = J.debugInfo(S, B, 4), I0 = J.debugInfo(null, N, 1);
+  ok(I.lv === S.lv && I.lv === 1 && I.p1 === Math.round(J.p1Of(B, 4) * 10) / 10 && I.p2 > I.p1 && I.pts >= I.p1 && I.grav === Math.round(J.grav(S, B, 4) * 10) / 10 && I.phase === 'air' && I0.pts === 0 && I0.p1 === N.p1,
+    '调试快照：阶段 / 点数 / 两条保护线（按重量缩放）/ 等级 / 重力和会话一致', { I, I0 }); }
 console.log(`\n${n - fails}/${n} 通过`); process.exit(fails ? 1 : 0);

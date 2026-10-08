@@ -84,5 +84,10 @@ const JUGGLE_CORE = (() => {
   }
   // 技能强制弹地：本套还没用满 bounceMax 次 → true（并记一次）
   function bounce(S, P) { if (S.fb >= P.bounceMax) return false; S.fb++; return true; }
-  return { profile, session, level, hit, mods, grav, land, otg, bounce, p1Of, p2Of };
+  // 调试显示（?jugdbg，src/game/jugdbg.js）用的快照：阶段、点数和两条保护线（已按重量缩放）、等级、重力倍率、追击额度、挑空次数
+  function debugInfo(S, P, w) {
+    const s = S || session(), r = v => Math.round(v * 10) / 10;
+    return { phase: s.phase, pts: r(s.pts), p1: r(p1Of(P, w)), p2: r(p2Of(P, w)), lv: s.lv, grav: r(grav(s, P, w)), otg: s.otg, otgMax: P.otgMax, launches: s.launches, fb: s.fb };
+  }
+  return { profile, session, level, hit, mods, grav, land, otg, bounce, p1Of, p2Of, debugInfo };
 })();

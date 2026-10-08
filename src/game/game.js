@@ -96,6 +96,7 @@ function renderWorld() {
   for (const e of ents) if (e.status && !e.dead) drawStatus(c, e);
   drawBlind(c);
   drawNumbers(c);
+  if (jugDbg.on) jugDbg.draw(c);   // ?jugdbg：头顶显示浮空保护（game/jugdbg.js）
   drawRoomFore(c, R);
   if (game.timeStop > 0) { c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(0, 0, WW, WH); const p = game.player; if (p) p.draw(c); }
   if (cam.flash > 0) { c.globalAlpha = clamp(cam.flash * 5, 0, 0.85); c.fillStyle = cam.flashCol; c.fillRect(0, 0, WW, WH); c.globalAlpha = 1; }

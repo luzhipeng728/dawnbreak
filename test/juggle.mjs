@@ -113,6 +113,10 @@ try {
     // B5：扣地打站着的目标 → 砸倒（弹一下再倒地）
     fresh(); raw({ spike: 420, bounce: 0.5, stun: 0.3 }); { const st0 = m.st; let down = false, bounce = 0; for (let i = 0; i < 90; i++) { tick(1); bounce = Math.max(bounce, m.cmb.bounce || 0); if (m.st === 'down') { down = true; break; } } R.slam = { st0, down, bounce }; }
     fresh(); raw({ spike: 420, stun: 0.3 }); R.slamNoBounce = m.st;
+    // ?jugdbg 调试显示：挑空后头顶有阶段 / 点数 / 保护线；打开时画一帧不报错；没在连招里的不显示
+    fresh(); const idle0 = jugDbg.info(m); J.hit(a, m, { launch: 520 }); tick(2); const I = jugDbg.info(m); const on0 = jugDbg.on; jugDbg.on = true; let drawErr = null;
+    try { renderWorld(); } catch (e) { drawErr = String(e); } jugDbg.on = on0;
+    R.dbg = { idle: idle0, lines: I && I.lines, phase: I && I.raw.phase, pts: I && I.raw.pts, p1: I && I.raw.p1, drawErr };
     return R;
   });
   console.log('刷图回归', JSON.stringify(reg));
@@ -125,6 +129,7 @@ try {
   ok(reg.rawDownT < 1.3, 'B3 被非追击判定打着的倒地目标按正常倒地时间起身（没有被一直按在地上）', reg.rawDownT);
   const os = reg.otgSegs;
   ok(os.length === 5 && os.slice(0, 4).every(L => L.length === 6 && L.every(x => !x.startsWith('miss') && !x.endsWith('getup'))) && reg.otgGetup === 4, 'B4 多段打地按招算：4 招 × 6 段全部打到，第 5 招才强制起身', { getupAt: reg.otgGetup, segs: os.map(L => L.length) });
+  ok(!reg.dbg.idle && reg.dbg.lines && reg.dbg.lines.length >= 3 && reg.dbg.phase === 'air' && reg.dbg.pts >= 3 && reg.dbg.p1 > reg.dbg.pts && !reg.dbg.drawErr, '?jugdbg 调试显示：挑空后头顶显示阶段 / 浮空点数 / 保护线，画面不报错', reg.dbg);
   ok(reg.slam.st0 === 'air' && reg.slam.down && reg.slam.bounce >= 1 && reg.slamNoBounce === 'air', 'B5 扣地打站着的目标：砸倒在地并弹一下（以前只有普通硬直）', { slam: reg.slam, noBounce: reg.slamNoBounce });
 
   /* ---------------- 决斗（PvP）---------------- */

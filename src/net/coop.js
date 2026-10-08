@@ -265,7 +265,7 @@ const coop = {
     if (m.hp <= 0) { m.hp = 0; killEnt(m, g, h); return; }
     if (m.invul > 0 || (m.st === 'down' && !h.downHit)) return;
     const P = game.player; game.player = g;
-    try { react(g, m, h, { x: +r.x || g.x, y: m.y, z: +r.z || 0, face: r.f < 0 ? -1 : 1 }, !!r.co, false); } finally { game.player = P; }
+    try { react(g, m, h, { x: +r.x || g.x, y: m.y, z: +r.z || 0, face: r.f < 0 ? -1 : 1 }, !!r.co, false, h.ik ? uid + ':' + h.ik : null); } finally { game.player = P; }
     if (m.onHurt) { try { m.onHurt(g, h); } catch (e) { /* */ } }
   },
   // 队员抓住 / 放开了怪：主机把怪挂到这个队员的影子上（被抓状态照样同步给其他人）；抓取规则（领主、体重、刚被抓过、倒地）在主机上再判一次
@@ -335,6 +335,7 @@ const coop = {
     t.pred = now + 350 + Math.min(300, net.rtt || 60);
     const H = {}; for (const k of COOP_HIT_KEYS) if (h[k] !== undefined && h[k] !== null) H[k] = typeof h[k] === 'boolean' ? (h[k] ? 1 : 0) : h[k];
     if (h.grab) H.stun = Math.max(H.stun || 0, 0.6);
+    if (t._jInst) H.ik = t._jInst % 2000 || 2000;   // 这一下属于哪一招（主机按招算倒地追击额度，engine/combat.js jugInst）
     const counter = isCounter(t); this.stats.sentHits++;
     this.hitQ.push({ id: t.nid, dmg, cr: crit ? 1 : 0, co: counter ? 1 : 0, x: Math.round(a.x), z: Math.round(a.z || 0), f: a.face, h: H, tm: +coopTakenMul(t).toFixed(3) });   // 每 25ms 打包发一次
   },
@@ -600,7 +601,7 @@ function coopRefund(list) {
 const coopTakenMul = t => (t.dmgTaken ?? 1) * (t.dmgTakenMul || 1) * (1 + buffVal(t, 'taken'));
 const COOP_RELIABLE = new Set(['spawn', 'kill', 'room', 'clear', 'go', 'drop']);
 const COOP_LOGGED = new Set(['spawn', 'kill', 'room', 'clear']);   // 带序号、主机保留最近的记录，给重连的队员补发
-const COOP_HIT_KEYS = ['stun', 'knock', 'launch', 'airLift', 'down', 'downHit', 'spike', 'bounce', 'heavy', 'hs', 'radial', 'pull', 'otgLift', 'downLift', 'throwHit'];
+const COOP_HIT_KEYS = ['stun', 'knock', 'launch', 'airLift', 'down', 'downHit', 'spike', 'bounce', 'heavy', 'hs', 'radial', 'pull', 'otgLift', 'downLift', 'throwHit', 'rep', 'jp', 'ik'];   // rep / jp：浮空点数；ik：第几招（倒地追击按招算）
 function coopCleanHit(H) {
   const h = {}; if (!H || typeof H !== 'object') return h;
   for (const k of COOP_HIT_KEYS) { const v = H[k]; if (typeof v === 'number' && Number.isFinite(v)) h[k] = clamp(v, -2000, 2000); }

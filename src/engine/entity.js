@@ -179,7 +179,8 @@ class Ent {
         fxDust(this.x, this.y, 5, 14); sfx.thud(0.6); this.cmb.bounce = (this.cmb.bounce || 0) + 1; this.bouncing = true; this.play(this.clipOr('bounceUp', 'air'), true); return;
       }
       if (this.js) JUGGLE_CORE.land(this.js);   // 刷图连招会话进入倒地阶段
-      this.vz = 0; this.bouncing = false; this.setState('down'); this.downTime = this.dead ? 99 : downTimeOf(this); if (game.pvp && game.duel && this.cmb) this.cmb.landed = true; fxDust(this.x, this.y, 6, 18); sfx.thud(0.8);
+      const keep = this._popLeft; this._popLeft = null;   // 被倒地追击托起后落回来：接着躺剩下的时间（至少 otgKeep 秒），不再整段重置
+      this.vz = 0; this.bouncing = false; this.setState('down'); this.downTime = this.dead ? 99 : keep !== null && keep !== undefined ? Math.max(keep, jugProf(this).otgKeep) : downTimeOf(this); if (game.pvp && game.duel && this.cmb) this.cmb.landed = true; fxDust(this.x, this.y, 6, 18); sfx.thud(0.8);
       this.play(this.clipOr('down'), true);
       return;
     }

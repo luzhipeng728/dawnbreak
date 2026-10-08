@@ -69,7 +69,7 @@ const RAID_PEN_ADDS_MAX = 6;
         break;
       case 'pool':
         if (here && C.pool) {
-          C.pool.hp = p.hp;
+          C.pool.hp = p.hp; if (p.by) C.pool.by = p.by;
           if (b && !b.dead && C.isHost && b.hpMax > 0) {
             b.hp = clamp(Math.round(b.hp + (p.d || 0) * b.hpMax), p.hp <= 0 ? 0 : 1, b.hpMax); C.hpSent = b.hp / b.hpMax;
             if (p.hp <= 0 && !C.cleared) { b.raidOk = true; b.invul = 0; b.hp = 0; killEnt(b, game.player || b, {}); }

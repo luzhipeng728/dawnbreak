@@ -170,8 +170,10 @@ let save;
   ok(fxOf(b, 'entered', 2)[0].p.hpStart === 0.8, '另一边进来时血量是共享的 80%');
   const o = ev(S, 2, br, 'hp', 0.7, sec(5));
   ok(fxOf(o, 'pool', 1).some(f => Math.abs(f.p.d + 0.1) < 1e-9), '乙打掉的 10% 同步给甲那边', o.fx);
+  ok(Math.abs(S.pools.truth.by[1] - 0.2) < 1e-9 && Math.abs(S.pools.truth.by[2] - 0.1) < 1e-9 && fxOf(o, 'pool', 1).some(f => f.p.by && Math.abs(f.p.by[2] - 0.1) < 1e-9), '共享血量按队伍记各打掉多少（领主血条按队伍颜色）', S.pools.truth.by);
   const r = ev(S, 2, br, 'fail', 'retreat', sec(1));
   ok(Math.abs(S.pools.truth.hp - 0.8) < 1e-9 && fxOf(r, 'pool', 1).some(f => Math.abs(f.p.d - 0.1) < 1e-9), '乙撤退：这次的伤害退回（官方：退出 = 伤害无效）', S.pools);
+  ok(!S.pools.truth.by[2] && Math.abs(S.pools.truth.by[1] - 0.2) < 1e-9, '乙撤退：乙那一队的颜色也退掉', S.pools.truth.by);
   save = JSON.parse(JSON.stringify(S));
   tick(S, sec(61));   // 撤退的侵蚀
   const rot0 = S.rot;

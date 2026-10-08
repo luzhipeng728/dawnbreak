@@ -175,6 +175,8 @@ try {
   ok(Math.abs((await boss(B)).hp - 0.6) < 0.02, 'bob 那边的希洛克也是 60%', await boss(B));
   await B.evaluate(() => { const b = raidNet.ctx.boss; b.hp = Math.round(b.hpMax * 0.5); });
   ok(await until(A, () => Math.abs(raidNet.ctx.boss.hp / raidNet.ctx.boss.hpMax - 0.5) < 0.02, null, 4000), 'bob 打掉的 10% 同步到 alice 那边', await boss(A));
+  { const by = await A.evaluate(() => { const Q = raidNet.ctx.pool || {}, me = String(raidNet.me()), M = raidNet.mate(); return { me: (Q.by || {})[me] || 0, mate: M ? (Q.by || {})[String(M.uid)] || 0 : 0 }; });
+    ok(Math.abs(by.me - 0.4) < 0.03 && Math.abs(by.mate - 0.1) < 0.03, `共享血量按队伍颜色：alice 那边看到自己 ${Math.round(by.me * 100)}%、bob ${Math.round(by.mate * 100)}%`, by); }
   await A.screenshot({ path: `${out}/mp-06-hud-pool.png` });
   await B.evaluate(() => { raidNet.ev('fail', 'retreat'); raidNet.leaveNode('撤退'); });
   ok(await until(A, () => Math.abs(raidNet.ctx.boss.hp / raidNet.ctx.boss.hpMax - 0.6) < 0.02, null, 4000), 'bob 撤退：这次的伤害退回（alice 那边回到 60%）', await boss(A));

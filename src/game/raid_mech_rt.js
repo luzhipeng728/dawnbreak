@@ -123,6 +123,7 @@ defineBossMech('raidScript', { defaults: {},
     if (V.ph === 'break') { { const B = st.S.brkSpec || st.S.spec.onSolve; msBar(c, x, y + h, w, 1 - V.phT / B.dur, '#7aff9a', `虚弱！受到伤害 ×${B.mul}`); }; h += 16; }
     for (const s of V.side) { uiText(`${s.name}：${s.hint}${s.text ? '　' + s.text : ''}`, x + w / 2, y + h + 14, { size: 14, align: 'center', color: '#ffb0a0', sw: 3 }); h += 18; }
     for (const b of [V.cast && V.cast.bar, ...V.side.map(s => s.bar)]) if (b) { msBar(c, x, y + h, w, b.k, b.col, b.label); h += 16; }   // 谜题自己的条：呼吸 / 护盾 / 聚集 / 吸入
+    h += rmPoolHud(c, x, y + h, w);
     h += rmBtHud(c, x, y + h, w);
     return h;
   },
@@ -244,6 +245,23 @@ function rmBtHud(c, x, y, w) {
   const on = rmBt.t > 0, k = on ? rmBt.t / RAID_BT.dur : rmBt.e;
   msBar(c, x, y, w, k, on ? '#d0b0ff' : rmBt.e >= 1 ? '#ffe070' : '#8a7ab0', on ? `无之轨迹 ${rmBt.t.toFixed(1)} 秒` : rmBt.e >= 1 ? `无之轨迹 就绪：按 ${keyName('raidBt')}` : `无之轨迹 ${Math.floor(rmBt.e * 100)}%`);
   return 16;
+}
+// 共享血量按队伍颜色（P4，[QQ]“领主血条按小队颜色显示各队输出”）：你 = 金色、队友 = 蓝色，剩下的血是暗红；数据是服务端的 pools[k].by（队伍 = 挑战的主机）
+const RM_TEAM_COL = ['#ffd040', '#5ac8ff', '#ff8ad8', '#8aff9a'];
+function rmPoolHud(c, x, y, w) {
+  const C = typeof raidNet !== 'undefined' && raidNet.ctx, Q = C && C.pool; if (!Q || C.done) return 0;
+  const by = Q.by || {}, me = String(raidNet.me()), S = raidNet.S, ids = ((S && S.members) || []).map(m => String(m.uid));
+  for (const k of Object.keys(by)) if (!ids.includes(k)) ids.push(k);
+  ids.sort((a, b) => (a === me ? -1 : b === me ? 1 : 0));
+  const h = 12, tot = Object.values(by).reduce((a, b) => a + b, 0) + Math.max(0, Q.hp ?? 1), sc = tot > 0 ? w / Math.max(1, tot) : 0;
+  c.fillStyle = 'rgba(0,0,0,.6)'; c.fillRect(x - 1, y - 1, w + 2, h + 2);
+  let xx = x; const parts = [];
+  ids.forEach((u, i) => { const v = by[u] || 0; if (v <= 0) return; const col = RM_TEAM_COL[Math.min(i, RM_TEAM_COL.length - 1)]; c.fillStyle = col; c.fillRect(xx, y, v * sc, h); xx += v * sc; const M = S && S.members.find(m => String(m.uid) === u); parts.push([`${u === me ? '你' : (M && M.name) || '队友'} ${Math.round(v * 100)}%`, col]); });
+  c.fillStyle = '#7a1a3a'; c.fillRect(xx, y, Math.max(0, (Q.hp ?? 1) * sc), h);
+  let tx = x + 4; uiText('共享血量', tx, y + h - 1, { size: 12, color: '#fff', sw: 3 }); tx += 64;
+  for (const [t, col] of parts) { uiText(t, tx, y + h - 1, { size: 12, color: col, sw: 3 }); tx += uctx.measureText(t).width + 14; }
+  uiText(`剩 ${Math.round((Q.hp ?? 1) * 100)}%`, x + w - 4, y + h - 1, { size: 12, align: 'right', color: '#ffb0c0', sw: 3 });
+  return h + 4;
 }
 // 测试 / 调试：现在跑着的团本脚本状态
 function rmScriptOf(m) { const st = m && m.msMechs && m.msMechs.find(s => s.id === 'raidScript' && !s.done); return st || null; }

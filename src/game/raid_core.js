@@ -253,7 +253,7 @@ const RAID_CORE = (() => {
     for (const R of Object.values(S.runs)) if (!R.end) { R.end = 'phase'; R.endAt = now; }
     S.nodes = {};
     for (const id of Object.keys(P.nodes)) S.nodes[id] = { st: 'locked', by: [], run: null, hp: 1, n: 0, order: 0, until: 0, timer: 0, hpStart: 0, seen: false, boss: false, openT: 0 };
-    S.pools = {}; for (const k of Object.keys(P.pools)) S.pools[k] = { hp: 1, until: 0 };
+    S.pools = {}; for (const k of Object.keys(P.pools)) S.pools[k] = { hp: 1, until: 0, by: {} };
     S.rot = P.rot ? Math.floor(rnd(S) * P.rot.forms.length) : 0;
     const groups = {};
     for (const nd of Object.values(P.nodes)) if (nd.type === 'order') (groups[nd.group] = groups[nd.group] || []).push(nd.id);
@@ -359,7 +359,7 @@ const RAID_CORE = (() => {
     }
     for (const k of Object.keys(S.aura)) if (ids.includes(S.aura[k].src) || ids.includes(S.aura[k].to)) delete S.aura[k];
     const pools = new Set(ids.map(id => nodeOf(S, id).pool).filter(Boolean));
-    for (const k of pools) { S.pools[k] = { hp: 1, until: 0 }; }
+    for (const k of pools) { S.pools[k] = { hp: 1, until: 0, by: {} }; }
     if (P.rot && pools.has(P.rot.pool)) S.rot = Math.floor(rnd(S) * P.rot.forms.length);
     push(o, 'all', 'reset', null, { area, nodes: ids });
   }
@@ -415,7 +415,7 @@ const RAID_CORE = (() => {
     }
     if (!nd || !o) return;
     const P = nd.pool && S.pools[nd.pool];
-    if (P && (why === 'retreat' || why === 'dead' || why === 'lost') && R.dealt > 0 && P.hp > 0) { P.hp = Math.min(1, P.hp + R.dealt); R.dealt = 0; poolSync(S, nd.pool, o); note(o, 'all', `「${nd.name}」的队伍撤出：这次造成的伤害退回了（共享血量 ${Math.round(P.hp * 100)}%）`, nd.id); }
+    if (P && (why === 'retreat' || why === 'dead' || why === 'lost') && R.dealt > 0 && P.hp > 0) { P.hp = Math.min(1, P.hp + R.dealt); poolBy(P, R, -R.dealt); R.dealt = 0; poolSync(S, nd.pool, o); note(o, 'all', `「${nd.name}」的队伍撤出：这次造成的伤害退回了（共享血量 ${Math.round(P.hp * 100)}%）`, nd.id); }
     if (nd.manual && N && N.st !== 'cleared') { N.st = 'locked'; N.until = 0; reopenAfterMerge(S, now); }
     if (QUIET[why]) return;
     for (const id of nd.failKick || []) {
@@ -436,13 +436,15 @@ const RAID_CORE = (() => {
     for (const nd of Object.values(P.nodes)) { const N = S.nodes[nd.id]; if (nd.area === (Object.values(P.nodes).find(x => x.manual) || {}).area && N.st === 'cool' && nd.type !== 'timer') openNode(S, nd, now); }
   }
   // 共享血量：服务端记着每次挑战“客户端现在的血量”（R.ph），池子变了就把差值发给每个正在打的挑战（客户端按差值加减，没上报的伤害不会丢）
+  // 共享血量按队伍（= 挑战的主机）记各打掉了多少：领主血条按队伍颜色显示 [QQ]；撤退退回时也从那一队扣掉
+  function poolBy(P, R, d) { if (!d) return; const by = P.by || (P.by = {}), k = R.host; by[k] = Math.max(0, (by[k] || 0) + d); if (by[k] < 1e-6) delete by[k]; }
   function poolSync(S, k, o) {
     const P = S.pools[k]; if (!P) return;
     for (const R of Object.values(S.runs)) {
       if (R.end || R.ph == null) continue;
       const nd = nodeOf(S, R.node); if (!nd || nd.pool !== k) continue;
       const d = P.hp - R.ph; if (Math.abs(d) < 1e-6) continue;
-      R.ph = P.hp; push(o, R.by.slice(), 'pool', R.node, { hp: P.hp, d });
+      R.ph = P.hp; push(o, R.by.slice(), 'pool', R.node, { hp: P.hp, d, by: Object.assign({}, P.by) });
     }
   }
   function poolClear(S, k, now, o) {
@@ -504,7 +506,7 @@ const RAID_CORE = (() => {
     }
     R.down = now;
     if (nd.pool && S.pools[nd.pool]) {   // 共享血量：哪一边把自己那份打空都算池子空了（客户端的领主血量一直跟着池子走）
-      const P = S.pools[nd.pool]; P.hp = Math.max(0, P.hp - (R.ph || 0)); R.dealt = (R.dealt || 0) + (R.ph || 0); R.ph = 0;
+      const P = S.pools[nd.pool]; poolBy(P, R, Math.min(P.hp, R.ph || 0)); P.hp = Math.max(0, P.hp - (R.ph || 0)); R.dealt = (R.dealt || 0) + (R.ph || 0); R.ph = 0;
       poolClear(S, nd.pool, now, o);
       note(o, 'all', `${def(S).phases.find(x => x.id === phaseOf(S).id).pools[nd.pool].name || '共享领主'}的血量打空了！`);
       o.ack = { res: 'clear' };
@@ -786,7 +788,7 @@ const RAID_CORE = (() => {
       push(o, ids, 'entered', nd.id, { run: R.id, node: nd.id, name: nd.name, type: nd.type, dg: rot >= 0 ? P.rot.dgs[rot] : nd.dg || null, boss: nd.boss || null, host: m.uid, by: ids,
         scale: scale(S, nd.id, ids.length), buffs: activeBuffs(S, nd.id, now), cp: S.cp[nd.id] || null, hpStart: hp0 < 1 ? hp0 : 0, order: N.order || 0,
         orderTurn: nd.type === 'order' && !S.sub ? myTurn(S, nd) : true, sub: S.sub, deadline: S.deadline,
-        limit: R.limit, pool: PL ? { name: nd.pool, hp: PL.hp, until: PL.until } : null, form: rot >= 0 ? P.rot.forms[rot] : null });
+        limit: R.limit, pool: PL ? { name: nd.pool, hp: PL.hp, until: PL.until, by: Object.assign({}, PL.by) } : null, form: rot >= 0 ? P.rot.forms[rot] : null });
       o.ack = { run: R.id };
     },
     hp(S, ev, now, o, m) {
@@ -802,7 +804,7 @@ const RAID_CORE = (() => {
         let own = R.ph - v; const drop = S.guard.maxDrop;
         if (own > 0 && drop) own = Math.min(own, drop * Math.max(0, now - (R.pt || R.t0)) / 1000 + 1e-9);   // 防作弊：共享血量按掉血速度封顶（多报的部分下一次同步时补回给客户端）
         R.pt = now;
-        if (own > 0) { PL.hp = Math.max(0, PL.hp - own); R.dealt += own; }
+        if (own > 0) { poolBy(PL, R, Math.min(PL.hp, own)); PL.hp = Math.max(0, PL.hp - own); R.dealt += own; }
         R.ph = v; N.hp = PL.hp;
         if (PL.hp <= 1e-6) { R.down = R.down || now; poolClear(S, nd.pool, now, o); o.ack = { res: 'clear' }; return; }
         poolSync(S, nd.pool, o);

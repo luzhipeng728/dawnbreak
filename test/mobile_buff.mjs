@@ -1,8 +1,8 @@
 // 手机状态键：没放进技能栏的 Buff（方向 + 空格那类）/ 受击技能出现在最右边一列，点一下就放
 // 用法：node build.mjs && node test/mobile_buff.mjs
-import { URL_BASE, chromium } from './lib.mjs';
+import { URL_BASE, chromium, CHROME_EXE } from './lib.mjs';
 let fails = 0; const check = (ok, msg, x = '') => { console.log(ok ? '  ✓' : '  ✗', msg, x); if (!ok) fails++; };
-const browser = await chromium.launch({ headless: true, executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', args: ['--autoplay-policy=no-user-gesture-required'] });
+const browser = await chromium.launch({ headless: true, executablePath: CHROME_EXE, args: ['--autoplay-policy=no-user-gesture-required'] });
 const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
 await page.goto(`${URL_BASE}?town&fresh&mute&cls=sword`); await page.waitForFunction(() => window.__READY && game.player && game.scene === 'town', null, { timeout: 30000 });

@@ -2,14 +2,14 @@
 // 覆盖：摇杆走 / 跑、按住攻击连打、14 个技能格（扇形 10 个 + 滑屏键 4 个方向）、觉醒键、按住蓄力、后跳键、跳跃下滑后跳、倒地点跳跃受身、
 //       物品栏开 / 关（✕）、窗口拖动 / 滚动、设置 → 手机按钮（大小 / 拖动编辑）、竖屏提示暂停、双指清完一个房间、CPU 降速 ×4 的帧率
 // 用法：node test/mobile.mjs [shots]   （shots：另外出一张总览图 test/shots/mobile/sheet.jpg，给主线程审）
-import { chromium, devices, URL_BASE } from './lib.mjs';
+import { chromium, devices, URL_BASE, CHROME_EXE } from './lib.mjs';
 import fs from 'fs';
 import { execSync } from 'child_process';
 const out = 'test/shots/mobile'; fs.mkdirSync(out, { recursive: true });
 const SHOTS = process.argv.includes('shots');
 if (SHOTS) for (const f of fs.readdirSync(out)) if (/\.(png|jpg)$/.test(f)) fs.unlinkSync(`${out}/${f}`);
 const T0 = Date.now();
-const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', args: ['--autoplay-policy=no-user-gesture-required', '--ignore-gpu-blocklist'] });
+const browser = await chromium.launch({ headless: true, executablePath: CHROME_EXE, args: ['--autoplay-policy=no-user-gesture-required', '--ignore-gpu-blocklist'] });
 const dev = devices['iPhone 13 landscape'];
 const ctx = await browser.newContext({ ...dev, viewport: { width: 844, height: 390 }, deviceScaleFactor: SHOTS ? 2 : 1 });
 const page = await ctx.newPage();

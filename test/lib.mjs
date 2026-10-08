@@ -58,6 +58,10 @@ function bundledBrowser() {
   return null;
 }
 const CHROME = bundledBrowser();
+// 给自己调 chromium.launch 的测试用（手机触屏测试要 newContext({ isMobile })）：CHROME_PATH → Playwright 自带 → 常见的系统 Chrome 路径 → undefined（交给 Playwright 自己找）
+const SYS_CHROME = ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser',
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'];
+export const CHROME_EXE = CHROME || SYS_CHROME.find(f => existsSync(f)) || undefined;
 
 export async function launch({ width = 1280, height = 720, gpu = process.env.PELICAN_GPU || (process.platform === 'darwin' ? 'metal' : 'default') } = {}) {
   const args = ['--autoplay-policy=no-user-gesture-required', '--enable-precise-memory-info', '--js-flags=--expose-gc', '--ignore-gpu-blocklist'];

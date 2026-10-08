@@ -3,11 +3,11 @@
 //       格斗家的指令在触屏上怎么放：空中 C（空中再点跳跃 = 空绞锤）、蹲伏（技能键）→ 攻击键肩撞 / 跳跃键起身、按住↑+Z 的前踢（技能键直接放）、
 //       鹰踏（跳起后点技能键，再点一次第二踩）、跑攻中 X（推到底跑 + 攻击键 = 肩撞，再点攻击 = 疾风追击）、街霸装填数（按钮角标 ×N）、气功师风雷能量条不压住 BUFF 行
 // 用法：node test/mobile_fighter.mjs [shots]（约 30 秒；shots 另出 test/shots/mobile_fighter/<转职>.png 给主线程看布局）
-import { chromium, devices, URL_BASE } from './lib.mjs';
+import { chromium, devices, URL_BASE, CHROME_EXE } from './lib.mjs';
 import fs from 'fs';
 const out = 'test/shots/mobile_fighter'; fs.mkdirSync(out, { recursive: true });
 const SHOTS = process.argv.includes('shots');
-const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', args: ['--autoplay-policy=no-user-gesture-required', '--ignore-gpu-blocklist'] });
+const browser = await chromium.launch({ headless: true, executablePath: CHROME_EXE, args: ['--autoplay-policy=no-user-gesture-required', '--ignore-gpu-blocklist'] });
 const ctx = await browser.newContext({ ...devices['iPhone 13 landscape'], viewport: { width: 844, height: 390 }, deviceScaleFactor: SHOTS ? 2 : 1 });
 const page = await ctx.newPage();
 const logs = [];

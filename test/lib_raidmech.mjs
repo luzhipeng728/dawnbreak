@@ -30,7 +30,7 @@ export async function setupRaidLab(page) {
     path(c) { c._k = (c._k || 0) + (c.t >= c.p.grace ? 0.06 : 0); const cells = c.cells.map(s => s.split(',').map(Number)).sort((a, b) => a[0] - b[0]); const q = cells[Math.min(cells.length - 1, Math.floor(c._k))]; const x = c.W * c.p.x0 + c.cw * (q[0] + 0.5); T.put(c.p.rtl ? c.W - x : x, c.ch * (q[1] + 0.5)); },
     soulSwap(c, f) { if (f % 5) return; const o = c.objs.find(q => q.alive && q.side === c.soul.me); const e = o && T.ent('soul:' + o.i); if (e) T.hit(e); },
     reflect(c, f) { if (!c.up && f % 10 === 0) { T.hit(window.__m); window.__m.hp = window.__m.hpMax; } },
-    facing() { T.put(500, 100, -1); },
+    facing(c) { const bx = c.anchor ? c.anchor.x : window.__m.x, to = Math.sign(bx - 500) || 1; T.put(500, 100, c.mode === 'away' ? -to : to); },   // random 模式按这次的提示：背对 / 面朝
     crouch() { game.player.raidCrouch = true; },
     dps(c, f) { const m = window.__m; if (f % 3) return; m.invul = 0; m.hp = 1e12; applyHit(game.player, m, { dmg: 400, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); m.hp = m.hpMax; },
     clear(c) { const mk = c.marks.find(q => q.on); if (mk) T.put(mk.x, mk.y); },

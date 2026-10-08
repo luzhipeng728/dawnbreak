@@ -13,6 +13,10 @@
 const COOP_HP = [1, 1, 1.6, 2.2, 2.8];          // 怪物血量倍率（按人数，可调）
 const COOP_SNAP_MS = 50;                        // 快照 / 自身状态发送间隔（20Hz）
 const COOP_INTERP = 100;                        // 傀儡 / 影子的插值延迟（毫秒）
+// 队员本地预测（打中傀儡后按单机规则跑浮空 / 倒地）：每次命中把预测上限往后推 PRED_EXT 毫秒（盖得住最后一下之后的下落 + 倒地 + 起身），
+// 一套连招从第一下算总共最多 PRED_CAP 毫秒（刷图没有浮空时限，满连到二级保护落地约 10~11 秒）。以前第一下就定死 4 秒、之后不延长，长连段会被拉回主机的状态
+const COOP_PRED_EXT = 4000, COOP_PRED_CAP = 20000;
+const COOP_LAND_GRACE = 0.25;   // 主机收到“队员看到还在空中”的命中时，怪在主机上刚落地不到这么久（秒）：按空中受击处理一次（延迟造成的落地先后差）
 const COOP_ST = ['idle', 'walk', 'run', 'jump', 'act', 'hit', 'air', 'down', 'getup', 'held', 'dead'];
 const coop = {
   role: null, room: null, state: 'none', dg: null, def: null, diff: 0, hostId: 0, mates: new Map(), puppets: new Map(), spawnInfo: new Map(),
@@ -417,6 +421,8 @@ const coop = {
     this.dmgQ.push([m.nid, dmg, r.cr ? 1 : 0, uid]);
     if (m.onDamaged) { try { m.onDamaged(m, g, dmg, !!r.cr, h); } catch (e) { console.error(e); } }
     if (m.hp <= 0) { m.hp = 0; killEnt(m, g, h); return; }
+    // 队员那边命中时怪还在空中、主机这边刚落地（网络延迟造成的先后差）：按空中受击处理一次，别把队员的托空命中丢掉（二级保护强制落地的不算）
+    if (m.st === 'down' && !h.downHit && +r.tz > 2 && m.stT < COOP_LAND_GRACE && !m.invul && !(m.js && m.js.lv >= 2)) { m.z = Math.min(clamp(+r.tz, 3, 60), 12); m.setState('air'); m.vz = 0; this.stats.landGrace = (this.stats.landGrace || 0) + 1; }
     if (m.invul > 0 || (m.st === 'down' && !h.downHit)) return;
     const P = game.player; game.player = g;
     try { react(g, m, h, { x: +r.x || g.x, y: m.y, z: +r.z || 0, face: r.f < 0 ? -1 : 1 }, !!r.co, false, h.ik ? uid + ':' + h.ik : null); } finally { game.player = P; }
@@ -485,13 +491,18 @@ const coop = {
     const now = performance.now();
     t.lockSt = now + Math.max(200, net.rtt + 100);
     // 本地预测：打中以后傀儡立刻按单机的受击规则动起来（浮空 / 弹地 / 倒地 / 起身），不等主机快照；恢复行动后再平滑回主机的位置
-    if (!t.pred) t.predMax = now + 4000;
+    if (!t.pred) {   // 新的一套：傀儡站着的话，上一套的连击统计 / 浮空会话清掉（傀儡不预测时不跑起身结束的清零，留着会让下一套一开始就进保护）
+      t.predStart = now;
+      if (t.st !== 'air' && t.st !== 'down' && t.st !== 'getup' && t.z <= 2) resetCmb(t);
+    }
+    t.predMax = Math.min((t.predStart || now) + COOP_PRED_CAP, Math.max(t.predMax || 0, now + COOP_PRED_EXT));   // 每下都延长（以前只在第一下定 4 秒）
     t.pred = now + 350 + Math.min(300, net.rtt || 60);
     const H = {}; for (const k of COOP_HIT_KEYS) if (h[k] !== undefined && h[k] !== null) H[k] = typeof h[k] === 'boolean' ? (h[k] ? 1 : 0) : h[k];
     if (h.grab) H.stun = Math.max(H.stun || 0, 0.6);
     if (t._jInst) H.ik = t._jInst % 2000 || 2000;   // 这一下属于哪一招（主机按招算倒地追击额度，engine/combat.js jugInst）
     const counter = isCounter(t); this.stats.sentHits++;
-    this.hitQ.push({ id: t.nid, dmg, cr: crit ? 1 : 0, co: counter ? 1 : 0, x: Math.round(a.x), z: Math.round(a.z || 0), f: a.face, h: H, tm: +coopTakenMul(t).toFixed(3) });   // 每 25ms 打包发一次
+    const tz = t.st === 'air' || t.z > 2 ? Math.max(3, Math.round(t.z)) : 0;   // 我这边看到它还在空中（主机那边可能因为延迟已经落地）
+    this.hitQ.push({ id: t.nid, dmg, cr: crit ? 1 : 0, co: counter ? 1 : 0, x: Math.round(a.x), z: Math.round(a.z || 0), f: a.face, h: H, tm: +coopTakenMul(t).toFixed(3), tz });   // 每 25ms 打包发一次
   },
   onSnap(d, recvT) {
     if (!this.dg || this.dg.transition) { this.misT = 0; return; }

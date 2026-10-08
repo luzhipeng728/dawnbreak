@@ -44,11 +44,11 @@ try {
   const mk = await A.evaluate(() => {
     const g = [...coop.mates.values()][0], R = game.room, ids = [];
     game.player.x = R.x1 - 60; game.player.y = 20;
-    for (let i = 0; i < 4; i++) { const m = spawnMonster('goblin', clamp(g.x + 120 + i * 90, 60, R.x1 - 60), clamp(g.y + (i % 2 ? 30 : -30), 20, DEPTH - 20), { lvl: 3, mul: 60 }); m.control = null; ids.push(m.nid); }
+    for (let i = 0; i < 5; i++) { const m = spawnMonster('goblin', clamp(g.x + 120 + i * 90, 60, R.x1 - 60), clamp(g.y + (i % 2 ? 30 : -30), 20, DEPTH - 20), { lvl: 3, mul: 60 }); m.control = null; ids.push(m.nid); }
     return ids;
   });
   ok(await until(B, ids => ids.every(id => coop.puppets.has(id)), mk, 10000), '队员那边出现了测试用的怪', await B.evaluate(ids => ids.map(id => coop.puppets.has(id)), mk));
-  const [pick, jugId, gid0, nid0] = mk;
+  const [pick, jugId, gid0, nid0, longId] = mk;
   // 打中 → 离地：按游戏逻辑时间量（掉帧时一帧会补跑好几步逻辑，按真实时间量会误报）；采样一直到它落地、起身、恢复（逻辑时间 4 秒为限）
   const hit = await B.evaluate(async id => {
     const m = ents.find(e => e.nid === id), g0 = game.t; game.player.x = m.x - 60; game.player.y = m.y; game.player.face = 1;
@@ -105,6 +105,39 @@ try {
   }, jugId);
   // 击退最快几百像素 / 秒；快照位置硬拉过来会是一帧几十像素（上千像素 / 秒）
   ok(jug && jug.hits === 4 && jug.minZ > 2 && jug.maxSpeed < 900, `浮空连击：追打期间一直在空中（最低 ${jug && jug.minZ}px），没有瞬移（最大横向速度 ${jug && jug.maxSpeed}px/s）`, jug);
+  // 长浮空连（刷图没有浮空时限）：队员连打 6.5 秒（每 0.2 秒一下空中攻击、快落地就再挑），傀儡全程在空中、没有被拉回主机的状态（以前第一下定 4 秒预测上限）；
+  // 主机那边这些命中也都按空中受击结算了（没有因为主机先落地而被丢掉）
+  const host0 = await A.evaluate(id => { const m = coop.puppets.get(id); return m ? m.cmb.air : -1; }, longId);
+  const lj = await B.evaluate(async id => {
+    const m = ents.find(e => e.nid === id); if (!m) return null;
+    const p = game.player; p.x = m.x - 60; p.y = m.y; p.face = 1;
+    const H = { dmg: 1, sure: true, noCounterBonus: true, box: [0, 60, 20, 0, 260] };
+    applyHit(p, m, { ...H, launch: 520 });
+    const g0 = game.t, S = []; let next = 0.2, hits = 1, launches = 1, lastT = 0, lastX = m.x, snapped = 0;
+    while (game.t - g0 < 6.5) {
+      await new Promise(r => requestAnimationFrame(r));
+      const t = game.t - g0; p.x = m.x - 60; p.y = m.y;
+      if (!m.pred) snapped++;
+      if (t >= next) { next += 0.2; if (m.vz < 0 && m.z < 50) { applyHit(p, m, { ...H, launch: 480 }); launches++; } else applyHit(p, m, { ...H, airLift: 160 }); hits++; }
+      if (t > lastT) S.push([+t.toFixed(3), +m.z.toFixed(1), Math.abs(m.x - lastX) / (t - lastT), m.st]);
+      lastT = t; lastX = m.x;
+    }
+    const mid = S.filter(s => s[0] >= 0.15);
+    return { T: +(game.t - g0).toFixed(2), hits, launches, minZ: Math.min(...mid.map(s => s[1])), grounded: mid.filter(s => s[3] !== 'air').length, maxSpeed: Math.round(Math.max(...S.map(s => s[2]))), snapped, lv: m.js ? m.js.lv : 0 };
+  }, longId);
+  const hostLong = await until(A, ([id, a0, n]) => { const m = coop.puppets.get(id); return m && m.cmb.air - a0 >= n * 0.8; }, [longId, host0, lj ? lj.hits : 1e9], 6000);
+  const hostInfo = await A.evaluate(id => { const m = coop.puppets.get(id); return m && { air: m.cmb.air, st: m.st, lv: m.js ? m.js.lv : 0, grace: coop.stats.landGrace || 0 }; }, longId);
+  ok(lj && lj.T >= 6.4 && lj.minZ > 2 && lj.grounded === 0 && lj.snapped === 0 && lj.maxSpeed < 900, `队员长浮空连 ${lj && lj.T} 秒（${lj && lj.hits} 下、再挑 ${lj && lj.launches} 次）：傀儡全程在空中（最低 ${lj && lj.minZ}px），没有被拉回主机状态`, lj);
+  ok(hostLong, `主机那边这套长连的命中都按空中受击结算（空中受击 +${hostInfo && hostInfo.air - host0} / 队员 ${lj && lj.hits} 下，落地宽容 ${hostInfo && hostInfo.grace} 次）`, { hostInfo, host0 });
+  // 主机落地宽容：队员那边看到还在空中（tz）、主机这边刚落地不到 0.25 秒 → 按空中受击结算一次；落地久了 / 二级保护强制落地的照旧不吃
+  const grace = await A.evaluate(id => {
+    const m = coop.puppets.get(id), uid = [...coop.mates.keys()][0]; if (!m || uid === undefined) return null;
+    const try1 = (stT, lv, tz) => { m.hp = Math.max(m.hp, m.hpMax * 0.5); m.invul = 0; m.z = 0; m.vz = 0; m.setState('down'); m.stT = stT; if (m.js) m.js.lv = lv; const g0 = coop.stats.landGrace || 0;
+      coop.remoteHit(uid, { id, dmg: 1, h: { airLift: 140, stun: 0.2 }, tz, x: Math.round(m.x - 40), z: 0, f: 1, tm: 1 }); const r = { st: m.st, grace: (coop.stats.landGrace || 0) - g0 }; if (m.js) m.js.lv = 0; return r; };
+    const out = { fresh: try1(0.1, 0, 40), late: try1(0.6, 0, 40), lv2: m.js ? try1(0.1, 2, 40) : { st: 'down', grace: 0 }, ground: try1(0.1, 0, 0) };
+    m.z = 0; m.vz = 0; m.setState('idle'); resetCmb(m); return out;
+  }, longId);
+  ok(grace && grace.fresh.st === 'air' && grace.fresh.grace === 1 && grace.late.st === 'down' && grace.lv2.st === 'down' && grace.ground.st === 'down' && !grace.late.grace && !grace.lv2.grace && !grace.ground.grace, '主机落地宽容：队员看到还在空中、主机刚落地 0.1 秒的命中按空中受击；落地 0.6 秒 / 二级保护落地 / 队员也看到在地上的不吃', grace);
   // ---- 2) 队员抓取 ----
   // 抓之前先等条件就绪（不用固定等待）：队员站到怪旁边，主机那边的影子也跟过来了，主机上这只怪可以被抓（站着、没被抓、没有抓取保护）
   await B.evaluate(id => { const m = ents.find(e => e.nid === id); if (!m) return; const p = game.player; p.x = m.x - 40; p.y = m.y; p.face = 1; }, gid0);

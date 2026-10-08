@@ -20,6 +20,8 @@ const JUGGLE = {
   relaunch: 0.87, relaunchMin: 0.4,  // 决斗：追加浮空同一轮连击第 n 次挑空 × 0.87^n（最低 40%）
   airLift: 160, airDecay: 0.93, airMin: 0.2,   // 空中普通受击：接住下落，托力 160；决斗里力度 k = 0.93^空中受击次数（最低 20%），刷图 k 由保护等级决定（自由段 1）
   riseKeep: 0.96,            // 上升中被普通攻击打到：保留 96% 上升速度（不会把挑空打断）
+  pveCeil: 230,              // 刷图高度上限（我们自己加的，官方资料没有）：保护线之前不衰减，密集的空中攻击 + 再挑会把怪越顶越高、顶出屏幕。
+                             // 空中再挑最多挑到约 230 像素；空中受击的托力在 170 像素以上逐渐减到 20%（只托住、不再往上顶）
   gravStep: 0.03, gravMax: 0.9,   // 决斗：每次空中受击重力 +3%，最多 +90%（越连越沉）
   // 刷图没有浮空时限（官方也没有）：以前“同一轮浮空超过 5 秒 → 重力 ×2、挑空 ×0.3、不再接住”的断崖已取消，连招长度只由浮空保护决定
   duelSumLateT: 5, duelSumLate: 0.3,   // 只剩决斗里召唤物 / 场地打决斗玩家（不按玩家对玩家结算）沿用的旧时限：浮空超过 5 秒后挑空 ×0.3、不再接住
@@ -329,12 +331,14 @@ function jugAir(t, h, dir, kb, airborne) {
   const res = Math.pow(Math.max(0.5, t.weight), JUGGLE.weightExp) / (t.boss ? JUGGLE.bossRes : 1);
   const r = JUGGLE_CORE.hit(S, P, { kind: h.launch ? 'launch' : 'air', rep: !!h.rep, jp: h.jp, w: t.weight, ground });
   let vz;
+  const room = Math.max(0, JUGGLE.pveCeil - t.z);
   if (h.launch && r.canLaunch) {
     vz = h.launch * r.launchK / res;
+    if (airborne) vz = Math.min(vz, Math.max(JUGGLE.airLift / res, Math.sqrt(2 * JUGGLE.grav * room)));   // 空中再挑：最高点不超过 pveCeil
     if (airborne && t.vz > vz) vz = t.vz;   // 已经在更快地上升：不减速
     c.launch = (c.launch || 0) + 1; t._popLeft = null;   // 重新挑成正常浮空：落地按完整倒地时间算
   } else {   // 空中普通受击：下落中把速度拉回托力（力度 catchK），上升中基本不影响
-    const k = r.catchK, lift = (h.airLift ?? JUGGLE.airLift) * k / res;
+    const k = r.catchK, lift = (h.airLift ?? JUGGLE.airLift) * k / res * Math.min(1, Math.max(0.2, room / (JUGGLE.pveCeil * 0.26)));
     vz = t.vz > 0 ? Math.max(t.vz * JUGGLE.riseKeep, lift) : t.vz + (lift - t.vz) * k;
   }
   if (r.lv >= 2) vz = Math.min(vz, 0);

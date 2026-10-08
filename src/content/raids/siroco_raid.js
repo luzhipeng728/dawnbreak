@@ -21,7 +21,16 @@ for (const [id, M] of Object.entries(SIROCO_RAID_MOB_DEFS)) regionMonster(SIROCO
 const raidBoss = (id, name, art, elem, first, second, extra = {}) => regionMonster(SIROCO_RAID_SPEC, id, { name, lvl: extra.lvl || 64, size: extra.size || [18, 15, 126], speed: extra.speed || 100, scale: extra.scale ?? 0.92, elem, art, hook: extra.hook, mechs: extra.mechs || [], phases: [{ at: 1, skills: first }, { at: 0.5, enter: extra.enter || { say: `${name}进入第二阶段！` }, skills: second }] }, true);
 raidBoss('siRaidBoss_gatekeeper', '遗忘姓名的守门人', 'gatekeeper', 'light', [{ use: 'pull', clip: 'sigA', mode: 'in', r: 320, force: 300, dur: 1, windup: 0.8, dmg: 0.4, cd: [8, 11] }, { use: 'swipe', clip: 'sigB', n: 3, reach: 120, width: 34, windup: 0.6, dmg: 1.15, cd: [3, 4.5] }, { use: 'aoe', clip: 'charge', shape: 'ring', at: 'self', r: 230, r0: 90, windup: 1, dmg: 1.2, down: true, cd: [8, 10] }], [{ use: 'dash', clip: 'sigA', len: 360, speed: 690, windup: 0.8, dmg: 1.25, cd: [7, 9] }, { use: 'aoe', clip: 'sigB', shape: 'circle', at: 'self', r: 200, windup: 1.2, dmg: 1.3, cd: [9, 11] }], { scale: 0.84 });
 raidBoss('siRaidBoss_haniel', '魅惑之哈妮尔', 'sirocoRaidMimic', 'dark', [{ use: 'shot', clip: 'sigA', mode: 'straight', n: 1, speed: 520, dmg: 1.05, cd: [4, 6] }, { use: 'aoe', clip: 'sigB', shape: 'circle', at: 'self', r: 150, windup: 0.9, dmg: 1.2, cd: [7, 9] }, { use: 'dash', clip: 'sigA', len: 300, speed: 700, windup: 0.6, dmg: 1.1, cd: [6, 8] }], [{ use: 'aoe', clip: 'rage', shape: 'ring', at: 'self', r: 300, r0: 120, windup: 1, dmg: 1.15, cd: [8, 10] }, { use: 'swipe', clip: 'sigB', n: 4, reach: 96, dmg: 1.05, cd: [4, 6] }], { scale: 0.78 });
-raidBoss('siRaidBoss_lena', '魔弹持有者蕾娜', 'sirocoRaidFrost', 'dark', [{ use: 'rain', clip: 'sigA', kind: 'bolt', n: 5, r: 50, spread: 190, windup: 1, dmg: 1.05, cd: [7, 9] }, { use: 'shot', clip: 'sigB', mode: 'spread', n: 6, spread: 60, speed: 340, dmg: 0.8, cd: [4, 6] }, { use: 'mark', clip: 'atk1', delay: 1.1, r: 70, dmg: 1.2, cd: [8, 10] }], [{ use: 'shot', clip: 'sigA', mode: 'straight', n: 3, speed: 620, dmg: 1.1, cd: [6, 8] }, { use: 'rain', clip: 'sigB', kind: 'bolt', n: 7, r: 46, spread: 220, windup: 1.1, dmg: 1.1, cd: [8, 10] }], { scale: 0.78 });
+// 蕾娜：7 招按顺序放（raid_mech 的 loop），每招之后回到中央、脚下黑雾站着不动（rest：短暂受伤 ×1.3）[91-夜][NAMU-WIT]；AI 自己不放（cd 很长）
+raidBoss('siRaidBoss_lena', '魔弹持有者蕾娜', 'sirocoRaidFrost', 'dark', [
+  { use: 'rain', id: 'lnRain', clip: 'sigA', kind: 'bolt', n: 7, r: 50, spread: 220, windup: 1, dmg: 1.05, cd: [60, 60], say: '雨点爆炸！' },
+  { use: 'mark', id: 'lnBolt', clip: 'atk1', mode: 'burst', delay: 1.2, r: 80, dmg: 1.2, cd: [60, 60], say: '指定雷击！' },
+  { use: 'dash', id: 'lnGrab', clip: 'sigB', carry: true, speed: 720, windup: 0.9, dmg: 1.1, cd: [60, 60], say: '抓住你了——枪舞！' },
+  { use: 'mark', id: 'lnSnipe', clip: 'sigA', mode: 'burst', delay: 1.6, r: 110, dmg: 1.4, cd: [60, 60], say: '蓝色标记——爆裂射击！' },
+  { use: 'shot', id: 'lnBarrage', clip: 'sigB', mode: 'spread', n: 12, spread: 330, speed: 300, dmg: 0.8, cd: [60, 60], say: '十二方向弹幕！' },
+  { use: 'shot', id: 'lnHead', clip: 'atk1', mode: 'straight', n: 3, speed: 680, dmg: 1.15, cd: [60, 60], say: '三连爆头！' },
+  { use: 'pool', id: 'lnFeather', clip: 'sigA', trail: true, zone: 'blind', dur: 5, every: 0.5, r: 40, cd: [60, 60], say: '黑羽散落……' }],
+  [{ use: 'shot', clip: 'sigA', mode: 'straight', n: 3, speed: 620, dmg: 1.1, cd: [60, 60] }], { scale: 0.78 });
 raidBoss('siRaidBoss_gusty', '灭食之古斯迪', 'sirocoRaidGorge', 'dark', [{ use: 'pull', clip: 'sigA', mode: 'out', r: 240, force: 300, dur: 0.8, windup: 0.6, dmg: 0.6, cd: [8, 11] }, { use: 'leap', clip: 'sigB', r: 110, dmg: 1.25, cd: [6, 8] }, { use: 'rain', clip: 'atk1', kind: 'hex', n: 5, r: 52, spread: 180, windup: 1, dmg: 1.05, cd: [7, 9] }], [{ use: 'pull', clip: 'rage', mode: 'in', r: 320, force: 300, dur: 1.2, windup: 0.9, dmg: 0.5, cd: [10, 13] }, { use: 'mark', clip: 'sigA', delay: 1, r: 64, dmg: 0.9, status: 'slow', cd: [8, 10] }], { scale: 0.86 });
 raidBoss('siRaidBoss_grumi', '飘荡的咕噜米', 'sirocoRaidCinder', 'light', [{ use: 'shot', clip: 'sigA', mode: 'spread', n: 5, spread: 48, speed: 300, dmg: 0.72, cd: [4, 6] }, { use: 'rain', clip: 'sigB', kind: 'bolt', n: 5, r: 54, spread: 180, windup: 1.1, dmg: 1.1, cd: [7, 9] }], [{ use: 'shot', clip: 'sigA', mode: 'spread', n: 9, spread: 160, speed: 260, dmg: 0.7, cd: [5, 7] }, { use: 'laser', clip: 'sigB', windup: 0.8, dur: 1.2, sweep: 90, dmg: 0.42, cd: [7, 9] }], { scale: 0.8 });
 raidBoss('siRaidBoss_vita', '慈悲之维塔', 'sirocoRaidDawn', 'light', [{ use: 'pool', clip: 'sigA', at: 'target', r: 90, windup: 1, linger: 4, zone: 'slow', dmg: 0.3, cd: [7, 9] }, { use: 'rain', clip: 'sigB', kind: 'bolt', n: 6, r: 44, spread: 200, windup: 0.9, dmg: 1.05, cd: [7, 9] }, { use: 'dash', clip: 'atk1', len: 380, speed: 760, windup: 0.7, dmg: 1.15, cd: [6, 8] }], [{ use: 'lanes', clip: 'sigA', kind: 'bolt', lanes: 5, hit: 3, windup: 0.85, dmg: 1.1, cd: [8, 10] }], { scale: 0.82 });
@@ -50,6 +59,104 @@ const SIROCO_RAID_PEN_MOBS = {
   siRaidMob_tanna: { name: '昙娜', tier: 'elite', arch: 'kiter', size: [16, 13, 108], elem: 'dark', art: ['siPhantom', { hue: -150, sat: 1 }], skills: [{ use: 'shot', mode: 'spread', n: 3, spread: 40, speed: 340, dmg: 0.8, cd: [3, 5] }] },
 };
 for (const [id, M] of Object.entries(SIROCO_RAID_PEN_MOBS)) regionMonster(SIROCO_RAID_SPEC, id, M, false);
+// ===================================================================== 
+// P3 · 官方领主机制（raid_mech 脚本，docs/RAID_SIROCO.md §11）：每个领主一份数据，raidScript 运行时统一处理。
+// 出场无敌都 ≤ 3 秒（机器人 / raidfast 照样能打）；数值能直接改这里。来源代号同 §9，【分歧】【存疑】见 §6 / §11。
+// =====================================================================
+const RS_CROUCH = (name, o = {}) => ({ use: 'crouch', name, windup: 2.0, hurt: 0.3, ...o });
+const SIROCO_RAID_SCRIPTS = {
+  // 守门人：进场吸入灵魂（= 这扇门的顺序），约 36 秒 BGM 换乐器提示顺序；逆时针紫气 + 砸地震倒（蹲伏可躲）；防御姿态（绝望技）：限时打掉，否则全屏爆炸；没有破防 [QQ][91-破][NAMU-LAW]
+  siRaidBoss_gatekeeper: { intro: { dur: 3, say: '守门人吸入了灵魂……' }, orderCue: { at: 36 },
+    atk: [{ every: [26, 32], first: 15, puzzle: RS_CROUCH('逆时针紫气 · 砸地') }],
+    weak: { at: [0.55, 0.2], pool: [{ use: 'dps', name: '防御姿态', need: 0.05, dur: 10, onSolve: { dur: 0, say: '防御姿态被打破了！' }, cast: { name: '防御姿态（绝望技）' } }] },
+    onFail: { frac: 1, down: true, say: '全屏爆炸！' }, lines: { intro: '……你们是来找回名字的吗？', cast: '退下！', low: '我的名字……' } },
+  // 哈妮尔：虚弱三选一随机——魅惑之沼（清掉所有沼泽）/ 心灵之锁（按顺序踩 5 个法阵）/ 魅惑之舞（蓝条结束前打空橙条）；失败全屏秒杀 [233-黎]
+  //   分身：持心者站进分身脚下的紫阵 ~1 秒消除 [233-黎] → 定时机制招 clear（两人版没有“传心”，谁都能消）
+  siRaidBoss_haniel: { intro: { dur: 2.5, say: '魅惑之哈妮尔现身了' },
+    atk: [{ every: [30, 36], first: 20, puzzle: { use: 'clear', name: '分身之阵', n: 2, hold: 1, grow: 0, dur: 12, col: '#c060ff', failHurt: 0.2 } }],
+    weak: { at: [0.75, 0.5, 0.25], pick: 'random', pool: [
+      { use: 'clear', name: '魅惑之沼', n: 3, every: 4, max: 6, grow: 5, hold: 1.5, dur: 20, col: '#ff6ad0' },
+      { use: 'pads', name: '心灵之锁', n: 5, peek: 6, dur: 16, maxWrong: 3 },
+      { use: 'dps', name: '魅惑之舞', need: 0.08, dur: 12 }] },
+    onSolve: { dur: 8, mul: 1.5 }, onFail: { frac: 1, down: true }, lines: { intro: '来吧，看着我的眼睛……', cast: '沉醉吧！', solve: '怎么会……', low: '我的心……还给我！' } },
+  // 蕾娜：7 招按顺序（loop）+ 每招后回中央黑雾（rest）；希洛克之舞：碰到头顶粉字的真身，否则全屏秒杀 [91-夜]
+  siRaidBoss_lena: { intro: { dur: 2.5 }, loop: ['lnRain', 'lnBolt', 'lnGrab', 'lnSnipe', 'lnBarrage', 'lnHead', 'lnFeather'], gap: [4.5, 5.5], rest: { dur: 2.2, mul: 1.3 },
+    weak: { at: [0.5, 0.2], pool: [{ use: 'realBody', name: '希洛克之舞', n: 5, dur: 12, every: 2.5, col: '#ff8ad8', maxWrong: 1 }] },
+    onSolve: { dur: 6, mul: 1.5 }, lines: { intro: '第六发魔弹，送给你。', cast: '跳一支希洛克之舞吧！', solve: '被看穿了？' } },
+  // 崔拉 & 昙娜：开心的玩球啦（黑白两球相撞 → 破防，否则全屏爆炸）；弹球（多段攻击打断 → 短暂破防）[91-界][NAMU-WIT]
+  //   两人版：两个球都由你引导到中间相撞（官方是两名玩家的连线交叉）【取舍】
+  siRaidBoss_kulaTanna: { intro: { dur: 2.5, say: '崔拉和昙娜手拉着手出现了' },
+    weak: { at: [0.65, 0.3], pool: [{ use: 'guide', name: '开心的玩球啦', n: 2, dur: 22, label: '球', goalLabel: '相撞点' }, { use: 'dps', name: '弹球', need: 0.03, dur: 7, onSolve: { dur: 4 } }] },
+    onSolve: { dur: 6, mul: 1.5 }, lines: { intro: '一起玩吧！', cast: '开心的玩球啦！', solve: '撞、撞到了……' } },
+  // 明皓：召唤玄武束缚（连打挣脱）；必杀：黑红齿轮滚两次（定时机制招：只有蹲下的人躲得过滚过来的齿轮 → 用 lanes 招式见技能表）；没有破防 [YW-昼][NAMU-WIT]【分歧：两组招式描述差异大，取 [YW-昼] 为主】
+  siRaidBoss_myungho: { intro: { dur: 2.5, say: '万兽之皇明皓咆哮着' },
+    atk: [{ every: [24, 30], first: 12, puzzle: { use: 'burial', name: '玄武束缚', hits: 9, dur: 6, hurt: 0.3 } }, { every: [34, 40], first: 26, puzzle: RS_CROUCH('必杀 · 齿轮滚动') }],
+    lines: { intro: '万兽，听我号令！', low: '必杀——！' } },
+  // 古斯迪：吞噬属性（喂头顶的相反属性 → 虚弱 10 秒，否则全屏陨石雨）；吞人（打领主救人）[YW-忆][NAMU-PAIN]
+  siRaidBoss_gusty: { intro: { dur: 2.5 },
+    atk: [{ every: [30, 36], first: 22, puzzle: { use: 'burial', name: '吞噬', boss: true, hits: 8, dur: 6, hurt: 0.4 } }],
+    weak: { at: [0.7, 0.4, 0.15], pool: [{ use: 'feed', name: '吞噬属性', dur: 12 }] }, onSolve: { dur: 10, mul: 1.5 }, onFail: { frac: 1, down: true, say: '陨石雨！' },
+    lines: { intro: '饿……好饿……', cast: '吃掉……属性……', solve: '呕——！' } },
+  // 咕噜米：天上聚集黄泡，被打中会加速聚集，满了大范围 AoE；没有破防 [NAMU-PAIN]
+  siRaidBoss_grumi: { intro: { dur: 2 }, atk: [{ every: [36, 40], first: 6, puzzle: { use: 'gauge', name: '黄色泡泡', dur: 24, rate: 4.5, bump: 14, hurt: 0.3, maxBad: 9 } }] },
+  // 维塔：苏醒之路（只踩白色地板，读条内走到维塔身边，否则强制苏醒高伤；引导模式没有）→ 慈悲的引导（能量球引到维塔身上 3 次 → 虚弱，否则全屏秒杀）；
+  //   大招「我对你已经没有慈悲了」：白花碎裂震倒全员（蹲伏可躲）[YW-门][NAMU-PAIN]【分歧：引导次数 3（困难）/ 4（NAMU），取 3】
+  siRaidBoss_vita: { intro: { dur: 2, say: '维塔在另一端沉睡着……' },
+    atk: [{ every: [30, 36], first: 24, puzzle: RS_CROUCH('我对你已经没有慈悲了') }],
+    weak: { at: [1, 0.6, 0.25], pool: [
+      { use: 'path', name: '苏醒之路', dur: 18, hurt: 0.12, skipGuide: true, onSolve: { dur: 0, say: '维塔醒了：「是谁想走进我的内心」' }, onFail: { frac: 0.5, down: true, say: '维塔强制苏醒！' }, cast: { name: '维塔强制苏醒' } },
+      { use: 'guide', name: '慈悲的引导', n: 3, toBoss: true, goal: 70, dur: 26, label: '光', goalLabel: '维塔' },
+      { use: 'guide', name: '慈悲的引导', n: 3, toBoss: true, goal: 70, dur: 26, label: '光', goalLabel: '维塔' }] },
+    onSolve: { dur: 8, mul: 1.5 }, lines: { intro: '是谁想走进我的内心？', cast: '光不会再庇护你。', solve: '慈悲……' } },
+  // 奈克斯：苏醒之路（浮动地板，不能踏空、也不能跳；从右往左）→ 公义的引导（白圈能量球引到奈克斯身上 3 次）；大招「把你们全部切碎」：地震震倒（蹲伏可躲）[YW-门][YW-Q1]
+  siRaidBoss_nex: { intro: { dur: 2, say: '奈克斯在另一端沉睡着……' },
+    atk: [{ every: [30, 36], first: 24, puzzle: RS_CROUCH('把你们全部切碎') }],
+    weak: { at: [1, 0.6, 0.25], pool: [
+      { use: 'path', name: '苏醒之路', dur: 18, hurt: 0.12, noJump: true, rtl: true, skipGuide: true, onSolve: { dur: 0, say: '奈克斯醒了：「是谁想看透我」' }, onFail: { frac: 0.5, down: true, say: '奈克斯强制苏醒！' }, cast: { name: '奈克斯强制苏醒' } },
+      { use: 'guide', name: '公义的引导', n: 3, toBoss: true, goal: 70, dur: 26, label: '光', goalLabel: '奈克斯' },
+      { use: 'guide', name: '公义的引导', n: 3, toBoss: true, goal: 70, dur: 26, label: '光', goalLabel: '奈克斯' }] },
+    onSolve: { dur: 8, mul: 1.5 }, lines: { intro: '是谁想看透我？', cast: '不能再让你猖狂下去了。', solve: '公义……' } },
+  // 洛多斯：举斧锤进地面（HELP，本人狂按键挣脱）、慢动作砸地 → 全屏震倒（蹲伏可躲）；没有破防 [YW-城][NAMU-PAIN]
+  siRaidBoss_rodos: { intro: { dur: 2, say: '破坏之洛多斯举起了巨斧' },
+    atk: [{ every: [22, 28], first: 10, puzzle: { use: 'burial', name: '举斧 · 锤进地面', hits: 10, dur: 5, hurt: 0.35 } }, { every: [30, 36], first: 20, puzzle: RS_CROUCH('慢动作砸地') }],
+    lines: { intro: '碾碎！', low: '破坏……一切……' } },
+  // 第 3 界 · 噩梦：W 形路径爆炸后中央砸地；没有破防 [NAMU-C32] → 地板路线做成定时机制招（只走安全的路）
+  siRaidBoss_nightmare: { intro: { dur: 2.5 }, atk: [{ every: [30, 36], first: 14, puzzle: { use: 'path', name: 'W 形爆炸', cols: 6, rows: 3, dur: 12, hurt: 0.15, maxFalls: 99 } }] },
+  // 第 2 界 · 老妪：破防「逃不掉的恐惧」（把激光反射到老妪身上 → 站进泪水洼）；眼波（看着会眩晕 → 背对）[NAMU-C32]；引导模式 1 分钟读条后自动破防 [DFO]
+  siRaidBoss_crone: { intro: { dur: 2.5 },
+    atk: [{ every: [22, 28], first: 12, puzzle: { use: 'facing', name: '眼波', mode: 'away', windup: 2.2, hurt: 0.15 } }],
+    weak: { at: [0.6, 0.25], pool: [{ use: 'clear', name: '逃不掉的恐惧', n: 4, hold: 0.8, grow: 0, r: 42, dur: 16, col: '#8ad8ff', label: '泪' }] },
+    onSolve: { dur: 8, mul: 1.5 }, lines: { intro: '嘻嘻嘻……做个好梦吧。', cast: '逃不掉的！', solve: '我的眼睛……' } },
+  // 第 2 界 · 意识之棺的希洛克：进场无敌 3~4 秒；希洛克的气息（轮流吸，条满还吸 = 大爆炸）；唯一的破防来源是老妪被击杀（P1 的跨图效果）[NAMU-C32][3DM-意]
+  siRaidBoss_phantom: { intro: { dur: 3, say: '无形之希洛克：进场无敌' },
+    atk: [{ every: [34, 40], first: 18, puzzle: { use: 'absorb', name: '希洛克的气息', need: 6, dur: 24 } }],
+    lines: { intro: '渺小的东西……', low: '我的结界……！' } },
+  // 第 1 界 · 否定（噩梦 v2）：3 次全屏冲击波后破防 [NAMU-C1]
+  siRaidBoss_nightmare2: { intro: { dur: 2.5 },
+    weak: { every: 40, pool: [{ use: 'crouch', name: '全屏冲击波 ×3', windup: 2.4, hurt: 0.25, cast: { name: '全屏冲击波' } }] }, onSolve: { dur: 6, mul: 1.5 }, onFail: { frac: 0.3, down: true } },
+  // 第 1 界 · 压抑（凯恩）：分身按波出现，击杀真身 3 次 → 破防（引导 2 波）[NAMU-C1]
+  siRaidBoss_kain: { intro: { dur: 2.5, say: '迷雾中的暗杀者凯恩' },
+    weak: { at: [0.6, 0.25], pool: [{ use: 'realBody', name: '残影', n: 4, rounds: 3, dur: 22, every: 2.2, col: '#8a8aa0', maxWrong: 2 }] }, onSolve: { dur: 8, mul: 1.5 },
+    lines: { intro: '……', cast: '看得见我吗？', solve: '啧。' } },
+  // 第 1 界 · 忘却（卢克西）：无敌期间拿宝玉撞她（共鸣 / 增伤由 P1 的规则核心处理）[PKVS-P2][NAMU-C1]；吸血（挡黄血）两人版做不了 → 没做【取舍】
+  siRaidBoss_luxi: { intro: { dur: 2.5 },
+    weak: { at: [0.7, 0.35], pool: [{ use: 'gem', name: '宝玉撞击', n: 2, toBoss: true, dur: 24, label: '宝玉', altarLabel: '卢克西' }] }, onSolve: { dur: 8, mul: 1.5 },
+    lines: { intro: '我会让你们忘掉一切。', cast: '来啊，撞过来！' } },
+  // 真理的意识之棺 · 基里：绝望技「灵魂抽取」（灵魂换到别人身体里 → 只打同色的魂，中途互换）[NAMU-C1]
+  siRaidBoss_formGiri: { intro: { dur: 2.5 },
+    weak: { at: [0.7, 0.35], pool: [{ use: 'soulSwap', name: '灵魂抽取', dur: 18, need: 4 }] }, onSolve: { dur: 8, mul: 1.5 }, lines: { cast: '你的灵魂归我了。' } },
+  // 真理的意识之棺 · 莱斯特：「月与日之剑」（站到亮出的剑那边）/ 绝望技「超新星」（把碎片搬到五角星的角，引导模式预先点亮 2 个）[NAMU-C1]
+  siRaidBoss_formLester: { intro: { dur: 2.5 },
+    weak: { at: [0.7, 0.35], pool: [{ use: 'swords', name: '月与日之剑', rounds: 3 }, { use: 'gem', name: '超新星', n: 3, dur: 26, label: '碎片', altarLabel: '五角星' }] }, onSolve: { dur: 8, mul: 1.5 }, lines: { cast: '日与月，选一个吧。' } },
+  // 真理的意识之棺 · 拉维茜：紫水晶（打碎 8 颗，引导 4 颗）、朝向判定（粉色面向 / 紫色背对，之后蹲伏）、黑雾冲击（埋人）[PKVS-真][NAMU-C1]
+  siRaidBoss_formLavicy: { intro: { dur: 2.5 },
+    atk: [{ every: [26, 32], first: 14, puzzle: { use: 'facing', name: '朝向判定', mode: 'random', windup: 2.4, hurt: 0.2 } }, { every: [34, 40], first: 28, puzzle: { use: 'burial', name: '黑雾冲击', hits: 9, dur: 6 } }],
+    weak: { at: [0.7, 0.35], pool: [{ use: 'crystals', name: '紫水晶', n: 8, hits: 2, dur: 18, col: '#c080ff' }] }, onSolve: { dur: 8, mul: 1.5 }, lines: { cast: '把水晶还给我！' } },
+  // 阴影之棺 / 引导的真理之棺：无形之希洛克本体；合并后 30 秒虚弱由 P1 规则给（共享血量 + enterFx）；这里只有进场无敌和全屏震倒 [QQ][NAMU-C1]
+  siRaidBoss_siroco: { intro: { dur: 3, say: '无形之希洛克' }, atk: [{ every: [30, 36], first: 16, puzzle: RS_CROUCH('无之冲击') }],
+    lines: { intro: '你们……终于来了。', low: '无形……不会消失……' } },
+};
+for (const [id, spec] of Object.entries(SIROCO_RAID_SCRIPTS)) { const D = MON[id]; if (D) (D.msMechs ??= []).push({ use: 'raidScript', ...spec }); }
 Object.assign(MON_ART, {
   siRaidBoss_gatekeeper: ['gatekeeper'], siRaidBoss_haniel: ['sirocoRaidMimic'],
   siRaidBoss_lena: ['sirocoRaidFrost'], siRaidBoss_gusty: ['sirocoRaidGorge'], siRaidBoss_grumi: ['sirocoRaidCinder'],

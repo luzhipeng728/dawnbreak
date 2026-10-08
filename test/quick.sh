@@ -32,6 +32,7 @@ g3() { for t in combat summon avatar shop acct bag skyguide epicfx; do run 3 $t 
 g4() { for t in sword gunner mage enchantress summoner awkcancel; do run 4 $t node test/$t.mjs; done
   run 4 region node test/region.mjs siroco data,skills,mechs,scenes,quest,abyss   # 区域流水线的快速部分（怪物逐个 / 机器人通关在 all.sh）
   run 4 raidmech node test/raid_mech_lab.mjs   # 团本领主机制运行时（docs/RAID_SIROCO.md §10）：每个谜题真的刷物件 / 标记、能解开、灭团掉血
+  run 4 raidbosses node test/raid_bosses.mjs   # 希洛克团本每个领主的官方机制（docs/RAID_SIROCO.md §11）：出场无敌、虚弱池逐个解开、不操作灭团、机制招按解法没事
   run 4 bossprims node test/boss_prims.mjs   # 领主差异化原语（docs/BOSS_SPEC.md）：挨打 / 生路、解开 / 失败、特性、defineBossKit、领主房
   run 4 boss node test/boss.mjs graca,skasa_nest data,phases,skills,mechs; }   # 领主专项的快速样本：一个手写领主 + 一个 4 阶段区域领主（全部 59 个 + 机器人在 all.sh）
 g5() { for t in paramedic witch spitfire mechanic fighter fighter_quests fighter_pvp fighter_launch priest infighter priest_infighter infighter_contract contract duel_rules; do run 5 $t node test/$t.mjs; done; run 5 duelwake node test/duel_wakeup.mjs asura,aura; run 5 classes node test/classes.mjs sword,gun,mage; }

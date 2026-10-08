@@ -5,7 +5,7 @@ const rd = f => fs.readFileSync(new URL('../src/' + f, import.meta.url), 'utf8')
 const core = rd('engine/core.js'), mul = core.match(/function mulberry[^\n]+/)[0];
 const ctx = {}; vm.runInNewContext(mul + '\n' + rd('game/dungeon.js') + '\nthis.genLayout = genLayout; this.genFixedLayout = genFixedLayout;', ctx);
 // 内容文件：只要 defineDungeon 收到的数据（怪物 / 主题 / 美术这些全局用空函数顶替）
-const DG = {}, stub = { regionTheme() {}, regionMonster() {}, MON_ART: {}, RAID_DEFS: { siroco: {} }, SIROCO_RAID_GEAR: [], defineDungeon: (id, d) => { DG[id] = { id, ...d }; } };
+const DG = {}, stub = { regionTheme() {}, regionMonster() {}, MON: {}, MON_ART: {}, RAID_DEFS: { siroco: {} }, SIROCO_RAID_GEAR: [], defineDungeon: (id, d) => { DG[id] = { id, ...d }; } };
 vm.runInNewContext(rd('content/raids/siroco_raid.js'), stub);
 let fail = 0;
 const ok = (c, msg, d) => { console.log((c ? '✓ ' : '✗ ') + msg + (c || d === undefined ? '' : '  ' + JSON.stringify(d).slice(0, 300))); if (!c) fail++; return c; };

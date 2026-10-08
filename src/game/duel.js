@@ -88,17 +88,19 @@ for (const id in SKILLS) {
   if (S.pvp === undefined && PVP_SKILL[kind]) S.pvp = PVP_SKILL[kind];
   if (S.awaken && S.cd && S.cd * (S.pvpCd || 1) < DUEL_CFG.time + 1) S.pvpCd = (DUEL_CFG.time + 1) / S.cd;   // 觉醒每局一次
 }
-/* ---- 连招保护（官方两段浮空 + 落地自己蹲，docs/PVP.md §5。百分比都是决斗血条上能看到的最大 HP）----
-   平推（红）stand：站着挨打累计 20% → 强制击倒；
-   浮空一段 air1：被挑飞后累计 20% → 下落变快（重力 ×1.6，之后每 5% 再重一档），人还在空中，可以继续打；
+/* ---- 连招保护（官方两段浮空 + 落地自己蹲，docs/PVP.md §5 / §6。百分比都是决斗血条上能看到的最大 HP）----
+   平推（红）stand：站着挨打累计 25% → 强制击倒（官方 90 版红条 25%）；3 秒没再挨站立攻击、或者被挑起来，红条清掉；
+   浮空一段 air1：从被挑飞（击倒）那一下起累计 20%（落地后的扫地也算，加重一直保留到扫地结束）→ 下落变快（重力 ×1.6，之后每 5% 再重一档），人还在空中，可以继续打；
    浮空二段 air2：累计 30% → 立马砸到地上。不在空中无敌、不自动受身。落地后自己按跳跃受身蹲伏才躲得掉，不蹲就能被低段扫地；
-   扫地（黄）down：落地之后再被打掉 15%（含扫地托起来的那几下）→ 强制起身 + 无敌。不蹲的代价有上限，但不能一落地就站起来；
+   扫地 / 起身（黄）down：倒地之后被打掉 15%（倒地中、扫地托起来的那几下）→ 强制起身 + 无敌 0.7 秒。不蹲的代价有上限，但不能一落地就站起来；
+   二次保护（紫）sec：落地后被重新挑成正常浮空（二次浮空），这一段再累计 15% → 强制落地站起 + 无敌（和扫地分开算）；
+   清零 reset：第一次落地 3 秒后、并且已经脱离浮空 / 倒地（还在被连着打就一直保留）；没落过地的按能行动 3 秒（engine/entity.js 的 PVP.protReset）；
    downMax：落地后连续被追着打最多 3.8 秒（阿修罗那种小伤害也拖不住）。没人打的时候仍按 PVP.downTime 自己爬起来；
    时间保护 lockMax：连续不能行动超过 7.5 秒脱出。一整套「浮空到 30% 砸地 + 扫地」放得下，第二套要等对方起来、保护条清空；
    单下伤害不超过最大 HP 的 5%（PVP.hitCap），一发多段技能跨不过二段，上挑之后还接得上；
    受击状态：浮空 ×0.85、倒地 ×0.9。起来之后保护条清零，下一套从头算 */
-const PVP_PROT = { stand: 0.2, air1: 0.2, air2: 0.3, airStep: 0.05, down: 0.15, downMax: 3.8, wakeInvul: 0.7, lockMax: 7.5, airDmg: 0.85, downDmg: 0.9 };
-Object.assign(PVP, { airProt: PVP_PROT.air1, airStep: PVP_PROT.airStep, downProt: PVP_PROT.down, standProt: PVP_PROT.stand, hitCap: 0.05, downTime: 1.35 });
+const PVP_PROT = { stand: 0.25, air1: 0.2, air2: 0.3, airStep: 0.05, down: 0.15, sec: 0.15, reset: 3, standReset: 3, downMax: 3.8, wakeInvul: 0.7, lockMax: 7.5, airDmg: 0.85, downDmg: 0.9 };
+Object.assign(PVP, { airProt: PVP_PROT.air1, airStep: PVP_PROT.airStep, downProt: PVP_PROT.down, standProt: PVP_PROT.stand, secProt: PVP_PROT.sec, protReset: PVP_PROT.reset, getupInvul: PVP_PROT.wakeInvul, hitCap: 0.05, downTime: 1.35 });
 JUGGLE.pvpRecover = 99;   // 二段是砸地，不是空中受身
 const duelAirLv = p => { const r = (p.cmb.airDmg || 0) / p.hpMax; return r >= PVP_PROT.air2 ? 2 : r >= PVP_PROT.air1 ? 1 : 0; };   // 0 / 一段 / 二段（画在人物头上）
 /* ---- 开局冷却（官方决斗场第 8 季“起始冷却时间”：大技能开局就在冷却，时长 = 技能的决斗冷却；手游“无色技能开场自动进入冷却”）----
@@ -123,7 +125,7 @@ const duelGuardFree = id => { const S = SKILLS[id]; return !!S && !S.awaken && (
   return cs0(p, id, viaCmd, key);
 }; }
 { const da0 = Ent.prototype.doAct; Ent.prototype.doAct = function (def, extra) { if (def && def.basic && duelGuardOn(this)) return; return da0.call(this, def, extra); }; }
-// 命中：倒计时中不算；时间保护（连续不能行动太久：这一下改成受身脱出）；受击状态修正（浮空 ×0.85、倒地 ×0.9）；二次浮空（第一次落地之后被再挑起来的伤害也算倒地保护）
+// 命中：倒计时中不算；时间保护（连续不能行动太久：这一下改成受身脱出）；受击状态修正（浮空 ×0.85、倒地 ×0.9）；一次浮空条从挑飞起算；第一次落地之后：倒地 / 扫地算起身保护，再挑成浮空算二次保护
 const DUEL_HARD = ['stun', 'freeze', 'sleep', 'root', 'hold'];
 const duelClearHard = t => { if (t.status) for (const k of DUEL_HARD) delete t.status[k]; };
 function duelEscape(t, why = '连招保护') {
@@ -165,19 +167,34 @@ const duelSumPvp = s => { const S = s && s.fromSkill && SKILLS[s.fromSkill], o =
   if (duelSumCtx && h && h.pvp === undefined) h = { ...h, pvp: duelSumPvp(duelSumCtx) };   // 场地 / 附着型召唤物（summonHit 以主人的名义打）
   if ((t.pvpLockT || 0) > PVP_PROT.lockMax && t.st !== 'held') { duelEscape(t); return false; }
   if (duelLying(t) && (t.pvpDownT || 0) > PVP_PROT.downMax) { duelEscape(t, '起身'); return false; }
-  const st0 = t.st, air0 = st0 === 'air' || t.z > 2, m0 = t.dmgTakenMul, c = t.cmb, dmg0 = c.dmg;
+  const st0 = t.st, air0 = st0 === 'air' || t.z > 2, m0 = t.dmgTakenMul, c = t.cmb, dmg0 = c.dmg, stand0 = c.standDmg || 0;
   t.dmgTakenMul = (m0 || 1) * (air0 ? PVP_PROT.airDmg : st0 === 'down' ? PVP_PROT.downDmg : 1);
   let r; try { r = ah0(a, t, h, opt); } finally { t.dmgTakenMul = m0; }
   if (r) t._pvpHitT = game.t;
-  if (c.landed && st0 !== 'down' && c.dmg > dmg0) c.downDmg += c.dmg - dmg0;
-  if (c.landed && (t.st === 'air' || t.z > 2) && !t.dead && c.downDmg >= t.hpMax * PVP.downProt && !t.recoverLand) { airRecover(t); fxText('倒地保护', t.x, t.y, t.z, { col: '#9fe8ff', size: 10 }); }
+  const d = c.dmg - dmg0, airNow = t.st === 'air' || t.z > 2;
+  if ((c.standDmg || 0) > stand0) c.standT = game.t;   // 平推条：3 秒没再挨站立攻击就清（duel.update）
+  // 一次浮空保护（蓝条）：从被挑飞的那一下起，之后所有伤害都算（核心只算空中挨的）；挑飞时平推条清掉
+  if (!c.airOn && airNow && !t.dead) { c.airOn = true; c.standDmg = 0; if (!air0 && d > 0) c.airDmg += d; }
+  else if (c.airOn && !air0 && d > 0) c.airDmg += d;
+  // 二次浮空：落地后被挑空重新挑成正常浮空（二段砸地之后挑不起来）→ 进二次保护阶段，这一段的伤害单独算（紫条）；落地之后的其余伤害（倒地中、扫地托起）算起身保护（黄条）
+  if (r && c.landed && h && h.launch && !t._pvpDrop && airNow && !t.recoverLand) t._pvpSec = true;
+  if (c.landed && st0 !== 'down' && d > 0) { if (t._pvpSec) c.secDmg = (c.secDmg || 0) + d; else c.downDmg += d; }
+  if (c.landed && airNow && !t.dead && !t.recoverLand && (c.downDmg >= t.hpMax * PVP.downProt || (c.secDmg || 0) >= t.hpMax * PVP.secProt)) { const sec = (c.secDmg || 0) >= t.hpMax * PVP.secProt; airRecover(t); fxText(sec ? '二次保护' : '倒地保护', t.x, t.y, t.z, { col: sec ? '#d8a0ff' : '#9fe8ff', size: 10 }); }
   else if (!t.dead && !c.landed && duelAirLv(t) >= 2 && (t.st === 'air' || t.z > 2) && !t.recoverLand) {   // 二段：立马砸下去，不给空中无敌
     t.vz = -1500; t.bounceNext = 0; t.bounced = true;
     if (!t._pvpDrop) { t._pvpDrop = 1; fxText('二段保护', t.x, t.y, t.z + 34, { col: '#ffb060', size: 11 }); fxAura(t, '#ffb060', 0.45); }
   } else if (c.landed && duelAirLv(t) >= 2 && t.st === 'air' && t.vz > JUGGLE.pvpSweepPop && !t.recoverLand) t.vz = JUGGLE.pvpSweepPop;   // 砸地之后的扫地只托一小节
   return r;
 }; }
-{ const rc0 = resetCmb; resetCmb = function (e) { rc0(e); if (e && e.cmb) e.cmb.landed = false; if (e) { e._pvpDrop = 0; e._pvpSweepUntil = 0; e._pvpSweepCount = 0; } }; }
+{ const rc0 = resetCmb; resetCmb = function (e) { rc0(e); if (e && e.cmb) Object.assign(e.cmb, { landed: false, landT: 0, airOn: false, secDmg: 0, standT: 0 }); if (e) { e._pvpDrop = 0; e._pvpSweepUntil = 0; e._pvpSweepCount = 0; e._pvpSec = false; } }; }
+// ?jugdbg 调试显示（game/jugdbg.js）：决斗玩家头顶显示四条保护各占血条的百分比、第一次落地后过了几秒
+function duelDbgInfo(p) {
+  const c = p.cmb, H = p.hpMax, pc = v => Math.round((v || 0) / H * 1000) / 10;
+  if (!c.hits && !c.dmg) return null;
+  const lv = duelAirLv(p), land = c.landed ? +(game.t - c.landT).toFixed(1) : null;
+  return { lines: [`平推 ${pc(c.standDmg)}/${PVP_PROT.stand * 100}%  浮空 ${pc(c.airDmg)}% L${lv}`, `起身 ${pc(c.downDmg)}/${PVP_PROT.down * 100}%  二次 ${pc(c.secDmg)}/${PVP_PROT.sec * 100}%${p._pvpSec ? '*' : ''}`, land === null ? '未落地' : `落地 ${land}s / ${PVP_PROT.reset}s 清零`],
+    bar: { v: (c.airDmg || 0) / (H * PVP_PROT.air2), tick: PVP_PROT.air1 / PVP_PROT.air2, col: lv >= 2 ? '#ffb060' : lv ? '#6ab0ff' : '#9fe8b0' }, raw: { stand: pc(c.standDmg), air: pc(c.airDmg), down: pc(c.downDmg), sec: pc(c.secDmg), lv, land } };
+}
 const duel = {
   state: 'none', t: 0, round: 1, wins: [0, 0], a: null, b: null, msg: '', msgT: 0, timer: 60, koT: 0, result: null,
   start(o) {
@@ -216,8 +233,13 @@ const duel = {
     if (this.state === 'fight') {
       if (this.guardT > 0) { this.guardT -= dt; if (this.guardT <= 0) { this.guardT = 0; this.say('开始!', 0.8); sfx.boom(0.6); } }
       else this.timer -= dt;
-      for (const p of [A, B]) {   // 时间保护：连续不能行动的时间（觉醒定格不算）；二次浮空：这一轮连招第一次落地之后的伤害都算倒地保护
-        if (p.st === 'down' && p.cmb.hits > 0) p.cmb.landed = true;
+      for (const p of [A, B]) {   // 时间保护：连续不能行动的时间（觉醒定格不算）；第一次落地计时（3 秒清零 / 起身保护 / 二次保护从这里分段）
+        const c = p.cmb;
+        if (p.st === 'down' && c.hits > 0) { if (!c.landT) c.landT = game.t; c.landed = true; p._pvpSec = false; }   // 第一次落地的时刻（3 秒清零从这里算）；二次浮空落回地面就结束二次保护阶段
+        else if (c.airOn && !c.landT && c.hits > 0 && p.st !== 'air' && p.z <= 2) { c.landT = game.t; c.landed = true; p._pvpSec = false; }   // 受身 / 时间保护脱出落地（没进倒地）也算第一次落地
+        // 保护清零（官方）：第一次落地 3 秒后、并且已经脱离浮空 / 倒地；还在被连着打（浮空 / 倒地中）就一直保留。平推条 3 秒没再挨站立攻击就清
+        if (c.landed && c.landT && game.t - c.landT >= PVP_PROT.reset && p.st !== 'air' && p.st !== 'down' && p.z <= 2 && !p.recoverLand) resetCmb(p);
+        else if ((c.standDmg || 0) > 0 && game.t - (c.standT || 0) >= PVP_PROT.standReset) c.standDmg = 0;
         if (game.timeStop <= 0 && !p.dead) {
           p.pvpLockT = !(p.free || p.st === 'act' || p.techHold) ? (p.pvpLockT || 0) + dt : 0;   // 受身蹲伏（自己选择多蹲一会儿、无敌）不算被锁
           p.pvpDownT = p.st === 'down' || (p.cmb.landed && p.st === 'air') ? (p.pvpDownT || 0) + dt : 0;   // 被抓着（held）不算，抓取有自己的上限
@@ -268,12 +290,12 @@ const duel = {
       const g = c.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, p.burning ? '#ff9a3a' : '#ff5a5a'); g.addColorStop(1, p.burning ? '#c83a0a' : '#b0101a');
       c.fillStyle = g; c.fillRect(right ? x + w * (1 - f) : x, y, w * f, h);
       c.strokeStyle = '#e8c070'; c.lineWidth = 1.5; c.strokeRect(x, y, w, h);
-      // MP 与保护条（红 = 平推、蓝 = 浮空：刻度是一级保护，满 = 二级保护、黄 = 倒地；阈值按原 HP，见 PVP_PROT）
+      // MP 与保护条（红 = 平推、蓝 = 浮空：刻度是一级保护，满 = 二级保护、黄 = 倒地 / 起身、紫 = 二次保护；阈值按原 HP，见 PVP_PROT）
       const mp = clamp(p.mp / p.mpMax, 0, 1); c.fillStyle = '#1a3a8a'; c.fillRect(x, y + h + 2, w, 3); c.fillStyle = '#5ab0ff'; c.fillRect(right ? x + w * (1 - mp) : x, y + h + 2, w * mp, 3);
       const ph = p.hpMax, bw = 80, bx = right ? x + w - bw : x;
-      const P3 = [[(p.cmb.standDmg || 0) / (ph * PVP_PROT.stand), '#c84a4a'], [p.cmb.airDmg / (ph * PVP_PROT.air2), '#4a8ae8'], [p.cmb.downDmg / (ph * PVP_PROT.down), '#c8a02a']];
-      P3.forEach(([v, col], i) => { const yy = y + h + 7 + i * 4; c.fillStyle = 'rgba(0,0,0,.5)'; c.fillRect(bx, yy, bw, 3); c.fillStyle = col; c.fillRect(bx, yy, bw * clamp(v, 0, 1), 3); });
-      c.fillStyle = '#fff'; c.fillRect(bx + bw * PVP_PROT.air1 / PVP_PROT.air2 - 0.5, y + h + 10, 1, 5);
+      const P3 = [[(p.cmb.standDmg || 0) / (ph * PVP_PROT.stand), '#c84a4a'], [p.cmb.airDmg / (ph * PVP_PROT.air2), '#4a8ae8'], [p.cmb.downDmg / (ph * PVP_PROT.down), '#c8a02a'], [(p.cmb.secDmg || 0) / (ph * PVP_PROT.sec), '#a060e0']];
+      P3.forEach(([v, col], i) => { const yy = y + h + 6 + i * 3; c.fillStyle = 'rgba(0,0,0,.5)'; c.fillRect(bx, yy, bw, 2); c.fillStyle = col; c.fillRect(bx, yy, bw * clamp(v, 0, 1), 2); });
+      c.fillStyle = '#fff'; c.fillRect(bx + bw * PVP_PROT.air1 / PVP_PROT.air2 - 0.5, y + h + 8, 1, 4);
       const J = jobOf(p) && CLASSES[p.cls].jobs[jobOf(p)];
       c.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif'; c.textAlign = right ? 'right' : 'left'; c.fillStyle = '#fff';
       c.fillText(`${p.name}${J ? ' · ' + J.name : ''}  ${Math.max(0, Math.round(p.hp))}`, right ? x + w : x, y + h + 24);

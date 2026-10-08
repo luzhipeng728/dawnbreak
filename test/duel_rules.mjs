@@ -33,12 +33,12 @@ if (parts.includes('hp')) {
   const r = await ev(() => {
     const out = {};
     for (const c of ['sword', 'gun', 'mage', 'fighter']) { const { A, B } = __T.start(c, null, 'sword'); out[c] = { hp: A.hpMax, base: DUEL_BASE[c].hp, ai: B.hpMax, mp: A.mpMax }; }
-    out.mul = DUEL_CFG.hpMul; out.air = PVP.airProt; out.air2 = PVP_PROT.air2; out.down = PVP.downProt; out.stand = PVP.standProt; out.cap = PVP.hitCap;
+    out.mul = DUEL_CFG.hpMul; out.air = PVP.airProt; out.air2 = PVP_PROT.air2; out.down = PVP.downProt; out.stand = PVP.standProt; out.sec = PVP.secProt; out.reset = PVP.protReset; out.cap = PVP.hitCap;
     return out;
   });
   ok(['sword', 'gun', 'mage', 'fighter'].every(c => r[c].hp === Math.round(r[c].base * r.mul)) && r.sword.ai === Math.round(DUEL_BASE_SWORD() * r.mul), `决斗 HP ×${r.mul}（4 个职业、AI 一样）`, r);
   function DUEL_BASE_SWORD() { return r.sword.base; }
-  ok(r.air === 0.2 && r.air2 === 0.3 && r.down === 0.15 && r.stand === 0.2 && r.cap === 0.05, '保护按血条：一段 20% 加速下落，二段 30% 砸地，扫地再 15%，平推 20%，单下不超过 5%', r);
+  ok(r.air === 0.2 && r.air2 === 0.3 && r.down === 0.15 && r.sec === 0.15 && r.stand === 0.25 && r.reset === 3 && r.cap === 0.05, '保护按血条（官方 90 版）：一段 20% 加速下落，二段 30% 砸地，起身 15%，二次保护 15%，平推 25%，第一次落地 3 秒后清零，单下不超过 5%', r);
   const pve = await ev(async () => { const P = makePlayer('sword'); game.lvl = 30; const pvp0 = game.pvp; game.pvp = false; game.duel = null; recalcStats(P); const hp = P.hpMax; game.pvp = pvp0; game.duel = duel; return { hp, isPvp: isPvp(P, duel.b) }; });
   ok(pve.hp > 0 && pve.hp < 21000 * 1.5, `地下城不受影响：Lv30 鬼剑士 recalcStats 的 HP ${pve.hp}（不乘决斗倍率）`, pve);
 }
@@ -145,12 +145,37 @@ if (parts.includes('juggle')) {
       fall(B); lv2.landSt = B.st;
       let otg = 0; const d0 = B.cmb.downDmg; for (let i = 0; i < 40 && B.st === 'down'; i++) { if (applyHit(A, B, { dmg: 2, downHit: true, sure: true, stun: 0.3 }) !== false) otg++; __T.run(1); if (B.st !== 'down' && B.st !== 'air') break; if (B.st === 'air') { B.z = 0; B.vz = 0; B.bounced = true; B.setState('down'); B.cmb.landed = true; B.downTime = 9; B.stT = 0.2; } }
       out.prot = { lv1, lv2, otg, downPct: +((B.cmb.downDmg || 0) / base(B)).toFixed(3), afterSt: B.st, invul: +B.invul.toFixed(2), fullDown: +(PVP.downProt * B.hpMax / base(B)).toFixed(2) }; }
-    // 二次浮空：落地后再挑起，伤害算倒地保护，超过就落地站起（受身）
+    // 二次浮空：落地后再挑起，伤害单独算二次保护（不算进扫地 / 起身保护），超过 15% 就落地站起（受身）
     { const { A, B } = fresh(); applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); fall(B); const st = B.st; B.cmb.hits = Math.max(1, B.cmb.hits); __T.run(1);
       applyHit(A, B, { dmg: 0.05, launch: 500, downHit: true, sure: true }); let n = 0; while (!B.recoverLand && n < 60 && !B.dead) { B.z = Math.max(B.z, 60); applyHit(A, B, { dmg: 2, airLift: 120, sure: true }); n++; }
-      out.second = { st, landed: !!B.cmb.landed, recover: !!B.recoverLand, n, down: +(B.cmb.downDmg / base(B)).toFixed(3) }; }
-    // 平推保护：站着挨打累计血条的 20% → 强制击倒
-    { const { A, B } = fresh(); let n = 0, d = 0; while (B.st !== 'air' && n < 80) { B.stun = 0; B.setState('idle'); d = B.cmb.dmg; applyHit(A, B, { dmg: 2, stun: 0.3, sure: true }); n++; } out.stand = { n, st: B.st, pct: +(d / base(B)).toFixed(3), pctAfter: +(B.cmb.dmg / base(B)).toFixed(3) }; }
+      out.second = { st, landed: !!B.cmb.landed, recover: !!B.recoverLand, n, down: +(B.cmb.downDmg / base(B)).toFixed(3), sec: +((B.cmb.secDmg || 0) / base(B)).toFixed(3) }; }
+    // 清零规则（官方 90 版）：第一次落地 3 秒后、并且已经脱离浮空 / 倒地才清；起身后不到 3 秒再挑，上一套的保护还在；还在倒地被扫就一直保留；
+    // 平推条 3 秒没再挨站立攻击就清、被挑起来立即清；一次浮空条从挑飞起算，扫地伤害也算；没落过地的能行动 3 秒清零
+    { const { A, B } = fresh(); const pct = v => +((v || 0) / base(B)).toFixed(3);
+      applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); for (let i = 0; i < 6; i++) { B.z = Math.max(B.z, 60); applyHit(A, B, { dmg: 2, airLift: 140, sure: true }); }
+      fall(B); const landT = game.t, air0 = pct(B.cmb.airDmg);
+      applyHit(A, B, { dmg: 1, downHit: true, sure: true }); const airSweep = pct(B.cmb.airDmg);
+      for (let i = 0; i < 400 && B.st !== 'idle'; i++) __T.run(1);
+      const upT = +(game.t - landT).toFixed(2), keep = { air: pct(B.cmb.airDmg), down: pct(B.cmb.downDmg), landed: !!B.cmb.landed };
+      for (let i = 0; i < 400 && game.t - landT < 2.95; i++) __T.run(1); const at29 = pct(B.cmb.airDmg);
+      __T.run(10); const at31 = { air: pct(B.cmb.airDmg), hits: B.cmb.hits, landed: !!B.cmb.landed };
+      out.reset = { air0, airSweep, upT, keep, at29, at31 }; }
+    { const { A, B } = fresh(); applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); fall(B); const landT = game.t; let n = 0;
+      for (let i = 0; i < 60 * 5 && game.t - landT < 3.6; i++) { if (B.st === 'down' && i % 20 === 0) { B.downTime = 9; applyHit(A, B, { dmg: 0.01, downHit: true, sure: true }); n++; } if (B.st === 'air') { B.z = 0; B.vz = 0; B.setState('down'); B.stT = 0.2; } __T.run(1); }
+      const held = { st: B.st, air: +(B.cmb.airDmg / base(B)).toFixed(4), n, t: +(game.t - landT).toFixed(2) };
+      B.downTime = 0.1; for (let i = 0; i < 200 && (B.st === 'down' || B.st === 'getup'); i++) __T.run(1); __T.run(2);
+      out.extend = { held, after: { st: B.st, air: B.cmb.airDmg, hits: B.cmb.hits } }; }
+    { const { A, B } = fresh(); applyHit(A, B, { dmg: 2, stun: 0.3, sure: true }); const s0 = B.cmb.standDmg; for (let i = 0; i < 60 * 2.5; i++) __T.run(1); const s25 = B.cmb.standDmg;
+      B.stun = 0; B.setState('idle'); for (let i = 0; i < 40; i++) __T.run(1); const s31 = B.cmb.standDmg;
+      applyHit(A, B, { dmg: 2, stun: 0.3, sure: true }); const s1 = B.cmb.standDmg; applyHit(A, B, { dmg: 0.05, launch: 500, sure: true }); const sl = B.cmb.standDmg;
+      out.standReset = { s0: s0 > 0, s25: s25 > 0, s31, s1: s1 > 0, afterLaunch: sl }; }
+    { const { A, B } = fresh(); applyHit(A, B, { dmg: 0.5, stun: 0.05, sure: true }); for (let i = 0; i < 20; i++) __T.run(1); B.cmb.standDmg = 0; B.cmb.standT = game.t + 99;
+      for (let i = 0; i < 60 * 2.5; i++) __T.run(1); const h25 = B.cmb.hits; for (let i = 0; i < 60 * 0.7; i++) __T.run(1); out.free = { h25, h32: B.cmb.hits }; }
+    { const { A, B } = fresh(); const idle = jugDbg.info(B); applyHit(A, B, { dmg: 1, launch: 500, sure: true }); __T.run(2); const I = jugDbg.info(B);
+      const on0 = jugDbg.on; jugDbg.on = true; let err = null; try { renderWorld(); } catch (e) { err = String(e); } jugDbg.on = on0;
+      out.dbg = { idle, lines: I && I.lines, air: I && I.raw.air, err }; }
+    // 平推保护：站着挨打累计血条的 25% → 强制击倒（官方 90 版）
+    { const { A, B } = fresh(); let n = 0, d = 0; while (B.st !== 'air' && n < 80) { B.stun = 0; B.setState('idle'); d = B.cmb.dmg; applyHit(A, B, { dmg: 2, stun: 0.3, sure: true }); n++; } out.stand = { n, st: B.st, pct: +(d / base(B)).toFixed(3), pctAfter: +(B.cmb.dmg / base(B)).toFixed(3), below: d < base(B) * PVP.standProt, above: B.cmb.dmg >= base(B) * PVP.standProt }; }
     // 硬直衰减：同一轮每多挨一下硬直 −2.5%，最低 60%
     { const { A, B } = fresh(); const S = []; for (let k = 0; k < 20; k++) { B.setState('idle'); applyHit(A, B, { dmg: 0.001, stun: 0.4, sure: true }); S.push(+B.stun.toFixed(3)); } out.stun = { first: S[0], tenth: S[9], last: S[19], min: +(S[0] * PVP.stunMin / (1 - PVP.stunDecay)).toFixed(3) }; }
     // 时间保护：连续不能行动超过 lockMax，下一下直接脱出
@@ -181,8 +206,16 @@ if (parts.includes('juggle')) {
   ok(P.lv1.air >= 0.2 && P.lv1.air < 0.27 && P.lv1.g > 1.3, `一段保护：浮空累计血条的 ${(P.lv1.air * 100).toFixed(1)}% 开始加速下落，重力 ×${P.lv1.g}`, P.lv1);
   ok(P.lv2.air >= 0.3 && P.lv2.air < 0.4 && P.lv2.g > P.lv1.g && P.lv2.relaunchVz < 0 && !P.lv2.recover, `二段保护：累计 ${(P.lv2.air * 100).toFixed(1)}% 直接砸地（vz ${P.lv2.relaunchVz}），重力 ×${P.lv2.g}，不在空中受身`, P.lv2);
   ok(P.lv2.landSt === 'down' && P.otg >= 2 && P.downPct >= 0.15 && (P.afterSt === 'getup' || P.afterSt === 'idle') && P.invul > 0, `砸地之后还能扫地 ${P.otg} 下，再掉血条的 ${(P.downPct * 100).toFixed(0)}% 才强制起身 + 无敌 ${P.invul} 秒`, P);
-  ok(r.second.landed && r.second.recover && r.second.down >= 0.15, `扫地再托起来的伤害也算倒地保护（${(r.second.down * 100).toFixed(0)}%），超过就落地起身`, r.second);
-  ok(r.stand.st === 'air' && r.stand.pct < 0.2 && r.stand.pctAfter >= 0.2, `平推保护：站着挨打到血条的 20% 强制击倒（${r.stand.n} 下）`, r.stand);
+  ok(r.second.landed && r.second.recover && r.second.sec >= 0.15 && r.second.sec < 0.2 && r.second.down < 0.05, `二次保护：落地后再挑起来的伤害单独算（${(r.second.sec * 100).toFixed(0)}%，扫地 / 起身条 ${(r.second.down * 100).toFixed(0)}%），到 15% 落地起身`, r.second);
+  ok(r.dbg.idle === null && r.dbg.lines && r.dbg.lines.length === 3 && /二次/.test(r.dbg.lines[1]) && r.dbg.air > 0 && !r.dbg.err, '?jugdbg：决斗玩家头顶显示平推 / 浮空 / 起身 / 二次保护百分比和落地计时，画面不报错', r.dbg);
+  const Rs = r.reset;
+  ok(Rs.airSweep > Rs.air0 && Rs.keep.air > 0 && Rs.keep.landed && Rs.upT < 2.9 && Rs.at29 > 0 && Rs.at31.air === 0 && Rs.at31.hits === 0, `清零：起身（落地后 ${Rs.upT} 秒）时保护还在，第一次落地 3 秒后才清；扫地伤害也算一次浮空条（${Rs.air0} → ${Rs.airSweep}）`, Rs);
+  const E = r.extend;
+  ok(E.held.st === 'down' && E.held.t > 3.2 && E.held.air > 0 && E.after.hits === 0 && E.after.air === 0, `清零：落地后一直被扫（${E.held.t} 秒、${E.held.n} 下）保护一直保留，起身后才清`, E);
+  const SR = r.standReset;
+  ok(SR.s0 && SR.s25 && SR.s31 === 0 && SR.s1 && SR.afterLaunch === 0, '平推条：3 秒没再挨站立攻击就清，被挑起来立即清', SR);
+  ok(r.free.h25 > 0 && r.free.h32 === 0, `没落过地：能行动 3 秒清零（2.5 秒时还在：${r.free.h25} 下）`, r.free);
+  ok(r.stand.st === 'air' && r.stand.below && r.stand.above, `平推保护：站着挨打到血条的 25% 强制击倒（${r.stand.n} 下）`, r.stand);
   ok(r.stun.tenth < r.stun.first && r.stun.last >= r.stun.min - 0.005 && r.stun.last < r.stun.tenth, `硬直衰减：第 1 下 ${r.stun.first}s → 第 10 下 ${r.stun.tenth}s → 第 20 下 ${r.stun.last}s（最低 60%）`, r.stun);
   ok(r.lock && r.lock.t >= 7.2 && r.lock.t < 8.3 && r.lock.invul > 0, `时间保护：连续不能行动 ${r.lock && r.lock.t} 秒就脱出（上限 7.5 秒，一整套浮空加扫地放得下）`, r.lock);
   ok(!r.z.far && r.z.near && Math.abs(r.z.dy) < 1 && r.z.dx > 20, `错位：纵深超出判定（±20 + 身体厚度）打不到、偏 10 打得到，击退只沿横向（横移 ${r.z.dx}px、纵深变化 ${r.z.dy}）`, r.z);

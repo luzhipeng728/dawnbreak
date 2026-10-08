@@ -164,10 +164,10 @@ class Ent {
         if (game.pvp && game.duel) { this._pvpAutoRecover = true; this.techHold = true; }
       }
     }
-    else if (this.st === 'getup') { if (this.stT > (this.getupDur || 0.4)) { this.setState('idle'); this.tech = false; resetCmb(this); if (this._pvpAutoRecover) { this._pvpAutoRecover = false; this.techHold = false; } if (game.pvp && game.duel) { this.pvpDownT = 0; this.pvpLockT = 0; } } }   // 起来就是下一套：连击统计 / 保护清零（刷图和决斗一样；以前刷图要能行动满 1 秒才清，起身后马上再挑会沿用上一套的递减）
+    else if (this.st === 'getup') { if (this.stT > (this.getupDur || 0.4)) { this.setState('idle'); this.tech = false; if (!(this.fighter && game.pvp)) resetCmb(this); if (this._pvpAutoRecover) { this._pvpAutoRecover = false; this.techHold = false; } if (game.pvp && game.duel) { this.pvpDownT = 0; this.pvpLockT = 0; } } }   // 刷图：起来就是下一套，连击统计 / 保护清零（以前要能行动满 1 秒才清，起身后马上再挑会沿用上一套的递减）。决斗按官方：第一次落地 3 秒后、已经脱离浮空 / 倒地才清（duel.js）
     if (this.st === 'dead') this.deadT = (this.deadT || 0) + dt;
     // 连击统计：可行动一段时间后清零（浮空 / 倒地保护重新计算）
-    if (this.free || this.st === 'act') { this.freeT += dt; if (this.freeT > COMBAT.protReset && (this.cmb.hits || this.cmb.dmg)) resetCmb(this); } else this.freeT = 0;
+    if (this.free || this.st === 'act') { this.freeT += dt; if (this.freeT > (this.fighter && game.pvp ? PVP.protReset : COMBAT.protReset) && (this.cmb.hits || this.cmb.dmg)) resetCmb(this); } else this.freeT = 0;   // 决斗：能行动 3 秒（官方）
     // 浮空姿态：上升时向后仰，下落时趋于水平
     if (this.st === 'air' && !this.dead) this.rot = damp(this.rot, clamp(-this.vz / 900, -0.45, 0.35), 12, dt);
     else if (this.rot) this.rot = Math.abs(this.rot) < 0.01 ? 0 : damp(this.rot, 0, 18, dt);

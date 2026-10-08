@@ -36,7 +36,7 @@ const JUGGLE = {
   pvpOtgPop: 240, pvpSweepPop: 210,   // 倒地被扫地托起的高度；二段保护之后再托，只给一小节，马上落回地上
 };
 const COMBAT = {
-  protReset: 1.0,            // 可行动这么久后本轮连击统计清零
+  protReset: 1.0,            // 刷图：可行动这么久后本轮连击统计清零（决斗用 PVP.protReset）
   counterMul: 1.25, counterStun: 1.5,
   backCrit: 0.1,             // 背击暴击率加成
 };
@@ -46,7 +46,9 @@ const PVP = {
   stun: 0.85,                // 硬直修正
   airProt: 0.2, airStep: 0.05,     // 浮空保护：本轮浮空累计伤害 ≥20% 最大 HP 开始加速下落，之后每 +5% 加重一级
   downProt: 0.2,             // 倒地保护：倒地后累计伤害 ≥20% → 强制起身
-  standProt: 0.22,           // 平推保护：站立挨打累计伤害 ≥22% → 强制击倒
+  standProt: 0.25,           // 平推保护：站立挨打累计伤害 ≥25% → 强制击倒（官方 90 版红条 25%，duel.js 的 PVP_PROT.stand 覆盖）
+  secProt: 0.15,             // 二次保护：落地后被重新挑成正常浮空，这一段再累计 15% → 强制落地站起 + 无敌（duel.js）
+  protReset: 3,              // 保护清零：第一次落地 3 秒后、并且已经脱离浮空 / 倒地；没落过地的按能行动 3 秒（官方，duel.js）
   getupInvul: 0.7, techInvul: 0.6,
   grabProt: 1.5,             // 被抓取释放后这段时间不能再被抓
   downTime: 1.35,            // 决斗被砸倒后先躺这么久：够对手扫地，也够自己按跳跃受身蹲伏。连着被扫时 duel.js 会把起身再往后推

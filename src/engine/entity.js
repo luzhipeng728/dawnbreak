@@ -159,7 +159,7 @@ class Ent {
     // ---- 受击状态计时 ----
     if (this.st === 'hit') { this.stun -= dt; if (this.stun <= 0) { this.setState('idle'); this.hitHeavy = false; } }
     else if (this.st === 'down') { if (this.stT > (this.downTime || 0.8)) this.startGetup(); }
-    else if (this.st === 'getup') { if (this.stT > (this.getupDur || 0.4)) { this.setState('idle'); this.tech = false; this.downHits = 0; this.juggle = 0; if (game.pvp && game.duel) { resetCmb(this); this.pvpDownT = 0; this.pvpLockT = 0; } } }   // 决斗：起来就是下一套，保护条清空
+    else if (this.st === 'getup') { if (this.stT > (this.getupDur || 0.4)) { this.setState('idle'); this.tech = false; resetCmb(this); if (game.pvp && game.duel) { this.pvpDownT = 0; this.pvpLockT = 0; } } }   // 起来就是下一套：连击统计 / 保护清零（刷图和决斗一样；以前刷图要能行动满 1 秒才清，起身后马上再挑会沿用上一套的递减）
     if (this.st === 'dead') this.deadT = (this.deadT || 0) + dt;
     // 连击统计：可行动一段时间后清零（浮空 / 倒地保护重新计算）
     if (this.free || this.st === 'act') { this.freeT += dt; if (this.freeT > COMBAT.protReset && (this.cmb.hits || this.cmb.dmg)) resetCmb(this); } else this.freeT = 0;

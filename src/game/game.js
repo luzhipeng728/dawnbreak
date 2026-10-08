@@ -36,8 +36,11 @@ function step(dt) {
   }
   if (game.scene === 'dungeon' || game.scene === 'test') {
     for (const e of ents) if (e.fighter && e !== p) tickFighter(e, dt);   // AI / 网络格斗者：冷却、MP、BUFF
-    for (const e of ents) if (e.control && e.hitstop <= 0 && !(game.dungeon && game.dungeon.transition)) { try { e.control(e, dt); } catch (err) { frameErr('control:' + (e.kind || e.cls || '?'), err); } }   // 一个实体出错不拖垮整帧
-    for (const e of ents) { try { e.update(dt); if (e.status && !e.dead) updateStatus(e, dt); } catch (err) { frameErr('update:' + (e.kind || e.cls || '?'), err); } }
+    // 只让怪物变慢的时间倍率（团本子弹时间「无之轨迹」，docs/RAID_SIROCO.md §12）：game.monSlowT 秒内敌方实体的 dt × game.monSlow，到点自己失效
+    const mts = game.monSlowT > 0 ? clamp(game.monSlow || 1, 0.05, 1) : 1; if (game.monSlowT > 0) game.monSlowT -= dt;
+    const edt = e => (mts !== 1 && e.team === 'e' ? dt * mts : dt);
+    for (const e of ents) if (e.control && e.hitstop <= 0 && !(game.dungeon && game.dungeon.transition)) { try { e.control(e, edt(e)); } catch (err) { frameErr('control:' + (e.kind || e.cls || '?'), err); } }   // 一个实体出错不拖垮整帧
+    for (const e of ents) { try { const d = edt(e); e.update(d); if (e.status && !e.dead) updateStatus(e, d); } catch (err) { frameErr('update:' + (e.kind || e.cls || '?'), err); } }
     resolveHits();
     updateProjs(dt);
     updateGroundFx(dt);

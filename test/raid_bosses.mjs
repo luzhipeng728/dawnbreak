@@ -79,6 +79,26 @@ if (ids.includes('siRaidBoss_gatekeeper')) {
   const r = await page.evaluate(() => { B.spawn('siRaidBoss_gatekeeper'); const st = window.__st; SIM(35); const a = !!st.cued; SIM(1.5); return { a, b: !!st.cued, cue: st.log.some(x => x.k === 'cue') || true }; });
   ok(!r.a && r.b, '守门人：约 36 秒 BGM 换乐器提示这扇门的顺序', r);
 }
+// P4 子弹时间「无之轨迹」：能量在领主房充满 → 按键开启 → 怪物 / 机制计时变慢（读条时限跟着延长），到点恢复；维塔的虚弱不能延长
+{
+  const r = await page.evaluate(() => {
+    const R = {}; B.spawn('siRaidBoss_gatekeeper'); const st = window.__st, S = st.S; SIM(3.3);
+    rmBt.e = 0; SIM(6); R.fill = +rmBt.e.toFixed(3);   // 6 秒充 10%
+    rmBt.e = 1; RAID_MECH.forceCast(S, 0); SIM(1); const t0 = S.cast.t;
+    SIM(1 / 60, () => input.pressed.add(KEYMAP.raidBt[0])); R.on = rmBt.t > 0 && game.monSlowT > 0;
+    const t1 = S.cast.t; SIM(2); R.slow = +((S.cast.t - t1) / 2).toFixed(2); R.t0 = +t0.toFixed(2);
+    SIM(3.2); R.off = rmBt.t === 0 && !(game.monSlowT > 0); const t2 = S.cast ? S.cast.t : null; SIM(1); R.back = S.cast ? +(S.cast.t - t2).toFixed(2) : null;
+    R.again = rmBtUse();   // 能量用掉了：不能连开
+    const brk = id => { B.spawn(id); const S2 = window.__st.S; B.idle(S2); RAID_MECH.forceCast(S2, id === 'siRaidBoss_vita' ? 1 : 0); let f = 0, t = 0; while (S2.ph !== 'break' && t < 40) { SIM(0.1, () => { if (S2.cast && SOLVE[S2.cast.id]) SOLVE[S2.cast.id](S2.cast, f++); }); t += 0.1; } rmBt.e = 1; const ok = rmBtUse(); const p0 = S2.phT; SIM(2); return { ok, ph: S2.ph, d: +(S2.phT - p0).toFixed(2) }; };
+    R.n2 = brk('siRaidBoss_nightmare2'); SIM(4); R.vita = brk('siRaidBoss_vita'); SIM(4);
+    return R;
+  });
+  ok(Math.abs(r.fill - 0.1) < 0.01, `无之轨迹：领主房里能量自动充（60 秒充满，6 秒 = ${Math.round(r.fill * 100)}%）`, r);
+  ok(r.on && Math.abs(r.slow - 0.35) < 0.05, `无之轨迹：按 7 开启，读条计时变成 ×${r.slow}（时限跟着延长）`, r);
+  ok(r.off && Math.abs(r.back - 1) < 0.05 && r.again === false, '无之轨迹：5 秒后恢复正常速度，能量要重新充', r);
+  ok(r.n2.ok && r.n2.ph === 'break' && Math.abs(r.n2.d - 0.7) < 0.1, `无之轨迹：虚弱也跟着变慢（2 秒只过了 ${r.n2.d} 秒）`, r.n2);
+  ok(r.vita.ok && r.vita.ph === 'break' && Math.abs(r.vita.d - 2) < 0.1, '无之轨迹：维塔的虚弱不能延长（btNoBreak）', r.vita);
+}
 const errs = logs.filter(l => /pageerror|TypeError|ReferenceError/i.test(l));
 ok(errs.length === 0, '页面没有报错', errs.slice(0, 3));
 fs.writeFileSync(`${out}/list.json`, JSON.stringify(shots));

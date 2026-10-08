@@ -101,7 +101,7 @@ const SIROCO_RAID_SCRIPTS = {
   siRaidBoss_grumi: { intro: { dur: 2 }, atk: [{ every: [36, 40], first: 6, puzzle: { use: 'gauge', name: '黄色泡泡', dur: 24, rate: 4.5, bump: 14, hurt: 0.3, maxBad: 9 } }] },
   // 维塔：苏醒之路（只踩白色地板，读条内走到维塔身边，否则强制苏醒高伤；引导模式没有）→ 慈悲的引导（能量球引到维塔身上 3 次 → 虚弱，否则全屏秒杀）；
   //   大招「我对你已经没有慈悲了」：白花碎裂震倒全员（蹲伏可躲）[YW-门][NAMU-PAIN]【分歧：引导次数 3（困难）/ 4（NAMU），取 3】
-  siRaidBoss_vita: { intro: { dur: 2, say: '维塔在另一端沉睡着……' },
+  siRaidBoss_vita: { intro: { dur: 2, say: '维塔在另一端沉睡着……' }, btNoBreak: true,   // 维塔虚弱期间子弹时间不能延长虚弱 [NAMU-PAIN]
     atk: [{ every: [30, 36], first: 24, puzzle: RS_CROUCH('我对你已经没有慈悲了') }],
     weak: { at: [1, 0.6, 0.25], pool: [
       { use: 'path', name: '苏醒之路', dur: 18, hurt: 0.12, skipGuide: true, onSolve: { dur: 0, say: '维塔醒了：「是谁想走进我的内心」' }, onFail: { frac: 0.5, down: true, say: '维塔强制苏醒！' }, cast: { name: '维塔强制苏醒' } },

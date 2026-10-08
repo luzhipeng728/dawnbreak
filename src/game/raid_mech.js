@@ -301,7 +301,7 @@ const RAID_MECH = (() => {
   // 喂属性：领主头顶亮出一个属性，前方的属性球每打一下换一个属性；读条结束时球是头顶的相反属性（火↔冰、光↔暗）= 解开（古斯迪吞噬属性）
   const OPP = { fire: 'ice', ice: 'fire', light: 'dark', dark: 'light' };
   def('feed', { defaults: { elems: ['fire', 'ice', 'light', 'dark'], dur: 12, gap: 0.3 }, name: '喂属性', hint: '打前方的球换属性：读条结束时要是头顶的相反属性',
-    init(p, R, C) { const sign = p.elems[Math.floor(R() * p.elems.length)], k = Math.floor(R() * p.elems.length); return { sign, k, cd: 0, objs: [{ tag: 'orb', i: 0, x: Math.round(C.W * 0.5), y: Math.round(C.D * 0.5), shape: 'crystal', col: ELEM[p.elems[k]][1], hits: 99, keep: true, alive: true, label: ELEM[p.elems[k]][0] }] }; },
+    init(p, R, C) { const sign = p.elems[Math.floor(R() * p.elems.length)], want = p.elems.indexOf(OPP[sign]); let k = Math.floor(R() * p.elems.length); if (k === want) k = (k + 1) % p.elems.length; /* 开始时球一定不是答案（不操作不会碰巧解开） */ return { sign, k, cd: 0, objs: [{ tag: 'orb', i: 0, x: Math.round(C.W * 0.5), y: Math.round(C.D * 0.5), shape: 'crystal', col: ELEM[p.elems[k]][1], hits: 99, keep: true, alive: true, label: ELEM[p.elems[k]][0] }] }; },
     on(st, p, ev) { if (ev.k !== 'hit' || ev.tag !== 'orb' || st.cd > 0) return; st.cd = p.gap; st.k = (st.k + 1) % p.elems.length; const e = p.elems[st.k]; Object.assign(st.objs[0], { col: ELEM[e][1], label: ELEM[e][0] }); },
     tick(st, p, dt) { st.cd -= dt; if (st.t >= p.dur - 1e-6) st.res = p.elems[st.k] === OPP[st.sign] ? 'solve' : 'fail'; },
     text: (st, p) => `头顶：${ELEM[st.sign][0]}　球：${ELEM[p.elems[st.k]][0]}` });

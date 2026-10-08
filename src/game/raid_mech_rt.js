@@ -75,6 +75,9 @@ defineBossMech('raidScript', { defaults: {},
   },
   update(m, st, p, dt) {
     if (!st.S) return;   // 组队队员那边是傀儡（不跑 start），脚本只在主机跑
+    // 子弹时间里领主的 dt 已经变慢（谜题时限 / 虚弱跟着延长 = 官方“用无之轨迹延长机制时间”）；rdt = 真实时间（玩家的状态、子弹时间本身）
+    const rdt = rmBtRealDt(m, dt), sdt = st.S.ph === 'break' && p.btNoBreak ? rdt : dt;   // btNoBreak：子弹时间不能延长虚弱（维塔 [NAMU-PAIN]）
+    rmBtTick(m, st, rdt);
     const P = msSelf(), ev = st.q.splice(0);
     if (P && !P.dead) {
       ev.push({ k: 'pos', who: 'me', x: P.x, y: P.y, face: P.face, z: P.z || 0, crouch: rmCrouch(P) });
@@ -89,10 +92,10 @@ defineBossMech('raidScript', { defaults: {},
       if (e.hp < e.__rmHp) { ev.push({ k: 'hit', tag, i: +i, who: 'me' }); if (e.__rmKeep) e.hp = e.hpMax; }
       e.__rmHp = e.hp;
     }
-    rmApply(m, st, RAID_MECH.scriptTick(st.S, dt, { hp: m.hp / m.hpMax, ev }));
+    rmApply(m, st, RAID_MECH.scriptTick(st.S, sdt, { hp: m.hp / m.hpMax, ev }));
     if (p.orderCue && !st.cued && st.S.t >= p.orderCue.at) { st.cued = true; rmOrderCue(m, p.orderCue); }
     rmSyncObjs(m, st);
-    for (const id of RAID_MECH.stTick(st.ps, dt)) rmStatusOff(st, id);
+    for (const id of RAID_MECH.stTick(st.ps, rdt)) rmStatusOff(st, id);
     // rest：固定出招循环里每招放完回到中央、脚下黑雾站着（受伤 ×mul）——蕾娜 [91-夜]
     if (st.restWait != null && !m.act && (game.t || 0) - st.restWait > 0.3) { st.restWait = null; st.rest = p.rest.dur; m.x = msRoomW() / 2; m.y = DEPTH / 2; m.vx = m.vy = 0; fxBurst(m.x, m.y, 60, 160, '#4a3a6a'); msMulSet(m, 'raidRest', p.rest.mul || 1.3); }
     if (st.rest > 0) { st.rest -= dt; m.aiCd = Math.max(m.aiCd || 0, 0.3); if (Math.random() < 0.4) fxCharge(m, '#3a2a4a'); if (st.rest <= 0) msMulSet(m, 'raidRest', null); }
@@ -101,7 +104,7 @@ defineBossMech('raidScript', { defaults: {},
     if (hold && m.__rmSpd == null) { m.__rmSpd = m.speed; m.speed = 0; } else if (!hold && m.__rmSpd != null) { m.speed = m.__rmSpd; m.__rmSpd = null; }
     if (st.intro) { m.invul = Math.max(m.invul, 0.2); m.aiCd = Math.max(m.aiCd || 0, 0.2); }
     if (st.S.ph === 'cast') { m.aiCd = Math.max(m.aiCd || 0, 0.3); if (Math.random() < 0.25) fxCharge(m, '#c080ff'); }
-    if (st.brk > 0) { st.brk -= dt; m.stun = Math.max(m.stun || 0, Math.min(0.3, st.brk)); m.aiCd = Math.max(m.aiCd || 0, 0.3); if (m.st !== 'hit' && m.st !== 'air' && m.st !== 'down') m.setState('hit'); }
+    if (st.brk > 0) { st.brk -= sdt; m.stun = Math.max(m.stun || 0, Math.min(0.3, st.brk)); m.aiCd = Math.max(m.aiCd || 0, 0.3); if (m.st !== 'hit' && m.st !== 'air' && m.st !== 'down') m.setState('hit'); }
   },
   onHit(m, st, dmg, a) { if (st.q && a && (a.team === 'p' || (a.owner && a.owner.team === 'p'))) st.q.push({ k: 'hit', tag: 'boss', who: 'me' }, { k: 'dmg', frac: (dmg || 0) / m.hpMax, who: 'me' }); },
   end(m, st) {
@@ -120,6 +123,7 @@ defineBossMech('raidScript', { defaults: {},
     if (V.ph === 'break') { { const B = st.S.brkSpec || st.S.spec.onSolve; msBar(c, x, y + h, w, 1 - V.phT / B.dur, '#7aff9a', `虚弱！受到伤害 ×${B.mul}`); }; h += 16; }
     for (const s of V.side) { uiText(`${s.name}：${s.hint}${s.text ? '　' + s.text : ''}`, x + w / 2, y + h + 14, { size: 14, align: 'center', color: '#ffb0a0', sw: 3 }); h += 18; }
     for (const b of [V.cast && V.cast.bar, ...V.side.map(s => s.bar)]) if (b) { msBar(c, x, y + h, w, b.k, b.col, b.label); h += 16; }   // 谜题自己的条：呼吸 / 护盾 / 聚集 / 吸入
+    h += rmBtHud(c, x, y + h, w);
     return h;
   },
   test: { solve: null } });
@@ -189,6 +193,57 @@ function rmOrderCue(m, o) {
   const inst = RM_ORDER_INST[k - 1] || RM_ORDER_INST[3];
   toastMsg(`BGM：${inst} —— 这扇破坏之门要第 ${k} 个打倒`, '#e0c0ff'); if (typeof chatSys === 'function') chatSys(`【团本】BGM 换成了${inst}：这扇门是第 ${k} 个`);
   try { if (sfx.ctx && !sfx.muted && typeof MI !== 'undefined') { const t = sfx.ctx.currentTime + 0.05, ins = [MI.flute, MI.piano, MI.pluck, MI.synlead][k - 1] || MI.synlead; [72, 76, 79, 84].forEach((n, i) => ins(t + i * 0.18, n, 0.12, 0.3)); } } catch (e) { /* 没有音频 */ }
+}
+// ===================== 子弹时间「无之轨迹」（P4，docs/RAID_SIROCO.md §12）=====================
+// 官方：小队队长按 Tab，能量在领主房积累，开启后除本队以外的一切都变慢 [QQ][233-黎]。两人版每个人都是自己小队的队长：
+// 有团本脚本的领主房里能量自动充（RAID_BT.fill 秒充满），按 7（可改键）→ RAID_BT.dur 秒内怪物 / 领主 / 机制计时 × RAID_BT.mon（引擎 game.monSlow）。
+// 组队同房（raid 一起进 / coop）不能用（要主机同步，以后做）。已经飞出来的怪物弹道和地面预警不变慢。
+const RAID_BT = { fill: 60, dur: 5, mon: 0.35, key: 'Digit7' };
+const rmBt = { e: 0, t: 0, dg: null, owner: null };
+(function rmBtKey() {   // 按键设置“其他”组里加一项（和 social 的 sxAddKey 同一套写法）
+  const a = 'raidBt', code = RAID_BT.key; KEYMAP_DEFAULT[a] = [code];
+  if (!KEYMAP[a]) {
+    KEYMAP[a] = [code];
+    try { const k = (JSON.parse(localStorage.getItem(UI_PREF_KEY) || '{}').keys || {})[a]; if (Array.isArray(k)) KEYMAP[a] = k.filter(c => typeof c === 'string').slice(0, 2); } catch (e) { /* 用默认键 */ }
+    for (const b in KEYMAP) if (b !== a && KEYMAP[a].some(c => KEYMAP[b].includes(c))) KEYMAP[a] = KEYMAP[a].filter(c => !KEYMAP[b].includes(c));
+  }
+  ACTION_NAME[a] = '团本：无之轨迹（子弹时间）';
+  const g = KEY_GROUPS.find(x => x[0] === '其他'); if (g && !g[1].includes(a)) g[1].push(a);
+})();
+function rmBtOK() {
+  if (typeof coop !== 'undefined' && coop.state === 'play') return false;
+  if (typeof raidNet !== 'undefined' && raidNet.ctx && raidNet.ctx.together) return false;
+  return true;
+}
+const rmBtOn = () => game.monSlowT > 0 && rmBt.t > 0;
+function rmBtRealDt(m, dt) { return rmBtOn() && m.team === 'e' ? dt / clamp(game.monSlow || 1, 0.05, 1) : dt; }
+// 每帧只由一个有脚本的领主推进（同房多个领主时不重复充能）
+function rmBtTick(m, st, rdt) {
+  if (rmBt.dg !== game.dungeon) { rmBt.dg = game.dungeon; rmBt.e = 0; rmBt.t = 0; rmBt.owner = null; }
+  const O = rmBt.owner; if (O && O !== m && !O.dead && !O.remove && ents.includes(O) && rmScriptOf(O)) return;
+  rmBt.owner = m;
+  if (!rmBtOK()) return;
+  if (rmBt.t > 0) { rmBt.t -= rdt; if (rmBt.t <= 0) { rmBt.t = 0; game.monSlowT = 0; toastMsg('无之轨迹结束', '#c8b0ff'); } return; }
+  if (st.S.ph !== 'intro') rmBt.e = Math.min(1, rmBt.e + rdt / RAID_BT.fill);
+  const P = msSelf();
+  if (rmBt.e >= 1 && P && !P.dead && typeof input !== 'undefined' && input.hit('raidBt')) rmBtUse();
+}
+function rmBtUse() {
+  if (rmBt.e < 1 || rmBt.t > 0 || !rmBtOK()) return false;
+  rmBt.e = 0; rmBt.t = RAID_BT.dur; game.monSlow = RAID_BT.mon; game.monSlowT = RAID_BT.dur;
+  toastMsg('无之轨迹：除了你以外的一切都慢下来了', '#e0d0ff'); cam.flash = Math.max(cam.flash || 0, 0.2); cam.flashCol = '#b8a0ff';
+  try { if (sfx.ctx && !sfx.muted && typeof MI !== 'undefined') { const t = sfx.ctx.currentTime + 0.02; MI.bell(t, 60, 0.14, 2); MI.bell(t + 0.15, 55, 0.1, 2); } } catch (e) { /* 没有音频 */ }
+  addFx({ x: 0, y: 1e5, z: 0, dur: RAID_BT.dur, draw(c) {   // 全屏偏紫的冷色 + 四角暗角
+    if (!rmBtOn()) { this.dur = 0; return; }
+    const k = Math.min(1, this.t / 0.3, (this.dur - this.t) / 0.4); c.save(); c.globalAlpha = 0.3 * k; c.fillStyle = '#40287a'; c.fillRect(0, 0, WW, WH);
+    const g = c.createRadialGradient(WW / 2, WH / 2, WH * 0.35, WW / 2, WH / 2, WW * 0.62); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(10,0,30,0.9)'); c.globalAlpha = 0.65 * k; c.fillStyle = g; c.fillRect(0, 0, WW, WH); c.restore(); } });
+  return true;
+}
+function rmBtHud(c, x, y, w) {
+  if (!rmBtOK() || game.dungeon !== rmBt.dg) return 0;
+  const on = rmBt.t > 0, k = on ? rmBt.t / RAID_BT.dur : rmBt.e;
+  msBar(c, x, y, w, k, on ? '#d0b0ff' : rmBt.e >= 1 ? '#ffe070' : '#8a7ab0', on ? `无之轨迹 ${rmBt.t.toFixed(1)} 秒` : rmBt.e >= 1 ? `无之轨迹 就绪：按 ${keyName('raidBt')}` : `无之轨迹 ${Math.floor(rmBt.e * 100)}%`);
+  return 16;
 }
 // 测试 / 调试：现在跑着的团本脚本状态
 function rmScriptOf(m) { const st = m && m.msMechs && m.msMechs.find(s => s.id === 'raidScript' && !s.done); return st || null; }

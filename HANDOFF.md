@@ -84,8 +84,7 @@
 每个领主的验收：轮廓或换色 + 缩放能明显区分；至少 2 个招牌机制；预警清楚、有生路；组队双方一致；用时在基线区间内（`docs/BOSS_PLAN.md` §4.5）。
 
 ### 6.3 其他可认领的小任务（backlog）
-- **地下城房间左右的门没画出来**：`src/game/dungeon.js` 的 `drawGate` 被 `world.js` 同名函数覆盖。把 dungeon.js 那个改名（如 `drawRoomDoor`）就能恢复。这会改变画面，先截图给主线程审。
-- **全仓库查一遍同名全局函数**：写个脚本放进 `tools/`，接进 quick.sh，发现重名就失败。已知还有 `armorSet`（`epics.js` / `epics60_armor.js`，一个在块里，目前没出问题），要确认。
+- ~~地下城房间左右的门没画出来~~（已修：dungeon.js 的改名 `drawRoomDoor`；`node tools/dup_globals.mjs` 查同名全局函数，已接进 quick.sh。`armorSet` 那个在块里，`"use strict"` 下是块级作用域，不算重名）
 - **决斗**：召唤师、剑魂的个别觉醒一下能打掉 50%~68% HP，要压一下单次爆发（`src/game/duel.js`，要重跑 `node test/pvp_balance.mjs 6 all 4`）。
 - **格斗家**：
   - 街霸、柔道家的技能规格还没写进 `docs/skills/fighter.json`。

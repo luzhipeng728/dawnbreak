@@ -235,7 +235,7 @@ class Dungeon {
       const boss = this.room.doors[d].type === 'boss';
       if (d === 'left' || d === 'right') {
         const x = d === 'left' ? 12 : W - 12, X = sx(x), Y = sy(DEPTH / 2, 0);
-        drawGate(c, X, Y, open, boss, d === 'left' ? 1 : -1);
+        drawRoomDoor(c, X, Y, open, boss, d === 'left' ? 1 : -1);
       } else {
         const X = sx(W / 2), Y = d === 'up' ? sy(0, 0) - 2 : sy(DEPTH, 0) + 6;
         c.save(); c.globalCompositeOperation = open ? 'lighter' : 'source-over';
@@ -285,8 +285,8 @@ class Dungeon {
     if (this.state !== 'dead' && !menus.isOpen('result')) drawToastBanner(c);
   }
 }
-// 左右两侧的门：石拱门 + 发光传送面（开门后）
-function drawGate(c, X, Y, open, boss, dir) {
+// 左右两侧的门：石拱门 + 发光传送面（开门后）。原来叫 drawGate，被 world.js 的同名函数（野外传送门）覆盖，地下城的门一直没画出来
+function drawRoomDoor(c, X, Y, open, boss, dir) {
   c.save(); c.translate(X, Y);
   const h = 92, w = 26;
   c.fillStyle = '#3a3430'; c.fillRect(-w / 2 - 6, -h - 8, 8, h + 8); c.fillRect(w / 2 - 2, -h - 8, 8, h + 8);

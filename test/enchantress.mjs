@@ -83,6 +83,7 @@ const R = await page.evaluate(() => {
   fresh(); castSkill(p, 'en_scratch', false, null); out.stage.bearSkillOnSelf = !!(p.act && p.act.clip === 'bScratch');
   run(60);
   castSkill(p, 'mg_orb', false, null); out.stage.blockBase = !(p.act && p.act.skill === 'mg_orb');
+  for (let i = 0; i < 180 && (m5.st !== 'idle' || m5.invul > 0); i++) run(1);   // 等怪站起来、起身无敌结束（谢幕命中跳过无敌目标，别让判定卡在起身无敌的帧上）
   const hpMid = m5.hp; st.t = st.dur - 0.05; run(60);
   out.stage.finale = hpMid - m5.hp > 0; out.stage.restored = !p.enStage && p.model === model0 && p.acts === MAGE_ACTS && !!summonsOf(p, 'en_bear')[0] && summonsOf(p, 'en_bear')[0].model !== EN_EMPTY_MODEL;
   // 三觉短篇舞台：剧场中施放 → 延长 20 秒

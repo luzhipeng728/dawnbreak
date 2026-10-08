@@ -99,7 +99,7 @@ class Ent {
   hurtH() { return this.st === 'down' ? 22 : this.st === 'air' ? this.h * 0.55 : this.st === 'act' && this.act && this.act.hurtH !== undefined ? this.act.hurtH : this.h; }
   update(dt) {
     if (this.flash > 0) this.flash -= dt;
-    if (this.st === 'air') this.cmb.airT = (this.cmb.airT || 0) + dt;   // 本轮浮空时长（含打击停顿；JUGGLE：刷图 / 决斗防无限浮空）
+    if (this.st === 'air' && this.fighter && game.pvp) this.cmb.airT = (this.cmb.airT || 0) + dt;   // 决斗：本轮浮空时长（含打击停顿，JUGGLE.pvpAirT 时间保护）。刷图不计时，没有浮空时限
     if (this.hitstop > 0) { this.hitstop -= dt; return; }
     this.stT += dt;
     if (this.invul > 0) this.invul -= dt;
@@ -159,7 +159,7 @@ class Ent {
     // ---- 受击状态计时 ----
     if (this.st === 'hit') { this.stun -= dt; if (this.stun <= 0) { this.setState('idle'); this.hitHeavy = false; } }
     else if (this.st === 'down') { if (this.stT > (this.downTime || 0.8)) this.startGetup(); }
-    else if (this.st === 'getup') { if (this.stT > (this.getupDur || 0.4)) { this.setState('idle'); this.tech = false; this.downHits = 0; this.juggle = 0; if (game.pvp && game.duel) { resetCmb(this); this.pvpDownT = 0; this.pvpLockT = 0; } } }   // 决斗：起来就是下一套，保护条清空
+    else if (this.st === 'getup') { if (this.stT > (this.getupDur || 0.4)) { this.setState('idle'); this.tech = false; resetCmb(this); if (game.pvp && game.duel) { this.pvpDownT = 0; this.pvpLockT = 0; } } }   // 起来就是下一套：连击统计 / 保护清零（刷图和决斗一样；以前刷图要能行动满 1 秒才清，起身后马上再挑会沿用上一套的递减）
     if (this.st === 'dead') this.deadT = (this.deadT || 0) + dt;
     // 连击统计：可行动一段时间后清零（浮空 / 倒地保护重新计算）
     if (this.free || this.st === 'act') { this.freeT += dt; if (this.freeT > COMBAT.protReset && (this.cmb.hits || this.cmb.dmg)) resetCmb(this); } else this.freeT = 0;
@@ -178,7 +178,9 @@ class Ent {
         const forced = this.bounceNext || 0; this.bounced = true; this.bounceNext = 0; this.vz = forced ? Math.max(imp * forced, 260) : imp * JUGGLE.bounceK; this.z = 0.01;
         fxDust(this.x, this.y, 5, 14); sfx.thud(0.6); this.cmb.bounce = (this.cmb.bounce || 0) + 1; this.bouncing = true; this.play(this.clipOr('bounceUp', 'air'), true); return;
       }
-      this.vz = 0; this.bouncing = false; this.setState('down'); this.downTime = this.dead ? 99 : downTimeOf(this); if (game.pvp && game.duel && this.cmb) this.cmb.landed = true; fxDust(this.x, this.y, 6, 18); sfx.thud(0.8);
+      if (this.js) JUGGLE_CORE.land(this.js);   // 刷图连招会话进入倒地阶段
+      const keep = this._popLeft; this._popLeft = null;   // 被倒地追击托起后落回来：接着躺剩下的时间（至少 otgKeep 秒），不再整段重置
+      this.vz = 0; this.bouncing = false; this.setState('down'); this.downTime = this.dead ? 99 : keep !== null && keep !== undefined ? Math.max(keep, jugProf(this).otgKeep) : downTimeOf(this); if (game.pvp && game.duel && this.cmb) this.cmb.landed = true; fxDust(this.x, this.y, 6, 18); sfx.thud(0.8);
       this.play(this.clipOr('down'), true);
       return;
     }

@@ -1,4 +1,5 @@
-// 浮空（juggle）定量测试：无渲染快进，直接对目标调 applyHit，量滞空时间 / 高度 / 追加浮空递减 / 弹地 / 重怪 / 刷图连击上限 / 决斗浮空保护
+// 浮空（juggle）定量测试：无渲染快进，直接对目标调 applyHit，量滞空时间 / 高度 / 追加浮空 / 弹地 / 重怪 / 刷图一级二级保护 / 倒地追击 / 扣地 / 决斗浮空保护
+//   刷图回归（docs/COMBAT_JUGGLE.md §5，2026-10 修复）：起身后再挑满高度、没有浮空时限、非追击打倒地只扣血、多段追击打得完、扣地砸倒站着的目标
 // 用法：node test/juggle.mjs            参数表见 engine/combat.js 的 JUGGLE（docs/COMBAT_JUGGLE.md）
 import { launch, URL_BASE } from './lib.mjs';
 let fails = 0, n = 0;
@@ -50,24 +51,81 @@ try {
     fresh(1); J.hit(a, m, { dmg: 0.01, launch: 720 }); R.fallBounce = J.run(m, 4).bounces;
     // 刷图无限连：挑起后每 0.1 秒一下空中攻击（浮空力 150），每 0.9 秒再挑一次 → 多久掉下来
     fresh(1); J.hit(a, m, { dmg: 0.01, launch: 520 });
-    const r3 = J.run(m, 20, (T, i) => { if (m.st !== 'air') return; if (i % 6 === 0) J.hit(a, m, { dmg: 0.01, airLift: 150 }); if (i % 54 === 0) J.hit(a, m, { dmg: 0.01, launch: 480 }); });
-    R.pveJuggle = +r3.landT.toFixed(2);
+    let lv1 = -1, lv2 = -1, pre = [], cur = 0, seg = 0;   // 进一级 / 二级的时间；一级之前每次再挑后的最高点
+    const r3 = J.run(m, 20, (T, i) => { if (m.st !== 'air') return; const lv = m.js ? m.js.lv : 0; if (lv1 < 0 && lv >= 1) lv1 = T; if (lv2 < 0 && lv >= 2) lv2 = T; cur = Math.max(cur, m.z);
+      if (i % 6 === 0) J.hit(a, m, { dmg: 0.01, airLift: 150 }); if (i % 54 === 0) { if (i && !lv) pre.push(Math.round(cur)); cur = 0; J.hit(a, m, { dmg: 0.01, launch: 480 }); } });
+    R.ceil = JUGGLE.pveCeil; R.pveJuggle = +r3.landT.toFixed(2); R.maxZ = Math.round(r3.maxZ); R.lv1 = +lv1.toFixed(2); R.lv2 = +lv2.toFixed(2); R.prePeaks = pre;
+    const PN = JUGGLE_PROT.normal, rate = 10 * JUGGLE_PROT.common.pt.hit + JUGGLE_PROT.common.pt.launch / 0.9; R.expLv1 = +(PN.p1 / rate).toFixed(2); R.expLv2 = +(PN.p2 / rate).toFixed(2);
+    // 领主：同样的满连更早进保护
+    fresh(1); m.boss = true; J.hit(a, m, { dmg: 0.01, launch: 520 }); let b1 = -1, b2 = -1;
+    const rb = J.run(m, 20, (T, i) => { if (m.st !== 'air') return; const lv = m.js ? m.js.lv : 0; if (b1 < 0 && lv >= 1) b1 = T; if (b2 < 0 && lv >= 2) b2 = T; if (i % 6 === 0) J.hit(a, m, { dmg: 0.01, airLift: 150 }); if (i % 54 === 0) J.hit(a, m, { dmg: 0.01, launch: 480 }); });
+    m.boss = false; R.boss = { lv1: +b1.toFixed(2), lv2: +b2.toFixed(2), land: +rb.landT.toFixed(2) };
     // 倒地追击次数有限
     fresh(1); J.hit(a, m, { dmg: 0.01, launch: 300 }); J.run(m, 1.2); let otg = 0;
     for (let i = 0; i < 12 && (m.st === 'down' || m.st === 'air'); i++) { if (m.st === 'down') { J.hit(a, m, { dmg: 0.01, downHit: true }); otg++; } J.run(m, 0.25); }
     R.otg = otg; R.otgEnd = m.st;
     return R;
   });
-  console.log('刷图', JSON.stringify(pve));
+  console.log('刷图', JSON.stringify(pve)); const JUGGLE_CEIL = pve.ceil;
   ok(pve.hang520.hang >= 0.85 && pve.hang520.hang <= 1.35 && pve.hang520.apex >= 95 && pve.hang520.apex <= 170, '普通重量挑空（浮空力 520）：滞空 0.85~1.35 秒、高 95~170', pve.hang520);
   ok(pve.hang300.apex < pve.hang520.apex * 0.55, '浮空力小的技能挑得低', pve.hang300);
   ok(pve.heavy520.apex < pve.hang520.apex * 0.5 && pve.heavy520.hang < pve.hang520.hang * 0.75, '重怪（重量 3）挑得更低、掉得更快', pve.heavy520);
   const P = pve.relaunch;
-  ok(P.length >= 4 && P.every((v, i) => !i || v < P[i - 1]) && P[P.length - 1] >= P[0] * 0.25, '追加浮空：每次再挑高度递减，但不会一下子挑不起来', P);
+  ok(P.length >= 4 && P.every(v => v >= P[0] * 0.95), '追加浮空：一级保护之前再挑不递减（官方：保护线之前怎么连都一样）', P);   // 以前 111 / 81 / 59 / 43 / 32
   ok(pve.riseHit >= pve.hang520.apex * 0.85, '上升中被普攻打到不会打断浮空', { riseHit: pve.riseHit, base: pve.hang520.apex });
   ok(pve.spikeBounce >= 1 && pve.fallBounce >= 1, '砸地 / 高处落地会弹地一次', { spike: pve.spikeBounce, fall: pve.fallBounce });
-  ok(pve.pveJuggle > 3 && pve.pveJuggle < 12, '刷图：连续空中连击能打一阵（>3 秒），但不会无限（<12 秒掉下来）', pve.pveJuggle);   // 并行负载下实测到 10.4 秒（单跑 8~9 秒），上限只用来确认不是无限浮空
+  ok(Math.abs(pve.lv1 - pve.expLv1) < 0.6 && Math.abs(pve.lv2 - pve.expLv2) < 0.6, '刷图满连：进一级 / 二级保护的时间点和参数表（JUGGLE_PROT）算出来的一致', { lv1: pve.lv1, lv2: pve.lv2, exp: [pve.expLv1, pve.expLv2] });
+  ok(pve.prePeaks.length >= 3 && pve.prePeaks.every(v => v >= pve.prePeaks[0] * 0.95), '一级保护之前：每次再挑的最高点不递减', pve.prePeaks);
+  ok(pve.pveJuggle > pve.lv2 && pve.pveJuggle < pve.lv2 + 4.5, '刷图：连招能一直打到二级保护（没有 5 秒时限），过了二级很快掉下来（不会无限浮空）', { land: pve.pveJuggle, lv2: pve.lv2 });   // 打击停顿占了一大半时间，掉下来的 1~3 秒大部分是停顿
+  ok(pve.maxZ <= JUGGLE_CEIL + 15, `满连不会把怪顶出屏幕（最高 ≤${JUGGLE_CEIL + 15} 像素，JUGGLE.pveCeil）`, pve.maxZ);
+  ok(pve.boss.lv1 > 0 && pve.boss.lv1 < pve.lv1 && pve.boss.lv2 < pve.lv2 && pve.boss.land < pve.pveJuggle, '领主：同样的满连更早进保护、更早掉下来', { boss: pve.boss, normal: [pve.lv1, pve.lv2, pve.pveJuggle] });
   ok(pve.otg >= 1 && pve.otg <= 5 && pve.otgEnd !== 'down', '倒地追击次数有限，之后强制起身', { otg: pve.otg, end: pve.otgEnd });
+
+  /* ---------------- 刷图回归（审查报告 B1~B5 的复现场景）---------------- */
+  const reg = await page.evaluate(() => {
+    const a = game.player, m = ents.find(e => e.team === 'e' && !e.fighter), R = {}, dt = J.dt;
+    const fresh = () => { J.prep(a, m, { weight: 1 }); m.freeT = 0; m.x = 460; a.x = 400; };
+    const tick = n => { for (let i = 0; i < n; i++) { step(dt); m.x = 460; a.x = 400; } };
+    const until = (f, max = 6) => { let T = 0; while (!f() && T < max) { tick(1); T += dt; } return T; };
+    const apex = () => { let z = 0, T = 0; while ((m.st === 'air' || m.z > 0.5) && T < 8) { tick(1); z = Math.max(z, m.z); T += dt; } return Math.round(z); };
+    const raw = h => applyHit(a, m, { dmg: 0.01, ...h });   // 像职业文件那样直接调用（不经过 canHit）
+    // B1：挑空 → 落地 → 起身 → 0.3 秒后再挑，连续 4 轮（以前 111 / 82 / 60 / 44）
+    fresh(); R.rounds = []; for (let k = 0; k < 4; k++) { J.hit(a, m, { launch: 520 }); R.rounds.push(apex()); until(() => m.st === 'idle'); tick(18); }
+    // B2：6.5 秒浮空连 → 起身 → 站着挨打 3 秒 → 再挑（以前 1 像素）
+    fresh(); J.hit(a, m, { launch: 520 }); { let i = 0; while (i < 390 && m.st === 'air') { if (i % 6 === 0) J.hit(a, m, { airLift: 150 }); if (i % 54 === 0) J.hit(a, m, { launch: 480 }); tick(1); i++; } }
+    until(() => m.st === 'idle'); for (let i = 0; i < 12; i++) { J.hit(a, m, { stun: 0.3 }); tick(15); }
+    R.afterLong = (J.hit(a, m, { launch: 520 }), apex()); fresh(); J.hit(a, m, { launch: 520 }); R.freshApex = apex();
+    // 没有时限：每次快落地（下落中低于 40）就再挑一次，连挑 7 秒以上：最后一次多挑的高度和第一次一样（以前过了 5 秒挑空 ×0.3）
+    fresh(); J.hit(a, m, { launch: 520 }); { const pk = []; let cur = 0, base = 0, T = 0;
+      while (T < 9 && (m.st === 'air' || m.z > 0.5)) { cur = Math.max(cur, m.z); if (m.vz < 0 && m.z < 40) { pk.push(Math.round(cur - base)); base = m.z; cur = 0; J.hit(a, m, { launch: 520 }); } tick(1); T += dt; }
+      R.longJ = { T: +T.toFixed(2), gains: pk, lv: m.js ? m.js.lv : 0 }; }
+    // B3：直接 applyHit 一个非追击判定打倒地的目标：不托起、不吃追击额度、不重置倒地时间（以前被托起，5 下强制起身 + 无敌）
+    fresh(); J.hit(a, m, { launch: 300 }); until(() => m.st === 'down'); tick(6); { const st0 = m.stT, hp0 = m.hp;
+      raw({ stun: 0.3, launch: 400 }); const st1 = m.st, z1 = +m.z.toFixed(1); tick(10); const one = { st: st1, z: z1, downHits: m.downHits, stT: +(m.stT - st0).toFixed(2), dmg: hp0 > m.hp };   // 倒地计时接着走（被重置的话 stT 会回到 0 附近）
+      for (let i = 0; i < 4; i++) { tick(3); raw({ stun: 0.3 }); } R.rawDown = { ...one, after5: m.st, inv: +m.invul.toFixed(2) };
+      R.rawDownT = +until(() => m.st !== 'down').toFixed(2) + 0.1 + 0.2; }   // 自然起身的时间（≈ 倒地时间，没有被延长）
+    // B4：一招 6 段的打地技能（同一次出招）：6 段都打得到，中途不强制起身；4 招之后第 5 招才强制起身
+    fresh(); J.hit(a, m, { launch: 300 }); until(() => m.st === 'down'); { const segs = []; let getup = false;
+      for (let k = 0; k < 5; k++) { a.doAct({ name: 'otg' + k, dur: 3, hits: [] }); const L = [];
+        for (let s = 0; s < 6; s++) { until(() => m.st === 'down', 1); const st = m.st; const okHit = hittable(a, m) && canHit(a, m, { downHit: true }) && J.hit(a, m, { downHit: true }); L.push(okHit ? st + '>' + m.st : 'miss:' + m.st); if (m.st === 'getup') { getup = k; break; } tick(4); }
+        segs.push(L); a.endAct(); if (getup !== false) break; m.invul = 0; }
+      R.otgSegs = segs; R.otgGetup = getup; }
+    // B5：扣地打站着的目标 → 砸倒（弹一下再倒地）
+    fresh(); raw({ spike: 420, bounce: 0.5, stun: 0.3 }); { const st0 = m.st; let down = false, bounce = 0; for (let i = 0; i < 90; i++) { tick(1); bounce = Math.max(bounce, m.cmb.bounce || 0); if (m.st === 'down') { down = true; break; } } R.slam = { st0, down, bounce }; }
+    fresh(); raw({ spike: 420, stun: 0.3 }); R.slamNoBounce = m.st;
+    return R;
+  });
+  console.log('刷图回归', JSON.stringify(reg));
+  const rr = reg.rounds;
+  ok(rr.every(v => Math.abs(v - rr[0]) <= rr[0] * 0.05), 'B1 起身后马上再挑：每轮最高点一样（以前 111 / 82 / 60 / 44）', rr);
+  ok(reg.afterLong >= reg.freshApex * 0.9, 'B2 长浮空连 → 起身 → 站立连 3 秒 → 再挑：满高度（以前 1 像素）', { after: reg.afterLong, fresh: reg.freshApex });
+  const G = reg.longJ.gains;
+  ok(reg.longJ.T > 7 && G.length >= 6 && G.slice(-2).every(v => v >= G[0] * 0.9), '没有浮空时限：连挑 7 秒以上，最后几次再挑仍然满高度（以前过 5 秒只剩 ×0.3）', reg.longJ);
+  ok(reg.rawDown.st === 'down' && reg.rawDown.z === 0 && reg.rawDown.downHits === 0 && reg.rawDown.dmg && reg.rawDown.stT > 0.04 && reg.rawDown.after5 === 'down', 'B3 非追击判定直接打倒地目标：照常扣血，不托起、不吃追击额度、倒地时间不重置，5 下也不强制起身', reg.rawDown);
+  ok(reg.rawDownT < 1.3, 'B3 被非追击判定打着的倒地目标按正常倒地时间起身（没有被一直按在地上）', reg.rawDownT);
+  const os = reg.otgSegs;
+  ok(os.length === 5 && os.slice(0, 4).every(L => L.length === 6 && L.every(x => !x.startsWith('miss') && !x.endsWith('getup'))) && reg.otgGetup === 4, 'B4 多段打地按招算：4 招 × 6 段全部打到，第 5 招才强制起身', { getupAt: reg.otgGetup, segs: os.map(L => L.length) });
+  ok(reg.slam.st0 === 'air' && reg.slam.down && reg.slam.bounce >= 1 && reg.slamNoBounce === 'air', 'B5 扣地打站着的目标：砸倒在地并弹一下（以前只有普通硬直）', { slam: reg.slam, noBounce: reg.slamNoBounce });
 
   /* ---------------- 决斗（PvP）---------------- */
   await page.goto(`${URL_BASE}?duel=sword&vs=sword&auto&mute`); await page.waitForFunction(() => window.__READY && game.duel && duel.b, null, { timeout: 60000 });

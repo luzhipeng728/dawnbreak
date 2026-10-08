@@ -53,6 +53,7 @@ function classTests(cls, job, raw) {
 // ---- 规则：路径 → 测试 ----
 const RULES = [
   [/^src\/engine\/(combat|entity|proj)\.js$/, [nodeT('combat'), nodeT('juggle'), nodeT('skill_sa')]],
+  [/^src\/engine\/juggle_core\.js$|^test\/juggle_core\.mjs$/, [nodeT('juggle_core'), nodeT('juggle'), nodeT('combat')]],   // 刷图浮空保护核心：纯逻辑单元测试（毫秒级）+ 浏览器里的浮空定量
   [/^src\/content\/classes\/common\.js$/, [T('fighter_open', 'test/fighter.mjs', 'save,switch'), T('classes_base', 'test/classes.mjs', 'sword,fighter')]],   // 职业公共件：开放开关 / 技能登记 / 指令
   [/^src\/game\/player\.js$/, [nodeT('combat'), T('awk_sample', 'test/awkcancel.mjs', 'sword:berserker,fighter:striker')]],
   [/^src\/(game\/duel|net\/pvp|net\/arena)\.js$|^server\/modules\/arena\.js$/, [nodeT('duel_rules'), T('duel_wakeup', 'test/duel_wakeup.mjs', 'asura,aura'), nodeT('fighter_pvp'), srvT('arena')]],

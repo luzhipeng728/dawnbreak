@@ -19,7 +19,7 @@
 | 文档 | 状态 | 内容 |
 |---|---|---|
 | [`COMBAT.md`](COMBAT.md) | 现行 | 战斗机制、新增技能 / 转职 / 动作帧的方法 |
-| [`COMBAT_JUGGLE.md`](COMBAT_JUGGLE.md) | 现行 | 浮空、倒地、受身（刷图与决斗共用） |
+| [`COMBAT_JUGGLE.md`](COMBAT_JUGGLE.md) | 现行 | 浮空、倒地、受身（刷图与决斗共用）；刷图一级 / 二级保护、打地 / 扣地规则（§5） |
 | [`ANIMATION.md`](ANIMATION.md) | 现行 | 动作手感（跑动 / 攻击）的调整依据 |
 | [`JOB_VISUALS.md`](JOB_VISUALS.md) | 现行 | 转职外观：常驻外观与状态特效（运行时覆盖层） |
 | [`PVP.md`](PVP.md) | 现行 | 决斗场平衡：公正决斗、伤害修正、职业修正 |

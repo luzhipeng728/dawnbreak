@@ -6,9 +6,11 @@
      属性修正 = 1 + (攻击方属性强化 elem[e] − 受击方属性抗性 res[e]) / 220（与原作一致）
    命中：Miss 率 = 受击方回避 evade − 攻击方命中 hitRate（0..0.6）；抓取 / 觉醒等 sure 攻击必中
    硬直：stun × 僵直度修正（攻击方 stagger − 受击方 hardness，每 250 点 ±100%，限制在 0.5..1.6 倍）× 破招 1.5 倍
-   浮空：见下面的 JUGGLE 参数表（docs/COMBAT_JUGGLE.md）：浮空力 ÷ 重量^0.5，同一轮连击里追加浮空逐次递减，空中普通受击“接住”下落，
-         越连越沉；落地速度大就弹地一次；决斗场浮空保护（累计 20% 起加速下落，每 +5% 加重一级，35% 强制空中受身）
-   倒地：只有 downHit 攻击能打到倒地目标（追击）；怪物被追击 4 次 / 决斗场倒地累计 20% 伤害 → 强制起身 + 无敌
+   浮空：见下面的 JUGGLE 参数表（docs/COMBAT_JUGGLE.md）：浮空力 ÷ 重量^0.5，空中普通受击“接住”下落，落地速度大就弹地一次；
+         刷图按浮空点数的一级 / 二级保护（engine/juggle_core.js 的 JUGGLE_PROT，保护线之前不递减，没有浮空时限）；
+         决斗同一轮连击里追加浮空逐次递减、越连越沉，另有决斗场浮空保护（src/game/duel.js）
+   倒地：只有 downHit 攻击能打到倒地目标（追击）；刷图直接调 applyHit 的非追击攻击打倒地目标只扣血（pveDownBlock）；
+         刷图追击按“招”算额度（第 5 招强制起身 + 无敌）/ 决斗场倒地累计伤害 → 强制起身 + 无敌；刷图扣地（spike）打站着的目标直接砸倒
    ===================================================================== */
 /* 浮空参数表（刷图 + 决斗共用；技能里的写法：launch 挑空力 / airLift 空中托力 / spike 向下砸 + bounce 弹地倍率 / down 击倒 + downLift / otgLift 倒地追击托力）
    高度 ≈ (launch × 递减 ÷ 重量^0.5)² ÷ (2 × grav)：launch 520 打普通怪 ≈ 118 像素、滞空约 1 秒 */
@@ -16,20 +18,24 @@ const JUGGLE = {
   grav: 1150,                // 浮空状态的重力（跳跃等其他状态还是 GRAV 1500）
   apexV: 80, apexFloat: 0.75,     // 最高点附近（|vz| < 80）重力 ×0.75：顶点停一下，方便追击
   weightExp: 0.5, bossRes: 0.7,   // 浮空力 ÷ 重量^0.5；领主再 ×0.7
-  relaunch: 0.87, relaunchMin: 0.4,  // 追加浮空：同一轮连击第 n 次挑空 × 0.87^n（最低 40%）
-  airLift: 160, airDecay: 0.93, airMin: 0.2,   // 空中普通受击：接住下落，力度 k = 0.93^空中受击次数（最低 20%）：托力 × k，下落速度按 k 拉回托力
+  // 下面三项递减只用于决斗（从第一下就开始叠）。刷图改成按浮空点数的一级 / 二级保护（engine/juggle_core.js 的 JUGGLE_PROT）：保护线之前不递减
+  relaunch: 0.87, relaunchMin: 0.4,  // 决斗：追加浮空同一轮连击第 n 次挑空 × 0.87^n（最低 40%）
+  airLift: 160, airDecay: 0.93, airMin: 0.2,   // 空中普通受击：接住下落，托力 160；决斗里力度 k = 0.93^空中受击次数（最低 20%），刷图 k 由保护等级决定（自由段 1）
   riseKeep: 0.96,            // 上升中被普通攻击打到：保留 96% 上升速度（不会把挑空打断）
-  gravStep: 0.03, gravMax: 0.9,   // 每次空中受击重力 +3%，最多 +90%（越连越沉）
-  pveLateT: 5, pveLate: 2, pveLateLaunch: 0.3,   // 刷图：同一轮浮空超过 5 秒（含打击停顿）后重力 ×2、挑空 ×0.3、空中普通受击不再接住（不会无限浮空）
+  pveCeil: 230,              // 刷图高度上限（我们自己加的，官方资料没有）：保护线之前不衰减，密集的空中攻击 + 再挑会把怪越顶越高、顶出屏幕。
+                             // 空中再挑最多挑到约 230 像素；空中受击的托力在 170 像素以上逐渐减到 20%（只托住、不再往上顶）
+  gravStep: 0.03, gravMax: 0.9,   // 决斗：每次空中受击重力 +3%，最多 +90%（越连越沉）
+  // 刷图没有浮空时限（官方也没有）：以前“同一轮浮空超过 5 秒 → 重力 ×2、挑空 ×0.3、不再接住”的断崖已取消，连招长度只由浮空保护决定
+  duelSumLateT: 5, duelSumLate: 0.3,   // 只剩决斗里召唤物 / 场地打决斗玩家（不按玩家对玩家结算）沿用的旧时限：浮空超过 5 秒后挑空 ×0.3、不再接住
+  slamBounce: 0.4,                // 刷图扣地打站着的目标：砸倒后强制弹地的倍率（技能写了 bounce 就用技能的）
   bounceImp: 330, bounceK: 0.32,  // 落地速度 > 330 且这轮没弹过 → 弹地一次（速度 × 0.32）；bounce: k 强制弹（速度 × k，至少 260）
-  otgMax: 4, otgLift: 110,        // 倒地追击：怪物被追击超过 4 次强制起身；追击把目标轻轻托起
+  otgLift: 110,                   // 倒地追击把目标轻轻托起（刷图：越打托得越低，额度按“招”算，见 JUGGLE_PROT 的 otgMax / otgSegMax / otgLiftStep）
   pvpGrav: 0.6, pvpLaunch: 0.55, pvpRecover: 4,   // 决斗一段保护每级：重力 +60%、浮空力 ×0.55。二段（30%）不在这里强制受身，由 duel.js 直接砸地
   pvpFloatK: 0.4, pvpFloatG: 0.26,  // 决斗未进保护时：挑空压低（站立技能整段都打得到）、下落放慢，上挑之后还能接第二下、第三下。一段保护之后这两项取消，人变沉
   pvpAirT: 3, pvpAirRamp: 0.8,    // 决斗：同一轮浮空超过 3 秒，重力每秒再 +80%
   pvpOtgPop: 240, pvpSweepPop: 210,   // 倒地被扫地托起的高度；二段保护之后再托，只给一小节，马上落回地上
 };
 const COMBAT = {
-  pveOtgMax: JUGGLE.otgMax,   // 怪物倒地被追击次数上限 → 强制起身
   protReset: 1.0,            // 可行动这么久后本轮连击统计清零
   counterMul: 1.25, counterStun: 1.5,
   backCrit: 0.1,             // 背击暴击率加成
@@ -55,21 +61,42 @@ const hasSA = e => e.superArmor > 0 || !!(e.st === 'act' && e.act && (e.act.supe
 const isCounter = t => t.st === 'act' && !!t.act && !t.act.noCounter && t.actT < t.act.counterEnd;
 const foe = (e, t) => t !== e && t.team !== e.team && t.team !== 'n' && !t.dead && !t.remove;
 const hittable = (e, t) => foe(e, t) && t.invul <= 0;
-function resetCmb(e) { const c = e.cmb; c.air = 0; c.airDmg = 0; c.down = 0; c.downDmg = 0; c.standDmg = 0; c.hits = 0; c.dmg = 0; c.bounce = 0; c.launch = 0; c.airT = 0; e.juggle = 0; e.downHits = 0; e.recoverLand = false; e._plShown = 0; }
+function resetCmb(e) { const c = e.cmb; c.air = 0; c.airDmg = 0; c.down = 0; c.downDmg = 0; c.standDmg = 0; c.hits = 0; c.dmg = 0; c.bounce = 0; c.launch = 0; c.airT = 0; e.juggle = 0; e.downHits = 0; e.recoverLand = false; e._plShown = 0; e.js = null; e._popLeft = null; }
+// ---- 刷图浮空保护（engine/juggle_core.js）：决斗里的玩家之外都按这套算（怪物、地下城里的玩家、决斗召唤物不算决斗玩家）----
+const pveJug = e => !(e.fighter && game.pvp);
+const JUG_PROF = {};
+// 参数档位：领主 boss / 精英 elite / 普通 normal；怪物定义里写 juggle: {...} 单独覆盖（缓存在实体上）
+function jugProf(e) {
+  const kind = e.boss ? 'boss' : e.elite ? 'elite' : 'normal', o = e.def_ && e.def_.juggle;
+  if (o) { if (!e._jugP || e._jugP.kind !== kind) e._jugP = { kind, P: JUGGLE_CORE.profile(kind, o) }; return e._jugP.P; }
+  return JUG_PROF[kind] || (JUG_PROF[kind] = JUGGLE_CORE.profile(kind));
+}
+const jugS = e => e.js || (e.js = JUGGLE_CORE.session());
+// 这一下属于哪“一招”（倒地追击额度按招算，同一招的多段不重复扣）：投射物 / 召唤物出手按它自己（或它当前的动作），否则按攻击者当前的动作；
+// 都没有（直接调用、攻击者没在出招）→ null，每下各算一招
+let jugSeq = 0;
+function jugInst(a, opt) {
+  const o = opt && opt.src && opt.src !== a ? opt.src : a, k = (o && o.act) || (o !== a ? o : null);
+  return k && typeof k === 'object' ? k._jid || (k._jid = ++jugSeq) : null;
+}
 // 决斗场浮空保护等级（0 = 未触发）
 function airProtLv(e) {
   if (!e.fighter || !game.pvp) return 0;
   const r = e.cmb.airDmg / e.hpMax; return r < PVP.airProt ? 0 : 1 + Math.floor((r - PVP.airProt) / PVP.airStep);
 }
 function airGravity(e) {
+  if (pveJug(e)) {   // 刷图：自由段重力固定，一级保护起变沉，二级 ×3（JUGGLE_PROT）；没有浮空时限
+    let g = JUGGLE.grav / GRAV * JUGGLE_CORE.grav(e.js, jugProf(e), e.weight);
+    if (Math.abs(e.vz) < JUGGLE.apexV) g *= JUGGLE.apexFloat;
+    return g * (e.gravMul || 1);
+  }
   const c = e.cmb;
   let g = JUGGLE.grav / GRAV * (1 + Math.min(JUGGLE.gravMax, (c.air || 0) * JUGGLE.gravStep));
   if (Math.abs(e.vz) < JUGGLE.apexV) g *= JUGGLE.apexFloat;          // 最高点略微停顿，方便追击
   const pl = airProtLv(e), T = c.airT || 0;
   if (e.fighter && game.pvp && !pl) g *= JUGGLE.pvpFloatG;   // 还没到一段：下落慢，给连招留时间
   if (pl) g *= 1 + JUGGLE.pvpGrav * pl;
-  if (e.fighter && game.pvp) { if (T > JUGGLE.pvpAirT) g *= 1 + (T - JUGGLE.pvpAirT) * JUGGLE.pvpAirRamp; }
-  else if (T > JUGGLE.pveLateT) g *= JUGGLE.pveLate;
+  if (e.fighter && game.pvp && T > JUGGLE.pvpAirT) g *= 1 + (T - JUGGLE.pvpAirT) * JUGGLE.pvpAirRamp;
   return g * (e.gravMul || 1);
 }
 function downTimeOf(e) { if (e.fighter) return game.pvp ? PVP.downTime : 0.55; return e.boss ? 0.5 : (e.def_ && e.def_.downTime) || 0.75; }
@@ -138,6 +165,10 @@ function instantHit(e, h) {
 }
 
 /* ---- 伤害与受击反应 ---- */
+// 刷图：倒地的目标只有追击判定（downHit）/ 抓倒地（grabDown）/ 显式 force 才有受击反应。职业 / 怪物文件里有上百处直接调 applyHit（波动、场地、延迟出手……），
+// 很多没查倒地，以前会把倒地的怪托起来、重置倒地时间、吃掉追击次数（5 下就强制起身 + 无敌）。这里统一挡掉反应、照常扣血（伤害输出不变）。
+// 决斗不走这里：duel.js 包的那层 applyHit 直接打空（倒地只有扫地判定打得到）
+const pveDownBlock = (t, h, opt) => t.st === 'down' && !(t.fighter && game.pvp) && !h.downHit && !h.grabDown && !h.force && !(opt && opt.force);
 function applyHit(a, t, h, opt = {}) {
   if (a.ghost || t.ghost) return false;   // 组队刷图：队友的影子（net/coop.js）只做表现，不造成也不承受伤害（伤害由各自的客户端结算）
   const src = opt.src || a, act = a.act;
@@ -196,6 +227,7 @@ function applyHit(a, t, h, opt = {}) {
   sfx.hit(h.snd || (crit ? 'crit' : 'slash'), crit);
   if (a.team === 'p') game.onPlayerHit(t, dmg, crit, counter, back);
   if (t.team === 'p' && !t.summon) game.onPlayerHurt(t, dmg, a);   // 召唤物挨打不算玩家被击
+  t._jInst = jugInst(a, opt);   // 组队：队员的命中包带上它（net/coop.js localHit），主机按同一招算追击额度
   if (h.onHit) h.onHit(a, t, dmg);
   const Ca = a.fighter && CLASSES[a.cls]; if (Ca && Ca.onHit) Ca.onHit(a, t, h, dmg, opt.proj ? null : act, opt);   // 职业命中钩子（狂暴出血、炫纹……）
   if (t.onDamaged) t.onDamaged(t, a, dmg, crit, h);
@@ -209,11 +241,12 @@ function applyHit(a, t, h, opt = {}) {
   }
   if (guard) { t.vx = -t.face * (h.knock ?? 80) * 0.8; fxGuard(t); if (t.onHurt) t.onHurt(a, h); return true; }
   if ((bh && bh.noStun) || (statusRooted(t) && !h.grab)) t.flash = 0.1;   // 按霸体处理（钩子）/ 定身：只受伤，不击退、不浮空
-  else react(a, t, h, src, counter, pvp);
+  else if (pveDownBlock(t, h, opt)) t.flash = 0.1;                     // 刷图倒地规则的统一入口：不是追击判定只扣血（见 pveDownBlock）
+  else react(a, t, h, src, counter, pvp, t._jInst);
   if (t.onHurt) t.onHurt(a, h);
   return true;
 }
-function react(a, t, h, src, counter, pvp) {
+function react(a, t, h, src, counter, pvp, inst) {
   if (t.st === 'held') return;                                      // 被抓住：只受伤不反应
   // 怪物蓄力招式：被打出足够伤害 → 破招
   if (t.act && t.act.breakable && a.team !== t.team) { t.breakDmg = (t.breakDmg || 0) + t.lastDmg; if (t.breakDmg > t.hpMax * t.act.breakable) { breakAct(t); return; } }
@@ -224,9 +257,10 @@ function react(a, t, h, src, counter, pvp) {
   const kb = (h.knock ?? 80) / Math.max(0.5, t.weight), c = t.cmb;
   const airborne = t.st === 'air' || t.z > 2, sw = Math.sqrt(t.weight);
   // ---- 倒地追击 ----
-  if (t.st === 'down') {
+  if (t.st === 'down' && pveJug(t)) { if (jugOtg(t, h, dir, kb, sw, inst)) return; }   // 刷图：按招算额度（engine/juggle_core.js）；挑空的继续走下面的浮空分支
+  else if (t.st === 'down') {
     t.downHits++; c.down++;
-    const prot = pvp ? c.downDmg >= t.hpMax * PVP.downProt : !t.fighter && t.downHits > COMBAT.pveOtgMax;
+    const prot = pvp && c.downDmg >= t.hpMax * PVP.downProt;
     if (prot) { t.startGetup(); t.invul = Math.max(t.invul, pvp ? PVP.getupInvul : 0.7); fxText(pvp ? '倒地保护' : '起身', t.x, t.y, t.z, { col: '#9fe8ff', size: 10 }); return; }
     if (!h.launch) {
       const heavy = pvp && typeof duelAirLv === 'function' && duelAirLv(t) >= 2;   // 二段已经砸过地：扫地只托一点点
@@ -237,12 +271,13 @@ function react(a, t, h, src, counter, pvp) {
   const pl = airProtLv(t), pk = pl ? Math.pow(JUGGLE.pvpLaunch, pl) : 1;
   if (pvp && pl > (t._plShown || 0)) { t._plShown = pl; if (pl === 1) fxText('浮空保护', t.x, t.y, t.z + 30, { col: '#8ac8ff', size: 10 }); fxAura(t, '#6ab0ff', 0.35); }
   if (pvp && pl >= JUGGLE.pvpRecover && (airborne || t.st === 'down')) { airRecover(t); return; }   // 保护到顶：强制空中受身
-  if (h.launch || airborne || t.st === 'down') {
+  if ((h.launch || airborne || t.st === 'down') && pveJug(t)) jugAir(t, h, dir, kb, airborne);
+  else if (h.launch || airborne || t.st === 'down') {
     const res = Math.pow(Math.max(0.5, t.weight), JUGGLE.weightExp) / (t.boss ? JUGGLE.bossRes : 1);
-    const late = !pvp && (c.airT || 0) > JUGGLE.pveLateT;   // 刷图浮空太久：挑不高、接不住
+    const late = !pvp && t.fighter && game.pvp && (c.airT || 0) > JUGGLE.duelSumLateT;   // 决斗里被召唤物打、浮空太久：挑不高、接不住（刷图没有时限）
     let vz;
     if (h.launch) {   // 挑空 / 追加浮空：同一轮连击里逐次递减；目标已经在更快地上升就不减速
-      vz = h.launch * Math.max(JUGGLE.relaunchMin, Math.pow(JUGGLE.relaunch, c.launch || 0)) * pk / res * (late ? JUGGLE.pveLateLaunch : 1);
+      vz = h.launch * Math.max(JUGGLE.relaunchMin, Math.pow(JUGGLE.relaunch, c.launch || 0)) * pk / res * (late ? JUGGLE.duelSumLate : 1);
       if (pvp) vz *= JUGGLE.pvpFloatK;   // 压到站立判定打得到的高度；追加浮空仍一次比一次低
       if (airborne && t.vz > vz) vz = t.vz;
       c.launch = (c.launch || 0) + 1;
@@ -256,9 +291,15 @@ function react(a, t, h, src, counter, pvp) {
     if (!airborne) t.bounced = false;
     if (h.bounce) t.bounceNext = h.bounce;
     t.setState('air'); t.play(t.clipOr(vz > 80 ? 'airUp' : 'air', 'air'), true);
+  } else if (h.spike && pveJug(t)) {   // 刷图扣地（spike）打站着的目标：直接砸倒并弹一下（bounce 不写按 0.4），以前只有普通硬直
+    const S = jugS(t), P = jugProf(t); JUGGLE_CORE.hit(S, P, { kind: 'spike', jp: h.jp, w: t.weight });
+    t.vz = -Math.abs(h.spike); t.z = 1; t.vx = dir * kb * 0.5; t.setState('air'); t.bounced = false; t.bounceNext = JUGGLE_CORE.bounce(S, P) ? h.bounce ?? JUGGLE.slamBounce : 0; c.air++; t.juggle++;
+    t.play(t.clipOr('air'), true);
   } else if (h.down) {
+    const pj = pveJug(t), S = pj && jugS(t);
+    if (pj) JUGGLE_CORE.hit(S, jugProf(t), { kind: 'down', jp: h.jp, w: t.weight });
     t.vz = (h.downLift ?? 230) / sw; t.z = 1; t.vx = dir * kb; t.setState('air'); t.bounced = false; c.air++; t.juggle++;
-    if (h.bounce) t.bounceNext = h.bounce;
+    if (h.bounce) t.bounceNext = !pj || JUGGLE_CORE.bounce(S, jugProf(t)) ? h.bounce : 0;
     t.play(t.clipOr('airUp', 'air'), true);
   } else if (pvp && (c.standDmg || 0) >= t.hpMax * PVP.standProt) {   // 平推保护：强制击倒
     c.standDmg = 0; t.vz = 200; t.z = 1; t.vx = dir * 160; t.setState('air'); t.bounced = true; c.air++;
@@ -269,6 +310,46 @@ function react(a, t, h, src, counter, pvp) {
     t.hitHeavy = !!h.heavy || stun > 0.46 || kb > 190;
     t.play(t.hitHeavy ? t.clipOr('hit2', 'hit') : 'hit', true);
   }
+}
+// 刷图倒地追击（打地 / 扫地）：按“一招”扣额度（同一招的多段都打得完），第 otgMax+1 招打到 → 强制起身 + 无敌；
+// 同一招最多托 otgSegMax 段，之后只扣血；托起高度随本套追击段数降低；托起不重置倒地时间（落回地面只保证还剩 otgKeep 秒）。
+// 返回 true = 处理完了；false = 这一下是挑空（倒地再挑），交给 jugAir
+function jugOtg(t, h, dir, kb, sw, inst) {
+  const S = jugS(t), P = jugProf(t), c = t.cmb;
+  t.downHits++; c.down++;
+  const r = JUGGLE_CORE.otg(S, P, inst);
+  if (r.act === 'getup') { t._popLeft = null; t.startGetup(); t.invul = Math.max(t.invul, P.otgInvul); fxText('起身', t.x, t.y, t.z, { col: '#9fe8ff', size: 10 }); return true; }
+  if (r.act === 'dmg') { t.flash = 0.1; return true; }
+  if (h.launch) return false;
+  JUGGLE_CORE.hit(S, P, { kind: 'otg', jp: h.jp, w: t.weight });
+  if (t._popLeft === null || t._popLeft === undefined) t._popLeft = Math.max(0, (t.downTime || 0) - t.stT);   // 剩下的倒地时间，落回地面时接着躺
+  t.vz = (h.otgLift ?? JUGGLE.otgLift) * r.liftK / sw; t.z = 1; t.vx = dir * kb * 0.3; t.setState('air'); t.bounced = true;
+  return true;
+}
+// 刷图的挑空 / 空中受击（JUGGLE_PROT 一级 / 二级保护）：保护线之前再挑不递减、空中受击照样接住；一级起挑空 / 接住变弱、变沉；
+// 二级挑不起来（挑空按普通空中受击算）、接不住，进二级那一下就开始往下掉。官方没有浮空时限，连招多长只看保护
+function jugAir(t, h, dir, kb, airborne) {
+  const S = jugS(t), P = jugProf(t), c = t.cmb, ground = t.st === 'down';
+  const res = Math.pow(Math.max(0.5, t.weight), JUGGLE.weightExp) / (t.boss ? JUGGLE.bossRes : 1);
+  const r = JUGGLE_CORE.hit(S, P, { kind: h.launch ? 'launch' : 'air', rep: !!h.rep, jp: h.jp, w: t.weight, ground });
+  let vz;
+  const room = Math.max(0, JUGGLE.pveCeil - t.z);
+  if (h.launch && r.canLaunch) {
+    vz = h.launch * r.launchK / res;
+    if (airborne) vz = Math.min(vz, Math.max(JUGGLE.airLift / res, Math.sqrt(2 * JUGGLE.grav * room)));   // 空中再挑：最高点不超过 pveCeil
+    if (airborne && t.vz > vz) vz = t.vz;   // 已经在更快地上升：不减速
+    c.launch = (c.launch || 0) + 1; t._popLeft = null;   // 重新挑成正常浮空：落地按完整倒地时间算
+  } else {   // 空中普通受击：下落中把速度拉回托力（力度 catchK），上升中基本不影响
+    const k = r.catchK, lift = (h.airLift ?? JUGGLE.airLift) * k / res * Math.min(1, Math.max(0.2, room / (JUGGLE.pveCeil * 0.26)));
+    vz = t.vz > 0 ? Math.max(t.vz * JUGGLE.riseKeep, lift) : t.vz + (lift - t.vz) * k;
+  }
+  if (r.lv >= 2) vz = Math.min(vz, 0);
+  if (h.spike) vz = -h.spike;   // 向下砸地
+  if (r.up) fxAura(t, r.lv >= 2 ? '#ffb060' : '#6ab0ff', 0.35);   // 进一级（蓝）/ 二级（橙）闪一下
+  t.vz = vz; t.z = Math.max(t.z, 1); t.vx = dir * kb * (airborne ? 0.6 : 0.8); c.air++; t.juggle++; t.bouncing = false;
+  if (!airborne) t.bounced = false;
+  if (h.bounce) t.bounceNext = JUGGLE_CORE.bounce(S, P) ? h.bounce : 0;   // 强制弹地一套最多 bounceMax 次
+  t.setState('air'); t.play(t.clipOr(vz > 80 ? 'airUp' : 'air', 'air'), true);
 }
 // 决斗浮空保护到顶：强制空中受身——马上无敌、不再被托起，落地直接受身站起（不倒地、不能追击）
 function airRecover(t) {

@@ -53,9 +53,10 @@ const RAID_DEFS = {
         pain_mem: { name: '记忆的碎片', type: 'main', area: 3, pos: [0.62, 0.32], need: ['wit_dawn'], dg: 'raid_si_memory', boss: 'gusty' },
         pain_mirror: { name: '痛苦之镜', type: 'timer', area: 3, pos: [0.62, 0.72], need: ['wit_dawn'], solo: true, timer: 240, repair: 90, stopWhen: 'pain_mem', dg: 'raid_si_mirror', boss: 'grumi',
           fx: { expire: [{ kind: 'heal', to: 'pain_mem', text: '记忆的碎片的领主回满了血' }, { kind: 'time', v: -120, text: '全团计时 −2 分钟' }] }, guide: false },
-        gate_l: { name: '无形之门 · 左', type: 'sync', group: 'twins', area: 4, pos: [0.87, 0.32], need: ['pain_mem'], solo: true, window: 30, revive: 0.5, diff: 0.25, guard: 0.5, dg: 'raid_si_gate_l', boss: 'vita',
+        // 无形之门 ×2 各打各的：官方没有“同时击杀”的要求 [QQ]
+        gate_l: { name: '无形之门 1', type: 'main', area: 4, pos: [0.87, 0.32], need: ['pain_mem'], solo: true, dg: 'raid_si_gate_l', boss: 'vita',
           guide: { name: '无形之门', type: 'main', pos: [0.87, 0.5], dg: 'raid_si_gate_duo' } },
-        gate_r: { name: '无形之门 · 右', type: 'sync', group: 'twins', area: 4, pos: [0.87, 0.68], need: ['pain_mem'], solo: true, window: 30, revive: 0.5, diff: 0.25, guard: 0.5, dg: 'raid_si_gate_r', boss: 'nex', guide: false },
+        gate_r: { name: '无形之门 2', type: 'main', area: 4, pos: [0.87, 0.68], need: ['pain_mem'], solo: true, dg: 'raid_si_gate_r', boss: 'nex', guide: false },
       } },
       { id: 2, name: '讨伐战', limit: { normal: 1200, guide: 1800 }, goal: ['coffin'], nodes: {
         sub_a: { name: '潜意识之厅 A', type: 'main', area: 1, pos: [0.15, 0.32], need: [], dg: 'raid_si_sub', boss: 'siroNightmare', guide: { name: '潜意识之厅', pos: [0.15, 0.5] } },

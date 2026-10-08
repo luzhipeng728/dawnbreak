@@ -2,9 +2,9 @@
 // 组队 → 队长在阿甘左那里建团 → bob 收到邀请点加入 → 准备 → 开始 →
 //   破坏之门 A / B 分头打（错序：两边守门人回满血；数字小的先倒 → 通关）→ 梦幻之黎明 + 噩梦之夜 并行（跨节点 BUFF < 0.5 秒到达，领主受伤倍率生效）→
 //   记忆的碎片 + 痛苦之镜（镜子到 0：回满血 + 全团 −2 分钟；bob 断线时打完镜子，上报排队，重连后补发，进度不丢）→
-//   无形之门 左 / 右（血量差减伤；没同步 → 50% 复活；同步窗口内打倒 → 通关）→ 休整、两人各领 P1 → 讨伐战（变异的潜意识之厅 → 幻影破防）→
+//   无形之门 1 / 2（各打各的，两扇都通关 = 追逐战完成）→ 休整、两人各领 P1 → 讨伐战（变异的潜意识之厅 → 幻影破防）→
 //   最终战队长带队一起进（组队房间，room:open meta 带团本信息）→ 通关 → 两人各领 P2（重复领不重复入账）→ 次数 今天 0 / 本周剩 1
-// 服务端时间用 cfg.raidShift 平移（镜子倒计时、双生窗口不用真等）。截图：test/shots/raid/mp-*.png
+// 服务端时间用 cfg.raidShift 平移（镜子倒计时不用真等）。截图：test/shots/raid/mp-*.png
 // 用法：node test/mp_raid.mjs
 import fs from 'node:fs';
 import { startServer, launchPlayers, ok, result, sleep, until, uiRegister, uiCreateChar, dumpErrors } from './net_lib.mjs';
@@ -131,25 +131,14 @@ try {
   ok(await backToCamp(B), 'bob 回营地');
   await killBoss(A); ok(await backToCamp(A), 'alice 通关记忆的碎片');
   ok((await nst(A, 'gate_l')) === 'open' && (await nst(A, 'gate_r')) === 'open', '无形之门左右开放');
-  // ---- 无形之门：双生 ----
+  // ---- 无形之门：各打各的（没有同步窗口）----
   ok((await Promise.all([enterNode(A, 'gate_l'), enterNode(B, 'gate_r')])).every(Boolean), 'alice 维塔 / bob 奈克斯');
-  await A.evaluate(() => { const b = raidNet.ctx.boss; b.hp = Math.round(b.hpMax * 0.4); });
-  await B.evaluate(() => { const b = raidNet.ctx.boss; b.hp = Math.round(b.hpMax * 0.8); });
-  ok(await until(B, () => { const b = raidNet.ctx.boss; return b.msMul && b.msMul.raid_twin_guard === 0.5; }, null, 4000), '两边血量差超过 25%：血多的一边（bob）领主减伤 50%');
-  await A.evaluate(() => { const b = raidNet.ctx.boss; b.hp = Math.round(b.hpMax * 0.75); });
-  ok(await until(B, () => { const b = raidNet.ctx.boss; return !b.msMul || b.msMul.raid_twin_guard === undefined; }, null, 4000), '血量拉平：减伤撤掉');
-  ok(await killBoss(A), 'alice 先打倒维塔：按住等另一边');
-  ok(await until(B, () => (window.__fx || []).some(f => f.kind === 'window'), null, 4000), 'bob 收到同步窗口（30 秒内打倒）');
+  ok(await killBoss(A) === false && await until(A, () => raidNet.ctx.cleared, null, 4000), 'alice 打倒维塔：直接通关（不用等另一边）');
   await sleep(300);
-  await B.screenshot({ path: `${out}/mp-05-hud-window.png` });
-  await A.screenshot({ path: `${out}/mp-06-hud-held.png` });
-  shift(31000);
-  ok(await until(A, () => { const C = raidNet.ctx; return !C.held && Math.abs(C.boss.hp / C.boss.hpMax - 0.5) < 0.01; }, null, 4000), '30 秒没同步：维塔以 50% 血复活');
-  await killBoss(A);
-  await until(A, () => raidNet.S.nodes.gate_l.st === 'down', null, 4000);
-  await sleep(300);
+  await B.screenshot({ path: `${out}/mp-05-hud-gate.png` });
+  ok((await nst(A, 'gate_l')) === 'cleared' && (await nst(A, 'gate_r')) === 'busy', '一扇门通关、另一扇还在打');
   await killBoss(B);
-  ok((await Promise.all([until(A, () => raidNet.ctx.cleared, null, 5000), until(B, () => raidNet.ctx.cleared, null, 5000)])).every(Boolean), '窗口内同步打倒：两边都通关');
+  ok(await until(B, () => raidNet.ctx.cleared, null, 5000), 'bob 打倒奈克斯：通关');
   ok(await until(A, () => raidNet.S.st === 'rest', null, 5000), '追逐战完成 → 休整');
   ok((await Promise.all([backToCamp(A), backToCamp(B)])).every(Boolean), '两人回营地');
   ok((await Promise.all([claim(A, 1), claim(B, 1)])).every(Boolean), '两人各领 P1 奖励');

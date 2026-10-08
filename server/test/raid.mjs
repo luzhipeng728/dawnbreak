@@ -1,7 +1,7 @@
 // 团本（server/modules/raid.js + src/game/raid_core.js）自测，不需要浏览器。时间用 cfg.raidShift 平移（不真等），计时靠手动 tick
 // 规则核心：节点图（普通 / 引导）、每天 / 每周次数（周四 06:00 换周）、同一串事件在服务端 vm 和网页版脚本里结果一致（有 dist/web 构建时）
 // 两人全流程：建团 / 加入 / 准备 / 开始扣次数 → 顺序节点（错序回满、没轮到提示）→ 并行的增益节点（跨节点 BUFF、重生）→ 复活次数 / 侵蚀 →
-//   倒计时节点到 0（回满血 + 扣时间）→ 补位切换 → 双生（血量差减伤、30 秒内没同步复活 50%、同步通关）→ 阶段奖励（幂等）→ 掉线重连 →
+//   倒计时节点到 0（回满血 + 扣时间）→ 补位切换 → 无形之门 ×2（各打各的）→ 阶段奖励（幂等）→ 掉线重连 →
 //   服务端重启（计时顺延、重组队伍）→ 讨伐战（破防）→ 最终战合流 / 存档点 / 主机掉线后接着打 → 通关；作弊被拒；单人引导全流程；练习 / 每周次数；过期大厅清理
 // 用法：node --disable-warning=ExperimentalWarning server/test/raid.mjs
 import os from 'node:os';
@@ -226,28 +226,19 @@ try {
   await ev(al, 'pain_mem', ep.run, 'clear');
   ok(S(al).nodes.pain_mem.st === 'cleared' && S(al).nodes.pain_mirror.st === 'off' && S(al).nodes.gate_l.st === 'open' && S(al).nodes.gate_r.st === 'open', '主线通关：镜子关闭，无形之门左右开放');
 
-  // ---- 双生：血量差减伤、没同步复活、同步通关 ----
+  // ---- 无形之门 ×2：各打各的（官方没有同时击杀窗口 / 血量差减伤），两扇都通关 = 追逐战完成 ----
   drain(al, bo);
   const gl = await enter(al, 'gate_l'), gr = await enter(bo, 'gate_r');
   shift(21_000);
   await ev(al, 'gate_l', gl.run, 'hp', 0.4); await ev(bo, 'gate_r', gr.run, 'hp', 0.8);
-  const tg = await got(bo.c, m => m.t === 'raid:fx' && m.kind === 'buff' && m.p.id === 'twin_guard');
-  ok(tg && tg.p.p.dmgTaken === 0.5 && tg.node === 'gate_r', '两边血量差超过 25%：血多的一边减伤 50%', tg);
-  await ev(al, 'gate_l', gl.run, 'hp', 0.7);
-  ok(!!(await got(bo.c, m => m.t === 'raid:fx' && m.kind === 'unbuff' && m.p.id === 'twin_guard')), '血量差回到 25% 以内：减伤撤掉');
-  await ev(al, 'gate_l', gl.run, 'down');
-  const wn = await got(bo.c, m => m.t === 'raid:fx' && m.kind === 'window');
-  ok(wn && wn.p.from === 'gate_l' && wn.p.left === 30_000 && S(al).nodes.gate_l.st === 'down', '左边倒下：右边收到 30 秒同步窗口', wn);
-  shift(31_000); tick();
-  const rv = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'revive');
-  ok(rv && rv.p.hp === 0.5 && S(al).nodes.gate_l.st === 'busy', '30 秒内另一边没倒：倒下的那个以 50% 血复活', rv);
-  const x6 = await ev(bo, 'gate_r', gr.run, 'clear');
-  ok(x6 && !x6.ok && x6.code === 'nodown', '作弊：同步节点没倒就报通关被拒', x6);
-  drain(al, bo);
-  await ev(al, 'gate_l', gl.run, 'down'); shift(8_000);
+  ok(gl.type === 'main' && gr.type === 'main' && !S(al).buffs.some(b => b.id === 'twin_guard'), '两扇门都是普通主线：血量差多大都不减伤', S(al).buffs);
+  const gd = await ev(al, 'gate_l', gl.run, 'down');
+  ok(gd && gd.ok && gd.res === 'clear' && S(al).nodes.gate_l.st === 'cleared' && S(al).st === 'routes', '维塔倒下就通关（不等另一边）', gd);
+  drain(al, bo); shift(31_000); tick();
+  ok(S(al).nodes.gate_l.st === 'cleared', '过了 30 秒也不会复活');
   const sy = await ev(bo, 'gate_r', gr.run, 'down');
   const ph1 = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'phase' && m.p.ok);
-  ok(sy && sy.ok && sy.res === 'clear' && ph1 && ph1.p.phase === 1 && S(al).st === 'rest' && S(al).res.phases[0] === 1, '8 秒内同步打倒：双生通关 → 追逐战完成，进入休整', { sy, ph1 });
+  ok(sy && sy.ok && sy.res === 'clear' && ph1 && ph1.p.phase === 1 && S(al).st === 'rest' && S(al).res.phases[0] === 1, '两扇门都通关 → 追逐战完成，进入休整', { sy, ph1 });
   await ev(al, 'gate_l', gl.run, 'clear'); await ev(bo, 'gate_r', gr.run, 'clear');
 
   // ---- 阶段奖励（幂等）----

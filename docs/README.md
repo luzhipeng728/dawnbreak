@@ -48,6 +48,7 @@
 | [`BOSS_SPEC.md`](BOSS_SPEC.md) | 现行 | 领主 spec 写法与原语速查 |
 | [`BOSS_PLAN.md`](BOSS_PLAN.md) · [`boss_inventory.json`](boss_inventory.json) | 过程记录 | 领主差异化规划与盘点数据（`tools/boss_inventory.mjs` 生成） |
 | [`RAID_PLAN.md`](RAID_PLAN.md) | 过程记录 | 团本规划（文件内标明了已接入与待实现的部分） |
+| [`RAID_SIROCO.md`](RAID_SIROCO.md) | 现行 | 团本 · 无形之希洛克：官方规则对照、两人版取舍、分歧项与来源、实现进度（P0~P4） |
 | [`REGION_HANDOFF.md`](REGION_HANDOFF.md) | 过程记录 | 海上列车 / 时空之门区域交接（已完成） |
 
 ## 5. 美术

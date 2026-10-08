@@ -99,7 +99,7 @@ class Ent {
   hurtH() { return this.st === 'down' ? 22 : this.st === 'air' ? this.h * 0.55 : this.st === 'act' && this.act && this.act.hurtH !== undefined ? this.act.hurtH : this.h; }
   update(dt) {
     if (this.flash > 0) this.flash -= dt;
-    if (this.st === 'air') this.cmb.airT = (this.cmb.airT || 0) + dt;   // 本轮浮空时长（含打击停顿；JUGGLE：刷图 / 决斗防无限浮空）
+    if (this.st === 'air' && this.fighter && game.pvp) this.cmb.airT = (this.cmb.airT || 0) + dt;   // 决斗：本轮浮空时长（含打击停顿，JUGGLE.pvpAirT 时间保护）。刷图不计时，没有浮空时限
     if (this.hitstop > 0) { this.hitstop -= dt; return; }
     this.stT += dt;
     if (this.invul > 0) this.invul -= dt;

@@ -20,7 +20,8 @@ const JUGGLE = {
   airLift: 160, airDecay: 0.93, airMin: 0.2,   // 空中普通受击：接住下落，力度 k = 0.93^空中受击次数（最低 20%）：托力 × k，下落速度按 k 拉回托力
   riseKeep: 0.96,            // 上升中被普通攻击打到：保留 96% 上升速度（不会把挑空打断）
   gravStep: 0.03, gravMax: 0.9,   // 每次空中受击重力 +3%，最多 +90%（越连越沉）
-  pveLateT: 5, pveLate: 2, pveLateLaunch: 0.3,   // 刷图：同一轮浮空超过 5 秒（含打击停顿）后重力 ×2、挑空 ×0.3、空中普通受击不再接住（不会无限浮空）
+  // 刷图没有浮空时限（官方也没有）：以前“同一轮浮空超过 5 秒 → 重力 ×2、挑空 ×0.3、不再接住”的断崖已取消，连招长度只由浮空保护决定
+  duelSumLateT: 5, duelSumLate: 0.3,   // 只剩决斗里召唤物 / 场地打决斗玩家（不按玩家对玩家结算）沿用的旧时限：浮空超过 5 秒后挑空 ×0.3、不再接住
   bounceImp: 330, bounceK: 0.32,  // 落地速度 > 330 且这轮没弹过 → 弹地一次（速度 × 0.32）；bounce: k 强制弹（速度 × k，至少 260）
   otgMax: 4, otgLift: 110,        // 倒地追击：怪物被追击超过 4 次强制起身；追击把目标轻轻托起
   pvpGrav: 0.6, pvpLaunch: 0.55, pvpRecover: 4,   // 决斗一段保护每级：重力 +60%、浮空力 ×0.55。二段（30%）不在这里强制受身，由 duel.js 直接砸地
@@ -68,8 +69,7 @@ function airGravity(e) {
   const pl = airProtLv(e), T = c.airT || 0;
   if (e.fighter && game.pvp && !pl) g *= JUGGLE.pvpFloatG;   // 还没到一段：下落慢，给连招留时间
   if (pl) g *= 1 + JUGGLE.pvpGrav * pl;
-  if (e.fighter && game.pvp) { if (T > JUGGLE.pvpAirT) g *= 1 + (T - JUGGLE.pvpAirT) * JUGGLE.pvpAirRamp; }
-  else if (T > JUGGLE.pveLateT) g *= JUGGLE.pveLate;
+  if (e.fighter && game.pvp && T > JUGGLE.pvpAirT) g *= 1 + (T - JUGGLE.pvpAirT) * JUGGLE.pvpAirRamp;
   return g * (e.gravMul || 1);
 }
 function downTimeOf(e) { if (e.fighter) return game.pvp ? PVP.downTime : 0.55; return e.boss ? 0.5 : (e.def_ && e.def_.downTime) || 0.75; }
@@ -239,10 +239,10 @@ function react(a, t, h, src, counter, pvp) {
   if (pvp && pl >= JUGGLE.pvpRecover && (airborne || t.st === 'down')) { airRecover(t); return; }   // 保护到顶：强制空中受身
   if (h.launch || airborne || t.st === 'down') {
     const res = Math.pow(Math.max(0.5, t.weight), JUGGLE.weightExp) / (t.boss ? JUGGLE.bossRes : 1);
-    const late = !pvp && (c.airT || 0) > JUGGLE.pveLateT;   // 刷图浮空太久：挑不高、接不住
+    const late = !pvp && t.fighter && game.pvp && (c.airT || 0) > JUGGLE.duelSumLateT;   // 决斗里被召唤物打、浮空太久：挑不高、接不住（刷图没有时限）
     let vz;
     if (h.launch) {   // 挑空 / 追加浮空：同一轮连击里逐次递减；目标已经在更快地上升就不减速
-      vz = h.launch * Math.max(JUGGLE.relaunchMin, Math.pow(JUGGLE.relaunch, c.launch || 0)) * pk / res * (late ? JUGGLE.pveLateLaunch : 1);
+      vz = h.launch * Math.max(JUGGLE.relaunchMin, Math.pow(JUGGLE.relaunch, c.launch || 0)) * pk / res * (late ? JUGGLE.duelSumLate : 1);
       if (pvp) vz *= JUGGLE.pvpFloatK;   // 压到站立判定打得到的高度；追加浮空仍一次比一次低
       if (airborne && t.vz > vz) vz = t.vz;
       c.launch = (c.launch || 0) + 1;

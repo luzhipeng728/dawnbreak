@@ -22,6 +22,7 @@ const JUGGLE = {
   gravStep: 0.03, gravMax: 0.9,   // 每次空中受击重力 +3%，最多 +90%（越连越沉）
   // 刷图没有浮空时限（官方也没有）：以前“同一轮浮空超过 5 秒 → 重力 ×2、挑空 ×0.3、不再接住”的断崖已取消，连招长度只由浮空保护决定
   duelSumLateT: 5, duelSumLate: 0.3,   // 只剩决斗里召唤物 / 场地打决斗玩家（不按玩家对玩家结算）沿用的旧时限：浮空超过 5 秒后挑空 ×0.3、不再接住
+  slamBounce: 0.4,                // 刷图扣地打站着的目标：砸倒后强制弹地的倍率（技能写了 bounce 就用技能的）
   bounceImp: 330, bounceK: 0.32,  // 落地速度 > 330 且这轮没弹过 → 弹地一次（速度 × 0.32）；bounce: k 强制弹（速度 × k，至少 260）
   otgMax: 4, otgLift: 110,        // 倒地追击：怪物被追击超过 4 次强制起身；追击把目标轻轻托起
   pvpGrav: 0.6, pvpLaunch: 0.55, pvpRecover: 4,   // 决斗一段保护每级：重力 +60%、浮空力 ×0.55。二段（30%）不在这里强制受身，由 duel.js 直接砸地
@@ -261,6 +262,9 @@ function react(a, t, h, src, counter, pvp) {
     if (!airborne) t.bounced = false;
     if (h.bounce) t.bounceNext = h.bounce;
     t.setState('air'); t.play(t.clipOr(vz > 80 ? 'airUp' : 'air', 'air'), true);
+  } else if (h.spike && !(t.fighter && game.pvp)) {   // 刷图扣地（spike）打站着的目标：直接砸倒并弹一下（bounce 不写按 0.4），以前只有普通硬直
+    t.vz = -Math.abs(h.spike); t.z = 1; t.vx = dir * kb * 0.5; t.setState('air'); t.bounced = false; t.bounceNext = h.bounce ?? JUGGLE.slamBounce; c.air++; t.juggle++;
+    t.play(t.clipOr('air'), true);
   } else if (h.down) {
     t.vz = (h.downLift ?? 230) / sw; t.z = 1; t.vx = dir * kb; t.setState('air'); t.bounced = false; c.air++; t.juggle++;
     if (h.bounce) t.bounceNext = h.bounce;

@@ -105,7 +105,7 @@ const raidNet = {
   },
   /* ---------------- 实例上报（带序号排队，回执到了才删）---------------- */
   evc(C, e, v) {
-    if (!C || (!C.isHost && (e === 'hp' || e === 'down' || e === 'clear' || e === 'cp'))) return;
+    if (!C || (!C.isHost && (e === 'hp' || e === 'down' || e === 'clear' || e === 'cp' || e === 'boss'))) return;
     const m = { t: 'raid:ev', sid: C.sid, node: C.node, run: C.run, q: ++C.q, e };
     if (v !== undefined) m.v = v;
     if (e === 'hp' || e === 'cp') this.queue = this.queue.filter(x => x.sent || x.m.run !== m.run || x.m.e !== e);   // 没发出去的旧血量 / 存档点不用补发了

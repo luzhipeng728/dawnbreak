@@ -41,11 +41,14 @@ async function open(q) {
     p.crit = 1; out.crit = Math.round(avg(() => hit({ type: 'phys' }))); p.crit = 0;
     // 5) 背击：目标背对攻击者，暴击率 +10%
     m.face = 1; p.x = m.x - 50; let crits = 0; p.crit = 0; for (let i = 0; i < 2000; i++) { m.setState('idle'); const hp = m.hp; applyHit(p, m, { dmg: 1, sure: true, type: 'phys' }, { proj: true }); if (hp - m.hp > 1300) crits++; } out.backCritRate = crits / 2000; T.reset();
-    // 6) 浮空：挑空后连续空中受击，重力逐次加重、浮空力衰减
+    // 6) 浮空（刷图一级 / 二级保护，engine/juggle_core.js）：保护线之前再挑不衰减、重力不变；打满二级后变沉、挑不起来
     T.clear(); const j = T.mob('goblin', 360, 100, { set: { hp: 1e9, hpMax: 1e9, def: 0 } });
     applyHit(p, j, { dmg: 0.1, launch: 500, sure: true }, { proj: true }); const v1 = j.vz, g0 = airGravity(j);
     for (let i = 0; i < 8; i++) { j.vz = -50; applyHit(p, j, { dmg: 0.1, launch: 500, sure: true }, { proj: true }); }   // 下落中再挑（上升中再挑不会减速，见 docs/COMBAT_JUGGLE.md）
-    out.juggle = { firstLaunchVz: Math.round(v1), ninthLaunchVz: Math.round(j.vz), gravity1: +g0.toFixed(3), gravity9: +airGravity(j).toFixed(3), airHits: j.cmb.air };
+    const v9 = j.vz, g9 = airGravity(j);
+    for (let i = 0; i < 200 && (!j.js || j.js.lv < 2); i++) { j.vz = -50; applyHit(p, j, { dmg: 0.1, airLift: 160, sure: true }, { proj: true }); }
+    j.vz = -50; applyHit(p, j, { dmg: 0.1, launch: 500, sure: true }, { proj: true });
+    out.juggle = { firstLaunchVz: Math.round(v1), ninthLaunchVz: Math.round(v9), gravity1: +g0.toFixed(3), gravity9: +g9.toFixed(3), lv: j.js && j.js.lv, lv2LaunchVz: Math.round(j.vz), gravityLv2: +airGravity(j).toFixed(3), airHits: j.cmb.air };
     // 7) 落地 → 倒地；非追击攻击打不到倒地目标；追击攻击可以，4 次后强制起身（带无敌）
     for (let i = 0; i < 200 && j.st !== 'down'; i++) T.run(1); out.downState = j.st;
     out.canHitDownNormal = canHit(p, j, {}); out.canHitDownOtg = canHit(p, j, { downHit: true });
@@ -89,7 +92,7 @@ async function open(q) {
   report('回避 0.6 → Miss 约 60%', Math.abs(R.missRate - 0.6) < 0.08, { missRate: R.missRate });
   report('暴击 ×1.5', Math.abs(R.crit / R.phys - 1.5) < 0.06, { crit: R.crit });
   report('背击暴击率 +10%', Math.abs(R.backCritRate - 0.1) < 0.03, { backCritRate: R.backCritRate });
-  report('浮空衰减与重力加重', R.juggle.ninthLaunchVz < R.juggle.firstLaunchVz * 0.6 && R.juggle.gravity9 > R.juggle.gravity1 * 1.2, R.juggle);
+  report('浮空保护：保护线之前再挑不衰减，二级保护后挑不起来、变沉', Math.abs(R.juggle.ninthLaunchVz - R.juggle.firstLaunchVz) <= 2 && Math.abs(R.juggle.gravity9 - R.juggle.gravity1) < 0.01 && R.juggle.lv === 2 && R.juggle.lv2LaunchVz <= 0 && R.juggle.gravityLv2 > R.juggle.gravity1 * 2, R.juggle);
   report('落地倒地；普通攻击打不到倒地目标，追击可以', R.downState === 'down' && !R.canHitDownNormal && R.canHitDownOtg, { st: R.downState });
   report('倒地追击 4 次后强制起身（带无敌）', R.otgSeq.includes('getup') && R.otgInvul > 0, { seq: R.otgSeq, invul: R.otgInvul });
   report('霸体不硬直、抓取能抓霸体、领主抓不住', R.saHit !== 'hit' && R.saGrab === 'held' && R.grabbed && R.afterRelease !== 'held' && R.bossGrab !== 'held', { saHit: R.saHit, saGrab: R.saGrab, after: R.afterRelease, boss: R.bossGrab });

@@ -11,8 +11,9 @@ const RANKS = [['F', 0, 0], ['E', 35, 0], ['D', 45, 0], ['C', 55, 0], ['B', 65, 
 const RANK_COL = { F: '#8a8a8a', E: '#9a9a9a', D: '#b0b0b0', C: '#9ad0ff', B: '#6ab8ff', A: '#6aff9a', S: '#ffd23a', SS: '#ff9a2a', SSS: '#ff4a6a' };
 function rankOf(score) { let r = RANKS[0]; for (const x of RANKS) if (score >= x[1]) r = x; return r; }
 
-/* ---- 生成房间网格：从起点随机游走到领主房，再加若干支路 ---- */
+/* ---- 生成房间网格：从起点随机游走到领主房，再加若干支路（def.fixed = 固定房间结构，见 genFixedLayout）---- */
 function genLayout(def, seed) {
+  if (def.fixed) return genFixedLayout(def.fixed, seed);
   const R = mulberry(seed), cols = def.cols || 4, rows = def.rows || 3, n = def.rooms || 6;
   const key = (x, y) => x + ',' + y, rooms = new Map();
   let x = 0, y = Math.floor(rows / 2);
@@ -37,6 +38,23 @@ function genLayout(def, seed) {
     const r = add(nx, ny, base); if (R() < 0.35) r.type = 'elite';
   }
   return { rooms: [...rooms.values()], cols, rows, start: path[0], boss: cur, pathLen: path.length };
+}
+/* ---- 固定房间结构（团本节点等官方固定地图）：不随机游走，房间位置 / 连通 / 类型都写死；只有出生房、领主房可以在候选里按种子抽
+   fixed = { cols, rows, rooms: [{ at: [x, y], type: 'normal' | 'elite' | 'boss', prep 准备房（不刷怪）, n 小怪数, mobs 本房小怪池 [[kind, 权重]…], elite 精英 kind, name 房间名 }],
+             links: 'chain'（缺省：按数组顺序串起来）| 'grid'（相邻的全连通）| [[i, j]…], start: 下标 | [候选…], boss: 下标 | [候选…], hideBoss 小地图上没去过的领主房不标 ☠ }
+   没被抽中的领主候选房变成普通小怪房；出生房是 start 类型（prep 的不刷怪）。同一个种子永远得到同一张图（组队全队一致）---- */
+function genFixedLayout(F, seed) {
+  const R = mulberry(seed), list = F.rooms.map(o => ({ gx: o.at[0], gy: o.at[1], doors: {}, type: o.type || 'normal', spec: o }));
+  const link = (a, b) => { if (!a || !b || a === b) return; const d = dirTo(a, b); a.doors[d] = b; b.doors[OPP[d]] = a; };
+  if (F.links === 'grid') { for (const a of list) for (const b of list) if (Math.abs(a.gx - b.gx) + Math.abs(a.gy - b.gy) === 1) link(a, b); }
+  else if (Array.isArray(F.links)) for (const [i, j] of F.links) link(list[i], list[j]);
+  else for (let i = 1; i < list.length; i++) link(list[i - 1], list[i]);
+  const pick = v => { const c = [].concat(v ?? 0); return c[Math.floor(R() * c.length)]; };
+  const si = pick(F.start), bossC = [].concat(F.boss ?? list.length - 1).filter(i => i !== si || list.length === 1), bi = bossC.length ? bossC[Math.floor(R() * bossC.length)] : si;
+  for (const [i, r] of list.entries()) if (r.type === 'boss' && i !== bi) r.type = 'normal';
+  const start = list[si], boss = list[bi];
+  start.type = 'start'; boss.type = 'boss';
+  return { rooms: list, cols: F.cols || Math.max(...list.map(r => r.gx)) + 1, rows: F.rows || Math.max(...list.map(r => r.gy)) + 1, start, boss, pathLen: list.length, fixed: true, hideBoss: !!F.hideBoss };
 }
 const OPP = { left: 'right', right: 'left', up: 'down', down: 'up' };
 // 可以带着过门的动作：蓄气中的移动施法（charge.keepRoom）、开着走的载具（act.keepRoom = true 或 fn(p)，魔道学者 冰霜钻孔车 / 乌洛波洛斯之环）
@@ -76,7 +94,7 @@ class Dungeon {
     const first = !room.visited;
     if (first) { room.visited = true; this.roomsEntered++; save.useFatigue(1); }
     this.room = room;
-    const W = room.type === 'boss' ? 1400 : room.type === 'start' ? 1150 : 1150 + Math.floor(hash2(room.gx, room.gy) * 3) * 250;
+    const W = (room.spec && room.spec.w) || (room.type === 'boss' ? 1400 : room.type === 'start' ? 1150 : 1150 + Math.floor(hash2(room.gx, room.gy) * 3) * 250);
     const BT = room.type === 'boss' && this.def.bossTheme, theme = BT && (hasArt(`bg/${BT}_far`) || THEMES[BT]) ? BT : this.def.theme;   // 领主房单独的背景（bossTheme）
     game.room = { x0: 0, x1: W, theme, seed: room.seed, doors: room.doors, type: room.type };
     buildRoomArt(game.room);
@@ -103,10 +121,11 @@ class Dungeon {
     const def = this.def, D = this.D, R = mulberry(room.seed);
     const lv = def.lvl[0] + Math.floor(R() * (def.lvl[1] - def.lvl[0] + 1));
     const o = { lvl: lv, mul: D.hp * this.hpMul, atkMul: D.atk, expMul: D.exp };
-    const pick = () => { const tot = def.mobs.reduce((s, m) => s + m[1], 0); let r = R() * tot; for (const m of def.mobs) { r -= m[1]; if (r <= 0) return m[0]; } return def.mobs[0][0]; };
-    const count = room.type === 'start' ? 3 + Math.floor(R() * 2) : room.type === 'boss' ? def.bossAdds || 2 : 4 + Math.floor(R() * 4);
+    const RS = room.spec || {}, pool = RS.mobs || def.mobs;   // 固定房间（genFixedLayout）可以单独写这个房间的小怪池 / 数量 / 准备房
+    const pick = () => { const tot = pool.reduce((s, m) => s + m[1], 0); let r = R() * tot; for (const m of pool) { r -= m[1]; if (r <= 0) return m[0]; } return pool[0][0]; };
+    const count = RS.prep ? 0 : RS.n ?? (room.type === 'start' ? 3 + Math.floor(R() * 2) : room.type === 'boss' ? def.bossAdds || 2 : room.type === 'elite' && RS.elite ? 0 : 4 + Math.floor(R() * 4));
     for (let i = 0; i < count; i++) spawnMonster(pick(), 380 + R() * (W - 480), 20 + R() * (DEPTH - 40), o);
-    if (room.type === 'elite') spawnMonster(def.elite || pick(), W * 0.6, DEPTH / 2, { ...o, elite: true, lvl: lv + 1 });
+    if (room.type === 'elite') spawnMonster(RS.elite || def.elite || pick(), W * 0.6, DEPTH / 2, { ...o, elite: true, lvl: lv + 1 });
     if (room.type === 'boss') {
       const A = def.bossAlt, alt = A && MON[A.kind] && Math.random() < (A.chance ?? 0.1) && monBundles([A.kind]).every(b => IMG[b.replace(/^spr:/, 'spr/') + '/idle']);   // 稀有领主替换（素材没载完就不换）
       const b = spawnMonster(alt ? A.kind : def.boss.kind, W - 320, DEPTH / 2, { ...o, lvl: def.boss.lvl, boss: true }); this.boss = b; game.lastTarget = b; game.lastTargetT = game.t;
@@ -114,7 +133,7 @@ class Dungeon {
       for (const P of def.bossProps || []) if (MON[P.kind]) spawnMonster(P.kind, P.x <= 1 ? W * P.x : P.x, (P.y ?? 0.5) <= 1 ? DEPTH * (P.y ?? 0.5) : P.y, { ...o, lvl: def.boss.lvl - 1 });   // 摆设里是怪物 id 的（投冰车、笼子……）由主机刷
     }
     // 第二波（大房间）
-    this.waves = room.type === 'normal' && W > 1500 ? [{ n: 3 + Math.floor(R() * 2), o }] : [];
+    this.waves = room.type === 'normal' && W > 1500 && !RS.prep ? [{ n: 3 + Math.floor(R() * 2), o }] : [];
   }
   update(dt) {
     this.t += dt;
@@ -232,7 +251,7 @@ class Dungeon {
   drawDoors(c) {
     const R = game.room, W = R.x1, open = this.doorsOpen;
     for (const d in this.room.doors) {
-      const boss = this.room.doors[d].type === 'boss';
+      const nb = this.room.doors[d], boss = nb.type === 'boss' && !(this.layout.hideBoss && !nb.visited);   // 随机领主房（hideBoss）：没进去过就看不出来
       if (d === 'left' || d === 'right') {
         const x = d === 'left' ? 12 : W - 12, X = sx(x), Y = sy(DEPTH / 2, 0);
         drawGate(c, X, Y, open, boss, d === 'left' ? 1 : -1);
@@ -259,8 +278,9 @@ class Dungeon {
       for (const d of ['right', 'down']) if (r.doors[d]) { c.fillStyle = r.visited || r.doors[d].visited ? '#c8b080' : '#4a4038'; if (d === 'right') c.fillRect(x + cs - 6, y + cs / 2 - 2, 12, 4); else c.fillRect(x + cs / 2 - 2, y + cs - 6, 4, 12); }
       c.fillStyle = r === this.room ? '#ffd23a' : r.visited ? (r.cleared ? '#8a7a5a' : '#b89a60') : '#2c2620';
       c.fillRect(x + 4, y + 4, cs - 8, cs - 8);
-      c.strokeStyle = r.type === 'boss' ? '#ff4a3a' : '#0a0806'; c.lineWidth = 2; c.strokeRect(x + 4, y + 4, cs - 8, cs - 8);
-      if (r.type === 'boss') uiText('☠', x + cs / 2, y + cs / 2 + 8, { size: 20, align: 'center', color: '#ff5a4a', sw: 3 });
+      const showB = r.type === 'boss' && !(L.hideBoss && !r.visited);
+      c.strokeStyle = showB ? '#ff4a3a' : '#0a0806'; c.lineWidth = 2; c.strokeRect(x + 4, y + 4, cs - 8, cs - 8);
+      if (showB) uiText('☠', x + cs / 2, y + cs / 2 + 8, { size: 20, align: 'center', color: '#ff5a4a', sw: 3 });
       if (r === this.room) { c.fillStyle = '#fff'; c.beginPath(); c.arc(x + cs / 2, y + cs / 2, 5, 0, TAU); c.fill(); }
     }
     // 实时评价（右下）

@@ -82,9 +82,10 @@ Object.assign(menus, {
       for (const d of ['right', 'down']) if (r.doors[d]) { c.fillStyle = r.visited || r.doors[d].visited ? '#c8b080' : '#4a4038'; if (d === 'right') c.fillRect(x + cs - 10, y + cs / 2 - 4, 20, 8); else c.fillRect(x + cs / 2 - 4, y + cs - 10, 8, 20); }
       c.fillStyle = r === D.room ? '#ffd23a' : r.visited ? (r.cleared ? '#8a7a5a' : '#c8a060') : '#2c2620';
       c.fillRect(x + 8, y + 8, cs - 16, cs - 16);
-      c.strokeStyle = r.type === 'boss' ? '#ff4a3a' : r.type === 'start' ? '#6ab0ff' : '#0a0806'; c.lineWidth = 3; c.strokeRect(x + 8, y + 8, cs - 16, cs - 16);
+      const isB = r.type === 'boss' && !(L.hideBoss && !r.visited);   // 随机领主房（固定房间 hideBoss）：没进去过不标
+      c.strokeStyle = isB ? '#ff4a3a' : r.type === 'start' ? '#6ab0ff' : '#0a0806'; c.lineWidth = 3; c.strokeRect(x + 8, y + 8, cs - 16, cs - 16);
       c.font = '900 22px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      if (r.type === 'boss') { c.fillStyle = '#ff5a4a'; c.fillText('☠', x + cs / 2, y + cs / 2); }
+      if (isB) { c.fillStyle = '#ff5a4a'; c.fillText('☠', x + cs / 2, y + cs / 2); }
       else if (r.type === 'start') { c.fillStyle = '#9ad0ff'; c.fillText('起', x + cs / 2, y + cs / 2); }
       if (r === D.room) { c.fillStyle = '#fff'; c.beginPath(); c.arc(x + cs / 2, y + cs / 2 + (r.type === 'boss' || r.type === 'start' ? 16 : 0), 7, 0, TAU); c.fill(); }
     }

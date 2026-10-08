@@ -22,7 +22,8 @@ const same = s => { const L = ctx.genLayout({ fixed: { cols: 3, rows: 3, links: 
 ok(same(42) === same(42) && new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(same)).size > 2, '同一个种子同一张图（组队全队一致），不同种子出生 / 领主房会变');
 
 // ---- 希洛克团本每张图（docs/RAID_SIROCO.md §地图）----
-const want = { raid_si_law: 5, raid_si_dawn: 5, raid_si_night: 10, raid_si_memory: 4, raid_si_mirror: 4, raid_si_gate_l: 3, raid_si_gate_r: 3, raid_si_sub: 8 };
+const want = { raid_si_law: 5, raid_si_dawn: 5, raid_si_night: 10, raid_si_memory: 4, raid_si_mirror: 4, raid_si_gate_l: 3, raid_si_gate_r: 3, raid_si_sub: 8,
+  raid_si_phantom: 7, raid_si_day: 5, raid_si_castle: 2, raid_si_deny: 3, raid_si_suppress: 16, raid_si_forget: 2, raid_si_truth_g: 3, raid_si_truth_l: 3, raid_si_truth_v: 3, raid_si_shadow: 1 };
 for (const [id, n] of Object.entries(want)) {
   const D = DG[id]; if (!ok(D && D.fixed, `${id} 有固定房间结构`)) continue;
   const L = ctx.genLayout(D, 12345);
@@ -38,6 +39,12 @@ ok(nights.every(L => L.hideBoss && L.rooms.filter(r => r.type === 'boss').length
 ok(nights.every(L => L.rooms.filter(r => r.spec.prep).length === 4), '噩梦之夜：四角都是空房');
 const gr = ctx.genLayout(DG.raid_si_gate_r, 1);
 ok(gr.start.gx === 2 && gr.boss.gx === 0 && gr.start.doors.left, '无形之门 2（奈克斯）：左右镜像，从右往左走');
+const ph = ctx.genLayout(DG.raid_si_phantom, 2);
+ok(ph.rooms[2].type === 'elite' && ph.rooms[2].spec.elite === 'siRaidMob_kula' && ph.rooms[4].spec.elite === 'siRaidMob_tanna' && ph.boss === ph.rooms[6], '幻影之界：准备 / 小怪 / 崔拉 / 小怪 / 昙娜 / 小怪 / 崔拉 & 昙娜');
+const sups = [...Array(40).keys()].map(s => ctx.genLayout(DG.raid_si_suppress, s * 53 + 7));
+ok(sups.every(L => [3, 7, 11, 15, 14, 13, 12].includes(L.rooms.indexOf(L.boss)) && L.hideBoss) && new Set(sups.map(L => L.rooms.indexOf(L.boss))).size >= 5, '压抑：4×4 迷雾，领主随机在外圈“┛”的 7 个房间');
+const sh = ctx.genLayout(DG.raid_si_shadow, 1);
+ok(sh.rooms.length === 1 && sh.start === sh.boss, '阴影之棺：进门就是领主房');
 const subs = [...Array(40).keys()].map(s => ctx.genLayout(DG.raid_si_sub, s * 31 + 5));
 ok(subs.every(L => L.rooms.indexOf(L.start) === 0 && L.boss !== L.start) && new Set(subs.map(L => L.rooms.indexOf(L.boss))).size >= 5, '无欲之棺：领主每次进图随机，不在准备房');
 const mobs = new Set(Object.values(DG).flatMap(D => (D.mobs || []).map(m => m[0])));

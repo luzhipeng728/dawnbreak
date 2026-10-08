@@ -30,11 +30,33 @@ raidBoss('siRaidBoss_nightmare', '惊悸梦魇', 'sirocoRaidNightmare', 'dark', 
 raidBoss('siRaidBoss_phantom', '无形之希洛克', 'sirocoRaidPhantom', 'dark', [{ use: 'aoe', clip: 'sigA', shape: 'line', at: 'target', hw: 34, windup: 0.9, dmg: 1.2, cd: [5, 7] }, { use: 'seq', clip: 'atk1', cd: [8, 11], steps: [{ use: 'blink', to: 'behind', dist: 90 }, { use: 'swipe', n: 2, reach: 110, dmg: 1.2 }] }, { use: 'pool', clip: 'sigB', at: 'target', r: 80, windup: 0.9, linger: 3, zone: 'blind', dmg: 0.3, cd: [7, 9] }], [{ use: 'rain', clip: 'sigA', kind: 'bolt', n: 5, r: 50, spread: 160, windup: 0.9, dmg: 1.05, cd: [8, 10] }], { scale: 0.74 });
 raidBoss('siRaidBoss_crone', '梦魇之沃德海格', 'sirocoRaidOracle', 'dark', [{ use: 'laser', clip: 'sigA', windup: 0.9, dur: 1, sweep: 0, dmg: 0.45, cd: [5, 7] }, { use: 'shot', clip: 'sigB', mode: 'homing', n: 3, speed: 240, turn: 2.2, dmg: 0.85, cd: [4, 6] }, { use: 'rain', clip: 'rage', kind: 'bolt', n: 5, r: 50, spread: 180, windup: 1, dmg: 1, cd: [8, 10] }], [{ use: 'cone', clip: 'sigA', ang: 60, len: 300, windup: 1, dur: 1.2, dmg: 0.4, col: '#8aff9a', cd: [7, 9] }], { scale: 0.8 });
 raidBoss('siRaidBoss_siroco', '无形之希洛克', 'sirocoRaidFinal', 'dark', [{ use: 'swipe', clip: 'sigA', n: 4, reach: 128, width: 38, windup: 0.55, dmg: 1.32, cd: [2.4, 3.6] }, { use: 'shot', clip: 'sigB', mode: 'arc', n: 4, speed: 300, spread: 120, r: 72, dmg: 0.86, cd: [5, 7] }], [{ use: 'laser', clip: 'sigA', windup: 0.8, dur: 1.6, sweep: 110, dmg: 0.48, cd: [7, 9] }, { use: 'rain', clip: 'sigB', kind: 'bolt', n: 7, r: 50, spread: 220, windup: 0.9, dmg: 1.15, cd: [8, 10] }], { lvl: 64, scale: 0.76, size: [24, 18, 154], speed: 108 });
+// ---- 阻截战补全的图（P1 全图）：幻影之界 / 归还之昼 / 幻影之城；讨伐战第 1 界：否定 / 压抑 / 忘却 / 真理之棺 ×3 / 阴影之棺。招式是占位，机制在 raid_mech（P2/P3） ----
+raidBoss('siRaidBoss_kulaTanna', '崔拉 & 昙娜', ['sirocoRaidMimic', { hue: 150, sat: 0.9 }], 'dark', [{ use: 'seq', clip: 'atk1', cd: [6, 8], steps: [{ use: 'blink', to: 'behind', dist: 90 }, { use: 'swipe', n: 2, reach: 104, dmg: 1.1 }] }, { use: 'shot', clip: 'sigA', mode: 'spread', n: 4, spread: 50, speed: 360, dmg: 0.8, cd: [4, 6] }], [{ use: 'aoe', clip: 'sigB', shape: 'cross', at: 'self', hw: 26, windup: 1, dmg: 1.2, cd: [7, 9] }], { scale: 0.78 });
+raidBoss('siRaidBoss_myungho', '万兽之皇明皓', ['jailer', { hue: 40, sat: 1.1, bright: 0.9 }], 'fire', [{ use: 'dash', len: 420, speed: 760, windup: 0.7, dmg: 1.2, cd: [5, 7] }, { use: 'leap', r: 120, dmg: 1.25, cd: [7, 9] }, { use: 'swipe', n: 3, reach: 110, width: 34, dmg: 1.1, cd: [3, 4.5] }], [{ use: 'aoe', shape: 'ring', at: 'self', r: 260, r0: 100, windup: 1, dmg: 1.2, cd: [8, 10] }], { scale: 1.05, size: [22, 16, 136] });
+raidBoss('siRaidBoss_rodos', '破坏之洛多斯', ['gatekeeper', { hue: 150, sat: 0.8, bright: 0.8 }], 'dark', [{ use: 'swipe', n: 2, reach: 120, width: 36, windup: 0.7, dmg: 1.2, cd: [3, 4.5] }, { use: 'aoe', shape: 'line', at: 'target', hw: 30, windup: 0.9, dmg: 1.2, cd: [6, 8] }], [{ use: 'leap', r: 120, dmg: 1.3, cd: [7, 9] }], { scale: 0.8 });
+raidBoss('siRaidBoss_nightmare2', '惊悸梦魇', ['sirocoRaidNightmare', { hue: 40 }], 'dark', [{ use: 'blink', clip: 'sigA', to: 'behind', dist: 100, cd: [5, 7] }, { use: 'aoe', clip: 'sigB', shape: 'cross', at: 'self', hw: 26, windup: 1, dmg: 1.2, cd: [7, 9] }], [{ use: 'rain', clip: 'sigA', kind: 'bolt', n: 6, r: 48, spread: 200, windup: 1, dmg: 1.1, cd: [8, 10] }]);
+raidBoss('siRaidBoss_kain', '迷雾中的暗杀者凯恩', ['assassin', { hue: -40, sat: 0.9 }], 'dark', [{ use: 'seq', cd: [6, 8], steps: [{ use: 'blink', to: 'behind', dist: 70 }, { use: 'swipe', n: 2, reach: 90, windup: 0.3, dmg: 1.0 }] }, { use: 'dash', len: 400, speed: 780, windup: 0.7, dmg: 1.2, cd: [5, 7] }], [{ use: 'pool', at: 'target', r: 90, windup: 0.9, linger: 4, zone: 'blind', dmg: 0.3, cd: [8, 10] }], { scale: 0.92 });
+raidBoss('siRaidBoss_luxi', '卢克西', ['sirocoRaidOracle', { hue: 120 }], 'dark', [{ use: 'shot', clip: 'sigB', mode: 'homing', n: 3, speed: 240, turn: 2.2, dmg: 0.85, cd: [4, 6] }, { use: 'laser', clip: 'sigA', windup: 0.9, dur: 1, sweep: 40, dmg: 0.45, cd: [6, 8] }], [{ use: 'rain', clip: 'sigA', kind: 'hex', n: 5, r: 50, spread: 180, windup: 1, dmg: 1.05, cd: [7, 9] }], { scale: 0.8 });
+// 真理的意识之棺的三个形态（共享血量）：基里（无言）/ 莱斯特（无念）/ 拉维茜（无我）[QQ][NAMU-C1]
+raidBoss('siRaidBoss_formGiri', '无言之希洛克-基里', ['siroco', { hue: 200, sat: 0.8 }], 'dark', [{ use: 'swipe', n: 3, reach: 120, width: 36, windup: 0.6, dmg: 1.2, cd: [3, 4.5] }, { use: 'aoe', shape: 'line', at: 'target', hw: 34, windup: 0.9, dmg: 1.2, cd: [5, 7] }], [{ use: 'rain', kind: 'bolt', n: 5, r: 50, spread: 180, windup: 1, dmg: 1.1, cd: [8, 10] }], { scale: 1.2 });
+raidBoss('siRaidBoss_formLester', '无念之希洛克-莱斯特', ['siroco', { hue: 90, sat: 0.8 }], 'dark', [{ use: 'shot', mode: 'spread', n: 5, spread: 60, speed: 330, dmg: 0.85, cd: [4, 6] }, { use: 'pull', mode: 'in', r: 300, force: 280, dur: 1, windup: 0.8, dmg: 0.4, cd: [8, 11] }], [{ use: 'aoe', shape: 'ring', at: 'self', r: 280, r0: 110, windup: 1, dmg: 1.2, cd: [8, 10] }], { scale: 1.2 });
+raidBoss('siRaidBoss_formLavicy', '无我之希洛克-拉维茜', ['siroco', { hue: -40, sat: 0.9 }], 'dark', [{ use: 'dash', len: 380, speed: 760, windup: 0.7, dmg: 1.2, cd: [5, 7] }, { use: 'aoe', shape: 'cross', at: 'self', hw: 28, windup: 1, dmg: 1.2, cd: [7, 9] }], [{ use: 'laser', windup: 0.9, dur: 1.2, sweep: 80, dmg: 0.45, cd: [7, 9] }], { scale: 1.2 });
+// 跨图惩罚召唤的怪（raid_pen 在对方的图里刷）：高血量幻影（幻影之界）/ 玄武（归还之昼 → 黎明）/ 伪装者（归还之昼 → 幻影之界）[QQ][91-界]
+const SIROCO_RAID_PEN_MOBS = {
+  siRaidMob_phantomAdd: { name: '幻影', tier: 'brute', arch: 'aggressive', size: [15, 12, 100], weight: 3, elem: 'dark', art: ['siPhantom', { hue: -30, sat: 1.1, bright: 0.9 }], skills: [{ use: 'swipe', n: 2, reach: 86, dmg: 0.9, cd: [2, 3] }] },
+  siRaidMob_genbu: { name: '玄武', tier: 'brute', arch: 'guard', size: [22, 18, 96], weight: 6, speed: 50, elem: 'water', art: ['jailer', { hue: 140, sat: 0.9, bright: 0.8 }], skills: [{ use: 'aoe', shape: 'circle', at: 'self', r: 130, windup: 1.1, dmg: 1.1, cd: [5, 7] }] },
+  siRaidMob_disguiser: { name: '伪装者', arch: 'kiter', elem: 'dark', art: ['voidcaster', { hue: 60, sat: 0.9, bright: 0.85 }], skills: [{ use: 'shot', mode: 'straight', n: 1, speed: 420, dmg: 0.8, cd: [3, 4.5] }] },
+  siRaidMob_kula: { name: '崔拉', tier: 'elite', arch: 'aggressive', size: [16, 13, 108], elem: 'dark', art: ['siPhantom', { hue: 150, sat: 1 }], skills: [{ use: 'dash', len: 320, speed: 700, windup: 0.7, dmg: 1, cd: [4, 6] }] },
+  siRaidMob_tanna: { name: '昙娜', tier: 'elite', arch: 'kiter', size: [16, 13, 108], elem: 'dark', art: ['siPhantom', { hue: -150, sat: 1 }], skills: [{ use: 'shot', mode: 'spread', n: 3, spread: 40, speed: 340, dmg: 0.8, cd: [3, 5] }] },
+};
+for (const [id, M] of Object.entries(SIROCO_RAID_PEN_MOBS)) regionMonster(SIROCO_RAID_SPEC, id, M, false);
 Object.assign(MON_ART, {
   siRaidBoss_gatekeeper: ['gatekeeper'], siRaidBoss_haniel: ['sirocoRaidMimic'],
   siRaidBoss_lena: ['sirocoRaidFrost'], siRaidBoss_gusty: ['sirocoRaidGorge'], siRaidBoss_grumi: ['sirocoRaidCinder'],
   siRaidBoss_vita: ['sirocoRaidDawn'], siRaidBoss_nex: ['sirocoRaidEclipse'], siRaidBoss_nightmare: ['sirocoRaidNightmare'],
   siRaidBoss_phantom: ['sirocoRaidPhantom'], siRaidBoss_crone: ['sirocoRaidOracle'], siRaidBoss_siroco: ['sirocoRaidFinal'],
+  siRaidBoss_kulaTanna: ['sirocoRaidMimic'], siRaidBoss_myungho: ['jailer'], siRaidBoss_rodos: ['gatekeeper'], siRaidBoss_nightmare2: ['sirocoRaidNightmare'],
+  siRaidBoss_kain: ['assassin'], siRaidBoss_luxi: ['sirocoRaidOracle'], siRaidBoss_formGiri: ['siroco'], siRaidBoss_formLester: ['siroco'], siRaidBoss_formLavicy: ['siroco'],
 });
 const SIROCO_RAID_COMMON = { raid: true, hidden: true, layout: 'raid', branches: 0, cols: 5, rows: 1, rooms: 5, bossAdds: 0, lvl: [62, 63], clearExp: 0, bgm: 'dungeon', bossBgm: 'boss' };
 const SIROCO_RAID_MOBS = {
@@ -56,6 +78,14 @@ const SIROCO_RAID_LAYOUT = {
   sub: { cols: 4, rows: 2, links: 'grid', hideBoss: true, rooms: Array.from({ length: 8 }, (_, i) => ({ at: [i % 4, Math.floor(i / 4)], ...(i === 0 ? { prep: true } : {}) })), start: 0, boss: [1, 2, 3, 4, 5, 6, 7] },
   twisted: siLine(4), con: siLine(3),   // 【存疑：房间数】
   coffin: siLine(3, { rooms: { 1: { mobs: SIROCO_RAID_MOBS.shard } } }),
+  // 幻影之界：准备 / 小怪 / 崔拉（精英）/ 小怪 / 昙娜（精英）/ 小怪 / 崔拉 & 昙娜 [91-界]
+  phantom: siLine(7, { rooms: { 2: { type: 'elite', elite: 'siRaidMob_kula' }, 4: { type: 'elite', elite: 'siRaidMob_tanna' } } }),
+  day: siLine(5), castle: siLine(2),   // 【存疑：房间数】
+  deny: siLine(3), forget: siLine(2),
+  // 压抑：4×4 迷雾，领主随机在外圈“┛”的 7 个房间之一 [NAMU-C1]【存疑：具体形状】
+  suppress: { cols: 4, rows: 4, links: 'grid', hideBoss: true, rooms: Array.from({ length: 16 }, (_, i) => ({ at: [i % 4, Math.floor(i / 4)], ...(i === 0 ? { prep: true } : {}) })), start: 0, boss: [3, 7, 11, 15, 14, 13, 12] },
+  truth: siLine(3, { rooms: { 1: { mobs: SIROCO_RAID_MOBS.shard } } }),
+  shadow: { cols: 1, rows: 1, rooms: [{ at: [0, 0], type: 'boss' }], start: 0, boss: 0 },   // 阴影之棺：只有领主房
 };
 const defineSirocoRaid = (id, name, theme, mobs, elite, boss, extra = {}) => defineDungeon(id, { ...SIROCO_RAID_COMMON, ...extra, id, name, theme, mobs: SIROCO_RAID_MOBS[mobs] || mobs, elite, boss: { kind: boss, lvl: extra.bossLvl || 64 }, desc: `【希洛克攻坚】${name}。团本节点专用地图（官方固定房间结构），不消耗疲劳。` });
 defineSirocoRaid('raid_si_law', '破坏之门', 'siroRaidGate', 'gate', 'siRaidMob_gate', 'siRaidBoss_gatekeeper', { fixed: SIROCO_RAID_LAYOUT.law, bossLvl: 62 });
@@ -70,4 +100,14 @@ defineSirocoRaid('raid_si_sub', '无欲之棺', 'siroRaidCoffin', 'coffin', 'siR
 defineSirocoRaid('raid_si_con', '意识之棺', 'siroRaidCoffin', 'coffin', 'siRaidMob_grimElder', 'siRaidBoss_phantom', { fixed: SIROCO_RAID_LAYOUT.con, bossLvl: 63 });
 defineSirocoRaid('raid_si_mutant', '扭曲的无欲之棺', 'siroRaidMirror', 'coffin', 'siRaidMob_grimElder', 'siRaidBoss_crone', { fixed: SIROCO_RAID_LAYOUT.twisted, bossLvl: 63 });
 defineSirocoRaid('raid_si_coffin', '真理的意识之棺', 'siroRaidCoffin', 'coffin', 'siRaidMob_grimElder', 'siRaidBoss_siroco', { fixed: SIROCO_RAID_LAYOUT.coffin, lvl: [63, 64], bossLvl: 64, bgm: 'abyss' });
+defineSirocoRaid('raid_si_phantom', '幻影之界', 'siroRaidMirror', 'cult', 'siRaidMob_kula', 'siRaidBoss_kulaTanna', { fixed: SIROCO_RAID_LAYOUT.phantom, bossLvl: 62 });
+defineSirocoRaid('raid_si_day', '归还之昼', 'siroRaidGate', 'cult', 'siRaidMob_grimElder', 'siRaidBoss_myungho', { fixed: SIROCO_RAID_LAYOUT.day, bossLvl: 62 });
+defineSirocoRaid('raid_si_castle', '幻影之城', 'siroRaidGate', 'cult', 'siRaidMob_grimElder', 'siRaidBoss_rodos', { fixed: SIROCO_RAID_LAYOUT.castle, bossLvl: 63 });
+defineSirocoRaid('raid_si_deny', '无欲之棺：否定', 'siroRaidCoffin', 'coffin', 'siRaidMob_grimElder', 'siRaidBoss_nightmare2', { fixed: SIROCO_RAID_LAYOUT.deny, bossLvl: 63 });
+defineSirocoRaid('raid_si_suppress', '无欲之棺：压抑', 'siroRaidCoffin', 'coffin', 'siRaidMob_grimElder', 'siRaidBoss_kain', { fixed: SIROCO_RAID_LAYOUT.suppress, bossLvl: 63 });
+defineSirocoRaid('raid_si_forget', '无欲之棺：忘却', 'siroRaidMirror', 'coffin', 'siRaidMob_grimElder', 'siRaidBoss_luxi', { fixed: SIROCO_RAID_LAYOUT.forget, bossLvl: 63 });
+defineSirocoRaid('raid_si_truth_g', '真理的意识之棺 · 基里', 'siroRaidCoffin', 'coffin', 'siRaidMob_grimElder', 'siRaidBoss_formGiri', { fixed: SIROCO_RAID_LAYOUT.truth, lvl: [63, 64], bossLvl: 64 });
+defineSirocoRaid('raid_si_truth_l', '真理的意识之棺 · 莱斯特', 'siroRaidCoffin', 'coffin', 'siRaidMob_grimElder', 'siRaidBoss_formLester', { fixed: SIROCO_RAID_LAYOUT.truth, lvl: [63, 64], bossLvl: 64 });
+defineSirocoRaid('raid_si_truth_v', '真理的意识之棺 · 拉维茜', 'siroRaidCoffin', 'coffin', 'siRaidMob_grimElder', 'siRaidBoss_formLavicy', { fixed: SIROCO_RAID_LAYOUT.truth, lvl: [63, 64], bossLvl: 64 });
+defineSirocoRaid('raid_si_shadow', '阴影之棺', 'siroRaidCoffin', 'coffin', 'siRaidMob_grimElder', 'siRaidBoss_siroco', { fixed: SIROCO_RAID_LAYOUT.shadow, lvl: [64, 64], bossLvl: 64, bgm: 'abyss' });
 RAID_DEFS.siroco.rewards = { cur: 'raid_petal', p1: [{ cur: [3, 4] }, { key: 'raid_immaterial', n: [1, 2] }], p2: [{ cur: [12, 16] }, { table: [[82, { key: 'raid_immaterial', n: [2, 4] }], [18, { pick: SIROCO_RAID_GEAR, n: 1, gear: true }]] }] };

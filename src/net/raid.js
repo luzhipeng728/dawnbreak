@@ -24,7 +24,7 @@ const RAID_TZ = 480;   // 每天 / 每周次数按北京时间（和服务端一
 function raidNodeDef(dg, e) {
   const real = DUNGEONS[dg];
   if (real && !real.raidFallback) {
-    if (raidNet.fast && !real.raidFast) DUNGEONS[dg] = { ...real, rooms: 1, branches: 0, bossAdds: 0, raidFast: true };
+    if (raidNet.fast && !real.raidFast) DUNGEONS[dg] = { ...real, fixed: null, rooms: 1, branches: 0, bossAdds: 0, raidFast: true };   // 测试直达：固定房间结构也跳过
     return DUNGEONS[dg];
   }
   const base = DUNGEONS[RAID_FALLBACK_DG[dg]] || DUNGEONS.siroco_coffin;

@@ -64,13 +64,14 @@
 | [`test/quick.sh`](../test/quick.sh) | 快速回归（主线程合并一批后用，约 9 分钟；平时开发只跑受影响的测试：node test/affected.mjs）：只挑一分钟以内的核心测试，分 6 组并行跑。 |
 | [`test/testlock.mjs`](../test/testlock.mjs) | 测试并发名额（2026-10-01 用户：电脑全给你用，可以同时跑 3 套测试）：test/affected.mjs、test/boss.mjs、test/quick.sh 共用 |
 
-### 联机与服务端（27）
+### 联机与服务端（28）
 
 | 脚本 | 作用 |
 |---|---|
 | [`test/acct.mjs`](../test/acct.mjs) | 点券 / 魔盒碎片 / 礼包币账号共享（老存档合并）+ 没名字的角色补默认名 + 角色选择“改名” |
 | [`test/admin_console.mjs`](../test/admin_console.mjs) | 后台管理页面 /admin/ 的无头浏览器测试：本地服务端（临时数据库，托管 dist/web）→ 普通玩家登录被拒 → 管理员登录 → 逐个页签打开并截图 → |
 | [`test/boss_coop.mjs`](../test/boss_coop.mjs) | test/boss.mjs 的 coop 部分：2 个真实客户端（net_lib.mjs）组队，逐个地下城传到领主房，主机逐招强制放、逐阶段压血， |
+| [`test/coop_mail.mjs`](../test/coop_mail.mjs) | 竞拍邮件单测（不开浏览器）：在 Node VM 里抽出 src/net/coop.js 的 coop 对象，验证金币 / 物品竞拍邮件的持久化、领取与背包满时保留 |
 | [`test/enchantress_coop.mjs`](../test/enchantress_coop.mjs) | 小魔女 · 永恒的占据（组队才能用）：2 个玩家真联机 —— 队员死亡倒计时里，小魔女放永恒的占据，队员原地复活（不花复活币）。node test/enchantress_coop.mjs |
 | [`test/findfriend.mjs`](../test/findfriend.mjs) | 寻找好友：按角色名加好友 → 好友列表“前往”（跨区域自动走到好友身边）→ 聊天 /找 名字 → 方向键取消 |
 | [`test/liveupdate.mjs`](../test/liveupdate.mjs) | 在线更新（net/liveupdate.js）：本地服务端托管一份临时网页版（index.html 复制、素材链接到 dist/web/assets），改 index.html 的 BUILD_ID + version.json 模拟一次部署 |
@@ -108,7 +109,7 @@
 | [`test/fighter_pvp.mjs`](../test/fighter_pvp.mjs) | 男格斗家（B9）决斗：AI 用得出各转职的主要技能 + 抓取在决斗里公平（抓取保护 / 强制硬直上限 / 没有无限连）+ 决斗表登记 |
 | [`test/pvp_balance.mjs`](../test/pvp_balance.mjs) | 决斗场平衡：23 种职业 / 转职两两 AI 对打（难度 3，公正决斗规则），无渲染快进（直接调 step），统计每个职业的回合胜率 |
 
-### 领主、团本与区域（12）
+### 领主、团本与区域（18）
 
 | 脚本 | 作用 |
 |---|---|
@@ -116,6 +117,12 @@
 | [`test/behemoth_route.mjs`](../test/behemoth_route.mjs) | 天帷巨兽整条路线：西海岸的船（Lv.24 限制）→ 神殿之路 →（Lv.27）脊背 → 走到每个地下城门口弹出选择窗口 → 点“进入地下城” |
 | [`test/boss.mjs`](../test/boss.mjs) | 通用领主测试（docs/BOSS_PLAN.md §4.2 P0-C）：进图后直接传到领主房，逐阶段 / 逐招 / 逐机制验一遍，机器人打一遍，组队对照一遍 |
 | [`test/boss_prims.mjs`](../test/boss_prims.mjs) | 领主差异化 P0 原语的实验室测试（docs/BOSS_SPEC.md）：node test/boss_prims.mjs [skills,mechs,traits,engine,dungeon] |
+| [`test/ozma_core.mjs`](../test/ozma_core.mjs) | 奥兹玛团本核心规则单测（不开浏览器）：src/game/ozma_core.js 的 12 人队伍、阶段计时与事件 |
+| [`test/ozma_maps.mjs`](../test/ozma_maps.mjs) | 奥兹玛团本地图单测（不开浏览器）：P1 三域各 5 张图的进图 / 小怪波次 / Boss 攻击与机制阶段 / 通关，及 P2 三个终局 Boss 的阶段清单 |
+| [`test/ozma_runtime.mjs`](../test/ozma_runtime.mjs) | 奥兹玛区域接入测试：区域 spec 经 defineRegion 展开、运行时桥接（OZMA_RUNTIME）与规则会话创建 |
+| [`test/raid_auction.mjs`](../test/raid_auction.mjs) | 团本拍卖行规则单测（不开浏览器）：src/game/raid_core.js 的竞价、底价与离线队员处理 |
+| [`test/raid_core_rules.mjs`](../test/raid_core_rules.mjs) | 团本核心规则单测（不开浏览器）：队长权限、拾取方式、掉落分配 |
+| [`test/raid_rewards.mjs`](../test/raid_rewards.mjs) | 团本拾取规则单测（不开浏览器）：队长分配 / 随机分配 / 竞拍三种拾取方式的权限与结算 |
 | [`test/raid_ui.mjs`](../test/raid_ui.mjs) | 团本界面 + 客户端流程（RA2）：1 个客户端，单人引导从头打到尾（本地服务端 DNF_RAID_FAST=1 + 页面 ?raidfast：节点直达领主、领主血量 ×0.05） |
 | [`test/region.mjs`](../test/region.mjs) | 区域流水线的通用测试：node test/region.mjs <区域 id> [部分,...] |
 | [`test/region_monsters.mjs`](../test/region_monsters.mjs) | 地下城区域的公共测试（天空之城 test/sky.mjs、天帷巨兽 test/behemoth.mjs 共用）： |
@@ -125,7 +132,7 @@
 | [`test/skyguide.mjs`](../test/skyguide.mjs) | 时装外观（混搭按件数最多的一套）+ 天空套收集引导（部位状态 / 一键穿整套 / 合成器提示） |
 | [`test/world.mjs`](../test/world.mjs) | 世界测试：内容校验 → 每个场景截图（素材齐全、不黑屏、有路人）→ 走遍所有出口并走回来 → 锁住的路 / 等级限制 → 所有 NPC 可对话 |
 
-### 装备、商店、经济与任务（27）
+### 装备、商店、经济与任务（29）
 
 | 脚本 | 作用 |
 |---|---|
@@ -135,6 +142,8 @@
 | [`test/bulk.mjs`](../test/bulk.mjs) | 一键出售 / 一键分解：按品级勾选、保护选项、单独取消、执行结果 |
 | [`test/cdr60.mjs`](../test/cdr60.mjs) | 纯冷却流（content/items/cdr60.js，docs/GEAR.md §11）：传说「时之沙漏」5 件套 + 神器「流沙」 |
 | [`test/compare.mjs`](../test/compare.mjs) | 装备好坏对比：背包格子角标 ▲▼=× 与 tooltip 总结；模拟穿戴不能改动玩家真实属性 |
+| [`test/contract.mjs`](../test/contract.mjs) | Conqueror's Contract：项目自定义的 PvE 装备等级便利（账号范围、+10、竞技场排除、到期卸下）。 |
+| [`test/contract_rules.mjs`](../test/contract_rules.mjs) | 契约 / VIP 规则单测（不开浏览器）：在 Node VM 里跑 src/game/save.js，验证账号级契约、到期、等级上限与过级装备失效 |
 | [`test/econ.mjs`](../test/econ.mjs) | 经济模拟：按正常节奏从 Lv1 玩到 Lv20，统计金币收入（怪物金币 / 翻牌 / 卖装备）与支出（药剂 / 修理 / 买装备 / 强化），验证价格是否平衡 |
 | [`test/enh_nocap.mjs`](../test/enh_nocap.mjs) | 强化 / 增幅不设上限：+16 以后还能继续冲，成功率递减（最低 1%），加成继续变大；界面打开 +20 的装备不报错 |
 | [`test/epicfx.mjs`](../test/epicfx.mjs) | 史诗掉落演出：落地金色闪屏 + 光柱爆闪 + 星芒 + 专属音效（带混响）；设置 → 声音 → 史诗掉落音效（本地自定义文件） |
@@ -157,7 +166,7 @@
 | [`test/vanity.mjs`](../test/vanity.mjs) | 面子系统测试：node test/vanity.mjs [shots]（先 node build.mjs） |
 | [`test/weapons.mjs`](../test/weapons.mjs) | 武器外观测试：node test/weapons.mjs（先 node build.mjs） |
 
-### 技能、战斗与动作手感（15）
+### 技能、战斗与动作手感（16）
 
 | 脚本 | 作用 |
 |---|---|
@@ -167,17 +176,18 @@
 | [`test/bench.mjs`](../test/bench.mjs) | 性能基准：在真实 GPU（Metal）、真实分辨率下测最重的几个场景，决定渲染方案用。 |
 | [`test/combat.mjs`](../test/combat.mjs) | 战斗机制测试：暂停游戏循环、手动逐帧推进，逐条验证伤害公式 / 属性 / Miss / 破招 / 背击 / 浮空衰减与重力 / 倒地追击与强制起身 / |
 | [`test/hurtlog.mjs`](../test/hurtlog.mjs) | 难度核查：机器人通关时记录玩家每一次被击——是谁、哪一招、有没有地面预警、离上一次被击多久（连招），汇总出“最常打中人”的招式 |
-| [`test/juggle.mjs`](../test/juggle.mjs) | 浮空（juggle）定量测试：无渲染快进，直接对目标调 applyHit，量滞空时间 / 高度 / 追加浮空递减 / 弹地 / 重怪 / 刷图连击上限 / 决斗浮空保护 |
+| [`test/juggle.mjs`](../test/juggle.mjs) | 浮空（juggle）定量测试：无渲染快进，直接对目标调 applyHit，量滞空时间 / 高度 / 追加浮空 / 弹地 / 重怪 / 刷图一级二级保护 / 倒地追击 / 扣地 / 决斗浮空保护 |
 | [`test/juggle_core.mjs`](../test/juggle_core.mjs) | 刷图浮空保护核心（src/engine/juggle_core.js）的纯逻辑单元测试：node:vm 加载，不开浏览器，毫秒级跑完。用法：node test/juggle_core.mjs |
 | [`test/motion.mjs`](../test/motion.mjs) | 动作连拍：测试房间里依次做 走 / 跑 / 普攻连段 / 技能取消 / 浮空追击 / 被打（轻、重、浮空、倒地）/ 受身 / 被抓 / 后跳 / 闪避， |
 | [`test/skill_autolearn.mjs`](../test/skill_autolearn.mjs) | 一键加点 / 自动学前置 / 升级 SP 够把每个职业当前能学的技能加满（老角色补差额，只补一次；新角色不重复补） |
+| [`test/skill_layout.mjs`](../test/skill_layout.mjs) | 技能页签布局回归：转职技能较多时，每行不能被网格压扁，觉醒技能必须能滚动到并选中。 |
 | [`test/skill_sa.mjs`](../test/skill_sa.mjs) | 技能霸体：地下城里玩家放技能不会被怪物打断（普攻照常会被打断）；决斗场不受影响 |
 | [`test/skillaudit.mjs`](../test/skillaudit.mjs) | 技能机制体检（skill audit）：逐帧推进（暂停游戏循环、确定性），对着木桩逐个施放某职业 / 转职的全部主动技能，量出“手感数据”， |
 | [`test/skillseq.mjs`](../test/skillseq.mjs) | 技能行为连拍（鬼剑士）：一次施放拍不到的流程——再按 / 方向键 / 吸血成形 / 三觉代替收尾 / 追加输入——按脚本逐帧推进并截图，拼成一张总览图。 |
 | [`test/skillshots.mjs`](../test/skillshots.mjs) | 技能连拍体检：测试房间里对着木桩（冻结的哥布林）逐个施放某职业 / 转职的全部主动技能， |
 | [`test/soak.mjs`](../test/soak.mjs) | 长时间测试：机器人连续多次通关同一地下城（结算后点“再次挑战”），每轮强制 GC 后记录堆内存、实体/特效数量、帧率 |
 
-### 职业专项（39）
+### 职业专项（40）
 
 | 脚本 | 作用 |
 |---|---|
@@ -203,6 +213,7 @@
 | [`test/gunner.mjs`](../test/gunner.mjs) | 神枪手（女）+ 通用操作的官方对齐测试（docs/SKILLS_OFFICIAL_common.md / SKILLS_OFFICIAL_gun.md）：暂停游戏循环、逐帧推进，逐条验证 |
 | [`test/gunner_jobs.mjs`](../test/gunner_jobs.mjs) | 神枪手（女）转职的官方对齐测试（docs/SKILLS_OFFICIAL_gun.md 第 4、5 节）：暂停游戏循环、逐帧推进 |
 | [`test/infighter.mjs`](../test/infighter.mjs) | 蓝拳圣使（男圣职者转职 monk / Infighter）机制测试。node test/infighter.mjs（约 40 秒） |
+| [`test/infighter_contract.mjs`](../test/infighter_contract.mjs) | 气功师·念气 转职契约检查（不开浏览器）：技能 id、源码与 docs/skills/priest_infighter_final.md 三方对齐 |
 | [`test/mage.mjs`](../test/mage.mjs) | 魔法师（女）基础技能行为回归（docs/skills/mage_behavior.md 基础部分）： |
 | [`test/mechanic.mjs`](../test/mechanic.mjs) | 机械师（女）测试（docs/SKILLS_OFFICIAL_gun.md 第 6 节）：暂停游戏循环、逐帧推进，逐条验证 |
 | [`test/nenmaster.mjs`](../test/nenmaster.mjs) | 气功师（格斗家 nenmaster，B4）机制测试：逐帧 step（确定性），约 30 秒。node test/nenmaster.mjs [shots] |
@@ -239,7 +250,7 @@
 
 | 脚本 | 作用 |
 |---|---|
-| [`test/bestiary.mjs`](../test/bestiary.mjs) | 图鉴测试：逐个生成怪物，让玩家站着挨打若干秒，统计每下伤害占“同等级玩家血量”的比例，截图，收集报错 |
+| [`test/bestiary.mjs`](../test/bestiary.mjs) | 图鉴测试：逐个生成怪物，让玩家站着挨打若干秒，统计每下伤害占“同等级玩家血量”的比例，截图，收集报错。 |
 | [`test/botrun.mjs`](../test/botrun.mjs) | 机器人通关测试：?dungeon=ID&bot&lv=N，统计用时 / 评价 / 死亡次数，收集报错，定时截图 |
 | [`test/flow.mjs`](../test/flow.mjs) | 全流程测试：标题 → 角色选择 → 创建角色 → 艾尔文防线 → NPC 窗口 → 背包/技能/角色/系统 → 走出城到格兰之森 → 洛兰门口 → 机器人通关 → 结算翻牌 → 回到门口 → 刷新继续存档 |
 | [`test/guide.mjs`](../test/guide.mjs) | 任务线路指引 + 自动前往：新角色在赛丽亚的房间 → 指引到赛丽亚 → 自动前往并对话 → 接主线 → 指引切到下一个目标 → 自动跨场景前往 |

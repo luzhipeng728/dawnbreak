@@ -56,7 +56,7 @@ const center = m => pos(m.x, m.y);
 }
 { // path
   const walk = st => { // 沿路线一格一格走
-    st._k = (st._k || 0) + 0.25; const p = st.p, cells = st.cells.map(s => s.split(',').map(Number)).sort((a, b) => a[0] - b[0] || 0);
+    st._k = (st._k || 0) + (st.t >= st.p.grace ? 0.25 : 0); const p = st.p, cells = st.cells.map(s => s.split(',').map(Number)).sort((a, b) => a[0] - b[0] || 0);
     const c = cells[Math.min(cells.length - 1, Math.floor(st._k))]; return [pos(st.W * p.x0 + st.cw * (c[0] + 0.5), st.ch * (c[1] + 0.5))]; };
   const a = run({ use: 'path' }, walk);
   ok(a.st.res === 'solve' && a.hurts.length === 0, '地板路线：沿发光的格子走到对面 → 解开', a.st.res);
@@ -123,6 +123,38 @@ const center = m => pos(m.x, m.y);
   const b = run({ use: 'crouch' }, () => [pos(500, 98, { z: 40 })]); ok(b.st.res === 'fail' && b.hurts[0].down, '全屏击倒：跳起来也会被打倒');
   const c = run({ use: 'crouch' }, () => [pos(500, 98)]); ok(c.st.res === 'fail', '全屏击倒：站着 → 被打倒');
 }
+{ // dps
+  const a = run({ use: 'dps', need: 0.06 }, () => [{ k: 'dmg', frac: 0.002, who: 'me' }]); ok(a.st.res === 'solve' && a.st.t < 1.2, '限时输出：打够 6% 最大 HP → 解开');
+  const b = run({ use: 'dps', need: 0.06 }, () => [{ k: 'dmg', frac: 0.00005, who: 'me' }]); ok(b.st.res === 'fail' && M.puzBar(b.st).k > 0.5, '限时输出：打不够 → 超时失败（护盾条还剩一半以上）');
+}
+{ // clear
+  const a = run({ use: 'clear' }, st => { const m = st.marks.find(q => q.on); return m ? [center(m)] : []; }); ok(a.st.res === 'solve' && a.st.t < 6, '清除法阵：站进每个法阵 1.2 秒 → 全部清掉');
+  const b = run({ use: 'clear', every: 3 }, () => [pos(5, 5)]); ok(b.st.res === 'fail' && b.st.marks.length === 6 && b.st.marks.every(m => m.r > 44), '清除法阵：不管 → 越冒越多、越来越大，超时失败');
+}
+{ // feed
+  const a = run({ use: 'feed' }, (st, t) => (st.p.elems[st.k] !== M.OPP[st.sign] && Math.round(t * 30) % 12 === 0 ? [{ k: 'hit', tag: 'orb', i: 0, who: 'me' }] : []));
+  ok(a.st.res === 'solve' && a.st.p.elems[a.st.k] === M.OPP[a.st.sign], '喂属性：把球打成头顶的相反属性 → 读条结束时解开', M.puzText(a.st));
+  const b = run({ use: 'feed' }, (st, t) => (st.p.elems[st.k] !== st.sign && Math.round(t * 30) % 12 === 0 ? [{ k: 'hit', tag: 'orb', i: 0, who: 'me' }] : []));
+  ok(b.st.res === 'fail', '喂属性：喂同属性 → 失败');
+  let k0 = null, ch = 0; run({ use: 'feed' }, st => { if (k0 === null) k0 = st.k; else if (st.k !== k0) { ch++; k0 = st.k; } return [{ k: 'hit', tag: 'orb', i: 0, who: 'me' }]; }, { sec: 0.25 }); ok(ch <= 1, '喂属性：连打有 0.3 秒间隔（不会一帧换好几次）', ch);
+}
+{ // gauge
+  const a = run({ use: 'gauge' }, () => [pos(400, 98)]); ok(a.st.res === 'solve' && a.hurts.length === 1, '聚集槽：不被打中 → 22 秒里只满一次（挨一下），撑过去解开');
+  let k = 0; const b = run({ use: 'gauge' }, () => (k++ % 30 === 0 ? [pos(400, 98), { k: 'hurt', who: 'me' }] : [pos(400, 98)])); ok(b.st.res === 'fail' && b.hurts.length === 2, '聚集槽：老被打中 → 加速聚集，第二次爆炸失败');
+}
+{ // absorb
+  const a = run({ use: 'absorb' }, st => { const m = st.marks[0]; return [st.g.me > 85 || (st._out && st.g.me > 10) ? (st._out = true, pos(m.x, m.y + 150)) : (st._out = false, center(m))]; });
+  ok(a.st.res === 'solve' && a.hurts.length === 0, '吸入气息：吸到快满就出来、降下去再进 → 累计 6 秒解开', { r: a.st.res, h: a.hurts.length, p: a.st.prog });
+  const b = run({ use: 'absorb' }, st => [center(st.marks[0])]); ok(b.st.res === 'fail' && b.hurts[0].frac === 0.5, '吸入气息：一直待在里面 → 条满大爆炸（50%）失败');
+}
+{ // options
+  const r = run({ use: 'realBody', rounds: 3 }, st => { const o = st.objs.find(q => q.glow); return o ? [{ k: 'hit', tag: 'clone', i: o.i, who: 'me' }] : []; }); ok(r.st.res === 'solve' && r.st.round === 3, '真身 rounds: 3：要找 3 次（凯恩的分身波）');
+  const nj = run({ use: 'path', noJump: true }, st => { const c = st.cells[0].split(',').map(Number); return [pos(st.W * st.p.x0 + st.cw * 0.5, st.ch * (c[1] + 0.5), { z: 40 })]; }); ok(nj.out.some(o => o.k === 'say' && /不能跳/.test(o.text)), '地板路线 noJump：跳起来也算踩空（奈克斯）');
+  const rt = M.puzNew({ use: 'path', rtl: true }, M.rng(3), C); ok(rt.marks[0].x > 1000, '地板路线 rtl：从右往左（第一列在右边）');
+  const gb = run({ use: 'guide', toBoss: true, n: 1 }, st => { const o = st.orbs[0], g = st.goal; const dx = g.x - o.x, dy = (g.y - o.y) / 0.45, L = Math.hypot(dx, dy) || 1; return [{ k: 'anchor', x: 300, y: 60 }, pos(o.x + dx / L * 44, o.y + dy / L * 44 * 0.45)]; });
+  ok(gb.st.res === 'solve' && gb.st.goal.x === 300, '引导光球 toBoss：目标是领主（慈悲的引导：把能量球引到维塔身上）');
+  const bb = run({ use: 'burial', boss: true }, (st, t) => (Math.round(t * 30) % 5 === 0 ? [{ k: 'hit', tag: 'boss', who: 'me' }] : [])); ok(bb.st.res === 'solve', '掩埋 boss: true：打领主救人（古斯迪吞人）');
+}
 // ---------- 领主脚本 ----------
 function script(spec, { seed = 3, mode = 'normal', solve = true, hpAt = t => Math.max(0.05, 1 - t / 60), sec = 70 } = {}) {
   const S = M.scriptNew(spec, seed, { ...C, mode }), out = [];
@@ -152,6 +184,10 @@ function script(spec, { seed = 3, mode = 'normal', solve = true, hpAt = t => Mat
   const e = script({ intro: { dur: 1 }, weak: { every: 20, pool: [{ use: 'crystals' }] }, atk: [{ every: [12, 12], first: 5, puzzle: { use: 'crouch' } }] }, { hpAt: () => 1, sec: 60 });
   ok(e.of('cast').length === 2 && Math.abs(e.of('cast')[0].T - 21) < 0.1, '脚本：按时间读条（战斗时间每 20 秒，虚弱期间不计）', e.of('cast').map(c => c.T));
   ok(e.of('atk').length === 4 && e.of('hurt').length === 0, '脚本：定时机制招（全屏击倒，每 12 秒，虚弱期间暂停），蹲下没事', e.of('atk').map(c => c.T));
+  const nb = script({ intro: { dur: 0.5 }, weak: { at: [0.9], pool: [{ use: 'crystals', onSolve: { dur: 0 }, cast: { name: '防御姿态' } }] } });
+  ok(nb.of('cast')[0].name === '防御姿态' && nb.of('solve').length === 1 && nb.of('break').length === 0, '脚本：谜题自带 onSolve: { dur: 0 } = 只化解不虚弱（官方没有破防的领主），自带读条名');
+  const sg = script({ intro: { dur: 0.5 }, weak: { at: [1, 0.5], pool: [{ use: 'crystals', skipGuide: true }, { use: 'heartbeat' }] } }, { mode: 'guide' });
+  ok(sg.of('cast').length === 1 && sg.of('cast')[0].id === 'heartbeat', '脚本：skipGuide 的谜题在引导模式跳过（苏醒之路）');
   const v = M.view(e.S); ok(v.ph && 'cast' in v && Array.isArray(v.side), '脚本：view 给 HUD 用');
 }
 console.log(`\n${n - fail}/${n} 通过`);

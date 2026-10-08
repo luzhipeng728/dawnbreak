@@ -5,11 +5,11 @@
      读条期间从虚弱池 weak.pool 抽一个谜题；解开 → 虚弱 break（受伤 ×mul）；没解开 → 灭团 wipe（按最大 HP 结算，普通模式默认 100%）
    - 谜题原语 PUZ：pads 顺序踩板 / heartbeat 心跳 / realBody 真身 / orbs 属性球 / path 地板路线 / guide 引导光球 / burial 掩埋救援 /
      tether 连线 / breath 呼吸槽 / reflect 反射 / gem 搬宝石 / crystals 水晶 / swords 日月之剑 / facing 朝向 / soulSwap 灵魂互换 /
-     souls 守门人之魂（跟 BGM 节拍）/ crouch 全屏击倒（只有蹲下能躲）
+     souls 守门人之魂（跟 BGM 节拍）/ crouch 全屏击倒（只有蹲下能躲）/ dps 限时输出 / clear 清除法阵 / feed 喂属性 / gauge 聚集槽 / absorb 吸入气息
    - 玩家状态 STATUS：叠层 / 计时 / 满层触发（侵蚀 → 石化、掩埋、搬运、灵魂颜色……），运行时把 eff 翻译成游戏里的异常状态
    坐标：x ∈ [0, W]（房间宽）、y ∈ [0, D]（纵深）；距离按地面椭圆（纵向 ×1/0.45）算，和 inGround 一致。
    输入事件 ev：{ k: 'pos', who, x, y, face, z, crouch } | { k: 'anchor', x, y, face }（领主位置）| { k: 'hit', tag, i, who } | { k: 'kill', tag, i, who }
-               | { k: 'mash', who }（连打挣脱）| { k: 'hurt', who }（被领主打中）
+               | { k: 'mash', who }（连打挣脱）| { k: 'hurt', who }（被领主打中）| { k: 'dmg', frac, who }（打出的伤害占领主最大 HP 的比例）
    输出事件 out：{ k: 'hurt', who, frac, down, why } | { k: 'status' / 'unstatus', who, id, n, dur } | { k: 'say', text, col } | { k: 'tp', who, x, y }
                | { k: 'cue' }（BGM 节拍）| { k: 'invul', on } | { k: 'cast', id, name, dur, puzzle } | { k: 'break', dur, mul } | { k: 'unbreak' }
                | { k: 'wipe', frac, down } | { k: 'skill', id } | { k: 'solve' / 'fail', id, why } | { k: 'line', id }（台词）
@@ -86,16 +86,16 @@ const RAID_MECH = (() => {
     tick(st, p) { const o = st.objs[0]; o.glow = PUZ.heartbeat.beat(st, p); o.label = `${st.n}/${p.need}`; } });
 
   // 真身：n 个分身里只有一个是真的（每 every 秒闪一下 tell）；打到真的 = 解开，打到假的 = 挨打、假的消失；错 maxWrong 次以上失败
-  def('realBody', { defaults: { n: 4, dur: 16, every: 3, flash: 0.5, hurt: 0.12, maxWrong: 1, col: '#a070ff' }, name: '真身', hint: '分身里只有一个会闪光——打它',
-    init(p, R, C) { const real = Math.floor(R() * p.n); return { real, wrong: 0, objs: spots(p.n, C, R).map((q, i) => ({ tag: 'clone', i, ...q, shape: 'totem', col: p.col, hits: 99, keep: true, alive: true, label: '', glow: false })) }; },
+  def('realBody', { defaults: { n: 4, rounds: 1, dur: 16, every: 3, flash: 0.5, hurt: 0.12, maxWrong: 1, col: '#a070ff' }, name: '真身', hint: '分身里只有一个会闪光——打它',
+    init(p, R, C) { const real = Math.floor(R() * p.n); return { real, wrong: 0, rr: R, objs: spots(p.n, C, R).map((q, i) => ({ tag: 'clone', i, ...q, shape: 'totem', col: p.col, hits: 99, keep: true, alive: true, label: '', glow: false })) }; },
     on(st, p, ev) {
       if (ev.k !== 'hit' || ev.tag !== 'clone') return;
       const o = st.objs[ev.i]; if (!o || !o.alive) return;
-      if (ev.i === st.real) { st.res = 'solve'; return; }
+      if (ev.i === st.real) { st.round = (st.round || 0) + 1; if (st.round >= p.rounds) { st.res = 'solve'; return; } st.real = Math.floor(st.rr() * p.n); for (const q of st.objs) q.alive = true; say(st, `找到了！还有 ${p.rounds - st.round} 波`, '#8aff9a'); return; }
       o.alive = false; st.wrong++; hurt(st, ev.who, p.hurt, 'realBody'); say(st, '是假的！', '#ff8a8a');
       if (st.wrong > p.maxWrong) st.res = 'fail';
     },
-    tick(st, p) { const k = st.t % p.every; st.objs[st.real].glow = k < p.flash; } });
+    tick(st, p) { const k = st.t % p.every; for (const o of st.objs) o.glow = false; st.objs[st.real].glow = k < p.flash; } });
 
   // 属性球：按领主头顶给的顺序打碎属性球；打错 = 挨打、全部复原重来
   def('orbs', { defaults: { elems: ['fire', 'ice', 'light', 'dark'], dur: 20, hits: 3, hurt: 0.08 }, name: '属性球', hint: '按顺序打碎属性球',
@@ -109,30 +109,33 @@ const RAID_MECH = (() => {
     text: st => st.seq.map((e, i) => (i < st.k ? '✓' : (ELEM[e] || [e])[0])).join(' → ') });
 
   // 地板路线：cols × rows 的地板，只有发光的那条路能走；踩到别的格 = 挨打、送回起点；走到最后一列解开；掉下去 maxFalls 次以上失败
-  def('path', { defaults: { cols: 7, rows: 3, dur: 16, hurt: 0.1, maxFalls: 2, x0: 0.15, x1: 0.85 }, name: '地板路线', hint: '沿着发光的地板走到对面',
+  def('path', { defaults: { cols: 7, rows: 3, dur: 16, hurt: 0.1, maxFalls: 2, x0: 0.15, x1: 0.85, noJump: false, rtl: false, grace: 0.8 }, name: '地板路线', hint: '沿着发光的地板走到对面',
     init(p, R, C) {
       const cells = new Set(); let r = Math.floor(R() * p.rows); const path = [];
       for (let c = 0; c < p.cols; c++) { cells.add(c + ',' + r); path.push([c, r]); if (c < p.cols - 1) { const nr = clamp(r + Math.floor(R() * 3) - 1, 0, p.rows - 1); if (nr !== r) { cells.add((c + 1) + ',' + r); r = nr; } } }
       const cw = C.W * (p.x1 - p.x0) / p.cols, ch = C.D / p.rows, marks = [];
-      for (let c = 0; c < p.cols; c++) for (let rr = 0; rr < p.rows; rr++) marks.push({ x: Math.round(C.W * p.x0 + cw * (c + 0.5)), y: Math.round(ch * (rr + 0.5)), w: Math.round(cw), h: Math.round(ch), shape: 'tile', r: 0, col: cells.has(c + ',' + rr) ? '#7affd0' : '#ff4a4a', on: cells.has(c + ',' + rr), label: '' });
-      return { cells: [...cells], start: path[0], falls: 0, cw, ch, marks, W: C.W, D: C.D };
+      for (let c = 0; c < p.cols; c++) for (let rr = 0; rr < p.rows; rr++) marks.push({ x: Math.round(PUZ.path.mx(p, C.W, C.W * p.x0 + cw * (c + 0.5))), y: Math.round(ch * (rr + 0.5)), w: Math.round(cw), h: Math.round(ch), shape: 'tile', r: 0, col: cells.has(c + ',' + rr) ? '#7affd0' : '#ff4a4a', on: cells.has(c + ',' + rr), label: '' });
+      const tp = { x: Math.round(PUZ.path.mx(p, C.W, C.W * p.x0 - 30)), y: Math.round(ch * (path[0][1] + 0.5)) };
+      return { cells: [...cells], start: path[0], falls: 0, cw, ch, marks, W: C.W, D: C.D, went: {}, out0: C.players.map(who => ({ k: 'tp', who, ...tp })) };   // 开始时所有人站到起点那一侧
     },
-    cell(st, p, ev) { const c = Math.floor((ev.x - st.W * p.x0) / st.cw), r = clamp(Math.floor(ev.y / st.ch), 0, p.rows - 1); return c < 0 || c >= p.cols ? null : [c, r]; },
+    mx: (p, W, x) => (p.rtl ? W - x : x),   // rtl：从右往左走（奈克斯那张左右镜像）
+    cell(st, p, ev) { const c = Math.floor((PUZ.path.mx(p, st.W, ev.x) - st.W * p.x0) / st.cw), r = clamp(Math.floor(ev.y / st.ch), 0, p.rows - 1); return c < 0 || c >= p.cols ? null : [c, r]; },
     on(st, p, ev) {
-      if (ev.k !== 'pos' || (ev.z || 0) > 12) return;
+      if (ev.k !== 'pos' || ((ev.z || 0) > 12 && !p.noJump) || st.t < p.grace) return;   // grace：地板亮起后先给一点时间看清、站好
       const cr = PUZ.path.cell(st, p, ev); if (!cr) return;
-      if (!st.cells.includes(cr[0] + ',' + cr[1])) {
-        st.falls++; hurt(st, ev.who, p.hurt, 'path'); say(st, '踩空了！回到起点', '#ff8a8a');
-        st.out.push({ k: 'tp', who: ev.who, x: Math.round(st.W * p.x0 - 30), y: Math.round(st.ch * (st.start[1] + 0.5)) });
+      if (!st.cells.includes(cr[0] + ',' + cr[1]) || (p.noJump && (ev.z || 0) > 12)) {
+        st.falls++; hurt(st, ev.who, p.hurt, 'path'); say(st, p.noJump && (ev.z || 0) > 12 ? '不能跳！回到起点' : '踩空了！回到起点', '#ff8a8a');
+        st.out.push({ k: 'tp', who: ev.who, x: Math.round(PUZ.path.mx(p, st.W, st.W * p.x0 - 30)), y: Math.round(st.ch * (st.start[1] + 0.5)) });
         if (st.falls > p.maxFalls) st.res = 'fail'; return;
       }
-      if (cr[0] === p.cols - 1) st.res = 'solve';
+      if (cr[0] === 0) st.went[ev.who] = true;
+      if (cr[0] === p.cols - 1 && st.went[ev.who]) st.res = 'solve';   // 要从起点那一列走过来才算
     } });
 
   // 引导光球：走近光球它会跟着你，把 n 个都带进中间的祭坛
-  def('guide', { defaults: { n: 3, dur: 24, grab: 70, speed: 150, goal: 60, lag: 34 }, name: '引导光球', hint: '走近光球，把它们带进祭坛',
-    init(p, R, C) { const goal = { x: Math.round(C.W / 2), y: Math.round(C.D / 2), r: p.goal, col: '#ffe070', label: '祭坛', on: false, shape: 'circle' }; const orbs = spots(p.n, C, R, 0.15, 0.85).map(q => ({ ...q, x: q.x < goal.x ? Math.max(40, q.x - C.W * 0.1) : Math.min(C.W - 40, q.x + C.W * 0.1), r: 16, col: '#bfefff', label: '光', on: false, shape: 'orb' })); return { goal, orbs, done: 0, marks: [goal, ...orbs] }; },
-    on(st, p, ev) { if (ev.k === 'pos') P(st)[ev.who] = { x: ev.x, y: ev.y }; },
+  def('guide', { defaults: { n: 3, dur: 24, grab: 70, speed: 150, goal: 60, lag: 34, toBoss: false, label: '光', goalLabel: '祭坛' }, name: '引导光球', hint: '走近光球，把它们带进祭坛',
+    init(p, R, C) { const goal = { x: Math.round(C.W / 2), y: Math.round(C.D / 2), r: p.goal, col: '#ffe070', label: '祭坛', on: false, shape: 'circle' }; const orbs = spots(p.n, C, R, 0.15, 0.85).map(q => ({ ...q, x: q.x < goal.x ? Math.max(40, q.x - C.W * 0.1) : Math.min(C.W - 40, q.x + C.W * 0.1), r: 16, col: '#bfefff', label: p.label, on: false, shape: 'orb' })); return { goal, orbs, done: 0, marks: [goal, ...orbs] }; },
+    on(st, p, ev) { if (ev.k === 'pos') P(st)[ev.who] = { x: ev.x, y: ev.y }; else if (ev.k === 'anchor' && p.toBoss) { st.goal.x = ev.x; st.goal.y = ev.y; } },
     tick(st, p, dt) {
       for (const o of st.orbs) {
         if (o.on) continue;
@@ -140,14 +143,14 @@ const RAID_MECH = (() => {
         if (best && bd < p.grab && bd > p.lag) { const k = Math.min(1, p.speed * dt / bd); o.x += (best.x - o.x) * k; o.y += (best.y - o.y) * k; }
         if (gdist(o, st.goal) < st.goal.r) { o.on = true; o.x = st.goal.x; o.y = st.goal.y; st.done++; }
       }
-      st.goal.label = `祭坛 ${st.done}/${p.n}`;
+      st.goal.label = `${p.goalLabel} ${st.done}/${p.n}`;
       if (st.done >= p.n) st.res = 'solve';
     } });
 
   // 掩埋救援：一个人被埋住（定身），队友打墓碑 / 自己连打攻击挣脱，hits 下解开；到点没出来 = 重伤
-  def('burial', { defaults: { hits: 10, dur: 7, hurt: 0.45 }, name: '掩埋', hint: '连打攻击键挣脱（队友可以打墓碑）',
+  def('burial', { defaults: { hits: 10, dur: 7, hurt: 0.45, boss: false }, name: '掩埋', hint: '连打攻击键挣脱（队友可以打墓碑）',
     init(p, R, C) { const who = C.players[Math.floor(R() * C.players.length)]; return { who, n: 0, objs: [{ tag: 'tomb', i: 0, at: who, x: 0, y: 0, shape: 'pillar', col: '#b08a5a', hits: 99, keep: true, alive: true, label: '' }], out0: [{ k: 'status', who, id: 'buried' }] }; },
-    on(st, p, ev) { if ((ev.k === 'mash' && ev.who === st.who) || (ev.k === 'hit' && ev.tag === 'tomb')) { st.n++; st.objs[0].label = `${st.n}/${p.hits}`; if (st.n >= p.hits) { st.res = 'solve'; st.out.push({ k: 'unstatus', who: st.who, id: 'buried' }); } } },
+    on(st, p, ev) { if ((ev.k === 'mash' && ev.who === st.who) || (ev.k === 'hit' && (ev.tag === 'tomb' || (p.boss && ev.tag === 'boss')))) { st.n++; st.objs[0].label = `${st.n}/${p.hits}`; if (st.n >= p.hits) { st.res = 'solve'; st.out.push({ k: 'unstatus', who: st.who, id: 'buried' }); } } },
     onEnd(st, p) { if (st.res !== 'solve') { st.out.push({ k: 'unstatus', who: st.who, id: 'buried' }); hurt(st, st.who, p.hurt, 'burial'); } } });
 
   // 连线：和领主之间连着线，离得太近（< min）每 tick 秒挨一下；撑过 dur 秒解开，挨了 maxBad 下以上失败
@@ -166,6 +169,7 @@ const RAID_MECH = (() => {
     init(p, R, C) { const st = { g: {}, bad: 0, mv: 0, marks: [] }; PUZ.breath.place(st, p, R, C); return st; },
     place(st, p, R, C) { st.marks = Array.from({ length: p.zones }, (_, i) => ({ x: Math.round(C.W * (0.15 + 0.7 * ((i + R() * 0.8) / p.zones))), y: Math.round(C.D * (0.2 + 0.6 * R())), r: p.r, col: '#6ab0ff', label: '气泡', on: true, shape: 'circle' })); },
     on(st, p, ev) { if (ev.k === 'pos') { P(st)[ev.who] = { x: ev.x, y: ev.y }; if (st.g[ev.who] == null) st.g[ev.who] = p.max; } },
+    bar: (st, p) => (st.g.me != null ? { k: st.g.me / p.max, label: '呼吸', col: '#6ab0ff' } : null),
     tick(st, p, dt, R, C) {
       st.mv += dt; if (st.mv >= p.move) { st.mv = 0; PUZ.breath.place(st, p, R, C); }
       for (const w in P(st)) {
@@ -182,16 +186,17 @@ const RAID_MECH = (() => {
     tick(st, p) { st.up = (st.t % (p.on + p.off)) < p.on; st.marks[0].on = st.up; st.marks[0].label = st.up ? '反射' : ''; } });
 
   // 搬宝石：捡起宝石（减速）搬到祭坛；搬的时候被打中会掉在原地；n 个都送到解开
-  def('gem', { defaults: { n: 2, dur: 26, r: 40, hurt: 0 }, name: '搬宝石', hint: '捡起宝石搬到祭坛（被打中会掉）',
+  def('gem', { defaults: { n: 2, dur: 26, r: 40, hurt: 0, toBoss: false, label: '宝石', altarLabel: '祭坛' }, name: '搬宝石', hint: '捡起宝石搬到祭坛（被打中会掉）',
     init(p, R, C) { const altar = { x: Math.round(C.W * (R() < 0.5 ? 0.12 : 0.88)), y: Math.round(C.D / 2), r: 55, col: '#ffe070', label: '祭坛', on: false, shape: 'circle' }; const left = altar.x < C.W / 2, gems = spots(p.n, C, R).map(q => ({ ...q, x: Math.round(C.W * ((left ? 0.5 : 0.15) + 0.35 * (q.x / C.W - 0.18) / 0.64)), r: p.r * 0.5, col: '#7affd0', label: '宝石', on: false, shape: 'orb', by: null })); return { altar, gems, done: 0, carry: {}, marks: [altar, ...gems] }; },
     on(st, p, ev) {
       if (ev.k === 'hurt') { const g = st.carry[ev.who]; if (g != null) { const q = P(st)[ev.who] || {}; Object.assign(st.gems[g], { x: q.x, y: q.y, by: null }); delete st.carry[ev.who]; st.out.push({ k: 'unstatus', who: ev.who, id: 'carry' }); say(st, '宝石掉了！'); } return; }
+      if (ev.k === 'anchor' && p.toBoss) { st.altar.x = ev.x; st.altar.y = ev.y; return; }
       if (ev.k !== 'pos') return; P(st)[ev.who] = { x: ev.x, y: ev.y };
       const g = st.carry[ev.who];
       if (g != null) { Object.assign(st.gems[g], { x: ev.x, y: ev.y }); if (inMark(ev, st.altar)) { st.gems[g].on = true; st.gems[g].by = null; Object.assign(st.gems[g], { x: st.altar.x, y: st.altar.y }); delete st.carry[ev.who]; st.done++; st.out.push({ k: 'unstatus', who: ev.who, id: 'carry' }); if (st.done >= p.n) st.res = 'solve'; } return; }
       const k = st.gems.findIndex(q => !q.on && q.by == null && gdist(ev, q) < p.r); if (k >= 0) { st.gems[k].by = ev.who; st.carry[ev.who] = k; st.out.push({ k: 'status', who: ev.who, id: 'carry' }); }
     },
-    tick(st, p) { st.altar.label = `祭坛 ${st.done}/${p.n}`; } });
+    tick(st, p) { st.altar.label = `${p.altarLabel} ${st.done}/${p.n}`; for (const q of st.gems) if (!q.on) q.label = p.label; } });
 
   // 水晶：dur 秒内打碎 n 个水晶
   def('crystals', { defaults: { n: 4, dur: 15, hits: 4, col: '#b890ff' }, name: '水晶', hint: '打碎全部水晶',
@@ -270,7 +275,61 @@ const RAID_MECH = (() => {
       st.res = bad ? 'fail' : 'solve';
     } });
 
-  // 谜题实例：{ id, p, t, res, out, ...状态 }。普通 / 引导模式：引导模式挨打 ×0.5、时限 ×1.25
+  // 限时输出：dur 秒内打出 need×最大 HP 的伤害（魅惑之舞的橙条、守门人的防御姿态、弹球）
+  def('dps', { defaults: { need: 0.06, dur: 10 }, name: '限时输出', hint: '在时间内打掉领主的护盾',
+    init() { return { acc: 0 }; },
+    on(st, p, ev) { if (ev.k === 'dmg') { st.acc += ev.frac || 0; if (st.acc >= p.need) st.res = 'solve'; } },
+    bar: (st, p) => ({ k: 1 - st.acc / p.need, label: '护盾', col: '#ffb030' }),
+    text: (st, p) => `${Math.min(100, Math.round(st.acc / p.need * 100))}%` });
+
+  // 清除法阵：场上有 n 个法阵（会慢慢变大，every 秒再冒一个，最多 max 个），站进去 hold 秒清掉；读条结束时还剩就失败（魅惑之沼、泪水洼）
+  def('clear', { defaults: { n: 3, max: 6, every: 0, hold: 1.2, r: 44, grow: 4, rMax: 90, dur: 18, col: '#ff6ad0', label: '' }, name: '清除法阵', hint: '站进每个法阵把它清掉',
+    init(p, R, C) { const st = { marks: [], left: 0, sp: 0, rr: R, C }; for (const q of shuffle(spots(p.n, C, R, 0.2, 0.8), R)) PUZ.clear.add(st, p, q); return st; },
+    add(st, p, q) { st.marks.push({ x: q.x, y: q.y, r: p.r, col: p.col, label: p.label, on: true, shape: 'circle', h: 0 }); st.left++; },
+    on(st, p, ev) { if (ev.k === 'pos') P(st)[ev.who] = { x: ev.x, y: ev.y }; },
+    tick(st, p, dt, R, C) {
+      if (p.every) { st.sp += dt; if (st.sp >= p.every && st.marks.filter(m => m.on).length < p.max) { st.sp = 0; PUZ.clear.add(st, p, { x: Math.round(C.W * (0.15 + 0.7 * R())), y: Math.round(C.D * (0.15 + 0.7 * R())) }); } }
+      for (const m of st.marks) {
+        if (!m.on) continue; m.r = Math.min(p.rMax, m.r + p.grow * dt);
+        if (Object.values(P(st)).some(q => inMark(q, m))) { m.h += dt; m.label = `${Math.max(0, p.hold - m.h).toFixed(1)}`; if (m.h >= p.hold) { m.on = false; m.r = 0; m.label = ''; st.left--; } } else { m.h = Math.max(0, m.h - dt * 0.5); m.label = p.label; }
+      }
+      st.marks = st.marks.filter(m => m.on);
+      if (!st.left && (!p.every || st.t > p.dur * 0.6)) st.res = 'solve';
+    },
+    text: st => `还剩 ${st.left} 个` });
+
+  // 喂属性：领主头顶亮出一个属性，前方的属性球每打一下换一个属性；读条结束时球是头顶的相反属性（火↔冰、光↔暗）= 解开（古斯迪吞噬属性）
+  const OPP = { fire: 'ice', ice: 'fire', light: 'dark', dark: 'light' };
+  def('feed', { defaults: { elems: ['fire', 'ice', 'light', 'dark'], dur: 12, gap: 0.3 }, name: '喂属性', hint: '打前方的球换属性：读条结束时要是头顶的相反属性',
+    init(p, R, C) { const sign = p.elems[Math.floor(R() * p.elems.length)], k = Math.floor(R() * p.elems.length); return { sign, k, cd: 0, objs: [{ tag: 'orb', i: 0, x: Math.round(C.W * 0.5), y: Math.round(C.D * 0.5), shape: 'crystal', col: ELEM[p.elems[k]][1], hits: 99, keep: true, alive: true, label: ELEM[p.elems[k]][0] }] }; },
+    on(st, p, ev) { if (ev.k !== 'hit' || ev.tag !== 'orb' || st.cd > 0) return; st.cd = p.gap; st.k = (st.k + 1) % p.elems.length; const e = p.elems[st.k]; Object.assign(st.objs[0], { col: ELEM[e][1], label: ELEM[e][0] }); },
+    tick(st, p, dt) { st.cd -= dt; if (st.t >= p.dur - 1e-6) st.res = p.elems[st.k] === OPP[st.sign] ? 'solve' : 'fail'; },
+    text: (st, p) => `头顶：${ELEM[st.sign][0]}　球：${ELEM[p.elems[st.k]][0]}` });
+
+  // 聚集槽：天上的泡泡随时间聚集（rate/秒），被领主打中再加 bump；满了 = 大范围爆炸（挨打），撑过 dur 秒解开（咕噜米的黄色泡泡）
+  def('gauge', { defaults: { rate: 5, bump: 12, max: 100, hurt: 0.3, dur: 22, maxBad: 1, label: '聚集' }, name: '聚集槽', hint: '别被打中——打中会加速聚集', survive: true,
+    init() { return { g: 0, bad: 0 }; },
+    on(st, p, ev) { if (ev.k === 'hurt') st.g += p.bump; },
+    tick(st, p, dt) { st.g += p.rate * dt; if (st.g >= p.max) { st.g = 0; st.bad++; for (const w of Object.keys(P(st)).concat(Object.keys(P(st)).length ? [] : ['me'])) hurt(st, w, p.hurt, 'gauge'); say(st, '泡泡爆炸了！', '#ffe070'); if (st.bad > p.maxBad) st.res = 'fail'; } },
+    bar: (st, p) => ({ k: st.g / p.max, label: p.label, col: '#ffe070' }) });
+
+  // 吸入气息：12 点方向的气息柱，站进去累计 need 秒解开；但每个人头顶的条在柱子里会涨、离开会降，条满还在里面 = 大爆炸（希洛克的气息）
+  def('absorb', { defaults: { need: 6, max: 100, fill: 28, cool: 30, hurt: 0.5, maxBad: 0, r: 52, dur: 24 }, name: '吸入气息', hint: '轮流进气息柱吸气：头顶的条满了要立刻出来',
+    init(p, R, C) { return { prog: 0, g: {}, bad: 0, marks: [{ x: Math.round(C.W * (0.35 + 0.3 * R())), y: Math.round(C.D * 0.15), r: p.r, col: '#c080ff', label: '气息', on: true, shape: 'circle' }] }; },
+    on(st, p, ev) { if (ev.k === 'pos') { P(st)[ev.who] = { x: ev.x, y: ev.y }; if (st.g[ev.who] == null) st.g[ev.who] = 0; } },
+    tick(st, p, dt) {
+      const m = st.marks[0];
+      for (const w in P(st)) {
+        const inside = inMark(st.pl[w], m);
+        if (inside) { st.prog += dt; st.g[w] += p.fill * dt; } else st.g[w] = Math.max(0, st.g[w] - p.cool * dt);
+        if (st.g[w] >= p.max) { st.g[w] = 0; st.bad++; hurt(st, w, p.hurt, 'absorb'); say(st, '吸太多了！', '#ff6a6a'); if (st.bad > p.maxBad) st.res = 'fail'; }
+      }
+      m.label = `气息 ${Math.min(100, Math.round(st.prog / p.need * 100))}%`;
+      if (!st.res && st.prog >= p.need) st.res = 'solve';
+    },
+    bar: st => (st.g.me != null ? { k: st.g.me / 100, label: '吸入', col: '#c080ff' } : null) });
+
+  // 谜题实例：{ id, p, t, res, out, ...状态 }。公共参数：dur 时限、hurt 挨打（最大 HP 比例）、failHurt 没解开时再挨一下、onSolve / onFail / cast 覆盖脚本的同名设置、skipGuide 引导模式跳过。普通 / 引导模式：引导模式挨打 ×0.5、时限 ×1.25
   function scaleP(p, mode) { if (mode !== 'guide') return p; const q = { ...p }; if (q.hurt) q.hurt *= 0.5; if (q.dur) q.dur *= 1.25; return q; }
   function puzNew(spec, R, C) {
     const D = PUZ[spec.use]; if (!D) throw new Error('raid_mech: 没有谜题 ' + spec.use);
@@ -283,9 +342,10 @@ const RAID_MECH = (() => {
   function puzTick(st, dt, R, C) {
     const D = PUZ[st.id]; if (st.ended) return;
     if (!st.res) { st.t += dt; if (D.tick) D.tick(st, st.p, dt, R, C); if (!st.res && st.p.dur && st.t >= st.p.dur) st.res = D.survive ? 'solve' : 'fail'; }
-    if (st.res) { st.ended = true; if (D.onEnd) D.onEnd(st, st.p); }
+    if (st.res) { st.ended = true; if (D.onEnd) D.onEnd(st, st.p); if (st.res === 'fail' && st.p.failHurt) for (const w of st.pl && Object.keys(st.pl).length ? Object.keys(st.pl) : ['me']) hurt(st, w, st.p.failHurt, st.id + ':fail'); }   // failHurt：没解开时额外挨一下（定时机制招用）
   }
   const puzText = st => { const D = PUZ[st.id]; return D.text ? D.text(st, st.p) : ''; };
+  const puzBar = st => { const D = PUZ[st.id]; return D.bar ? D.bar(st, st.p) : null; };
   const drain = st => { const o = st.out; st.out = []; return o; };
 
   /* ---------------- 领主脚本 ---------------- */
@@ -308,16 +368,17 @@ const RAID_MECH = (() => {
   }
   function startCast(S) {
     const pz = pickWeak(S); if (!pz) return;
+    if (pz.skipGuide && S.C.mode === 'guide') return;   // 官方引导模式去掉的机制（维塔 / 奈克斯的苏醒之路……）
     S.cast = puzNew(pz, S.R, S.C); S.ph = 'cast'; S.phT = 0; S.stat.casts++;
-    const c = S.spec.cast || {}; S.out.push({ k: 'cast', id: S.cast.id, name: c.name || S.cast.name, dur: S.cast.p.dur || 0, puzzle: S.cast.name, hint: S.cast.hint });
+    const c = { ...(S.spec.cast || {}), ...(pz.cast || {}) }; S.out.push({ k: 'cast', id: S.cast.id, name: c.name || S.cast.name, dur: S.cast.p.dur || 0, puzzle: S.cast.name, hint: S.cast.hint });
     if (c.say) S.out.push({ k: 'say', text: c.say, col: '#ff9a7a' });
     if (S.spec.lines && S.spec.lines.cast) S.out.push({ k: 'line', id: 'cast', text: S.spec.lines.cast });
   }
   function endCast(S) {
     const ok = S.cast.res === 'solve', L = S.spec.lines || {}; S.out.push(...drain(S.cast));
     S.out.push({ k: ok ? 'solve' : 'fail', id: S.cast.id });
-    if (ok) { S.stat.solve++; const b = S.spec.onSolve; S.out.push({ k: 'break', dur: b.dur, mul: b.mul }); if (b.say) S.out.push({ k: 'say', text: b.say, col: '#8aff9a' }); if (L.solve) S.out.push({ k: 'line', id: 'solve', text: L.solve }); S.ph = 'break'; }
-    else { S.stat.fail++; const f = S.spec.onFail; const frac = S.C.mode === 'guide' ? Math.min(f.frac, S.spec.guide.wipe) : f.frac; S.out.push({ k: 'wipe', frac, down: !!f.down }); if (f.say) S.out.push({ k: 'say', text: f.say, col: '#ff6a6a' }); if (L.fail) S.out.push({ k: 'line', id: 'fail', text: L.fail }); S.ph = 'fight'; }
+    if (ok) { S.stat.solve++; const b = S.brkSpec = { ...S.spec.onSolve, ...(S.cast.p.onSolve || {}) }; if (b.say) S.out.push({ k: 'say', text: b.say, col: '#8aff9a' }); if (L.solve) S.out.push({ k: 'line', id: 'solve', text: L.solve }); if (b.dur > 0) { S.out.push({ k: 'break', dur: b.dur, mul: b.mul }); S.ph = 'break'; } else S.ph = 'fight'; }   // dur 0 = 只是化解（官方没有破防的领主）
+    else { S.stat.fail++; const f = { ...S.spec.onFail, ...(S.cast.p.onFail || {}) }; const frac = S.C.mode === 'guide' ? Math.min(f.frac, S.spec.guide.wipe) : f.frac; S.out.push({ k: 'wipe', frac, down: !!f.down }); if (f.say) S.out.push({ k: 'say', text: f.say, col: '#ff6a6a' }); if (L.fail) S.out.push({ k: 'line', id: 'fail', text: L.fail }); S.ph = 'fight'; }
     S.phT = 0; S.lastCast = S.cast; S.cast = null;
   }
   // io：{ hp: 0~1, ev: [...] }；返回 out 事件
@@ -328,7 +389,7 @@ const RAID_MECH = (() => {
     if (S.ph === 'fight' || S.ph === 'cast') (S.spec.atk || []).forEach((a, i) => { S.atkT[i] -= dt; if (S.atkT[i] <= 0 && !S.side.some(s => s.atk === i)) { S.atkT[i] = range(a.every, S.R); const s = puzNew(a.puzzle, S.R, S.C); s.atk = i; S.side.push(s); S.out.push({ k: 'atk', id: s.id, name: s.name, hint: s.hint }); } });
     for (const s of S.side) { puzTick(s, dt, S.R, S.C); S.out.push(...drain(s)); }
     S.side = S.side.filter(s => !s.res);
-    if (S.ph === 'intro') { if (S.phT >= (S.spec.intro.dur || 0)) { S.ph = 'fight'; S.phT = 0; S.out.push({ k: 'invul', on: false }); } }
+    if (S.ph === 'intro') { if (S.phT >= (S.spec.intro.dur || 0)) { S.ph = 'fight'; S.phT = 0; S.out.push({ k: 'invul', on: false }); const W = S.spec.weak; if (W && W.at) while (S.weakI < W.at.length && S.hp < W.at[S.weakI] - 0.05) S.weakI++; } }   // 进场时血量已经低于门槛（共享血量）：跳过那些门槛
     else if (S.ph === 'fight') {
       const W = S.spec.weak;
       if (W && W.at && S.weakI < W.at.length && S.hp <= W.at[S.weakI]) { S.weakI++; startCast(S); }
@@ -336,11 +397,14 @@ const RAID_MECH = (() => {
       if (S.ph === 'fight' && S.spec.loop && S.spec.loop.length) { S.loopT -= dt; if (S.loopT <= 0) { S.loopT = range(S.spec.gap, S.R); S.out.push({ k: 'skill', id: S.spec.loop[S.loopI++ % S.spec.loop.length] }); } }
       if (S.spec.lines && S.spec.lines.low && !S.lowSaid && S.hp <= 0.2) { S.lowSaid = true; S.out.push({ k: 'line', id: 'low', text: S.spec.lines.low }); }
     } else if (S.ph === 'cast') { puzTick(S.cast, dt, S.R, S.C); S.out.push(...drain(S.cast)); if (S.cast.res) endCast(S); }
-    else if (S.ph === 'break') { if (S.phT >= S.spec.onSolve.dur) { S.ph = 'fight'; S.phT = 0; S.out.push({ k: 'unbreak' }); } }
+    else if (S.ph === 'break') { if (S.phT >= (S.brkSpec || S.spec.onSolve).dur) { S.ph = 'fight'; S.phT = 0; S.out.push({ k: 'unbreak' }); } }
     const o = S.out; S.out = []; return o;
   }
-  const view = S => ({ ph: S.ph, t: +S.t.toFixed(2), phT: +S.phT.toFixed(2), cast: S.cast && { id: S.cast.id, t: S.cast.t, dur: S.cast.p.dur, name: S.cast.name, hint: S.cast.hint, text: puzText(S.cast) }, side: S.side.map(s => ({ id: s.id, t: s.t, name: s.name, hint: s.hint, text: puzText(s) })) });
+  // 调试 / 测试：立刻读条虚弱池第 i 个谜题、立刻放第 i 个定时机制招
+  function forceCast(S, i) { if (S.cast) return false; S.pickI = i; S.ph = 'fight'; startCast(S); return !!S.cast; }
+  function forceAtk(S, i) { const a = (S.spec.atk || [])[i]; if (!a) return false; const s = puzNew(a.puzzle, S.R, S.C); s.atk = i; S.side.push(s); S.out.push({ k: 'atk', id: s.id, name: s.name, hint: s.hint }); return true; }
+  const view = S => ({ ph: S.ph, t: +S.t.toFixed(2), phT: +S.phT.toFixed(2), cast: S.cast && { id: S.cast.id, t: S.cast.t, dur: S.cast.p.dur, name: S.cast.name, hint: S.cast.hint, text: puzText(S.cast), bar: puzBar(S.cast) }, side: S.side.map(s => ({ id: s.id, t: s.t, name: s.name, hint: s.hint, text: puzText(s), bar: puzBar(s) })) });
 
-  return { rng, shuffle, gdist, ELEM, STATUS, stAdd, stTick, stHas, stN, stDel, PUZ, puzNew, puzEv, puzTick, puzText, drain, scriptNew, scriptTick, view, SCRIPT_DEF };
+  return { rng, shuffle, gdist, ELEM, OPP, STATUS, puzBar, stAdd, stTick, stHas, stN, stDel, PUZ, puzNew, puzEv, puzTick, puzText, drain, scriptNew, scriptTick, view, forceCast, forceAtk, SCRIPT_DEF };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = RAID_MECH;

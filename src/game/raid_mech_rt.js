@@ -68,11 +68,13 @@ function rmRaidMode() { return typeof raidNet !== 'undefined' && raidNet.S && ra
 defineBossMech('raidScript', { defaults: {},
   start(m, st, p) {
     st.S = RAID_MECH.scriptNew(p, Math.floor(Math.random() * 1e9), { W: msRoomW(), D: DEPTH, mode: p.mode || rmRaidMode(), players: ['me'] });
-    st.ents = {}; st.q = []; st.ps = {}; st.php = null; st.intro = false; st.brk = 0; st.log = [];
+    st.ents = {}; st.q = []; st.ps = {}; st.php = null; st.intro = false; st.brk = 0; st.rest = 0; st.restWait = null; st.p = p; st.log = [];
     st.fx = rmMarksFx(m, st);
+    if (p.orderCue) { const k = rmRaidOrder(); if (k) { msSay(m, `吸入了 ${k} 个灵魂`, '#e0c0ff', 15); for (let i = 0; i < k; i++) rmSoulFx(m, i); } }
     rmApply(m, st, RAID_MECH.scriptTick(st.S, 0, { hp: m.hp / m.hpMax }));
   },
   update(m, st, p, dt) {
+    if (!st.S) return;   // 组队队员那边是傀儡（不跑 start），脚本只在主机跑
     const P = msSelf(), ev = st.q.splice(0);
     if (P && !P.dead) {
       ev.push({ k: 'pos', who: 'me', x: P.x, y: P.y, face: P.face, z: P.z || 0, crouch: rmCrouch(P) });
@@ -88,31 +90,36 @@ defineBossMech('raidScript', { defaults: {},
       e.__rmHp = e.hp;
     }
     rmApply(m, st, RAID_MECH.scriptTick(st.S, dt, { hp: m.hp / m.hpMax, ev }));
+    if (p.orderCue && !st.cued && st.S.t >= p.orderCue.at) { st.cued = true; rmOrderCue(m, p.orderCue); }
     rmSyncObjs(m, st);
     for (const id of RAID_MECH.stTick(st.ps, dt)) rmStatusOff(st, id);
-    // 出场 / 读条 / 虚弱时领主站着不动（读条是引导，不追人）
-    const hold = st.intro || st.S.ph === 'cast' || st.brk > 0;
+    // rest：固定出招循环里每招放完回到中央、脚下黑雾站着（受伤 ×mul）——蕾娜 [91-夜]
+    if (st.restWait != null && !m.act && (game.t || 0) - st.restWait > 0.3) { st.restWait = null; st.rest = p.rest.dur; m.x = msRoomW() / 2; m.y = DEPTH / 2; m.vx = m.vy = 0; fxBurst(m.x, m.y, 60, 160, '#4a3a6a'); msMulSet(m, 'raidRest', p.rest.mul || 1.3); }
+    if (st.rest > 0) { st.rest -= dt; m.aiCd = Math.max(m.aiCd || 0, 0.3); if (Math.random() < 0.4) fxCharge(m, '#3a2a4a'); if (st.rest <= 0) msMulSet(m, 'raidRest', null); }
+    // 出场 / 读条 / 虚弱 / 黑雾时领主站着不动（读条是引导，不追人）
+    const hold = st.intro || st.S.ph === 'cast' || st.brk > 0 || st.rest > 0;
     if (hold && m.__rmSpd == null) { m.__rmSpd = m.speed; m.speed = 0; } else if (!hold && m.__rmSpd != null) { m.speed = m.__rmSpd; m.__rmSpd = null; }
     if (st.intro) { m.invul = Math.max(m.invul, 0.2); m.aiCd = Math.max(m.aiCd || 0, 0.2); }
     if (st.S.ph === 'cast') { m.aiCd = Math.max(m.aiCd || 0, 0.3); if (Math.random() < 0.25) fxCharge(m, '#c080ff'); }
     if (st.brk > 0) { st.brk -= dt; m.stun = Math.max(m.stun || 0, Math.min(0.3, st.brk)); m.aiCd = Math.max(m.aiCd || 0, 0.3); if (m.st !== 'hit' && m.st !== 'air' && m.st !== 'down') m.setState('hit'); }
   },
-  onHit(m, st, dmg, a) { if (a && (a.team === 'p' || (a.owner && a.owner.team === 'p'))) st.q.push({ k: 'hit', tag: 'boss', who: 'me' }); },
+  onHit(m, st, dmg, a) { if (st.q && a && (a.team === 'p' || (a.owner && a.owner.team === 'p'))) st.q.push({ k: 'hit', tag: 'boss', who: 'me' }, { k: 'dmg', frac: (dmg || 0) / m.hpMax, who: 'me' }); },
   end(m, st) {
+    if (!st.S) return;
     for (const e of Object.values(st.ents)) { e.__rmGone = true; e.remove = true; }
     st.ents = {}; if (st.fx) st.fx.dur = 0;
     for (const id of Object.keys(st.ps)) rmStatusOff(st, id);
-    if (m.msMul) { delete m.msMul.raidBreak; delete m.msMul.raidReflect; }
+    if (m.msMul) { delete m.msMul.raidBreak; delete m.msMul.raidReflect; msMulSet(m, 'raidRest', null); }
     if (m.__rmSpd != null) { m.speed = m.__rmSpd; m.__rmSpd = null; }
   },
   hud(c, m, st, x, y, w) {
+    if (!st.S) return 0;
     const V = RAID_MECH.view(st.S); let h = 0;
     if (V.ph === 'intro') { msBar(c, x, y, w, 1 - V.phT / (st.S.spec.intro.dur || 1), '#b890ff', '出场 · 无敌'); h += 16; }
     if (V.cast) { const k = V.cast.dur ? 1 - V.cast.t / V.cast.dur : 1; msBar(c, x, y + h, w, k, '#ff7a5a', `${(st.S.spec.cast && st.S.spec.cast.name) || '读条'} · ${V.cast.name}`); uiText(`${V.cast.hint}${V.cast.text ? '　' + V.cast.text : ''}`, x + w / 2, y + h + 32, { size: 14, align: 'center', color: '#ffe0c0', sw: 3 }); h += 36; }
-    if (V.ph === 'break') { msBar(c, x, y + h, w, 1 - V.phT / st.S.spec.onSolve.dur, '#7aff9a', `虚弱！受到伤害 ×${st.S.spec.onSolve.mul}`); h += 16; }
+    if (V.ph === 'break') { { const B = st.S.brkSpec || st.S.spec.onSolve; msBar(c, x, y + h, w, 1 - V.phT / B.dur, '#7aff9a', `虚弱！受到伤害 ×${B.mul}`); }; h += 16; }
     for (const s of V.side) { uiText(`${s.name}：${s.hint}${s.text ? '　' + s.text : ''}`, x + w / 2, y + h + 14, { size: 14, align: 'center', color: '#ffb0a0', sw: 3 }); h += 18; }
-    const B = st.S.cast && st.S.cast.id === 'breath' ? st.S.cast : st.S.side.find(s => s.id === 'breath');
-    if (B && B.g.me != null) { msBar(c, x, y + h, w, B.g.me / B.p.max, '#6ab0ff', '呼吸'); h += 16; }
+    for (const b of [V.cast && V.cast.bar, ...V.side.map(s => s.bar)]) if (b) { msBar(c, x, y + h, w, b.k, b.col, b.label); h += 16; }   // 谜题自己的条：呼吸 / 护盾 / 聚集 / 吸入
     return h;
   },
   test: { solve: null } });
@@ -136,7 +143,7 @@ function rmApply(m, st, out) {
       case 'say': if (P) fxText(o.text, P.x, P.y, P.z + P.h + 30, { col: o.col || '#ffe070', size: 14, dur: 1.4 }); break;
       case 'line': msSay(m, `「${o.text}」`, '#ffe8c0', 15); if (typeof chatSys === 'function') chatSys(`【${m.name}】${o.text}`); break;
       case 'cue': rmCue(m); break;
-      case 'skill': if (!m.act && !m.dead) monForceSkill(m, o.id); break;
+      case 'skill': if (!m.act && !m.dead && monForceSkill(m, o.id) && st.p.rest) { st.restWait = game.t || 0; } break;
       case 'solve': case 'fail': msLog(o.k, m, { id: 'raid:' + o.id }); MS_STATS.mech['raid:' + o.id + (o.k === 'solve' ? 'Solve' : 'Fail')] = (MS_STATS.mech['raid:' + o.id + (o.k === 'solve' ? 'Solve' : 'Fail')] || 0) + 1; break;
     }
   }
@@ -170,6 +177,18 @@ function rmSyncObjs(m, st) {
     if (o.label && e.name !== o.label) e.name = o.label;
   }
   for (const key of Object.keys(st.ents)) if (!want.has(key)) { const e = st.ents[key]; e.__rmGone = true; e.remove = true; delete st.ents[key]; }
+}
+// 灵魂球从场边飞进领主身体（守门人进场）
+function rmSoulFx(m, i) { const sx0 = i % 2 ? msRoomW() * 0.9 : msRoomW() * 0.1; addFx({ x: sx0, y: 30 + i * 40, z: 80, dur: 1.2 + i * 0.25, x0: sx0, y0: 30 + i * 40, draw(c) { const k = easeOut(Math.min(1, this.t / this.dur)); this.x = this.x0 + (m.x - this.x0) * k; this.y = this.y0 + (m.y - this.y0) * k; c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(200,160,255,.85)'; c.beginPath(); c.arc(sx(this.x), sy(this.y, 80 + 30 * Math.sin(k * 3.1)), 9, 0, TAU); c.fill(); c.restore(); } }); }
+// 守门人：进场吸入的灵魂数 = 这扇门的击杀顺序（raid_core 的 order），约 36 秒后 BGM 换乐器提示顺序：咏叹调 = 1、钢琴 = 2、吉他 = 3、合成器 = 4 [NAMU-LAW]
+const RM_ORDER_INST = ['咏叹调', '钢琴', '吉他', '合成器'];
+function rmRaidOrder() { const C = typeof raidNet !== 'undefined' && raidNet.ctx, N = C && raidNet.S && raidNet.S.nodes[C.node]; return N && N.order || 0; }
+function rmOrderCue(m, o) {
+  const k = rmRaidOrder(); rmCue(m);
+  if (!k) { toastMsg('BGM 换了乐器……', '#e0c0ff'); return; }
+  const inst = RM_ORDER_INST[k - 1] || RM_ORDER_INST[3];
+  toastMsg(`BGM：${inst} —— 这扇破坏之门要第 ${k} 个打倒`, '#e0c0ff'); if (typeof chatSys === 'function') chatSys(`【团本】BGM 换成了${inst}：这扇门是第 ${k} 个`);
+  try { if (sfx.ctx && !sfx.muted && typeof MI !== 'undefined') { const t = sfx.ctx.currentTime + 0.05, ins = [MI.flute, MI.piano, MI.pluck, MI.synlead][k - 1] || MI.synlead; [72, 76, 79, 84].forEach((n, i) => ins(t + i * 0.18, n, 0.12, 0.3)); } } catch (e) { /* 没有音频 */ }
 }
 // 测试 / 调试：现在跑着的团本脚本状态
 function rmScriptOf(m) { const st = m && m.msMechs && m.msMechs.find(s => s.id === 'raidScript' && !s.done); return st || null; }

@@ -4,6 +4,7 @@
 // 用法：node test/raid_mech_lab.mjs [谜题,谜题…]；截图在 test/shots/raid_mech_lab/
 import { launch, URL_BASE } from './lib.mjs';
 import fs from 'fs';
+import { setupRaidLab } from './lib_raidmech.mjs';
 const out = 'test/shots/raid_mech_lab'; fs.mkdirSync(out, { recursive: true });
 const only = process.argv[2] ? process.argv[2].split(',') : null;
 let fail = 0, n = 0;
@@ -11,40 +12,8 @@ const ok = (c, msg, d) => { n++; if (c) console.log('✓', msg); else { fail++; 
 const { browser, page, logs } = await launch({ width: 1280, height: 720 });
 await page.goto(`${URL_BASE}?test&mute&mon=msLab`); await page.waitForFunction(() => window.__READY, null, { timeout: 30000 });
 await page.evaluate(async () => { await loadBundles(monBundles(['msLab'])); });
-await page.evaluate(() => {
-  window.__keepOn = true;
-  const keep = () => { if (!window.__keepOn) return; const q = game.player; q.hp = q.hpMax; q.mp = q.mpMax; q.dead = false; };
-  game.paused = true; Math.random = mulberry(20261008);
-  window.SIM = (sec, each) => { const n = Math.round(sec * 60); for (let i = 0; i < n; i++) { if (each) each(i); step(1 / 60); keep(); } };
-  window.T = {
-    clear() { for (let k = ents.length - 1; k >= 0; k--) if (ents[k].team === 'e') ents.splice(k, 1); groundFx.length = 0; projs.length = 0; game.timers.length = 0; MS_POOLS.length = 0; const p = game.player; if (p.act) p.endAct(); p.status = {}; p.invul = 0; p.raidCrouch = false; p.raidMash = false; p.dead = false; p.hp = p.hpMax; if (p.st === 'dead' || p.st === 'down') p.setState('idle'); },
-    spawn(spec) { const m = window.__m = spawnMonster('msLab', 900, 100, { lvl: 60, boss: true }); m.invul = 0; m.z = 0; m.setState('idle'); const c = m.control; m.control = (e, dt) => { e.aiCd = 99; if (c) c(e, dt); }; window.__st = msMechStart(m, { use: 'raidScript', mode: 'normal', ...spec }); return m; },
-    put(x, y = 100, face) { const p = game.player; if (p.act) p.endAct(); p.x = x; p.y = y; p.z = 0; p.vx = p.vy = 0; if (p.st !== 'idle' && p.st !== 'walk') p.setState('idle'); if (face) p.face = face; },
-    hit(t) { t.invul = 0; return applyHit(game.player, t, { dmg: 20, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); },
-    ent(key) { return window.__st.ents[key]; },
-  };
-  // 每个谜题的“正确操作”（每帧调用）：c = 当前读条的谜题状态
-  window.SOLVE = {
-    pads(c) { if (c.t < c.p.peek + 0.2) return; const mk = c.marks[c.seq[c.i]]; if (mk) T.put(mk.x, mk.y); },
-    heartbeat(c, f) { const e = T.ent('heart:0'); if (e && c.objs[0].glow && f % 6 === 0) T.hit(e); },
-    realBody(c, f) { const o = c.objs.find(q => q.glow); const e = o && T.ent('clone:' + o.i); if (e && f % 6 === 0) T.hit(e); },
-    orbs(c, f) { const i = c.objs.findIndex(o => o.alive && o.elem === c.seq[c.k]); const e = i >= 0 && T.ent('orb:' + i); if (e && f % 4 === 0) T.hit(e); },
-    crystals(c, f) { const e = Object.values(window.__st.ents)[0]; if (e && f % 4 === 0) T.hit(e); },
-    burial(c, f) { if (f % 5 === 0) game.player.raidMash = true; },
-    tether() { const m = window.__m; T.put(m.x < msRoomW() / 2 ? msRoomW() - 60 : 60, 100); },
-    souls(c, f) { if (!c.open || f % 5) return; const o = c.objs.find(q => q.alive); const e = o && T.ent('soul:' + o.i); if (e) T.hit(e); },
-    swords(c) { const mk = c.marks.find(q => q.on) || c.marks[0]; T.put(mk.x, mk.y); },
-    breath(c) { const mk = c.marks[0]; T.put(mk.x, mk.y); },
-    guide(c) { const o = c.orbs.find(q => !q.on); if (!o) return; const g = c.goal, dx = g.x - o.x, dy = (g.y - o.y) / 0.45, L = Math.hypot(dx, dy) || 1; T.put(o.x + dx / L * 44, o.y + dy / L * 44 * 0.45); },
-    gem(c) { const g = c.carry.me; if (g != null) T.put(c.altar.x, c.altar.y); else { const q = c.gems.find(x => !x.on); if (q) T.put(q.x, q.y); } },
-    path(c) { c._k = (c._k || 0) + 0.06; const cells = c.cells.map(s => s.split(',').map(Number)).sort((a, b) => a[0] - b[0]); const q = cells[Math.min(cells.length - 1, Math.floor(c._k))]; T.put(c.W * c.p.x0 + c.cw * (q[0] + 0.5), c.ch * (q[1] + 0.5)); },
-    soulSwap(c, f) { if (f % 5) return; const o = c.objs.find(q => q.alive && q.side === c.soul.me); const e = o && T.ent('soul:' + o.i); if (e) T.hit(e); },
-    reflect(c, f) { if (!c.up && f % 10 === 0) { T.hit(window.__m); window.__m.hp = window.__m.hpMax; } },
-    facing() { T.put(500, 100, -1); },
-    crouch() { game.player.raidCrouch = true; },
-  };
-});
-const puzzles = only || ['pads', 'heartbeat', 'realBody', 'orbs', 'crystals', 'burial', 'tether', 'souls', 'swords', 'breath', 'guide', 'gem', 'path', 'soulSwap', 'reflect', 'facing', 'crouch'];
+await setupRaidLab(page);
+const puzzles = only || ['pads', 'heartbeat', 'realBody', 'orbs', 'crystals', 'burial', 'tether', 'souls', 'swords', 'breath', 'guide', 'gem', 'path', 'soulSwap', 'reflect', 'facing', 'crouch', 'dps', 'clear', 'feed', 'gauge', 'absorb'];
 // 出场无敌
 {
   const r = await page.evaluate(() => { T.clear(); T.put(400); const m = T.spawn({ intro: { dur: 2.5, say: '入场' }, weak: { every: 999, pool: [{ use: 'crystals' }] } }); SIM(0.2); const hp0 = m.hp; if (canHit(game.player, m, {})) applyHit(game.player, m, { dmg: 20, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); SIM(0.1); const a = m.hp === hp0; SIM(2.6); const h1 = m.hp; if (canHit(game.player, m, {})) applyHit(game.player, m, { dmg: 20, sure: true, knock: 0, stun: 0.05, hs: 0 }, { proj: true }); SIM(0.1); return { a, b: m.hp < h1, ph: RAID_MECH.view(window.__st.S).ph, fx: fxList.includes(window.__st.fx) }; });
@@ -60,7 +29,7 @@ for (const id of puzzles) {
     const log = window.__st.log.map(x => x.k);
     return { id, log: log.join(','), brk: m.msMul.raidBreak, seen, solve: log.includes('solve'), fail: log.includes('fail') };
   }, id);
-  ok(r.solve && !r.fail && (r.seen.objs || r.seen.marks || ['burial', 'facing', 'crouch', 'reflect'].includes(id)), `${id}：按解法操作 → 解开、领主虚弱`, r);
+  ok(r.solve && !r.fail && (r.seen.objs || r.seen.marks || ['burial', 'facing', 'crouch', 'reflect', 'dps', 'gauge'].includes(id)), `${id}：按解法操作 → 解开、领主虚弱`, r);
 }
 // 画面：每个谜题刚开始时的样子（物件 + 地面标记 + HUD）
 for (const id of puzzles) {

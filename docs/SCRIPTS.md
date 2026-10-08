@@ -50,7 +50,7 @@
 
 全部是无头 Chrome 端到端测试，公共部分在 `lib.mjs`。先 `node build.mjs`（测试读构建产物）；多个测试不要并行开浏览器。入口：`node test/flow.mjs`（冒烟，必跑）、`sh test/quick.sh`（快速回归）、`sh test/all.sh`（完整回归）、`node test/affected.mjs`（按改动文件挑测试）。
 
-### 回归入口与公共库（10）
+### 回归入口与公共库（11）
 
 | 脚本 | 作用 |
 |---|---|
@@ -60,6 +60,7 @@
 | [`test/combat_all.sh`](../test/combat_all.sh) | 战斗与动作的全套回归：构建 → 机制 → 全部技能 → 决斗场 → 帧率 → 机器人通关。每项的结尾输出 EXIT=<退出码> |
 | [`test/lib.mjs`](../test/lib.mjs) | 无头浏览器测试公共部分：启动 Chrome（headless）、收集控制台/页面错误、分析截图亮度 |
 | [`test/lib_bestkit.mjs`](../test/lib_bestkit.mjs) | 「同级最好的一套史诗」搜索（页面里跑）：test/gear60.mjs power 和 test/region.mjs 的 GEAR=epic 共用 |
+| [`test/lib_raidmech.mjs`](../test/lib_raidmech.mjs) | 团本领主机制测试的公共工具（test/raid_mech_lab.mjs、test/raid_bosses.mjs 共用）：确定性推进 SIM、摆位 / 打一下 T、每个谜题的“正确操作” SOLVE |
 | [`test/net_lib.mjs`](../test/net_lib.mjs) | 联机测试公共部分：临时数据库起一个本地服务端（顺带托管 dist/web），开 1~4 个互相隔离的玩家（同一个 Chrome 进程里的独立上下文，各自的 localStorage） |
 | [`test/priest_coop_lib.mjs`](../test/priest_coop_lib.mjs) | 驱魔师 / 复仇者组队可见性检查的公共部分（test/exorcist.mjs coop、test/avenger.mjs coop 用）： |
 | [`test/quick.sh`](../test/quick.sh) | 快速回归（主线程合并一批后用，约 9 分钟；平时开发只跑受影响的测试：node test/affected.mjs）：只挑一分钟以内的核心测试，分 6 组并行跑。 |
@@ -110,7 +111,7 @@
 | [`test/fighter_pvp.mjs`](../test/fighter_pvp.mjs) | 男格斗家（B9）决斗：AI 用得出各转职的主要技能 + 抓取在决斗里公平（抓取保护 / 强制硬直上限 / 没有无限连）+ 决斗表登记 |
 | [`test/pvp_balance.mjs`](../test/pvp_balance.mjs) | 决斗场平衡：23 种职业 / 转职两两 AI 对打（难度 3，公正决斗规则），无渲染快进（直接调 step），统计每个职业的回合胜率 |
 
-### 领主、团本与区域（18）
+### 领主、团本与区域（23）
 
 | 脚本 | 作用 |
 |---|---|
@@ -122,8 +123,13 @@
 | [`test/ozma_maps.mjs`](../test/ozma_maps.mjs) | 奥兹玛团本地图单测（不开浏览器）：P1 三域各 5 张图的进图 / 小怪波次 / Boss 攻击与机制阶段 / 通关，及 P2 三个终局 Boss 的阶段清单 |
 | [`test/ozma_runtime.mjs`](../test/ozma_runtime.mjs) | 奥兹玛区域接入测试：区域 spec 经 defineRegion 展开、运行时桥接（OZMA_RUNTIME）与规则会话创建 |
 | [`test/raid_auction.mjs`](../test/raid_auction.mjs) | 团本拍卖行规则单测（不开浏览器）：src/game/raid_core.js 的竞价、底价与离线队员处理 |
+| [`test/raid_bosses.mjs`](../test/raid_bosses.mjs) | 希洛克团本领主的官方机制（P3，docs/RAID_SIROCO.md §11）：每个挂了 raidScript 的领主在实验室里逐项过一遍。 |
 | [`test/raid_core_rules.mjs`](../test/raid_core_rules.mjs) | 团本核心规则单测（不开浏览器）：队长权限、拾取方式、掉落分配 |
+| [`test/raid_layout.mjs`](../test/raid_layout.mjs) | 团本固定房间结构单测（不开浏览器）：genFixedLayout 的连通 / 准备房 / 随机领主房，希洛克团本每张图的官方房间数 |
+| [`test/raid_mech_core.mjs`](../test/raid_mech_core.mjs) | 团本领主机制核心（src/game/raid_mech.js）的纯逻辑测试：不开浏览器，固定种子。 |
+| [`test/raid_mech_lab.mjs`](../test/raid_mech_lab.mjs) | 团本领主机制运行时（game/raid_mech_rt.js）的实验室测试：样品怪挂 raidScript，逐个谜题在真实场景里解开 / 不解开。 |
 | [`test/raid_rewards.mjs`](../test/raid_rewards.mjs) | 团本拾取规则单测（不开浏览器）：队长分配 / 随机分配 / 竞拍三种拾取方式的权限与结算 |
+| [`test/raid_siroco_rules.mjs`](../test/raid_siroco_rules.mjs) | 无形之希洛克团本的官方规则（纯规则核心，不开浏览器、不连服务端）：破坏之门共享时限、知性之境跨图惩罚（噩梦之夜叠层 / 幻影之界 / 归还之昼）、 |
 | [`test/raid_ui.mjs`](../test/raid_ui.mjs) | 团本界面 + 客户端流程（RA2）：1 个客户端，单人引导从头打到尾（本地服务端 DNF_RAID_FAST=1 + 页面 ?raidfast：节点直达领主、领主血量 ×0.05） |
 | [`test/region.mjs`](../test/region.mjs) | 区域流水线的通用测试：node test/region.mjs <区域 id> [部分,...] |
 | [`test/region_monsters.mjs`](../test/region_monsters.mjs) | 地下城区域的公共测试（天空之城 test/sky.mjs、天帷巨兽 test/behemoth.mjs 共用）： |

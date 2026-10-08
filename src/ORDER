@@ -142,11 +142,15 @@ content/quests/sky.js
 content/quests/behemoth.js
 # 团本规则核心（RA1，docs/RAID_PLAN.md §3）：纯规则、不依赖别的文件；服务端 server/modules/raid.js 用 node:vm 跑同一个文件
 game/raid_core.js
+# 团本领主机制核心（docs/RAID_SIROCO.md §10）：纯逻辑的领主脚本 + 谜题原语 + 玩家状态，node 测试直接 require
+game/raid_mech.js
 game/ozma_core.js
 # 区域流水线（docs/REGION_PIPELINE.md）：怪物技能库 + 领主机制库 → defineRegion(spec) 生成器 → 每个区域一个纯数据 spec（+ 可选的领主自定义钩子）
 game/mon_skills.js
 # 领主差异化 P0（docs/BOSS_SPEC.md）：技能库第二批（leap cone lanes mark plant pool pull、冲刺变体）+ 特性钩子；要在 region.js 前面（样品怪 msLab 放全部技能）
 game/mon_skills_ext.js
+# 团本领主机制运行时：BOSS_MECHS.raidScript，把 raid_mech 的事件翻译成物件 / 地面标记 / 挨打 / 状态（用到 msObjDef，要在 mon_skills_ext 后面）
+game/raid_mech_rt.js
 game/region.js
 content/regions/darkelf_bosses.js
 content/regions/darkelf.js
@@ -217,6 +221,7 @@ net/coop_fighter.js
 net/party_sync.js
 # 团本客户端（RA2，docs/RAID_PLAN.md §4）：会话 / 进节点 / 局内上报 / 离线单人（net/raid.js）+ 入口窗口 / 攻坚情况板 / 局内 HUD / 阶段结算（ui/raid.js）；依赖 net/coop.js
 net/raid.js
+net/raid_pen.js
 ui/raid.js
 # 社交与经济服务（拍卖行 / 邮件 / 排行榜 / 全服公告 / 签到 / 管理员后台；依赖 net/net.js、物品窗口、npc.js，窗口在 ui/social/*）
 net/social.js

@@ -178,6 +178,7 @@ class Ent {
         const forced = this.bounceNext || 0; this.bounced = true; this.bounceNext = 0; this.vz = forced ? Math.max(imp * forced, 260) : imp * JUGGLE.bounceK; this.z = 0.01;
         fxDust(this.x, this.y, 5, 14); sfx.thud(0.6); this.cmb.bounce = (this.cmb.bounce || 0) + 1; this.bouncing = true; this.play(this.clipOr('bounceUp', 'air'), true); return;
       }
+      if (this.js) JUGGLE_CORE.land(this.js);   // 刷图连招会话进入倒地阶段
       this.vz = 0; this.bouncing = false; this.setState('down'); this.downTime = this.dead ? 99 : downTimeOf(this); if (game.pvp && game.duel && this.cmb) this.cmb.landed = true; fxDust(this.x, this.y, 6, 18); sfx.thud(0.8);
       this.play(this.clipOr('down'), true);
       return;

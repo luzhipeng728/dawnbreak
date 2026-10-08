@@ -27,7 +27,7 @@ run() { g=$1; name=$2; shift 2
 g1() { for t in flow ui mobile mobile_buff mobile_fighter polish quests60 admin_console; do run 1 $t node test/$t.mjs; done; }
 g2() { for t in items compare bulk gear guide quickquest levelcap; do run 2 $t node test/$t.mjs; done; run 2 gear60 node test/gear60.mjs core; run 2 gear60j node test/gear60.mjs jobs; run 2 cdr60 node test/cdr60.mjs; run 2 gearsim node test/gear_sim.mjs 40; run 2 jobvisuals node test/jobvisuals.mjs; run 2 fstriker node test/fighter_striker.mjs; run 2 fgrappler node test/fighter_grappler.mjs; run 2 grappler node test/grappler.mjs; run 2 brawler node test/brawler.mjs; run 2 fbrawler node test/fighter_brawler.mjs; run 2 fighter_nen node test/fighter_nenmaster.mjs; run 2 nenmaster node test/nenmaster.mjs; run 2 autolearn node test/skill_autolearn.mjs; run 2 flooks node test/fighter_looks.mjs; }
 g3() { for t in combat summon avatar shop acct bag skyguide epicfx; do run 3 $t node test/$t.mjs; done
-  run 3 skillsa node test/skill_sa.mjs; run 3 shopecon node test/shop_econ.mjs; run 3 shopsynth node test/shop_synth.mjs; run 3 vanity node test/vanity.mjs; run 3 juggle node test/juggle.mjs; }
+  run 3 skillsa node test/skill_sa.mjs; run 3 shopecon node test/shop_econ.mjs; run 3 shopsynth node test/shop_synth.mjs; run 3 vanity node test/vanity.mjs; run 3 juggle node test/juggle.mjs; run 3 juggle_core node test/juggle_core.mjs; }
 g4() { for t in sword gunner mage enchantress summoner awkcancel; do run 4 $t node test/$t.mjs; done
   run 4 region node test/region.mjs siroco data,skills,mechs,scenes,quest,abyss   # 区域流水线的快速部分（怪物逐个 / 机器人通关在 all.sh）
   run 4 bossprims node test/boss_prims.mjs   # 领主差异化原语（docs/BOSS_SPEC.md）：挨打 / 生路、解开 / 失败、特性、defineBossKit、领主房

@@ -157,7 +157,7 @@
 | [`test/vanity.mjs`](../test/vanity.mjs) | 面子系统测试：node test/vanity.mjs [shots]（先 node build.mjs） |
 | [`test/weapons.mjs`](../test/weapons.mjs) | 武器外观测试：node test/weapons.mjs（先 node build.mjs） |
 
-### 技能、战斗与动作手感（14）
+### 技能、战斗与动作手感（15）
 
 | 脚本 | 作用 |
 |---|---|
@@ -168,6 +168,7 @@
 | [`test/combat.mjs`](../test/combat.mjs) | 战斗机制测试：暂停游戏循环、手动逐帧推进，逐条验证伤害公式 / 属性 / Miss / 破招 / 背击 / 浮空衰减与重力 / 倒地追击与强制起身 / |
 | [`test/hurtlog.mjs`](../test/hurtlog.mjs) | 难度核查：机器人通关时记录玩家每一次被击——是谁、哪一招、有没有地面预警、离上一次被击多久（连招），汇总出“最常打中人”的招式 |
 | [`test/juggle.mjs`](../test/juggle.mjs) | 浮空（juggle）定量测试：无渲染快进，直接对目标调 applyHit，量滞空时间 / 高度 / 追加浮空递减 / 弹地 / 重怪 / 刷图连击上限 / 决斗浮空保护 |
+| [`test/juggle_core.mjs`](../test/juggle_core.mjs) | 刷图浮空保护核心（src/engine/juggle_core.js）的纯逻辑单元测试：node:vm 加载，不开浏览器，毫秒级跑完。用法：node test/juggle_core.mjs |
 | [`test/motion.mjs`](../test/motion.mjs) | 动作连拍：测试房间里依次做 走 / 跑 / 普攻连段 / 技能取消 / 浮空追击 / 被打（轻、重、浮空、倒地）/ 受身 / 被抓 / 后跳 / 闪避， |
 | [`test/skill_autolearn.mjs`](../test/skill_autolearn.mjs) | 一键加点 / 自动学前置 / 升级 SP 够把每个职业当前能学的技能加满（老角色补差额，只补一次；新角色不重复补） |
 | [`test/skill_sa.mjs`](../test/skill_sa.mjs) | 技能霸体：地下城里玩家放技能不会被怪物打断（普攻照常会被打断）；决斗场不受影响 |
@@ -238,7 +239,7 @@
 
 | 脚本 | 作用 |
 |---|---|
-| [`test/bestiary.mjs`](../test/bestiary.mjs) | 图鉴测试：逐个生成怪物，让玩家站着挨打若干秒，统计每下伤害占“同等级玩家血量”的比例，截图，收集报错。 |
+| [`test/bestiary.mjs`](../test/bestiary.mjs) | 图鉴测试：逐个生成怪物，让玩家站着挨打若干秒，统计每下伤害占“同等级玩家血量”的比例，截图，收集报错 |
 | [`test/botrun.mjs`](../test/botrun.mjs) | 机器人通关测试：?dungeon=ID&bot&lv=N，统计用时 / 评价 / 死亡次数，收集报错，定时截图 |
 | [`test/flow.mjs`](../test/flow.mjs) | 全流程测试：标题 → 角色选择 → 创建角色 → 艾尔文防线 → NPC 窗口 → 背包/技能/角色/系统 → 走出城到格兰之森 → 洛兰门口 → 机器人通关 → 结算翻牌 → 回到门口 → 刷新继续存档 |
 | [`test/guide.mjs`](../test/guide.mjs) | 任务线路指引 + 自动前往：新角色在赛丽亚的房间 → 指引到赛丽亚 → 自动前往并对话 → 接主线 → 指引切到下一个目标 → 自动跨场景前往 |

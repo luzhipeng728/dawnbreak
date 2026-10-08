@@ -17,6 +17,7 @@ engine/combat.js
 engine/pad.js
 # game：玩法系统
 game/player.js
+game/skill_cancel.js
 engine/proj.js
 game/monsters.js
 models/beast_models.js

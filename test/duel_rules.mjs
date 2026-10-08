@@ -237,7 +237,7 @@ if (parts.includes('buffer')) {
         const first = L.find(id => { A.act = null; A.setState('idle'); if (!castSkill(A, id)) return false; const a = A.act; const ok2 = a && !a.links && !a.cancelable && a.dur > 0.5; A.act = null; A.setState('idle'); A.cool[id] = 0; return ok2; });
         const second = L.find(id => id !== first);
         if (!first || !second) { res.push({ lead, skip: true }); continue; }
-        castSkill(A, first); const dur = A.act.dur, s2 = A.kit.bar.indexOf(second);
+        castSkill(A, first); A.act.noCancel = true; const dur = A.act.dur, s2 = A.kit.bar.indexOf(second);   // 远程技能会打中 400px 外的人：通用后摇取消（game/skill_cancel.js）在这里关掉，只测缓冲
         let pressed = false, got = null;
         for (let i = 0; i < 240; i++) { if (!pressed && A.act && A.act.skill === first && A.act.dur - A.actT <= lead) { A.pad.tap('s' + s2); pressed = true; } __T.run(1); if (pressed && A.act && A.act.skill === second) { got = true; break; } if (pressed && (!A.act || A.act.skill !== first) && i > 0 && !got) { got = got || false; } }
         res.push({ lead, first, second, dur: +dur.toFixed(2), got: !!got });

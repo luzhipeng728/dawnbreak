@@ -32,7 +32,7 @@ function updateProjs(dt) {
         if (p.hit.max) { const n = p.hitMap.get(-t.id) || 0; if (n >= p.hit.max) continue; p.hitMap.set(-t.id, n + 1); }
         p.hitMap.set(t.id, p.t);
         const fake = { x: p.x - p.face * 10, y: p.y, z: p.z, face: p.face };   // applyHit 只从 src 读取位置与朝向
-        applyHit(p.owner, t, p.hitBox ? p.hit : { ...p.hit, box: null }, { proj: true, src: fake, mul: p.mul });
+        applyHit(p.owner, t, p.hitBox ? p.hit : { ...p.hit, box: null }, { proj: true, src: fake, mul: p.mul, srcProj: p });
         if (p.onHitT) p.onHitT(p, t);
         if (!p.pierce) { dead = true; break; }
       }

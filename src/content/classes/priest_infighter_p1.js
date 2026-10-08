@@ -16,6 +16,8 @@ PRIEST_HOOKS.cancelHook.push((p, a, id) => {
   if (game.pvp && id === 'pi_hurricane') return false;   // 官方：决斗场里极速飓风拳不能用干涸之泉
   return true;
 });
+// 通用后摇取消（game/skill_cancel.js）在决斗里同样不能取消进极速飓风拳（和上面干涸之泉的官方限制一致）
+SKILLS.pi_hurricane.pvpNoCancelInto = true;
 PRIEST_HOOKS.softCommit.push((p, a, id) => { if (!piOn(p) || !skLv(p, 'pi_dry')) return; p._piDryT = game.t; if (p.act) p.act.piDry = true; fxText('干涸之泉', p.x, p.y, p.z + 16, { col: '#8ae8ff', size: 10, dur: 0.45 }); fxAfterimage(p, '#8ae8ff'); });
 defSkill('pi_dry', { name: '干涸之泉', cls: 'priest', job: PIJ, tier: 1, lvReq: 21, sp: 30, mp: 0, cd: 0, type: 'phys', passive: true, col: '#8ae8ff', cmdNote: '神击技能中按另一个神击技能',
   desc: '【一觉被动，完成一次觉醒时自动学会 Lv1】神击系技能（转职主动技能、虎袭、直拳冲击）施放中可以强制中断、接另一个神击系技能，每 3.5 秒一次（HUD 图标亮起时可用；决斗场 10.5 秒）。俯冲系、破碎之锤不能被取消进去；仲裁怒击和觉醒放出来后不能再取消（觉醒本身随时能切入）。基本攻击 / 技能的打击攻击力提高。',

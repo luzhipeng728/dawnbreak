@@ -5,7 +5,8 @@
    取消规则（官方现版，见 docs/SKILLS_OFFICIAL_common.md 第 5 节）：
      普攻（含跑攻、跳攻）→ 攻击类技能：随时（强制）；Buff 类技能（S.noForce，默认 = S.buff）不能取消普攻
      普攻 → 后跳：随时
-     技能 → 其他技能：只有白名单——动作 / 技能上的 links（技能 id 列表，linkFrom 秒之后生效）、职业钩子 CLASSES[cls].cancelHook（次数制柔化等）
+     技能 → 其他技能：白名单——动作 / 技能上的 links（技能 id 列表，linkFrom 秒之后生效）、职业钩子 CLASSES[cls].cancelHook（次数制柔化等）；
+       另外命中后进入后摇可以接任何攻击技能（通用后摇取消，game/skill_cancel.js：cancelAt / noCancel / noCancelInto / cancelNoHit）
      普攻 / 技能 → 觉醒（一 / 二 / 三觉）：随时（awkCancelOk；觉醒本身、非技能动作、写了 noAwk 的动作除外）
      技能 → 后跳：只有学了「后跳-强化」（c_bsup），冷却 40 秒；觉醒不能被取消
      受击 / 倒地中 ↓+C：「后跳-强化」的脱身，冷却 30 秒（和上面共用冷却），过程无敌 + 落地后 1 秒无敌
@@ -93,6 +94,7 @@ function playerControl(p, dt) {
   if (I.buffered('jump') && I.is('down') && p.z <= 1 && !downJumpCmd(p, I)) { const m = backstepMode(p); if (m) { I.consume('jump'); doBackstep(p, m); return; } }
   // 觉醒取消先于动作自己的输入处理（天雷落点、连按追加这类 onInput 会吞掉按键）
   if (p.st === 'act' && p.act && (p.act.onInput || p.act.keyLinks) && tryAwk(p)) return;
+  if (p.st === 'act' && p.act && (p.act.onInput || p.act.keyLinks) && tryCancelSkill(p)) return;   // 通用后摇取消同样先于动作自己的输入处理（game/skill_cancel.js）
   // 动作自己处理输入（流心的 X/C/Z、移动射击、天雷落点、连按追加……）
   if (p.st === 'act' && p.act && p.act.onInput && p.act.onInput(p, I, dt)) return;
   // 动作中的派生键（例：滑铲中按 X = 起身上旋踢）
@@ -208,6 +210,7 @@ function canCancelInto(p, id) {
   const L = a.links || (A && A.links);
   if (L && L.includes(id) && p.actT >= (a.linkFrom ?? (A && A.linkFrom) ?? 0) && (!(a.hitCancel ?? (A && A.hitCancel)) || a.hitAny || p.hitsDone.size > 0)) return true;
   if (a.cancelable && a.cancelFrom !== undefined && p.actT >= a.cancelFrom) return true;   // 模式类动作（移动射击等）
+  if (skillCancelOk(p, id)) { p._gcancel = { a, id }; return true; }   // 通用后摇取消：命中后进入后摇就能接别的攻击技能（game/skill_cancel.js）；在职业柔化之前，后摇里取消不扣柔化次数
   const C = CLASSES[p.cls]; if (C && C.cancelHook && C.cancelHook(p, a, id)) { p._soft = { a, id }; return true; }   // 职业专属柔化（女漫游「花式枪术」等）；真放出来才扣次数（softCommit）
   return false;
 }
@@ -282,10 +285,11 @@ function castSkill(p, id, viaCmd, key) {
   if (S.pvp) extra.pvp = S.pvp;
   if (S.speed || S.cast) extra.speed = S.speed || 'cspd';
   else if (!S.awaken && extra.type !== 'mag') extra.speed = 1 + (aspdOf(p) - 1) * 0.5;   // 物理技能：攻速一半生效（施法类技能看施放速度）
-  const prev = p.act, soft = p._soft; p._soft = null;
+  const prev = p.act, soft = p._soft, gc = p._gcancel; p._soft = null; p._gcancel = null;
   if (typeof S.instant === 'function') S.instant(lv, p, extra);
   else { if (p.st === 'hit' || p.st === 'down' || p.st === 'air') { p.interrupt(); p.stun = 0; } p.doAct(S.act(lv, p), extra); }
   const C = CLASSES[p.cls]; if (soft && soft.a === prev && soft.id === id && C.softCommit) C.softCommit(p, prev, id);
+  else if (gc && prev && gc.a === prev && gc.id === id) skillCancelCommit(p, prev, id);
   if (C.onCast) C.onCast(p, id, typeof S.instant === 'function' ? null : p.act);   // 职业的施放钩子：扣完 MP / 冷却 / 装填、动作开始之后调（枪炮师：重火器拔击、精通叠层）；无动作施放 act = null，再按（recast）第 4 个参数 'recast'
   if (human) { game.onSkill(id); bus.emit('skillUse', { id }); }
   return true;

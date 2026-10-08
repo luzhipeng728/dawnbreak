@@ -1,3 +1,4 @@
+// 临时截图小工具：node test/_shot.mjs "<URL 参数>" <输出.png> [等待毫秒]，加 JS=... 环境变量可在截图前执行脚本
 import { launch, URL_BASE } from './lib.mjs';
 const [q, out, wait = 1500] = process.argv.slice(2);
 const { browser, page, logs } = await launch({ width: 1600, height: 900 });

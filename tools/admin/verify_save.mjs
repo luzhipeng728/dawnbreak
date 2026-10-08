@@ -1,3 +1,4 @@
+// 校验 maxout 的结果：把 maxed.json 里每个角色进城一次、截个人信息图，确认存档能正常加载
 import fs from 'fs';
 // 把 maxed.json 里的每个角色进城一次、打开个人信息截图（<工作目录>/maxed_<序号>.png），确认没有报错
 import { launch, URL_BASE } from '../../test/lib.mjs';

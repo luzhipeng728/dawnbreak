@@ -358,7 +358,8 @@ art/tools/      美术流水线脚本（生图、切帧、锚点、武器、图�
 server/         联机服务端
 test/           端到端测试
 tools/          部署与运维脚本
-docs/           设计与开发文档
+docs/           设计与开发文档（入口 docs/README.md；脚本索引 docs/SCRIPTS.md）
+CLAUDE.md       项目地图与约定（新同事和 AI 助手先看）
 ```
 
 ## 美术是怎么做出来的
@@ -400,6 +401,9 @@ docs/           设计与开发文档
 
 | 文档 | 内容 |
 |---|---|
+| [`docs/README.md`](docs/README.md) | **文档索引**：按用途分类，标明现行 / 过程记录 |
+| [`docs/SCRIPTS.md`](docs/SCRIPTS.md) | **脚本索引**：构建 / 测试 / 美术 / 运维脚本的用途（自动生成） |
+| [`CLAUDE.md`](CLAUDE.md) | 项目地图、常用命令与约定（新同事和 AI 助手先看这页） |
 | [`PLAYER_GUIDE.md`](docs/PLAYER_GUIDE.md) | 游玩指南 |
 | [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) | 构建、模块划分、调试参数 |
 | [`PLAYBOOK.md`](docs/PLAYBOOK.md) | 开发手册、常用命令、踩过的坑 |

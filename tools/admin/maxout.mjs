@@ -1,3 +1,4 @@
+// 把云端存档拉下来的 cloud.json 里的角色一键练满（等级 / 装备 / 技能 / 转职），写成 maxed.json；一般由 tools/admin/admin.sh 调用
 import fs from 'fs';
 import { launch, URL_BASE } from '../../test/lib.mjs';
 // 用法（一般由 tools/admin/maxout.sh 调用）：node tools/admin/maxout.mjs <工作目录> [职业=转职,...] [额外点券]

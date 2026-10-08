@@ -1,8 +1,9 @@
 // 团本（server/modules/raid.js + src/game/raid_core.js）自测，不需要浏览器。时间用 cfg.raidShift 平移（不真等），计时靠手动 tick
 // 规则核心：节点图（普通 / 引导）、每天 / 每周次数（周四 06:00 换周）、同一串事件在服务端 vm 和网页版脚本里结果一致（有 dist/web 构建时）
 // 两人全流程：建团 / 加入 / 准备 / 开始扣次数 → 顺序节点（错序回满、没轮到提示）→ 并行的增益节点（跨节点 BUFF、重生）→ 复活次数 / 侵蚀 →
-//   倒计时节点到 0（回满血 + 扣时间）→ 补位切换 → 无形之门 ×2（各打各的）→ 阶段奖励（幂等）→ 掉线重连 →
-//   服务端重启（计时顺延、重组队伍）→ 讨伐战（破防）→ 最终战合流 / 存档点 / 主机掉线后接着打 → 通关；作弊被拒；单人引导全流程；练习 / 每周次数；过期大厅清理
+//   痛苦之镜到 0（重置苦难之境）→ 补位切换 → 无形之门 ×2（各打各的、门的队伍到领主房 → 幻影之城开放）→ 阶段奖励（幂等）→ 掉线重连 →
+//   服务端重启（计时顺延、重组队伍）→ 讨伐战（扭曲 → 意识之棺虚弱、真理之棺共享血量 / 压抑旋转 / 忘却共鸣合并）→ 阴影之棺一起进 → 通关；作弊被拒；单人引导全流程（存档点）；练习 / 每周次数；过期大厅清理
+//   官方规则的细节（共享时限、叠层、重置、合并、否定……）在 test/raid_siroco_rules.mjs
 // 用法：node --disable-warning=ExperimentalWarning server/test/raid.mjs
 import os from 'node:os';
 import path from 'node:path';
@@ -88,7 +89,7 @@ try {
   // ================= 规则核心（服务端 vm 加载的同一个文件）=================
   const K = loadRaidCore();
   const GN = K.graph('siroco', 'normal'), GG = K.graph('siroco', 'guide');
-  ok(Object.keys(GN.phases[0].nodes).length === 8 && Object.keys(GN.phases[1].nodes).length === 5, '普通图：追逐战 8 个节点、讨伐战 5 个');
+  ok(Object.keys(GN.phases[0].nodes).length === 16 && Object.keys(GN.phases[1].nodes).length === 15, '普通图：阻截战 16 个节点、讨伐战 15 个（官方全图）');
   ok(Object.keys(GG.phases[0].nodes).join() === 'law_a,wit_dawn,pain_mem,gate_l' && GG.phases[0].nodes.law_a.type === 'main' && GG.phases[0].nodes.gate_l.type === 'main'
     && GG.phases[0].nodes.wit_dawn.need.join() === 'law_a' && GG.phases[0].goal.join() === 'gate_l' && Object.keys(GG.phases[1].nodes).join() === 'sub_a,con_hall,coffin',
   '引导图：每层一个主线节点，顺序 / 同步节点变成主线，增益 / 倒计时节点去掉', Object.keys(GG.phases[0].nodes));
@@ -144,52 +145,58 @@ try {
   al.c.send({ t: 'party:invite', to: 'dave' });
   ok(!!(await got(al.c, m => m.t === 'party:note' && /团本以外/.test(m.text))), '团本进行中不能邀请外人');
 
-  // ---- 顺序节点（破坏之门）----
+  // ---- 顺序节点（破坏之门 ×4，共享时限）----
   ok((await enter(al, 'wit_dawn')).code === 'locked', '作弊：没开放的节点进不去');
   ok((await enter(al, 'law_a', [bo.id])).code === 'solo', '必须分头的节点不能一起进');
   ok((await enter(al, 'nope')).code === 'node', '没有的节点进不去');
-  const ea = await enter(al, 'law_a'), eb = await enter(bo, 'law_b');
-  ok(ea && ea.run && eb && eb.run && ea.order !== eb.order && ea.order >= 1 && ea.order <= 4 && eb.order >= 1 && eb.order <= 4 && ea.scale && ea.scale.lvl === 62, '两人各进一张破坏之门，各拿到一个不同的顺序数字（1~4）', { ea, eb });
-  ok((await enter(bo, 'law_a')).code === 'busy', '已经在节点里：不能再进别的');
-  const x1 = await ev(bo, 'law_a', ea.run, 'down');
+  const laws = ['law_a', 'law_b', 'law_c', 'law_d'].sort((x, y) => S(al).nodes[x].order - S(al).nodes[y].order);
+  const ea = await enter(al, laws[0]), eb = await enter(bo, laws[1]);
+  ok(ea && ea.run && eb && eb.run && ea.order === 1 && eb.order === 2 && ea.scale && ea.scale.lvl === 62 && S(al).glim.law && S(al).glim.law.until - R().now() > 590_000,
+    '4 扇破坏之门各有一个顺序数字（1~4）；第一次有人进门开始 10 分钟共享时限', { ea, eb, glim: S(al).glim });
+  ok((await enter(bo, laws[0])).code === 'busy', '已经在节点里：不能再进别的');
+  const x1 = await ev(bo, laws[0], ea.run, 'down');
   ok(x1 && !x1.ok && (x1.code === 'notyours' || x1.code === 'run'), '作弊：给别人的挑战上报被拒', x1);
-  const x2 = await ev(al, 'law_a', ea.run, 'down');
+  const x2 = await ev(al, laws[0], ea.run, 'down');
   ok(x2 && !x2.ok && x2.code === 'fast', '作弊：进去马上报领主倒下（太快）被拒', x2);
   shift(21_000);
-  const [first, second] = ea.order < eb.order ? [[al, ea, 'law_a'], [bo, eb, 'law_b']] : [[bo, eb, 'law_b'], [al, ea, 'law_a']];
+  const first = [al, ea, laws[0]], second = [bo, eb, laws[1]];
   drain(al, bo);
   await ev(second[0], second[2], second[1].run, 'hp', 0.05);
   ok(!!(await got(second[0].c, m => m.t === 'raid:note' && /还没轮到你/.test(m.text))), '数字大的一边血量压到 10% 以下：提示“还没轮到你”');
   const w1 = await ev(second[0], second[2], second[1].run, 'down');
   const h1 = await got(first[0].c, m => m.t === 'raid:fx' && m.kind === 'heal'), h2 = await got(second[0].c, m => m.t === 'raid:fx' && m.kind === 'heal');
-  ok(w1 && w1.ok && w1.res === 'heal' && h1 && h2 && S(al).stats.penalties === 1, '错序：两边的守门人都回满血', { w1, h1, h2 });
+  ok(w1 && w1.ok && w1.res === 'heal' && h1 && h2 && S(al).stats.penalties === 1, '错序：守门人回满血', { w1, h1, h2 });
   const d1 = await ev(first[0], first[2], first[1].run, 'down');
   ok(d1 && d1.ok && d1.res === 'clear' && !!(await got(first[0].c, m => m.t === 'raid:fx' && m.kind === 'done')), '数字小的先倒：通关');
   const d2 = await ev(second[0], second[2], second[1].run, 'down');
-  ok(d2 && d2.ok && d2.res === 'clear', '数字大的后倒：通关');
+  ok(d2 && d2.ok && d2.res === 'clear', '轮到数字 2：通关');
   await ev(first[0], first[2], first[1].run, 'clear'); await ev(second[0], second[2], second[1].run, 'clear');
   const x3 = await ev(first[0], first[2], first[1].run, 'down');
   ok(x3 && !x3.ok && x3.code === 'ended', '一个节点只认一次结果：挑战结束后再报被拒', x3);
   const x4 = await ev(first[0], first[2], first[1].run, 'down', null, 1);
   ok(x4 && x4.ok && x4.dup, '重连补发的旧事件（序号重复）回 dup，不重复生效', x4);
-  ok(S(al).nodes.law_a.st === 'cleared' && S(al).nodes.law_b.st === 'cleared' && S(al).nodes.wit_dawn.st === 'open' && S(al).nodes.wit_night.st === 'open' && S(al).members.every(m => m.at === 'camp'), '第一层通关：第二层（主线 + 增益）开放，两人回营地');
+  await solo(al, laws[2]); await solo(bo, laws[3]);
+  ok(laws.every(id => S(al).nodes[id].st === 'cleared') && !S(al).glim.law && S(al).nodes.wit_dawn.st === 'open' && S(al).nodes.wit_night.st === 'locked' && S(al).members.every(m => m.at === 'camp'),
+    '法则之境通关：梦幻之黎明开放（另外 3 张要等有人进黎明），两人回营地');
 
-  // ---- 并行：主线 + 增益节点（跨节点 BUFF、重生）、复活次数、侵蚀 ----
+  // ---- 知性之境：进黎明打开另外 3 张；噩梦之夜没通关 → 哈妮尔每 30 秒叠攻防；复活次数、侵蚀 ----
   drain(al, bo);
-  const ed = await enter(al, 'wit_dawn'), en = await enter(bo, 'wit_night');
-  ok(ed && ed.run && en && en.run && en.type === 'buff', '两人同时打两个节点（主线 + 增益）');
-  shift(21_000);
+  const ed = await enter(al, 'wit_dawn');
+  ok(ed && ed.run && ed.limit - R().now() > 410_000 && ['wit_night', 'wit_phantom', 'wit_day'].every(id => S(al).nodes[id].st === 'open'), '进了黎明（单次限时 7 分钟）：噩梦之夜 / 幻影之界 / 归还之昼开放', ed);
+  const en = await enter(bo, 'wit_night');
+  ok(en && en.run && en.type === 'buff', '两人同时打两张图（黎明 + 噩梦之夜）');
+  shift(30_500); tick();
+  const bf = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'buff' && m.node === 'wit_dawn' && m.p.id === 'night_haniel');
+  ok(bf && bf.p.n === 1 && bf.p.p.atk === 0.05 && bf.p.p.def === 0.05 && bf.p.tick, '30 秒：黎明里的哈妮尔攻防 +10%（两人系数 ×0.5）', bf);
   const cn = await ev(bo, 'wit_night', en.run, 'clear');
-  const bf = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'buff' && m.node === 'wit_dawn');
-  ok(cn && cn.ok && bf && bf.p.id === 'haniel_weak' && bf.p.p.dmgTaken === 1.3 && bf.p.p.noCharm === 1 && bf.p.dur === 90, '增益节点通关 → 正在打主线的队友收到跨节点 BUFF（哈妮尔受伤 +30%、免疫魅惑 90 秒）', bf);
-  ok(!!(await got(al.c, m => m.t === 'raid:note' && /哈妮尔/.test(m.text))) && S(al).nodes.wit_night.st === 'cool', '全团提示；增益节点进入重生');
-  shift(121_000); tick();
-  ok(S(al).nodes.wit_night.st === 'open' && !!(await got(al.c, m => m.t === 'raid:fx' && m.kind === 'unbuff')), '120 秒后增益节点重生（可以再打）；90 秒的 BUFF 到期撤掉');
+  const ub = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'unbuff' && m.p.id === 'night_haniel');
+  ok(cn && cn.ok && ub && S(al).nodes.wit_night.st === 'cool', '噩梦之夜通关：叠层撤掉；进入重生（1:30）', cn);
+  shift(91_000); tick();
+  ok(S(al).nodes.wit_night.st === 'open', '90 秒后噩梦之夜重生（叠层重新开始算）');
   const en2 = await enter(bo, 'wit_night');
-  const lv1 = await ev(bo, 'wit_night', en2.run, 'revive'), l1 = await got(bo.c, m => m.t === 'raid:fx' && m.kind === 'life');
-  const lv2 = await ev(bo, 'wit_night', en2.run, 'revive'), l2 = await got(bo.c, m => m.t === 'raid:fx' && m.kind === 'life');
-  const lv3 = await ev(bo, 'wit_night', en2.run, 'revive'), l3 = await got(bo.c, m => m.t === 'raid:fx' && m.kind === 'life');
-  ok(lv1.res === 'life' && l1.p.ok && l1.p.left === 5 && l2.p.ok && l2.p.left === 4 && lv3.res === 'nolife' && !l3.p.ok && l3.p.why === 'node' && S(al).lives === 4, '复活：用全团次数（6 → 4），每人每个节点最多 2 次', [l1, l2, l3]);
+  const lives = [];
+  for (let i = 0; i < 7; i++) { await ev(bo, 'wit_night', en2.run, 'revive'); lives.push(await got(bo.c, m => m.t === 'raid:fx' && m.kind === 'life')); }
+  ok(lives.slice(0, 6).every((l, i) => l.p.ok && l.p.left === 5 - i) && !lives[6].p.ok && lives[6].p.why === 'pool' && S(al).lives === 0, '复活：用全团次数（6 次用完）；每人每张图上限 6（官方每队每图 6 枚复活币）', lives.map(l => l && l.p));
   await ev(bo, 'wit_night', en2.run, 'death');
   const ero = await got(bo.c, m => m.t === 'raid:fx' && m.kind === 'erosion');
   ok(ero && ero.p.until - R().now() > 55_000 && S(al).nodes.wit_night.st === 'open' && S(al).stats.deaths === 1, '倒下不能复活：回营地、侵蚀 60 秒，一个人打的节点重置', ero);
@@ -200,18 +207,19 @@ try {
   await ev(bo, 'wit_night', en3.run, 'fail', 'retreat');
   ok(!!(await got(bo.c, m => m.t === 'raid:fx' && m.kind === 'erosion')), '撤退也算侵蚀');
   const dd = await ev(al, 'wit_dawn', ed.run, 'down');
-  ok(dd && dd.ok && S(al).nodes.wit_dawn.st === 'cleared' && S(al).nodes.wit_night.st === 'off' && S(al).nodes.pain_mirror.timer > R().now(), '主线通关：增益节点关闭，第三层开放、镜子开始倒计时');
+  ok(dd && dd.ok && S(al).nodes.wit_dawn.st === 'cleared' && S(al).nodes.wit_night.st === 'off' && S(al).nodes.pain_mirror.timer > R().now() && S(al).nodes.pain_mirror2.timer > R().now(), '黎明通关：另外 3 张关闭，苦难之境开放、两面痛苦之镜开始 5 分钟倒计时');
   const x5 = await ev(al, 'wit_dawn', ed.run, 'down');
   ok(x5 && !x5.ok && x5.code === 'dup', '同一次挑战重复报倒下被拒', x5);
   await ev(al, 'wit_dawn', ed.run, 'clear');
 
-  // ---- 倒计时节点到 0、补位切换 ----
+  // ---- 痛苦之镜到 0、补位切换 ----
   const ep = await enter(al, 'pain_mem');
   const dl0 = S(al).deadline;
   drain(al, bo);
-  shift(241_000); tick();
-  const hm = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'heal' && m.node === 'pain_mem'), tm = await got(bo.c, m => m.t === 'raid:fx' && m.kind === 'time');
-  ok(ep && ep.run && hm && tm && tm.p.v === -120 && S(al).deadline === dl0 - 120_000 && S(al).nodes.pain_mirror.timer > R().now(), '没人压镜子、倒计时到 0：记忆的碎片的领主回满血 + 全团计时 −2 分钟，镜子重新计时', { hm, tm });
+  shift(301_000); tick();
+  const rm = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'reset'), ck = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'closed' && m.node === 'pain_mem');
+  ok(ep && ep.run && rm && rm.p.area === 3 && ck && ck.p.why === 'reset' && S(al).deadline === dl0 && S(al).nodes.pain_mem.st === 'open' && S(al).nodes.pain_mirror.timer > R().now(),
+    '没人压镜子、倒计时到 0：苦难之境Ⅰ 的进度重置（里面的人回营地），时间不退，镜子重新计时', { rm, ck });
   bo.c.ws.close(); await sleep(150);
   ok(!!(await got(al.c, m => m.t === 'raid:d' && m.set.members && m.set.members.some(x => x.uid === bo.id && !x.online))), '队友掉线：会话里显示离线');
   shift(181_000); tick();
@@ -223,24 +231,28 @@ try {
   ok(rs && rs.run.sid === sid && rs.run.st === 'routes' && !S(al).sub && S(al).nodes.pain_mirror.timer > R().now() && !!(await got(al.c, m => m.t === 'raid:fx' && m.kind === 'sub' && !m.p.on)), '重连：自动恢复会话；补位关闭，镜子重新计时', rs && rs.run.st);
   const em = await solo(bo, 'pain_mirror');
   ok(em && em.run && S(al).nodes.pain_mirror.st === 'cool', '压镜子：通关后修复 90 秒');
-  await ev(al, 'pain_mem', ep.run, 'clear');
-  ok(S(al).nodes.pain_mem.st === 'cleared' && S(al).nodes.pain_mirror.st === 'off' && S(al).nodes.gate_l.st === 'open' && S(al).nodes.gate_r.st === 'open', '主线通关：镜子关闭，无形之门左右开放');
+  await solo(bo, 'pain_mirror2'); await solo(al, 'pain_mem'); await solo(bo, 'pain_mem2');
+  ok(S(al).nodes.pain_mem.st === 'cleared' && S(al).nodes.pain_mem2.st === 'cleared' && S(al).nodes.gate_l.st === 'open' && S(al).nodes.gate_r.st === 'open' && S(al).nodes.castle_l.st === 'locked',
+    '记忆的碎片 + 碎片的记忆通关：无形之门 ×2 开放（幻影之城还没开）');
 
-  // ---- 无形之门 ×2：各打各的（官方没有同时击杀窗口 / 血量差减伤），两扇都通关 = 追逐战完成 ----
+  // ---- 无形之门 ×2：各打各的（官方没有同时击杀窗口）；门的队伍到领主房 → 幻影之城开放 ----
   drain(al, bo);
   const gl = await enter(al, 'gate_l'), gr = await enter(bo, 'gate_r');
+  const bs = await ev(al, 'gate_l', gl.run, 'boss');
+  ok(bs && bs.ok && S(al).nodes.castle_l.st === 'open' && S(al).nodes.castle_r.st === 'locked', '门 1 的队伍到领主房（boss 事件）：幻影之城开放', bs);
+  const bsx = await ev(al, 'gate_l', gr.run, 'boss');
+  ok(bsx && !bsx.ok, '作弊：替别人的挑战报到领主房被拒', bsx);
   shift(21_000);
   await ev(al, 'gate_l', gl.run, 'hp', 0.4); await ev(bo, 'gate_r', gr.run, 'hp', 0.8);
   ok(gl.type === 'main' && gr.type === 'main' && !S(al).buffs.some(b => b.id === 'twin_guard'), '两扇门都是普通主线：血量差多大都不减伤', S(al).buffs);
   const gd = await ev(al, 'gate_l', gl.run, 'down');
-  ok(gd && gd.ok && gd.res === 'clear' && S(al).nodes.gate_l.st === 'cleared' && S(al).st === 'routes', '维塔倒下就通关（不等另一边）', gd);
+  ok(gd && gd.ok && gd.res === 'clear' && S(al).nodes.gate_l.st === 'cleared' && S(al).nodes.castle_l.st === 'off' && S(al).st === 'routes', '维塔倒下就通关（不等另一边），幻影之城关闭', gd);
   drain(al, bo); shift(31_000); tick();
   ok(S(al).nodes.gate_l.st === 'cleared', '过了 30 秒也不会复活');
   const sy = await ev(bo, 'gate_r', gr.run, 'down');
   const ph1 = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'phase' && m.p.ok);
-  ok(sy && sy.ok && sy.res === 'clear' && ph1 && ph1.p.phase === 1 && S(al).st === 'rest' && S(al).res.phases[0] === 1, '两扇门都通关 → 追逐战完成，进入休整', { sy, ph1 });
+  ok(sy && sy.ok && sy.res === 'clear' && ph1 && ph1.p.phase === 1 && S(al).st === 'rest' && S(al).res.phases[0] === 1, '两扇门都通关 → 阻截战完成，进入休整', { sy, ph1 });
   await ev(al, 'gate_l', gl.run, 'clear'); await ev(bo, 'gate_r', gr.run, 'clear');
-
   // ---- 阶段奖励（幂等）----
   al.c.send({ t: 'raid:claim', sid, phase: 2 });
   ok(!!(await got(al.c, m => m.t === 'raid:note' && m.code === 'claim')), '没通关的阶段不能领奖');
@@ -274,45 +286,61 @@ try {
   drain(al, bo);
   al.c.send({ t: 'raid:start' });
   const p2 = await got(bo.c, m => m.t === 'raid' && m.run.phase === 2);
-  ok(p2 && p2.run.st === 'routes' && p2.run.lives === 6 && p2.run.nodes.sub_a.st === 'open', '团长提前结束休整：讨伐战开始（复活次数重置）', p2 && p2.run);
-  const [sa, sbb] = await Promise.all([solo(al, 'sub_a'), solo(bo, 'sub_b')]);
-  ok(sa && sa.run && sbb && sbb.run && S(al).nodes.con_hall.st === 'open' && S(al).nodes.con_mut.st === 'open', '潜意识之厅 A / B 分头通关 → 意识之厅开放');
+  ok(p2 && p2.run.st === 'routes' && p2.run.lives === 6 && p2.run.nodes.sub_a.st === 'open' && p2.run.rot && p2.run.rot.forms.length === 3, '团长提前结束休整：讨伐战开始（复活次数重置，真理之棺有旋转形态）', p2 && p2.run);
+  await Promise.all([solo(al, 'sub_a'), solo(bo, 'sub_b')]); await Promise.all([solo(al, 'sub_c'), solo(bo, 'sub_d')]);
+  ok(['con_hall', 'con_hall2', 'con_mut', 'con_mut2'].every(id => S(al).nodes[id].st === 'open'), '4 个无欲之棺分头通关 → 第 2 界开放');
   drain(al, bo);
   const ch = await enter(al, 'con_hall'), cm = await enter(bo, 'con_mut');
+  await ev(al, 'con_hall', ch.run, 'boss');
   shift(21_000);
   await ev(bo, 'con_mut', cm.run, 'clear');
   const gg = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'groggy');
-  ok(gg && gg.node === 'con_hall' && gg.p.dur === 20 && gg.p.p.dmgTaken === 1.6, '变异的潜意识之厅通关 → 幻影破防 20 秒（受伤 ×1.6）', gg);
-  await ev(al, 'con_hall', ch.run, 'clear');
-  ok(S(al).st === 'final' && S(al).nodes.coffin.st === 'open', '意识之厅通关：最终领主的门开了');
+  ok(gg && gg.node === 'con_hall' && gg.p.dur === 10 && gg.p.p.weak === 1, '扭曲的无欲之棺通关 → 意识之棺 1 的希洛克虚弱 10 秒（那边已到领主房）', gg);
+  await ev(al, 'con_hall', ch.run, 'clear'); await solo(bo, 'con_hall2');
+  ok(['truth_a', 'truth_b', 'truth_c'].every(id => S(al).nodes[id].st === 'open') && S(al).nodes.coffin.st === 'locked' && S(al).st === 'routes', '意识之棺 ×2 通关：真理的意识之棺 ×3 开放（阴影之棺还关着）');
 
-  // ---- 最终战：合流、存档点、主机掉线后接着打 ----
-  ok((await enter(al, 'coffin')).code === 'together', '普通模式最终战要两人一起进');
+  // ---- 第 1 界：共享血量、压抑旋转、忘却共鸣 → 阴影之棺 ----
+  drain(al, bo);
+  const ta = await enter(al, 'truth_a');
+  ok(ta && ta.run && ta.pool && ta.pool.hp === 1 && ta.form && /^raid_si_truth_/.test(ta.dg), '真理之棺 1：共享血量 100%，按旋转进对应形态', ta);
+  await ev(al, 'truth_a', ta.run, 'boss');
+  ok(['deny', 'suppress', 'forget'].every(id => S(al).nodes[id].st === 'open'), '遇到希洛克：否定 / 压抑 / 忘却开放');
+  shift(15_000);
+  await ev(al, 'truth_a', ta.run, 'hp', 0.7);
+  const tb = await enter(bo, 'truth_b');
+  ok(tb && tb.hpStart === 0.7, '另一边进来：血量接着共享的 70%', tb);
+  shift(5_000); drain(al, bo);
+  await ev(bo, 'truth_b', tb.run, 'hp', 0.6);
+  const ps = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'pool');
+  ok(ps && Math.abs(ps.p.d + 0.1) < 1e-6, '乙打掉的 10% 同步给甲（差值推送）', ps);
+  await ev(bo, 'truth_b', tb.run, 'fail', 'retreat');
+  const pr2 = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'pool');
+  ok(pr2 && Math.abs(pr2.p.d - 0.1) < 1e-6 && Math.abs(S(al).pools.truth.hp - 0.7) < 1e-6, '乙撤退：这次的伤害退回', pr2);
+  shift(61_000); tick();
+  for (let k = 0; k < 3 && S(al).rot !== 0; k++) { shift(31_000); tick(); await solo(bo, 'suppress'); }
+  ok(S(al).rot === 0, '压抑转到共鸣位置', S(al).rot);
+  drain(al, bo);
+  await solo(bo, 'forget');
+  const mg = await got(al.c, m => m.t === 'raid:fx' && m.kind === 'closed' && m.node === 'truth_a');
+  ok(mg && mg.p.why === 'merge' && S(al).nodes.coffin.st === 'open' && S(al).st === 'final', '共鸣时通关忘却：真理之棺里的人被收回营地，阴影之棺开 60 秒', mg);
+  ok((await enter(al, 'coffin')).code === 'together', '阴影之棺要两人一起进');
   ok((await enter(bo, 'coffin', [al.id])).code === 'party', '一起进要由队长带队');
   drain(al, bo);
   const f1 = await enter(al, 'coffin', [bo.id]), f1b = await got(bo.c, m => m.t === 'raid:entered' && m.node === 'coffin');
-  ok(f1 && f1.run && f1b && f1b.run === f1.run && f1.host === al.id && f1.by.length === 2 && f1.scale.lvl === 64, '队长带队一起进最终战（两人同一次挑战，队长是主机）', f1);
-  shift(10_000);
+  ok(f1 && f1.run && f1b && f1b.run === f1.run && f1.host === al.id && f1.by.length === 2 && f1.scale.lvl === 64 && f1.hpStart === 0.7 && f1.buffs.some(b => b.id === 'shadow_weak') && f1.dg === 'raid_si_shadow',
+    '队长带队一起进阴影之棺：血量接着共享的 70%，希洛克一进门就虚弱', f1);
   const cpx = await ev(al, 'coffin', f1.run, 'cp', { hp: 0.3, ph: 1 });
-  ok(cpx && !cpx.ok && cpx.code === 'fast', '作弊：10 秒掉 70% 血的存档点被拒', cpx);
-  const cpb = await ev(bo, 'coffin', f1.run, 'cp', { hp: 0.9, ph: 0 });
-  ok(cpb && !cpb.ok && cpb.code === 'host', '只有主机能报存档点', cpb);
-  const cpo = await ev(al, 'coffin', f1.run, 'cp', { hp: 0.6, ph: 1 });
-  ok(cpo && cpo.ok && S(al).cp.coffin.hp === 0.6 && S(al).cp.coffin.ph === 1, '主机每 3 秒报领主血量和阶段（存档点）');
-  al.c.ws.close(); await sleep(150);
-  const fl = await ev(bo, 'coffin', f1.run, 'fail', 'lost');
-  ok(fl && fl.ok && S(bo).nodes.coffin.st === 'open' && !S(bo).nodes.coffin.by.length, '主机掉线、房间没了：队员回营地（不算侵蚀），节点放开');
-  const f2 = await enter(bo, 'coffin');
-  ok(f2 && f2.run && f2.host === bo.id && f2.cp && f2.cp.hp === 0.6 && f2.cp.ph === 1 && f2.hpStart === 0.6, '队员重进最终战当主机：领主从存档点（60%、第 2 阶段）开始', f2);
-  await reconnect(al);
-  const ra2 = await got(al.c, m => m.t === 'raid' && m.resume);
-  const x7 = await ev(al, 'coffin', f1.run, 'down');
-  ok(ra2 && x7 && !x7.ok && x7.code === 'ended', '原主机回来补发旧挑战的结果：被拒（节点已经换人打了）', x7);
-  shift(13_000);
+  ok(cpx && !cpx.ok && cpx.code === 'bad', '阴影之棺没有存档点（共享血量就是进度）', cpx);
+  const hb = await ev(bo, 'coffin', f1.run, 'hp', 0.2);
+  ok(hb && !hb.ok && hb.code === 'host', '只有主机能报血量', hb);
+  shift(10_000);
+  await ev(al, 'coffin', f1.run, 'hp', 0.3);
+  ok(Math.abs(S(al).pools.truth.hp - 0.3) < 1e-6, '共享血量 70% → 30%');
+  shift(10_000);
   drain(al, bo);
-  const fd = await ev(bo, 'coffin', f2.run, 'down');
+  const fd = await ev(al, 'coffin', f1.run, 'hp', 0);
   const endA = await got(al.c, m => m.t === 'raid:end'), endB = await got(bo.c, m => m.t === 'raid:end');
-  ok(fd && fd.ok && endA && endA.ok && endA.why === 'clear' && endB && endB.ok && S(al) === null, '最终领主倒下（从 60% 开始，最短时间按比例）：团本通关，两人都收到 raid:end', { fd, endA });
+  ok(fd && fd.ok && endA && endA.ok && endA.why === 'clear' && endB && endB.ok && S(al) === null, '共享血量打空：团本通关，两人都收到 raid:end', { fd, endA });
   al.c.send({ t: 'raid:claim', sid, phase: 2 });
   const cp2a = await got(al.c, m => m.t === 'raid:claimed' && m.sid === sid && m.phase === 2);
   bo.c.send({ t: 'raid:claim', sid, phase: 2 });
@@ -352,9 +380,17 @@ try {
   ca.c.send({ t: 'raid:start' }); await got(ca.c, m => m.t === 'raid' && m.run.phase === 2);
   await solo(ca, 'sub_a'); await solo(ca, 'con_hall');
   const fc = await enter(ca, 'coffin');
-  ok(fc && fc.run && fc.scale.lvl === 64, '引导：最终战一个人进');
-  shift(21_000); drain(ca);
-  await ev(ca, 'coffin', fc.run, 'down');
+  ok(fc && fc.run && fc.scale.lvl === 64 && fc.dg === 'raid_si_coffin' && !fc.pool, '引导：最终战一个人进（真理的意识之棺，没有共享血量）', fc);
+  shift(10_000);
+  const gcpx = await ev(ca, 'coffin', fc.run, 'cp', { hp: 0.3, ph: 1 });
+  ok(gcpx && !gcpx.ok && gcpx.code === 'fast', '作弊：10 秒掉 70% 血的存档点被拒', gcpx);
+  const gcpo = await ev(ca, 'coffin', fc.run, 'cp', { hp: 0.6, ph: 1 });
+  ok(gcpo && gcpo.ok && S(ca).cp.coffin.hp === 0.6 && S(ca).cp.coffin.ph === 1, '主机每 3 秒报领主血量和阶段（存档点）');
+  await ev(ca, 'coffin', fc.run, 'fail', 'lost');
+  const fc2 = await enter(ca, 'coffin');
+  ok(fc2 && fc2.run && fc2.cp && fc2.cp.hp === 0.6 && fc2.hpStart === 0.6, '房间断了重进：领主从存档点（60%、第 2 阶段）开始', fc2);
+  shift(13_000); drain(ca);
+  await ev(ca, 'coffin', fc2.run, 'down');
   ok(!!(await got(ca.c, m => m.t === 'raid:end' && m.ok)), '单人引导通关');
   ca.c.send({ t: 'raid:claim', sid: gs.run.sid, phase: 1 });
   const gc = await got(ca.c, m => m.t === 'raid:claimed');
@@ -402,18 +438,19 @@ try {
     const E = (ev2, dt) => { t += dt || 0; const o = K2.event(S2, ev2, t); out.push(JSON.stringify([o.err, o.ack, o.fx])); return o; };
     const T = dt => { t += dt; out.push(JSON.stringify(K2.tick(S2, t).fx)); };
     E({ t: 'join', uid: 2, cid: 'b', name: 'B' }); E({ t: 'ready', uid: 2 }); E({ t: 'start', uid: 1 });
-    const a = E({ t: 'enter', uid: 1, node: 'law_a' }).ack.run, b = E({ t: 'enter', uid: 2, node: 'law_b' }).ack.run;
-    const big = S2.nodes.law_a.order > S2.nodes.law_b.order ? [1, 'law_a', a] : [2, 'law_b', b], small = big[0] === 1 ? [2, 'law_b', b] : [1, 'law_a', a];
-    E({ t: 'down', uid: big[0], node: big[1], run: big[2], q: 1 }, 25_000); E({ t: 'down', uid: small[0], node: small[1], run: small[2], q: 2 }, 1000);
-    E({ t: 'clear', uid: small[0], node: small[1], run: small[2], q: 3 }); E({ t: 'down', uid: big[0], node: big[1], run: big[2], q: 4 }); E({ t: 'clear', uid: big[0], node: big[1], run: big[2], q: 5 });
+    const laws = ['law_a', 'law_b', 'law_c', 'law_d'].sort((x, y) => S2.nodes[x].order - S2.nodes[y].order);
+    const a = E({ t: 'enter', uid: 1, node: laws[0] }).ack.run, b = E({ t: 'enter', uid: 2, node: laws[1] }).ack.run;
+    E({ t: 'down', uid: 2, node: laws[1], run: b, q: 1 }, 25_000); E({ t: 'down', uid: 1, node: laws[0], run: a, q: 2 }, 1000);
+    E({ t: 'clear', uid: 1, node: laws[0], run: a, q: 3 }); E({ t: 'down', uid: 2, node: laws[1], run: b, q: 4 }); E({ t: 'clear', uid: 2, node: laws[1], run: b, q: 5 });
+    for (const [u, id] of [[1, laws[2]], [2, laws[3]]]) { const r = E({ t: 'enter', uid: u, node: id }).ack.run; E({ t: 'clear', uid: u, node: id, run: r, q: 1 }, 21_000); }
     const d = E({ t: 'enter', uid: 1, node: 'wit_dawn' }).ack.run, nn = E({ t: 'enter', uid: 2, node: 'wit_night' }).ack.run;
-    E({ t: 'revive', uid: 2, node: 'wit_night', run: nn }, 30_000); E({ t: 'clear', uid: 2, node: 'wit_night', run: nn });
-    T(200_000); E({ t: 'online', uid: 2, on: false }); T(190_000); E({ t: 'clear', uid: 1, node: 'wit_dawn', run: d });
+    T(31_000); E({ t: 'revive', uid: 2, node: 'wit_night', run: nn }); E({ t: 'clear', uid: 2, node: 'wit_night', run: nn });
+    T(100_000); E({ t: 'online', uid: 2, on: false }); T(190_000); E({ t: 'clear', uid: 1, node: 'wit_dawn', run: d });
     out.push(JSON.stringify(K2.view(S2)));
     return out;
   };
   const vmOut = script(K);
-  ok(vmOut.length > 15 && !vmOut.some(s => s.includes('"code"')) && JSON.parse(vmOut[vmOut.length - 1]).nodes.pain_mem.st === 'open', '固定事件脚本在服务端 vm 里跑通（顺序、增益、复活、补位）');
+  ok(vmOut.length > 15 && !vmOut.some(s => s.includes('"code"')) && JSON.parse(vmOut[vmOut.length - 1]).nodes.pain_mem.st === 'open', '固定事件脚本在服务端 vm 里跑通（顺序、跨图叠层、复活、补位）', vmOut.find(s => s.includes('"code"')));
   const page = path.join(ROOT, 'dist', 'web', 'index.html');
   const html = fs.existsSync(page) ? fs.readFileSync(page, 'utf8') : '';
   if (html.includes('RAID_CORE')) {

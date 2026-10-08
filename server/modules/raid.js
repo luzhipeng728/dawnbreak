@@ -24,7 +24,7 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const TZ = 480;   // 每天 / 每周按北京时间算（06:00 换日，周四 06:00 换周），和 signin.js 一致
 const KEEP_ENDED = 10 * 60_000, LOBBY_IDLE = 30 * 60_000, DB_KEEP = 7 * 86400_000;
 const LIVE_SQL = `('lobby','routes','rest','final')`;
-const EVS = new Set(['hp', 'down', 'clear', 'fail', 'death', 'revive', 'cp']);
+const EVS = new Set(['hp', 'down', 'clear', 'fail', 'death', 'revive', 'cp', 'boss']);
 const txt = (s, n) => String(s ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n);
 const KEY_RE = /^[a-z][a-z0-9_]{0,23}$/, CLS_RE = /^[a-z]{2,12}$/;
 

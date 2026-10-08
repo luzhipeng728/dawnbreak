@@ -109,7 +109,7 @@
 | [`test/fighter_pvp.mjs`](../test/fighter_pvp.mjs) | 男格斗家（B9）决斗：AI 用得出各转职的主要技能 + 抓取在决斗里公平（抓取保护 / 强制硬直上限 / 没有无限连）+ 决斗表登记 |
 | [`test/pvp_balance.mjs`](../test/pvp_balance.mjs) | 决斗场平衡：23 种职业 / 转职两两 AI 对打（难度 3，公正决斗规则），无渲染快进（直接调 step），统计每个职业的回合胜率 |
 
-### 领主、团本与区域（19）
+### 领主、团本与区域（20）
 
 | 脚本 | 作用 |
 |---|---|
@@ -124,6 +124,7 @@
 | [`test/raid_core_rules.mjs`](../test/raid_core_rules.mjs) | 团本核心规则单测（不开浏览器）：队长权限、拾取方式、掉落分配 |
 | [`test/raid_layout.mjs`](../test/raid_layout.mjs) | 团本固定房间结构单测（不开浏览器）：genFixedLayout 的连通 / 准备房 / 随机领主房，希洛克团本每张图的官方房间数 |
 | [`test/raid_rewards.mjs`](../test/raid_rewards.mjs) | 团本拾取规则单测（不开浏览器）：队长分配 / 随机分配 / 竞拍三种拾取方式的权限与结算 |
+| [`test/raid_siroco_rules.mjs`](../test/raid_siroco_rules.mjs) | 无形之希洛克团本的官方规则（纯规则核心，不开浏览器、不连服务端）：破坏之门共享时限、知性之境跨图惩罚（噩梦之夜叠层 / 幻影之界 / 归还之昼）、 |
 | [`test/raid_ui.mjs`](../test/raid_ui.mjs) | 团本界面 + 客户端流程（RA2）：1 个客户端，单人引导从头打到尾（本地服务端 DNF_RAID_FAST=1 + 页面 ?raidfast：节点直达领主、领主血量 ×0.05） |
 | [`test/region.mjs`](../test/region.mjs) | 区域流水线的通用测试：node test/region.mjs <区域 id> [部分,...] |
 | [`test/region_monsters.mjs`](../test/region_monsters.mjs) | 地下城区域的公共测试（天空之城 test/sky.mjs、天帷巨兽 test/behemoth.mjs 共用）： |

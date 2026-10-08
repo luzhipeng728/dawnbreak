@@ -128,9 +128,18 @@ const DUEL_HARD = ['stun', 'freeze', 'sleep', 'root', 'hold'];
 const duelClearHard = t => { if (t.status) for (const k of DUEL_HARD) delete t.status[k]; };
 function duelEscape(t, why = '连招保护') {
   duelClearHard(t);
-  if (t.st === 'down') { t.startGetup(true); t.invul = Math.max(t.invul, PVP_PROT.wakeInvul); }
+  if (t.st === 'down') {
+    t.startGetup(true); t.invul = Math.max(t.invul, PVP_PROT.wakeInvul);
+    t._pvpAutoRecover = true; t.techHold = true;
+  }
   else if (t.st === 'getup') t.invul = Math.max(t.invul, PVP_PROT.wakeInvul);
-  else if (t.st === 'air' || t.z > 2) { airRecover(t); t.vz = Math.min(t.vz, -480); }   // 空中：受身并直接落下（不再在空中飘着算时间）
+  else if (t.st === 'air' || t.z > 2) {
+    airRecover(t); t.vz = Math.min(t.vz, -480);
+    // The forced aerial escape is an invulnerable recovery window.  Mark it as
+    // a recovery hold so lock timers stop at the escape frame instead of
+    // counting the fall and landing animation as continued hit lock.
+    t._pvpAutoRecover = true; t.techHold = true;
+  }   // 空中：受身并直接落下（不再在空中飘着算时间）
   else { t.stun = 0; t.invul = Math.max(t.invul, 0.5); }
   t.pvpLockT = 0; t.pvpDownT = 0; fxText(why, t.x, t.y, t.z + 40, { col: '#9fe8ff', size: 11 }); fxAura(t, '#9fe8ff', 0.5);
 }
@@ -163,12 +172,12 @@ const duelSumPvp = s => { const S = s && s.fromSkill && SKILLS[s.fromSkill], o =
   if (c.landed && st0 !== 'down' && c.dmg > dmg0) c.downDmg += c.dmg - dmg0;
   if (c.landed && (t.st === 'air' || t.z > 2) && !t.dead && c.downDmg >= t.hpMax * PVP.downProt && !t.recoverLand) { airRecover(t); fxText('倒地保护', t.x, t.y, t.z, { col: '#9fe8ff', size: 10 }); }
   else if (!t.dead && !c.landed && duelAirLv(t) >= 2 && (t.st === 'air' || t.z > 2) && !t.recoverLand) {   // 二段：立马砸下去，不给空中无敌
-    t.vz = -560; t.bounceNext = 0; t.bounced = true;
+    t.vz = -1500; t.bounceNext = 0; t.bounced = true;
     if (!t._pvpDrop) { t._pvpDrop = 1; fxText('二段保护', t.x, t.y, t.z + 34, { col: '#ffb060', size: 11 }); fxAura(t, '#ffb060', 0.45); }
   } else if (c.landed && duelAirLv(t) >= 2 && t.st === 'air' && t.vz > JUGGLE.pvpSweepPop && !t.recoverLand) t.vz = JUGGLE.pvpSweepPop;   // 砸地之后的扫地只托一小节
   return r;
 }; }
-{ const rc0 = resetCmb; resetCmb = function (e) { rc0(e); if (e && e.cmb) e.cmb.landed = false; if (e) e._pvpDrop = 0; }; }
+{ const rc0 = resetCmb; resetCmb = function (e) { rc0(e); if (e && e.cmb) e.cmb.landed = false; if (e) { e._pvpDrop = 0; e._pvpSweepUntil = 0; e._pvpSweepCount = 0; } }; }
 const duel = {
   state: 'none', t: 0, round: 1, wins: [0, 0], a: null, b: null, msg: '', msgT: 0, timer: 60, koT: 0, result: null,
   start(o) {
@@ -191,7 +200,7 @@ const duel = {
   resetRound() {
     projs.length = 0; groundFx.length = 0; game.timeStop = 0; game.cutin = null; game.slowmo = false;
     [[this.a, 330, 1], [this.b, 790, -1]].forEach(([p, x, f]) => {
-      Object.assign(p, { x, y: DEPTH / 2, z: 0, vx: 0, vy: 0, vz: 0, face: f, dead: false, hp: p.hpMax, mp: p.mpMax, invul: 0, superArmor: 0, stun: 0, hitstop: 0, act: null, status: {}, buffs: {}, cool: {}, chasers: [], rot: 0, reboundCd: 0, bsCd: 0, charges: {}, burning: false, pvpLockT: 0, pvpDownT: 0, pvpImm: {} });
+      Object.assign(p, { x, y: DEPTH / 2, z: 0, vx: 0, vy: 0, vz: 0, face: f, dead: false, hp: p.hpMax, mp: p.mpMax, invul: 0, superArmor: 0, stun: 0, hitstop: 0, act: null, status: {}, buffs: {}, cool: {}, chasers: [], rot: 0, reboundCd: 0, bsCd: 0, charges: {}, burning: false, pvpLockT: 0, pvpDownT: 0, pvpImm: {}, techHold: false, _pvpAutoRecover: false });
       if (p.brain) p.brain.reset();
       p.grabbed = null; p.heldBy = null; p.deadT = 0; p.remove = false; if (!ents.includes(p)) ents.push(p); p.setState('idle'); p.play('idle', true); resetCmb(p); applyBuffs(p);
       duelStartCd(p);   // 大技能 / 觉醒开局就在冷却（技能栏上直接显示）

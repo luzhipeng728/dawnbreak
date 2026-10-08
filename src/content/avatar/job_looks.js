@@ -227,6 +227,23 @@ const JOB_LOOKS = {
     col: '#4a6ad8', outfit: '#26386e', acc: ['job_grappler_band'],
     states: [{ id: 'overgrab', name: '暴力抓取', on: jlBuff('fg_overgrab'), demo: jlDemo('fg_overgrab'), fx: { aura: { col: '#8ac8ff', a: 0.35, haze: 0.2 }, arcs: { col: '#cfe6ff', n: 2 } } }],
   },
+  /* ================= 圣职者（男）：巨兵 / 光环 / 恶魔化状态 ================= */
+  crusader: {
+    col: '#ffe3a0', hair: '#d9c7a0', outfit: '#e8e2d2',
+    states: [{ id: 'buff', name: '圣力', on: jlBuff('pc_holy'), demo: jlDemo('pc_holy'), fx: { aura: { col: '#ffe3a0', a: 0.35, haze: 0.18 }, motes: { img: 'cross', col: '#fff0b0', n: 4, h: 4, rise: 26, life: 1.5 } } }],
+  },
+  monk: {
+    col: '#9fe0ff', hair: '#6f93a8', outfit: '#dceaf2',
+    states: [{ id: 'will', name: '意念驱动', on: jlBuff('pi_will'), demo: jlDemo('pi_will'), fx: { trail: { col: '#9fe0ff', a: 0.6 }, arcs: { col: '#c8f2ff', n: 3 }, aura: { col: '#6ac8ff', a: 0.28 } } }],
+  },
+  exorcist: {
+    col: '#d8a05a', hair: '#8a6a42', outfit: '#5c4a38',
+    states: [{ id: 'chakra', name: '封魔莲华', on: jlBuff('pe_lotus'), demo: jlDemo('pe_lotus'), fx: { ring: { img: 'rune', col: '#ffd070', r: 34, spin: 0.8, a: 0.75 }, motes: { img: 'spark', col: '#ffe8a0', n: 5, h: 6, rise: 24 } } }],
+  },
+  avenger: {
+    col: '#a45ae0', hair: '#4c305c', outfit: '#4a304f',
+    states: [{ id: 'devil', name: '恶魔化', on: jlBuff('pa_demon'), demo: jlDemo('pa_demon'), fx: { aura: { col: '#9a2a9a', a: 0.42, haze: 0.3 }, burn: { col: '#b04a6a', n: 9, h: 36 }, eyes: { col: '#ff5ad8', r: 3 } } }],
+  },
   // 小魔女：手上用红线吊着疯疯熊人偶；禁忌诅咒 = 脚下暗红诅咒法阵 + 暗紫气场 + 飘落的蔷薇
   enchantress: {
     col: '#c0304a', hair: '#f07890', acc: ['job_enchantress_bow'],

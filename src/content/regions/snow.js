@@ -279,6 +279,7 @@ defineRegion({
       phases: [
         { at: 1, skills: [
           { use: 'aoe', id: 'claw', clip: 'sigA', shape: 'circle', at: 'front', r: 150, windup: 1.0, dmg: 1.4, jump: true, down: true, follow: false, cd: [4.5, 6.5], w: 1.8, say: '前爪拍地——跳起来！', col: '#bfe6ff' },
+          { use: 'swipe', id: 'bite', clip: 'bite', reach: 170, width: 48, windup: 0.55, dmg: 1.1, knock: 90, cd: [5.5, 7.5], w: 1.2, say: '咬！', col: '#d8f0ff' },
           { use: 'cone', id: 'breath', clip: 'sigB', ang: 56, len: 380, windup: 1.0, dur: 1.4, tick: 0.2, dmg: 0.32, status: 'freeze', sdur: 0.8, cd: [8, 10], w: 1.5, say: '极寒龙息——绕到侧面！', col: '#bfe6ff' },
           { use: 'pull', id: 'blow', mode: 'out', r: 340, force: 320, windup: 0.9, dur: 1.1, status: 'stun', sdur: 0.9, dmg: 0.4, cd: [13, 16], say: '吹气！', col: '#e8f4ff' },
           { use: 'plant', id: 'eggs', kind: 'skasaEgg', n: 3, at: 'spots', fuse: 12, hp: 0.012, onFuse: 'hatch:babySkasa', max: 3, cd: [22, 26], w: 0.8, label: '孵化', say: '斯卡萨产下了龙蛋——在孵化前打碎！', col: '#bfe6ff' }] },

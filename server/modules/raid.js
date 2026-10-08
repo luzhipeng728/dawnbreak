@@ -9,7 +9,7 @@
          加入 / 准备 / 团长开始（休整中 = 提前进下一阶段）/ 离开（开始后离开 = 放弃，次数照扣）
      raid:enter { node, with?: [uid] }    进节点；with = 一起进（要是队长，收到 raid:entered 后自己发 room:open）→ 进的人都收到 raid:entered
      raid:ev { node, run, q, e, v }       实例上报：e = hp | down | clear | fail | death | revive | cp；q = 这次挑战里自己的序号（补发重复的回 dup）→ raid:ack
-     raid:mark { uid, node } / raid:resume { sid } / raid:claim { sid, phase }
+     raid:mark { uid, node } / raid:resume { sid } / raid:claim { sid, phase } / raid:loot { mode } / raid:flip { op, phase, index }
    WS（服务端 → 客户端）：raid { run, now, resume? } 全量 | raid:d { sid, now, set, nodes } 变化 | raid:fx { sid, kind, node, p } | raid:entered { sid, run, … } |
      raid:ack { sid, run, q, e, ok, res?, dup?, code?, text? } | raid:note { sid, text, code?, bad? } | raid:end { sid, ok, why } |
      raid:open { sid, raid, mode, leader } | raid:claimed { sid, phase, reward, dup?, limits }
@@ -186,7 +186,7 @@ export default {
         if (mode === 'normal' && P && P.members.length > (D.maxPlayers || 2)) return note(c, null, `当前团本最多 ${D.maxPlayers || 2} 人`);
         if (D.minLvl && ch.lvl < D.minLvl) return note(c, null, `需要 ${D.minLvl} 级`);
         const sid = 'rd' + C.boot + '_' + (seq++), t = now();
-        const S = CORE.init(raid, [{ uid: me, cid: cidOf(msg.cid), name: ch.name, cls: ch.cls, job: ch.job }], mode, t, { sid, guard: guard(), seed: crypto.randomInt(2 ** 31) });
+        const S = CORE.init(raid, [{ uid: me, cid: cidOf(msg.cid), name: ch.name, cls: ch.cls, job: ch.job }], mode, t, { sid, guard: guard(), seed: crypto.randomInt(2 ** 31), lootMode: msg.lootMode });
         const W = wrap(S, t); runs.set(sid, W); index(W); save(W);
         c.send({ t: 'raid', run: W.sent, now: t });
         if (mode === 'normal' && P) for (const id of P.members) if (id !== me) ctx.sendTo(id, { t: 'raid:open', sid, raid, mode, leader: { id: me, name: c.user.name } });
@@ -251,12 +251,51 @@ export default {
         else ack(true, out.ack || {});
       },
       mark(c, msg) { const W = mine(c.user.id); if (W) apply(W, { t: 'mark', uid: c.user.id, to: +msg.uid, node: msg.node == null ? null : txt(msg.node, 24) }, c); },
+      loot(c, msg) {
+        const W = mine(c.user.id); if (!W) return;
+        const out = CORE.setLootMode(W.S, c.user.id, txt(msg.mode, 16));
+        if (!out.ok) return note(c, W, out.text, out.code);
+        commit(W, { fx: [] }, true);
+      },
+      flip(c, msg) {
+        const me = c.user.id, W = typeof msg.sid === 'string' ? load(txt(msg.sid, 40)) : mine(me), phase = msg.phase | 0, op = txt(msg.op, 8) || 'open';
+        if (!W || !member(W, me)) return note(c, W, '你不在这个团本里', 'flip');
+        let out;
+        if (op === 'open') out = CORE.flipOpen(W.S, me, phase, now());
+        else if (op === 'pick') out = CORE.flipPick(W.S, me, phase, msg.index | 0, now(), Math.random);
+        else if (op === 'close') out = CORE.flipClose(W.S, me, phase, now());
+        else out = { ok: false, code: 'flip', text: '未知翻牌操作' };
+        if (!out.ok) return note(c, W, out.text, out.code);
+        // picks / rewardCards intentionally stay out of public view; mark the wrapped run dirty so
+        // each member's selection survives a restart even when the shared flip state stays "open".
+        W.dirty = true; commit(W, { fx: [] }, true); c.send({ t: 'raid:flip', sid: W.S.sid, phase, op, ...out });
+      },
       // 重连 / 刷新页面：发全量状态（没结束的会话顺便标回在线）；已经结束的补一条 raid:end
       resume(c, msg) {
         const me = c.user.id, sid = txt(msg.sid, 40), W = sid ? load(sid) : mine(me), m = W && member(W, me);
         if (!m) return c.send({ t: 'raid:end', sid: sid || null, ok: false, why: 'gone' });
         if (LIVE(W.S.st) && !m.left) apply(W, { t: 'online', uid: me, on: true });
         c.send({ t: 'raid', run: W.sent, now: now(), resume: true });
+        // 领奖和翻牌是两个可重入步骤：刷新后先补发角色自己的领奖记录，再补发
+        // 已选牌 / 关牌状态。公共 raid view 不带 rewardCards，避免把别人的牌面泄露给客户端。
+        // 这也让 claim → reload → pick 在结束会话和服务端重启后仍能继续。
+        if (!m.left) {
+          const rows = ctx.db.all('SELECT phase, reward FROM raid_claim WHERE sid = ? AND user_id = ? AND cid = ? ORDER BY phase', W.S.sid, me, m.cid);
+          const claimed = new Map();
+          for (const row of rows) {
+            try { claimed.set(Number(row.phase), JSON.parse(row.reward)); } catch { /* 损坏的历史奖励由正常 claim 错误路径处理 */ }
+          }
+          const phases = (W.S.res && W.S.res.phases || []).map(Number), F = W.S.flip && W.S.flip.cards || {}, current = Number(W.S.flip && W.S.flip.phase) || 0;
+          for (const phase of phases) {
+            const reward = claimed.get(phase);
+            if (!reward) continue;
+            c.send({ t: 'raid:claimed', sid: W.S.sid, phase, reward, dup: true, limits: limitsOf(me, m.cid, W.S.raid) });
+            const card = current === phase ? F[String(me)] : null;
+            const picks = card && Array.isArray(card.picks) ? card.picks.map(x => ({ index: x.index, reward: x.reward })) : [];
+            const closed = !!(card && card.closedAt) || phase < current;
+            c.send({ t: 'raid:flip', sid: W.S.sid, phase, op: 'resume', state: closed ? 'closed' : 'open', closed, picks });
+          }
+        }
         if (!LIVE(W.S.st) || m.left) c.send({ t: 'raid:end', sid: W.S.sid, ok: W.S.st === 'cleared', why: m.left ? 'left' : W.S.why });
       },
       // 领阶段奖励：阶段通关了、这次不是练习、没领过（会话 + 账号 + 角色 + 阶段唯一）；重复领返回同一份（dup），客户端按 sid + phase 只入账一次
@@ -265,10 +304,22 @@ export default {
         if (!m) return note(c, W, '你不在这个团本里', 'claim');
         const old = ctx.db.get('SELECT reward FROM raid_claim WHERE sid = ? AND user_id = ? AND cid = ? AND phase = ?', W.S.sid, me, m.cid, phase);
         const limits = limitsOf(me, m.cid, W.S.raid);
-        if (old) return c.send({ t: 'raid:claimed', sid: W.S.sid, phase, reward: JSON.parse(old.reward), dup: true, limits });
+        if (old) {
+          const reward = JSON.parse(old.reward), opened = CORE.flipOpen(W.S, me, phase, now());
+          if (opened.ok) {
+            const set = CORE.flipSetReward(W.S, me, phase, reward);
+            if (set.ok) commit(W, { fx: [] }, true);
+          }
+          return c.send({ t: 'raid:claimed', sid: W.S.sid, phase, reward, dup: true, limits });
+        }
         if (!W.S.res.phases.includes(phase)) return note(c, W, '这个阶段还没通关', 'claim');
         if (!m.rw) return note(c, W, '这次是练习（本周 / 今天的次数已经用完了），没有奖励', 'practice');
+        const opened = CORE.flipOpen(W.S, me, phase, now());
+        if (!opened.ok) return note(c, W, opened.text, opened.code);
         const reward = CORE.rollReward(W.S, me, phase, Math.random);
+        CORE.flipSetReward(W.S, me, phase, reward);
+        // 领奖确认本身就是一次合法的翻牌打开；客户端再按卡面做动画，不会让角色提前离开结算锁。
+        commit(W, { fx: [] }, true);
         ctx.db.run('INSERT INTO raid_claim (sid, user_id, cid, phase, reward, at) VALUES (?,?,?,?,?,?)', W.S.sid, me, m.cid, phase, JSON.stringify(reward), now());
         c.send({ t: 'raid:claimed', sid: W.S.sid, phase, reward, limits });
         if (ctx.mods.gm && ctx.mods.gm.log) ctx.mods.gm.log('raid', { id: me, name: c.user.name }, { sid: W.S.sid, cid: m.cid, phase, reward });
@@ -289,6 +340,8 @@ export default {
     'raid:enter'(c, msg, ctx) { ctx.mods.raid.enter(c, msg); },
     'raid:ev'(c, msg, ctx) { ctx.mods.raid.ev(c, msg); },
     'raid:mark'(c, msg, ctx) { ctx.mods.raid.mark(c, msg); },
+    'raid:loot'(c, msg, ctx) { ctx.mods.raid.loot(c, msg); },
+    'raid:flip'(c, msg, ctx) { ctx.mods.raid.flip(c, msg); },
     'raid:resume'(c, msg, ctx) { ctx.mods.raid.resume(c, msg); },
     'raid:claim'(c, msg, ctx) { ctx.mods.raid.claim(c, msg); },
   },

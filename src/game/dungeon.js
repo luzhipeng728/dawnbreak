@@ -54,7 +54,7 @@ class Dungeon {
     this.seed = o.seed ?? ((Math.random() * 1e9) | 0);
     this.layout = genLayout(def, this.seed);
     this.t = 0; this.kills = 0; this.hurt = 0; this.combos5 = 0; this.aerial = 0; this.back = 0; this.counter = 0; this.overkill = 0; this.expGot = 0;
-    this.roomsEntered = 0; this.transition = null; this.state = 'play'; this.lastComboCounted = 0; this.usedCoins = 0;
+    this.roomsEntered = 0; this.transition = null; this.state = 'play'; this.flipStage = 'none'; this.lastComboCounted = 0; this.usedCoins = 0;
     this.guest = !!o.guest; this.hpMul = o.hpMul || 1;
     this.layout.rooms.forEach((r, i) => { r.visited = false; r.cleared = false; r.seed = o.roomSeeds ? o.roomSeeds[i] : (Math.random() * 1e9) | 0; });
   }
@@ -200,15 +200,23 @@ class Dungeon {
   finish() {
     if (game.dungeon !== this || this.state === 'result' || this.state === 'failed') return;
     const p = game.player; if (p.dead) { p.dead = false; p.hp = Math.max(1, Math.round(p.hpMax * 0.3)); p.setState('idle'); p.z = 0; p.vz = 0; }
-    this.state = 'result'; music.play('clear');
+    // Official flow: after the boss is down the instance is frozen in a
+    // result / card-flip stage.  Input, movement, combat and room changes are
+    // all suspended until the player has selected the free card and closes the
+    // settlement window.
+    this.state = 'result'; this.flipStage = 'choose'; this.combatLocked = true; music.play('clear');
     const S = this.score(), rk = rankOf(S.total);
     const clearExp = Math.round((this.def.clearExp || 300) * this.D.exp);
     const bonus = Math.round((this.expGot + clearExp) * rk[2]);
     gainExp(clearExp + bonus);
-    this.result = { S, rank: rk[0], clearExp, bonus, time: this.t };
+    this.result = { S, rank: rk[0], clearExp, bonus, time: this.t, cards: [], freeCard: -1, goldCards: [] };
     save.onClear(this.def.id, this.diff, rk[0]);
     bus.emit('dungeonClear', { id: this.def.id, diff: this.diff, rank: rk[0], time: this.t, hurt: this.hurt, maxCombo: game.maxCombo });
     menus.open('result', this);
+  }
+  finishFlip() {
+    if (this.state !== 'result' || this.flipStage === 'done') return false;
+    this.flipStage = 'done'; this.combatLocked = false; return true;
   }
   revive() {
     save.data.coins--; save.write(); this.usedCoins++;

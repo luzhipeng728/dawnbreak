@@ -82,7 +82,7 @@ function equipCompareTip(it) {
   const col = r.v === 'up' ? 'good' : r.v === 'down' ? 'bad' : 'dimt';
   const head = r.broken ? '耐久为 0，换上后没有属性' : r.empty ? '该部位还没穿装备 · 换上后综合' : `换上后综合 ${r.v === 'up' ? '▲' : r.v === 'down' ? '▼' : '≈'}`;
   return h('div', { class: 'cmpsum ' + col }, head, r.broken ? null : ` ${pct(r.total)}`,
-    h('div', { class: 'd' }, `输出 ${pct(r.off)} · 生存 ${pct(r.ehp)}${it.lvl > game.lvl ? `（需要 Lv.${it.lvl}）` : ''}`),
+    h('div', { class: 'd' }, `输出 ${pct(r.off)} · 生存 ${pct(r.ehp)}${it.lvl > (typeof equipLevelCap === 'function' ? equipLevelCap(game.lvl, game.scene) : game.lvl) ? `（需要 Lv.${it.lvl}）` : ''}`),
     r.gained && r.gained.length ? h('div', { class: 'setd good' }, '激活：' + r.gained.join('、')) : null,
     r.lost && r.lost.length ? h('div', { class: 'setd bad' }, '失去：' + r.lost.join('、')) : null);
 }

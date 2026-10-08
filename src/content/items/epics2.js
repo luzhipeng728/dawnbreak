@@ -215,6 +215,10 @@ otherSet('set_ow_nenmaster', '雷霆之啸', 'nenmaster', 'fn_tiger', ['雷霆�
 otherSet('set_ow_striker', '邪灵之息', 'striker', 'fs_spin', ['邪灵之息项链', '邪灵之息手镯', '邪灵之息戒指'], 10, 0.15, { str: 25, crit: 0.03 }, '散打的邪灵拳意。官方异界套：旋风碎心踢攻击力 +80%、冷却时间 -20%。');
 otherSet('set_ow_brawler', '诡秘之地', 'brawler', 'fb_mount', ['诡秘之地项链', '诡秘之地手镯', '诡秘之地戒指'], 4, 0.15, { int: 25, mcrit: 0.03 }, '街霸的暗街秘术。官方异界套：伏虎霸王拳冷却时间 -25%。');
 otherSet('set_ow_grappler', '璇龙夺魄', 'grappler', 'fg_rolling', ['璇龙夺魄项链', '璇龙夺魄手镯', '璇龙夺魄戒指'], 5, 0.2, { str: 25, hpPct: 0.05 }, '柔道家的璇龙之技。官方异界套：地狱风火轮踢飞攻击力 +70%、冲击波范围 +100%。');
+otherSet('set_ow_crusader', '圣光裁决', 'crusader', 'pc_honor', ['圣光裁决项链', '圣光裁决手镯', '圣光裁决戒指'], 4, 0.18, { int: 25, spr: 25, light: 10 }, '圣骑士的荣誉祝福与神圣审判。官方异界套口径：核心祝福冷却缩短、独立攻击提高。');
+otherSet('set_ow_monk', '神击连环', 'monk', 'pi_gorgeous', ['神击连环项链', '神击连环手镯', '神击连环戒指'], 3, 0.2, { str: 25, crit: 0.04, aspd: 0.03 }, '蓝拳圣使的神击连锁。官方异界套口径：圣拳连击冷却缩短、攻击强化。');
+otherSet('set_ow_exorcist', '式神镇魂', 'exorcist', 'pe_spin', ['式神镇魂项链', '式神镇魂手镯', '式神镇魂戒指'], 5, 0.18, { str: 25, int: 20, dark: 10 }, '驱魔师的式神与巨兵。官方异界套口径：疾空旋风破冷却缩短、攻击强化。');
+otherSet('set_ow_avenger', '末日降临', 'avenger', 'pa_reaper', ['末日降临项链', '末日降临手镯', '末日降临戒指'], 4, 0.2, { int: 25, dark: 15, mcrit: 0.04 }, '复仇者的恶魔之力。官方异界套口径：黑暗之触冷却缩短、暗属性伤害强化。');
 /* ---------------- 原有神器套装的 5 件特效（本作追加：让神器套装也有自己的玩法，数值比史诗套装低一档） ---------------- */
 const artifactProc = (id, P) => { const B = SETS[id] && SETS[id].bonus[5]; if (B) B.proc = P; };
 artifactProc('set_knight', { on: 'hurt', chance: 0.1, cd: 20, act: 'shield', amt: 0.12, dur: 6, name: '骑士之盾', desc: '被击时 10% 几率举起骑士之盾：6 秒内吸收最多 12% HP 上限的伤害（冷却 20 秒）' });

@@ -29,7 +29,7 @@ async function enterNode(P, id, together) {
 const killBoss = P => P.evaluate(() => { const b = game.dungeon.boss; b.invul = 0; b.hp = 0; killEnt(b, game.player, {}); window.__killT = Date.now(); return !!(raidNet.ctx && raidNet.ctx.held); });
 async function backToCamp(P) {
   if (!(await until(P, () => menus.isOpen('result'), null, 15000))) return false;
-  for (let k = 0; k < 3 && await P.evaluate(() => menus.isOpen('result')); k++) { await P.click('#result button:has-text("返回营地")').catch(() => {}); await until(P, () => !menus.isOpen('result'), null, 2000); }
+  for (let k = 0; k < 3 && await P.evaluate(() => menus.isOpen('result')); k++) { await P.click('#result button:has-text("进入翻牌结算"), #result button:has-text("返回营地")').catch(() => {}); await until(P, () => !menus.isOpen('result'), null, 2000); }
   return until(P, () => game.scene === 'town' && world && world.S.id === 'siroco_town' && menus.isOpen('raidboard'), null, 20000);
 }
 const nst = (P, id) => P.evaluate(i => raidNet.S && raidNet.S.nodes[i] && raidNet.S.nodes[i].st, id);
@@ -38,6 +38,18 @@ const claim = async (P, ph) => {
   if (!(await until(P, () => menus.isOpen('raidres'), null, 8000))) await P.evaluate(p => menus.show('raidres', p), ph);
   await P.click('[data-win="raidres"] [data-act="claim"]');
   const got = await until(P, p => !!raidNet.claims[raidNet.S.sid + ':' + p], ph, 6000);
+  if (!got) return false;
+  const limit = ph === 1 ? 1 : 2;
+  if (!(await until(P, p => raidNet.flipState && raidNet.flipState.phase === p && raidNet.flipState.state === 'open', ph, 8000))) return false;
+  if (!(await until(P, n => document.querySelectorAll('[data-win="raidres"] .card').length >= n, limit, 8000))) return false;
+  let picked = await P.evaluate(p => raidNet.flipState && raidNet.flipState.phase === p && raidNet.flipState.picks ? raidNet.flipState.picks.length : 0, ph);
+  while (picked < limit) {
+    const card = P.locator('[data-win="raidres"] .card:not(.flip)').first();
+    if (!(await card.count())) return false;
+    await card.click({ force: true });
+    if (!(await until(P, o => raidNet.flipState && raidNet.flipState.phase === o.phase && raidNet.flipState.picks && raidNet.flipState.picks.length >= o.n, { phase: ph, n: picked + 1 }, 8000))) return false;
+    picked++;
+  }
   await sleep(500);
   await P.click('[data-win="raidres"] [data-act="close"]').catch(() => {});
   return got;
@@ -174,7 +186,9 @@ try {
   ok((await Promise.all([backToCamp(A), backToCamp(B)])).every(Boolean), '两人回营地');
   ok((await Promise.all([claim(A, 2), claim(B, 2)])).every(Boolean), '两人各领 P2 奖励（翻 2 张）');
   const own = await Promise.all([A, B].map(P => P.evaluate(async () => { const count = () => inv.items.filter(x => x.key === 'raid_petal').reduce((n, x) => n + x.n, 0); const o = count(); raidNet.claim(2); raidNet.claim(1); await new Promise(r => setTimeout(r, 800)); const r = await raidNet.fetch(); return { o, o2: count(), got: Object.keys(save.data.raidGot).length, lim: r.limits }; })));
-  ok(own.every(x => x.o === x.o2 && x.o >= 3 + 8 + 12 && x.got === 2), '重复领：奖励只入账一次（每人 P1 + P2）', own);
+  // 新翻牌流程只把玩家明确选择的牌入账：P1 选 1 张、P2 选 2 张；
+  // 检查每个阶段的最低货币奖励和重复领取不重复入账。
+  ok(own.every(x => x.o === x.o2 && x.o >= 3 + 12 && x.got === 2), '重复领：选择的奖励只入账一次（每人 P1 + P2）', own);
   ok(own.every(x => x.lim.dayLeft === 0 && x.lim.weekLeft === 1), '次数 −1：今天 0 / 本周剩 1', own.map(x => x.lim));
   await A.evaluate(() => { menus.closeAll(); menus.show('raidboard'); }); await sleep(300);
   await A.screenshot({ path: `${out}/mp-11-board-cleared.png` });

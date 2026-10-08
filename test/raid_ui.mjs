@@ -38,12 +38,28 @@ const killBoss = P => P.evaluate(() => { const b = game.dungeon.boss; b.invul = 
 async function backToCamp(P) {
   if (!(await until(P, () => menus.isOpen('result'), null, 15000))) return false;
   for (let k = 0; k < 3 && await P.evaluate(() => menus.isOpen('result')); k++) {
-    await P.click('#result button:has-text("返回营地")').catch(() => {});
+    await P.click('#result button:has-text("进入翻牌结算"), #result button:has-text("返回营地")').catch(() => {});
     await until(P, () => !menus.isOpen('result'), null, 2000);
   }
   const r = await until(P, () => game.scene === 'town' && world && world.S.id === 'siroco_town' && menus.isOpen('raidboard'), null, 20000);
   if (!r) { console.log('  backToCamp 失败：', JSON.stringify(await P.evaluate(() => ({ scene: game.scene, w: world && world.S.id, stack: menus.stack, st: raidNet.S && raidNet.S.st, ctx: !!raidNet.ctx, back: raidNet.back })))); await P.screenshot({ path: `${out}/zz-back.png` }); }
   return r;
+}
+async function pickRaidCards(P, phase, limit, preferred) {
+  const chosen = [];
+  for (let n = 0; n < limit; n++) {
+    const idx = await P.evaluate(({ phase, preferred, chosen, n }) => {
+      const rw = raidNet.claims[raidNet.S.sid + ':' + phase], cards = rw && rw.cards || [];
+      let i = preferred && n === 0 ? cards.findIndex(x => x.key === preferred) : -1;
+      if (i < 0 || chosen.includes(i)) i = cards.findIndex((_, j) => !chosen.includes(j));
+      return i;
+    }, { phase, preferred, chosen, n });
+    if (idx < 0) return false;
+    chosen.push(idx);
+    await P.click(`[data-win="raidres"] .cards .card:nth-child(${idx + 1})`);
+    if (!await until(P, ({ phase: p, n: n0 }) => raidNet.flipState && raidNet.flipState.phase === p && (raidNet.flipState.picks || []).length >= n0 + 1, { phase, n }, 5000)) return false;
+  }
+  return true;
 }
 const st = (P, id) => P.evaluate(i => raidNet.S && raidNet.S.nodes[i] && raidNet.S.nodes[i].st, id);
 try {
@@ -129,7 +145,7 @@ try {
   ok(await until(A, () => menus.isOpen('raidres'), null, 8000), '阶段结算自动弹出');
   await A.screenshot({ path: `${out}/06-result-p1.png` });
   await A.click('[data-win="raidres"] [data-act="claim"]');
-  ok(await until(A, () => { const k = raidNet.S.sid + ':1'; return !!raidNet.claims[k] && document.querySelectorAll('[data-win="raidres"] .card.flip').length === 1; }, null, 6000), '领 P1 奖励：翻开 1 张');
+  ok(await until(A, () => !!raidNet.claims[raidNet.S.sid + ':1'] && document.querySelectorAll('[data-win="raidres"] .card:not(.flip)').length >= 1, null, 6000) && await pickRaidCards(A, 1, 1, 'raid_petal'), '领 P1 奖励：明确选择并翻开 1 张');
   const own1 = await A.evaluate(() => ({ petals: inv.items.filter(x => x.key === 'raid_petal').reduce((n, x) => n + x.n, 0), owed: { ...(save.data.raidOwed || {}) }, got: Object.keys(save.data.raidGot || {}).length, rw: raidNet.claims[raidNet.S.sid + ':1'] }));
   ok(own1.petals === 2 && !own1.owed.raid_petal && own1.got === 1, '引导货币 ×0.6（3~4 → 2 花瓣）直接进入背包', own1);
   await sleep(700);
@@ -160,7 +176,7 @@ try {
   });
   ok(rq.same && rq.st === 'cleared', '重连（刷新）后按存档里的 raidLast 找回结束了的团本（还有没领的奖励）', rq);
   await A.click('[data-win="raidres"] [data-act="claim"]');
-  ok(await until(A, () => document.querySelectorAll('[data-win="raidres"] .card.flip').length === 2, null, 6000), '领 P2 奖励：翻开 2 张');
+  ok(await until(A, () => !!raidNet.claims[raidNet.S.sid + ':2'] && document.querySelectorAll('[data-win="raidres"] .card:not(.flip)').length >= 2, null, 6000) && await pickRaidCards(A, 2, 2, 'raid_petal'), '领 P2 奖励：明确选择并翻开 2 张');
   await sleep(800);
   await A.screenshot({ path: `${out}/09-result-final.png` });
   const fin = await A.evaluate(async () => { const r = await raidNet.fetch(); return { lim: r && r.limits, petals: inv.items.filter(x => x.key === 'raid_petal').reduce((n, x) => n + x.n, 0), got: Object.keys(save.data.raidGot).length }; });
@@ -198,7 +214,8 @@ try {
   for (const nd of ['law_a', 'wit_dawn', 'pain_mem', 'gate_l']) { ok(await enterNode(M, nd), `离线：进「${nd}」`); if (nd === 'pain_mem') await M.screenshot({ path: `${out}/12-mobile-hud.png` }); await killBoss(M); ok(await backToCamp(M), `离线：「${nd}」通关`); }
   ok(await until(M, () => raidNet.S.st === 'rest' && menus.isOpen('raidres'), null, 8000), '离线：追逐战完成、结算弹出');
   await M.click('[data-win="raidres"] [data-act="claim"]');
-  ok(await until(M, () => !!raidNet.claims[raidNet.S.sid + ':1'], null, 4000), '离线：领 P1 奖励');
+  ok(await until(M, () => !!raidNet.claims[raidNet.S.sid + ':1'], null, 4000) && await pickRaidCards(M, 1, 1, 'raid_petal'), '离线：领 P1 奖励并明确翻牌');
+  await M.click('[data-win="raidres"] [data-act="close"]');
   const sid = await M.evaluate(() => raidNet.S.sid);
   await M.reload();
   ok(await until(M, () => window.__READY && game.scene === 'town' && raidNet.S && raidNet.S.st === 'rest', null, 60000), '离线：刷新页面后会话还在（存档里）');

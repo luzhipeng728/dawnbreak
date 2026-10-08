@@ -288,6 +288,7 @@ function monSkill(spec, D = {}) {
 // 招式子集（stance 架势 / form 形态，docs/BOSS_SPEC.md）：m.msGates 栈顶 = { ids: Set, tok, replace }
 // 形态 / 架势自带的招式（A.msGateTok）只在它生效时可用；被某个模式点名的招式 id（D.msGatedIds）只在点名它的模式里可用；replace = 只放这个模式的招式
 function msGateOk(m, A) {
+  if (!A) return false;
   const Gs = m.msGates, G = Gs && Gs.length ? Gs[Gs.length - 1] : null, D = m.def_;
   if (A.msGateTok) return !!(G && G.tok === A.msGateTok);
   if (A.msId && D && D.msGatedIds && D.msGatedIds.has(A.msId)) return !!(G && G.ids.has(A.msId));

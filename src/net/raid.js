@@ -37,7 +37,7 @@ function raidNodeDef(dg, e) {
   return D;
 }
 const raidNet = {
-  S: null, off: 0, limits: null, invite: null, L: null, ctx: null, queue: [], feed: [], claims: {}, lastSt: null, markFor: null, back: false,
+  S: null, off: 0, limits: null, invite: null, L: null, ctx: null, queue: [], feed: [], claims: {}, lastSt: null, markFor: null, back: false, flipState: null,
   fast: PARAMS.has('raidfast'),   // 测试：节点直达领主房、领主血量 ×0.05（服务端要 DNF_RAID_FAST=1，不然“太快”会被拒）
   local() { return !netOn(); },
   me() { return this.local() ? 1 : net.user ? net.user.id : 0; },
@@ -51,6 +51,22 @@ const raidNet = {
   mine() { return this.S ? this.S.members.find(m => m.uid === this.me()) || null : null; },
   mate() { return this.S ? this.S.members.find(m => m.uid !== this.me() && !m.left) || null : null; },
   live() { return !!this.S && !!RAID_CORE.LIVE[this.S.st]; },
+  flipRecord(sid, phase) {
+    const key = `${sid}:${phase}`, d = save.data || {};
+    return d.raidFlipState && d.raidFlipState[key] || null;
+  },
+  flipClosed(sid, phase) {
+    const F = this.flipRecord(sid, phase);
+    if (F && (F.closed || F.state === 'closed')) return true;
+    const S = this.S;
+    // 全员都已关牌时，服务端公开的阶段状态足以证明当前角色也已完成。
+    return !!(S && S.sid === sid && S.flip && S.flip.phase === phase && S.flip.state === 'closed');
+  },
+  pendingFlip() {
+    const S = this.S, M = this.mine();
+    if (!S || !M || M.rw === false) return false;
+    return (S.res && S.res.phases || []).some(ph => !this.flipClosed(S.sid, ph));
+  },
   inNode() { const C = this.ctx; return !!(C && C.started && !C.done && game.dungeon && game.dungeon.raid === C); },
   say(text, col) { this.feed.unshift({ t: Date.now(), text, col: col || '#e8d8ff' }); if (this.feed.length > 40) this.feed.length = 40; },
   changed() { bus.emit('raidChange', {}); },
@@ -68,11 +84,15 @@ const raidNet = {
   enter(node, together) { const M = this.mate(); return this.send('raid:enter', { node, with: together && M ? [M.uid] : undefined }); },
   mark(uid, node) { return this.send('raid:mark', { uid, node }); },
   claim(phase) { return this.S && this.send('raid:claim', { sid: this.S.sid, phase }); },
+  setLootMode(mode) { return this.S && this.send('raid:loot', { sid: this.S.sid, mode }); },
+  flip(op, phase, index) { return this.S && this.send('raid:flip', { sid: this.S.sid, op, phase, index }); },
   // 不再看这个会话（结束了 / 离开了）：情况板关掉，本地存的也清掉
   dismiss() {
+    if (this.pendingFlip()) { toastMsg('请先完成所有阶段翻牌，再关闭团本', '#ffd0a0'); return false; }
     if (this.L && !RAID_CORE.LIVE[this.L.S.st]) { this.L = null; if (save.data) { save.data.raidRun = null; save.write(); } }
     if (!this.live()) { this.S = null; this.lastSt = null; if (save.data) save.data.raidLast = null; }
     this.changed();
+    return true;
   },
   async fetch() {
     if (this.local()) { this.limits = RAID_CORE.limits('siroco', save.data && save.data.raidWeek, Date.now(), RAID_TZ); this.changed(); return this.limits; }
@@ -117,6 +137,7 @@ const raidNet = {
     raid(m) {
       if (!m.run) return;
       if (this.quiet === m.run.sid && RAID_CORE.LIVE[m.run.st]) this.quiet = null;
+      if (!this.S || this.S.sid !== m.run.sid) this.flipState = null;
       this.S = m.run; this.off = m.now - Date.now();
       if (save.data && !this.local()) save.data.raidLast = { sid: m.run.sid, t: Date.now() };
       if (m.resume) { this.restore(); this.flush(); }
@@ -137,13 +158,14 @@ const raidNet = {
       this.say(m.text, m.bad ? '#ffa08a' : mine ? '#ffe070' : null);
       if (m.bad || mine || !this.inNode()) toastMsg(m.text, m.bad ? '#ff9a7a' : '#e0c0ff');
       if (!m.bad) chatSys('【团本】' + m.text);
+      if (m.bad && m.code === 'flip') bus.emit('raidFlipError', m);
       this.changed();
     },
     'raid:end'(m) {
       if (this.S && m.sid && this.S.sid !== m.sid) return;
       if (this.quiet && m.sid === this.quiet && m.why !== 'left' && m.why !== 'gone') {   // 登录时找回的上一次团本：不再提示，奖励都领过了就直接忘掉
         this.quiet = null;
-        const S = this.S, me = this.mine(), todo = S && me && me.rw !== false && (S.res.phases || []).some(ph => !this.got(S.sid, ph));
+        const S = this.S, me = this.mine(), todo = S && me && me.rw !== false && (S.res.phases || []).some(ph => !this.flipClosed(S.sid, ph));
         if (!todo) { this.S = null; this.lastSt = null; if (save.data) save.data.raidLast = null; }
         this.changed(); return;
       }
@@ -161,6 +183,45 @@ const raidNet = {
       bus.emit('raidInvite', m); this.changed();
     },
     'raid:claimed'(m) { this.onClaimed(m); },
+    'raid:flip'(m) {
+      if (this.S && m.sid && this.S.sid !== m.sid) return;
+      const key = `${m.sid}:${m.phase}`, saved = this.flipRecord(m.sid, m.phase), prev = this.flipState && this.flipState.sid === m.sid && this.flipState.phase === m.phase ? this.flipState : saved;
+      const picks = (m.picks || (prev && prev.picks) || []).map(x => ({ index: x.index, reward: x.reward }));
+      // close 的回执代表“我”已关牌；m.closed 只表示全团是否都关牌，不能拿它判断本人的锁定。
+      const closed = !!(prev && prev.closed) || m.op === 'close' || (m.op === 'resume' && m.closed === true);
+      m.state = closed ? 'closed' : (m.state || (m.op === 'close' ? 'open' : (prev && prev.state) || 'open'));
+      m.picks = picks;
+      m.closed = closed;
+      this.flipState = m;
+      // 奖励在明确翻开卡牌后才入包；claim 只建立待翻牌记录，避免领奖即吞下整组奖励。
+      if (save.data) {
+        const FS = save.data.raidFlipState || (save.data.raidFlipState = {});
+        FS[key] = { phase: m.phase, state: m.state, closed, picks: picks.map(x => ({ index: x.index })) };
+      }
+      let credited = false;
+      const creditPick = (index, reward) => {
+        if (!save.data || !reward || !reward.key) return;
+        const gotKey = `${m.sid}:${m.phase}:${index}`;
+        const G = save.data.raidFlipGot || (save.data.raidFlipGot = {});
+        if (G[gotKey]) return;
+        G[gotKey] = Date.now(); this.credit(reward.key, reward.n); credited = true;
+      };
+      if (m.op === 'pick') creditPick(m.index, m.reward);
+      // resume 也带回已翻开的牌；断在服务端已提交、客户端尚未收到 pick 回执时，
+      // 刷新后的第一次 resume 必须把奖励补入包，raidFlipGot 保证重复 resume 不重复发放。
+      if (m.op === 'resume') for (const pick of picks) creditPick(pick.index, pick.reward);
+      if (credited) save.write();
+      // raidGot 只在规定数量的牌真正翻开后记录，claim 回执本身不再提前吞掉未翻牌会话。
+      if (save.data && (m.op === 'pick' || m.op === 'close' || m.op === 'resume')) {
+        const limit = RAID_CORE.flipLimit ? RAID_CORE.flipLimit(m.phase) : (Number(m.phase) === 1 ? 1 : 2);
+        if (picks.length >= limit) {
+          const G = save.data.raidGot || (save.data.raidGot = {});
+          if (!G[key]) { G[key] = Date.now(); const ks = Object.keys(G); if (ks.length > 40) for (const k of ks.sort((a, b) => G[a] - G[b]).slice(0, ks.length - 40)) delete G[k]; }
+        }
+        save.write();
+      }
+      this.changed();
+    },
   },
   stateChanged() {
     const S = this.S, st = S && S.st; if (st === this.lastSt) return;
@@ -187,7 +248,10 @@ const raidNet = {
     menus.closeAll(); sfx.door();
     this.say(`进入「${m.name}」${C.together ? '（一起打）' : ''}`, '#ffe070');
     if (C.together) {
-      if (C.isHost) { if (!coop.lead(def.id, 0, { raid: m.sid, node: m.node, run: m.run })) bail('没能开组队房间'); }
+      if (C.isHost) {
+        const lootMode = this.S && this.S.loot && this.S.loot.mode;
+        if (!coop.lead(def.id, 0, { raid: m.sid, node: m.node, run: m.run, lootMode })) bail('没能开组队房间');
+      }
       else setTimeout(() => { if (this.ctx === C && !C.started && !C.done) bail('没能跟上队长进入节点'); }, 30000);
       return;
     }
@@ -307,13 +371,13 @@ const raidNet = {
     if (m.limits) this.limits = m.limits;
     this.claims[key] = m.reward;
     if (d) {
-      const G = d.raidGot || (d.raidGot = {});
-      if (!G[key]) {
-        G[key] = Date.now();
-        for (const c of (m.reward && m.reward.cards) || []) this.credit(c.key, c.n);
-        const ks = Object.keys(G); if (ks.length > 40) for (const k of ks.sort((a, b) => G[a] - G[b]).slice(0, ks.length - 40)) delete G[k];
-        save.write();
+      const F = d.raidFlipState && d.raidFlipState[key], picks = F && F.picks || [];
+      if (!F) {
+        const FS = d.raidFlipState || (d.raidFlipState = {});
+        FS[key] = { phase: m.phase, state: 'open', closed: false, picks: [] };
       }
+      if (!this.flipState || this.flipState.sid !== m.sid || this.flipState.phase !== m.phase) this.flipState = { sid: m.sid, phase: m.phase, state: F && F.state || 'open', closed: !!(F && F.closed), picks };
+      save.write();
     }
     bus.emit('raidClaimed', m); this.changed();
   },
@@ -375,11 +439,20 @@ const raidNet = {
     if (t === 'raid:resume') return this.localOut({ S, fx: [], err: null, ack: null });
     if (t === 'raid:claim') {
       const ph = o.phase | 0, C = save.data.raidClaims || (save.data.raidClaims = {}), key = S.sid + ':' + ph, lim = RAID_CORE.limits(S.raid, save.data.raidWeek, now, RAID_TZ);
-      if (C[key]) return this.recv({ t: 'raid:claimed', sid: S.sid, phase: ph, reward: C[key], dup: true, limits: lim });
+    if (C[key]) { RAID_CORE.flipOpen(S, me, ph, now); RAID_CORE.flipSetReward(S, me, ph, C[key]); return this.recv({ t: 'raid:claimed', sid: S.sid, phase: ph, reward: C[key], dup: true, limits: lim }); }
       if (!S.res.phases.includes(ph)) return bad('这个阶段还没通关');
       if (!S.members[0].rw) return bad('这次是练习（本周 / 今天的次数已经用完了），没有奖励');
+      const opened = RAID_CORE.flipOpen(S, me, ph, now); if (!opened.ok) return bad(opened.text);
       C[key] = RAID_CORE.rollReward(S, me, ph, Math.random);
+      RAID_CORE.flipSetReward(S, me, ph, C[key]);
       return this.recv({ t: 'raid:claimed', sid: S.sid, phase: ph, reward: C[key], limits: lim });
+    }
+    if (t === 'raid:loot') {
+      const out = RAID_CORE.setLootMode(S, me, o.mode); if (!out.ok) return bad(out.text); return this.localOut({ S, fx: [], err: null, ack: null });
+    }
+    if (t === 'raid:flip') {
+      const ph = o.phase | 0, out = o.op === 'pick' ? RAID_CORE.flipPick(S, me, ph, o.index | 0, now, Math.random) : o.op === 'close' ? RAID_CORE.flipClose(S, me, ph, now) : RAID_CORE.flipOpen(S, me, ph, now);
+      if (!out.ok) return bad(out.text); return this.recv({ t: 'raid:flip', sid: S.sid, phase: ph, op: o.op, ...out });
     }
   },
   localTick() {
@@ -453,28 +526,40 @@ killEnt = function (t, a, h) {
 // 练习（次数用完）的节点：不掉装备
 const _raidRollDrop = rollDrop;
 rollDrop = function (t, dg) { if (dg && dg.raid && dg.raid.practice) return; return _raidRollDrop(t, dg); };
-// 结算：节点里没有翻牌 / 再次挑战，按钮改成“返回营地”
+// 节点结算：结果层持续暂停移动；最终节点完成后才允许进入阶段翻牌。
 const _raidResult = menus.w_result;
 menus.w_result = function (dg) {
   const el = _raidResult.call(this, dg);
   if (el && dg && dg.raid) {
     for (const x of el.querySelectorAll('.cards, .cardlbl')) x.remove();
     const row = el.querySelector('.row.hidden'); if (row) row.classList.remove('hidden');
-    for (const b of [...el.querySelectorAll('button')]) { if (b.textContent === '再次挑战') b.remove(); else if (b.textContent === '返回城镇') b.textContent = '返回营地'; }
-    const ttl = el.querySelector('.ttl'); if (ttl) ttl.textContent = 'NODE CLEAR!';
-    const dim = el.querySelector('.dim'); if (dim) dim.after(h('div', { class: 'cardlbl', style: 'color:#e0c0ff' }, `团本节点「${dg.raid.name}」通关${dg.raid.practice ? '（练习）' : ''}——回营地看攻坚情况板`));
+    const final = dg.raid.type === 'final';
+    for (const b of [...el.querySelectorAll('button')]) {
+      if (b.textContent === '再次挑战') b.remove();
+      else if (b.textContent === '返回城镇') {
+        b.textContent = final ? '进入翻牌结算' : '返回营地';
+        // 原版按钮闭包要求先点免费卡；团本节点不使用本地卡牌，改为显式回营地。
+        b.onclick = () => {
+          const S = raidNet.S;
+          if (final && (!S || S.st !== 'cleared')) { toastMsg('最终节点尚未完成，等待团本结算后才能翻牌', '#ffd0a0'); sfx.error(); return; }
+          sfx.click(); dg.finishFlip(); this.close('result'); game.paused = false; lootAll(); goTown();
+        };
+      }
+    }
+    const ttl = el.querySelector('.ttl'); if (ttl) ttl.textContent = final ? 'RAID NODE CLEAR!' : 'NODE CLEAR!';
+    const dim = el.querySelector('.dim'); if (dim) dim.after(h('div', { class: 'cardlbl', style: 'color:#e0c0ff' }, `团本节点「${dg.raid.name}」通关${dg.raid.practice ? '（练习）' : ''}——${final ? '完成团本后进入翻牌阶段' : '回营地看攻坚情况板'}`));
   }
   return el;
 };
 /* ---------------- 事件 ---------------- */
-for (const t of ['raid', 'raid:d', 'raid:entered', 'raid:ack', 'raid:fx', 'raid:note', 'raid:end', 'raid:open', 'raid:claimed']) net.on(t, m => raidNet.recv(m));
+for (const t of ['raid', 'raid:d', 'raid:entered', 'raid:ack', 'raid:fx', 'raid:note', 'raid:end', 'raid:open', 'raid:claimed', 'raid:flip']) net.on(t, m => raidNet.recv(m));
 bus.on('netOpen', () => {
   raidNet.flush();
   const d = save.data, L = d && d.raidLast;
   if (!raidNet.S && L && L.sid && Date.now() - L.t < 7 * 86400000) { raidNet.quiet = L.sid; net.send({ t: 'raid:resume', sid: L.sid }); }   // 刷新前的团本（结束了也能领没领的奖励）
 });
-bus.on('netLogout', () => { raidNet.S = null; raidNet.lastSt = null; raidNet.queue = []; raidNet.changed(); });
-bus.on('charLeave', () => { if (raidNet.L) { raidNet.L = null; raidNet.S = null; raidNet.lastSt = null; } raidNet.changed(); });
+bus.on('netLogout', () => { raidNet.S = null; raidNet.lastSt = null; raidNet.flipState = null; raidNet.queue = []; raidNet.changed(); });
+bus.on('charLeave', () => { if (raidNet.L) { raidNet.L = null; raidNet.S = null; raidNet.lastSt = null; raidNet.flipState = null; } raidNet.changed(); });
 // 回到城镇：节点结束（没打完 = 撤退），回营地后打开情况板
 bus.on('sceneEnter', () => {
   raidNet.flushOwed();

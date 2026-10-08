@@ -333,7 +333,10 @@ if (run('jobs')) {
       // 3. 装备对比 / 红字默认属性按转职的伤害类型
       if (Jd.dmgType === 'mag') {
         for (const id in SKILLS) { const S = SKILLS[id]; if (S.job === job && !S.passive && !S.awaken) game.skillLv[id] = 1; }
-        if (mainDmgType(p) !== 'mag') out.cmp.push(`${row} 装备对比按 ${mainDmgType(p)}`);
+        const cmpType = mainDmgType(p);
+        // 圣骑士的官方技能结算是独立攻击；职业元数据仍归在魔法口径以使用智力/板甲，
+        // 这里允许装备比较器返回 indep，避免把正确的独立攻击评分误报成魔法口径失败。
+        if (cmpType !== 'mag' && !(job === 'crusader' && cmpType === 'indep')) out.cmp.push(`${row} 装备对比按 ${cmpType}`);
         if (mainStatOf(cls, job) !== 'int') out.stat.push(`${row} 红字默认 ${mainStatOf(cls, job)}`);
         // 魔法转职能装的 Lv31+ 史诗：写了物理暴击的也要有魔法暴击、写了力量的也要有智力（不然魔法转职拿到是白板）
         for (const D of W) if (wear(D) && (D.rar === 5 || D.named) && D.lvl > 30) { const f = D.fx || {}, st = (D._def && D._def.st) || {};

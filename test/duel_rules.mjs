@@ -119,12 +119,21 @@ if (parts.includes('juggle')) {
       applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); vz.push(Math.round(B.vz));
       for (let k = 0; k < 3; k++) { let top = 0, falling = false; for (let i = 0; i < 300; i++) { __T.run(1); top = Math.max(top, B.z); if (B.vz < 0 && B.z < top * 0.7) { falling = true; break; } } if (!falling) break; applyHit(A, B, { dmg: 0.05, launch: 600, sure: true }); vz.push(Math.round(B.vz)); }
       out.relaunch = { vz, lv: duelAirLv(B) }; }
-    // 上挑之后人停在站立技能打得到的高度，整段浮空都能接上，不是挑完就飞出判定
+    // 上挑按正常重力飞起来。下落途中普攻和技能打中会把人重新打上去；无尽波动那种没判定的持续伤不会托人
     { const { A, B } = fresh(); const lv = A.kit.lv.upslash || 1;
       applyHit(A, B, { dmg: skillDmg(1.8, 0.18, lv), launch: 520 + lv * 6, knock: 40, box: [0, 100, 34, 0, 125], sure: true });
-      const hb = { box: [0, 92, 32, 18, 100] }; let maxZ = 0, connect = 0, frames = 0;
-      for (let i = 0; i < 200 && (B.st === 'air' || B.z > 0.5); i++) { __T.run(1); frames++; maxZ = Math.max(maxZ, B.z); A.x = B.x - 40; A.y = B.y; if (overlaps(atkBox(A, hb), B)) connect++; }
-      out.float = { maxZ: Math.round(maxZ), connect, frames, vz: Math.round(520 + lv * 6) }; }
+      const launchVz = Math.round(B.vz);
+      let maxZ = 0, frames = 0;
+      for (let i = 0; i < 180 && (B.st === 'air' || B.z > 0.5); i++) { __T.run(1); frames++; maxZ = Math.max(maxZ, B.z); if (B.vz < -40 && B.z < maxZ * 0.7) break; }
+      const fallVz = Math.round(B.vz);
+      applyHit(A, B, { dmg: 0.2, box: [0, 92, 32, 18, 100], stun: 0.2, knock: 40, sure: true });
+      const atkVz = Math.round(B.vz);
+      for (let i = 0; i < 90 && B.vz > -40; i++) __T.run(1);
+      applyHit(A, B, { dmg: 0.4, box: [0, 120, 40, 0, 140], stun: 0.3, knock: 30, sure: true });
+      const skVz = Math.round(B.vz);
+      for (let i = 0; i < 20 && B.vz > -60; i++) __T.run(1);
+      const before = B.vz; applyHit(A, B, { dmg: 0.05, sure: true, hs: 0, stun: 0.05, knock: 0, asAura: true });
+      out.float = { maxZ: Math.round(maxZ), frames, launchVz, fallVz, atkVz, skVz, auraVz: Math.round(B.vz), before: Math.round(before) }; }
     // 一级 / 二级保护：按原 HP 的 20% / 30%；重力变大；二级后挑空几乎没用；不强制空中受身；落地后追击直到倒地保护
     { const { A, B } = fresh(); applyHit(A, B, { dmg: 0.05, launch: 700, sure: true }); __T.run(10);
       const g0 = airGravity(B); let n = 0; const hitAir = () => { applyHit(A, B, { dmg: 3, airLift: 160, sure: true }); n++; };
@@ -167,7 +176,7 @@ if (parts.includes('juggle')) {
   const t = r.relaunch.vz;
   ok(t.length >= 4 && t.slice(1).every((v, i) => v > 0 && v < t[i]), `追加浮空：下落中再挑起来 ${t.length - 1} 次，挑起的初速度一次比一次小（${t.join(' → ')}）`, r.relaunch);
   const F = r.float;
-  ok(F && F.maxZ >= 50 && F.maxZ <= 110 && F.connect >= 45 && F.connect > F.frames * 0.6, `上挑后最高 ${F && F.maxZ}px，站立普攻在 ${F && F.connect}/${F && F.frames} 帧里打得到`, F);
+  ok(F && F.launchVz >= 400 && F.maxZ >= 90 && F.maxZ <= 180 && F.frames < 100 && F.fallVz < 0 && F.atkVz >= 300 && F.skVz >= 300 && F.auraVz < 150 && F.auraVz < F.atkVz - 100, `上挑初速 ${F && F.launchVz}、最高 ${F && F.maxZ}px、${F && F.frames} 帧后开始落（vz ${F && F.fallVz}）；普攻把人打回 vz ${F && F.atkVz}，技能 vz ${F && F.skVz}；持续伤不托人（vz ${F && F.auraVz}）`, F);
   const P = r.prot;
   ok(P.lv1.air >= 0.2 && P.lv1.air < 0.27 && P.lv1.g > 1.3, `一段保护：浮空累计血条的 ${(P.lv1.air * 100).toFixed(1)}% 开始加速下落，重力 ×${P.lv1.g}`, P.lv1);
   ok(P.lv2.air >= 0.3 && P.lv2.air < 0.4 && P.lv2.g > P.lv1.g && P.lv2.relaunchVz < 0 && !P.lv2.recover, `二段保护：累计 ${(P.lv2.air * 100).toFixed(1)}% 直接砸地（vz ${P.lv2.relaunchVz}），重力 ×${P.lv2.g}，不在空中受身`, P.lv2);

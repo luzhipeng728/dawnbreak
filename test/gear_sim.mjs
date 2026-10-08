@@ -24,7 +24,14 @@ const res = await page.evaluate(({ N, TARGET, OFF }) => {
   for (const k of NEW_EPICS) ITEMS[k]._noDrop0 = !!ITEMS[k].noDrop;
   const normalDgs = Object.values(DUNGEONS).filter(d => !d.hidden && !d.abyss).sort((a, b) => a.lvl[0] - b.lvl[0]);
   const LV = [5, 10, 12, 15, 18, 20, 22, 24, 26, 28, 30, 35, 40, 45, 50, 55, 60];   // 目标等级 60：node test/gear_sim.mjs 2 sword 60
-  function sim(base) {
+  function sim(base, seed) {
+    const oldRandom = Math.random;
+    let state = (seed >>> 0) || 0x9e3779b9;
+    Math.random = () => {
+      state = (Math.imul(1664525, state) + 1013904223) >>> 0;
+      return state / 0x100000000;
+    };
+    try {
     setMode(base);
     const p = game.player;
     game.lvl = 1; game.exp = 0; game.gold = 1500; game.job = null; inv.starter(p.cls); save.data.codex = {}; save.data.codexLog = []; save.data.abyss = null; save.data.questDone = {}; codexBonusCache = null;
@@ -116,8 +123,11 @@ const res = await page.evaluate(({ N, TARGET, OFF }) => {
     town(); snap();
     log.codex = codexStats().epic;
     return log;
+    } finally {
+      Math.random = oldRandom;
+    }
   }
-  const runAll = base => { const L = []; for (let i = 0; i < N; i++) L.push(sim(base)); return L; };
+  const runAll = base => { const L = []; for (let i = 0; i < N; i++) L.push(sim(base, 0x9e3779b9 + i)); return L; };
   const B = runAll(true), X = runAll(false);
   const avg = (L, f) => L.reduce((s, l) => s + (f(l) || 0), 0) / L.length;
   const rows = LV.filter(l => l <= TARGET).map(lv => {

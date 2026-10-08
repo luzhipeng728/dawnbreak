@@ -13,7 +13,7 @@ const START_SCENE = 'seria_room';
 defineNpc('seria', { name: '赛丽亚', title: '新手引导', art: 'world/npc_seria', h: 112, services: ['quest', 'shop:seria', 'storage'],
   greet: ['啊，勇士，你终于醒了！', '欢迎回来，勇士。'],
   lines: ['欢迎回来，勇士。今天也要去冒险吗？', '累了就回来休息吧，我会一直在这里等你。', '不知道为什么，我总觉得自己知道很多事情……', '你在洛兰昏倒以后睡了一整天，可把我吓坏了。', '格兰之森的哥布林越来越多了，出门要小心。'] });
-defineNpc('linus', { name: '林纳斯', title: '铁匠', art: 'world/npc_linus', h: 124, services: ['quest', 'shop:linus', 'repair', 'enhance', 'disassemble'],
+defineNpc('linus', { name: '林纳斯', title: '铁匠', art: 'world/npc_linus', h: 124, services: ['quest', 'shop:linus', 'repair', 'enhance', 'inherit', 'disassemble'],
   greet: ['哟，是你啊。手里的家伙还顺手吗？'],
   lines: ['武器坏了就拿来修，别拿命开玩笑。', '想要变强？先把手里的家伙练熟再说。', '我年轻的时候也是帝国有名的剑客……算了，不提了。', '强化这种事，看的是运气，也看的是胆量。'] });
 defineNpc('tuguan', { name: '土罐', title: '罐子商人', art: 'world/npc_tuguan', h: 108, services: ['quest', 'shop:tuguan'],
@@ -46,7 +46,7 @@ defineNpc('vier', { name: '维尔·克鲁', title: '竞技大赛', art: 'world/n
   greet: ['来来来！想在竞技场上一决高下吗？'],
   lines: ['赫顿玛尔竞技大赛，是勇士证明自己的舞台！', '上一届的冠军是一位鬼剑士，一招拔刀斩就结束了比赛。', '想参加决斗？先把基本功练扎实再说吧。', '观众们最喜欢华丽的连招了！'] });
 /* ---- 赫顿玛尔 · 中央广场（官方：凯丽、风振、诺顿、索西雅、诺羽） ---- */
-defineNpc('kiri', { name: '凯丽', title: '强化 · 神枪手导师', art: 'world/npc_kiri', h: 114, services: ['quest', 'shop:kiri', 'enhance', 'job'], jobFor: 'gun',
+defineNpc('kiri', { name: '凯丽', title: '强化 · 神枪手导师', art: 'world/npc_kiri', h: 114, services: ['quest', 'shop:kiri', 'enhance', 'inherit', 'job'], jobFor: 'gun',
   greet: ['嗨~要让装备闪闪发光吗？'],
   lines: ['来自天界的技术，可比你们地上的铁匠厉害多了！', '想让装备闪闪发光？交给凯丽吧~', '枪械的奥秘，可不是随便谁都能掌握的哦。'] });
 // 格斗家导师（docs/CLASS_PLAN_FIGHTER.md #44）：转职按钮只对格斗家显示（jobAvailable 看 jobFor）；武器商店等格斗家开放后才挂出来

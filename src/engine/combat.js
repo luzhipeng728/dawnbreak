@@ -31,7 +31,7 @@ const JUGGLE = {
   bounceImp: 330, bounceK: 0.32,  // 落地速度 > 330 且这轮没弹过 → 弹地一次（速度 × 0.32）；bounce: k 强制弹（速度 × k，至少 260）
   otgLift: 110,                   // 倒地追击把目标轻轻托起（刷图：越打托得越低，额度按“招”算，见 JUGGLE_PROT 的 otgMax / otgSegMax / otgLiftStep）
   pvpGrav: 0.6, pvpLaunch: 0.55, pvpRecover: 4,   // 决斗一段保护每级：重力 +60%、浮空力 ×0.55。二段（30%）不在这里强制受身，由 duel.js 直接砸地
-  pvpFloatK: 0.4, pvpFloatG: 0.26,  // 决斗未进保护时：挑空压低（站立技能整段都打得到）、下落放慢，上挑之后还能接第二下、第三下。一段保护之后这两项取消，人变沉
+  pvpHitPop: 320,             // 决斗未进保护：空中被普攻或技能打中，这一下把人重新打上去。下落不另放慢，停手就正常落地。一段保护之后取消
   pvpAirT: 3, pvpAirRamp: 0.8,    // 决斗：同一轮浮空超过 3 秒，重力每秒再 +80%
   pvpOtgPop: 240, pvpSweepPop: 210,   // 倒地被扫地托起的高度；二段保护之后再托，只给一小节，马上落回地上
 };
@@ -94,8 +94,7 @@ function airGravity(e) {
   let g = JUGGLE.grav / GRAV * (1 + Math.min(JUGGLE.gravMax, (c.air || 0) * JUGGLE.gravStep));
   if (Math.abs(e.vz) < JUGGLE.apexV) g *= JUGGLE.apexFloat;          // 最高点略微停顿，方便追击
   const pl = airProtLv(e), T = c.airT || 0;
-  if (e.fighter && game.pvp && !pl) g *= JUGGLE.pvpFloatG;   // 还没到一段：下落慢，给连招留时间
-  if (pl) g *= 1 + JUGGLE.pvpGrav * pl;
+  if (pl) g *= 1 + JUGGLE.pvpGrav * pl;          // 一段保护起下落变快；没到一段时重力不另放慢
   if (e.fighter && game.pvp && T > JUGGLE.pvpAirT) g *= 1 + (T - JUGGLE.pvpAirT) * JUGGLE.pvpAirRamp;
   return g * (e.gravMul || 1);
 }
@@ -186,7 +185,12 @@ function applyHit(a, t, h, opt = {}) {
   }
   const counter = !h.noCounterBonus && isCounter(t);
   const back = Math.sign(src.x - t.x || 1) !== t.face && t.st !== 'down' && t.st !== 'air' && t.st !== 'held';
-  const crit = Math.random() < critOf(a, type) + (back ? COMBAT.backCrit : 0) + (h.critBonus || 0);
+  // A successful front guard suppresses the critical bonus.  Guarded hits are
+  // already reduced by the skill's absorption rate; letting a random critical
+  // through can make one guarded hit exceed the normal unguarded hit, which
+  // contradicts the PvE guard rule and makes the result depend on RNG.
+  const guard = t.st === 'act' && t.act && t.act.guard && !h.grab && !h.unblockable && Math.sign(src.x - t.x || 1) === t.face;
+  const crit = !guard && Math.random() < critOf(a, type) + (back ? COMBAT.backCrit : 0) + (h.critBonus || 0);
   const defV = Math.max(0, defOf(t, h.defType || type) || 0);
   let dmg = atkOf(a, type) * (h.dmg ?? 1) * (opt.mul || (act && !opt.proj ? act.dmgMul : 1) || 1) * (1 - defV / (defV + 1200)) * elemMul(a, t, elem) * rnd(0.95, 1.05);
   if (crit) dmg *= (a.critDmg || 1.5) + buffVal(a, 'critDmg');
@@ -199,7 +203,6 @@ function applyHit(a, t, h, opt = {}) {
   if (bh && bh.mul !== undefined) dmg *= bh.mul;
   if (t.status || a.status) dmg *= statusDmgMul(a, t);   // 异常状态：诅咒 / 睡眠唤醒（content/monsters/bestiary.js）
   // 格挡：正面的非抓取攻击被吸收大部分伤害，不硬直（被打会后退）
-  const guard = t.st === 'act' && t.act && t.act.guard && !h.grab && !h.unblockable && Math.sign(src.x - t.x || 1) === t.face;
   if (guard) dmg *= 1 - t.act.guard;
   // 魔法护盾：一部分伤害改由 MP 承担
   const sh = buffVal(t, 'shield'); if (sh > 0 && t.mp > 0) { const take = Math.min(t.mp, dmg * sh); t.mp -= take; dmg -= take; }
@@ -256,15 +259,29 @@ function react(a, t, h, src, counter, pvp, inst) {
   const dir = h.radial ? Math.sign(t.x - src.x || src.face) : h.pull ? -src.face : src.face;
   const kb = (h.knock ?? 80) / Math.max(0.5, t.weight), c = t.cmb;
   const airborne = t.st === 'air' || t.z > 2, sw = Math.sqrt(t.weight);
+  // 二段保护已经把目标砸入收尾阶段：后续高段攻击仍可造成伤害，但不能重新开启一轮浮空。
+  // 先去掉 launch，再进入倒地分支，确保连续扫地不会反复把目标托离地面。
+  if (pvp && t._pvpDrop && h.launch) { h = { ...h }; delete h.launch; }
   // ---- 倒地追击 ----
   if (t.st === 'down' && pveJug(t)) { if (jugOtg(t, h, dir, kb, sw, inst)) return; }   // 刷图：按招算额度（engine/juggle_core.js）；挑空的继续走下面的浮空分支
   else if (t.st === 'down') {
+    if (pvp && t._pvpDrop && (t._pvpSweepUntil || 0) > game.t) return;
     t.downHits++; c.down++;
     const prot = pvp && c.downDmg >= t.hpMax * PVP.downProt;
-    if (prot) { t.startGetup(); t.invul = Math.max(t.invul, pvp ? PVP.getupInvul : 0.7); fxText(pvp ? '倒地保护' : '起身', t.x, t.y, t.z, { col: '#9fe8ff', size: 10 }); return; }
+    if (prot) {
+      t.startGetup();
+      if (pvp) { t._pvpAutoRecover = true; t.techHold = true; }
+      t.invul = Math.max(t.invul, pvp ? PVP.getupInvul : 0.7); fxText(pvp ? '倒地保护' : '起身', t.x, t.y, t.z, { col: '#9fe8ff', size: 10 }); return;
+    }
     if (!h.launch) {
       const heavy = pvp && typeof duelAirLv === 'function' && duelAirLv(t) >= 2;   // 二段已经砸过地：扫地只托一点点
       const pop = heavy ? JUGGLE.pvpSweepPop : (pvp ? JUGGLE.pvpOtgPop : (h.otgLift ?? JUGGLE.otgLift));
+      if (pvp && t._pvpDrop) {
+        t._pvpSweepCount = (t._pvpSweepCount || 0) + 1;
+        // 允许前两次扫地完整展示短托动作；之后进入更长的倒地保护窗口，
+        // 防止高频低段攻击把二段保护变成无限循环浮空。
+        t._pvpSweepUntil = game.t + (t._pvpSweepCount <= 2 ? 0.28 : 1.4);
+      }
       t.vz = (heavy ? pop : (h.otgLift ?? pop)) / sw; t.z = 1; t.vx = dir * kb * 0.3; t.setState('air'); t.bounced = true; return;
     }
   }
@@ -276,11 +293,16 @@ function react(a, t, h, src, counter, pvp, inst) {
     const res = Math.pow(Math.max(0.5, t.weight), JUGGLE.weightExp) / (t.boss ? JUGGLE.bossRes : 1);
     const late = !pvp && t.fighter && game.pvp && (c.airT || 0) > JUGGLE.duelSumLateT;   // 决斗里被召唤物打、浮空太久：挑不高、接不住（刷图没有时限）
     let vz;
+    const dot = !h.launch && !h.box && !h.airLift && !h.spike && !h.down && !(h.knock > 0);   // 无尽波动这类持续伤：只扣血，不把人托在天上
     if (h.launch) {   // 挑空 / 追加浮空：同一轮连击里逐次递减；目标已经在更快地上升就不减速
       vz = h.launch * Math.max(JUGGLE.relaunchMin, Math.pow(JUGGLE.relaunch, c.launch || 0)) * pk / res * (late ? JUGGLE.duelSumLate : 1);
-      if (pvp) vz *= JUGGLE.pvpFloatK;   // 压到站立判定打得到的高度；追加浮空仍一次比一次低
       if (airborne && t.vz > vz) vz = t.vz;
       c.launch = (c.launch || 0) + 1;
+    } else if (dot) {
+      vz = t.vz;
+    } else if (pvp && !pl) {   // 没到一段：普攻和技能打中就把人重新打上去
+      const pop = (h.airLift > JUGGLE.pvpHitPop ? h.airLift : JUGGLE.pvpHitPop) * pk / res;
+      vz = t.vz > pop ? t.vz : pop;
     } else {          // 空中普通受击：下落中接住（托一下），上升中基本不影响
       const k = late ? 0 : Math.max(JUGGLE.airMin, Math.pow(JUGGLE.airDecay, c.air));   // 接住的力度：越连越弱
       const lift = (h.airLift ?? JUGGLE.airLift) * k * pk / res;

@@ -85,7 +85,7 @@ Object.assign(menus, {
       h('div', { class: 'small', style: 'color:#ffb08a' }, '这个角色的职业在当前版本还不能进入：请刷新页面更新到最新版本。角色数据已原样保留，不会丢失。'))
       : d ? h('div', { class: 'csinfo' },
       h('div', { class: 'row' }, h('b', { class: 'big' }, d.name || csClassName(d.cls)), h('span', { class: 'gold' }, `Lv.${d.lvl}`), h('span', {}, csClassName(d.cls, d.job) + (d.job ? `（${CLASSES[d.cls].name}）` : ''))),
-      h('div', { class: 'row small' }, h('span', {}, `所在位置：${csLocName(d)}`), h('span', {}, `金币：${fmtNum(d.gold || 0)} G`), h('span', {}, `疲劳：${d.fatigue}/${FATIGUE_MAX}`), h('span', {}, `游戏时间：${csFmtPlay(d.playTime)}`)))
+      h('div', { class: 'row small' }, h('span', {}, `所在位置：${csLocName(d)}`), h('span', {}, `金币：${fmtNum(d.gold || 0)} G`), h('span', {}, `疲劳：${d.fatigue}/${typeof fatigueMax === 'function' ? fatigueMax() : FATIGUE_MAX}`), h('span', {}, `游戏时间：${csFmtPlay(d.playTime)}`)))
       : h('div', { class: 'csinfo dim' }, chars.length ? '选择一个角色' : '还没有角色。点击空的角色位或“创建角色”，开始你的冒险吧！');
     const del = () => {
       if (!d) return; sfx.click();

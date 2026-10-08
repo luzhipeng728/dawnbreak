@@ -10,6 +10,11 @@ function weaponArtOf(it, cls, skin) {
   const t = it.wtype || (typeof CLASS_START_WEAPON !== 'undefined' && CLASS_START_WEAPON[it.cls || cls]);
   const sk = skin && (skin.skin || WEAPON_SKINS[skin.key]);   // 商城物品带 skin 字段；没有就按 key 查表
   if (sk && t && WEAPON_IMG[`${sk}_${t}`]) return `${sk}_${t}`;
+  // 带独立配色的具名武器复用对应类型的高品级原画，让渲染层继续应用 pal；
+  // 资源别名仍保留在 WEAPON_IMG / ASSET_SRC 中供懒加载和完整性检查使用。
+  const def = typeof ITEMS !== 'undefined' && ITEMS[it.key];
+  const pal = it.pal || (def && def.pal), palTier = (it.rar ?? (def && def.rar)) === 5 ? 4 : 3;
+  if (pal && t && WEAPON_IMG[`${t}_r${palTier}`]) return `${t}_r${palTier}`;
   if (WEAPON_IMG[it.key]) return it.key;
   const tier = weaponTierArt(t, it.rar ?? (typeof ITEMS !== 'undefined' && ITEMS[it.key] ? ITEMS[it.key].rar : 0));
   return tier || (t && WEAPON_IMG[t] ? t : null);

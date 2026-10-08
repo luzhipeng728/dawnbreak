@@ -1,6 +1,9 @@
 // 无头浏览器测试公共部分：启动 Chrome（headless）、收集控制台/页面错误、分析截图亮度
 import { createRequire } from 'module';
 import { execSync } from 'child_process';
+import { existsSync, readdirSync } from 'fs';
+import { homedir } from 'os';
+import path from 'path';
 const require = createRequire(import.meta.url);
 
 function loadPlaywright() {
@@ -28,13 +31,41 @@ function serveWeb() {
   return `http://127.0.0.1:${srv.address().port}/index.html`;
 }
 export const URL_BASE = process.env.GAME_URL || (process.env.WEB ? serveWeb() : new URL('../dist/dawnbreak.html', import.meta.url).href);
-const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+// 系统 Chrome 在 macOS headless 启动时会触发 HIServices/RegisterApplication，
+// 多个测试并发清理 profile 时可能直接 SIGABRT。优先使用 Playwright 自带
+// 浏览器；本机偶尔只保留相邻 revision 的 headless-shell，因此动态寻找
+// 已安装的 shell，避免把“浏览器没启动”误报成页面断言失败。
+function bundledBrowser() {
+  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+  const own = chromium.executablePath();
+  if (existsSync(own)) return own;
+  const root = process.env.PLAYWRIGHT_BROWSERS_PATH && process.env.PLAYWRIGHT_BROWSERS_PATH !== '0'
+    ? process.env.PLAYWRIGHT_BROWSERS_PATH : path.join(homedir(), 'Library', 'Caches', 'ms-playwright');
+  try {
+    const dirs = readdirSync(root).filter(n => /^chromium_headless_shell-/.test(n)).sort().reverse();
+    const suffix = process.platform === 'darwin' ? (process.arch === 'arm64' ? 'mac-arm64' : 'mac') : process.platform === 'win32' ? 'win64' : 'linux';
+    for (const d of dirs) {
+      const base = path.join(root, d);
+      const names = readdirSync(base, { withFileTypes: true }).filter(x => x.isDirectory()).map(x => x.name);
+      for (const n of names) {
+        const f = path.join(base, n, `chrome-headless-shell-${suffix}`);
+        if (existsSync(f)) return f;
+        const g = path.join(base, n, 'chrome-headless-shell');
+        if (existsSync(g)) return g;
+      }
+    }
+  } catch { /* 没有缓存时让 Playwright 给出标准安装提示 */ }
+  return null;
+}
+const CHROME = bundledBrowser();
 
-export async function launch({ width = 1280, height = 720, gpu = process.env.PELICAN_GPU || 'default' } = {}) {
+export async function launch({ width = 1280, height = 720, gpu = process.env.PELICAN_GPU || (process.platform === 'darwin' ? 'metal' : 'default') } = {}) {
   const args = ['--autoplay-policy=no-user-gesture-required', '--enable-precise-memory-info', '--js-flags=--expose-gc', '--ignore-gpu-blocklist'];
   if (gpu === 'swiftshader') args.push('--use-angle=swiftshader', '--enable-unsafe-swiftshader');
   else if (gpu === 'metal') args.push('--use-angle=metal', '--enable-gpu');
-  const browser = await chromium.launch({ headless: true, executablePath: CHROME, args });
+  const launchOpt = { headless: true, args };
+  if (CHROME) launchOpt.executablePath = CHROME;
+  const browser = await chromium.launch(launchOpt);
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
   const logs = [];
   page.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') logs.push({ type: m.type(), text: m.text() }); });

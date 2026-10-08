@@ -7,7 +7,7 @@
 //   6. 帧率：城镇 8 人（各转职外观 + +13~+16 武器 + 天空套）+ 地下城 4 个开着状态特效的角色打怪，要 55fps 以上
 //   shots：每个转职一排（城镇站立 / 走路 / 状态、混搭时装 + 状态、地下城状态），原始 1 倍大小 → test/shots/jobvisuals/sheet.jpg
 //   glow：强化光效阶梯 +7 / +10 / +12 / +13 / +14 / +15 / +16（修罗之戮、血之挽歌、增幅各一排）→ test/shots/jobvisuals/glow.jpg
-import { launch, URL_BASE } from './lib.mjs';
+import { launch, URL_BASE, gpuInfo } from './lib.mjs';
 import fs from 'fs';
 import { execFileSync } from 'child_process';
 const SHOTS = process.argv.includes('shots'), GLOW = process.argv.includes('glow');
@@ -102,6 +102,7 @@ const headsSheet = async () => {
 
 const { browser, page, logs } = await launch({ width: 960, height: 540 });
 await town();
+console.log('渲染器', await gpuInfo(page));
 if (process.argv.includes('heads')) { await headsSheet(); await browser.close(); process.exit(0); }
 
 console.log('1. look 带转职');

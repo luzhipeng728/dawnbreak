@@ -1,7 +1,7 @@
 /* =====================================================================
    装备 2.0 · 纯冷却流（用户要求「只减冷却」的装备线，本作原创，Lv50）
    - 传说「时之沙漏」5 件套（项链 / 手镯 / 戒指 / 辅助装备 / 魔法石）：每件只有技能冷却 -10% + 这个部位的普通基础属性；2 / 3 / 5 件各 -5% / -8% / -12%
-   - 神器「流沙」：防具 5 种护甲 × 5 部位、首饰 3 件、辅助装备、魔法石、15 种武器各一件，每件只有技能冷却 -6%（武器拿在手里是 <类型>_r3 外观，只做图标）
+   - 神器「流沙」：防具 5 种护甲 × 5 部位、首饰 3 件、辅助装备、魔法石、当前已开放武器类型各一件，每件只有技能冷却 -6%（武器拿在手里是 <类型>_r3 外观）
    冷却减少各来源相乘、不设上限（game/progress.js equipTotals 的 cdrMul，最低保底 5%）；每件装备、每档套装效果各算一个来源。
    获取：所有 Lv50 以上地下城 / 深渊派对的领主小几率掉落（不进随机池）；歌兰蒂斯「深渊派对 · 纯冷却流」用宇宙灵魂兑换（ui/items/abyss.js）。
    图标：art/tools/gear_icons_cdr60.py。说明：docs/GEAR.md §11。
@@ -50,11 +50,15 @@ const SAND = (key, def) => { CDR(key, { rar: 3, fx: { cdr: 0.06 }, desc: SAND_DE
 for (const [slot, name] of [['neck', '流沙项链'], ['bracelet', '流沙手镯'], ['ring', '流沙戒指'], ['support', '流沙之瓶'], ['stone', '流沙晶石']]) SAND(`sand_${slot}`, { slot, name });
 // 防具：5 种护甲各一套（精通只认同类型的护甲，重甲 / 板甲穿错还有惩罚）
 for (const a of Object.keys(ATYPES)) for (const s of ARMOR_SLOTS) SAND(`sand_${a}_${s}`, { slot: s, atype: a, name: `流沙${ATYPES[a].name}${SLOT_NAME[s]}` });
-for (const t of Object.keys(WTYPES)) SAND(`sand_${t}`, { slot: 'weapon', wtype: t, name: `流沙${WTYPES[t].name}` });
+// 当前类型有独立的流沙图标；旧版 / 未随包发布的素材用同形制通用武器图兜底，
+// 这样新增职业不会因为缺一张美术而在商城或掉落窗口显示空图。
+const CDR_WEAPON_ICON = { cross: 'item_w_staff', rosary: 'item_w_rod', totem: 'item_w_club', scythe: 'item_w_spear', battleaxe: 'item_w_greatsword' };
+const cdr60Icon = t => { const k = `item_sand_${t}`; return typeof ASSET_SRC === 'undefined' || ASSET_SRC[`icon/${k}`] ? k : (CDR_WEAPON_ICON[t] || `item_w_${t}`); };
+for (const t of Object.keys(WTYPES)) SAND(`sand_${t}`, { slot: 'weapon', wtype: t, name: `流沙${WTYPES[t].name}`, icon: cdr60Icon(t) });
 
 /* ---------------- 掉落：所有 Lv50 以上地下城（含深渊派对）的领主（要等所有区域定义完，排到 gear60_apply.js 执行）---------------- */
 g60Later(() => {
-  const list = [...CDR60.legend, ...CDR60.sand].filter(k => !ITEMS[k].cls || clsOpen(ITEMS[k].cls)).map(k => [k, CDR60.drop[ITEMS[k].rar]]);   // 还没开放的职业（格斗家）的流沙武器不掉
+  const list = [...CDR60.legend, ...CDR60.sand].filter(k => !ITEMS[k].cls || clsOpen(ITEMS[k].cls)).map(k => [k, CDR60.drop[ITEMS[k].rar]]);   // 未开放职业的流沙武器不进入当前掉落表
   for (const id in DUNGEONS) { const G = DUNGEONS[id]; if (G.lvl && G.lvl[1] >= CDR60.minLv) g60AddBoss(id, list); }   // g60Later 里直接调 gearDrop 的实现（gearDrop 本身在排队执行期间还会再排一次队）
 });
 }

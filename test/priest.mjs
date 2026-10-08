@@ -32,7 +32,7 @@ if (MODES.includes('switch')) {
     on.open && on.card && !on.off && on.sel === 'priest' && on.classes.includes('priest') && on.jobs.join() === 'crusader,monk,exorcist,avenger' && on.drop > 0 && on.shopLinus > 0 && on.grandis.job && on.grandis.shop && on.grandis.jobFor === 'priest' && on.fighterOpen, on);
   // 已开放的圣职者旧存档：可以正常打开并保留角色关键数据
   const kept = await page.evaluate(() => {
-    const c = { v: 9, cls: 'priest', name: '开发圣职者', lvl: 12, job: null, skillLv: { p_launcher: 3 }, equip: {}, inv: [], cera: 7 };
+    const c = { v: 5, cls: 'priest', name: '开发圣职者', lvl: 12, job: null, skillLv: { p_launcher: 3 }, equip: {}, inv: [], cera: 7 };
     save.live = false; save.newGame('sword', '剑士'); const d = JSON.parse(localStorage.getItem(save.key)); d.chars.push(c); localStorage.setItem(save.key, JSON.stringify(d));
     save.loadAll(); save.persist(); const after = JSON.parse(localStorage.getItem(save.key)); const pc = after.chars.find(x => x.cls === 'priest');
     return { kept: !!pc && pc.name === c.name && pc.lvl === c.lvl && pc.skillLv.p_launcher === 3, open: charOpen(pc), n: after.chars.length };

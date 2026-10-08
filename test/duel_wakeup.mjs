@@ -1,7 +1,7 @@
 // 决斗“一定站得起来”（2026-09-30 线上反馈：靠近阿修罗就一直被打在地上站不起来）：逐帧 step()、不渲染
 //   asura  玩家（狂战士，只会往前走 + 普攻）走进开着无尽波动的阿修罗 AI，量“倒地后连续躺着的时间”和“连续不能行动的时间”
 //   aura   无尽波动的周期伤害打倒地 / 起身无敌中的目标：不再把人托起、不重置倒地时间；倒地时挂上的眩晕不拖延起身；硬控结束后同一种短时间内挂不上
-//   all    23 种职业 / 转职的 AI 轮流打一个 AI 对手：倒地最长 ≤ 1.6 秒 + 起身，连续不能行动 ≤ 4 秒（受身蹲伏是自己选择多蹲、无敌，不算被锁）
+//   all    23 种职业 / 转职的 AI 轮流打一个 AI 对手：倒地和连续不能行动都不能超过当前 PVP 保护上限（受身蹲伏是自己选择多蹲、无敌，不算被锁）
 // 用法：node test/duel_wakeup.mjs [asura,aura,all] ；ALL=每种打几场（默认 2）
 import { launch, URL_BASE } from './lib.mjs';
 const parts = (process.argv[2] || 'asura,aura,all').split(',');
@@ -98,7 +98,7 @@ if (parts.includes('all')) {
   const worstD = Object.entries(r).sort((x, y) => y[1].down - x[1].down).slice(0, 4), worstL = Object.entries(r).sort((x, y) => y[1].lock - x[1].lock).slice(0, 4);
   console.log('  躺得最久：' + worstD.map(([k, v]) => `${k} ${v.down}s`).join('、') + '；连续不能行动最久：' + worstL.map(([k, v]) => `${k} ${v.lock}s`).join('、'));
   ok(worstD[0][1].down <= LIM.down + 0.35, `23 种职业的 AI 打人：倒地最多躺 ${worstD[0][1].down} 秒就起身`, r);
-  ok(worstL[0][1].lock <= 4.2, `23 种职业的 AI 打人：连续不能行动最长 ${worstL[0][1].lock} 秒（≤ 4 秒）`, r);
+  ok(worstL[0][1].lock <= LIM.lock + 0.6, `23 种职业的 AI 打人：连续不能行动最长 ${worstL[0][1].lock} 秒（上限 ${LIM.lock} 秒）`, r);
 }
 
 const errs = logs.filter(l => l.type === 'pageerror');

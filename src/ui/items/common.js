@@ -86,7 +86,7 @@ addStyle(`
 `);
 /* ---- 状态（跨窗口共享，重绘时保留） ---- */
 const IW = { invTab: 'equip', shopTab: {}, shopCat: {}, shopSel: {}, sellSel: new Set(), disSel: new Set(), stTab: 'char', enhSel: null };
-const ITEM_WINS = ['inv', 'status', 'shop', 'sell', 'storage', 'enhance', 'disassemble', 'repair', 'amplify', 'forge', 'enchant', 'codex', 'abyss', 'bulk'];
+const ITEM_WINS = ['inv', 'status', 'shop', 'sell', 'storage', 'enhance', 'inherit', 'disassemble', 'repair', 'amplify', 'forge', 'enchant', 'codex', 'abyss', 'bulk'];
 // 物品变化后刷新所有打开的物品窗口（原地重绘，保留位置与滚动）
 function itemsRefresh(except) {
   menus.hideTip();
@@ -128,7 +128,8 @@ function itemTipOne(it, cur, head, who) {
     it.kind === 'equip' && it.grade != null ? h('div', { class: 'gr' }, GRADES[it.grade]) : null));
   if (it.kind === 'equip') {
     const s1 = h('div', { class: 'sec' });
-    s1.append(h('div', { class: it.lvl > W.lvl ? 'bad' : '' }, `Lv.${it.lvl} 以上可以使用`));
+    const cap = typeof equipLevelCap === 'function' ? equipLevelCap(W.lvl, game.scene) : W.lvl;
+    s1.append(h('div', { class: it.lvl > cap ? 'bad' : '' }, `Lv.${it.lvl} 以上可以使用${cap > W.lvl ? `（契约上限 Lv.${cap}）` : ''}`));
     if (it.slot === 'weapon' && it.cls) s1.append(h('div', { class: W.cls && it.cls !== W.cls ? 'bad' : '' }, `${CLASSES[it.cls] ? CLASSES[it.cls].name : it.cls}专用`));
     if (it.slot === 'weapon' && wtypeJobText(it.wtype)) s1.append(h('div', { class: W.cls && !wtypeJobOk(it.wtype, W.job) ? 'bad' : '' }, `只有${wtypeJobText(it.wtype)}能装备`));
     if (it.atype && ARMOR_SLOTS.includes(it.slot)) { const m = W.cls && masteryOf(W.cls, W.job) === it.atype; s1.append(h('div', {}, `${ATYPES[it.atype].name}`, h('span', { class: m ? 'good' : it.atype === 'heavy' || it.atype === 'plate' ? 'bad' : 'dimt' }, m ? '（精通：有额外加成）' : it.atype === 'heavy' || it.atype === 'plate' ? '（非精通：攻速 / 施放 / MP 恢复略微降低）' : '（非精通）'))); }

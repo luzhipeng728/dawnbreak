@@ -3,15 +3,23 @@
 # 必须串行跑：同时开多个无头浏览器时，时序敏感的测试会偶发失败。
 # 用法：sh test/all.sh [quick]   —— quick 只跑核心的几项
 cd "$(dirname "$0")/.." || exit 1
-node build.mjs | tail -1
-[ -d server/node_modules ] || npm ci --prefix server --no-audit --no-fund >/dev/null 2>&1   # 联机测试要用真实服务端（本机临时库）
 LOG=test/shots/all; mkdir -p $LOG; : > $LOG/summary.txt
+if ! node build.mjs > $LOG/build.log 2>&1; then cat $LOG/build.log; exit 1; fi
+tail -1 $LOG/build.log
+if [ ! -d server/node_modules ] && ! npm ci --prefix server --no-audit --no-fund > $LOG/npm-ci.log 2>&1; then cat $LOG/npm-ci.log; exit 1; fi   # 联机测试要用真实服务端（本机临时库）
+FAILS=0; TOTAL=0
 run() { name=$1; shift; printf '== %-12s ' "$name"; start=$(date +%s); "$@" > $LOG/$name.log 2>&1; code=$?
   # 输出里出现页面错误也算失败（有些测试只打印 LOGS 不设退出码）
   if [ $code -eq 0 ] && grep -qE '"type": ?"pageerror"|✗' $LOG/$name.log; then code=99; fi
+  TOTAL=$((TOTAL + 1)); [ $code -eq 0 ] || FAILS=$((FAILS + 1))
   echo "$([ $code -eq 0 ] && echo PASS || echo "FAIL($code)")  $(( $(date +%s) - start ))s" | tee -a $LOG/summary.txt; }
+finish() {
+  echo "全套回归：$((TOTAL - FAILS))/$TOTAL 通过（详情 $LOG/<名字>.log）"
+  [ "$FAILS" -eq 0 ]
+}
 run flow      node test/flow.mjs
 run ui        node test/ui.mjs
+run skill_layout node test/skill_layout.mjs
 run items     node test/items.mjs
 run compare   node test/compare.mjs
 run bulk      node test/bulk.mjs
@@ -23,6 +31,16 @@ run gear60pow node test/gear60.mjs power
 run gear60con node test/gear60.mjs content
 run gearsim   node test/gear_sim.mjs 20
 run cdr60     node test/cdr60.mjs
+run contract_rules node test/contract_rules.mjs
+run contract   node test/contract.mjs
+run infighter_contract node test/infighter_contract.mjs
+run raid_auction node test/raid_auction.mjs
+run raid_core_rules node test/raid_core_rules.mjs
+run raid_rewards node test/raid_rewards.mjs
+run coop_mail node test/coop_mail.mjs
+run ozma_core node test/ozma_core.mjs
+run ozma_maps node test/ozma_maps.mjs
+run ozma_runtime node test/ozma_runtime.mjs
 run quests    node test/quests.mjs
 run guide     node test/guide.mjs
 run quickquest node test/quickquest.mjs
@@ -56,6 +74,8 @@ run fpvp      node test/fighter_pvp.mjs   # 格斗家 B9：决斗表登记、AI 
 run flaunch   node test/fighter_launch.mjs   # 格斗家上线整条流程：建 4 个转职、3 个转职打通地下城、决斗、存档往返（没开放时原样保留）、选角显示
 run flooks    node test/fighter_looks.mjs   # 格斗家外观（B2）：转职动作片段、转职外观 / 头饰 / 道服色、拳上武器 50 张 + 图标、6 套时装、配件、路人
 run priest    node test/priest.mjs   # 圣职者 B0 + 基础职业：开放开关（?priest=1 / 没开放时原样保留）、id / 转职登记 / 武器 / 动画契约、队伍原语（hot / life / d.to）、11 个基础技能逐个放 / 命中 / 冷却 / MP / 指令 / 机制
+run infighter node test/infighter.mjs
+run priest_infighter node test/priest_infighter.mjs
 run audit_priest node test/skillaudit.mjs priest --compare   # 圣职者技能对官方规格 docs/skills/priest.json（转职块做完把 priest:<转职> 加进来）
 run spitfire  node test/spitfire.mjs
 run mechanic  node test/mechanic.mjs
@@ -79,8 +99,8 @@ run box100    node test/box100.mjs
 run repair    node test/repair.mjs
 run classes   node test/classes.mjs sword,gun,mage,sword:blade,sword:berserker,sword:asura,sword:soulbender,sword:ghostblade,gun:ranger,gun:launcher,gun:mechanic,gun:spitfire,gun:paramedic,mage:elemental,mage:battlemage,mage:summoner,mage:witch,mage:enchantress
 run audit_mage node test/skillaudit.mjs mage,mage:elemental,mage:battlemage,mage:summoner,mage:witch,mage:enchantress --compare   # 魔法师技能对官方规格 docs/skills/mage.json
-[ "$1" = quick ] && exit 0
-run bestiary  node test/bestiary.mjs
+[ "$1" = quick ] && { finish; exit $?; }
+run bestiary  env WEB=1 node test/bestiary.mjs   # 逐怪反复导航，使用分包网页版避免反复加载 220MB 离线单文件导致浏览器崩溃
 run sky       node test/sky.mjs
 run skyroute  node test/sky_route.mjs
 run behemoth  node test/behemoth.mjs
@@ -123,8 +143,12 @@ run mpmore    node test/mp_coop_more.mjs
 run mpbossprim node test/mp_bossprims.mjs   # 组队：新原语的 hook / 机制镜像两边一致、队员按自己的位置结算
 run bosscoop  node test/boss.mjs graca,floating_castle,second_spine,darkcity_gate,skasa_nest,bilmark,arden,siroco_coffin coop   # 组队领主：8 个代表领主逐招 / 逐阶段，队员的预警 / 机制 / 钩子事件一一对应、队员挨打
 run mpabyss   node test/mp_abyss.mjs   # 组队深渊：满级狂战士 + 冷却 ×0.34 打完两轮和三种深渊领主，两边不报错、每帧都画；队员逐招重播领主出招、会被打到；逐帧出错安全网
+run raid_ui   node test/raid_ui.mjs
+run mp_raid   node test/mp_raid.mjs
+run srvraid   node --disable-warning=ExperimentalWarning server/test/raid.mjs
 run mprestart node test/mp_restart.mjs
 run findfriend node test/findfriend.mjs
 run partyhud  node test/mp_party_hud.mjs
 run inspect   node test/inspect.mjs
 echo; cat $LOG/summary.txt
+finish

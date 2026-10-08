@@ -4,7 +4,7 @@
    队伍状态以服务端为准（消息 party），组队刷图见 net/coop.js
    ===================================================================== */
 const netParty = {
-  p: null,
+  p: null, lootMode: 'owner',
   has(id) { return !!this.p && this.p.members.some(m => m.id === id); },
   me() { return net.user && this.p && this.p.members.find(m => m.id === net.user.id); },
   isLeader() { return !!(this.p && net.user && this.p.leader === net.user.id); },
@@ -48,6 +48,49 @@ function netPartyInvite(id, name) {
   net.send({ t: 'party:invite', to: id || name });
 }
 Object.assign(menus, {
+  w_loot(arg = {}) {
+    const O = arg && arg.id && typeof coop !== 'undefined' && coop.lootOffers ? (coop.lootOffers.get(arg.id) || arg) : arg;
+    if (!O || !O.item) return null;
+    const D = ITEMS[O.item.key], itemName = O.item.name || (D && D.name) || O.item.key || '未知装备';
+    const modeName = { owner: '归属拾取', leader: '队长分配', random: '随机分配', auction: '队内竞拍' }[O.mode] || O.mode;
+    const body = h('div', { class: 'col', style: 'gap:.65em' },
+      h('div', { class: 'loot-item' }, h('img', { src: itemIconSrc(O.item.key, 48), alt: '' }), h('div', { class: 'col', style: 'gap:.1em' }, h('b', {}, itemName), h('span', { class: 'small dim' }, `${modeName} · ${O.status === 'pending' ? '等待分配' : '已分配'}`))),
+    );
+    const close = () => { menus.close('loot'); sfx.click(); };
+    if (O.status === 'pending' && O.mode === 'leader') {
+      const lead = typeof netParty !== 'undefined' && netParty.isLeader() && typeof coop !== 'undefined' && coop.role === 'host';
+      if (lead) {
+        const rows = (coop.lootMembers ? coop.lootMembers() : []).map(uid => {
+          const m = netParty.p && netParty.p.members.find(x => String(x.id) === String(uid));
+          return h('button', { class: 'btn blue', onclick: () => coop.assignLoot(O.id, uid) }, `分给 ${m ? (m.char ? m.char.name : m.name) : `队员 ${uid}`}`);
+        });
+        body.append(h('div', { class: 'small dim' }, '队长选择这件装备的归属：'), h('div', { class: 'row', style: 'gap:.45em;flex-wrap:wrap' }, rows));
+      } else body.append(h('div', { class: 'small dim' }, '等待队长分配这件装备…'));
+    } else if (O.status === 'pending' && O.mode === 'auction') {
+      const bids = Object.entries(O.bids || {}).map(([uid, n]) => `${uid}: ${Number(n).toLocaleString('en-US')} G`).join('、');
+      const high = Object.values(O.bids || {}).reduce((m, n) => Math.max(m, Number(n) || 0), 0);
+      const floor = Math.max(Number(O.minBid) || 1, high ? high + 1 : 1);
+      const auto = high ? Math.max(floor, Math.ceil(high * 1.05)) : floor;
+      const inp = h('input', { class: 'txt', type: 'number', min: String(floor), step: '1', value: String(floor), style: 'width:8em' });
+      const bid = () => { const n = Math.floor(Number(inp.value)); if (n >= floor && coop.bidLoot(O.id, n, 'manual')) menus.refresh('loot', O); };
+      const bidNow = () => { if (coop.bidLoot(O.id, auto, 'auto')) menus.refresh('loot', O); };
+      body.append(h('div', { class: 'small dim' }, bids ? `当前竞价：${bids}` : `起拍价：${Number(O.minBid || 1).toLocaleString('en-US')} G`),
+        h('div', { class: 'row', style: 'gap:.45em;align-items:center;flex-wrap:wrap' }, inp,
+          h('button', { class: 'btn blue', onclick: bid }, '手动出价'),
+          h('button', { class: 'btn gold', onclick: bidNow }, high ? `立即出价（+5%：${auto.toLocaleString('en-US')} G）` : `立即出价（${auto.toLocaleString('en-US')} G）`)));
+      if (typeof netParty !== 'undefined' && netParty.isLeader() && typeof coop !== 'undefined' && coop.role === 'host') body.append(h('button', { class: 'btn gold', onclick: () => coop.resolveLoot(O.id) }, '结算竞拍'));
+    } else if (O.status === 'destroyed') {
+      body.append(h('div', { class: 'small dim' }, '无人出价，物品已销毁（官方竞拍规则）'));
+    } else if (O.status === 'awarded') {
+      const m = netParty && netParty.p && netParty.p.members.find(x => String(x.id) === String(O.winner));
+      const settle = O.settlement || {};
+      body.append(h('div', { class: 'small' }, `获得者：${m ? (m.char ? m.char.name : m.name) : O.winner}`),
+        O.price ? h('div', { class: 'small dim' }, `成交价：${Number(O.price).toLocaleString('en-US')} G · 手续费 ${Number(O.fee || 0).toLocaleString('en-US')} G`) : null,
+        O.price && settle.pool != null ? h('div', { class: 'small dim' }, `队伍分红：${Number(settle.pool).toLocaleString('en-US')} G（已通过邮件发放）`) : null);
+    }
+    body.append(h('div', { class: 'row', style: 'justify-content:flex-end' }, h('button', { class: 'btn', onclick: close }, '关闭')));
+    return menus.win('队伍装备分配', body, { w: 25, at: 'center' });
+  },
   w_party() {
     if (!netOn()) return null;
     const P = netParty.p, lead = netParty.isLeader(), me = net.user.id;
@@ -65,7 +108,17 @@ Object.assign(menus, {
           lead && m.id !== me ? h('button', { class: 'btn', onclick: () => net.send({ t: 'party:lead', id: m.id }) }, '移交队长') : null,
           lead && m.id !== me ? h('button', { class: 'btn red', onclick: () => net.send({ t: 'party:kick', id: m.id }) }, '请离') : null));
       }
+      const lootNames = { owner: '归属拾取', leader: '队长分配', random: '随机分配', auction: '队内竞拍' };
+      body.append(h('div', { class: 'row', style: 'gap:.45em;align-items:center' }, h('span', { class: 'small dim' }, '装备分配'), lead ? h('select', { class: 'txt', value: netParty.lootMode, onchange: ev => { const mode = ev.target.value; if (typeof coop !== 'undefined' && coop.setLootMode(mode)) { netParty.lootMode = mode; chatSys(`装备分配改为：${lootNames[mode]}`); } else { ev.target.value = netParty.lootMode; toastMsg('只有队长能在进图前修改分配', '#ffb08a'); } } }, Object.entries(lootNames).map(([k, v]) => h('option', { value: k }, v))) : h('span', {}, lootNames[netParty.lootMode])));
       body.append(h('div', { class: 'row', style: 'gap:.5em;justify-content:flex-end' }, h('button', { class: 'btn blue', onclick: () => { if (typeof coop !== 'undefined' && coop.active()) { toastMsg('地下城里不能离开队伍，请先回城', '#ffd0a0'); return; } net.send({ t: 'party:leave' }); } }, '离开队伍')));
+    }
+    const auctionMail = typeof coop !== 'undefined' && typeof coop.auctionMailPending === 'function' ? coop.auctionMailPending() : [];
+    if (auctionMail.length) {
+      const label = auctionMail.map(m => m.kind === 'item' ? `物品：${m.item && (m.item.name || m.item.key)}` : `金币：${Number(m.amount || 0).toLocaleString('en-US')} G`).join('、');
+      body.append(h('div', { class: 'ptmail' },
+        h('div', { class: 'small', style: 'color:#ffe8a8' }, `竞拍邮件（${auctionMail.length}）`),
+        h('div', { class: 'small dim' }, label),
+        h('button', { class: 'btn gold', onclick: () => { sfx.click(); const n = coop.claimAllAuctionMail(); if (n) toastMsg(`领取了 ${n} 封竞拍邮件`, '#bfe8bf'); menus.refresh('party'); } }, '领取竞拍邮件')));
     }
     if (!P || (lead && P.members.length < 4)) {
       const inp = h('input', { class: 'txt', placeholder: '账号名或角色名', maxlength: 16, spellcheck: 'false' });
@@ -116,4 +169,5 @@ addStyle(`
 .ptrow{display:flex;align-items:center;gap:.45em;padding:.3em .4em;border-radius:.25em;background:rgba(255,255,255,.04)}
 .ptrow.off{opacity:.55}.ptrow .btn{padding:.2em .55em;font-size:.85em}
 .ptcrown{width:1.1em;color:#ffd23a;font-size:1.1em;text-align:center}
+.ptmail{display:flex;flex-direction:column;gap:.25em;padding:.45em;background:rgba(120,80,20,.16);border:.07em solid rgba(255,210,100,.35);border-radius:.25em}
 `);

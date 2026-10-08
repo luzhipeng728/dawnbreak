@@ -204,10 +204,10 @@ const ui = {
       c.globalAlpha = 1; }
     if (!lite) {
       // 疲劳条 + 金币 / 复活币 / SP
-      const F = save.data.fatigue, fx = HUD.quick.x, fy = 1030, fw = HUD.quick.gap * 5 + HUD.quick.s;
-      c.fillStyle = '#1a1210'; c.fillRect(fx, fy, fw, 10); c.fillStyle = '#6ad06a'; c.fillRect(fx, fy, fw * clamp(F / FATIGUE_MAX, 0, 1), 10);
+      const F = save.data.fatigue, FM = typeof fatigueMax === 'function' ? fatigueMax() : FATIGUE_MAX, fx = HUD.quick.x, fy = 1030, fw = HUD.quick.gap * 5 + HUD.quick.s;
+      c.fillStyle = '#1a1210'; c.fillRect(fx, fy, fw, 10); c.fillStyle = '#6ad06a'; c.fillRect(fx, fy, fw * clamp(F / FM, 0, 1), 10);
       c.strokeStyle = '#3a4a30'; c.lineWidth = 1.5; c.strokeRect(fx, fy, fw, 10);
-      uiText(`疲劳 ${F}/${FATIGUE_MAX}`, fx, fy - 4, { size: 15, color: '#bfe8bf', sw: 3 });
+      uiText(`疲劳 ${F}/${FM}`, fx, fy - 4, { size: 15, color: '#bfe8bf', sw: 3 });
       uiText(`${fmtNum(game.gold)} G`, fx, 1068, { size: 20, color: '#ffd24a', sw: 4 });
       uiText(`复活币 ×${save.data.coins}`, fx + fw, 1068, { size: 16, align: 'right', color: '#ffe8c0', sw: 3 });
       uiText(`SP ${fmtNum(game.sp || 0)}`, HUD.dodge.x, 1072, { size: 16, align: 'center', color: (game.sp || 0) > 0 ? '#8aff9a' : '#c8c0b0', sw: 3 });
@@ -290,7 +290,7 @@ const ui = {
     const { y0, x0, x1 } = HUD, lite = uiPref('hudMode') === 'lite', ey = lite ? 1070 : y0 + 6;
     if (x > x0 + 18 && x < x1 - 18 && y > ey - 6 && y < ey + 15) { const need = expNeed(game.lvl); return `<b>Lv.${game.lvl}</b> 经验 ${fmtNum(game.exp)} / ${fmtNum(need)}（${(game.exp / need * 100).toFixed(2)}%）`; }
     const fw = HUD.quick.gap * 5 + HUD.quick.s;
-    if (!lite && save.data && x > HUD.quick.x && x < HUD.quick.x + fw && y > 1016 && y < 1044) return `<b>疲劳值</b> ${save.data.fatigue} / ${FATIGUE_MAX}<br><span class="small dim">进入新房间消耗 1 点，每天 06:00 恢复</span>`;
+    if (!lite && save.data && x > HUD.quick.x && x < HUD.quick.x + fw && y > 1016 && y < 1044) return `<b>疲劳值</b> ${save.data.fatigue} / ${typeof fatigueMax === 'function' ? fatigueMax() : FATIGUE_MAX}<br><span class="small dim">进入新房间消耗 1 点，每天 06:00 恢复</span>`;
     if (p.buffs) { let bx = x0 + 10; for (const k in p.buffs) { const b = p.buffs[k]; if (!b || b.hide) continue; if (x >= bx && x <= bx + 34 && y >= y0 - 84 && y <= y0 - 50) return `<b>${SKILLS[k] ? SKILLS[k].name : (b.name || k)}</b><br>剩余 ${Math.ceil(b.t)} 秒`; bx += 40; } }
     return null;
   },

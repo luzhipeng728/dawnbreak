@@ -42,7 +42,7 @@ const UI_ACTIONS = new Set(['menu', 'confirm', 'uiMode', 'dropNames', 'hideRank'
 const menus = {
   stack: [], wins: {}, tip: null, sel: null, z: 10,
   // 默认阻挡移动的窗口（对话 / NPC 服务 / 全屏界面）；别人的窗口也可以用 win({ block }) 或 data-block 自己声明
-  BLOCK: new Set(['title', 'charselect', 'newgame', 'npc', 'npcquest', 'job', 'dungeon', 'result', 'system', 'shop', 'enhance', 'storage', 'disassemble', 'sell', 'repair', 'keyconfig', 'ask', 'duel']),
+  BLOCK: new Set(['title', 'charselect', 'newgame', 'npc', 'npcquest', 'job', 'dungeon', 'result', 'loot', 'system', 'shop', 'enhance', 'inherit', 'storage', 'disassemble', 'sell', 'repair', 'keyconfig', 'ask', 'duel']),
   // 打开时隐藏 HUD 底栏的窗口（NPC 对话在屏幕下方，和底栏重叠）
   HUD_HIDE: new Set(['npc', 'npcquest', 'title', 'charselect', 'newgame']),
   // 首次打开的默认位置（官方：物品栏在右、个人信息在左）
@@ -250,7 +250,7 @@ const menus = {
         low ? h('div', { class: 'small', style: 'color:#ff9a8a' }, `等级偏低（当前 Lv.${game.lvl}），怪物会非常强，建议先去前面的地下城练级`) : null,
         h('div', { class: 'diffs' }, DIFFS.map((D, i) => h('div', { class: 'diff' + (i === diff ? ' sel' : '') + (i > un ? ' lock' : ''), style: `color:${D.col}`, onclick: () => { if (i > un) { sfx.error(); return; } diff = i; sfx.click(); render(); } }, D.name, i > un ? h('div', { class: 'small dim' }, '🔒') : null))),
         h('div', { class: 'small dim' }, un < 3 ? `解锁下一难度：${['通关普通', '冒险难度评价 B 以上', '勇士难度评价 S 以上'][un]}` : '已解锁全部难度'),
-        h('div', { class: 'row' }, h('span', {}, '最佳评价：'), h('b', { style: `color:${best ? RANK_COL[best] : '#777'};font-size:1.4em` }, best || '—'), h('span', { class: 'sp' }), h('span', { class: 'small' }, `疲劳 ${save.data.fatigue}/${FATIGUE_MAX}`)),
+        h('div', { class: 'row' }, h('span', {}, '最佳评价：'), h('b', { style: `color:${best ? RANK_COL[best] : '#777'};font-size:1.4em` }, best || '—'), h('span', { class: 'sp' }), h('span', { class: 'small' }, `疲劳 ${save.data.fatigue}/${typeof fatigueMax === 'function' ? fatigueMax() : FATIGUE_MAX}`)),
         h('div', { class: 'row' }, h('button', { class: 'btn big' + (save.data.fatigue < sel.rooms ? ' off' : ''), onclick: () => { sfx.click(); if (enterDungeon(sel.id, diff)) this.close('dungeon'); } }, '进入地下城'), h('button', { class: 'btn', onclick: () => { sfx.click(); this.close('dungeon'); } }, '取消')),
       ].filter(Boolean));
     };
@@ -264,31 +264,32 @@ const menus = {
     const R = dg.result, col = RANK_COL[R.rank];
     const lvCost = 400 + game.lvl * 150;
     const reward = gold => rollCardReward(dg, gold);   // 掉落表统一在 drops.js
-    const rewards = [reward(false), reward(false), reward(true), reward(true)];
+    const freeCount = typeof vipActive === 'function' && vipActive() ? 3 : 2;
+    const rewards = Array.from({ length: freeCount + 2 }, (_, i) => reward(i >= freeCount));
     let freePicked = false;
     const give = (rw) => { if (rw.gold) { game.gold += rw.gold; sfx.coin(); } else if (!giveItem(rw.item)) { /* 已自动出售 */ } else if ((rw.item.rar || 0) >= 5) sfx.epic(); save.write(); };
     const faceOf = (rw) => rw.gold ? [h('div', { style: 'font-size:2.2em' }, '💰'), h('b', { class: 'gold' }, `${fmtNum(rw.gold)} G`)] : [h('img', { src: itemIconURL(rw.item) }), h('b', { class: `r${rw.item.rar || 0}`, style: 'font-size:.85em' }, (rw.item.n > 1 ? rw.item.n + '× ' : '') + rw.item.name)];
     const cardEls = rewards.map((rw, i) => {
-      const gold = i >= 2;
+      const gold = i >= freeCount;
       const c = h('div', { class: 'card' + (gold ? ' goldc' : '') }, h('div', { class: 'in' }, h('div', { class: 'b' }, gold ? '★' : '?', gold ? h('div', { style: 'font-size:.35em' }, `${fmtNum(lvCost)} G`) : null), h('div', { class: 'f' }, ...faceOf(rw))));
       c.addEventListener('click', () => {
         if (c.classList.contains('flip')) return;
         if (!gold) {
-          if (freePicked) return; freePicked = true; c.classList.add('flip'); sfx.card(); give(rw);
-          const other = cardEls[1 - i]; setTimeout(() => { other.classList.add('flip', 'used'); other.style.opacity = 0.55; }, 600);
+          if (freePicked) return; freePicked = true; dg.result.freeCard = i; dg.result.cards.push({ kind: 'free', index: i, reward: rw }); dg.flipStage = 'revealed'; c.classList.add('flip'); sfx.card(); give(rw);
+          const other = cardEls.find((x, j) => j < freeCount && j !== i); if (other) setTimeout(() => { other.classList.add('flip', 'used'); other.style.opacity = 0.55; }, 600);
           btns.classList.remove('hidden'); goldHint.classList.remove('hidden');
         } else {
           if (!freePicked) { toastMsg('先从上排选择一张免费卡牌'); sfx.error(); return; }
           if (game.gold < lvCost) { toastMsg('金币不足'); sfx.error(); return; }
-          game.gold -= lvCost; c.classList.add('flip', 'used'); sfx.card(); give(rw);
+          game.gold -= lvCost; dg.result.goldCards.push(i); c.classList.add('flip', 'used'); sfx.card(); give(rw);
         }
       });
       return c;
     });
     const goldHint = h('div', { class: 'cardlbl hidden' }, `下排为黄金卡牌，每张 ${fmtNum(lvCost)} G`);
     const btns = h('div', { class: 'row hidden', style: 'margin-top:.8em' },
-      h('button', { class: 'btn big', onclick: () => { sfx.click(); this.close('result'); lootAll(); const id = dg.def.id, d = dg.diff; if (!enterDungeon(id, d)) goTown(); } }, '再次挑战'),
-      h('button', { class: 'btn big blue', onclick: () => { sfx.click(); this.close('result'); lootAll(); goTown(); } }, '返回城镇'));
+      h('button', { class: 'btn big', onclick: () => { if (!freePicked) return; sfx.click(); dg.finishFlip(); this.close('result'); lootAll(); const id = dg.def.id, d = dg.diff; if (!enterDungeon(id, d)) goTown(); } }, '再次挑战'),
+      h('button', { class: 'btn big blue', onclick: () => { if (!freePicked) return; sfx.click(); dg.finishFlip(); this.close('result'); lootAll(); goTown(); } }, '返回城镇'));
     const el = h('div', { id: 'result' },
       h('div', { class: 'ttl' }, 'DUNGEON CLEAR!'),
       h('div', { class: 'dim' }, `${dg.def.name} · ${dg.D.name} · 用时 ${Math.floor(R.time / 60)}分${Math.floor(R.time % 60)}秒`),

@@ -331,7 +331,8 @@ const inv = {
     const U = D.use;
     if (U.dungeonOnly && game.scene !== 'dungeon' && game.scene !== 'test') { toastMsg('只能在地下城里使用', '#ffb0a0'); sfx.error(); return false; }
     if ((U.hp || U.mp) && this.potCd > 0) return false;
-    if (U.fatigue && save.data.fatigue >= (U.fatigueBelow || FATIGUE_MAX)) { toastMsg(U.fatigueBelow ? `疲劳值低于 ${U.fatigueBelow} 时才能使用` : '疲劳值已满', '#ffb0a0'); sfx.error(); return false; }
+    const fatigueCap = typeof fatigueMax === 'function' ? fatigueMax() : FATIGUE_MAX;
+    if (U.fatigue && save.data.fatigue >= (U.fatigueBelow || fatigueCap)) { toastMsg(U.fatigueBelow ? `疲劳值低于 ${U.fatigueBelow} 时才能使用` : '疲劳值已满', '#ffb0a0'); sfx.error(); return false; }
     const daily = U.perDay && (save.data.itemDaily || (save.data.itemDaily = {}));
     if (daily) { const d = typeof dayKey === 'function' ? dayKey() : ''; if (daily.day !== d) { daily.day = d; daily.n = {}; } if ((daily.n[it.key] || 0) >= U.perDay) { toastMsg(`今天已经用了 ${U.perDay} 次，明天再来吧`, '#ffb0a0'); sfx.error(); return false; } }
     if (U.open && !this.canOpen(U)) return false;
@@ -340,7 +341,7 @@ const inv = {
     if (U.hp) { const hh = Math.round(p.hpMax * U.hp); p.hp = Math.min(p.hpMax, p.hp + hh); if (game.scene !== 'town') addNumber(hh, p.x, p.y, p.z, { heal: true }); }
     if (U.mp) { const mm = Math.round(p.mpMax * U.mp); p.mp = Math.min(p.mpMax, p.mp + mm); if (game.scene !== 'town') addNumber(mm, p.x, p.y, p.z + 12, { col: '#6ab8ff' }); }
     if (U.hp || U.mp) this.potCd = U.cd ?? 1;
-    if (U.fatigue) { const f = Math.min(FATIGUE_MAX - save.data.fatigue, U.fatigue); save.data.fatigue += f; toastMsg(`疲劳值恢复了 ${f} 点`, '#8aff9a'); }
+    if (U.fatigue) { const f = Math.min((typeof fatigueMax === 'function' ? fatigueMax() : FATIGUE_MAX) - save.data.fatigue, U.fatigue); save.data.fatigue += f; toastMsg(`疲劳值恢复了 ${f} 点`, '#8aff9a'); }
     if (U.buff) { p.buffs = p.buffs || {}; p.buffs['item_' + it.key] = { ...U.buff, t: U.buff.t }; toastMsg(`${D.name}：${D.desc || '效果发动'}`, '#ffe8a8'); }
     if (U.open) this.openBox(D);
     sfx.pickup(); bus.emit('itemUse', { item: D, key: it.key });

@@ -172,6 +172,36 @@ await ev(() => itemsRefresh());
 check(!(await page.isVisible('[data-win=enhance] .enhpity')), '隐藏保底不在强化窗口明示');
 await ev(() => { Math.random = window.__rnd; });
 
+/* ---------- 4b. 强化继承 ---------- */
+step('强化继承：限制 / 材料 / 属性转移 / 源装备重置');
+const inherit = await ev(() => {
+  const src = makeItem('katana_20_2'), dst = makeItem('katana_25_2');
+  src.bind = 'char'; dst.bind = 'char'; src.enh = 8; src.dim = 'str'; src.forge = 3; src.orb = { key: 'card_catKing', name: '测试附魔' };
+  dst.enh = 2; dst.dim = 'int'; dst.forge = 1; dst.orb = { key: 'card_goblin', name: '旧附魔' };
+  inv.add(src); inv.add(dst); inv.add(makeItem('m_malefic', 5));
+  const before = { gold: game.gold, residue: inv.count('m_malefic') };
+  const ok = tryInheritEnhance(src, dst, 'residue');
+  const saved = JSON.parse(localStorage.getItem(save.key) || '{}');
+  const savedItems = (saved.chars && saved.chars[save.cur] && saved.chars[save.cur].inv) || [];
+  const bad = makeItem('katana_20_2'); bad.bind = 'char'; inv.add(bad);
+  const wrongSlot = makeItem('heavy_top_25_2'); wrongSlot.bind = 'char'; inv.add(wrongSlot);
+  return {
+    ok: !!ok.ok, moved: ok.moved, cost: ok.cost, source: { enh: src.enh, dim: src.dim, forge: src.forge, orb: src.orb },
+    target: { enh: dst.enh, dim: dst.dim, forge: dst.forge, orb: dst.orb }, residue: before.residue - inv.count('m_malefic'),
+    invalid: canInheritEnhance(bad, wrongSlot), saved: savedItems.some(x => x && x.id === dst.id && x.enh === 8), gold: before.gold - game.gold,
+  };
+});
+check(inherit.ok && inherit.residue === 5 && inherit.gold === 0, '继承成功并扣除邪念残骸 ×5（不扣金币）', JSON.stringify(inherit));
+check(inherit.target.enh === 8 && inherit.target.dim === 'str' && inherit.target.forge === 3 && inherit.target.orb && inherit.target.orb.key === 'card_catKing', '目标覆盖为源装备的强化 / 红字 / 锻造 / 附魔', JSON.stringify(inherit.target));
+check(inherit.source.enh === 0 && !inherit.source.dim && !inherit.source.forge && !inherit.source.orb, '源装备相关属性全部重置，避免复制', JSON.stringify(inherit.source));
+check(!inherit.invalid && inherit.saved, '不同部位被拒绝且写回存档可读到继承结果', JSON.stringify(inherit));
+await closeAll();
+let inheritUi = null, inheritUiErr = '';
+try { inheritUi = await ev(() => { menus.open('inherit', NPCS.linus); const w = document.querySelector('[data-win=inherit]'); return { open: !!w, title: w && w.querySelector('.tt')?.textContent, confirm: w && [...w.querySelectorAll('button')].some(b => b.textContent.includes('确认继承')) }; }); }
+catch (e) { inheritUiErr = e.message; }
+check(!inheritUiErr && inheritUi && inheritUi.open && /强化继承/.test(inheritUi.title || '') && inheritUi.confirm, 'NPC 强化继承窗口可打开且不触发递归错误', inheritUiErr || JSON.stringify(inheritUi));
+await closeAll();
+
 /* ---------- 5. 分解 ---------- */
 step('分解（多选）');
 await closeAll(); await ev(() => { for (let i = 0; i < 4; i++) inv.add(rollEquip({ lvl: 10, rar: i % 3 })); IW.disSel.clear(); menus.open('disassemble', NPCS.linus); }); await wait(300);

@@ -84,6 +84,48 @@ Object.assign(menus, {
     el._arg = npc;
     return el;
   },
+  /* ---------------- 强化继承 ---------------- */
+  w_inherit(npc) {
+    inv.ensure();
+    const all = () => [...SLOTS.map(s => inv.equip[s]).filter(Boolean), ...inv.items.filter(it => it && it.kind === 'equip')]
+      .filter((it, i, a) => a.indexOf(it) === i);
+    const el = itemWin('inherit', `${npc && npc.name ? npc.name + ' · ' : ''}强化继承`, el => {
+      const list = all(), src = IW.inheritSrc && list.includes(IW.inheritSrc) ? IW.inheritSrc : null;
+      const dst = IW.inheritDst && list.includes(IW.inheritDst) ? IW.inheritDst : null;
+      const selectInherit = (which, it) => { IW[which] = it; IW.inheritMsg = null; sfx.click(); el._render(); };
+      const grid = (which, selected, filter) => {
+        const L = list.filter(filter), g = h('div', { class: 'igrid', style: 'grid-template-columns:repeat(6,2.8em);max-height:9.4em;overflow:auto' });
+        for (let i = 0; i < Math.max(12, Math.ceil(L.length / 6) * 6); i++) {
+          const it = L[i]; g.append(itemSlot(it, { sel: it && it === selected, cmp: false, onClick: () => it && selectInherit(which, it) }));
+        }
+        return g;
+      };
+      const srcFilter = it => !!((it.enh || 0) || it.dim || (it.forge || 0) || it.orb);
+      const body = h('div', { class: 'col', style: 'gap:.55em' });
+      body.append(h('div', { class: 'small dim' }, '选择带有强化、增幅、锻造或附魔的源装备，再选择同部位且等级不低于源装备的目标装备。继承后源装备相关属性归零，目标原有属性被覆盖。'));
+      body.append(h('div', { class: 'lbl' }, '源装备（转出）'), grid('inheritSrc', src, srcFilter));
+      body.append(h('div', { class: 'lbl' }, '目标装备（转入）'), grid('inheritDst', dst, it => it !== src && canAmplify(it)));
+      const valid = src && dst && canInheritEnhance(src, dst), pay = IW.inheritPay === 'residue' ? 'residue' : 'gold', cost = inheritEnhanceCost(pay);
+      const have = pay === 'gold' ? game.gold >= cost.gold : inv.count('m_malefic') >= cost.residue;
+      const msg = IW.inheritMsg;
+      body.append(h('div', { class: 'row', style: 'justify-content:center;gap:.4em' },
+        h('button', { class: 'btn sm' + (pay === 'gold' ? ' on' : ''), onclick: () => { IW.inheritPay = 'gold'; el._render(); } }, `金币 ${fmtNum(INHERIT_GOLD)} G`),
+        h('button', { class: 'btn sm' + (pay === 'residue' ? ' on' : ''), onclick: () => { IW.inheritPay = 'residue'; el._render(); } }, `邪念残骸 ×${INHERIT_RESIDUE}`)));
+      body.append(h('div', { class: 'small' + (have ? '' : ' bad') }, pay === 'gold' ? `持有 ${fmtNum(game.gold)} G` : `持有邪念残骸 ${inv.count('m_malefic')} 个`));
+      if (src && dst && !valid) body.append(h('div', { class: 'small bad' }, '源 / 目标部位或等级不符合继承限制，或装备为可交易 / 不可强化装备。'));
+      if (msg) body.append(h('div', { class: 'enhmsg ' + (msg.ok ? 'ok' : 'fail') }, msg.text));
+      body.append(h('button', { class: 'btn big' + (valid && have ? '' : ' off'), onclick: () => {
+        if (!valid || !have) return;
+        const r = tryInheritEnhance(src, dst, pay);
+        IW.inheritMsg = r.ok ? { ok: true, text: `继承完成：${src.name} → ${dst.name}` } : { ok: false, text: r.err || '继承失败' };
+        if (r.ok) { IW.inheritSrc = null; IW.inheritDst = null; }
+        itemsRefresh(); el._render();
+      } }, '确认继承'));
+      return [npc && npc.lines ? h('div', { class: 'greet', style: 'color:#c8b890;font-size:.85em;font-style:italic' }, `“${pick(npc.lines)}”`) : null, body];
+    }, { w: 34, at: 'left' });
+    el._arg = npc;
+    return el;
+  },
 });
 function enhGo(el, it) {
   if (IW.enhBusy || !it) return;

@@ -6,7 +6,7 @@
    奖池里的物品还不存在时（例如装备深化组的增幅保护券还没合并）这一项自动去掉，概率按剩下的归一，概率公示同步
    ===================================================================== */
 /* ---- 商城页签 ---- */
-const CASH_TABS = [['rec', '推荐'], ['avatar', '时装'], ['weapon', '武器装扮'], ['sky', '天空'], ['pet', '宠物'], ['aura', '光环'], ['use', '消耗品'], ['pack', '礼包'], ['box', '魔盒']];
+const CASH_TABS = [['rec', '推荐'], ['avatar', '时装'], ['weapon', '武器装扮'], ['sky', '天空'], ['pet', '宠物'], ['aura', '光环'], ['use', '消耗品'], ['contract', '契约'], ['pack', '礼包'], ['box', '魔盒']];
 /* ---- 商品：pid → { key, n, price, cur, tab, sub?, tag?, limit?: { per: 'day'|'week'|'life', n }, lvl?, whole?（整套时装）, need? } ---- */
 const CASH_GOODS = {};
 function defGoods(pid, def) { CASH_GOODS[pid] = { pid, n: 1, cur: 'cera', ...def }; }
@@ -48,6 +48,10 @@ defGoods('box_gold', { key: 'box_gold', price: 400, tab: 'use' });
 defGoods('abyss_ticket', { key: 'abyss_ticket', n: 1, price: 150, tab: 'use', limit: { per: 'day', n: 1 } });   // 装备深化组：深渊派对邀请函
 defGoods('amp_guard', { key: 'amp_guard', price: 600, tab: 'use' });
 defGoods('amp_book', { key: 'amp_book', price: 800, tab: 'use' });
+// 官方商城契约：账号绑定，购买即直接开通（不进入背包等待手动使用）。
+defGoods('contract_conqueror_7', { key: 'contract_conqueror_7', price: 700, tab: 'contract', tag: '账号共享', name: '征服者契约 · 7天' });
+defGoods('contract_conqueror_15', { key: 'contract_conqueror_15', price: 1400, tab: 'contract', tag: '账号共享', name: '征服者契约 · 15天' });
+defGoods('contract_vip_7', { key: 'contract_vip_7', price: 700, tab: 'contract', tag: '账号共享', name: 'VIP高级契约 · 7天' });
 // 礼包
 defGoods('pkg_spring', { key: 'pkg_spring', price: 15800, tab: 'pack', tag: '多买多送', fest: true });
 defGoods('pkg_summer', { key: 'pkg_summer', price: 15800, tab: 'pack', tag: '多买多送', fest: true });

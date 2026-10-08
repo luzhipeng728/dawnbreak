@@ -66,5 +66,12 @@ defineShop('paris', { name: '帕丽丝的时装店', greet: '勇士也要穿得�
 defineShop('roget', { name: '罗杰的港口货栈', markup: 1.1, greet: '船上刚到的稀罕货，要不要看看？', tabs: [
   { name: '稀有物资', goods: ['elixir', 'fatigue', 'guard', 'potCrit', 'potStr', 'potGold'] },
   { name: '稀有材料', goods: ['m_elem', 'c_red', 'c_blue', 'c_white', 'c_black', 'm_diamond'] }] });
+// 希洛克攻坚商店：老人 NPC 在暗黑城营地提供材料、补给与三类融合装备。
+// 商店系统仍以金币结算；团本货币由奖励 / 兑换接口保留，避免把翻牌阶段绕成直接购买。
+defineShop('siroco_raid', { name: '希洛克攻坚商店', markup: 1, greet: '打下来的紫英花瓣和无形之息，换成趁手的融合装备吧。', tabs: [
+  { name: '攻坚材料', goods: ['raid_petal', 'raid_immaterial'] },
+  { name: '融合装备', goods: () => typeof SIROCO_RAID_GEAR !== 'undefined' ? SIROCO_RAID_GEAR.slice() : [] },
+  { name: '团本补给', goods: ['hpM', 'hpL', 'mpM', 'mpL', 'elixir'] },
+] });
 defineShop('_default', { name: '杂货店', greet: '随便看看吧。', tabs: [
   { name: '药剂', goods: ['hpS', 'hpM', 'mpS', 'mpM'] }, { name: '杂货', goods: ['crystal', 'bread'] }] });

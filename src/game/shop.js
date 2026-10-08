@@ -134,14 +134,36 @@ function cashGoodsBlock(G) {
   if (cashLimitLeft(G.pid, G.limit) <= 0) return G.limit.per === 'life' ? '已经领取过了' : `${LIMIT_TXT[G.limit.per]}限购已满`;
   return null;
 }
+function cashActivateContract(D) {
+  const C = D && D.contract;
+  if (!C || !C.kind || !Number.isFinite(Number(C.days)) || Number(C.days) <= 0) return { err: '契约参数无效' };
+  const fn = C.kind === 'vip' ? activateVip : C.kind === 'conqueror' ? activateConquerorContract : null;
+  if (!fn) return { err: '未知契约类型' };
+  const until = fn(Number(C.days));
+  if (!until) return { err: '契约开通失败' };
+  bus.emit('contractActivate', { kind: C.kind, days: Number(C.days), until, key: D.key });
+  return { ok: true, activated: true, kind: C.kind, until };
+}
 /* ---- 购买：opt = { opts: { [物品 key]: 属性 } }（时装自选属性） ---- */
 function cashBuy(pid, n = 1, opt = {}) {
   const S = cashData(), G = cashGoods(pid);
   const block = cashGoodsBlock(G); if (block) return { err: block };
   n = Math.max(1, n | 0);
+  const D = G && ITEMS[G.key];
+  if (D && D.contract) n = 1; // 契约按官方“一次购买、立即开通”处理
   if (G.limit) n = Math.min(n, cashLimitLeft(pid, G.limit));
   const cost = G.price * n;
   if (cashBal(G.cur) < cost) return { err: `${CUR_NAME[G.cur]}不足（需要 ${fmtNum(cost)}）` };
+  if (D && D.contract) {
+    cashAdd(G.cur, -cost, `购买 ${cashGoodsName(G)}`);
+    const r = cashActivateContract({ ...D, key: G.key });
+    if (r.err) { cashAdd(G.cur, cost, `退回 ${cashGoodsName(G)}`); return r; }
+    cashLimitUse(pid, G.limit, n);
+    S.buys.unshift({ t: Date.now(), pid, name: cashGoodsName(G), n, cost, cur: G.cur }); if (S.buys.length > 100) S.buys.length = 100;
+    bus.emit('cashBuy', { pid, n, cost, cur: G.cur, contract: r.kind, until: r.until });
+    sfx.coin(); save.write();
+    return { ...r, cost, n, items: [] };
+  }
   let items = [];
   for (let i = 0; i < n; i++) items.push(...(G.whole ? AV_PIECE_SLOTS.map(s => makeItem(avKey(G.whole, s))) : cashRewardItems({ key: G.key, n: G.n })));
   items = items.filter(Boolean);
@@ -338,6 +360,15 @@ function cashUseItem(it, D) {
   const err = m => { toastMsg(m, '#ff6a6a'); sfx.error(); return false; };
   if (!game.player) return false;
   switch (D.cashUse) {
+    case 'contract': {
+      if (!inv.items.includes(it)) return err('契约不在当前角色背包中');
+      const r = cashActivateContract({ ...D, key: it.key });
+      if (r.err) return err(r.err);
+      if (!inv.take(it.key, 1)) return err('契约物品不存在');
+      save.write();
+      toastMsg(`${D.name} 已生效至 ${new Date(r.until).toLocaleString()}`, '#8affc8');
+      return true;
+    }
     case 'box': return typeof cashBoxUI === 'function' ? cashBoxUI(it.key, 1) : !cashOpenBoxes(it.key, 1).err;
     case 'pack': { const r = cashOpenPack(it); if (r.err) return err(r.err); if (typeof cashShowGot === 'function') cashShowGot(D.name, r.items); return true; }
     case 'red': { if (!inv.take(it.key, 1)) return false; const n = cashInt(D.red[0], D.red[1]); addCera(n, D.name); sfx.coin(); save.write(); return true; }

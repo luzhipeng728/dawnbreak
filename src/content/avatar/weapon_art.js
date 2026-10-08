@@ -462,3 +462,13 @@ for (const [t, base] of Object.entries(PRIEST_WEAPON_ART_ALIASES)) {
     ASSET_SRC[`weapon/${dst}`] = ASSET_SRC[`weapon/${src}`]; ASSET_BUNDLE[`weapon/${dst}`] = ASSET_BUNDLE[`weapon/${src}`];
   }
 }
+// 圣职者史诗没有单独烘焙的 60 张原画时，沿用对应巨兵的高品级握点与素材。
+// 物品 key 仍登记成独立资源别名，装备外观选择和 content 完整性检查都能走同一条路径。
+if (typeof ITEMS !== 'undefined') for (const D of Object.values(ITEMS)) {
+  if (!D || D.slot !== 'weapon' || D.rar !== 5 || !PRIEST_WEAPON_ART_ALIASES[D.wtype]) continue;
+  const t = D.wtype, base = WEAPON_IMG[`${t}_r4`] ? `${t}_r4` : t, A = WEAPON_IMG[base];
+  if (!A || !ASSET_SRC[`weapon/${base}`]) continue;
+  WEAPON_IMG[D.key] = { ...A, type: t };
+  ASSET_SRC[`weapon/${D.key}`] = ASSET_SRC[`weapon/${base}`];
+  ASSET_BUNDLE[`weapon/${D.key}`] = ASSET_BUNDLE[`weapon/${base}`];
+}

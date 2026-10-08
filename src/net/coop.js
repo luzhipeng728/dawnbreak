@@ -17,9 +17,147 @@ const COOP_ST = ['idle', 'walk', 'run', 'jump', 'act', 'hit', 'air', 'down', 'ge
 const coop = {
   role: null, room: null, state: 'none', dg: null, def: null, diff: 0, hostId: 0, mates: new Map(), puppets: new Map(), spawnInfo: new Map(),
   nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, stats: { remoteHits: 0, sentHits: 0, snaps: 0, kills: 0, mateActs: 0, monActs: 0 }, lastSnap: 0, lastSelf: 0, prep: null, waitT: 0, hostLag: false, lagSince: 0, hostClk: {},
+  lootMode: 'owner', lootS: null, lootOffers: new Map(), lootApplied: new Set(),
   active() { return !!this.role && (this.state === 'play' || this.state === 'prep' || this.state === 'load'); },
   isGuest() { return this.role === 'guest' && this.state !== 'none'; },
   me() { return net.user ? net.user.id : 0; },
+  walletSnapshot() {
+    let vault = 0;
+    if (typeof bank !== 'undefined' && bank && typeof bank.load === 'function') { bank.load(); vault = Math.max(0, Math.floor(Number(bank.gold) || 0)); }
+    return { gold: Math.max(0, Math.floor(Number(game.gold) || 0)), vault, cap: (typeof RAID_CORE !== 'undefined' && RAID_CORE.AUCTION_GOLD_CAP) || 2_000_000_000 };
+  },
+  applyAuctionEffect(e) {
+    if (!e || String(e.uid) !== String(this.me())) return;
+    const k = `${e.offer || ''}:${e.kind}:${e.amount || 0}:${e.mail && e.mail.at || ''}`;
+    if (this.lootApplied.has(k)) return;
+    this.lootApplied.add(k);
+    if (e.wallet) {
+      game.gold = Math.max(0, Math.floor(Number(e.wallet.gold) || 0));
+      if (typeof bank !== 'undefined' && bank && typeof bank.load === 'function') { bank.load(); bank.gold = Math.max(0, Math.floor(Number(e.wallet.vault) || 0)); bank.write(); }
+    }
+    if (e.mail && typeof save !== 'undefined' && save && save.data) {
+      const M = save.data.coopAuctionMail || (save.data.coopAuctionMail = []), sig = JSON.stringify([e.offer, e.mail.kind, e.mail.amount, e.mail.at]);
+      if (!M.some(x => x.sig === sig)) M.push({ sig, ...e.mail, claimed: false });
+    }
+    if (typeof save !== 'undefined' && save && save.data && save.live && typeof save.write === 'function') save.write();
+  },
+  applyAuctionEffects(list) { for (const e of list || []) this.applyAuctionEffect(e); },
+  auctionMailPending() {
+    const M = typeof save !== 'undefined' && save && save.data && save.data.coopAuctionMail;
+    return Array.isArray(M) ? M.filter(x => x && !x.claimed) : [];
+  },
+  claimAuctionMail(sig) {
+    const M = typeof save !== 'undefined' && save && save.data && save.data.coopAuctionMail;
+    if (!Array.isArray(M)) return false;
+    const m = M.find(x => x && !x.claimed && (sig == null || x.sig === sig));
+    if (!m) return false;
+    if (m.kind === 'gold') {
+      const n = Math.max(0, Math.floor(Number(m.amount) || 0)), cap = this.walletSnapshot().cap;
+      if (!n) { m.claimed = true; }
+      else if (game.gold + n > cap) { toastMsg(`金币携带上限不足（需要 ${n.toLocaleString('en-US')} G）`, '#ffb08a'); return false; }
+      else { game.gold += n; m.claimed = true; }
+    } else if (m.kind === 'item' && m.item) {
+      const it = typeof makeItem === 'function' && m.item.key ? makeItem(m.item.key, m.item.n || 1, m.item) : m.item;
+      if (!it || typeof inv === 'undefined' || !inv || typeof inv.add !== 'function' || !inv.add(it)) {
+        toastMsg('背包空间不足，暂时不能领取竞拍邮件', '#ffb08a'); return false;
+      }
+      m.claimed = true;
+    } else return false;
+    if (m.claimed) {
+      if (typeof save.write === 'function') save.write();
+      toastMsg(m.kind === 'item' ? `已领取竞拍物品：${m.item && (m.item.name || m.item.key)}` : `已领取竞拍邮件：${Number(m.amount || 0).toLocaleString('en-US')} G`, '#ffe8a8', 'log');
+      bus.emit('coopAuctionMail', m);
+      menus.refresh('party');
+      return true;
+    }
+    return false;
+  },
+  claimAllAuctionMail() {
+    let n = 0;
+    for (const m of this.auctionMailPending().slice()) if (this.claimAuctionMail(m.sig)) n++;
+    return n;
+  },
+  deliverAuctionItem(d) {
+    if (!d || !d.item || String(d.winner) !== String(this.me())) return;
+    const sig = `${d.id}:item:${this.me()}`;
+    if (this.lootApplied.has(sig)) return;
+    this.lootApplied.add(sig);
+    if (typeof save !== 'undefined' && save && save.data) {
+      const M = save.data.coopAuctionMail || (save.data.coopAuctionMail = []);
+      if (!M.some(x => x.sig === sig)) M.push({ sig, kind: 'item', item: d.item, offer: d.id, claimed: false });
+      if (save.live && typeof save.write === 'function') save.write();
+    }
+    toastMsg(`竞拍物品已进入邮件，请在队伍窗口领取：${d.item.name || d.item.key}`, '#ffe8a8', 'log');
+  },
+  setLootMode(mode) {
+    mode = mode === 'free' ? 'owner' : mode;
+    if (!['owner', 'leader', 'random', 'auction'].includes(mode)) return false;
+    if (this.state !== 'none' && this.role !== 'host') return false;
+    this.lootMode = mode;
+    if (this.role === 'host' && this.lootS) { const r = RAID_CORE.setLootMode(this.lootS, this.me(), mode); if (!r.ok) return false; this.send({ k: 'lootMode', mode }, 'all'); }
+    return true;
+  },
+  lootMembers() { return this.lootS ? this.lootS.members.filter(m => !m.left && m.online).map(m => m.uid) : [this.me()]; },
+  offerLoot(item, source, pos) {
+    if (this.role !== 'host' || !this.lootS || !item) return null;
+    const out = RAID_CORE.lootOffer(this.lootS, item, source, Date.now()); if (!out.ok) return null;
+    const O = out.offer; this.lootOffers.set(O.id, O);
+    const payload = { id: O.id, item: O.item, mode: O.mode, status: O.status, winner: O.winner, source: O.source, minBid: O.minBid, bids: O.bids, delivery: O.delivery,
+      x: Math.round(pos && pos.x || game.player.x), y: Math.round(pos && pos.y || game.player.y) };
+    this.send({ k: 'loot', ...payload }, 'all');
+    if (O.status === 'pending') menus.show('loot', O);
+    else this.receiveLoot(payload);
+    // 原始掉落只由分配窗口消费；否则获奖者会同时看到地面装备和分配结果两份。
+    if (pos) { const i = drops.indexOf(pos); if (i >= 0) drops.splice(i, 1); }
+    return O;
+  },
+  assignLoot(id, to) {
+    if (this.role !== 'host' || !this.lootS) return false;
+    const out = RAID_CORE.lootAssign(this.lootS, this.me(), id, to, Date.now()); if (!out.ok) { toastMsg(out.text, '#ffb08a'); return false; }
+    const O = out.offer, p = { id: O.id, item: O.item, mode: O.mode, status: O.status, winner: O.winner, source: O.source, minBid: O.minBid, bids: O.bids, delivery: O.delivery, x: game.player.x, y: game.player.y };
+    this.lootOffers.set(O.id, O); this.send({ k: 'loot', ...p }, 'all');
+    if (O.winner === this.me()) this.receiveLoot(p); else menus.close('loot');
+    return true;
+  },
+  receiveLoot(d) {
+    if (!d || !d.id || !d.item) return;
+    this.lootOffers.set(d.id, d);
+    this.applyAuctionEffects(d.effects);
+    if (d.status === 'pending') { menus.show('loot', d); return; }
+    if (d.status === 'destroyed') { menus.close('loot'); toastMsg('无人出价，竞拍物品已销毁', '#c8b8a0', 'log'); return; }
+    if (d.winner !== this.me()) { menus.close('loot'); return; }
+    if (d.delivery === 'mail') { this.deliverAuctionItem(d); menus.close('loot'); return; }
+    const it = typeof makeItem === 'function' && d.item.key ? makeItem(d.item.key, d.item.n || 1, d.item) : d.item;
+    if (!it) return;
+    spawnDrop({ kind: 'item', item: it, x: d.x || game.player.x, y: d.y || game.player.y, z: 30, lootId: d.id, owner: this.me() });
+    menus.close('loot');
+    toastMsg(`队伍分配：${it.name || d.item.key}`, '#ffe8a8', 'log');
+  },
+  bidLoot(id, amount, source) {
+    if (!id || !(amount > 0)) return false;
+    if (this.role === 'host') return this._bidLoot(this.me(), id, amount, { source });
+    this.send({ k: 'lootBid', id, amount: Math.floor(amount), source: source || 'auto', wallet: this.walletSnapshot() }); return true;
+  },
+  _bidLoot(uid, id, amount, opt) {
+    const out = RAID_CORE.lootBid(this.lootS, uid, id, amount, Date.now(), opt);
+    if (!out.ok) {
+      if (String(uid) === String(this.me())) toastMsg(out.text, '#ffb08a');
+      else this.send({ k: 'lootBidResult', ok: false, id, code: out.code, text: out.text }, uid);
+      return false;
+    }
+    const O = this.lootS.loot.offers[id]; this.lootOffers.set(id, O);
+    const payload = { id, uid, amount, bids: out.bids, current: out.current, effects: out.effects || [], minBid: O.minBid };
+    this.send({ k: 'lootBid', ...payload }, 'all'); this.applyAuctionEffects(out.effects);
+    if (menus.isOpen('loot')) menus.refresh('loot', O); return true;
+  },
+  resolveLoot(id) {
+    if (this.role !== 'host' || !this.lootS) return false;
+    const out = RAID_CORE.lootResolve(this.lootS, id, Date.now()); if (!out.ok) return false;
+    const O = out.offer, p = { id: O.id, item: O.item, mode: O.mode, status: O.status, winner: O.winner, source: O.source, minBid: O.minBid, bids: O.bids, price: O.price, fee: O.fee, pool: O.pool, settlement: O.settlement, delivery: O.delivery, effects: out.effects || [], x: game.player.x, y: game.player.y };
+    this.lootOffers.set(O.id, O); this.send({ k: 'loot', ...p }, 'all'); this.receiveLoot(p);
+    for (let i = drops.length - 1; i >= 0; i--) if (drops[i].lootId === id) drops.splice(i, 1);
+    return true;
+  },
   // 主机的关键事件（生成 / 击杀 / 换房间 / 清房）在断线期间先排队，重连后补发，免得队员漏掉奖励或卡在旧房间
   send(d, to) {
     if (this.role === 'host' && COOP_LOGGED.has(d.k) && to === undefined) { d.sq = ++this.sq; this.relLog.push(d); if (this.relLog.length > 600) this.relLog.splice(0, 200); }
@@ -68,10 +206,11 @@ const coop = {
     const cost = coopEntryCost(() => typeof def.beforeEnter === 'function' ? def.beforeEnter(diff) : true);
     if (cost === false) return false;
     const others = netParty.others().filter(m => m.online);
+    if (meta && ['owner', 'leader', 'random', 'auction'].includes(meta.lootMode)) this.lootMode = meta.lootMode;
     this.reset(); this.entryCost = cost; this.role = 'host'; this.state = 'prep'; this.def = def; this.diff = diff; this.hostId = this.me();
     const seed = (Math.random() * 1e9) | 0, tmp = genLayout(def, seed);
-    this.prep = { id, diff, seed, rs: tmp.rooms.map(() => (Math.random() * 1e9) | 0), resp: new Map(), mem: others.map(m => m.id) };
-    net.send({ t: 'room:open', kind: 'dungeon', meta: { ...meta, id, diff } });
+    this.prep = { id, diff, seed, rs: tmp.rooms.map(() => (Math.random() * 1e9) | 0), resp: new Map(), mem: others.map(m => m.id), wallets: { [this.me()]: this.walletSnapshot() } };
+    net.send({ t: 'room:open', kind: 'dungeon', meta: { ...meta, id, diff, lootMode: this.lootMode } });
     this.waitDialog();
     this.waitT = setTimeout(() => this.goNow(), 25000);
     // 服务端没有建好房间（例如刚好不再是队长 / 网络断了）：别一直卡在等待框
@@ -86,9 +225,10 @@ const coop = {
       ok: () => this.goNow(), cancel: () => { this.abort('队长取消了进图'); } });
   },
   // 收到队员的“准备好了 / 进不了”
-  onResp(uid, ok, why) {
+  onResp(uid, ok, why, wallet) {
     const P = this.prep; if (!P || this.state !== 'prep') return;
     P.resp.set(uid, ok ? true : why || '进不了');
+    if (ok && wallet && typeof wallet === 'object') P.wallets = P.wallets || {}, P.wallets[uid] = { gold: Math.max(0, Math.floor(Number(wallet.gold) || 0)), vault: Math.max(0, Math.floor(Number(wallet.vault) || 0)), cap: Math.max(1, Math.floor(Number(wallet.cap) || 2_000_000_000)) };
     if (!ok) chatSys(`${this.nameOf(uid)} 无法进入：${why}`);
     if (P.mem.every(id => P.resp.has(id)) && P.selfReady) this.goNow(); else if (menus.isOpen('nd_coopwait')) this.waitDialog();
   },
@@ -100,14 +240,16 @@ const coop = {
     for (const id of P.mem) if (!go.includes(id)) this.send({ k: 'drop', why: P.resp.get(id) || '加载超时' }, id);
     if (!go.length) { toastMsg('没有队友能一起进，按单人进入', '#ffb08a'); this.entryCost = null; this.end('solo'); return withLoading(dungeonBundles(this.def), () => new Dungeon(this.def, this.diff).start()); }
     const n = go.length + 1, mul = COOP_HP[n] || 2.8;
-    this.send({ k: 'go', mem: [this.me(), ...go], mul, seed: P.seed, rs: P.rs, id: P.id, diff: P.diff });
-    this.start({ seed: P.seed, roomSeeds: P.rs, hpMul: mul }, [this.me(), ...go]);
+    P.wallets = P.wallets || {}; P.wallets[this.me()] = this.walletSnapshot();
+    this.send({ k: 'go', mem: [this.me(), ...go], mul, seed: P.seed, rs: P.rs, id: P.id, diff: P.diff, wallets: P.wallets });
+    this.start({ seed: P.seed, roomSeeds: P.rs, hpMul: mul, wallets: P.wallets }, [this.me(), ...go]);
   },
   // 队员：收到队长的准备消息
   onPrep(d, from) {
     const def = DUNGEONS[d.id];
     const no = why => { this.send({ k: 'nope', why }); chatSys(`无法跟随队长进入地下城：${why}`); net.send({ t: 'room:leave' }); this.reset(); };
     if (!def) return no('没有这个地下城（请刷新页面更新版本）');
+    if (['owner', 'leader', 'random', 'auction'].includes(d.lootMode)) this.lootMode = d.lootMode;
     if (game.scene !== 'town' || !game.player || !save.live || game.duel) return no(game.scene === 'dungeon' ? '正在别的地下城里' : '现在不在城镇里');
     save.daily();
     if (!def.raid && save.data.fatigue < def.rooms) return no(`疲劳不足（需要 ${def.rooms}）`);
@@ -118,7 +260,7 @@ const coop = {
     menus.closeAll(); input.clearAll();
     toastMsg(`队长带队进入 ${def.name}（${DIFFS[d.diff].name}）`, '#ffe8a8');
     this.gateLoc(def.id);
-    withLoading(this.bundles(def), () => { if (this.state === 'load') this.send({ k: 'ready' }); });
+    withLoading(this.bundles(def), () => { if (this.state === 'load') this.send({ k: 'ready', wallet: this.walletSnapshot() }); });
   },
   // 回城时站在这个地下城的门口（和队长一样）
   gateLoc(id) {
@@ -134,6 +276,11 @@ const coop = {
     const guest = this.role === 'guest';
     this.entryCost = null;   // 真的进去了：入场道具不退
     this.state = 'play'; this.mem = mem;
+    const wallets = o && o.wallets || {};
+    this.lootS = { st: 'lobby', leader: mem[0], rs: (Math.random() * 0x7fffffff) | 0,
+      members: mem.map(uid => { const w = wallets[uid] || wallets[String(uid)] || {}; return { uid, online: true, left: false, gold: w.gold, vaultGold: w.vault, goldCap: w.cap }; }),
+      loot: { mode: this.lootMode, seq: 0, offers: {}, history: [], wallets } };
+    RAID_CORE.setLootMode(this.lootS, mem[0], this.lootMode); this.lootS.st = 'routes';
     game.maxCombo = 0; game.combo = 0;
     const dg = new Dungeon(this.def, this.diff, { ...o, guest });
     this.dg = dg;
@@ -154,7 +301,14 @@ const coop = {
       const onCleared0 = dg.onCleared.bind(dg);
       dg.onCleared = function (silent) { onCleared0(silent); if (!silent) C.send({ k: 'clear', rk: C.rk() }); };
       const onKill0 = dg.onKill.bind(dg);
-      dg.onKill = function (t, a) { if (t.nid) C.flushSpawns(); if (t.nid) C.send({ k: 'kill', id: t.nid, a: a && a.uid ? a.uid : a === game.player ? C.me() : 0, ld: Math.round(t.lastDmg || 0), b: t.boss ? 1 : 0 }); onKill0(t, a); };
+      dg.onKill = function (t, a) {
+        if (t.nid) C.flushSpawns();
+        const source = a && a.uid ? a.uid : a === game.player ? C.me() : C.me();
+        if (t.nid) C.send({ k: 'kill', id: t.nid, a: source, ld: Math.round(t.lastDmg || 0), b: t.boss ? 1 : 0 });
+        const n0 = drops.length; onKill0(t, a);
+        // 主机是掉落权威：队员只重放经验 / 金币 / 领主结算，装备通过 loot 消息按策略分给唯一收件人。
+        if (C.lootS && C.state === 'play') for (const d of drops.slice(n0)) if (d.kind === 'item' && d.item) C.offerLoot(d.item, source, d);
+      };
     } else {
       dg.go = dir => { if (!this.doorAsk || performance.now() - this.doorAsk > 800) { this.doorAsk = performance.now(); this.send({ k: 'door', dir }); } };
     }
@@ -401,7 +555,12 @@ const coop = {
     const a = d.a === this.me() ? game.player : (this.mates.get(d.a) || game.player);
     if (!m.dead) { m.dead = true; m.setState('dead'); m.deadT = 0; m.act = null; m.vz = 0; }
     this.spawnInfo.delete(d.id);
-    if (this.dg && this.dg.state !== 'failed') this.dg.onKill(m, a);
+    if (this.dg && this.dg.state !== 'failed') {
+      // 客户端不再自行滚装备；否则每个队员都会得到一份，无法实现队长 / 随机 / 竞拍。
+      const old = globalThis.rollDrop;
+      if (this.role === 'guest') globalThis.rollDrop = () => {};
+      try { this.dg.onKill(m, a); } finally { if (this.role === 'guest') globalThis.rollDrop = old; }
+    }
   },
   onRoom(d) {
     const dg = this.dg; if (!dg) return;
@@ -477,23 +636,28 @@ const coop = {
   onRelay(from, d) {
     const recvT = performance.now();
     if (this.role === 'host') {
-      if (d.k === 'ready') this.onResp(from, true);
+      if (d.k === 'ready') this.onResp(from, true, null, d.wallet);
       else if (d.k === 'nope') this.onResp(from, false, d.why);
       else if (d.k === 'hb' && this.state === 'play' && Array.isArray(d.l)) { for (const r of d.l.slice(0, 80)) if (r.g !== undefined) this.remoteGrab(from, r); else this.remoteHit(from, r); }
       else if (d.k === 'resync' && this.state === 'play') this.onResync(from, +d.last || 0);
       else if (d.k === 'st' && this.state === 'play') { const m = this.puppets.get(d.id); if (m && !m.dead && ents.includes(m) && STATUS_COL[d.kind]) _coopAddStatus(m, d.kind, clamp(+d.dur || 0, 0, 30), { dps: clamp(+d.dps || 0, 0, 1e7), src: this.mates.get(from) || null, force: !!d.fo }); }
+      else if (d.k === 'lootBid' && this.state === 'play') { this._bidLoot(from, d.id, d.amount, { source: d.source }); }
       else if (d.k === 'door' && this.state === 'play' && this.dg && this.dg.doorsOpen && !this.dg.transition && this.dg.room.doors[d.dir]) this.dg.go(d.dir);
       if (document.hidden) this.bgStep();
     } else if (from === this.hostId) {
       if (d.sq) this.lastSq = Math.max(this.lastSq, d.sq);
       if (d.k === 'prep') this.onPrep(d, from);
-      else if (d.k === 'go' && this.state === 'load') this.start({ seed: d.seed, roomSeeds: d.rs, hpMul: d.mul }, d.mem);
+      else if (d.k === 'go' && this.state === 'load') this.start({ seed: d.seed, roomSeeds: d.rs, hpMul: d.mul, wallets: d.wallets }, d.mem);
       else if (d.k === 'drop') { chatSys(`没能跟上队伍：${d.why}`); net.send({ t: 'room:leave' }); this.reset(); }
       else if (this.state === 'play') {
         if (d.k === 's') this.onSnap(d, recvT);
         else if (d.k === 'spawn') this.onSpawn(d);
         else if (d.k === 'ma') this.onMonAct(d);
         else if (d.k === 'kill') this.onKill(d);
+        else if (d.k === 'loot') { this.receiveLoot(d); }
+        else if (d.k === 'lootBid') { const O = this.lootOffers.get(d.id); if (O) { O.bids = d.bids || O.bids; this.applyAuctionEffects(d.effects); if (menus.isOpen('loot')) menus.refresh('loot', O); } }
+        else if (d.k === 'lootBidResult' && d.ok === false) toastMsg(d.text || '竞价失败', '#ffb08a');
+        else if (d.k === 'lootMode' && ['owner', 'leader', 'random', 'auction'].includes(d.mode)) { this.lootMode = d.mode; if (this.lootS) this.lootS.loot.mode = d.mode; }
         else if (d.k === 'room') this.onRoom(d);
         else if (d.k === 'clear') this.onClear(d);
         else if (d.k === 'sync') this.onSync(d);
@@ -515,7 +679,7 @@ const coop = {
     }
     if (this.role === 'host' && this.state === 'prep' && R.host === this.me()) {
       const P = this.prep; P.mem = R.members.map(x => x.id).filter(id => id !== this.me());
-      this.send({ k: 'prep', id: P.id, diff: P.diff, boss: this.def.boss ? { ...this.def.boss } : null });
+      this.send({ k: 'prep', id: P.id, diff: P.diff, boss: this.def.boss ? { ...this.def.boss } : null, lootMode: this.lootMode });
       withLoading(this.bundles(this.def), () => { P.selfReady = true; if (P.goWhenReady || P.mem.every(id => P.resp.has(id))) this.goNow(); else this.waitDialog(); });
       if (!P.mem.length) this.goNow();
     } else if (R.host !== this.me()) { this.hostId = R.host; }
@@ -581,8 +745,10 @@ const coop = {
     if (this.entryCost && (this.state === 'prep' || this.state === 'load')) coopRefund(this.entryCost);   // 进图没成功：退还入场道具（深渊邀请函）
     this.entryCost = null;
     clearTimeout(this.waitT); clearTimeout(this.resumeT); clearTimeout(this.roomT);
-    Object.assign(this, { role: null, room: null, state: 'none', dg: null, def: null, prep: null, hostLag: false, hostClk: {}, nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, mem: null });
+    Object.assign(this, { role: null, room: null, state: 'none', dg: null, def: null, prep: null, hostLag: false, hostClk: {}, nid: 0, spawnQ: [], dmgQ: [], hitQ: [], pendingRel: [], relLog: [], sq: 0, lastSq: 0, mem: null, lootS: null });
     this.mates.clear(); this.puppets.clear(); this.spawnInfo.clear();
+    this.lootOffers.clear();
+    this.lootApplied.clear();
   },
 };
 // 入场消耗（深渊邀请函等）：对比 beforeEnter 前后的背包，记下扣掉了什么；进图没成功就原样退还

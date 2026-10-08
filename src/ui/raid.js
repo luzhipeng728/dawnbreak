@@ -139,7 +139,7 @@ function raidCan(id) {
   return { solo: !needT, together: canT, why };
 }
 const raidUi = {
-  sel: null, flipped: {},
+  sel: null, flipped: {}, flipAsked: {}, flipClosing: {},
   refresh() {
     if (this.rq) return;
     this.rq = requestAnimationFrame(() => { this.rq = 0; for (const n of ['raidboard', 'raid', 'raidres']) if (menus.isOpen(n)) menus.refresh(n); });
@@ -234,11 +234,13 @@ const raidUi = {
   lobby() {
     const S = raidNet.S, me = raidNet.me(), lead = S.leader === me, mine = raidNet.mine(), D = raidNet.def();
     const act = S.members.filter(m => !m.left), block = RAID_CORE.canStart(S, me);
+    const lootNames = { owner: '归属拾取', leader: '队长分配', random: '随机分配', auction: '队内竞拍' }, lootMode = S.loot && lootNames[S.loot.mode] ? S.loot.mode : 'owner';
     return h('div', { class: 'rbbox rblobby' },
       h('div', { class: 'lbl' }, `大厅 · ${S.mode === 'guide' ? '引导（单人）' : `普通（${act.length}/${D.maxPlayers || 2} 人）`}`),
       act.map(m => h('div', { class: 'row2' }, h('b', { style: 'color:#ffe8a8' }, S.leader === m.uid ? '♛ ' : '', m.name, m.uid === me ? '（你）' : ''), h('span', { class: 'small dim' }, m.online ? '' : '离线'),
         h('span', { class: 'rd', style: `color:${S.leader === m.uid || m.ready ? '#8aff9a' : '#ffb08a'}` }, S.leader === m.uid ? '团长' : m.ready ? '已准备' : '没准备'))),
       S.mode === 'normal' && act.length < 2 ? h('div', { class: 'small', style: 'color:#d8c8e8' }, '邀请一名队友进队伍，队友在阿甘左那里点“加入”；也可以直接开始：1 个人进普通 = 引导的节点、普通的数值和奖励。') : null,
+      S.mode === 'normal' ? h('div', { class: 'row', style: 'gap:.45em;align-items:center' }, h('span', { class: 'small dim' }, '装备分配'), lead ? h('select', { class: 'txt', value: lootMode, onchange: ev => { const mode = ev.target.value; if (!raidNet.setLootMode(mode)) ev.target.value = lootMode; } }, Object.entries(lootNames).map(([k, v]) => h('option', { value: k }, v))) : h('span', {}, lootNames[lootMode])) : null,
       raidNet.limits && !raidNet.limits.ok ? h('div', { class: 'small', style: 'color:#ffd0a0' }, '你今天 / 本周的次数用完了：这次算练习（没有奖励、不翻牌）。') : null,
       h('div', { class: 'rbbar' },
         lead ? h('button', { class: 'btn' + (block ? ' off' : ''), 'data-act': 'start', title: block ? block.text : '', onclick: () => { if (block) { toastMsg(block.text, '#ffd0a0'); sfx.error(); return; } sfx.click(); raidNet.start(); } }, '开始团本')
@@ -249,9 +251,10 @@ const raidUi = {
     const S = raidNet.S, me = raidNet.me(), lead = S.leader === me, mine = raidNet.mine(), rw = mine && mine.rw !== false;
     const quit = () => netAsk('raidquit', { title: '离开团本？', text: '团本开始以后离开 = 放弃，这周的次数照扣。确定离开吗？', okText: '离开', danger: true, ok: () => raidNet.leave() });
     const claimBtn = ph => rw && S.res && S.res.phases.includes(ph) ? h('button', { class: 'btn', 'data-act': 'claim' + ph, onclick: () => { sfx.click(); menus.show('raidres', ph); } }, raidNet.got(S.sid, ph) ? `${(raidNet.phase(ph) || {}).name || ''}奖励（已领）` : `领取${(raidNet.phase(ph) || {}).name || ''}奖励`) : null;
-    if (S.st === 'cleared' || S.st === 'failed') return h('div', { class: 'rbbar' }, claimBtn(1), claimBtn(2), h('span', { class: 'sp' }), h('button', { class: 'btn blue', 'data-act': 'dismiss', onclick: () => { sfx.click(); menus.close('raidboard'); raidNet.dismiss(); } }, '关闭团本'));
+    if (S.st === 'cleared' || S.st === 'failed') return h('div', { class: 'rbbar' }, claimBtn(1), claimBtn(2), h('span', { class: 'sp' }), h('button', { class: 'btn blue', 'data-act': 'dismiss', onclick: () => { sfx.click(); if (raidNet.dismiss()) menus.close('raidboard'); } }, '关闭团本'));
+    const flipReady = !S.members.some(m => m.rw !== false) || !S.flip || S.flip.state === 'closed';
     return h('div', { class: 'rbbar' }, claimBtn(1),
-      S.st === 'rest' && lead ? h('button', { class: 'btn', 'data-act': 'next', onclick: () => { sfx.click(); raidNet.start(); } }, `现在开始${(raidNet.phase((raidNet.S.phase || 0) + 1) || {}).name || '下一阶段'}`) : null,
+      S.st === 'rest' && lead ? h('button', { class: 'btn' + (flipReady ? '' : ' off'), 'data-act': 'next', onclick: () => { if (!flipReady) { toastMsg('请等全员完成翻牌后再开始下一阶段', '#ffd0a0'); return; } sfx.click(); raidNet.start(); } }, flipReady ? `现在开始${(raidNet.phase((raidNet.S.phase || 0) + 1) || {}).name || '下一阶段'}` : '等待全员翻牌') : null,
       h('span', { class: 'sp' }), h('span', { class: 'small dim' }, '城镇里按 R 开关情况板'),
       h('button', { class: 'btn red', onclick: () => { sfx.click(); quit(); } }, '离开团本'));
   },
@@ -310,29 +313,45 @@ Object.assign(menus, {
     el.classList.add('rbwin');
     return el;
   },
-  // 阶段结算：领奖 → 翻牌
+  // 阶段结算：领奖 → 明确选择翻牌（P1 选 1 张，P2 选 2 张）
   w_raidres(ph) {
     const S = raidNet.S; if (!S) return null;
     ph = ph || (S.res.phases[S.res.phases.length - 1] || 1);
     const P = raidNet.phase(ph) || { name: '阶段' }, me = raidNet.mine(), rw = !!me && me.rw !== false, key = S.sid + ':' + ph, rew = raidNet.claims[key], D = raidNet.def();
-    const n = Math.max(1, ((D.rewards || {})['p' + ph] || []).length), cards = [];
+    const n = Math.max(1, ((D.rewards || {})['p' + ph] || []).length), limit = RAID_CORE.flipLimit ? RAID_CORE.flipLimit(ph) : (ph === 1 ? 1 : 2), cards = [];
     const owed = save.data && save.data.raidOwed;
+    const picks = () => raidNet.flipState && raidNet.flipState.phase === ph ? (raidNet.flipState.picks || []) : [];
+    const picked = i => picks().find(x => x.index === i);
     for (let i = 0; i < n; i++) {
       const c = rew && rew.cards && rew.cards[i];
-      const face = c ? [h('img', { src: itemIconSrc(c.key, 64) }), h('b', { class: 'r3' }, `${raidNet.itemName(c.key)} ×${c.n}`)] : [h('span', { class: 'dim' }, '—')];
-      const el = h('div', { class: 'card' + (c && raidUi.flipped[key] ? ' flip used' : '') }, h('div', { class: 'in' }, h('div', { class: 'b' }, '?'), h('div', { class: 'f' }, ...face)));
+      const sel = picked(i), face = c && sel ? [h('img', { src: itemIconSrc(c.key, 64) }), h('b', { class: 'r3' }, `${raidNet.itemName(c.key)} ×${c.n}`)] : [h('span', { class: 'dim' }, c ? '?' : '—')];
+      const el = h('div', { class: 'card' + (sel ? ' flip used' : ''), onclick: () => {
+        if (!rew || sel) return;
+        if (picks().length >= limit) { toastMsg(`本阶段只能选择 ${limit} 张牌`, '#ffd0a0'); sfx.error(); return; }
+        sfx.click(); raidNet.flip('pick', ph, i);
+      } }, h('div', { class: 'in' }, h('div', { class: 'b' }, sel ? '★' : '?'), h('div', { class: 'f' }, ...face)));
       cards.push(el);
     }
-    if (rew && !raidUi.flipped[key]) { raidUi.flipped[key] = 1; setTimeout(() => { cards.forEach((c, i) => setTimeout(() => { c.classList.add('flip', 'used'); sfx.card(); }, i * 350)); }, 120); }
+    if (rew && !raidUi.flipAsked[key]) { raidUi.flipAsked[key] = 1; raidNet.flip('open', ph); }
     const used = S.res.used && S.res.used[ph];
+    const flipDone = raidNet.flipClosed(S.sid, ph), closing = !!raidUi.flipClosing[key];
+    if (flipDone) delete raidUi.flipClosing[key];
     const body = h('div', { class: 'col', style: 'gap:.6em;align-items:center' },
       h('div', { style: 'font:900 1.6em "PingFang SC","Microsoft YaHei",serif;color:#f0d0ff' }, S.st === 'cleared' && ph === 2 ? '团本通关！' : `${P.name}完成！`),
       h('div', { class: 'stats' }, h('span', {}, '用时 ', h('b', {}, used ? raidFmt(used) : '—')), h('span', {}, '全团倒下 ', h('b', {}, S.stats.deaths)), h('span', {}, '惩罚 ', h('b', {}, S.stats.penalties)), h('span', {}, '模式 ', h('b', {}, S.mode === 'guide' ? '引导' : '普通'))),
+      rw && rew ? h('div', { class: 'rnote' }, `翻牌阶段：选择 ${limit} 张牌（已选 ${picks().length}/${limit}），未完成前角色停留在结算界面。`) : null,
       rw ? h('div', { class: 'cards', style: `--n:${n}` }, cards) : h('div', { class: 'rnote', style: 'color:#ffd0a0' }, '这次是练习（本周 / 今天的次数已经用完了）：没有奖励。'),
       rew && owed && Object.keys(owed).length ? h('div', { class: 'small', style: 'color:#d8c8e8' }, `物品还没上架，先记在账上：${Object.entries(owed).map(([k, v]) => `${raidNet.itemName(k)} ×${v}`).join('、')}（团本商店开放后自动发到背包）`) : null,
       h('div', { class: 'rbbar', style: 'justify-content:center' },
         rw && !rew ? h('button', { class: 'btn big', 'data-act': 'claim', onclick: () => { sfx.click(); raidNet.claim(ph); } }, '领取奖励') : null,
-        h('button', { class: 'btn big blue', 'data-act': 'close', onclick: () => { sfx.click(); this.close('raidres'); } }, '关闭')));
+        rw && rew ? h('button', { class: 'btn big blue' + (closing || picks().length < limit && !flipDone ? ' off' : ''), 'data-act': 'close', onclick: () => {
+          if (closing) return;
+          if (flipDone) { sfx.click(); this.close('raidres'); return; }
+          if (picks().length < limit) { toastMsg(`请先选择 ${limit} 张牌`, '#ffd0a0'); return; }
+          sfx.click(); raidUi.flipClosing[key] = 1;
+          if (!raidNet.flip('close', ph)) delete raidUi.flipClosing[key];
+          raidUi.refresh();
+        } }, closing ? '正在确认翻牌…' : flipDone ? '已完成翻牌' : '完成翻牌') : h('button', { class: 'btn big blue', 'data-act': 'close', onclick: () => { sfx.click(); this.close('raidres'); } }, '关闭')));
     const el = this.win(`阶段结算 · ${P.name}`, body, { w: 30, block: true });
     el.classList.add('rreswin'); el._arg = ph;
     return el;
@@ -346,7 +365,18 @@ if (typeof MENUBAR !== 'undefined' && !MENUBAR.some(b => b[0] === 'raid')) {
   const i = MENUBAR.findIndex(b => b[0] === 'pvp');
   MENUBAR.splice(i >= 0 ? i : MENUBAR.length, 0, ['raid', '团本']);
 }
-bus.on('raidChange', () => raidUi.refresh());
+bus.on('raidChange', () => {
+  // 翻牌关闭必须等服务端回执；收到回执后再解除结算 modal 和移动锁。
+  for (const key of Object.keys(raidUi.flipClosing)) {
+    const i = key.lastIndexOf(':'), sid = key.slice(0, i), ph = Number(key.slice(i + 1));
+    if (raidNet.flipClosed(sid, ph)) {
+      delete raidUi.flipClosing[key];
+      if (menus.isOpen('raidres')) menus.close('raidres');
+    }
+  }
+  raidUi.refresh();
+});
+bus.on('raidFlipError', () => { raidUi.flipClosing = {}; raidUi.refresh(); });
 bus.on('raidClaimed', () => raidUi.refresh());
 bus.on('raidStarted', () => { if (game.scene !== 'town') return; if (menus.isOpen('raid')) menus.close('raid'); menus.show('raidboard'); });
 bus.on('raidInvite', m => {

@@ -5,53 +5,124 @@
 const FATIGUE_MAX = 156;
 const dayKey = () => { const d = new Date(Date.now() - 6 * 3600 * 1000); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 const SAVE_V = 5, MAX_CHARS = 6;
-// 项目自定义的“征服者契约”规则：账号范围，允许角色穿戴高于自身等级最多 10 级的装备。
-// 这是本作对会员装备便利的映射，不把它当作官方 VIP 奖励；竞技场始终使用角色等级限制。
-const CONQUEROR_LEVEL_BONUS = 10;
-function conquerorUntil() {
-  const A = (save && save.acct) || {};
-  const C = A.contracts || {};
-  return Math.max(Number(A.conquerorUntil) || 0, Number(C.conquerorUntil) || 0);
+// 会员和契约是两项独立的账号权益：黑钻（VIP）只影响疲劳等会员福利，
+// Conqueror's Contract 只提供 PvE 装备等级便利，不能把其中一个字段当成另一个。
+const VIP_FATIGUE_BONUS = 32, CONQUEROR_LEVEL_BONUS = 10;
+const CONTRACT_DAY_MS = 86400000;
+const contractClock = () => Date.now();
+const accountMembership = () => {
+  const owner = typeof save !== 'undefined' && save ? save : null;
+  const A = owner ? (owner.acct || (owner.acct = {})) : {};
+  const M = A.membership || (A.membership = {});
+  const C = A.contracts || (A.contracts = {});
+  return { A, M, C };
+};
+function vipUntil() {
+  const { A, M } = accountMembership();
+  return Math.max(Number(M.vipUntil) || 0, Number(A.vipUntil) || 0);
 }
-function conquerorActive(now = Date.now()) { return conquerorUntil() > now; }
-function equipLevelCap(level = game && game.lvl || 1, scene = game && game.scene) {
+function vipActive(now = contractClock()) { return vipUntil() > now; }
+function fatigueMax() { return FATIGUE_MAX + (vipActive() ? VIP_FATIGUE_BONUS : 0); }
+function conquerorUntil() {
+  const { A, M, C } = accountMembership();
+  return Math.max(Number(C.conquerorUntil) || 0, Number(M.conquerorUntil) || 0, Number(A.conquerorUntil) || 0);
+}
+function conquerorActive(now = contractClock()) { return conquerorUntil() > now; }
+function contractStatus(now = contractClock()) {
+  const vip = vipUntil(), conqueror = conquerorUntil();
+  return { vipUntil: vip, vipActive: vip > now, conquerorUntil: conqueror, conquerorActive: conqueror > now };
+}
+const pvpScene = scene => scene === 'duel' || scene === 'arena' || scene === 'pvp' || !!(game && (game.pvp || game.duel));
+let syncingContractExpiry = false;
+function equipLevelCapRaw(level, scene, active) {
   const base = Math.max(1, Number(level) || 1);
-  // PvP / duel never inherits the PvE contract bonus.
-  return scene === 'duel' || (game && (game.pvp || game.duel)) ? base : (conquerorActive() ? base + CONQUEROR_LEVEL_BONUS : base);
+  return pvpScene(scene) || !active ? base : base + CONQUEROR_LEVEL_BONUS;
+}
+function equipLevelCap(level = game && game.lvl || 1, scene = game && game.scene) {
+  const active = conquerorActive();
+  // A character can remain online across expiry. Reconcile an over-level item at the
+  // next equipment check so the old item never keeps contributing stats indefinitely.
+  if (!active && !syncingContractExpiry && typeof expireOverlevelEquipmentAll === 'function') expireOverlevelEquipmentAll();
+  return equipLevelCapRaw(level, scene, active);
 }
 function canEquipLevel(level, scene = game && game.scene) { return Number(level) <= equipLevelCap(game && game.lvl || 1, scene); }
+function activateVip(days = 30, now = contractClock()) {
+  const n = Number(days);
+  if (!Number.isFinite(n) || n <= 0) return false;
+  const { A, M } = accountMembership(), wall = contractClock();
+  const until = Math.max(vipUntil(), Number(now) || 0, wall) + Math.round(n * CONTRACT_DAY_MS);
+  M.vipUntil = until; A.vipUntil = until;
+  if (save && typeof save.persist === 'function') save.persist();
+  return until;
+}
 function activateConquerorContract(days = 30, now = Date.now()) {
   const n = Number(days);
   if (!Number.isFinite(n) || n <= 0) return false;
-  const A = save.acct || (save.acct = {}), C = A.contracts || (A.contracts = {});
-  const until = Math.max(conquerorUntil(), now) + Math.round(n * 86400000);
+  const { A, M, C } = accountMembership(), wall = contractClock();
+  // A stale purchase timestamp (for example an imported receipt) must not create
+  // a contract which is already expired when the player equips an item.
+  const base = Math.max(conquerorUntil(), Number(now) || 0, wall);
+  const until = base + Math.round(n * CONTRACT_DAY_MS);
   C.conquerorUntil = until;
+  M.conquerorUntil = until;
   A.conquerorUntil = until; // 扁平字段便于旧版本 / 服务端读取
+  if (save && typeof save.persist === 'function') save.persist();
   return until;
 }
 function expireOverlevelEquipment() {
-  if (!save.data || conquerorActive() || !inv || !inv.equip) return 0;
+  if (!save.data || conquerorActive() || !inv || !inv.equip || syncingContractExpiry) return 0;
+  syncingContractExpiry = true;
   let moved = 0;
-  for (const slot of Object.keys(inv.equip)) {
-    const it = inv.equip[slot];
-    if (!it || !it.kind || canEquipLevel(it.lvl)) continue;
-    delete inv.equip[slot];
-    // 装备不能因契约到期而丢失；装备栏满时仍放入角色背包，背包规则允许装备超容量保留。
-    inv.items.push(it); moved++;
+  try {
+    for (const slot of Object.keys(inv.equip)) {
+      const it = inv.equip[slot];
+      if (!it || it.kind !== 'equip' || it.lvl <= equipLevelCapRaw(game && game.lvl, game && game.scene, false)) continue;
+      delete inv.equip[slot];
+      // 装备不能因契约到期而丢失；装备栏满时仍放入角色背包，背包规则允许装备超容量保留。
+      inv.items.push(it); moved++;
+    }
+  } finally {
+    syncingContractExpiry = false;
   }
   if (moved && typeof recalcStats === 'function' && game.player) recalcStats(game.player);
+  if (moved && save && typeof save.write === 'function') save.write();
   return moved;
 }
+// Contract expiry is account-wide. Reconcile characters that are not currently selected
+// as soon as the shared account is read or a scene boundary is crossed.
+function expireOverlevelEquipmentAll() {
+  if (!save.data || conquerorActive() || syncingContractExpiry) return 0;
+  let moved = expireOverlevelEquipment();
+  for (const c of save.chars || []) {
+    if (!c || c === save.data || !charOpen(c) || !c.equip) continue;
+    const cap = equipLevelCapRaw(c.lvl, 'town', false);
+    c.inv = Array.isArray(c.inv) ? c.inv : [];
+    for (const slot of Object.keys(c.equip)) {
+      const it = c.equip[slot];
+      if (!it || it.kind !== 'equip' || it.lvl <= cap) continue;
+      delete c.equip[slot]; c.inv.push(it); moved++;
+    }
+  }
+  if (moved && save && typeof save.persist === 'function') save.persist();
+  return moved;
+}
+// Contract expiry can happen while a character remains online; scene transitions
+// are a natural boundary to reconcile the equipped set before combat starts.
+if (typeof bus !== 'undefined') bus.on('sceneEnter', expireOverlevelEquipmentAll);
 const DUNGEON_ALIAS = { path: 'lorien', deep: 'lorien_deep', shade: 'dark_woods', thunder: 'thunder_ruins', venom: 'venom_ruins', camp: 'graca', flame: 'blazing_graca', abyss: 'dark_thunder' };
 /* 存档结构：{ v, cur, chars: [角色数据...] }，每个角色独立保存等级 / 背包 / 任务 / 位置等（官方的角色选择）
    不认识 / 还没开放的职业的角色（新版本加的职业、网址 ?fighter=1 建的格斗家、ready:false）：原样留在 chars 里——不升级、不改数据、写回时照抄，
    选角显示“需要更新”、不能进入（老页面读到新职业的角色再写回云端也不会丢，docs/CLASS_PLAN_FIGHTER.md #19） */
-const charOpen = c => !!c && clsOpen(c.cls);
+// A character written by a newer client must remain opaque until this client
+// understands its schema.  Treating it as playable would run the current
+// migrations against fields we do not know and can silently consume shared
+// currency or equipment from a future save.
+const charOpen = c => !!c && Number(c.v || 1) <= SAVE_V && clsOpen(c.cls);
 const save = {
   key: ['test', 'dungeon', 'town', 'bot', 'cls', 'duel'].some(k => PARAMS.has(k)) ? 'dawnbreak_dev' : 'dawnbreak_save_v1', data: null, chars: [], cur: -1, live: false, acct: {},   // 调试参数用独立存档，不碰玩家的正式存档
   defaults(cls = 'sword', name = '勇士') {
     return { v: SAVE_V, cls, name, job: null, lvl: 1, exp: 0, sp: 150, gold: 1500, skillLv: {}, skillBar: Array(SKILL_SLOTS).fill(null), inv: [], equip: {}, quick: [null, null, null, null, null, null], storage: [],
-      fatigue: FATIGUE_MAX, day: dayKey(), coins: 5, unlocked: {}, best: {}, weak: 0, clears: 0, created: Date.now(), playTime: 0, quests: {}, questDone: {}, loc: null, seen: {}, titles: [], buyback: [],
+      fatigue: fatigueMax(), day: dayKey(), coins: 5, unlocked: {}, best: {}, weak: 0, clears: 0, created: Date.now(), playTime: 0, quests: {}, questDone: {}, loc: null, seen: {}, titles: [], buyback: [],
       opts: { music: 0.6, sfx: 0.9 }, enhPity: 0 };
   },
   // 读取全部角色；返回是否至少有一个角色
@@ -73,7 +144,7 @@ const save = {
   // 兼容旧接口：读取并选中上次的角色
   load() { if (!this.loadAll()) { this.data = null; return false; } let i = Math.max(0, this.cur); if (!charOpen(this.chars[i])) i = this.chars.findIndex(charOpen); if (i < 0) { this.data = null; return false; } this.select(i); return true; },
   select(i) { this.cur = i; this.data = this.chars[i]; this.live = false; this.daily(); },
-  daily() { const d = dayKey(); if (this.data.day !== d) { this.data.day = d; this.data.fatigue = FATIGUE_MAX; this.data.coins = Math.max(this.data.coins, 0) + 1; if (typeof questsDailyReset === 'function') questsDailyReset(this.data); toastMsg('新的一天：疲劳值已恢复，领取复活币 ×1', '#bfe8bf'); } },
+  daily() { const d = dayKey(); if (this.data.day !== d) { this.data.day = d; this.data.fatigue = fatigueMax(); this.data.coins = Math.max(this.data.coins, 0) + 1; if (typeof questsDailyReset === 'function') questsDailyReset(this.data); toastMsg('新的一天：疲劳值已恢复，领取复活币 ×1', '#bfe8bf'); } },
   write() {
     if (!this.data || !this.live) return;   // 只有 apply() 之后（游戏状态已对应这个角色）才写，避免在标题 / 选角界面把空状态写进角色
     const d = this.data;
@@ -148,7 +219,7 @@ const save = {
     const d = this.data; this.live = true;
     game.lvl = d.lvl; game.exp = d.exp; game.sp = d.sp; game.gold = d.gold; game.skillLv = d.skillLv; game.skillBar = d.skillBar; game.job = d.job || null;
     inv.items = d.inv || []; inv.equip = d.equip || {}; inv.quick = d.quick || inv.quick; inv.storage = d.storage || [];
-    expireOverlevelEquipment();
+    expireOverlevelEquipmentAll();
   },
   newGame(cls, name) {
     this.loadAll();   // 先读出已有角色，新角色追加在后面，不覆盖

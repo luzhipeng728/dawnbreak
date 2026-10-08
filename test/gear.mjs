@@ -24,15 +24,17 @@ const lib = await ev(() => {
   const byW = {}; for (const D of ep) if (D.wtype) byW[D.wtype] = (byW[D.wtype] || 0) + 1;
   const slots = {}; for (const D of ep) slots[D.slot] = (slots[D.slot] || 0) + 1;
   const epicSets = Object.values(SETS).filter(S => S.epic), sizes = epicSets.map(S => S.pieces.length);
-  const lv = [...new Set(ep.map(D => D.lvl))].sort((a, b) => a - b);
+  // 旧装备深化验收的上限是 Lv60；团本融合装备属于后续官方层级（tier 4，Lv63），
+  // 单独记录它们，避免把两套等级口径混在同一条 legacy 检查里。
+  const legacyEp = ep.filter(D => (D.tier || 0) < 4 && !D.raid), lv = [...new Set(legacyEp.map(D => D.lvl))].sort((a, b) => a - b);
   const badIcon = ep.filter(D => !ASSET_SRC['icon/' + D.icon]).map(D => D.key);
   const openW = Object.keys(WTYPES).filter(t => clsOpen(WTYPES[t].cls)).length;
-  return { n: ep.length, minW: Math.min(...Object.values(byW)), wtypes: Object.keys(byW).length, openW, slots, epicSets: epicSets.length, has5: sizes.includes(5), has3: sizes.includes(3), maxLv: Math.max(...lv), lv, badIcon: badIcon.length, badIconList: badIcon.slice(0, 8), legend: Object.values(SETS).filter(S => S.job).length, cards: Object.keys(ITEMS).filter(k => ITEMS[k].orb).length };
+  return { n: ep.length, minW: Math.min(...Object.values(byW)), wtypes: Object.keys(byW).length, openW, slots, epicSets: epicSets.length, has5: sizes.includes(5), has3: sizes.includes(3), maxLv: Math.max(...lv), fusionMaxLv: Math.max(...ep.filter(D => (D.tier || 0) >= 4 || D.raid).map(D => D.lvl), 0), lv, badIcon: badIcon.length, badIconList: badIcon.slice(0, 8), legend: Object.values(SETS).filter(S => S.job).length, cards: Object.keys(ITEMS).filter(k => ITEMS[k].orb).length };
 });
 check(lib.n >= 120 && lib.wtypes === lib.openW && lib.minW >= 3, `史诗 ${lib.n} 件，${lib.openW} 种武器（已开放职业）每种至少 ${lib.minW} 件`);
 check(['weapon', 'top', 'head', 'bottom', 'belt', 'shoes', 'neck', 'bracelet', 'ring', 'support', 'stone'].every(s => lib.slots[s] >= 2), '每个部位至少 2 件史诗', JSON.stringify(lib.slots));
 check(lib.epicSets >= 12 && lib.has5 && lib.has3 && lib.maxLv >= 30 && lib.maxLv <= 60, `史诗套装 ${lib.epicSets} 套（有 3 件 / 5 件套），最高 Lv${lib.maxLv}`);
-check(lib.legend === 10 && lib.cards >= 30, `异界套装 ${lib.legend} 套（格斗家 4 个转职各一套），怪物卡片 ${lib.cards} 张`);
+check(lib.legend >= 10 && lib.cards >= 30, `异界套装 ${lib.legend} 套（含新增转职套装；格斗家 4 个转职各一套），怪物卡片 ${lib.cards} 张`);
 check(lib.badIcon === 0, '每件史诗都有专属图标', lib.badIconList.join(','));
 
 /* ---------- 2. 绑定 / 交易 ---------- */

@@ -1,5 +1,5 @@
 """装备 2.0 · 纯冷却流（content/items/cdr60.js）的图标表（gear_icons.py 自动合并；用法：python3 art/tools/gear_icons.py gen|cut <表名...>）
-母题：沙漏 / 流沙 / 时钟。传说「时之沙漏」金 + 天蓝；神器「流沙」粉紫。流沙武器拿在手里是 <类型>_r3，只做图标。
+母题：沙漏 / 流沙 / 时钟。传说「时之沙漏」金 + 天蓝；神器「流沙」粉紫。流沙武器拿在手里是 <类型>_r3，只做图标。武器表覆盖当前所有已开放的类型。
 刀剑一律直刃直尖（用户：不许弯钩卷尖）；枪身用亮色（全黑的枪 1 倍下看不清）。'gear_spare' 格子切图时跳过。
 样图：gen cdr60_hourglass（传说 5 件 + 一件流沙，两种配色一起看）→ 审过再批量 gen 其余 8 张（同时 2~3 个）→ cut。
 """
@@ -40,6 +40,12 @@ W = {
     'rod': 'a short magic rod topped with a small glass hourglass of pink sand held by silver crescent prongs',
     'staff': 'a tall wizard staff of lavender-purple wood topped with a large ornate silver hourglass full of glowing pink sand',
     'broom': 'a broom with a lavender-purple handle and bristles made of flowing pink sand, a tiny silver hourglass charm tied on',
+    # 圣职者的五种巨兵（运行时手持图先复用同形制长杆 / 重兵器，但图标 key 独立）。
+    'cross': 'a large ivory cross with a lavender-purple metal frame and a glass hourglass of glowing pink sand in its center',
+    'rosary': 'a string of silver prayer beads with a faceted pink hourglass crystal and lavender sand sparks',
+    'totem': 'a heavy lavender-purple totem club carved with hourglass symbols and wrapped in flowing pink sand',
+    'scythe': 'a long silver scythe with a translucent pink glass blade filled with flowing sand and a lavender shaft',
+    'battleaxe': 'a massive lavender-purple battle axe with a straight silver edge and a glowing pink sand channel',
 }
 _w = lambda *ts: [(f'sand_{t}', W[t] + PINK) for t in ts]
 _acc = lambda *ks: [(k, SAND_ACC[k]) for k in ks]
@@ -60,4 +66,5 @@ SHEETS = {
     'cdr60_sand_sword': _w('shortsword', 'katana', 'club', 'greatsword', 'lightsaber') + [('gear_spare', 'a small silver pocket watch')],
     'cdr60_sand_gun': _w('revolver', 'autopistol', 'rifle', 'handcannon', 'bowgun') + [('gear_spare', 'a small brass key')],
     'cdr60_sand_mage': _w('spear', 'pole', 'rod', 'staff', 'broom') + [('gear_spare', 'a small round blue mana potion bottle with a cork')],
+    'cdr60_sand_priest': _w('cross', 'rosary', 'totem', 'scythe', 'battleaxe') + [('gear_spare', 'a small silver prayer charm')],
 }

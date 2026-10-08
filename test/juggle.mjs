@@ -12,7 +12,7 @@ const HELPERS = () => {
     prep(a, t, o = {}) {
       game.paused = true; window.toastMsg = () => {};
       ents.length = 0; projs.length = 0; ents.push(a, t);
-      for (const e of [a, t]) { e.control = () => {}; e.brain = null; e.act = null; e.hitstop = 0; e.invul = 0; e.stun = 0; e.z = 0; e.vz = 0; e.vx = 0; e.dead = false; e.setState('idle'); resetCmb(e); e.status = {}; e.buffs = {}; }
+      for (const e of [a, t]) { e.control = () => {}; e.brain = null; e.act = null; e.hitstop = 0; e.invul = 0; e.stun = 0; e.z = 0; e.vz = 0; e.vx = 0; e.dead = false; e.techHold = false; e.pvpLockT = 0; e.pvpDownT = 0; e.setState('idle'); resetCmb(e); e.status = {}; e.buffs = {}; }
       a.x = 400; t.x = 460; a.y = t.y = DEPTH / 2; a.face = 1; t.face = -1;
       a.invul = 999; t.weight = o.weight ?? t.weight; if (!o.keepHp) { t.hpMax = t.hp = 1e9; }
       return t;
@@ -151,7 +151,7 @@ try {
     const want = { tap: false, hold: false };
     const knock = () => { fresh(); t.pad = new Pad(); t.control = (e, dt) => { if (want.tap) { e.pad.tap('jump'); want.tap = false; } else if (want.hold) e.pad.hold('jump'); e.pad.frame(game.t); playerControl(e, dt); }; J.hit(a, t, { dmg: 0.5, launch: 300 }); for (let i = 0; i < 300 && t.st !== 'down'; i++) step(J.dt); };
     const crouch = holdS => { want.tap = true; want.hold = holdS > 0; let T = 0, inv = 0, st0 = null; for (let i = 0; i < 240; i++) { if (T >= holdS) want.hold = false; step(J.dt); T += J.dt; if (i === 8) st0 = t.st + (t.techHold ? ':hold' : ''); if (t.invul > 0) inv = T; } return { st0, inv: +inv.toFixed(2) }; };
-    knock(); t.reboundCd = 0; R.down = t.st; R.tap = crouch(0);
+    t.reboundCd = 0; knock(); t.reboundCd = 0; R.down = t.st; R.tap = crouch(0);
     knock(); t.reboundCd = 0; R.hold = crouch(3);
     knock(); t.reboundCd = 0; want.tap = true; want.hold = true; for (let i = 0; i < 20; i++) step(J.dt);
     R.otgWhiff = !J.hit(a, t, { dmg: 2, downHit: true }) && t.techHold; want.hold = false; for (let i = 0; i < 60; i++) step(J.dt);

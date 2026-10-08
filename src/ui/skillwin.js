@@ -242,8 +242,9 @@ addStyle(`
 .sktab.on{background:linear-gradient(180deg,#5a4020,#2a1c10);color:#ffe8a8}
 .sksp{font-size:1.1em;padding-bottom:.2em}
 .skmain{align-items:stretch;gap:.8em;min-width:0;max-width:100%}
-.sklist2{flex:1.2 1 0;min-width:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35em;max-height:26em;overflow-x:hidden;overflow-y:auto;align-content:start;padding-right:.2em}
-.ski2{display:flex;gap:.45em;align-items:center;padding:.3em;border:.1em solid #3a3040;border-radius:.25em;background:#16121a;cursor:pointer;min-width:0;overflow:hidden}
+.sklist2{flex:1.2 1 0;min-width:0;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(3.7em,auto);gap:.35em;max-height:26em;overflow-x:hidden;overflow-y:auto;align-content:start;padding-right:.2em;scrollbar-width:thin;scrollbar-color:#6a5436 #120e16}
+.sklist2::-webkit-scrollbar{width:.55em}.sklist2::-webkit-scrollbar-track{background:#120e16}.sklist2::-webkit-scrollbar-thumb{background:#6a5436;border-radius:.3em}
+.ski2{display:flex;gap:.45em;align-items:center;padding:.3em;border:.1em solid #3a3040;border-radius:.25em;background:#16121a;cursor:pointer;min-width:0;min-height:3.7em;box-sizing:border-box;overflow:hidden}
 .ski2:hover{border-color:#8a6a3a}.ski2.sel{border-color:#ffd23a;background:#2a2014}.ski2.lock .skic,.ski2.lock .d{opacity:.5}
 .ski2 .d{flex:1;min-width:0;line-height:1.3}.ski2 .d b{color:#ffe8a8;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .skic{position:relative;width:2.9em;height:2.9em;flex:none;border:.1em solid #6a5436;border-radius:.2em;overflow:hidden;cursor:grab;touch-action:none}

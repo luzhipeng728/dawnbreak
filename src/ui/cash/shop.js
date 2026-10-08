@@ -248,6 +248,11 @@ function cashFillGrid(grid, el) {
     sec('其他礼包'); for (const G of other) add(G);
     return;
   }
+  if (tab === 'contract') {
+    sec('账号契约', '官方规则：购买后立即生效，并对本服务器账号内全部角色共享。');
+    for (const G of list) add(G);
+    return;
+  }
   if (tab === 'weapon') sec('武器装扮', '不分职业：一件覆盖所有武器类型（拿在手里换成装扮的样子），另加攻击 / 施放速度；也会出现在节日礼包里');
   for (const G of list) add(G);
   if (tab === 'box') grid.append(h('div', { class: 'cash-sec' }, h('small', {}, '每个箱子都公开概率：选中后点“概率公示”。魔盒每开 1 个得 1 个魔盒碎片，碎片可以在兑换商店换好东西。')));
@@ -262,6 +267,11 @@ function cashDetail(G, el) {
   out.push(h('div', { class: `t q${G.whole ? 1 : D.rar}` }, cashGoodsName(G)));
   out.push(h('div', { class: 'st' }, G.whole ? `高级装扮 · 整套 8 件（单买合计 ${fmtNum(AV_PIECE_SLOTS.reduce((s, k) => s + CASH_SLOT_PRICE[k], 0))}）` : `${RARITY[D.rar].name} · ${itemTypeName({ ...D, key: G.key })}`));
   out.push(h('div', { class: 'ds' }, D.desc || ''));
+  if (D.contract) {
+    const S = contractStatus(), until = D.contract.kind === 'vip' ? S.vipUntil : S.conquerorUntil;
+    const active = D.contract.kind === 'vip' ? S.vipActive : S.conquerorActive;
+    out.push(h('div', { class: 'cash-note' }, active ? `当前已生效至 ${new Date(until).toLocaleString()}；再次购买会顺延时长。` : '购买后立即生效，不会进入角色背包。账号内全部角色共享。'));
+  }
   // 装备类：官方 tooltip（属性 / 套装）
   if (D.kind === 'equip' && !G.whole) { const it = makeItem(G.key); if (CW.opts[G.key]) { it.opt = CW.opts[G.key]; normalizeItem(it); } const tip = itemTip(it, { cmp: false }); tip.style.width = '100%'; tip.style.fontSize = '.78em'; out.push(tip); }
   // 礼包内容
@@ -284,7 +294,7 @@ function cashDetail(G, el) {
     out.push(h('div', { class: 'st' }, '购买时选择属性（之后在“属性选择”里第一次更换免费）'), box);
   }
   // 价格 / 数量 / 按钮
-  const stack = D.kind !== 'equip' && !G.whole && !G.fest && !CASH_PACKS[G.key];
+  const stack = D.kind !== 'equip' && !D.contract && !G.whole && !G.fest && !CASH_PACKS[G.key];
   const left = cashLimitLeft(G.pid, G.limit), maxQ = Math.max(1, Math.min(stack ? 99 : 1, left, G.price ? Math.floor(cashBal(G.cur) / G.price) || 1 : 1));
   CW.qty = clamp(CW.qty, 1, maxQ);
   const buy = h('div', { class: 'cash-buy' });
@@ -351,11 +361,11 @@ function cashOddsDialog(key, win) {
 }
 // 购买确认（贵的二次确认）；open = 买完直接打开
 function cashBuyAsk(G, win, open) {
-  const n = CW.qty || 1, cost = G.price * n;
+  const n = ITEMS[G.key] && ITEMS[G.key].contract ? 1 : CW.qty || 1, cost = G.price * n;
   const done = () => {
     const r = cashBuy(G.pid, n, { opts: CW.opts });
     if (r.err) { toastMsg(r.err, '#ff6a6a'); sfx.error(); return; }
-    toastMsg(`购买成功：${cashGoodsName(G)}${n > 1 ? ' ×' + n : ''}${cost ? `（-${fmtNum(cost)} ${CUR_NAME[G.cur]}）` : ''}`, '#ff9ae8');
+    toastMsg(r.activated ? `${cashGoodsName(G)} 已立即生效至 ${new Date(r.until).toLocaleString()}${cost ? `（-${fmtNum(cost)} ${CUR_NAME[G.cur]}）` : ''}` : `购买成功：${cashGoodsName(G)}${n > 1 ? ' ×' + n : ''}${cost ? `（-${fmtNum(cost)} ${CUR_NAME[G.cur]}）` : ''}`, r.activated ? '#8affc8' : '#ff9ae8');
     CW.qty = 1; itemsRefresh();
     if (open) {
       const D = ITEMS[G.key];

@@ -71,9 +71,18 @@ const RAID_DEFS = {
 };
 
 const RAID_CORE = (() => {
-  const VER = 1, DAY = 86400000, RESET = 6 * 3600000, BJ = 480;
+  const VER = 2, DAY = 86400000, RESET = 6 * 3600000, BJ = 480;
   const LIVE = { lobby: 1, routes: 1, rest: 1, final: 1 };
   const SCALE = RAID_DEFS.siroco.scale;
+  // 官方组队拾取规则。`owner` 是掉落归属（击杀者 / 来源队员），`leader` 是队长分配，
+  // `random` 是在线队员随机分配，`auction` 先进入竞拍池、由队员竞价后结算。
+  // 规则核心不碰 UI / 网络，普通地下城和团本都可以复用这套纯函数。
+  const LOOT_MODES = Object.freeze(['owner', 'leader', 'random', 'auction']);
+  // DFO 的竞拍钱包上限是角色金币携带上限；本项目的邮件服务同样以 2e9 为单封上限。
+  // 竞拍金额在出价时进入托管，超价后按官方规则退回钱包，溢出携带上限的整笔退回邮件。
+  const AUCTION_GOLD_CAP = 2_000_000_000, AUCTION_FEE_RATE = 0.05;
+  // 追逐战只选一张，讨伐战选两张；服务端规则也校验这个数量。
+  const flipLimit = phase => Number(phase) === 1 ? 1 : 2;
   const graphs = {};
   const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
   const defOf = raid => own(RAID_DEFS, raid) ? RAID_DEFS[raid] : null;
@@ -120,6 +129,10 @@ const RAID_CORE = (() => {
 
   function addMember(S, m) {
     S.members.push({ uid: m.uid, cid: String(m.cid || ''), name: String(m.name || ''), cls: m.cls || null, job: m.job || null,
+      // gold / vaultGold 只用于纯规则和主机权威的竞拍结算，不会从 view() 暴露给其他队员。
+      gold: Number.isFinite(Number(m.gold)) ? Math.max(0, Math.floor(Number(m.gold))) : null,
+      vaultGold: Number.isFinite(Number(m.vaultGold)) ? Math.max(0, Math.floor(Number(m.vaultGold))) : 0,
+      goldCap: Number.isFinite(Number(m.goldCap)) ? Math.min(AUCTION_GOLD_CAP, Math.max(1, Math.floor(Number(m.goldCap)))) : AUCTION_GOLD_CAP,
       ready: false, online: m.online !== false, offAt: 0, at: 'camp', ero: 0, left: false, rw: true });
   }
   function init(raid, members, mode, now, opt) {
@@ -130,9 +143,39 @@ const RAID_CORE = (() => {
       created: now, started: 0, ended: 0, why: null, phaseT0: 0, deadline: 0, restUntil: 0, lives: 0, sub: false,
       members: [], nodes: {}, buffs: [], win: {}, cp: {}, marks: {}, rev: {}, runs: {}, runSeq: 0,
       rs: opt.seed != null ? opt.seed | 0 : hash(String(opt.sid || '') + ':' + now), res: { phases: [], used: {} }, stats: { deaths: 0, penalties: 0 },
+      // 翻牌和拾取分配是会话状态的一部分：页面刷新 / 服务端重启后仍然锁在结算阶段，
+      // 不能在玩家边走边打时重复领取。历史存档缺字段时由 ensureMeta 补齐。
+      flip: { state: 'none', phase: 0, openedAt: 0, closedAt: 0, cards: {} },
+      loot: { mode: LOOT_MODES.includes(opt.lootMode) ? opt.lootMode : 'owner', seq: 0, offers: {}, history: [], wallets: {} },
       guard: Object.assign({}, D.guard, opt.guard || {}) };
     for (const m of members) addMember(S, m);
+    for (const m of S.members) {
+      const w = opt.wallets && (opt.wallets[m.uid] || opt.wallets[String(m.uid)]) || {};
+      S.loot.wallets[String(m.uid)] = {
+        gold: Number.isFinite(Number(w.gold)) ? Math.max(0, Math.floor(Number(w.gold))) : (m.gold == null ? AUCTION_GOLD_CAP : m.gold),
+        vault: Number.isFinite(Number(w.vault)) ? Math.max(0, Math.floor(Number(w.vault))) : m.vaultGold,
+        cap: Number.isFinite(Number(w.cap)) ? Math.min(AUCTION_GOLD_CAP, Math.max(1, Math.floor(Number(w.cap)))) : m.goldCap,
+        mail: Array.isArray(w.mail) ? w.mail.slice() : [],
+      };
+    }
     S.members[0].ready = true;
+    return S;
+  }
+
+  function ensureMeta(S) {
+    if (!S.flip || typeof S.flip !== 'object') S.flip = { state: 'none', phase: 0, openedAt: 0, closedAt: 0, cards: {} };
+    S.flip.state ||= 'none'; S.flip.phase = S.flip.phase | 0; S.flip.openedAt ||= 0; S.flip.closedAt ||= 0; S.flip.cards ||= {};
+    if (!S.loot || typeof S.loot !== 'object') S.loot = { mode: 'owner', seq: 0, offers: {}, history: [], wallets: {} };
+    if (!LOOT_MODES.includes(S.loot.mode)) S.loot.mode = 'owner';
+    S.loot.seq = S.loot.seq | 0; S.loot.offers ||= {}; S.loot.history ||= []; S.loot.wallets ||= {};
+    for (const m of S.members || []) {
+      const k = String(m.uid), w = S.loot.wallets[k] || {};
+      w.gold = Number.isFinite(Number(w.gold)) ? Math.max(0, Math.floor(Number(w.gold))) : (m.gold == null ? AUCTION_GOLD_CAP : Math.max(0, Math.floor(Number(m.gold))));
+      w.vault = Number.isFinite(Number(w.vault)) ? Math.max(0, Math.floor(Number(w.vault))) : Math.max(0, Math.floor(Number(m.vaultGold) || 0));
+      w.cap = Number.isFinite(Number(w.cap)) ? Math.min(AUCTION_GOLD_CAP, Math.max(1, Math.floor(Number(w.cap)))) : Math.min(AUCTION_GOLD_CAP, Math.max(1, Math.floor(Number(m.goldCap) || AUCTION_GOLD_CAP)));
+      if (!Array.isArray(w.mail)) w.mail = [];
+      S.loot.wallets[k] = w;
+    }
     return S;
   }
 
@@ -158,17 +201,37 @@ const RAID_CORE = (() => {
     const G = graph(S.raid, S.graph), P = G.phases[S.phase];
     if (S.res.phases.includes(P.id)) return;
     S.res.phases.push(P.id); S.res.used[P.id] = now - S.phaseT0;
+    ensureMeta(S);
+    // 休整 / 结算先锁住翻牌，再由客户端明确打开结算窗口。翻牌完成前不会进入下一阶段。
+    S.flip = { state: 'ready', phase: P.id, openedAt: 0, closedAt: 0, cards: {} };
     push(o, 'all', 'phase', null, { phase: P.id, ok: true, used: now - S.phaseT0 });
     if (S.phase >= G.phases.length - 1) return end(S, now, o, true, 'clear');
     S.st = 'rest'; S.restUntil = now + def(S).rest * 1000;
-    note(o, 'all', `${P.name}完成！休整 ${Math.round(def(S).rest / 60)} 分钟后进入下一阶段（团长可以提前开始）`);
+    note(o, 'all', `${P.name}完成！先完成全员翻牌，休整 ${Math.round(def(S).rest / 60)} 分钟后进入下一阶段（团长可在倒计时后开始）`);
+  }
+  function flipComplete(S) {
+    ensureMeta(S);
+    if (S.flip.state === 'closed') return true;
+    const eligible = act(S).filter(m => m.rw !== false);
+    return eligible.length === 0 || eligible.every(m => {
+      const c = S.flip.cards[String(m.uid)]; return c && c.closedAt;
+    });
   }
   function end(S, now, o, ok, why) {
     if (!LIVE[S.st]) return;
     S.st = ok ? 'cleared' : 'failed'; S.why = why; S.ended = now;
     for (const R of Object.values(S.runs)) if (!R.end) { R.end = why; R.endAt = now; }
     for (const m of S.members) m.at = 'camp';
-    push(o, 'all', 'end', null, { ok, why, phases: S.res.phases.slice() });
+    ensureMeta(S);
+    // 成功通关进入最终翻牌；失败也要保留最后一个已完成阶段的翻牌状态，
+    // 这样超时 / 中途放弃不会吞掉已经打完但尚未领取的阶段奖励。
+    if (ok) S.flip = { state: 'ready', phase: S.res.phases[S.res.phases.length - 1] || 0, openedAt: 0, closedAt: 0, cards: {} };
+    else {
+      const p = S.res.phases[S.res.phases.length - 1] || 0;
+      if (!p) S.flip = { state: 'none', phase: 0, openedAt: 0, closedAt: 0, cards: {} };
+      else if (!S.flip || S.flip.phase !== p || S.flip.state === 'none') S.flip = { state: 'ready', phase: p, openedAt: 0, closedAt: 0, cards: {} };
+    }
+    push(o, 'all', 'end', null, { ok, why, phases: S.res.phases.slice(), flip: S.flip.state === 'ready' });
   }
 
   // ---- 节点 ----
@@ -326,7 +389,7 @@ const RAID_CORE = (() => {
     const D = def(S);
     for (const m of S.members) if (m.ero && m.ero <= now) m.ero = 0;
     if (S.st === 'lobby') return;
-    if (S.st === 'rest') { if (now >= S.restUntil) beginPhase(S, S.phase + 1, now, o); return; }
+    if (S.st === 'rest') { if (now >= S.restUntil && flipComplete(S)) beginPhase(S, S.phase + 1, now, o); return; }
     if (now >= S.deadline) return end(S, now, o, false, 'timeout');
     const sub = subNow(S, now);
     if (sub !== S.sub) setSub(S, sub, now, o);
@@ -386,7 +449,7 @@ const RAID_CORE = (() => {
 
   function canStart(S, uid) {
     if (S.leader !== uid) return { code: 'leader', text: '只有团长能开始' };
-    if (S.st === 'rest') return null;
+    if (S.st === 'rest') return flipComplete(S) ? null : { code: 'flip', text: '请全员完成翻牌后再开始下一阶段' };
     if (S.st !== 'lobby') return { code: 'state', text: '团本已经开始了' };
     const A = act(S);
     if (A.some(m => !m.online)) return { code: 'offline', text: '还有人不在线' };
@@ -523,6 +586,7 @@ const RAID_CORE = (() => {
   };
 
   function event(S, ev, now) {
+    ensureMeta(S);
     const o = { S, fx: [], err: null, ack: null };
     const h = ev && typeof ev.t === 'string' && Object.prototype.hasOwnProperty.call(EV, ev.t) ? EV[ev.t] : null;
     if (!h) return fail(o, 'bad', '未知的团本事件');
@@ -537,6 +601,7 @@ const RAID_CORE = (() => {
     return o;
   }
   function tick(S, now) {
+    ensureMeta(S);
     const o = { S, fx: [], err: null, ack: null };
     advance(S, now, o); sweep(S, now, o);
     return o;
@@ -563,6 +628,7 @@ const RAID_CORE = (() => {
 
   // ---- 给客户端看的状态（不含 RNG、挑战的内部记录）----
   function view(S) {
+    ensureMeta(S);
     const P = phaseOf(S), nodes = {};
     for (const id of Object.keys(S.nodes)) { const N = S.nodes[id]; nodes[id] = { st: N.st, by: N.by.slice(), hp: N.hp, n: N.n, order: N.order, until: N.until, timer: N.timer, hpStart: N.hpStart }; }
     return { sid: S.sid, raid: S.raid, mode: S.mode, graph: S.graph, st: S.st, phase: P ? P.id : 0, leader: S.leader,
@@ -570,7 +636,10 @@ const RAID_CORE = (() => {
       members: S.members.map(m => ({ uid: m.uid, cid: m.cid, name: m.name, cls: m.cls, job: m.job, ready: m.ready, online: m.online, at: m.at, ero: m.ero, left: m.left, rw: m.rw })),
       nodes, buffs: S.buffs.map(b => ({ id: b.id, node: b.node, kind: b.kind, p: b.p, until: b.until })),
       win: JSON.parse(JSON.stringify(S.win)), cp: JSON.parse(JSON.stringify(S.cp)), marks: Object.assign({}, S.marks),
-      res: { phases: S.res.phases.slice(), used: Object.assign({}, S.res.used) }, stats: Object.assign({}, S.stats) };
+      res: { phases: S.res.phases.slice(), used: Object.assign({}, S.res.used) }, stats: Object.assign({}, S.stats),
+      flip: { state: S.flip.state, phase: S.flip.phase, openedAt: S.flip.openedAt, closedAt: S.flip.closedAt },
+      loot: { mode: S.loot.mode, offers: Object.fromEntries(Object.entries(S.loot.offers).map(([id, O]) => [id, { id: O.id, item: O.item, source: O.source, mode: O.mode, status: O.status, winner: O.winner,
+        minBid: O.minBid, bids: Object.assign({}, O.bids), price: O.price, fee: O.fee, pool: O.pool, settlement: O.settlement, delivery: O.delivery }])) } };
   }
 
   // ---- 数值（RA3 按它生成节点里的怪；组队房间的 ×1.6 由现有 coop 的 COOP_HP 负责，这里不重复乘）----
@@ -612,12 +681,193 @@ const RAID_CORE = (() => {
     return null;
   }
   function rollReward(S, uid, phaseId, r) {
+    ensureMeta(S);
     r = r || Math.random;
     const D = def(S), RW = D.rewards || {}, T = (D.scale || SCALE)[S.mode] || SCALE.normal, sc = { cur: T.cur, gear: T.gear };
     if (typeof RW.roll === 'function') return RW.roll({ S, uid, phase: phaseId, rnd: r, scale: sc, mode: S.mode });
     return { phase: phaseId, cards: (RW['p' + phaseId] || []).map(c => card(RW, c, sc, r)).filter(Boolean) };
   }
 
-  return { VER, defs: RAID_DEFS, LIVE, defOf, graph, init, event, tick, abort, view, scale, canStart, limits, consume, dayNo, weekNo, rollReward, shift };
+  // ---- 翻牌生命周期（结算阶段的移动 / 战斗锁由客户端消费 flip.state） ----
+  function flipOpen(S, uid, phaseId, now) {
+    ensureMeta(S); const m = mem(S, uid), p = Number(phaseId);
+    if (!m || m.left) return { ok: false, code: 'member', text: '你不在这个团本里' };
+    if (!S.res.phases.includes(p)) return { ok: false, code: 'phase', text: '这个阶段还没通关' };
+    const key = String(uid);
+    // 兼容旧版本已经失败的会话：旧存档没有保留失败前的翻牌元数据，
+    // 但阶段记录仍然可信，按请求的已完成阶段重建可补领的牌面。
+    if (S.st === 'failed' && S.flip.state === 'none' && S.res.phases.includes(p)) S.flip = { state: 'ready', phase: p, openedAt: 0, closedAt: 0, cards: {} };
+    if (S.flip.state === 'none' || S.flip.phase !== p) return { ok: false, code: 'flip', text: '翻牌阶段不可用' };
+    const old = S.flip.cards[key];
+    if (old && old.closedAt) return { ok: false, code: 'closed', text: '你已经完成本阶段翻牌' };
+    // 每个队员都有自己的牌面和关闭状态；一名队员完成后，其他队员仍可打开自己的结算窗口。
+    if (S.flip.state === 'ready' || S.flip.state === 'closed') { S.flip.state = 'open'; S.flip.openedAt ||= now; }
+    if (!S.flip.cards[key]) S.flip.cards[key] = { phase: p, openedAt: now, picks: [] };
+    return { ok: true, state: S.flip.state, phase: p, picks: S.flip.cards[key].picks.slice() };
+  }
+  function flipSetReward(S, uid, phaseId, reward) {
+    ensureMeta(S); const p = Number(phaseId), c = S.flip.cards[String(uid)];
+    if (!c || S.flip.phase !== p || S.flip.state !== 'open' || !reward || !Array.isArray(reward.cards)) return { ok: false, code: 'flip', text: '请先打开翻牌阶段' };
+    if (!c.rewardCards) c.rewardCards = JSON.parse(JSON.stringify(reward.cards));
+    return { ok: true };
+  }
+  function flipPick(S, uid, phaseId, index, now, r) {
+    ensureMeta(S); const p = Number(phaseId), key = String(uid), c = S.flip.cards[key];
+    if (S.flip.state !== 'open' || S.flip.phase !== p || !c) return { ok: false, code: 'flip', text: '请先进入翻牌阶段' };
+    const i = index | 0, n = Math.max(1, ((def(S).rewards || {})['p' + p] || []).length);
+    if (i < 0 || i >= n) return { ok: false, code: 'card', text: '没有这张牌' };
+    if (c.picks.length >= flipLimit(p)) return { ok: false, code: 'limit', text: `本阶段只能翻 ${flipLimit(p)} 张牌` };
+    if (c.picks.some(x => x.index === i)) return { ok: false, code: 'dup', text: '这张牌已经翻开了' };
+    const reward = (c.rewardCards && c.rewardCards[i]) || rollReward(S, uid, p, r || Math.random).cards[i] || null;
+    c.picks.push({ index: i, reward, at: now });
+    return { ok: true, index: i, reward, picks: c.picks.slice() };
+  }
+  function flipClose(S, uid, phaseId, now) {
+    ensureMeta(S); const p = Number(phaseId), c = S.flip.cards[String(uid)];
+    if (!c || S.flip.phase !== p || (S.flip.state !== 'open' && S.flip.state !== 'ready')) return { ok: false, code: 'flip', text: '翻牌阶段不可用' };
+    if (c.picks.length < flipLimit(p)) return { ok: false, code: 'limit', text: `请先选择 ${flipLimit(p)} 张牌` };
+    c.closedAt = now;
+    const allClosed = act(S).filter(m => m.rw !== false).every(m => S.flip.cards[String(m.uid)] && S.flip.cards[String(m.uid)].closedAt);
+    if (allClosed) { S.flip.state = 'closed'; S.flip.closedAt = now; }
+    return { ok: true, phase: p, closed: allClosed };
+  }
+
+  // ---- 组队装备分配（可供普通协作副本和团本掉落共用） ----
+  function lootCandidates(S) { return S.members.filter(m => !m.left && m.online).map(m => m.uid).sort((a, b) => String(a).localeCompare(String(b))); }
+  function lootParticipants(S) { return S.members.filter(m => !m.left).map(m => m.uid).sort((a, b) => String(a).localeCompare(String(b))); }
+  function lootMode(S) { ensureMeta(S); return S.loot.mode; }
+  function lootWallet(S, uid) {
+    ensureMeta(S); const W = S.loot.wallets[String(uid)];
+    return W ? { gold: W.gold, vault: W.vault, cap: W.cap, mail: W.mail.slice() } : null;
+  }
+  function wallet(S, uid) { ensureMeta(S); return S.loot.wallets[String(uid)] || null; }
+  function walletEffect(S, uid, kind, amount, offer) {
+    const W = wallet(S, uid);
+    const mail = W && (kind === 'share' || kind === 'refund-mail') && W.mail.length ? W.mail[W.mail.length - 1] : null;
+    return { uid, kind, amount: Math.max(0, Math.floor(amount || 0)), offer: offer || null, wallet: W ? { gold: W.gold, vault: W.vault, cap: W.cap } : null, mail };
+  }
+  function takeWallet(S, uid, amount, source) {
+    const W = wallet(S, uid), n = Math.max(0, Math.floor(Number(amount) || 0));
+    if (!W || n <= 0) return null;
+    if (n > W.gold + W.vault) return null;
+    let gold = 0, vault = 0;
+    if (source === 'vault') { vault = Math.min(W.vault, n); gold = n - vault; }
+    else { gold = Math.min(W.gold, n); vault = n - gold; }
+    W.gold -= gold; W.vault -= vault;
+    return { amount: n, gold, vault };
+  }
+  function returnWallet(S, uid, amount, now, offer) {
+    const W = wallet(S, uid), n = Math.max(0, Math.floor(Number(amount) || 0));
+    if (!W || n <= 0) return null;
+    // 官方：退回金额若超过角色携带上限，整笔通过邮件退回，而不是部分塞进钱包。
+    if (W.gold + n > W.cap) {
+      const mail = { kind: 'gold', amount: n, reason: 'raid-auction-refund', offer: offer || null, at: now };
+      W.mail.push(mail);
+      return { ...walletEffect(S, uid, 'refund-mail', n, offer), mail, at: now };
+    }
+    W.gold += n;
+    return { ...walletEffect(S, uid, 'refund', n, offer), at: now };
+  }
+  function auctionRows(S, O) {
+    // 已经出过价的队员即使在结算前掉线 / 离开，托管中的最高价仍然有效；
+    // 只有新的出价人要求在线，所以这里使用掉落生成时的参战快照。
+    const ids = (O.participants || lootParticipants(S)).map(String);
+    return Object.entries(O.bids || {}).filter(([uid, n]) => ids.includes(String(uid)) && Number(n) > 0)
+      .map(([uid, n]) => ({ uid, amount: Math.floor(Number(n)) }))
+      .sort((a, b) => b.amount - a.amount || String(a.uid).localeCompare(String(b.uid)));
+  }
+  function setLootMode(S, uid, mode) {
+    ensureMeta(S); mode = mode === 'free' ? 'owner' : mode;
+    if (!LOOT_MODES.includes(mode)) return { ok: false, code: 'mode', text: '未知的分配方式' };
+    if (S.leader !== uid) return { ok: false, code: 'leader', text: '只有队长能设置拾取分配' };
+    if (S.st !== 'lobby') return { ok: false, code: 'state', text: '开始后不能更改拾取分配' };
+    S.loot.mode = mode; return { ok: true, mode };
+  }
+  function lootOffer(S, item, source, now, mode) {
+    ensureMeta(S); const M = mode === 'free' ? 'owner' : (mode || S.loot.mode), ids = lootCandidates(S);
+    if (!LOOT_MODES.includes(M)) return { ok: false, code: 'mode', text: '未知的分配方式' };
+    if (!ids.length) return { ok: false, code: 'party', text: '没有在线队员可分配' };
+    const id = 'loot' + (++S.loot.seq), owner = ids.includes(source) ? source : S.leader;
+    const minBid = Math.max(1, Math.floor(Number(item && (item.minBid ?? item.bidMin)) || 0));
+    const O = { id, item: item && JSON.parse(JSON.stringify(item)), source: owner, mode: M, status: 'pending', winner: null,
+      minBid, participants: lootParticipants(S), bids: {}, escrow: {}, bidHistory: [], refunds: [], createdAt: now };
+    if (M === 'owner') { O.status = 'awarded'; O.winner = owner; }
+    else if (M === 'random') { O.status = 'awarded'; O.winner = ids[Math.floor(rnd(S) * ids.length)]; }
+    S.loot.offers[id] = O; S.loot.history.push(id); if (S.loot.history.length > 200) S.loot.history.shift();
+    return { ok: true, offer: JSON.parse(JSON.stringify(O)) };
+  }
+  function lootAssign(S, uid, id, to, now) {
+    ensureMeta(S); const O = S.loot.offers[id], ids = lootCandidates(S);
+    if (!O) return { ok: false, code: 'loot', text: '掉落不存在' };
+    if (O.mode !== 'leader' || uid !== S.leader) return { ok: false, code: 'leader', text: '只有队长能分配这件装备' };
+    if (!ids.includes(to)) return { ok: false, code: 'member', text: '接收者不在队伍中' };
+    if (O.status !== 'pending') return { ok: false, code: 'done', text: '这件装备已经分配' };
+    O.status = 'awarded'; O.winner = to; O.assignedAt = now; return { ok: true, offer: JSON.parse(JSON.stringify(O)) };
+  }
+  function lootBid(S, uid, id, amount, now, opt) {
+    ensureMeta(S); const O = S.loot.offers[id], ids = lootCandidates(S), key = String(uid), n = Math.max(0, Math.floor(Number(amount) || 0));
+    if (!O) return { ok: false, code: 'loot', text: '掉落不存在' };
+    if (O.mode !== 'auction' || O.status !== 'pending') return { ok: false, code: 'auction', text: '这件装备不在竞拍中' };
+    if (!ids.some(x => String(x) === key) || !n) return { ok: false, code: 'bid', text: '竞价无效' };
+    const rows = auctionRows(S, O), high = rows[0], old = O.bids[key] && Math.floor(Number(O.bids[key]));
+    // 最高价者不能追加出价；出价被超后旧托管会在同一事务里退回，随后可以重新竞拍。
+    if (high && String(high.uid) === key) return { ok: false, code: 'highest', text: '你已经是最高出价者，不能追加竞价' };
+    const floor = Math.max(O.minBid || 1, high ? high.amount + 1 : 0);
+    if (n < floor) return { ok: false, code: 'minimum', text: `出价必须至少 ${floor.toLocaleString('en-US')} G` };
+    const limitWallet = wallet(S, uid);
+    if (!limitWallet || n > limitWallet.cap) return { ok: false, code: 'cap', text: `出价不能超过角色金币携带上限 ${Number(limitWallet && limitWallet.cap || AUCTION_GOLD_CAP).toLocaleString('en-US')} G` };
+    // 先验证金额，避免一笔无效的低价出手把自己的旧托管意外退回。
+    // 正常流程不会留下非最高旧价；兼容旧会话时仍将它完整退回，再扣本次新价。
+    const oldHeld = old > 0 ? (O.escrow[key] && O.escrow[key].amount || old) : 0;
+    const available = wallet(S, uid);
+    const freeAfterOld = available ? available.gold + available.vault + oldHeld : 0;
+    if (!available || n > freeAfterOld) return { ok: false, code: 'funds', text: '金币和账号金库余额不足' };
+    const effects = [];
+    if (oldHeld) {
+      delete O.bids[key]; delete O.escrow[key];
+      const back = returnWallet(S, uid, oldHeld, now, O.id); if (back) { O.refunds.push(back); effects.push(back); }
+    }
+    const debit = takeWallet(S, uid, n, opt && opt.source);
+    if (!debit) return { ok: false, code: 'funds', text: '金币和账号金库余额不足' };
+    // 新出价取代旧最高价；旧最高价的整笔托管立即退回，超过携带上限则整笔进邮件。
+    if (high) {
+      const previous = String(high.uid), held = O.escrow[previous] && O.escrow[previous].amount || high.amount;
+      delete O.bids[previous]; delete O.escrow[previous];
+      const back = returnWallet(S, previous, held, now, O.id);
+      if (back) { O.refunds.push(back); effects.push(back); }
+    }
+    O.bids[key] = n; O.escrow[key] = debit; O.bidAt = now;
+    O.bidHistory.push({ uid, amount: n, at: now });
+    effects.unshift(walletEffect(S, uid, 'debit', n, O.id));
+    return { ok: true, id, bids: Object.assign({}, O.bids), current: { uid, amount: n }, effects };
+  }
+  function lootResolve(S, id, now) {
+    ensureMeta(S); const O = S.loot.offers[id]; if (!O) return { ok: false, code: 'loot', text: '掉落不存在' };
+    if (O.status !== 'pending') return { ok: true, offer: JSON.parse(JSON.stringify(O)) };
+    if (O.mode !== 'auction') return { ok: false, code: 'loot', text: '只有竞拍掉落需要结算' };
+    const rows = auctionRows(S, O);
+    if (!rows.length) {
+      O.status = 'destroyed'; O.destroyedAt = now; O.resolvedAt = now;
+      O.settlement = { destroyed: true, participants: (O.participants || lootParticipants(S)).slice() };
+      return { ok: true, offer: JSON.parse(JSON.stringify(O)), destroyed: true };
+    }
+    O.status = 'awarded'; O.winner = rows[0].uid; O.price = rows[0].amount; O.resolvedAt = now;
+    const fee = Math.max(0, Math.floor(O.price * (Number.isFinite(Number(O.feeRate)) ? Number(O.feeRate) : AUCTION_FEE_RATE)));
+    const pool = Math.max(0, O.price - fee), participants = (O.participants || lootParticipants(S)).slice(), shares = {};
+    if (participants.length) {
+      const base = Math.floor(pool / participants.length), rem = pool - base * participants.length;
+      participants.forEach((uid, i) => {
+        const share = base + (i < rem ? 1 : 0); shares[String(uid)] = share;
+        if (share) { const W = wallet(S, uid); const mail = { kind: 'gold', amount: share, reason: 'raid-auction-share', offer: O.id, at: now }; W.mail.push(mail); }
+      });
+    }
+    O.fee = fee; O.pool = pool; O.settlement = { fee, pool, shares, participants };
+    O.delivery = 'mail';
+    return { ok: true, offer: JSON.parse(JSON.stringify(O)), effects: participants.map(uid => walletEffect(S, uid, 'share', shares[String(uid)] || 0, O.id)) };
+  }
+
+  return { VER, defs: RAID_DEFS, LIVE, LOOT_MODES, flipLimit, flipComplete, defOf, graph, init, event, tick, abort, view, scale, canStart, limits, consume, dayNo, weekNo, rollReward,
+    flipOpen, flipSetReward, flipPick, flipClose, lootMode, setLootMode, lootCandidates, lootParticipants, lootWallet, lootOffer, lootAssign, lootBid, lootResolve, shift,
+    AUCTION_GOLD_CAP, AUCTION_FEE_RATE };
 })();
 const raidInit = RAID_CORE.init, raidEvent = RAID_CORE.event, raidTick = RAID_CORE.tick;

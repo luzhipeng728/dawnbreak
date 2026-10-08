@@ -158,8 +158,13 @@ class Ent {
     if (this.grabbed) holdGrabbed(this);
     // ---- 受击状态计时 ----
     if (this.st === 'hit') { this.stun -= dt; if (this.stun <= 0) { this.setState('idle'); this.hitHeavy = false; } }
-    else if (this.st === 'down') { if (this.stT > (this.downTime || 0.8)) this.startGetup(); }
-    else if (this.st === 'getup') { if (this.stT > (this.getupDur || 0.4)) { this.setState('idle'); this.tech = false; resetCmb(this); if (game.pvp && game.duel) { this.pvpDownT = 0; this.pvpLockT = 0; } } }   // 起来就是下一套：连击统计 / 保护清零（刷图和决斗一样；以前刷图要能行动满 1 秒才清，起身后马上再挑会沿用上一套的递减）
+    else if (this.st === 'down') {
+      if (this.stT > (this.downTime || 0.8)) {
+        this.startGetup();
+        if (game.pvp && game.duel) { this._pvpAutoRecover = true; this.techHold = true; }
+      }
+    }
+    else if (this.st === 'getup') { if (this.stT > (this.getupDur || 0.4)) { this.setState('idle'); this.tech = false; resetCmb(this); if (this._pvpAutoRecover) { this._pvpAutoRecover = false; this.techHold = false; } if (game.pvp && game.duel) { this.pvpDownT = 0; this.pvpLockT = 0; } } }   // 起来就是下一套：连击统计 / 保护清零（刷图和决斗一样；以前刷图要能行动满 1 秒才清，起身后马上再挑会沿用上一套的递减）
     if (this.st === 'dead') this.deadT = (this.deadT || 0) + dt;
     // 连击统计：可行动一段时间后清零（浮空 / 倒地保护重新计算）
     if (this.free || this.st === 'act') { this.freeT += dt; if (this.freeT > COMBAT.protReset && (this.cmb.hits || this.cmb.dmg)) resetCmb(this); } else this.freeT = 0;
@@ -173,7 +178,11 @@ class Ent {
     const imp = -this.vz;
     if (this.st === 'air') {
       // 落地反弹一次（重击砸地 bounceNext 会弹得更高）
-      if (this.recoverLand && !this.dead) { this.recoverLand = false; this.vz = 0; this.bouncing = false; this.startGetup(true); return; }   // 决斗浮空保护：强制受身落地
+      if (this.recoverLand && !this.dead) {
+        this.recoverLand = false; this.vz = 0; this.bouncing = false; this.startGetup(true);
+        if (this._pvpAutoRecover) { this._pvpAutoRecover = false; this.techHold = false; }
+        return;
+      }   // 决斗浮空保护：强制受身落地
       if (!this.dead && ((!this.bounced && imp > JUGGLE.bounceImp) || this.bounceNext)) {
         const forced = this.bounceNext || 0; this.bounced = true; this.bounceNext = 0; this.vz = forced ? Math.max(imp * forced, 260) : imp * JUGGLE.bounceK; this.z = 0.01;
         fxDust(this.x, this.y, 5, 14); sfx.thud(0.6); this.cmb.bounce = (this.cmb.bounce || 0) + 1; this.bouncing = true; this.play(this.clipOr('bounceUp', 'air'), true); return;

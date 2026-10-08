@@ -71,6 +71,39 @@ function ampCost(it) {
   return { gold: Math.round((it.lvl * 40 + 150) * Math.pow(1.36, e) * rarCostMul(it)), contra: Math.max(1, Math.ceil((e + 1) * (0.4 + it.lvl / 60))) };
 }
 const itemOwned = it => inv.items.includes(it) || SLOTS.some(s => inv.equip[s] === it);
+/* ---------------- 强化继承（项目版，映射官方 Inherit/Transcend） ----------------
+   只转移强化 / 增幅 / 锻造 / 附魔；目标原有这些属性会被覆盖，源装备清零。
+   费用二选一：25,000 金币或 5 个邪念残骸。为避免复制，源和目标必须是玩家持有的不同装备，
+   同部位且目标等级不低于源；可交易 / 封装装备、时装和不可强化装备不能作为继承材料。
+*/
+const INHERIT_GOLD = 25000, INHERIT_RESIDUE = 5;
+function canInheritEnhance(src, dst) {
+  if (!src || !dst || src === dst || src.kind !== 'equip' || dst.kind !== 'equip') return false;
+  if (!itemOwned(src) || !itemOwned(dst) || src.slot !== dst.slot || (dst.lvl || 1) < (src.lvl || 1)) return false;
+  if (!canAmplify(src) || !canAmplify(dst) || (ITEMS[src.key] && ITEMS[src.key].noEnhance) || (ITEMS[dst.key] && ITEMS[dst.key].noEnhance)) return false;
+  if (itemTradable(src) || itemTradable(dst)) return false;
+  return !!((src.enh || 0) || src.dim || (src.forge || 0) || src.orb);
+}
+function inheritEnhanceCost(pay = 'gold') { return pay === 'residue' ? { residue: INHERIT_RESIDUE } : { gold: INHERIT_GOLD }; }
+function tryInheritEnhance(src, dst, pay = 'gold') {
+  if (!canInheritEnhance(src, dst)) return { err: '这两件装备不能进行强化继承' };
+  pay = pay === 'residue' ? 'residue' : 'gold';
+  const c = inheritEnhanceCost(pay);
+  if (pay === 'gold' && game.gold < c.gold) return { err: '金币不足', cost: c };
+  if (pay === 'residue' && inv.count('m_malefic') < c.residue) return { err: '邪念残骸不足', cost: c };
+  if (pay === 'gold') game.gold -= c.gold; else inv.take('m_malefic', c.residue);
+  const old = { enh: dst.enh || 0, dim: dst.dim || null, forge: dst.forge || 0, orb: dst.orb ? { ...dst.orb } : null };
+  const moved = { enh: src.enh || 0, dim: src.dim || null, forge: src.forge || 0, orb: src.orb ? { ...src.orb } : null };
+  dst.enh = moved.enh;
+  if (moved.dim) dst.dim = moved.dim; else delete dst.dim;
+  if (moved.forge) dst.forge = moved.forge; else delete dst.forge;
+  if (moved.orb) dst.orb = moved.orb; else delete dst.orb;
+  src.enh = 0; delete src.dim; delete src.forge; delete src.orb;
+  if (game.player) recalcStats(game.player);
+  bus.emit('inheritEnhance', { source: src, target: dst, pay, moved });
+  save.write();
+  return { ok: true, cost: c, old, moved };
+}
 // 净化异界气息：随机赋予一种红字；已有红字时换成另外三种之一（增幅等级不变）
 function ampConvert(it, r01 = Math.random()) {
   if (!canAmplify(it)) return { err: '这件物品不能增幅' };

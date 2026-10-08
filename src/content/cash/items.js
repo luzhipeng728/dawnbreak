@@ -138,6 +138,10 @@ const ORB_TIER = { rare: ['orb_title1', 'orb_weapon1', 'orb_armor1', 'orb_acc1',
 
 /* ---- 可以直接使用的商城道具（cashUse：由 game/shop.js 包装 inv.useItem 统一处理） ---- */
 const defCashUse = (key, def) => defineItem(key, { kind: 'use', price: 10, noSell: true, cash: true, cashIcon: def.cashIcon || key, use: { open: def.cashUse === 'box' || def.cashUse === 'pack' || def.cashUse === 'red' }, ...def });
+// 官方契约：购买后立即作用于账号内全部角色；物品本身为账号绑定，不能转移或出售。
+defCashUse('contract_conqueror_7', { name: '征服者契约（7天）', rar: 4, bind: 'account', noTrade: true, cashUse: 'contract', contract: { kind: 'conqueror', days: 7 }, desc: '购买后立即生效：允许穿戴高于当前等级最多 10 级的装备；不适用于竞技场；账号内全部角色共享。' });
+defCashUse('contract_conqueror_15', { name: '征服者契约（15天）', rar: 4, bind: 'account', noTrade: true, cashUse: 'contract', contract: { kind: 'conqueror', days: 15 }, desc: '购买后立即生效：允许穿戴高于当前等级最多 10 级的装备；不适用于竞技场；账号内全部角色共享。' });
+defCashUse('contract_vip_7', { name: 'VIP高级契约（7天）', rar: 4, bind: 'account', noTrade: true, cashUse: 'contract', contract: { kind: 'vip', days: 7 }, desc: '购买后立即生效：账号内全部角色共享 VIP 疲劳值上限与会员福利；不改变征服者契约的装备等级上限。' });
 // 券
 defCashUse('tk_maxlv', { name: '一键满级券', rar: 5, cashUse: 'maxlv', desc: '使用后当前角色直接升到满级（Lv.60），每一级的 SP 照常获得。主线任务不会自动完成，可以回头补做领奖励。' });
 defCashUse('tk_enh7', { name: '+7 装备强化券', rar: 2, cashUse: 'ticket', ticket: { kind: 'enh', lvl: 7 }, desc: '选择一件装备，把强化等级直接变为 +7（已经 +7 以上的不能用；增幅过的装备不能用）。' });

@@ -12,18 +12,31 @@ web() {
   node build.mjs --web
   rsync -az --exclude version.json dist/web/ cc:/opt/dawnbreak/
   L=$(md5 -q dist/web/index.html 2>/dev/null || md5sum dist/web/index.html | cut -d' ' -f1)
-  R=$(curl -s https://dnf.cc.l-hate.com/ | (md5 -q 2>/dev/null || md5sum | cut -d' ' -f1))
+  # 先在 cc 上核对静态文件；本机可能无法穿过公网代理访问 Caddy，不能因此
+  # 在 version.json 上传前中止，留下“文件已更新、版本号仍旧”的半发布状态。
+  R=$(ssh cc 'md5sum /opt/dawnbreak/index.html' | cut -d' ' -f1)
   [ "$L" = "$R" ] || { echo "前端首页和本地不一致（没有更新 version.json，玩家不会收到更新提示）"; exit 1; }
   # 首页和素材都到位了才发版本号：玩家收到提示时新文件一定已经在服务器上
   rsync -az dist/web/version.json cc:/opt/dawnbreak/version.json
   ID=$(node -p "require('./dist/web/version.json').id")
-  case "$(curl -s "https://dnf.cc.l-hate.com/version.json?t=$(date +%s)")" in *"\"$ID\""*) echo "前端已上线（首页一致，版本 $ID）" ;; *) echo "线上 version.json 和本地（$ID）不一致"; exit 1 ;; esac
+  RID=$(ssh cc 'node -p "require(\"/opt/dawnbreak/version.json\").id"')
+  [ "$RID" = "$ID" ] || { echo "cc version.json 和本地（$ID）不一致"; exit 1; }
+  if PUB=$(curl -fsS --max-time 15 "https://dnf.cc.l-hate.com/version.json?t=$(date +%s)" 2>/dev/null); then
+    case "$PUB" in *"\"$ID\""*) ;; *) echo "公网 version.json 和本地（$ID）不一致"; exit 1 ;; esac
+  else
+    echo "公网回读不可用，已用 cc 本机文件和版本号完成校验"
+  fi
+  echo "前端已上线（首页一致，版本 $ID）"
 }
 server() {
   ssh cc 'sudo /opt/dawnbreak-server/backup.sh'
   rsync -az --delete --exclude node_modules --exclude data --exclude test server/ cc:/tmp/dawnbreak-server-src/
   rsync -az src/game/raid_core.js cc:/tmp/dawnbreak-server-src/lib/raid_core.js   # 团本规则核心：浏览器和服务端共用同一个文件（server/modules/raid.js 用 node:vm 加载）
   ssh cc 'NODE_MIRROR=https://npmmirror.com/mirrors/node sh /tmp/dawnbreak-server-src/deploy/install.sh /tmp/dawnbreak-server-src 2>&1 | tail -2'
-  curl -s https://dnf.cc.l-hate.com/api/health; echo
+  if ! curl -fsS --max-time 15 https://dnf.cc.l-hate.com/api/health; then
+    echo "公网健康接口回读不可用，改用 cc 本机健康接口"
+    ssh cc 'curl -fsS --max-time 10 http://127.0.0.1:18790/api/health'
+  fi
+  echo
 }
 case "$1" in web) web ;; server) server ;; all) server; web ;; *) sed -n 2,6p "$0"; exit 1 ;; esac

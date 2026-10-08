@@ -1,5 +1,5 @@
 // 纯冷却流（content/items/cdr60.js，docs/GEAR.md §11）：传说「时之沙漏」5 件套 + 神器「流沙」
-//   1. 物品：50 件都在、只有 cdr 特效（没有伤害 / 攻击 / 暴击特效和 proc）、不进随机池、都有图标、流沙武器拿在手里是 <类型>_r3
+//   1. 物品：当前版本的全部件都在、只有 cdr 特效（没有伤害 / 攻击 / 暴击特效和 proc）、不进随机池、都有图标、流沙武器拿在手里是 <类型>_r3
 //   2. 冷却：Lv60 穿满时之沙漏 + 其余部位全流沙 → cdMul = 0.6 × 各来源连乘（套装按档各算一个来源），保底 5%
 //   3. 兑换：歌兰蒂斯「深渊派对 · 纯冷却流」列出来、能用宇宙灵魂买（传说 40 / 神器 20）
 //   4. 掉落：所有 Lv50 以上地下城（含深渊派对）的领主掉落表里都有，传说比神器稀有；低等级地下城没有
@@ -15,9 +15,10 @@ await ev(() => { window.toastMsg = () => {}; while (menus.stack.length) menus.cl
 
 step('物品');
 const lib = await ev(() => {
-  const D = k => ITEMS[k], all = [...CDR60.legend, ...CDR60.sand].filter(k => !D(k).cls || clsOpen(D(k).cls)), WT = Object.keys(WTYPES).filter(t => clsOpen(WTYPES[t].cls));   // 还没开放的职业（格斗家 ready:false）的流沙武器不算
+  const D = k => ITEMS[k], all = [...CDR60.legend, ...CDR60.sand].filter(k => !D(k).cls || clsOpen(D(k).cls)), WT = Object.keys(WTYPES).filter(t => clsOpen(WTYPES[t].cls));   // 未开放职业的流沙武器不计入当前可用件数
   const bad = all.filter(k => { const x = D(k); return !x || x.lvl !== 50 || JSON.stringify(Object.keys(x.fx || {})) !== '["cdr"]' || x.proc || !x.noDrop; });
-  return { nNewW: WT.filter(t => WTYPES[t].cls === 'fighter').length, legend: CDR60.legend.slice(), setPieces: SETS.set_hourglass.pieces.slice(), n: all.length, bad,
+  const expected = CDR60.legend.length + ACC_SLOTS.length + SPECIAL_SLOTS.length + Object.keys(ATYPES).length * ARMOR_SLOTS.length + WT.length;
+  return { expected, weaponTypes: WT.slice(), legend: CDR60.legend.slice(), setPieces: SETS.set_hourglass.pieces.slice(), n: all.length, bad,
     legendOk: CDR60.legend.every(k => D(k).rar === 4 && D(k).fx.cdr === 0.1 && D(k).set === 'set_hourglass'),
     sandOk: CDR60.sand.every(k => D(k).rar === 3 && D(k).fx.cdr === 0.06 && !D(k).set),   // 没开放职业的也要是同样的神器（开放后直接用）
     armor: Object.keys(ATYPES).every(a => ARMOR_SLOTS.every(s => D(`sand_${a}_${s}`) && D(`sand_${a}_${s}`).atype === a)),
@@ -27,9 +28,9 @@ const lib = await ev(() => {
     look: WT.filter(t => weaponArtOf(makeItem(`sand_${t}`), WTYPES[t].cls) !== `${t}_r3`),
     src: itemSourceText('sand_katana'), problems: G60.problems.slice() };
 });
-check(lib.n === 50 + lib.nNewW && !lib.bad.length, `${lib.n} 件（5 传说 + 45 神器 + 开放职业新增的武器类型），都是 Lv50、只有 cdr 特效、没有 proc、不进随机池`, lib.bad);
+check(lib.n === lib.expected && !lib.bad.length, `${lib.n} 件（5 传说 + 5 首饰/特殊 + 25 防具 + ${lib.weaponTypes.length} 种开放武器），都是 Lv50、只有 cdr 特效、没有 proc、不进随机池`, lib.bad);
 check(lib.legendOk && lib.setPieces.join() === lib.legend.join(), `时之沙漏：${lib.legend.join(' ')}（传说，每件 -10%）`);
-check(lib.sandOk && lib.armor && lib.acc && lib.weapons, '流沙：5 种护甲 × 5 部位 + 首饰 3 + 辅助 + 魔法石 + 15 种武器（神器，每件 -6%）');
+check(lib.sandOk && lib.armor && lib.acc && lib.weapons, `流沙：5 种护甲 × 5 部位 + 首饰 3 + 辅助 + 魔法石 + ${lib.weaponTypes.length} 种开放武器（神器，每件 -6%）`);
 check(!lib.inPool.length, '不在随机掉落池里', lib.inPool);
 check(!lib.noIcon.length, `每件都有图标（缺 ${lib.noIcon.length}）`, lib.noIcon.join(' '));
 check(!lib.look.length, '流沙武器拿在手里是 <类型>_r3', lib.look);

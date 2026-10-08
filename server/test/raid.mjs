@@ -62,6 +62,22 @@ async function solo(u, node) {
   const a = await ev(u, node, e.run, 'clear');
   return a && a.ok ? e : a;
 }
+// 结算后的翻牌是阶段边界：领奖后每名有奖励的队员都必须明确翻开并关闭自己的牌面，
+// 才能开始下一阶段。服务端测试沿用客户端的 open → pick → close 顺序。
+async function flip(c, sid, phase, index = 0) {
+  c.send({ t: 'raid:flip', sid, phase, op: 'open' });
+  const o = await got(c, m => m.t === 'raid:flip' && m.sid === sid && m.phase === phase && m.op === 'open');
+  if (!o) return false;
+  const count = phase === 1 ? 1 : 2;
+  for (let i = 0; i < count; i++) {
+    const card = index + i;
+    c.send({ t: 'raid:flip', sid, phase, op: 'pick', index: card });
+    const p = await got(c, m => m.t === 'raid:flip' && m.sid === sid && m.phase === phase && m.op === 'pick' && m.index === card);
+    if (!p) return false;
+  }
+  c.send({ t: 'raid:flip', sid, phase, op: 'close' });
+  return !!(await got(c, m => m.t === 'raid:flip' && m.sid === sid && m.phase === phase && m.op === 'close' && m.ok !== false));
+}
 async function party(a, b) {
   a.c.send({ t: 'party:invite', to: b.name }); const iv = await got(b.c, m => m.t === 'party:invited');
   b.c.send({ t: 'party:accept', from: iv.from.id });
@@ -243,6 +259,10 @@ try {
   const cl2 = await got(al.c, m => m.t === 'raid:claimed');
   ok(cl1 && !cl1.dup && cl1.reward.cards[0].key === 'raid_petal' && cl1.reward.cards[0].n >= 3 && cl1.reward.cards[0].n <= 4 && cl2 && cl2.dup && JSON.stringify(cl2.reward) === JSON.stringify(cl1.reward)
     && app.ctx.db.get('SELECT COUNT(*) AS n FROM raid_claim').n === 1, '领 P1 奖励（3~4 花瓣）；重复领返回同一份、不重复发', { cl1, cl2 });
+  bo.c.send({ t: 'raid:claim', sid, phase: 1 });
+  const cl1b = await got(bo.c, m => m.t === 'raid:claimed' && m.sid === sid && m.phase === 1);
+  const flipA1 = await flip(al.c, sid, 1), flipB1 = await flip(bo.c, sid, 1);
+  ok(cl1b && !cl1b.dup && flipA1 && flipB1, '两名队员分别完成 P1 翻牌后才解除阶段门禁', { cl1b, flipA1, flipB1 });
 
   // ---- 服务端重启：会话从库里读回来，计时按停机时长顺延；队伍要重组 ----
   const left0 = S(al).restUntil - R().now();
@@ -302,11 +322,19 @@ try {
   const fd = await ev(bo, 'coffin', f2.run, 'down');
   const endA = await got(al.c, m => m.t === 'raid:end'), endB = await got(bo.c, m => m.t === 'raid:end');
   ok(fd && fd.ok && endA && endA.ok && endA.why === 'clear' && endB && endB.ok && S(al) === null, '最终领主倒下（从 60% 开始，最短时间按比例）：团本通关，两人都收到 raid:end', { fd, endA });
+  al.c.send({ t: 'raid:claim', sid, phase: 2 });
+  const cp2a = await got(al.c, m => m.t === 'raid:claimed' && m.sid === sid && m.phase === 2);
   bo.c.send({ t: 'raid:claim', sid, phase: 2 });
   const cp2 = await got(bo.c, m => m.t === 'raid:claimed');
-  ok(cp2 && cp2.reward.cards.length === 2 && cp2.limits.weekLeft === 1, '通关后领 P2 奖励（翻 2 张），带本周剩余次数', cp2);
+  ok(cp2a && cp2 && cp2.reward.cards.length === 2 && cp2.limits.weekLeft === 1, '通关后两名队员都能领取 P2 奖励（翻 2 张），带本周剩余次数', { cp2a, cp2 });
+  const flipA2 = await flip(al.c, sid, 2, 0), flipB2 = await flip(bo.c, sid, 2, 0);
+  ok(flipA2 && flipB2, '两名队员完成 P2 翻牌后结算锁解除', { flipA2, flipB2 });
   al.c.send({ t: 'raid:resume', sid });
-  ok(!!(await got(al.c, m => m.t === 'raid' && m.run.st === 'cleared')) && !!(await got(al.c, m => m.t === 'raid:end' && m.ok)), '结束后 raid:resume 仍能看到结果');
+  const rr = await got(al.c, m => m.t === 'raid' && m.run.st === 'cleared');
+  const rclaim = await got(al.c, m => m.t === 'raid:claimed' && m.phase === 2);
+  const rflip = await got(al.c, m => m.t === 'raid:flip' && m.phase === 2 && m.op === 'resume');
+  const rend = await got(al.c, m => m.t === 'raid:end' && m.ok);
+  ok(rr && rclaim && rflip && rflip.closed && (rflip.picks || []).length === 2 && rend, '结束后 raid:resume 补发领奖与已选 / 已关闭牌面，刷新可继续或确认结算', { rr, rclaim, rflip, rend });
   const row = app.ctx.db.get('SELECT st FROM raid_run WHERE sid = ?', sid);
   ok(row && row.st === 'cleared', '会话结果存在库里（raid_run）');
 
@@ -326,6 +354,10 @@ try {
   for (const nd of ['law_a', 'wit_dawn', 'pain_mem']) await solo(ca, nd);
   const gl1 = await solo(ca, 'gate_l');
   ok(gl1 && gl1.run && gl1.dg === 'raid_si_gate_duo' && S(ca).st === 'rest', '引导：无形之门是一个房间的双领主，打完追逐战完成');
+  ca.c.send({ t: 'raid:claim', sid: gs.run.sid, phase: 1 });
+  const gcl1 = await got(ca.c, m => m.t === 'raid:claimed' && m.sid === gs.run.sid && m.phase === 1);
+  const gflip1 = await flip(ca.c, gs.run.sid, 1);
+  ok(gcl1 && gflip1, '引导阶段完成 P1 翻牌后才能进入讨伐战', { gcl1, gflip1 });
   ca.c.send({ t: 'raid:start' }); await got(ca.c, m => m.t === 'raid' && m.run.phase === 2);
   await solo(ca, 'sub_a'); await solo(ca, 'con_hall');
   const fc = await enter(ca, 'coffin');

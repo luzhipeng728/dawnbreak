@@ -163,12 +163,12 @@ if (parts.includes('mechs')) {
     T.clear(); const m = T.spawn('skasa', 700, { boss: true }); T.put(400); const sc0 = m.scale, a0 = MS_STATS.cast.aoe || 0;
     const st = msMechStart(m, { use: 'form', fly: 160, dur: 1.4, scale: 1.2, skills: [{ use: 'rain', n: 2, id: 'formRain' }], land: { use: 'aoe', at: 'self', r: 120, windup: 0.4 } });
     SIM(0.9);
-    const A = m.def_.attacks, rainA = A.find(a => a.msId === 'formRain'), biteA = A.find(a => a.clip === 'bite');
-    const mid = { z: Math.round(m.z), scale: +(m.scale / sc0).toFixed(2), rain: msGateOk(m, rainA), bite: msGateOk(m, biteA) };
+    const A = m.def_.attacks, rainA = A.find(a => a.msId === 'formRain'), baseA = A.find(a => a.msId === 'claw');
+    const mid = { z: Math.round(m.z), scale: +(m.scale / sc0).toFixed(2), rain: msGateOk(m, rainA), base: msGateOk(m, baseA) };
     SIM(1.8);
-    return { mid, after: { ended: !!st.ended, scale: +(m.scale / sc0).toFixed(2), rain: msGateOk(m, rainA), bite: msGateOk(m, biteA), land: (MS_STATS.cast.aoe || 0) - a0 } };
+    return { mid, after: { ended: !!st.ended, scale: +(m.scale / sc0).toFixed(2), rain: msGateOk(m, rainA), base: msGateOk(m, baseA), land: (MS_STATS.cast.aoe || 0) - a0 } };
   }, speed);
-  check(fm.mid.z > 100 && fm.mid.scale === 1.2 && fm.mid.rain && !fm.mid.bite && fm.after.ended && fm.after.scale === 1 && !fm.after.rain && fm.after.bite && fm.after.land > 0, `form：浮空 ${fm.mid.z}、体型 ×${fm.mid.scale}、只放形态招式、变回后恢复并落地一招 ${fm.after.land}`, fm);
+  check(fm.mid.z > 100 && fm.mid.scale === 1.2 && fm.mid.rain && !fm.mid.base && fm.after.ended && fm.after.scale === 1 && !fm.after.rain && fm.after.base && fm.after.land > 0, `form：浮空 ${fm.mid.z}、体型 ×${fm.mid.scale}、只放形态招式、变回后恢复并落地一招 ${fm.after.land}`, fm);
   await page.evaluate(() => { T.clear(); const m = T.spawn('skasa', 700, { boss: true }); T.put(400); msMechStart(m, { use: 'form', fly: 190, dur: 9, say: '斯卡萨飞上了天空！' }); }); await simWait(1.2); await shot('mech-form');
   // stance：模式轮换（受伤倍率、招式子集）、反伤模式打人
   const sn = await page.evaluate(async speed => {

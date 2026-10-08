@@ -9,6 +9,7 @@ const NPC_SERVICES = {
   storage: { label: '仓库', run: () => menus.open('storage') },
   repair: { label: '修理', run: () => { if (menus.w_repair) menus.open('repair'); else repairAll(true); } },
   enhance: { label: '强化', run: (N) => menus.open('enhance', N) },
+  inherit: { label: '强化继承', run: (N) => menus.open('inherit', N) },
   disassemble: { label: '分解', run: () => menus.open('disassemble') },
   job: { label: '转职', show: N => typeof jobAvailable === 'function' && jobAvailable(N), run: (N) => menus.open('job', N) },
   cure: { label: '解除虚弱', show: () => !!(save.data.weak > Date.now()), run: () => cureWeak() },

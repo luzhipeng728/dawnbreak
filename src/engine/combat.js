@@ -138,6 +138,10 @@ function instantHit(e, h) {
 }
 
 /* ---- 伤害与受击反应 ---- */
+// 刷图：倒地的目标只有追击判定（downHit）/ 抓倒地（grabDown）/ 显式 force 才有受击反应。职业 / 怪物文件里有上百处直接调 applyHit（波动、场地、延迟出手……），
+// 很多没查倒地，以前会把倒地的怪托起来、重置倒地时间、吃掉追击次数（5 下就强制起身 + 无敌）。这里统一挡掉反应、照常扣血（伤害输出不变）。
+// 决斗不走这里：duel.js 包的那层 applyHit 直接打空（倒地只有扫地判定打得到）
+const pveDownBlock = (t, h, opt) => t.st === 'down' && !(t.fighter && game.pvp) && !h.downHit && !h.grabDown && !h.force && !(opt && opt.force);
 function applyHit(a, t, h, opt = {}) {
   if (a.ghost || t.ghost) return false;   // 组队刷图：队友的影子（net/coop.js）只做表现，不造成也不承受伤害（伤害由各自的客户端结算）
   const src = opt.src || a, act = a.act;
@@ -209,6 +213,7 @@ function applyHit(a, t, h, opt = {}) {
   }
   if (guard) { t.vx = -t.face * (h.knock ?? 80) * 0.8; fxGuard(t); if (t.onHurt) t.onHurt(a, h); return true; }
   if ((bh && bh.noStun) || (statusRooted(t) && !h.grab)) t.flash = 0.1;   // 按霸体处理（钩子）/ 定身：只受伤，不击退、不浮空
+  else if (pveDownBlock(t, h, opt)) t.flash = 0.1;                     // 刷图倒地规则的统一入口：不是追击判定只扣血（见 pveDownBlock）
   else react(a, t, h, src, counter, pvp);
   if (t.onHurt) t.onHurt(a, h);
   return true;

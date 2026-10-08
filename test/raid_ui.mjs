@@ -1,6 +1,6 @@
 // 团本界面 + 客户端流程（RA2）：1 个客户端，单人引导从头打到尾（本地服务端 DNF_RAID_FAST=1 + 页面 ?raidfast：节点直达领主、领主血量 ×0.05）
 // 在线：阿甘左「团本」窗口（列表 / 次数）→ 单人引导建团 → 开始 → 攻坚情况板点节点 → 单独进 → 机器人打第一个领主 → 返回营地自动打开情况板 →
-//       复活要全团次数（3 → 2）→ 倒下 = 侵蚀（进不了节点）→ 追逐战完成 → 阶段结算领奖（翻 1 张，货币 ×0.6 后进入背包）→ 团长提前开始讨伐战 →
+//       复活要全团次数（3 → 2）→ 倒下 = 侵蚀（进不了节点）→ 阻截战完成 → 阶段结算领奖（翻 1 张，货币 ×0.6 后进入背包）→ 团长提前开始讨伐战 →
 //       最终战（存档点上报）→ 团本通关 → 领 P2（2 张）→ 重复领不重复入账 → 次数 今天 0 / 本周剩 1
 // 离线（手机横屏模拟，不登录）：本地规则核心跑引导全流程，刷新页面接着打，领奖只入账一次
 // 截图：test/shots/raid/*.png（入口窗口、大厅、情况板、局内 HUD、阶段结算、手机版情况板）
@@ -68,10 +68,10 @@ try {
   ok(await uiCreateChar(A, 0, '阿丽'), 'alice 建角色进城');
   ok(await A.evaluate(PREP) === 60, 'Lv60、希洛克主线已完成');
   const content = await A.evaluate(() => {
-    const ids = ['raid_si_law', 'raid_si_dawn', 'raid_si_night', 'raid_si_memory', 'raid_si_mirror', 'raid_si_gate_l', 'raid_si_gate_r', 'raid_si_gate_duo', 'raid_si_sub', 'raid_si_con', 'raid_si_mutant', 'raid_si_coffin'];
+    const ids = ['raid_si_law', 'raid_si_dawn', 'raid_si_night', 'raid_si_memory', 'raid_si_mirror', 'raid_si_gate_l', 'raid_si_gate_r', 'raid_si_gate_duo', 'raid_si_sub', 'raid_si_con', 'raid_si_mutant', 'raid_si_coffin', 'raid_si_phantom', 'raid_si_day', 'raid_si_castle', 'raid_si_deny', 'raid_si_suppress', 'raid_si_forget', 'raid_si_truth_g', 'raid_si_truth_l', 'raid_si_truth_v', 'raid_si_shadow'];
     return { nodes: ids.filter(id => DUNGEONS[id] && DUNGEONS[id].raid && !DUNGEONS[id].raidFallback).length, total: ids.length, petal: ITEMS.raid_petal && ITEMS.raid_petal.name };
   });
-  ok(content.nodes === content.total && content.petal === '紫英花瓣', 'RA3：12 个真实团本节点和紫英花瓣已登记', content);
+  ok(content.nodes === content.total && content.petal === '紫英花瓣', 'RA3：22 个真实团本节点（官方全图）和紫英花瓣已登记', content);
   ok(await openRaidGlobal(A), '全局任务栏「团本」：不去暗黑城也能打开团本窗口');
   await A.evaluate(() => menus.close('raid'));
   ok(await toCamp(A), '到暗黑城（营地）');
@@ -84,7 +84,7 @@ try {
   ok(await until(A, () => raidNet.S && raidNet.S.st === 'lobby' && !!document.querySelector('[data-win="raid"] [data-act="start"]'), null, 5000), '建团（引导）：大厅');
   await A.screenshot({ path: `${out}/02-lobby.png` });
   await A.click('[data-win="raid"] [data-act="start"]');
-  ok(await until(A, () => raidNet.S.st === 'routes' && menus.isOpen('raidboard'), null, 5000), '开始：追逐战，自动打开攻坚情况板');
+  ok(await until(A, () => raidNet.S.st === 'routes' && menus.isOpen('raidboard'), null, 5000), '开始：阻截战，自动打开攻坚情况板');
   const g = await A.evaluate(() => ({ nodes: Object.keys(raidNet.S.nodes).join(), lives: raidNet.S.lives, graph: raidNet.S.graph, law: raidNet.S.nodes.law_a.st, pill: !!document.getElementById('raidpill') }));
   ok(g.nodes === 'law_a,wit_dawn,pain_mem,gate_l' && g.lives === 3 && g.graph === 'guide' && g.law === 'open', '引导图：每层一个节点，全团 3 次复活', g);
   await A.click('[data-win="raidboard"] .rbnode[data-node="law_a"]');
@@ -140,7 +140,7 @@ try {
   await killBoss(A); ok(await backToCamp(A), '「记忆的碎片」通关');
   ok(await enterNode(A, 'gate_l'), '进「无形之门」（引导：一个房间的双领主）');
   await killBoss(A);
-  ok(await until(A, () => raidNet.S.st === 'rest', null, 8000), '追逐战完成 → 休整');
+  ok(await until(A, () => raidNet.S.st === 'rest', null, 8000), '阻截战完成 → 休整');
   ok(await backToCamp(A), '回营地');
   ok(await until(A, () => menus.isOpen('raidres'), null, 8000), '阶段结算自动弹出');
   await A.screenshot({ path: `${out}/06-result-p1.png` });
@@ -212,7 +212,7 @@ try {
   await sleep(300);
   await M.screenshot({ path: `${out}/11-mobile-board.png` });
   for (const nd of ['law_a', 'wit_dawn', 'pain_mem', 'gate_l']) { ok(await enterNode(M, nd), `离线：进「${nd}」`); if (nd === 'pain_mem') await M.screenshot({ path: `${out}/12-mobile-hud.png` }); await killBoss(M); ok(await backToCamp(M), `离线：「${nd}」通关`); }
-  ok(await until(M, () => raidNet.S.st === 'rest' && menus.isOpen('raidres'), null, 8000), '离线：追逐战完成、结算弹出');
+  ok(await until(M, () => raidNet.S.st === 'rest' && menus.isOpen('raidres'), null, 8000), '离线：阻截战完成、结算弹出');
   await M.click('[data-win="raidres"] [data-act="claim"]');
   ok(await until(M, () => !!raidNet.claims[raidNet.S.sid + ':1'], null, 4000) && await pickRaidCards(M, 1, 1, 'raid_petal'), '离线：领 P1 奖励并明确翻牌');
   await M.click('[data-win="raidres"] [data-act="close"]');

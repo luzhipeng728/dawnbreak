@@ -91,7 +91,7 @@ addStyle(`
 `);
 const RAID_TYPE = { main: ['主', '主线'], buff: ['增', '增益'], timer: ['时', '倒计时'], order: ['序', '顺序击杀'], sync: ['双', '同步击杀'], final: ['终', '最终合流'] };
 const RAID_ST = { locked: '未开放', open: '可进入', busy: '战斗中', down: '等另一边', cleared: '已通关', cool: '重生中', off: '已关闭' };
-const RAID_AREA = { siroco: { 1: ['法则之境', '知性之境', '苦难之境 I', '苦难之境 II'], 2: ['第三层 · 潜意识', '第二层 · 意识', '第一层 · 棺'] } };
+const RAID_AREA = { siroco: { 1: ['法则之境', '知性之境', '苦难之境Ⅰ', '苦难之境Ⅱ'], 2: ['第 3 界 · 无欲', '第 2 界 · 意识', '第 1 界 · 真理'] } };
 const raidFmt = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const raidCd = (until, cls) => h('span', { class: cls || '', 'data-cd': String(until || 0) }, raidFmt((until || 0) - raidNet.now()));
 // 门槛：Lv60 + 希洛克主线（RAID_PLAN §4.1）；服务端只查等级
@@ -103,23 +103,48 @@ function raidReq() {
   return null;
 }
 function raidBuffText(b) {
-  for (const P of RAID_DEFS.siroco.phases) for (const nd of Object.values(P.nodes)) for (const f of (nd.fx && nd.fx.clear) || []) if (f.id === b.id && f.text) return f.text.replace(/（\d+ 秒）$/, '');
+  const p = b.p || {}, n = b.n > 1 ? `（${b.n} 层）` : '';
+  for (const P of RAID_DEFS.siroco.phases) for (const nd of Object.values(P.nodes)) {
+    for (const A of nd.aura || []) if (A.id === b.id && A.text) return A.text.replace(/^.*：/, '') + n;
+    for (const f of [...((nd.fx && nd.fx.clear) || []), ...(nd.enterFx || [])]) {
+      if (f.id === b.id && f.kind === 'stack') return `${nd.name}：伤害 ×${p.dmgTaken}${n}`;
+      if (f.id === b.id && f.text) return f.text.replace(/（\d+ 秒）$/, '');
+      for (const g of f.miss || []) if (g.id === b.id) return `卢克西逃走：受伤 ×${g.p.dmgTaken}`;
+    }
+  }
   if (b.id === 'twin_guard') return '血量差太大：减伤 50%';
-  const p = b.p || {}; return [p.dmgTaken ? `受伤 ×${p.dmgTaken}` : '', p.noCharm ? '魅惑无效' : ''].filter(Boolean).join('、') || b.id;
+  return [p.dmgTaken && p.dmgTaken !== 1 ? `受伤 ×${p.dmgTaken}` : '', p.atk ? `攻击 +${Math.round(p.atk * 100)}%` : '', p.def ? `防御 +${Math.round(p.def * 100)}%` : '', p.ptaken ? `你受到的伤害 +${Math.round(p.ptaken * 100)}%` : '',
+    p.weak ? '虚弱' : '', p.noCharm ? '魅惑无效' : ''].filter(Boolean).join('、') + n || b.id;
 }
 function raidBossName(nd) {
   const real = DUNGEONS[nd.dg], base = real && real.raidFallback ? DUNGEONS[real.raidFallback] : real && !real.raid ? real : DUNGEONS[RAID_FALLBACK_DG[nd.dg]];
   const tmp = base && (!real || real.raidFallback) ? `（暂用「${base.name}」的领主 ${MON[base.boss.kind] ? MON[base.boss.kind].name : ''}）` : '';
-  const nm = { gatekeeper: '无名守门人', haniel: '魅惑之哈妮尔', lena: '狙击手莱娜', gusty: '贪食的古斯提', grumi: '漂流的古鲁米', vita: '慈悲之维塔', nex: '公义之奈克斯', siroNightmare: '希洛克的噩梦', siroPhantom: '希洛克的幻影', crone: '梦中老妪', siroco: '希洛克' }[nd.boss] || (MON[nd.boss] && MON[nd.boss].name) || nd.boss || '';
+  if (nd.pool && nd.slot != null) return '无形之希洛克（基里 / 莱斯特 / 拉维茜，随旋转变化）';
+  if (real && real.raid && !real.raidFallback && real.boss && MON[real.boss.kind]) return MON[real.boss.kind].name;
+  const nm = { gatekeeper: '遗忘姓名的守门人', haniel: '魅惑之哈妮尔', lena: '魔弹持有者蕾娜', gusty: '灭食之古斯迪', grumi: '飘荡的咕噜米', vita: '慈悲之维塔', nex: '公义之奈克斯', kulaTanna: '崔拉 & 昙娜', myungho: '万兽之皇明皓', rodos: '破坏之洛多斯',
+    siroNightmare: '惊悸梦魇', siroPhantom: '无形之希洛克', crone: '梦魇之沃德海格', nightmare2: '惊悸梦魇', kain: '迷雾中的暗杀者凯恩', luxi: '卢克西', siroco: '无形之希洛克' }[nd.boss] || (MON[nd.boss] && MON[nd.boss].name) || nd.boss || '';
   return nm + tmp;
 }
 function raidRuleText(nd) {
+  const t = raidRuleBase(nd), x = [], S = raidNet.S, mode = S ? S.mode : 'normal', bm = v => v && typeof v === 'object' ? (v[mode] ?? v.normal) : v;
+  if (bm(nd.groupLimit)) x.push(`同组共享时限 ${raidFmt(bm(nd.groupLimit) * 1000)}（第一次有人进门开始），到点没打完 = 全部重置、重新分配顺序`);
+  if (bm(nd.runLimit)) x.push(`单次限时 ${raidFmt(bm(nd.runLimit) * 1000)}`);
+  if ((nd.needEnter || []).length) x.push(`有人进了「${nd.needEnter.map(id => (raidNet.node(id) || {}).name || id).join('、')}」才开放`);
+  if ((nd.needBoss || []).length) x.push(`「${nd.needBoss.map(id => (raidNet.node(id) || {}).name || id).join(' / ')}」的队伍走到领主房才开放`);
+  if ((nd.failKick || []).length) x.push(`这里没打完（失败 / 撤退 / 超时）→「${nd.failKick.map(id => (raidNet.node(id) || {}).name || id).join('、')}」里的人也被送回营地`);
+  for (const A of nd.aura || []) x.push(`没通关期间每 ${A.every} 秒：${A.text.replace(/^.*：/, '')}（作用在「${(raidNet.node(A.to) || {}).name || A.to}」${A.max && A.max < 99 ? `，最多 ${A.max} 层` : ''}）`);
+  if (nd.pool) x.push('和其他真理之棺共享血量：撤退 = 这次的伤害退回');
+  if (nd.manual) x.push('平时关闭：共鸣时通关「忘却」才打开 60 秒');
+  if (nd.respawn === 0) x.push('通关后不重生');
+  return [t, ...x].join('；');
+}
+function raidRuleBase(nd) {
   const f = nd.fx || {}, T = nd.type;
-  if (T === 'order') return '顺序击杀：两个人各打一张。头顶数字小的一边先打倒，错了两边的守门人都回满血。';
+  if (T === 'order') return '顺序击杀：两个人轮流打 4 扇门。守门人头顶的数字小的先打倒，错了守门人回满血。';
   if (T === 'sync') return `同步击杀：一边倒下后 ${nd.window || 30} 秒内另一边也要倒，不然会以 ${Math.round((nd.revive || 0.5) * 100)}% 血复活；两边血量差超过 ${Math.round((nd.diff || 0.25) * 100)}% 时血多的一边减伤。`;
-  if (T === 'buff') return `增益：通关 → ${(f.clear || []).map(x => x.text).join('；')}；${nd.respawn || 120} 秒后重生，可以反复打。`;
+  if (T === 'buff') return (f.clear || []).length ? `增益：通关 → ${(f.clear || []).map(x => x.text).join('；')}${nd.respawn ? `；${nd.respawn} 秒后重生，可以反复打` : ''}。` : '惩罚源：尽快通关它，其他图的惩罚就会停下。';
   if (T === 'timer') return `倒计时 ${raidFmt((nd.timer || 240) * 1000)}：没人压住，到 0 → ${(f.expire || []).map(x => x.text).join('、')}；通关后修复 ${nd.repair || 90} 秒再重新计时。`;
-  if (T === 'final') return '最终领主：普通模式里两个人一起进（队长带队，组队房间）；主机每 3 秒存档，房间断了从存档点接着打。';
+  if (T === 'final') return nd.manual ? '阴影之棺：两个人一起进（队长带队）；进门希洛克就虚弱，时间很短，把共享血量打空！' : '最终领主：普通模式里两个人一起进（队长带队，组队房间）；主机每 3 秒存档，房间断了从存档点接着打。';
   return '主线节点：打通才开放下一层。';
 }
 // 这个节点现在能不能进（只是界面提示，最后以服务端为准）
@@ -161,6 +186,9 @@ const raidUi = {
       live || S.st === 'rest' ? h('span', { class: 'chip' }, '全团复活 ', h('b', {}, `${S.lives}/${maxL}`)) : null,
       h('span', { class: 'chip' }, mode, S.sub ? ' · 补位中' : ''),
       L ? h('span', { class: 'chip' }, `今天剩 ${L.dayLeft}/${L.max.day} · 本周剩 ${L.weekLeft}/${L.max.week}`) : null,
+      ...Object.entries(S.glim || {}).filter(([, G]) => G.until > t).map(([, G]) => h('span', { class: 'chip bf' }, '破坏之门共享时限 ', raidCd(G.until))),
+      ...Object.entries(S.pools || {}).filter(([, Q]) => Q.until).map(([k, Q]) => h('span', { class: 'chip bf' }, `${((P && P.pools && P.pools[k]) || {}).name || '共享领主'} ${Math.round(Q.hp * 100)}% `, raidCd(Q.until))),
+      S.rot ? h('span', { class: 'chip' + (S.rot.res ? ' bf' : '') }, S.rot.res ? '共鸣中：去打忘却！' : `形态：${S.rot.forms.join(' / ')}`) : null,
       ...(S.buffs || []).filter(b => !b.until || b.until > t).map(b => h('span', { class: 'chip bf' }, `${(raidNet.node(b.node) || {}).name || ''}：${raidBuffText(b)} `, b.until ? raidCd(b.until) : null)));
   },
   map() {
@@ -171,6 +199,7 @@ const raidUi = {
     for (const nd of Object.values(P.nodes)) {
       for (const n0 of nd.need) { const a = P.nodes[n0]; if (a) line(a, nd, S.nodes[n0] && S.nodes[n0].st === 'cleared' ? 'rgba(125,224,138,.75)' : 'rgba(200,180,230,.35)'); }
       for (const f of [...((nd.fx && nd.fx.clear) || []), ...((nd.fx && nd.fx.expire) || [])]) if (f.to && P.nodes[f.to]) line(nd, P.nodes[f.to], f.kind === 'heal' ? 'rgba(255,120,110,.6)' : 'rgba(210,140,255,.7)', true);
+      for (const A of nd.aura || []) if (P.nodes[A.to] && S.nodes[nd.id] && (S.nodes[nd.id].st === 'open' || S.nodes[nd.id].st === 'busy')) line(nd, P.nodes[A.to], 'rgba(255,110,90,.55)', true);
     }
     const map = h('div', { class: 'rbmap' }, svg);
     const areas = RAID_AREA[S.raid] && RAID_AREA[S.raid][P.id], xs = {};
@@ -190,10 +219,16 @@ const raidUi = {
       if (nd.type === 'timer' && N.timer && (N.st === 'open' || N.st === 'busy')) big = raidCd(N.timer, 'big');
       else if (nd.type === 'timer' && (N.st === 'open' || N.st === 'busy') && S.sub) big = h('span', { class: 'big' }, '暂停');
       const order = nd.type === 'order' && N.order ? ` · 顺序 ${N.order}` : '';
+      if (N.st === 'busy' && N.limit) sub = [sub, ' ', raidCd(N.limit)];
+      if (nd.manual && N.st === 'open' && N.until) sub = ['集合 ', raidCd(N.until)];
+      const extra = [];
+      if (S.aura && S.aura[nd.id] && N.st === 'busy') extra.push(h('span', { style: 'color:#ff9a8a' }, ` · 惩罚 ${S.aura[nd.id]} 层`));
+      if (nd.pool && S.pools && S.pools[nd.pool] && N.st !== 'cleared') extra.push(h('span', { style: 'color:#ffb0ff' }, ` · 共享 ${Math.round(S.pools[nd.pool].hp * 100)}%`));
+      if (nd.slot != null && S.rot && S.rot.forms[nd.slot]) extra.push(h('span', { style: 'color:#e0c0ff' }, ` · ${S.rot.forms[nd.slot]}`));
       const cls = `rbnode st-${N.st} ty-${nd.type}${this.sel === nd.id ? ' sel' : ''}${raidNet.markFor === nd.id || (S.marks && S.marks[me] === nd.id) ? ' mark' : ''}`;
       map.append(h('div', { class: cls, 'data-node': nd.id, style: `left:${nd.pos[0] * 100}%;top:${nd.pos[1] * 100}%`, title: RAID_TYPE[nd.type] ? RAID_TYPE[nd.type][1] : '',
         onclick: () => { sfx.click(); this.sel = this.sel === nd.id ? null : nd.id; menus.refresh('raidboard'); } },
-        h('div', { class: 'ic' }, ic), h('div', { class: 'nm' }, nd.name), big, h('div', { class: 'sub' }, sub, order),
+        h('div', { class: 'ic' }, ic), h('div', { class: 'nm' }, nd.name), big, h('div', { class: 'sub' }, sub, order, ...extra),
         who.length ? h('div', { class: 'who' }, who.map(m => h('span', { class: m.uid === me ? 'me' : '' }, m.uid === me ? '你' : m.name))) : null));
     }
     return map;
@@ -427,6 +462,9 @@ netUiHooks.push(c => {
   if (P) for (const nd of Object.values(P.nodes)) { const N = S.nodes[nd.id]; if (nd.type === 'timer' && N && N.timer && (N.st === 'open' || N.st === 'busy')) { const left = N.timer - t; sp.push([`${nd.name} ${raidFmt(left)}`, left < 30000 && blink ? '#ff5a4a' : '#c8e0ff']); } }
   if (C.order && C.type === 'order') sp.push([`顺序 ${C.order}${C.orderTurn ? '' : '（先等小的）'}`, C.orderTurn ? '#8aff9a' : '#ffb070']);
   if (C.practice) sp.push(['练习', '#aaa']);
+  if (C.limit && C.limit > t) sp.push([`限时 ${raidFmt(C.limit - t)}`, C.limit - t < 30000 && blink ? '#ff5a4a' : '#ffd8a0']);
+  if (C.pool) sp.push([`共享血量 ${Math.round((C.pool.hp ?? 1) * 100)}%`, '#ffb0ff']);
+  if (C.form) sp.push([`形态：${C.form}`, '#e0c0ff']);
   if (M) { const nd = M.at !== 'camp' && raidNet.node(M.at), N = nd && S.nodes[M.at]; rows.push([[!M.online ? `${M.name}：离线` : M.at === C.node ? `${M.name}：一起打` : nd ? `${M.name}：${nd.name} ${Math.round(((N && N.hp) ?? 1) * 100)}%` : `${M.name}：在营地`, M.online ? '#9ad8ff' : '#999']]); }
   if (sp.length) rows.push(sp);
   const bl = C.buffs.filter(b => !b.until || b.until > t);

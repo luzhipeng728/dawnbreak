@@ -1,11 +1,11 @@
 {
- "generated": "2026-10-10 14:38:28",
+ "generated": "2026-10-10 15:14:15",
  "note": "团本专属美术清单。精灵走 NOFX，帧名同普通怪（idle walk1-8 run1-8 atk1-4 cast1-2 low1-2 hit1-2 down getup air jump），ax/ay 为 2x 像素的脚底锚点，res=2。",
  "counts": {
   "boss": 24,
   "elite": 20,
   "mob": 1,
-  "bg": 0,
+  "bg": 4,
   "icon": 36
  },
  "items": [
@@ -5492,8 +5492,12 @@
    "kind": "bg",
    "raid": "ozma",
    "desc": "The red Destruction zone of a chaotic dimension: a vast burning ruined black fortress floating in a crimson void, shattered towers and broken bridges of black stone with glowing red cracks, a blood-red sky with huge swirling ember clouds, rivers of lava falling into the void, dramatic crimson and black palette.",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/bg/raidOzRuin_far.webp",
+    "art/final/bg/raidOzRuin_floor.webp",
+    "art/final/bg/raidOzRuin_edge.webp"
+   ],
    "frames": null,
    "anchors": {
     "floorW": 1700,
@@ -5508,8 +5512,12 @@
    "kind": "bg",
    "raid": "ozma",
    "desc": "The blue-violet Despair zone of a chaotic dimension: a vast frozen sorrowful cathedral drowned in an endless deep indigo void, drooping icicle-like crystal pillars and weeping stone statues, a sky of dark violet clouds with faint pale falling crystal tears, cold moonlit mist, melancholy blue and violet palette.",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/bg/raidOzDespair_far.webp",
+    "art/final/bg/raidOzDespair_floor.webp",
+    "art/final/bg/raidOzDespair_edge.webp"
+   ],
    "frames": null,
    "anchors": {
     "floorW": 1700,
@@ -5524,8 +5532,12 @@
    "kind": "bg",
    "raid": "ozma",
    "desc": "The black-green Horror zone of a chaotic dimension: a sickly swamp of twisted dead giant roots and rotten gnarled trees under a black sky, huge drooping vines with glowing pale yellow eyes watching from the dark, murky dark olive and black fog, rotting bone arches, unsettling palette of black and dark moss green.",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/bg/raidOzHorror_far.webp",
+    "art/final/bg/raidOzHorror_floor.webp",
+    "art/final/bg/raidOzHorror_edge.webp"
+   ],
    "frames": null,
    "anchors": {
     "floorW": 1700,
@@ -5540,8 +5552,12 @@
    "kind": "bg",
    "raid": "ozma",
    "desc": "The Chaos Throne of the final boss: a vast floating black and gold cathedral platform in the middle of a swirling void where crimson, indigo and dark green light streams merge, a huge empty ornate gold-black throne in the distance, giant floating broken pillars, three colored fractured rings of light in the sky, majestic and ominous.",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/bg/raidOzThrone_far.webp",
+    "art/final/bg/raidOzThrone_floor.webp",
+    "art/final/bg/raidOzThrone_edge.webp"
+   ],
    "frames": null,
    "anchors": {
     "floorW": 1700,

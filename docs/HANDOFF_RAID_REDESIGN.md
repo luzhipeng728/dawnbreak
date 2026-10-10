@@ -16,7 +16,7 @@
 | 安徒恩（Neo Lv60，规则 + 17 节点 + 14 领主 + 9 精英 + 融合装备 + 商店） | ✅ 内容 / ⏳ 美术占位 | 81b7f2a3 48853666；`docs/RAID_ANTON.md` |
 | 奥兹玛（18 图、理智 / 混沌、次元之门、25 件融合装备、HUD、军需官） | ✅ 内容 / ⏳ 美术占位 | c07e7760 6111b104 e2477d27 fbc417fb；`docs/RAID_OZMA.md` |
 | 美术流水线 + 清单 | ⏳ 进行中 | ccf8264d；`docs/RAID_ART_MANIFEST.json` |
-| **部署到 cc + 线上验证** | ❌ **未做** | 见 §3 |
+| **部署到 cc + 线上验证** | ✅ 2026-10-10 12:36 已部署（`deploy.sh all`，版本 cd46843aabfc，不含新美术） | 线上冒烟：三团本入口 / 规则初始化 / anton_ui 13/13 / ozma_ui 全过，无报错；服务端 raid 模块已加载 |
 
 ### 测试状态（main，最近一次）
 - `node build.mjs` 通过。
@@ -37,7 +37,7 @@
 - 精灵帧名同普通怪：idle walk1-8 run1-8 atk1-4 cast1-2 low1-2 hit1-2 down getup air jump，res=2，ax/ay 脚底锚点。精灵名全局唯一（前缀 raidSi* / raidAn* / raidOz*）。
 - 建议优先级：三个团本主领主 → 精英 → 图标 → 背景 → 小怪。若额度仍紧，**可以不等美术，先部署**（见 §3）。
 
-## 3. 下一步（按顺序）
+## 3. 下一步（部署已完成，以下 2 之后若有新美术再发一次 `sh tools/deploy.sh web`）
 
 1. `git status`（应只剩 `.playwright-cli/` 未跟踪，别提交它）；`git log --oneline | head -20` 看美术是否有新提交。
 2. 如美术有新素材：注册（§2）→ `node build.mjs` → 跑相关测试（`raid_ui` `raid_bosses` `anton_ui` `ozma_ui`，或 `node test/affected.mjs`）。

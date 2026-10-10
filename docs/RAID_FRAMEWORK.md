@@ -35,5 +35,5 @@ def 字段：`duoMax`(默认2)、`teamSize`、`minPlayers`、`minTeams`(默认2)
 ## 6. 已知限制
 - 一队 = 一个 party（房间上限 4）；`together` 节点按队判定，不支持跨 party 同房。
 - 4~5 人会自动拆成 ≥2 队（`minTeams`）。
-- ozma 的 def 是骨架，奖励为占位；`ozma_core.js` 独立状态机仅保留给自己的测试。
+- ozma 的 def / 内容已完整（见 `docs/RAID_OZMA.md`）；`ozma_core.js` 独立状态机仅保留给自己的测试。
 - 精英运行时（刷物件/HUD）只在房主端，未做浏览器测试；访客端精英视觉未镜像。

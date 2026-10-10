@@ -111,7 +111,7 @@
 | [`test/fighter_pvp.mjs`](../test/fighter_pvp.mjs) | 男格斗家（B9）决斗：AI 用得出各转职的主要技能 + 抓取在决斗里公平（抓取保护 / 强制硬直上限 / 没有无限连）+ 决斗表登记 |
 | [`test/pvp_balance.mjs`](../test/pvp_balance.mjs) | 决斗场平衡：23 种职业 / 转职两两 AI 对打（难度 3，公正决斗规则），无渲染快进（直接调 step），统计每个职业的回合胜率 |
 
-### 领主、团本与区域（23）
+### 领主、团本与区域（32）
 
 | 脚本 | 作用 |
 |---|---|
@@ -119,17 +119,26 @@
 | [`test/behemoth_route.mjs`](../test/behemoth_route.mjs) | 天帷巨兽整条路线：西海岸的船（Lv.24 限制）→ 神殿之路 →（Lv.27）脊背 → 走到每个地下城门口弹出选择窗口 → 点“进入地下城” |
 | [`test/boss.mjs`](../test/boss.mjs) | 通用领主测试（docs/BOSS_PLAN.md §4.2 P0-C）：进图后直接传到领主房，逐阶段 / 逐招 / 逐机制验一遍，机器人打一遍，组队对照一遍 |
 | [`test/boss_prims.mjs`](../test/boss_prims.mjs) | 领主差异化 P0 原语的实验室测试（docs/BOSS_SPEC.md）：node test/boss_prims.mjs [skills,mechs,traits,engine,dungeon] |
+| [`test/ozma_content.mjs`](../test/ozma_content.mjs) | 奥兹玛内容单测（纯 Node，不开浏览器）：次元之门谜题、18 个领主脚本（每个 puzzle 用得上、脚本能跑到读条并解开 / 失败）、5 种精英破防（破招闪光窗口 / 拦截 / 破壳 / 分身） |
 | [`test/ozma_core.mjs`](../test/ozma_core.mjs) | 奥兹玛团本核心规则单测（不开浏览器）：src/game/ozma_core.js 的 12 人队伍、阶段计时与事件 |
 | [`test/ozma_maps.mjs`](../test/ozma_maps.mjs) | 奥兹玛团本地图单测（不开浏览器）：P1 三域各 5 张图的进图 / 小怪波次 / Boss 攻击与机制阶段 / 通关，及 P2 三个终局 Boss 的阶段清单 |
+| [`test/ozma_raid.mjs`](../test/ozma_raid.mjs) | 奥兹玛团本规则单测（不开浏览器）：RAID_DEFS.ozma 节点图 / 三档（guide、duo、team 12 人 3 队）/ 钥匙·功能·双剑·倒计时·精英·锁血解除 / 理智 / 混沌奖励 / 融合装备奖励表 |
 | [`test/ozma_runtime.mjs`](../test/ozma_runtime.mjs) | 奥兹玛区域接入测试：区域 spec 经 defineRegion 展开、运行时桥接（OZMA_RUNTIME）与规则会话创建 |
+| [`test/ozma_ui.mjs`](../test/ozma_ui.mjs) | 奥兹玛浏览器冒烟：内容注册（物品 / 商店 / NPC / 精英 / 领主脚本 / 锁血）+ 理智·混沌 HUD（暗角 / 扭曲滤镜 / 小游戏 / 倒下） |
 | [`test/raid_auction.mjs`](../test/raid_auction.mjs) | 团本拍卖行规则单测（不开浏览器）：src/game/raid_core.js 的竞价、底价与离线队员处理 |
 | [`test/raid_bosses.mjs`](../test/raid_bosses.mjs) | 希洛克团本领主的官方机制（P3，docs/RAID_SIROCO.md §11）：每个挂了 raidScript 的领主在实验室里逐项过一遍。 |
 | [`test/raid_core_rules.mjs`](../test/raid_core_rules.mjs) | 团本核心规则单测（不开浏览器）：队长权限、拾取方式、掉落分配 |
+| [`test/raid_elite.mjs`](../test/raid_elite.mjs) | 团本精英原语单测（不开浏览器）：6 种破防条件的纯逻辑 + 精英倒下 → 规则核心全局效果 |
 | [`test/raid_layout.mjs`](../test/raid_layout.mjs) | 团本固定房间结构单测（不开浏览器）：genFixedLayout 的连通 / 准备房 / 随机领主房，希洛克团本每张图的官方房间数 |
 | [`test/raid_mech_core.mjs`](../test/raid_mech_core.mjs) | 团本领主机制核心（src/game/raid_mech.js）的纯逻辑测试：不开浏览器，固定种子。 |
 | [`test/raid_mech_lab.mjs`](../test/raid_mech_lab.mjs) | 团本领主机制运行时（game/raid_mech_rt.js）的实验室测试：样品怪挂 raidScript，逐个谜题在真实场景里解开 / 不解开。 |
+| [`test/raid_mech_multi.mjs`](../test/raid_mech_multi.mjs) | 团本领主机制多人化（src/game/raid_mech.js）的纯逻辑测试：哈妮尔传心、崔拉 & 昙娜各引一球、卢克西吸血挡位，以及人少时的降级。 |
+| [`test/raid_mech_rt_multi.mjs`](../test/raid_mech_rt_multi.mjs) | 团本领主机制运行时的多人化（game/raid_mech_rt.js）：同房全部玩家都是输入、队员的挨打 / 状态走 msNetEv、队员那边按 netState / mirror 镜像 |
 | [`test/raid_rewards.mjs`](../test/raid_rewards.mjs) | 团本拾取规则单测（不开浏览器）：队长分配 / 随机分配 / 竞拍三种拾取方式的权限与结算 |
+| [`test/raid_siroco_elite.mjs`](../test/raid_siroco_elite.mjs) | 希洛克团本精英 / 小怪（content/raids/siroco_raid.js）：数据一致性（纯 vm）+ 浏览器里每个精英真的挂上破防条件、打得动、倒下上报 |
 | [`test/raid_siroco_rules.mjs`](../test/raid_siroco_rules.mjs) | 无形之希洛克团本的官方规则（纯规则核心，不开浏览器、不连服务端）：破坏之门共享时限、知性之境跨图惩罚（噩梦之夜叠层 / 幻影之界 / 归还之昼）、 |
+| [`test/raid_siroco_teams.mjs`](../test/raid_siroco_teams.mjs) | 希洛克多队版（16 人 4 队）的规则测试（纯规则核心）：参数随队数缩放、守门人顺序对应 4 队、倒计时节点由不同队分担、真理之棺三队共用一条血；两人版数值不变 |
+| [`test/raid_teams.mjs`](../test/raid_teams.mjs) | 团本多队模型规则单测（不开浏览器）：人数档位、分队、按队数缩放、solo / 带队进图、补位、 |
 | [`test/raid_ui.mjs`](../test/raid_ui.mjs) | 团本界面 + 客户端流程（RA2）：1 个客户端，单人引导从头打到尾（本地服务端 DNF_RAID_FAST=1 + 页面 ?raidfast：节点直达领主、领主血量 ×0.05） |
 | [`test/region.mjs`](../test/region.mjs) | 区域流水线的通用测试：node test/region.mjs <区域 id> [部分,...] |
 | [`test/region_monsters.mjs`](../test/region_monsters.mjs) | 地下城区域的公共测试（天空之城 test/sky.mjs、天帷巨兽 test/behemoth.mjs 共用）： |
@@ -272,6 +281,14 @@
 | [`test/polish.mjs`](../test/polish.mjs) | 收尾打磨的回归：提示横幅排队 / 任务与获得类消息只进系统消息、1280 宽 I/M/K 并排、路人名牌不重叠、NPC 眨眼、隐藏门、决斗后回城 |
 | [`test/ui.mjs`](../test/ui.mjs) | 界面与操作测试：角色创建 / 选择 / 删除 / 切换（各自存档）、快捷键 → 窗口、改键生效并持久化、技能拖到技能栏、 |
 | [`test/walk.mjs`](../test/walk.mjs) | 以玩家视角把联机和新玩法走一遍（本机临时服务端，不连线上；1 个浏览器里 2 个玩家）： |
+
+### 其他（3）
+
+| 脚本 | 作用 |
+|---|---|
+| [`test/anton_bosses.mjs`](../test/anton_bosses.mjs) | 安徒恩团本领主 / 精英逐个测试（浏览器）：领主 = 出场无敌 → 虚弱池逐项按解法解开 → 不操作 = 灭团 → 定时机制招按解法没事 → AI 开着正常打； |
+| [`test/anton_rules.mjs`](../test/anton_rules.mjs) | 安徒恩攻坚战规则测试（纯规则核心，不开浏览器）：节点图 / 引导削弱 / 震颤倒计时回退 / 精英解锁孵化所 / 擎天之柱 ×2 / 火山 → 心脏 → 通关 / 奖励表 / 服务端同款 vm 加载 |
+| [`test/anton_ui.mjs`](../test/anton_ui.mjs) | 安徒恩团本 UI 冒烟（浏览器，离线本地规则核心，不登录）： |
 
 ## 服务端测试（`server/test/`）
 

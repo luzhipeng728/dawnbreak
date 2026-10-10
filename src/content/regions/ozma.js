@@ -146,7 +146,7 @@ const OZMA_SPEC = {
     ozma_field: { name: '黑暗一侧', area: '奥兹玛攻坚地图', kind: 'field', width: 3000, theme: 'ozmaRuin', bgm: 'field', ambient: 'wisps', map: [35, -16], exits: [{ side: 'left', to: 'ozma_town' }] },
   },
   npcs: {
-    ozmaQuarter: { name: '混沌军需官', title: '奥兹玛攻坚商人 · 融合装备', art: 'world/npc_agonzo', h: 112, services: ['shop:ozma_raid', 'repair'],
+    ozmaQuarter: { name: '混沌军需官', title: '奥兹玛攻坚商人 · 融合装备', art: 'world/npc_agonzo', h: 112, services: ['raid', 'shop:ozma_raid', 'repair'],
       greet: ['混沌的怨念，换成称手的融合装备吧。'],
       lines: ['理智归零别慌：第一次会被拉进小游戏，稳住心神就能回来；第二次就真的倒下了。', '混沌等级越高，翻出来的怨念越多——双剑图可以把它推高。'],
       look: 'A grizzled raid quartermaster in dark crimson-violet armor with a tattered cloak, a brass ledger and a lantern, standing beside crates of glowing violet chaos shards' },

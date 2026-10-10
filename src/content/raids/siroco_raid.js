@@ -7,16 +7,40 @@ regionTheme('siroRaidMirror', { grade: { tint: 'rgba(40,170,200,0.13)', fog: 'rg
 regionTheme('siroRaidCoffin', { grade: { tint: 'rgba(170,50,190,0.16)', fog: 'rgba(230,120,255,0.1)' }, ambient: 'wisps', rgb: '220,120,255', pal: { sky: ['#16051f', '#42135c', '#812b95'], far: '#0b0312', haze: '#e078ff', floor: ['#25102f', '#4b1d58', '#1b0925'], line: 'rgba(236,130,255,.48)' } });
 regionTheme('siroRaidGate', { grade: { tint: 'rgba(220,155,40,0.13)', fog: 'rgba(255,210,90,0.08)' }, ambient: 'motes', rgb: '255,205,110', pal: { sky: ['#211306', '#5c3410', '#a56a1b'], far: '#120a03', haze: '#ffd36a', floor: ['#38220c', '#674116', '#241407'], line: 'rgba(255,220,130,.48)' } });
 // 官方小怪：被侵蚀的格里姆希克教徒系（一般教徒 / 战士 / 上级教徒，잠식된 그림시커 일반신도·전사·상급신도 [NAMU-DG][NAMU-LAW]）+ 希洛克的碎片（P2 第 1 界 [SR-P2]【存疑】）。
-// 公开资料只写了“血量低、基本无威胁”[YW-忆][91-破]，没有技能表：招式是按定位补的占位（docs/RAID_SIROCO.md §小怪）。
+// 公开资料只写了“血量低、基本无威胁”[YW-忆][91-破]，没有技能表：每种怪按定位配了真实的技能组（近战 / 冲锋 / 施法 / 自爆，带状态和位移），不再是占位【原创，标存疑】。
 const SIROCO_RAID_MOB_DEFS = {
-  siRaidMob_grimFollower: { name: '被侵蚀的格里姆希克一般教徒', tier: 'swarm', arch: 'swarm', size: [13, 11, 92], elem: 'dark', art: ['voidcaster', { hue: -60, sat: 0.9, bright: 0.72 }], skills: [{ use: 'swipe', n: 2, reach: 70, dmg: 0.8, cd: [1.6, 2.4] }, { use: 'shot', mode: 'spread', n: 2, spread: 30, speed: 260, dmg: 0.7, cd: [3.5, 5] }] },
-  siRaidMob_grimWarrior: { name: '被侵蚀的格里姆希克战士', arch: 'aggressive', size: [17, 14, 108], weight: 2, elem: 'dark', art: ['jailer', { hue: -80, sat: 0.85, bright: 0.74 }], skills: [{ use: 'swipe', clip: 'slam', reach: 96, width: 30, windup: 0.6, dmg: 1.15, cd: [2.2, 3.2] }, { use: 'dash', len: 280, speed: 640, windup: 0.65, dmg: 1, cd: [4, 6] }] },
-  siRaidMob_grimElder: { name: '被侵蚀的格里姆希克上级教徒', tier: 'caster', arch: 'kiter', elem: 'dark', art: ['archbishop', { hue: -50, sat: 0.9, bright: 0.75 }], skills: [{ use: 'mark', delay: 0.9, r: 60, dmg: 1, cd: [5, 7] }, { use: 'buff', kind: 'shield', target: 'allies', r: 240, amt: 0.1, dur: 6, cd: [11, 15] }, { use: 'shot', mode: 'homing', n: 2, speed: 230, turn: 2.2, dmg: 0.8, cd: [3.5, 5] }] },
-  siRaidMob_sirocoShard: { name: '希洛克的碎片', tier: 'swarm', arch: 'swarm', size: [11, 10, 60], scale: 0.8, elem: 'dark', art: ['siPhantom', { hue: 140, sat: 0.8, bright: 0.8 }], skills: [{ use: 'seq', cd: [5, 7], steps: [{ use: 'blink', to: 'behind', dist: 54 }, { use: 'swipe', n: 2, reach: 56, dmg: 0.72 }] }, { use: 'explode', r: 74, windup: 0.8, dmg: 1.1, cd: [6, 8] }] },
-  // 破坏之门 ③ 号房的精英「门」[91-破][NAMU-LAW]：不断召唤教徒（P3 接炮台充能 / 召唤时无敌）
-  siRaidMob_gate: { name: '门', tier: 'elite', arch: 'guard', size: [26, 18, 150], weight: 9, speed: 0, noGrab: true, elem: 'dark', art: ['gatekeeper', { hue: -100, sat: 0.6, bright: 0.6 }], skills: [{ use: 'summon', kind: 'siRaidMob_grimFollower', n: 2, max: 6, lvlOff: -1, cd: [7, 9] }, { use: 'laser', windup: 1, dur: 0.9, sweep: 0, dmg: 0.5, cd: [6, 8] }, { use: 'mark', delay: 1, r: 70, dmg: 1.1, cd: [7, 9] }] },
+  // 一般教徒：成群的杂兵——连击、散射、临死前自爆（逼人别扎堆）
+  siRaidMob_grimFollower: { name: '被侵蚀的格里姆希克一般教徒', tier: 'swarm', arch: 'swarm', size: [13, 11, 92], elem: 'dark', art: ['voidcaster', { hue: -60, sat: 0.9, bright: 0.72 }], skills: [{ use: 'swipe', n: 2, reach: 70, dmg: 0.8, cd: [1.6, 2.4] }, { use: 'shot', mode: 'spread', n: 3, spread: 36, speed: 260, dmg: 0.65, cd: [3.5, 5] }, { use: 'explode', r: 64, windup: 0.9, dmg: 0.9, cd: [8, 11] }] },
+  // 战士：重击 + 冲锋 + 跳劈（落点预警）
+  siRaidMob_grimWarrior: { name: '被侵蚀的格里姆希克战士', arch: 'aggressive', size: [17, 14, 108], weight: 2, elem: 'dark', art: ['jailer', { hue: -80, sat: 0.85, bright: 0.74 }], skills: [{ use: 'swipe', clip: 'slam', reach: 96, width: 30, windup: 0.6, dmg: 1.15, cd: [2.2, 3.2] }, { use: 'dash', len: 280, speed: 640, windup: 0.65, dmg: 1, cd: [4, 6] }, { use: 'leap', r: 84, dmg: 1.1, cd: [7, 9] }] },
+  // 上级教徒：远程施法——地面法阵、给友军上盾、追踪弹、黑暗泥沼（减速）
+  siRaidMob_grimElder: { name: '被侵蚀的格里姆希克上级教徒', tier: 'caster', arch: 'kiter', elem: 'dark', art: ['archbishop', { hue: -50, sat: 0.9, bright: 0.75 }], skills: [{ use: 'mark', delay: 0.9, r: 60, dmg: 1, cd: [5, 7] }, { use: 'buff', kind: 'shield', target: 'allies', r: 240, amt: 0.1, dur: 6, cd: [11, 15] }, { use: 'shot', mode: 'homing', n: 2, speed: 230, turn: 2.2, dmg: 0.8, cd: [3.5, 5] }, { use: 'pool', at: 'target', r: 70, windup: 0.9, linger: 3, zone: 'slow', dmg: 0.25, cd: [9, 12] }] },
+  // 希洛克的碎片：瞬移到身后连击 + 自爆 + 黑暗致盲泥沼
+  siRaidMob_sirocoShard: { name: '希洛克的碎片', tier: 'swarm', arch: 'swarm', size: [11, 10, 60], scale: 0.8, elem: 'dark', art: ['siPhantom', { hue: 140, sat: 0.8, bright: 0.8 }], skills: [{ use: 'seq', cd: [5, 7], steps: [{ use: 'blink', to: 'behind', dist: 54 }, { use: 'swipe', n: 2, reach: 56, dmg: 0.72 }] }, { use: 'explode', r: 74, windup: 0.8, dmg: 1.1, cd: [6, 8] }, { use: 'pool', at: 'self', r: 52, windup: 0.6, linger: 3, zone: 'blind', dmg: 0.2, cd: [10, 13] }] },
+  // ---- 精英（RAID_ELITE 破防条件 + 专属技能组，docs/RAID_SIROCO.md §精英）----
+  // 门（破坏之门）：门身两侧各一台发电机，壳在时几乎不掉血；不断召唤教徒 + 激光 + 地面轰击 [91-破][NAMU-LAW]
+  siRaidMob_gate: { name: '门', tier: 'elite', arch: 'guard', size: [26, 18, 150], weight: 9, speed: 0, noGrab: true, elem: 'dark', art: ['gatekeeper', { hue: -100, sat: 0.6, bright: 0.6 }], skills: [{ use: 'summon', kind: 'siRaidMob_grimFollower', n: 2, max: 6, lvlOff: -1, cd: [7, 9] }, { use: 'laser', windup: 1, dur: 0.9, sweep: 70, dmg: 0.5, cd: [6, 8] }, { use: 'mark', delay: 1, r: 70, dmg: 1.1, cd: [7, 9] }, { use: 'aoe', shape: 'ring', at: 'self', r: 210, r0: 90, windup: 1.2, dmg: 1.1, cd: [10, 13] }] },
+  // 崔拉（幻影之界）：冲锋 + 蓄力重击，起手闪光时命中它能打断 → 破防
+  siRaidMob_kula: { name: '崔拉', tier: 'elite', arch: 'aggressive', size: [16, 13, 108], elem: 'dark', art: ['siPhantom', { hue: 150, sat: 1 }], skills: [{ use: 'dash', len: 320, speed: 700, windup: 0.7, dmg: 1, cd: [4, 6] }, { use: 'swipe', n: 3, reach: 96, dmg: 1, cd: [3, 4.5] }, { use: 'aoe', shape: 'circle', at: 'self', r: 150, windup: 1, dmg: 1.15, cd: [8, 10] }] },
+  // 昙娜（幻影之界）：远程散射 + 放出电球飞向自己回血，要拦截
+  siRaidMob_tanna: { name: '昙娜', tier: 'elite', arch: 'kiter', size: [16, 13, 108], elem: 'dark', art: ['siPhantom', { hue: -150, sat: 1 }], skills: [{ use: 'shot', mode: 'spread', n: 3, spread: 40, speed: 340, dmg: 0.8, cd: [3, 5] }, { use: 'rain', kind: 'bolt', n: 4, r: 46, spread: 180, windup: 1, dmg: 1, cd: [7, 9] }, { use: 'blink', to: 'away', dist: 220, cd: [8, 11] }] },
+  // 镜之侍女（梦幻之黎明）：读条召唤玩家的分身，读条结束前杀光才能打断
+  siRaidMob_maid: { name: '魅惑的侍女', tier: 'elite', arch: 'kiter', size: [15, 13, 104], weight: 3, elem: 'dark', art: ['voidcaster', { hue: 300, sat: 1, bright: 0.85 }], skills: [{ use: 'shot', mode: 'homing', n: 2, speed: 240, turn: 2.4, dmg: 0.85, cd: [4, 6] }, { use: 'mark', delay: 1, r: 70, dmg: 1.05, cd: [6, 8] }, { use: 'seq', cd: [9, 12], steps: [{ use: 'blink', to: 'behind', dist: 80 }, { use: 'swipe', n: 2, reach: 80, dmg: 1 }] }] },
+  // 吞噬者（记忆的碎片 / 痛苦之镜）：吐出属性球，打碎才不会被它吸收回血 [YW-忆]
+  siRaidMob_devour: { name: '吞噬者', tier: 'elite', arch: 'aggressive', size: [20, 16, 120], weight: 5, elem: 'dark', art: ['jailer', { hue: 20, sat: 1, bright: 0.85 }], skills: [{ use: 'swipe', n: 2, reach: 110, width: 34, windup: 0.6, dmg: 1.2, cd: [3, 4.5] }, { use: 'pull', mode: 'in', r: 260, force: 260, dur: 0.9, windup: 0.8, dmg: 0.4, cd: [8, 11] }, { use: 'leap', r: 100, dmg: 1.2, cd: [7, 9] }] },
+  // 凝视者（无形之门）：头顶睁眼时不能攻击它（反伤），先杀分身
+  siRaidMob_watcher: { name: '凝视者', tier: 'elite', arch: 'guard', size: [18, 15, 124], weight: 5, speed: 60, elem: 'dark', art: ['sirocoRaidOracle', { hue: 40 }], skills: [{ use: 'laser', windup: 0.9, dur: 1, sweep: 50, dmg: 0.45, cd: [5, 7] }, { use: 'shot', mode: 'homing', n: 3, speed: 240, turn: 2.2, dmg: 0.8, cd: [4, 6] }, { use: 'cone', ang: 60, len: 280, windup: 1, dur: 1, dmg: 0.4, col: '#8aff9a', cd: [8, 10] }] },
 };
 for (const [id, M] of Object.entries(SIROCO_RAID_MOB_DEFS)) regionMonster(SIROCO_RAID_SPEC, id, M, false);
+// 精英登记（破防条件见 game/raid_elite.js）：房间 spec 写 eliteSpec 引用；击杀上报 → raid_core 节点的 elites[id]
+if (typeof defineRaidElite === 'function') {
+  defineRaidElite('siEliteGate', { name: '门', mon: 'siRaidMob_gate', type: 'breakShell', p: { shells: 2, hits: 4, shieldMul: 0.1, weakDur: 10, regen: 22 }, hp: 1.1, text: '打碎两侧的发电机，门才吃得到伤害' });
+  defineRaidElite('siEliteKula', { name: '崔拉', mon: 'siRaidMob_kula', type: 'counterBreak', p: { every: 9, windup: 2.4, flashAt: 1.4, flashLen: 0.8, punish: 0.25, weakDur: 6 }, text: '看到闪光的瞬间命中崔拉，打断她的蓄力' });
+  defineRaidElite('siEliteTanna', { name: '昙娜', mon: 'siRaidMob_tanna', type: 'intercept', p: { every: 9, orbN: 2, travel: 6, need: 4, healPct: 0.05 }, text: '打掉飞向昙娜的电球，连续拦截 4 个让她破防' });
+  defineRaidElite('siEliteMaid', { name: '魅惑的侍女', mon: 'siRaidMob_maid', type: 'killClone', p: { every: 14, cast: 9, cloneN: 2, punish: 0.4 }, text: '读条结束前杀光玩家的分身，打断侍女' });
+  defineRaidElite('siEliteDevour', { name: '吞噬者', mon: 'siRaidMob_devour', type: 'elemBall', p: { every: 8, ballN: 2, need: 2, life: 9, healPct: 0.04 }, text: '打碎它吐出的属性球，否则它会吸收回血' });
+  defineRaidElite('siEliteWatcher', { name: '凝视者', mon: 'siRaidMob_watcher', type: 'eyeGuard', p: { closed: 12, open: 12, cloneN: 2, reflect: 0.1, punish: 0.35 }, text: '睁眼时别攻击凝视者，先杀掉分身' });
+}
 // 领主模板：两阶段（100% / 50%），没有通用破招槽 / 狂暴（官方的虚弱只来自各自的机制，P3 由 raid_mech 脚本接管）
 const raidBoss = (id, name, art, elem, first, second, extra = {}) => regionMonster(SIROCO_RAID_SPEC, id, { name, lvl: extra.lvl || 64, size: extra.size || [18, 15, 126], speed: extra.speed || 100, scale: extra.scale ?? 0.92, elem, art, hook: extra.hook, mechs: extra.mechs || [], phases: [{ at: 1, skills: first }, { at: 0.5, enter: extra.enter || { say: `${name}进入第二阶段！` }, skills: second }] }, true);
 raidBoss('siRaidBoss_gatekeeper', '遗忘姓名的守门人', 'gatekeeper', 'light', [{ use: 'pull', clip: 'sigA', mode: 'in', r: 320, force: 300, dur: 1, windup: 0.8, dmg: 0.4, cd: [8, 11] }, { use: 'swipe', clip: 'sigB', n: 3, reach: 120, width: 34, windup: 0.6, dmg: 1.15, cd: [3, 4.5] }, { use: 'aoe', clip: 'charge', shape: 'ring', at: 'self', r: 230, r0: 90, windup: 1, dmg: 1.2, down: true, cd: [8, 10] }], [{ use: 'dash', clip: 'sigA', len: 360, speed: 690, windup: 0.8, dmg: 1.25, cd: [7, 9] }, { use: 'aoe', clip: 'sigB', shape: 'circle', at: 'self', r: 200, windup: 1.2, dmg: 1.3, cd: [9, 11] }], { scale: 0.84 });
@@ -55,8 +79,6 @@ const SIROCO_RAID_PEN_MOBS = {
   siRaidMob_phantomAdd: { name: '幻影', tier: 'brute', arch: 'aggressive', size: [15, 12, 100], weight: 3, elem: 'dark', art: ['siPhantom', { hue: -30, sat: 1.1, bright: 0.9 }], skills: [{ use: 'swipe', n: 2, reach: 86, dmg: 0.9, cd: [2, 3] }] },
   siRaidMob_genbu: { name: '玄武', tier: 'brute', arch: 'guard', size: [22, 18, 96], weight: 6, speed: 50, elem: 'water', art: ['jailer', { hue: 140, sat: 0.9, bright: 0.8 }], skills: [{ use: 'aoe', shape: 'circle', at: 'self', r: 130, windup: 1.1, dmg: 1.1, cd: [5, 7] }] },
   siRaidMob_disguiser: { name: '伪装者', arch: 'kiter', elem: 'dark', art: ['voidcaster', { hue: 60, sat: 0.9, bright: 0.85 }], skills: [{ use: 'shot', mode: 'straight', n: 1, speed: 420, dmg: 0.8, cd: [3, 4.5] }] },
-  siRaidMob_kula: { name: '崔拉', tier: 'elite', arch: 'aggressive', size: [16, 13, 108], elem: 'dark', art: ['siPhantom', { hue: 150, sat: 1 }], skills: [{ use: 'dash', len: 320, speed: 700, windup: 0.7, dmg: 1, cd: [4, 6] }] },
-  siRaidMob_tanna: { name: '昙娜', tier: 'elite', arch: 'kiter', size: [16, 13, 108], elem: 'dark', art: ['siPhantom', { hue: -150, sat: 1 }], skills: [{ use: 'shot', mode: 'spread', n: 3, spread: 40, speed: 340, dmg: 0.8, cd: [3, 5] }] },
 };
 for (const [id, M] of Object.entries(SIROCO_RAID_PEN_MOBS)) regionMonster(SIROCO_RAID_SPEC, id, M, false);
 // ===================================================================== 
@@ -176,18 +198,18 @@ const SIROCO_RAID_MOBS = {
 // 官方固定房间结构（docs/RAID_SIROCO.md §地图）：line(n) = 一条直线 n 个房间，第一个是准备房（不刷怪），最后一个是领主房
 const siLine = (n, o = {}) => ({ cols: n, rows: 1, rooms: Array.from({ length: n }, (_, i) => ({ at: [o.rtl ? n - 1 - i : i, 0], ...(i === 0 ? { prep: true } : {}), ...(i === n - 1 ? { type: 'boss' } : {}), ...((o.rooms || {})[i] || {}) })), start: 0, boss: n - 1 });
 const SIROCO_RAID_LAYOUT = {
-  law: siLine(5, { rooms: { 2: { type: 'elite', elite: 'siRaidMob_gate', name: '门' } } }),   // 准备 / 小怪 / 门 / 小怪 / 守门人 [91-破]
-  dawn: siLine(5),   // 准备 + 3 小怪 + 哈妮尔 [233-黎]
+  law: siLine(5, { rooms: { 2: { type: 'elite', elite: 'siRaidMob_gate', eliteSpec: 'siEliteGate', name: '门' } } }),   // 准备 / 小怪 / 门 / 小怪 / 守门人 [91-破]
+  dawn: siLine(5, { rooms: { 2: { type: 'elite', elite: 'siRaidMob_maid', eliteSpec: 'siEliteMaid', name: '魅惑的侍女' } } }),   // 准备 + 3 小怪 + 哈妮尔 [233-黎]
   // 噩梦之夜：5×2 共 10 房，随机出生在四角（1 / 5 / 6 / 10，空房），领主随机在 2 / 3 / 4 / 7 / 8 / 9 之一 [91-夜]
   night: { cols: 5, rows: 2, links: 'grid', hideBoss: true, rooms: Array.from({ length: 10 }, (_, i) => ({ at: [i % 5, Math.floor(i / 5)], ...([0, 4, 5, 9].includes(i) ? { prep: true } : {}) })), start: [0, 4, 5, 9], boss: [1, 2, 3, 6, 7, 8] },
-  memory: siLine(4), mirror: siLine(4),   // 准备 / 小怪 / 小怪 / 领主 [YW-忆][YW-镜]
-  gateL: siLine(3), gateR: siLine(3, { rtl: true }),   // 准备 / 小怪 / 领主；奈克斯那张左右镜像、从右往左走 [YW-门]
+  memory: siLine(4, { rooms: { 2: { type: 'elite', elite: 'siRaidMob_devour', eliteSpec: 'siEliteDevour', name: '吞噬者' } } }), mirror: siLine(4, { rooms: { 2: { type: 'elite', elite: 'siRaidMob_devour', eliteSpec: 'siEliteDevour', name: '吞噬者' } } }),   // 准备 / 小怪 / 小怪 / 领主 [YW-忆][YW-镜]
+  gateL: siLine(3, { rooms: { 1: { type: 'elite', elite: 'siRaidMob_watcher', eliteSpec: 'siEliteWatcher', name: '凝视者' } } }), gateR: siLine(3, { rtl: true, rooms: { 1: { type: 'elite', elite: 'siRaidMob_watcher', eliteSpec: 'siEliteWatcher', name: '凝视者' } } }),   // 准备 / 小怪 / 领主；奈克斯那张左右镜像、从右往左走 [YW-门]
   // 无欲之棺：约 8 房、领主每次进图随机（不在准备房）[QQ][SR-P2]【存疑：具体形状】
   sub: { cols: 4, rows: 2, links: 'grid', hideBoss: true, rooms: Array.from({ length: 8 }, (_, i) => ({ at: [i % 4, Math.floor(i / 4)], ...(i === 0 ? { prep: true } : {}) })), start: 0, boss: [1, 2, 3, 4, 5, 6, 7] },
   twisted: siLine(4), con: siLine(3),   // 【存疑：房间数】
   coffin: siLine(3, { rooms: { 1: { mobs: SIROCO_RAID_MOBS.shard } } }),
   // 幻影之界：准备 / 小怪 / 崔拉（精英）/ 小怪 / 昙娜（精英）/ 小怪 / 崔拉 & 昙娜 [91-界]
-  phantom: siLine(7, { rooms: { 2: { type: 'elite', elite: 'siRaidMob_kula' }, 4: { type: 'elite', elite: 'siRaidMob_tanna' } } }),
+  phantom: siLine(7, { rooms: { 2: { type: 'elite', elite: 'siRaidMob_kula', eliteSpec: 'siEliteKula' }, 4: { type: 'elite', elite: 'siRaidMob_tanna', eliteSpec: 'siEliteTanna' } } }),
   day: siLine(5), castle: siLine(2),   // 【存疑：房间数】
   deny: siLine(3), forget: siLine(2),
   // 压抑：4×4 迷雾，领主随机在外圈“┛”的 7 个房间之一 [NAMU-C1]【存疑：具体形状】

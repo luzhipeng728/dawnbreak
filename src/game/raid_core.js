@@ -64,20 +64,20 @@ const RAID_DEFS = {
     phases: [
       { id: 1, name: '阻截战', limit: { normal: 4800, guide: 2400 }, goal: ['gate_l', 'gate_r'], nodes: {
         // ---- 法则之境：4 × 破坏之门，按守门人吸入的灵魂数顺序击杀；有人进图就开始共享时限，超时重置并重新分配顺序 [QQ] ----
-        law_a: { name: '破坏之门 1', type: 'order', group: 'law', area: 1, pos: [0.12, 0.14], need: [], solo: true, groupLimit: { normal: 600, guide: 0 }, dg: 'raid_si_law', boss: 'gatekeeper',
+        law_a: { name: '破坏之门 1', type: 'order', group: 'law', area: 1, pos: [0.12, 0.14], need: [], solo: true, groupLimit: { normal: 600, guide: 0 }, elites: { siEliteGate: { fx: [{ kind: 'gbuff', id: 'gate_down', p: { dmgDealt: 0.05 }, dur: 120, text: '门倒下了：全团伤害 +5%（120 秒）' }], text: '门倒下了：全团伤害 +5%（120 秒）' } }, dg: 'raid_si_law', boss: 'gatekeeper',
           guide: { name: '破坏之门', type: 'main', pos: [0.12, 0.5] } },
-        law_b: { name: '破坏之门 2', type: 'order', group: 'law', area: 1, pos: [0.12, 0.38], need: [], solo: true, groupLimit: { normal: 600, guide: 0 }, dg: 'raid_si_law', boss: 'gatekeeper', guide: false },
-        law_c: { name: '破坏之门 3', type: 'order', group: 'law', area: 1, pos: [0.12, 0.62], need: [], solo: true, groupLimit: { normal: 600, guide: 0 }, dg: 'raid_si_law', boss: 'gatekeeper', guide: false },
-        law_d: { name: '破坏之门 4', type: 'order', group: 'law', area: 1, pos: [0.12, 0.86], need: [], solo: true, groupLimit: { normal: 600, guide: 0 }, dg: 'raid_si_law', boss: 'gatekeeper', guide: false },
+        law_b: { name: '破坏之门 2', type: 'order', group: 'law', area: 1, pos: [0.12, 0.38], need: [], solo: true, groupLimit: { normal: 600, guide: 0 }, elites: { siEliteGate: { fx: [{ kind: 'gbuff', id: 'gate_down', p: { dmgDealt: 0.05 }, dur: 120, text: '门倒下了：全团伤害 +5%（120 秒）' }], text: '门倒下了：全团伤害 +5%（120 秒）' } }, dg: 'raid_si_law', boss: 'gatekeeper', guide: false },
+        law_c: { name: '破坏之门 3', type: 'order', group: 'law', area: 1, pos: [0.12, 0.62], need: [], solo: true, groupLimit: { normal: 600, guide: 0 }, elites: { siEliteGate: { fx: [{ kind: 'gbuff', id: 'gate_down', p: { dmgDealt: 0.05 }, dur: 120, text: '门倒下了：全团伤害 +5%（120 秒）' }], text: '门倒下了：全团伤害 +5%（120 秒）' } }, dg: 'raid_si_law', boss: 'gatekeeper', guide: false },
+        law_d: { name: '破坏之门 4', type: 'order', group: 'law', area: 1, pos: [0.12, 0.86], need: [], solo: true, groupLimit: { normal: 600, guide: 0 }, elites: { siEliteGate: { fx: [{ kind: 'gbuff', id: 'gate_down', p: { dmgDealt: 0.05 }, dur: 120, text: '门倒下了：全团伤害 +5%（120 秒）' }], text: '门倒下了：全团伤害 +5%（120 秒）' } }, dg: 'raid_si_law', boss: 'gatekeeper', guide: false },
         // ---- 知性之境：进入梦幻之黎明后另外 3 张开放；黎明失败 / 撤退 / 超时 → 其余 3 张里的人被踢回营地 [QQ]；黎明单独限时 7 分钟 [233-黎] ----
         wit_dawn: { name: '梦幻之黎明', type: 'main', area: 2, pos: [0.37, 0.14], need: ['law_a', 'law_b', 'law_c', 'law_d'], runLimit: { normal: 420, guide: 0 },
-          failKick: ['wit_night', 'wit_phantom', 'wit_day'], failReset: ['wit_phantom'], dg: 'raid_si_dawn', boss: 'haniel' },
+          failKick: ['wit_night', 'wit_phantom', 'wit_day'], failReset: ['wit_phantom'], elites: { siEliteMaid: { fx: [], text: '侍女被打断倒下了' } }, dg: 'raid_si_dawn', boss: 'haniel' },
         // 未通关期间每 30 秒叠一层（进了黎明才开始算，离开就清零）：哈妮尔攻 / 防 +10%（最多 10 层）、幻影之界视野遮挡 20 秒 [QQ]；重生 1:30 [QQ]
         wit_night: { name: '噩梦之夜', type: 'buff', area: 2, pos: [0.37, 0.38], need: ['law_a', 'law_b', 'law_c', 'law_d'], needEnter: ['wit_dawn'], solo: true, respawn: 90, stopWhen: 'wit_dawn', dg: 'raid_si_night', boss: 'lena',
           aura: [{ to: 'wit_dawn', every: 30, id: 'night_haniel', p: { atk: 0.1, def: 0.1 }, max: 10, text: '噩梦之夜未通关：哈妮尔的攻击 / 防御提升' },
             { to: 'wit_phantom', every: 30, id: 'night_blind', p: { blind: 20 }, max: 99, text: '噩梦之夜未通关：视野被遮挡 20 秒' }], guide: false },
         // 通关：黎明伤害 +100%，只要黎明的队伍不撤退就一直保持（不重生）[91-界][DFO]；未通关：黎明高血量小怪、夜黑色旋风、昼防御 −25%/层（最多 4 层）[91-界][NAMU-WIT]
-        wit_phantom: { name: '幻影之界', type: 'buff', area: 2, pos: [0.37, 0.62], need: ['law_a', 'law_b', 'law_c', 'law_d'], needEnter: ['wit_dawn'], solo: true, respawn: 0, stopWhen: 'wit_dawn', dg: 'raid_si_phantom', boss: 'kulaTanna',
+        wit_phantom: { name: '幻影之界', type: 'buff', area: 2, pos: [0.37, 0.62], need: ['law_a', 'law_b', 'law_c', 'law_d'], needEnter: ['wit_dawn'], solo: true, respawn: 0, stopWhen: 'wit_dawn', elites: { siEliteKula: { fx: [], text: '崔拉倒下了' }, siEliteTanna: { fx: [], text: '昙娜倒下了' } }, dg: 'raid_si_phantom', boss: 'kulaTanna',
           aura: [{ to: 'wit_dawn', every: 30, id: 'phantom_adds', p: { adds: 'siRaidMob_phantomAdd', n: 2 }, max: 99, text: '幻影之界未通关：黎明出现高血量的幻影' },
             { to: 'wit_night', every: 30, id: 'phantom_whirl', p: { whirl: 1 }, max: 99, text: '幻影之界未通关：噩梦之夜出现黑色旋风' },
             { to: 'wit_day', every: 30, id: 'phantom_def', p: { ptaken: 0.25 }, max: 4, text: '幻影之界未通关：防御下降' }],
@@ -87,16 +87,16 @@ const RAID_DEFS = {
           aura: [{ to: 'wit_dawn', every: 30, id: 'day_genbu', p: { adds: 'siRaidMob_genbu', n: 1 }, max: 99, text: '归还之昼未通关：黎明召唤了玄武' },
             { to: 'wit_phantom', every: 30, id: 'day_mimic', p: { adds: 'siRaidMob_disguiser', n: 2 }, max: 99, text: '归还之昼未通关：幻影之界出现伪装者' }], guide: false },
         // ---- 苦难之境Ⅰ：记忆的碎片 + 碎片的记忆都要通关；痛苦之镜 ×2 进入本层就开始各 5 分钟倒计时，任意一面到 0 = 重置当前层（Ⅰ 或 Ⅱ）的进度，时间不退 [QQ][YW-镜] ----
-        pain_mem: { name: '记忆的碎片', type: 'main', area: 3, pos: [0.62, 0.14], need: ['wit_dawn'], dg: 'raid_si_memory', boss: 'gusty' },
-        pain_mem2: { name: '碎片的记忆', type: 'main', area: 3, pos: [0.62, 0.38], need: ['wit_dawn'], dg: 'raid_si_memory', boss: 'gusty', guide: false },
-        pain_mirror: { name: '痛苦之镜 1', type: 'timer', area: 3, pos: [0.62, 0.62], need: ['wit_dawn'], solo: true, timer: 300, repair: 90, dg: 'raid_si_mirror', boss: 'grumi',
+        pain_mem: { name: '记忆的碎片', type: 'main', area: 3, pos: [0.62, 0.14], need: ['wit_dawn'], elites: { siEliteDevour: { fx: [{ kind: 'gbuff', id: 'devour_down', p: { dmgDealt: 0.05 }, dur: 120, text: '吞噬者倒下了：全团伤害 +5%（120 秒）' }], text: '吞噬者倒下了：全团伤害 +5%（120 秒）' } }, dg: 'raid_si_memory', boss: 'gusty' },
+        pain_mem2: { name: '碎片的记忆', type: 'main', area: 3, pos: [0.62, 0.38], need: ['wit_dawn'], elites: { siEliteDevour: { fx: [{ kind: 'gbuff', id: 'devour_down', p: { dmgDealt: 0.05 }, dur: 120, text: '吞噬者倒下了：全团伤害 +5%（120 秒）' }], text: '吞噬者倒下了：全团伤害 +5%（120 秒）' } }, dg: 'raid_si_memory', boss: 'gusty', guide: false },
+        pain_mirror: { name: '痛苦之镜 1', type: 'timer', area: 3, pos: [0.62, 0.62], need: ['wit_dawn'], solo: true, timer: 300, repair: 90, elites: { siEliteDevour: { fx: [{ kind: 'gbuff', id: 'devour_down', p: { dmgDealt: 0.05 }, dur: 120, text: '吞噬者倒下了：全团伤害 +5%（120 秒）' }], text: '吞噬者倒下了：全团伤害 +5%（120 秒）' } }, dg: 'raid_si_mirror', boss: 'grumi',
           fx: { expire: [{ kind: 'reset', areas: [3, 4], text: '痛苦之镜没压住：苦难之境的进度重置了（时间不退）' }] }, guide: false },
-        pain_mirror2: { name: '痛苦之镜 2', type: 'timer', area: 3, pos: [0.62, 0.86], need: ['wit_dawn'], solo: true, timer: 300, repair: 90, dg: 'raid_si_mirror', boss: 'grumi',
+        pain_mirror2: { name: '痛苦之镜 2', type: 'timer', area: 3, pos: [0.62, 0.86], need: ['wit_dawn'], solo: true, timer: 300, repair: 90, elites: { siEliteDevour: { fx: [{ kind: 'gbuff', id: 'devour_down', p: { dmgDealt: 0.05 }, dur: 120, text: '吞噬者倒下了：全团伤害 +5%（120 秒）' }], text: '吞噬者倒下了：全团伤害 +5%（120 秒）' } }, dg: 'raid_si_mirror', boss: 'grumi',
           fx: { expire: [{ kind: 'reset', areas: [3, 4], text: '痛苦之镜没压住：苦难之境的进度重置了（时间不退）' }] }, guide: false },
         // ---- 苦难之境Ⅱ：无形之门 ×2 各打各的（没有同时击杀窗口），两扇都通关 = 阻截完成；门的队伍到领主房 → 关联的幻影之城开放 [QQ] ----
-        gate_l: { name: '无形之门 1', type: 'main', area: 4, pos: [0.87, 0.14], need: ['pain_mem', 'pain_mem2'], solo: true, failKick: ['castle_l'], failReset: ['castle_l'], dg: 'raid_si_gate_l', boss: 'vita',
-          guide: { name: '无形之门', type: 'main', pos: [0.87, 0.5], dg: 'raid_si_gate_duo' } },
-        gate_r: { name: '无形之门 2', type: 'main', area: 4, pos: [0.87, 0.38], need: ['pain_mem', 'pain_mem2'], solo: true, failKick: ['castle_r'], failReset: ['castle_r'], dg: 'raid_si_gate_r', boss: 'nex', guide: false },
+        gate_l: { name: '无形之门 1', type: 'main', area: 4, pos: [0.87, 0.14], need: ['pain_mem', 'pain_mem2'], solo: true, failKick: ['castle_l'], failReset: ['castle_l'], elites: { siEliteWatcher: { fx: [], text: '凝视者倒下了' } }, dg: 'raid_si_gate_l', boss: 'vita',
+          guide: { name: '无形之门', type: 'main', pos: [0.87, 0.5], elites: { siEliteWatcher: { fx: [], text: '凝视者倒下了' } }, dg: 'raid_si_gate_duo' } },
+        gate_r: { name: '无形之门 2', type: 'main', area: 4, pos: [0.87, 0.38], need: ['pain_mem', 'pain_mem2'], solo: true, failKick: ['castle_r'], failReset: ['castle_r'], elites: { siEliteWatcher: { fx: [], text: '凝视者倒下了' } }, dg: 'raid_si_gate_r', boss: 'nex', guide: false },
         // 幻影之城 / 城之幻影：每通关一次，关联的门伤害 +80% / 110% / 140% / 170% / 200%（60 秒内再通关叠层并刷新）[QQ]（另一说：+40%/层、加给两扇门 [YW-城]）
         castle_l: { name: '幻影之城', type: 'buff', area: 4, pos: [0.87, 0.62], need: [], needBoss: ['gate_l'], solo: true, respawn: 10, stopWhen: 'gate_l', dg: 'raid_si_castle', boss: 'rodos',
           fx: { clear: [{ kind: 'stack', to: 'gate_l', id: 'castle_l', steps: [1.8, 2.1, 2.4, 2.7, 3], dur: 60, text: '幻影之城通关：无形之门 1 的伤害提升' }] }, guide: false },

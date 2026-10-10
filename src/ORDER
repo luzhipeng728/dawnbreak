@@ -101,6 +101,8 @@ content/items/epics60_w_priest.js
 content/items/epics60_armor.js
 content/items/epics60_acc.js
 content/items/raid_siroco.js
+# 奥兹玛团本奖励：混沌的怨念 + 融合装备 5 系列 25 件（docs/RAID_OZMA.md §8）
+content/items/raid_ozma.js
 content/items/cdr60.js
 content/items/cards.js
 content/items/shops.js
@@ -146,6 +148,8 @@ game/raid_core.js
 game/raid_mech.js
 game/ozma_core.js
 game/raid_ozma.js
+# 安徒恩攻坚战（Neo 版）：RAID_DEFS.anton 纯规则，服务端 loadRaidCore 同目录加载（docs/RAID_ANTON.md）
+game/raid_anton.js
 # 区域流水线（docs/REGION_PIPELINE.md）：怪物技能库 + 领主机制库 → defineRegion(spec) 生成器 → 每个区域一个纯数据 spec（+ 可选的领主自定义钩子）
 game/mon_skills.js
 # 领主差异化 P0（docs/BOSS_SPEC.md）：技能库第二批（leap cone lanes mark plant pool pull、冲刺变体）+ 特性钩子；要在 region.js 前面（样品怪 msLab 放全部技能）

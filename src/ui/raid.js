@@ -91,7 +91,7 @@ addStyle(`
 `);
 const RAID_TYPE = { main: ['主', '主线'], buff: ['增', '增益'], timer: ['时', '倒计时'], order: ['序', '顺序击杀'], sync: ['双', '同步击杀'], final: ['终', '最终合流'], func: ['能', '功能图'], key: ['钥', '钥匙图'] };
 const RAID_ST = { locked: '未开放', open: '可进入', busy: '战斗中', down: '等另一边', cleared: '已通关', cool: '重生中', off: '已关闭' };
-const RAID_AREA = { siroco: { 1: ['法则之境', '知性之境', '苦难之境Ⅰ', '苦难之境Ⅱ'], 2: ['第 3 界 · 无欲', '第 2 界 · 意识', '第 1 界 · 真理'] }, ozma: { 1: ['毁灭区域', '绝望区域', '恐怖区域'], 2: ['王座前线', '混沌王座'] } };
+const RAID_AREA = { siroco: { 1: ['法则之境', '知性之境', '苦难之境Ⅰ', '苦难之境Ⅱ'], 2: ['第 3 界 · 无欲', '第 2 界 · 意识', '第 1 界 · 真理'] }, ozma: { 1: ['毁灭区域', '绝望区域', '恐怖区域'], 2: ['王座前线', '混沌王座'] }, anton: { 1: ['黑雾之源', '震颤 · 舰炮', '擎天之柱'], 2: ['能量阻截', '孵化所', '黑色火山', '安徒恩的心脏'] } };
 const raidFmt = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const raidCd = (until, cls) => h('span', { class: cls || '', 'data-cd': String(until || 0) }, raidFmt((until || 0) - raidNet.now()));
 // 门槛：Lv60 + 希洛克主线（RAID_PLAN §4.1）；服务端只查等级

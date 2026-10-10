@@ -36,8 +36,8 @@ export function loadRaidCore(file) {
   const cands = [file, process.env.DNF_RAID_CORE, path.join(DIR, '..', 'lib', 'raid_core.js'), path.join(DIR, '..', '..', 'src', 'game', 'raid_core.js')].filter(Boolean);
   const f = cands.find(p => fs.existsSync(p));
   if (!f) throw new Error('找不到团本规则文件 raid_core.js（' + cands.join(' / ') + '）');
-  // 团本定义包（和 raid_core.js 在同一个目录；有就一起加载，往 RAID_DEFS 里登记别的团本）：奥兹玛 = ozma_core.js（内容清单）+ raid_ozma.js（登记 RAID_DEFS.ozma）。顺序：清单在前、核心居中、登记在后
-  const dir = path.dirname(f), pre = ['ozma_core.js'].map(n => path.join(dir, n)).filter(p => fs.existsSync(p)), post = ['raid_ozma.js'].map(n => path.join(dir, n)).filter(p => fs.existsSync(p));
+  // 团本定义包（和 raid_core.js 在同一个目录；有就一起加载，往 RAID_DEFS 里登记别的团本）：奥兹玛 = ozma_core.js（内容清单）+ raid_ozma.js（登记 RAID_DEFS.ozma）；安徒恩 = raid_anton.js（登记 RAID_DEFS.anton）。顺序：清单在前、核心居中、登记在后
+  const dir = path.dirname(f), pre = ['ozma_core.js'].map(n => path.join(dir, n)).filter(p => fs.existsSync(p)), post = ['raid_ozma.js', 'raid_anton.js'].map(n => path.join(dir, n)).filter(p => fs.existsSync(p));
   const code = [...pre, f, ...post].map(p => fs.readFileSync(p, 'utf8')).join('\n;\n');
   const core = vm.runInContext('"use strict";\n' + code + '\n;RAID_CORE', vm.createContext({}), { filename: f, timeout: 5000 });
   core.file = f; core.packs = [...pre, ...post].map(p => path.basename(p));

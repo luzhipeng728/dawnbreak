@@ -240,7 +240,7 @@ defineRegion({
     mira: { name: '米拉', title: '魔界商人 · 修理 / 仓库', h: 110, services: ['repair', 'storage'],
       greet: ['欢迎来到暗黑城！修理、寄存，找米拉就对了~'], lines: ['在魔界做生意？只要你付得起金币，恶魔也是客人。', '最近幻界那边的门一直在响……可别迷路哦。'],
       look: 'Mira, a cheerful young demon-realm merchant girl with short lilac hair, two tiny curved horns, a big fluffy scarf, a purple apron full of tools and keys, carrying a lantern on a long pole' },
-    raidOldman: { name: '攻坚商店老人', title: '希洛克攻坚商人 · 融合装备', art: 'world/npc_agonzo', h: 112, services: ['shop:siroco_raid', 'repair'],
+    raidOldman: { name: '攻坚商店老人', title: '希洛克攻坚商人 · 融合装备', art: 'world/npc_agonzo', h: 112, services: ['shop:siroco_raid', 'shop:anton_raid', 'repair'],
       greet: ['年轻人，辛苦从幻界回来了。花瓣和无形之息，换些真正能用的东西吧。'],
       lines: ['希洛克的奖励要在翻牌阶段确认，不能离开副本后再补领。', '融合装备有三种部位，先看清楚自己的装备空位再兑换。'],
       look: 'An old demon-realm raid quartermaster with long silver hair, a dark violet hooded coat, round spectacles, a brass ledger and a lantern, standing beside crates of purple raid materials' },

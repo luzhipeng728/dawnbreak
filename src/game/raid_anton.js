@@ -14,6 +14,8 @@
   // 吞噬魔 [研]：黑雾之源二图的精英，打碎它吐的属性球使其破防；击杀给全团一小段攻击增益（【原创】数值）
   // 融合装备 key（content/items/raid_anton.js 按同一份命名注册；服务端没有物品库，所以写在规则里）：贪食（下装）/ 荒古（戒指）/ 魔能（辅助）各 4 个词条
   const ANTON_GEAR = ['gluttony', 'primeval', 'mana'].flatMap(s => [1, 2, 3, 4].map(i => `raid_an_${s}_${i}`));
+  // 精英击杀的全局效果：给全团一小段攻击增益（【原创】数值，不叠加到同 id 之外）
+  const gb = (id, text, atk = 0.03) => ({ fx: [{ kind: 'gbuff', id, p: { atk }, dur: 0 }], text });
   const devour = n => ({ devour: { fx: [{ kind: 'gbuff', id: 'devour_' + n, p: { atk: 0.04 }, dur: 0 }], text: '吞噬魔倒下：黑雾稀薄了一点，全团攻击小幅提升' } });
   RAID_DEFS.anton = {
     id: 'anton', name: '团本 · 安徒恩攻坚战', minLvl: 60, orderMax: 4,
@@ -44,24 +46,24 @@
         quake_a: { name: '震颤的大地 A', type: 'timer', area: 2, pos: [0.36, 0.14], need: FOG, solo: true, timer: 360, repair: 120, dg: 'raid_an_quake_a', boss: 'ioli',
           fx: { expire: [{ kind: 'reset', areas: [2, 3], text: '震颤的大地 A 没压住：最靠后的一层进度回退了（时间不退）' }] },
           elites: { ioliOrb: { once: false, fx: [{ kind: 'countdown', to: 'quake_a', sec: 360 }], text: '加血球被打掉：震颤延缓' } }, guide: { type: 'main', pos: [0.36, 0.3] } },
-        quake_b: { name: '震颤的大地 B', type: 'timer', area: 2, pos: [0.36, 0.38], need: FOG, solo: true, timer: 360, repair: 120, dg: 'raid_an_quake_b', boss: 'freines',
+        quake_b: { name: '震颤的大地 B', type: 'timer', area: 2, pos: [0.36, 0.38], need: FOG, solo: true, timer: 360, repair: 120, dg: 'raid_an_quake_b', boss: 'freines', elites: { freinesClone: { once: false, fx: [{ kind: 'countdown', to: 'quake_b', sec: 360 }], text: '玩家幻影被清掉：震颤延缓' } },
           fx: { expire: [{ kind: 'reset', areas: [2, 3], text: '震颤的大地 B 没压住：最靠后的一层进度回退了（时间不退）' }] }, guide: false },
         // 舰炮防御战：守右侧炮充能 3 次（3 次输出窗口），屏幕变红时禁用无色技能（用「舰炮故障 = 全屏灭团」表现）[研]
         cannon: { name: '舰炮防御战', type: 'main', area: 2, pos: [0.36, 0.7], need: FOG, dg: 'raid_an_cannon', boss: 'boarder' },
         // ---- 擎天之柱 A / B：炽炎之艾格尼丝，各通关 2 次 [研] ----
-        pillar_a1: { name: '擎天之柱 A-1', type: 'main', area: 3, pos: [0.62, 0.14], need: ['cannon'], solo: true, dg: 'raid_an_pillar', boss: 'agnes', guide: { name: '擎天之柱 1', pos: [0.62, 0.3] } },
-        pillar_a2: { name: '擎天之柱 A-2', type: 'main', area: 3, pos: [0.8, 0.14], need: ['pillar_a1'], solo: true, dg: 'raid_an_pillar', boss: 'agnes', guide: { name: '擎天之柱 2', pos: [0.8, 0.3] } },
-        pillar_b1: { name: '擎天之柱 B-1', type: 'main', area: 3, pos: [0.62, 0.62], need: ['cannon'], solo: true, dg: 'raid_an_pillar', boss: 'agnes', guide: false },
-        pillar_b2: { name: '擎天之柱 B-2', type: 'main', area: 3, pos: [0.8, 0.62], need: ['pillar_b1'], solo: true, dg: 'raid_an_pillar', boss: 'agnes', guide: false },
+        pillar_a1: { name: '擎天之柱 A-1', type: 'main', area: 3, pos: [0.62, 0.14], need: ['cannon'], solo: true, dg: 'raid_an_pillar', boss: 'agnes', elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, guide: { name: '擎天之柱 1', pos: [0.62, 0.3] } },
+        pillar_a2: { name: '擎天之柱 A-2', type: 'main', area: 3, pos: [0.8, 0.14], need: ['pillar_a1'], solo: true, dg: 'raid_an_pillar', boss: 'agnes', elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, guide: { name: '擎天之柱 2', pos: [0.8, 0.3] } },
+        pillar_b1: { name: '擎天之柱 B-1', type: 'main', area: 3, pos: [0.62, 0.62], need: ['cannon'], solo: true, dg: 'raid_an_pillar', boss: 'agnes', elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, guide: false },
+        pillar_b2: { name: '擎天之柱 B-2', type: 'main', area: 3, pos: [0.8, 0.62], need: ['pillar_b1'], solo: true, dg: 'raid_an_pillar', boss: 'agnes', elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, elites: { agnesEye: gb('agnes_eye', '炽炎之艾格尼丝的眼睛被打碎：全团攻击小幅提升') }, guide: false },
       } },
       { id: 2, name: '焦杀战', limit: { normal: 3600, guide: 1800 }, goal: ['heart_5'], nodes: {
         // ---- 能量阻截战：先杀黄色精英吞噬之厄伽勒 → 四角孵化所 + 紫色感染孵化场开放 [研] ----
         egale: { name: '能量阻截战', type: 'main', area: 1, pos: [0.1, 0.5], need: [], dg: 'raid_an_egale', boss: 'egaleCore',
           elites: { egale: { fx: [...HATCH.map(h => ({ kind: 'unlock', to: h })), { kind: 'unlock', to: 'infect' }], text: '吞噬之厄伽勒倒下：四个孵化所和紫色感染孵化场开启了' } } },
-        hatch_1: { name: '孵化所 · 熔岩怪虫', type: 'main', area: 2, pos: [0.34, 0.14], need: [], manual: true, solo: true, dg: 'raid_an_hatch_worm', boss: 'hatchGuard', guide: { name: '孵化所', manual: false, need: ['egale'], pos: [0.34, 0.5] } },
-        hatch_2: { name: '孵化所 · 巡视者梅尔塔', type: 'main', area: 2, pos: [0.34, 0.38], need: [], manual: true, solo: true, dg: 'raid_an_hatch_meltha', boss: 'hatchGuard', guide: false },
-        hatch_3: { name: '孵化所 · 粉碎者阿托尔', type: 'main', area: 2, pos: [0.34, 0.62], need: [], manual: true, solo: true, dg: 'raid_an_hatch_atol', boss: 'hatchGuard', guide: false },
-        hatch_4: { name: '孵化所 · 恐怖邪念体', type: 'main', area: 2, pos: [0.34, 0.86], need: [], manual: true, solo: true, dg: 'raid_an_hatch_wraith', boss: 'hatchGuard', guide: false },
+        hatch_1: { name: '孵化所 · 熔岩怪虫', type: 'main', area: 2, pos: [0.34, 0.14], need: [], manual: true, solo: true, dg: 'raid_an_hatch_worm', boss: 'hatchGuard', elites: { worm: gb('hatch_worm', '熔岩怪虫倒下：全团攻击小幅提升') }, guide: { name: '孵化所', manual: false, need: ['egale'], pos: [0.34, 0.5] } },
+        hatch_2: { name: '孵化所 · 巡视者梅尔塔', type: 'main', area: 2, pos: [0.34, 0.38], need: [], manual: true, solo: true, dg: 'raid_an_hatch_meltha', boss: 'hatchGuard', elites: { meltha: gb('hatch_meltha', '巡视者梅尔塔倒下：全团攻击小幅提升') }, guide: false },
+        hatch_3: { name: '孵化所 · 粉碎者阿托尔', type: 'main', area: 2, pos: [0.34, 0.62], need: [], manual: true, solo: true, dg: 'raid_an_hatch_atol', boss: 'hatchGuard', elites: { atol: gb('hatch_atol', '粉碎者阿托尔倒下：全团攻击小幅提升') }, guide: false },
+        hatch_4: { name: '孵化所 · 恐怖邪念体', type: 'main', area: 2, pos: [0.34, 0.86], need: [], manual: true, solo: true, dg: 'raid_an_hatch_wraith', boss: 'hatchGuard', elites: { wraith: gb('hatch_wraith', '恐怖邪念体倒下：全团攻击小幅提升') }, guide: false },
         // 紫色感染孵化场：没通关期间每 30 秒给火山叠一层护盾（受伤降低，最多 6 层）；通关撤掉 [研]（数值【原创】）
         infect: { name: '紫色感染孵化场', type: 'buff', area: 2, pos: [0.34, 0.3], need: [], manual: true, solo: true, respawn: 0, stopWhen: 'volcano', dg: 'raid_an_infect', boss: 'infectGuard',
           aura: [{ to: 'volcano', every: 30, id: 'infect_shield', p: { def: 0.08 }, max: 6, text: '紫色感染孵化场未清除：火山的护盾在加厚' }], guide: false },

@@ -105,7 +105,7 @@ const raidNet = {
   },
   /* ---------------- 实例上报（带序号排队，回执到了才删）---------------- */
   evc(C, e, v) {
-    if (!C || (!C.isHost && (e === 'hp' || e === 'down' || e === 'clear' || e === 'cp' || e === 'boss'))) return;
+    if (!C || (!C.isHost && (e === 'hp' || e === 'down' || e === 'clear' || e === 'cp' || e === 'boss' || e === 'elite'))) return;
     const m = { t: 'raid:ev', sid: C.sid, node: C.node, run: C.run, q: ++C.q, e };
     if (v !== undefined) m.v = v;
     if (e === 'hp' || e === 'cp') this.queue = this.queue.filter(x => x.sent || x.m.run !== m.run || x.m.e !== e);   // 没发出去的旧血量 / 存档点不用补发了
@@ -114,6 +114,8 @@ const raidNet = {
     if (this.local()) { it.sent = true; this.localSend('raid:ev', m); } else it.sent = net.send(m);
   },
   ev(e, v) { this.evc(this.ctx, e, v); },
+  // 精英倒下（game/raid_elite.js）：主机上报，规则核心按节点 elites[id].fx 执行全局效果（开关节点 / 增益 / 倒计时 / 钥匙…）
+  eliteKill(id) { const C = this.ctx; if (C && C.isHost && !C.done && id) this.evc(C, 'elite', String(id)); },
   flush() { if (this.local() || !net.connected) return; for (const it of this.queue) it.sent = net.send(it.m) || it.sent; },
   // 刷新页面也不丢：排队的上报 + 当前挑战（刷新后发现自己还挂在节点里，就报 lost 把节点放出来）
   pkey() { return net.user ? 'dawnbreak_raid_' + net.user.id : null; },

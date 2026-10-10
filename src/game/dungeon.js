@@ -125,7 +125,11 @@ class Dungeon {
     const pick = () => { const tot = pool.reduce((s, m) => s + m[1], 0); let r = R() * tot; for (const m of pool) { r -= m[1]; if (r <= 0) return m[0]; } return pool[0][0]; };
     const count = RS.prep ? 0 : RS.n ?? (room.type === 'start' ? 3 + Math.floor(R() * 2) : room.type === 'boss' ? def.bossAdds || 2 : room.type === 'elite' && RS.elite ? 0 : 4 + Math.floor(R() * 4));
     for (let i = 0; i < count; i++) spawnMonster(pick(), 380 + R() * (W - 480), 20 + R() * (DEPTH - 40), o);
-    if (room.type === 'elite') spawnMonster(RS.elite || def.elite || pick(), W * 0.6, DEPTH / 2, { ...o, elite: true, lvl: lv + 1 });
+    if (room.type === 'elite') {
+      const em = spawnMonster(RS.elite || def.elite || pick(), W * 0.6, DEPTH / 2, { ...o, elite: true, lvl: lv + 1 });
+      // 团本精英（game/raid_elite.js）：房间 / 地下城写了 eliteSpec（登记 id 或内联 spec）就挂上破防条件 + 专属技能；普通精英不受影响
+      if (typeof raidEliteAttach === 'function' && (RS.eliteSpec || def.eliteSpec)) raidEliteAttach(em, RS.eliteSpec || def.eliteSpec, { room, def });
+    }
     if (room.type === 'boss') {
       const A = def.bossAlt, alt = A && MON[A.kind] && Math.random() < (A.chance ?? 0.1) && monBundles([A.kind]).every(b => IMG[b.replace(/^spr:/, 'spr/') + '/idle']);   // 稀有领主替换（素材没载完就不换）
       const b = spawnMonster(alt ? A.kind : def.boss.kind, W - 320, DEPTH / 2, { ...o, lvl: def.boss.lvl, boss: true }); this.boss = b; game.lastTarget = b; game.lastTargetT = game.t;

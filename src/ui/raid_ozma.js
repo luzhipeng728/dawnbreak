@@ -78,3 +78,6 @@ const OZMA_HUD = { san: 100, max: 100, lv: 0, on: false, mini: null, minis: 0, d
   bus.on('raidChaos', p => { OZMA_HUD.lv = p.lv; apply(); });
   setInterval(() => { apply(); if (OZMA_HUD.turb && OZMA_HUD.dist > 0) OZMA_HUD.turb.setAttribute('seed', String((Date.now() / 120 | 0) % 50)); }, 200);
 })();
+
+// 军需官也带「团本」入口（服务要等 ui/raid.js 注册 NPC_SERVICES 之后再挂，内容校验才不会报错）
+if (typeof NPCS !== 'undefined' && NPCS.ozmaQuarter && !NPCS.ozmaQuarter.services.includes('raid')) NPCS.ozmaQuarter.services.unshift('raid');

@@ -2,14 +2,15 @@
    数值预算见 docs/RAID_PLAN.md §4.3：融合件的 fx 略低于希洛克（Lv62 < 63，dmgUp 0.16~0.19 < 0.18~0.22），高于同等级普通史诗。
    装备 key 命名 raid_an_<套>_<序号>，与 src/game/raid_anton.js 里的奖励 pick 列表一一对应（服务端看不到物品库，所以那边写死了 key）。
    物品图标 item_<key> 由美术批次产出（docs/RAID_ART_MANIFEST.json）；没有图时走物品通用占位。 */
-defineItem('raid_magic_ore', { kind: 'mat', name: '魔能矿', rar: 4, price: 1200, sellMul: 0.05, col: '#ff7a4a', icon: 'item_raid_magic_ore', noSell: true, desc: '安徒恩体内凝结的魔能结晶。完成攻坚阶段后获得，可在安徒恩攻坚商店兑换。' });
-defineItem('raid_an_core', { kind: 'mat', name: '荒古融合核', rar: 4, price: 1800, sellMul: 0.05, col: '#ff4a3a', icon: 'item_raid_an_core', noSell: true, desc: '安徒恩的心脏碎片炼成的融合材料，可在攻坚商店兑换安徒恩融合装备。' });
+defineItem('raid_magic_ore', { kind: 'mat', name: '魔能矿', rar: 4, price: 1200, sellMul: 0.05, col: '#ff7a4a', icon: 'item_raid_an_manaore', noSell: true, desc: '安徒恩体内凝结的魔能结晶。完成攻坚阶段后获得，可在安徒恩攻坚商店兑换。' });
+defineItem('raid_an_core', { kind: 'mat', name: '荒古融合核', rar: 4, price: 1800, sellMul: 0.05, col: '#ff4a3a', icon: 'item_raid_an_fusion_core', noSell: true, desc: '安徒恩的心脏碎片炼成的融合材料，可在攻坚商店兑换安徒恩融合装备。' });
 const ANTON_RAID_GEAR = [];
 function defineAntonFusionSet(id, name, slot, options, desc) {
   defineSet(id, { name, epic: true, fusion: true, bonus: { 1: { st: { dmgUp: 0.07 }, desc: '融合装备伤害增加 7%。' } } });
   for (const [i, o] of options.entries()) {
     const key = `raid_an_${id.replace('set_anton_', '')}_${i + 1}`;
-    defineGear(key, { rar: 5, tier: 4, lvl: 62, slot, ...(slot === 'bottom' ? { atype: 'light' } : {}), name: o.name, icon: 'item_' + key, fx: o.fx, proc: o.proc, set: id, desc: `${desc}${o.desc ? ` ${o.desc}` : ''}（安徒恩独立融合装备）`, src: '安徒恩攻坚战翻牌、荒古融合核兑换' });
+    const setIcon = id.includes('gluttony') ? 'item_raid_an_glutton_set' : (id.includes('primeval') ? 'item_raid_an_ancient_set' : 'item_raid_an_heartshard');
+    defineGear(key, { rar: 5, tier: 4, lvl: 62, slot, ...(slot === 'bottom' ? { atype: 'light' } : {}), name: o.name, icon: typeof ASSET_SRC === 'undefined' || ASSET_SRC['icon/item_' + key] ? 'item_' + key : setIcon, fx: o.fx, proc: o.proc, set: id, desc: `${desc}${o.desc ? ` ${o.desc}` : ''}（安徒恩独立融合装备）`, src: '安徒恩攻坚战翻牌、荒古融合核兑换' });
     SETS[id].pieces.push(key); ANTON_RAID_GEAR.push(key);
   }
 }

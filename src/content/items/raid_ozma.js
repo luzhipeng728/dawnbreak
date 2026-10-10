@@ -7,17 +7,19 @@
    ===================================================================== */
 const OZMA_RAID_GEAR = [];
 const OZMA_SERIES_KEYS = ['ruin', 'despair', 'terror', 'sacrifice', 'flame'];
+const OZMA_SET_ICONS = { ruin: 'item_raid_oz_destruction', despair: 'item_raid_oz_despair', terror: 'item_raid_oz_horror', sacrifice: 'item_raid_oz_sacrifice', flame: 'item_raid_oz_godflame' };
 function defineOzmaFusionSet(sid, name, slot, iconFrom, options, desc) {
   const id = 'set_ozma_' + sid;
   defineSet(id, { name, epic: true, fusion: true, bonus: { 1: { st: { dmgUp: 0.09 }, desc: '融合装备伤害增加 9%，略高于希洛克融合装备。' } } });
   for (const [i, o] of options.entries()) {
     const key = `raid_oz_${sid}_${i + 1}`;
-    defineGear(key, { rar: 5, tier: 4, lvl: 65, slot, name: o.name, icon: typeof ASSET_SRC === 'undefined' || ASSET_SRC['icon/item_' + key] ? 'item_' + key : `item_raid_si_${iconFrom}_${i + 1}`,
+    const defIcon = OZMA_SET_ICONS[sid] || `item_raid_si_${iconFrom}_${i + 1}`;
+    defineGear(key, { rar: 5, tier: 4, lvl: 65, slot, name: o.name, icon: typeof ASSET_SRC === 'undefined' || ASSET_SRC['icon/item_' + key] ? 'item_' + key : defIcon,
       fx: o.fx, proc: o.proc, set: id, desc: `${desc}${o.desc ? ` ${o.desc}` : ''}（奥兹玛独立融合装备）`, src: '奥兹玛攻坚战翻牌、混沌的怨念兑换' });
     SETS[id].pieces.push(key); OZMA_RAID_GEAR.push(key);
   }
 }
-defineItem('raid_ozma_grudge', { kind: 'mat', name: '混沌的怨念', rar: 4, price: 1500, sellMul: 0.05, col: '#ff6a8a', icon: 'item_raid_immaterial', noSell: true, desc: '奥兹玛攻坚战的混沌残渣。混沌等级越高，翻牌得到的越多，可在攻坚商店兑换奥兹玛融合装备。' });
+defineItem('raid_ozma_grudge', { kind: 'mat', name: '混沌的怨念', rar: 4, price: 1500, sellMul: 0.05, col: '#ff6a8a', icon: 'item_raid_oz_chaos', noSell: true, desc: '奥兹玛攻坚战的混沌残渣。混沌等级越高，翻牌得到的越多，可在攻坚商店兑换奥兹玛融合装备。' });
 
 defineOzmaFusionSet('ruin', '毁灭融合', 'neck', 'immateriality', [
   { name: '毁灭：灰烬', fx: { dmgUp: 0.22, str: 78, int: 78, cdr: 0.03 }, desc: '技能命中后 3 秒内伤害额外 +8%。' },

@@ -190,8 +190,34 @@ Object.assign(MON_ART, {
 });
 // 美术智能体产出的独立精灵（art/tools/raid_art_spec.py → art/final/spr/raidSi*，进度见 docs/RAID_ART_MANIFEST.json）：已出图的在这里注册，替换原来的换色复用；
 // 没出图的保留原来的换色（先写数据、后出图也能跑）。精灵的 sigA / sigB 帧缺了会自动退回 atk / cast 帧。
-const SIROCO_RAID_OWN_ART = { siRaidBoss_haniel: 'raidSiHanir' };
-for (const [k, a] of Object.entries(SIROCO_RAID_OWN_ART)) MON_ART[k] = [a];
+const SIROCO_RAID_OWN_ART = {
+  // 领主
+  siRaidBoss_haniel: 'raidSiHanir',
+  siRaidBoss_vita: 'raidSiVita',
+  siRaidBoss_nex: 'raidSiNexJustice',
+  siRaidBoss_rodos: 'raidSiRodos',
+  siRaidBoss_gusty: 'raidSiGusdi',
+  siRaidBoss_grumi: 'raidSiGulumi',
+  siRaidBoss_lena: 'raidSiRena',
+  siRaidBoss_myungho: 'raidSiMinhao',
+  siRaidBoss_crone: 'raidSiCrone',
+  // 精英怪
+  siRaidMob_gate: 'raidSiGate',
+  siRaidMob_kula: 'raidSiKula',
+  siRaidMob_tanna: 'raidSiTanna',
+  siRaidMob_maid: 'raidSiCrone',
+  siRaidMob_genbu: 'raidSiGenbu',
+  siRaidMob_disguiser: 'raidSiDisguiser',
+  // 小怪
+  siRaidMob_grimFollower: 'raidSiGrimFollower',
+  siRaidMob_grimWarrior: 'raidSiGrimWarrior',
+  siRaidMob_grimElder: 'raidSiGrimElder',
+  siRaidMob_sirocoShard: 'raidSiShard',
+};
+for (const [k, a] of Object.entries(SIROCO_RAID_OWN_ART)) {
+  MON_ART[k] = [a];
+  if (MON[k]) MON[k].art = [a];
+}
 const SIROCO_RAID_COMMON = { raid: true, hidden: true, layout: 'raid', branches: 0, cols: 5, rows: 1, rooms: 5, bossAdds: 0, lvl: [62, 63], clearExp: 0, bgm: 'dungeon', bossBgm: 'boss' };
 const SIROCO_RAID_MOBS = {
   cult: [['siRaidMob_grimFollower', 3], ['siRaidMob_grimWarrior', 2], ['siRaidMob_grimElder', 1]],

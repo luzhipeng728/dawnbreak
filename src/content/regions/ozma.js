@@ -38,24 +38,24 @@ const OZMA_MOB_SKILLS = {
 };
 
 const OZMA_MOBS = {
-  ozma_cultist: { name: '奥兹玛混沌信徒', tier: 'caster', arch: 'kiter', elem: 'dark', art: ['goblin', { hue: 165, sat: 1.4, bright: .65 }], skills: OZMA_MOB_SKILLS.cultist },
-  ozma_knight: { name: '堕落混沌骑士', tier: 'brute', arch: 'aggressive', elem: 'dark', art: ['tauArmored', { hue: 175, sat: .75, bright: .65 }], size: [17, 13, 118], skills: OZMA_MOB_SKILLS.knight },
-  ozma_wisp: { name: '黑雾残灵', tier: 'flier', arch: 'flier', elem: 'dark', art: ['deGhost', { hue: -120, sat: 1.1, bright: .8 }], skills: OZMA_MOB_SKILLS.wisp },
-  ozma_hound: { name: '混沌猎犬', tier: 'normal', arch: 'aggressive', elem: 'dark', art: ['hound', { hue: -80, sat: .9, bright: .78 }], skills: OZMA_MOB_SKILLS.hound },
-  ozma_golem: { name: '黑焰混沌魔像', tier: 'brute', arch: 'guard', elem: 'fire', art: ['flamehulk', { hue: -10, sat: 1.15, bright: .72 }], size: [20, 15, 126], skills: OZMA_MOB_SKILLS.golem },
-  ozma_archer: { name: '黑焰弓手', tier: 'caster', arch: 'kiter', elem: 'fire', art: ['goblin', { hue: -65, sat: 1.45, bright: .82 }], skills: OZMA_MOB_SKILLS.archer },
-  ozma_eye: { name: '混沌之眼', tier: 'flier', arch: 'flier', elem: 'dark', art: ['gazer', { hue: 90, sat: 1.1, bright: .78 }], skills: OZMA_MOB_SKILLS.eye },
-  ozma_priest: { name: '奥兹玛黑暗祭司', tier: 'elite', arch: 'kiter', elem: 'dark', art: ['gbl', { hue: 170, sat: 1.2, bright: .58 }], size: [15, 12, 112], skills: OZMA_MOB_SKILLS.priest },
+  ozma_cultist: { name: '奥兹玛混沌信徒', tier: 'caster', arch: 'kiter', elem: 'dark', art: ['raidOzCinderImp'], skills: OZMA_MOB_SKILLS.cultist },
+  ozma_knight: { name: '堕落混沌骑士', tier: 'brute', arch: 'aggressive', elem: 'dark', art: ['raidOzBogCrawler'], size: [17, 13, 118], skills: OZMA_MOB_SKILLS.knight },
+  ozma_wisp: { name: '黑雾残灵', tier: 'flier', arch: 'flier', elem: 'dark', art: ['raidOzMourner'], skills: OZMA_MOB_SKILLS.wisp },
+  ozma_hound: { name: '混沌猎犬', tier: 'normal', arch: 'aggressive', elem: 'dark', art: ['raidOzEmberHound'], skills: OZMA_MOB_SKILLS.hound },
+  ozma_golem: { name: '黑焰混沌魔像', tier: 'brute', arch: 'guard', elem: 'fire', art: ['raidOzMagmaGolem'], size: [20, 15, 126], skills: OZMA_MOB_SKILLS.golem },
+  ozma_archer: { name: '黑焰弓手', tier: 'caster', arch: 'kiter', elem: 'fire', art: ['raidOzSporeling'], skills: OZMA_MOB_SKILLS.archer },
+  ozma_eye: { name: '混沌之眼', tier: 'flier', arch: 'flier', elem: 'dark', art: ['raidOzDroneFish'], skills: OZMA_MOB_SKILLS.eye },
+  ozma_priest: { name: '奥兹玛黑暗祭司', tier: 'elite', arch: 'kiter', elem: 'dark', art: ['raidOzRotShaman'], size: [15, 12, 112], skills: OZMA_MOB_SKILLS.priest },
 };
 
 // 门将：每个区域一组专属技能（docs/RAID_OZMA.md §5）；破防机制在 raid_elite 的 eliteSpec（ozma_raid.js 的 defineRaidElite），技能的抬手 / 前冲就是破招要打断的东西
 const OZMA_GATE_BASE = [{ use: 'guard', dur: 2.2, reduce: .8, cd: [7, 10], w: 1.4 }, { use: 'swipe', clip: 'slam', reach: 110, width: 30, dmg: 1.28, down: true, sa: true, cd: [2.5, 3.7], w: 2 }];
 const OZMA_GATEKEEPERS = {
-  ruin: { name: '毁灭门将', art: ['gatekeeper', { hue: 165, sat: .8, bright: .68 }], elem: 'dark',   // 前冲 + 黑焰扇射：抬手时闪光，被打断就硬直
+  ruin: { name: '毁灭门将', art: ['raidOzEmberKnight'], elem: 'dark',   // 前冲 + 黑焰扇射：抬手时闪光，被打断就硬直
     skills: [...OZMA_GATE_BASE, { use: 'dash', len: 380, speed: 760, windup: 1, dmg: 1.3, down: true, cd: [6, 8], col: '#ff8060' }, { use: 'shot', mode: 'spread', n: 5, spread: 70, speed: 300, dmg: .8, col: '#ff8060', cd: [5, 7] }] },
-  despair: { name: '绝望门将', art: ['gatekeeper', { hue: 100, sat: 1.2, bright: .72 }], elem: 'dark',   // 召唤残灵 + 追踪弹 + 十字光柱：绝望之球要拦截
+  despair: { name: '绝望门将', art: ['raidOzTearMage'], elem: 'dark',   // 召唤残灵 + 追踪弹 + 十字光柱：绝望之球要拦截
     skills: [...OZMA_GATE_BASE, { use: 'shot', mode: 'homing', n: 3, spread: 50, speed: 240, turn: 1.8, dmg: .85, col: '#c090ff', cd: [4, 6] }, { use: 'aoe', shape: 'cross', at: 'target', hw: 26, windup: 1.1, dmg: 1.15, cd: [6, 8], col: '#c080ff' }, { use: 'summon', kind: 'ozma_wisp', n: 2, max: 4, cd: [12, 15] }] },
-  terror: { name: '恐怖门将', art: ['gatekeeper', { hue: -30, sat: 1.2, bright: .8 }], elem: 'fire',   // 震地环 + 岩刺雨 + 冲锋：破壳后才吃得到伤害
+  terror: { name: '恐怖门将', art: ['raidOzSwampHorror'], elem: 'fire',   // 震地环 + 岩刺雨 + 冲锋：破壳后才吃得到伤害
     skills: [...OZMA_GATE_BASE, { use: 'aoe', shape: 'ring', at: 'self', r: 170, r0: 60, windup: 1.2, dmg: 1.15, cd: [7, 9], col: '#ffa050' }, { use: 'rain', kind: 'bolt', n: 4, r: 52, windup: 1.1, dmg: 1, cd: [8, 10] }, { use: 'dash', len: 340, speed: 720, windup: .9, dmg: 1.2, down: true, cd: [6, 9] }] },
 };
 
@@ -69,7 +69,27 @@ const OZMA_ATTACKS = [
 ];
 
 // 团本里的领主名（docs/RAID_OZMA.md §3）：规则清单（ozma_core）里的原名保留给它自己的测试，这里按团本流程改成官方领主名
-const OZMA_LORD_NAME = { ruin_beyond: '贝利亚斯', despair_lunen: '提亚马特', terror_martyr: '卡赞', p2_armis: '阿斯特罗斯', p2_throne: '奥兹玛' };
+const OZMA_LORD_NAME = { ruin_beyond: '贝利亚斯', despair_lunen: '提亚马特', terror_martyr: '卡赞', p2_armis: '阿斯特罗斯', p2_throne: '奥兹玛', p2_elerinon: '埃利诺斯', despair_serha: '赛赫', ruin_corridor: '亡者回廊守卫', ruin_path: '卡赞的幻影' };
+const OZMA_LORD_ART = {
+  ruin_beyond: 'raidOzBelias',
+  despair_lunen: 'raidOzTiamat',
+  terror_martyr: 'raidOzKazan',
+  p2_armis: 'raidOzAstros',
+  p2_throne: 'raidOzOzma',
+  p2_elerinon: 'raidOzEllinos',
+  despair_serha: 'raidOzSehet',
+  ruin_corridor: 'raidOzDeadKeeper',
+  ruin_path: 'raidOzKazan',
+  ruin_resting: 'raidOzFrostWraith',
+  ruin_gladden: 'raidOzRotShaman',
+  despair_crossroads: 'raidOzTearMage',
+  despair_aventus: 'raidOzMagmaGolem',
+  despair_phylis: 'raidOzFrostWraith',
+  terror_land: 'raidOzBogCrawler',
+  terror_grauben: 'raidOzEmberKnight',
+  terror_eldfell: 'raidOzMagmaGolem',
+  terror_red_altar: 'raidOzSwampHorror',
+};
 const OZMA_ELITE_OF = { ruin: 'ozEliteRuin', despair: 'ozEliteDespair', terror: 'ozEliteTerror', p2_elerinon: 'ozEliteSuppress', p2_armis: 'ozEliteChaos', p2_throne: 'ozEliteChaos' };
 const ozmaBoss = (M, region, i, final = false) => {
   const gate = OZMA_GATEKEEPERS[region] || { name: '王座门将' };
@@ -81,7 +101,7 @@ const ozmaBoss = (M, region, i, final = false) => {
         : { use: 'hazard', kind: 'fire', every: 3.6, n: 2, r: 54, dmg: 1.05, col, say: '黑焰地火蔓延——移动！' };
   const phase3 = final ? { at: .25, enter: { say: '王座终焉读条——分队同时打断！', mechs: [{ use: 'stagger', windup: 3.6, need: .05, onBreak: 'groggy', col }] }, skills: [{ ...OZMA_ATTACKS[4], dmg: 1.2, cd: [5.5, 7.5] }, { use: 'mech', mech: { use: 'safezone', windup: 2.8, n: 3, r: 68, frac: .45, col }, cd: [19, 24] }] } : null;
   return {
-    name: OZMA_LORD_NAME[M.id] || M.boss, tier: 'raid', lvl: final ? 65 : 64, art: OZMA_BOSS_ART[i % OZMA_BOSS_ART.length], size: [20, 16, 138], scale: final ? 1.42 : 1.26,
+    name: OZMA_LORD_NAME[M.id] || M.boss, tier: 'raid', lvl: final ? 65 : 64, art: OZMA_LORD_ART[M.id] || OZMA_BOSS_ART[i % OZMA_BOSS_ART.length], size: [20, 16, 138], scale: final ? 1.42 : 1.26,
     elem: region === 'terror' || final ? 'fire' : 'dark', pref: 150, hook: null,
     mechs: [{ use: 'groggy', max: final ? 125 : 110, dur: final ? 8 : 6, mul: final ? 1.65 : 1.5 }, { use: 'enrage', t: final ? 360 : 240, atk: 1.7, speed: 1.25 }],
     phases: [
@@ -159,7 +179,7 @@ const OZMA_REGION = typeof defineRegion === 'function' ? defineRegion(OZMA_REGIO
 
 // 奥兹玛专属手绘背景尚未单独分包时，沿用已有的深渊/圣战背景作为可玩的视觉兜底。
 // 仍保留 ozma* 主题和区域色调；把素材别名登记到自己的 bundle，离线包和网页版都能按需加载。
-const OZMA_BG_FALLBACK = { ozmaRuin: 'siroCoffin', ozmaDespair: 'tgHoly', ozmaTerror: 'tgFire', ozmaElerinon: 'siroTown' };
+const OZMA_BG_FALLBACK = { ozmaRuin: 'raidOzRuin', ozmaDespair: 'raidOzDespair', ozmaTerror: 'raidOzHorror', ozmaElerinon: 'raidOzThrone' };
 if (typeof ASSET_SRC !== 'undefined' && typeof ASSET_BUNDLE !== 'undefined') for (const [dst, src] of Object.entries(OZMA_BG_FALLBACK)) {
   for (const suf of ['far', 'floor', 'edge', 'mid', 'fore']) {
     const from = `bg/${src}_${suf}`, to = `bg/${dst}_${suf}`;

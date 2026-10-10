@@ -1,11 +1,11 @@
 {
- "generated": "2026-10-10 15:28:52",
+ "generated": "2026-10-10 16:33:16",
  "note": "团本专属美术清单。精灵走 NOFX，帧名同普通怪（idle walk1-8 run1-8 atk1-4 cast1-2 low1-2 hit1-2 down getup air jump），ax/ay 为 2x 像素的脚底锚点，res=2。",
  "counts": {
   "boss": 24,
   "elite": 20,
   "mob": 16,
-  "bg": 4,
+  "bg": 7,
   "icon": 36
  },
  "items": [
@@ -2762,7 +2762,7 @@
    "kind": "boss",
    "raid": "anton",
    "cn": "安徒恩的心脏",
-   "desc": "The Heart of Antuen, the final boss: a gigantic living red fleshy heart creature standing on thick pulsing arterial legs, a glossy dark crimson muscular body with thick veins and bulging valves, a ring of small fleshy tendrils on top, a single huge white-yellow eye embedded in the chest, thick tubes hanging down like arms with bony claws, wet and glossy.",
+   "desc": "The Heart of Antuen, the final boss: a cute floating gigantic ruby crystal heart golem, a faceted translucent crimson gemstone heart body crowned with a tiny ornate golden crown, two floating crystal-shard wings on its back, glowing warm ruby light from within, two floating crystal fist arms, clean and sparkling magical fantasy boss, chibi anime style.",
    "status": "done",
    "files": [
     "art/final/spr/raidAnHeart/air.webp",
@@ -2842,23 +2842,23 @@
    "anchors": {
     "note": "spr.json frames[name] = {w,h,ax,ay}（2x 像素；ax/ay = 脚底锚点）",
     "idle": {
-     "w": 141,
+     "w": 159,
      "h": 300,
-     "ax": 68.5,
-     "ay": 300.0
+     "ax": 93.2,
+     "ay": 340.0
     },
     "walk3": {
-     "w": 139,
-     "h": 300,
-     "ax": 68.0,
-     "ay": 300.0
+     "w": 162,
+     "h": 262,
+     "ax": 98.6,
+     "ay": 310.3
     }
    },
    "suggested": {
-    "use": "安徒恩的心脏（最终领主，红色肉质）",
+    "use": "安徒恩的心脏（最终领主，红晶之心）",
     "standH": 150,
-    "fly": false,
-    "hover": 0,
+    "fly": true,
+    "hover": 20,
     "cycle": "biped",
     "hint": "scale 1.15~1.5，art: 名字（无换色）；NOFX 精灵，招式特效由运行时画",
     "replaces": null
@@ -4259,8 +4259,8 @@
    "name": "raidAnFleshPolyp",
    "kind": "mob",
    "raid": "anton",
-   "cn": "肉瘤寄生体",
-   "desc": "A flesh polyp inside the giant beast Antuen: a short squat blob of glistening red flesh with wet pink veins, a single big yellowish eye on top, a lamprey-like round mouth on the front, two stubby tentacle-arms and two short fleshy legs, small bubbles of mucus.",
+   "cn": "浆果冻怪",
+   "desc": "A cute bouncy berry jelly slime monster inside the giant beast Antuen: a chubby round strawberry-red translucent jelly pudding body, two big shiny sparkling cartoon eyes with a cheerful smile, two stubby jelly hands, sparkling sugar glimmers on its head, cute cartoon fantasy slime creature.",
    "status": "done",
    "files": [
     "art/final/spr/raidAnFleshPolyp/air.webp",
@@ -4340,20 +4340,20 @@
    "anchors": {
     "note": "spr.json frames[name] = {w,h,ax,ay}（2x 像素；ax/ay = 脚底锚点）",
     "idle": {
-     "w": 89,
+     "w": 126,
      "h": 156,
-     "ax": 46.1,
+     "ax": 62.3,
      "ay": 156.0
     },
     "walk3": {
-     "w": 87,
-     "h": 154,
-     "ax": 43.2,
-     "ay": 154.3
+     "w": 124,
+     "h": 158,
+     "ax": 60.9,
+     "ay": 157.9
     }
    },
    "suggested": {
-    "use": "小怪：肉瘤寄生体（心脏房）",
+    "use": "小怪：浆果冻怪（心脏房）",
     "standH": 78,
     "fly": false,
     "hover": 0,
@@ -4366,8 +4366,8 @@
    "name": "raidAnBloodLeech",
    "kind": "mob",
    "raid": "anton",
-   "cn": "血管水蛭",
-   "desc": "A blood leech inside the giant beast Antuen: a long glossy dark red leech-like worm creature with a round toothy sucker mouth, small pale tendril legs along the belly, throbbing dark veins on the back, wet shiny skin.",
+   "cn": "软糖幼虫",
+   "desc": "A cute red gummy caterpillar inside the giant beast Antuen: a chubby segmented translucent cherry-red gummy caterpillar with big shiny puppy eyes and rosy cheeks, tiny round stubby feet, two little antennae on its head, very sweet and adorable cartoon creature.",
    "status": "done",
    "files": [
     "art/final/spr/raidAnBloodLeech/air.webp",
@@ -4447,20 +4447,20 @@
    "anchors": {
     "note": "spr.json frames[name] = {w,h,ax,ay}（2x 像素；ax/ay = 脚底锚点）",
     "idle": {
-     "w": 249,
+     "w": 185,
      "h": 120,
-     "ax": 150.0,
-     "ay": 124.7
+     "ax": 125.9,
+     "ay": 120.0
     },
     "walk3": {
-     "w": 252,
-     "h": 122,
-     "ax": 148.2,
-     "ay": 122.4
+     "w": 187,
+     "h": 118,
+     "ax": 128.2,
+     "ay": 120.0
     }
    },
    "suggested": {
-    "use": "小怪：血管水蛭（心脏房）",
+    "use": "小怪：软糖幼虫（心脏房）",
     "standH": 60,
     "fly": false,
     "hover": 0,
@@ -4474,8 +4474,12 @@
    "kind": "bg",
    "raid": "anton",
    "desc": "The interior of a huge decaying sky-ship hull inside a giant beast: a cold grey-blue and black color palette, rusted riveted steel ribs and arches fading into thick black fog, tarnished silver noble ornaments and broken chandeliers, dim blue porthole lights, drifting black mist, dead cold silence, far corridors disappearing into darkness.",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/bg/raidAnFog_far.webp",
+    "art/final/bg/raidAnFog_floor.webp",
+    "art/final/bg/raidAnFog_edge.webp"
+   ],
    "frames": null,
    "anchors": {
     "floorW": 1700,
@@ -4489,9 +4493,13 @@
    "name": "raidAnVolcano",
    "kind": "bg",
    "raid": "anton",
-   "desc": "The interior of a giant beast's leg, a black volcano pillar rising to the sky: a red-black color palette, huge cooled obsidian walls and cracked basalt columns with rivers of glowing orange-red magma flowing in the cracks, the dark fleshy sinew of the beast faintly visible between rocks, hot red haze, rising heat, towering pillars in the distance.",
-   "status": "pending",
-   "files": [],
+   "desc": "The interior of a giant beast's leg, a black volcano pillar rising to the sky: a red-black color palette, huge cooled obsidian walls and cracked basalt columns with rivers of glowing orange-red magma flowing in the cracks, towering dark volcanic rock spires, hot red haze, rising heat, majestic columns in the distance.",
+   "status": "done",
+   "files": [
+    "art/final/bg/raidAnVolcano_far.webp",
+    "art/final/bg/raidAnVolcano_floor.webp",
+    "art/final/bg/raidAnVolcano_edge.webp"
+   ],
    "frames": null,
    "anchors": {
     "floorW": 1700,
@@ -4505,9 +4513,13 @@
    "name": "raidAnHeart",
    "kind": "bg",
    "raid": "anton",
-   "desc": "The inside of a giant beast's heart chamber: a deep red and dark crimson fleshy palette, huge thick pulsing veins and arteries like pillars, glistening wet muscle walls with bulging valves, hanging membranes and mucus strands, faint warm pinkish-red glow from within, a huge slow-beating atmosphere, organic and eerie.",
-   "status": "pending",
-   "files": [],
+   "desc": "The grand crystal heart sanctuary inside a colossal mystical beast: a luminous crimson and rose-gold crystal sanctuary with towering glowing ruby stalagmites and floating geometric crystal prisms, warm ambient amber and pinkish-red light, elegant ancient stone arches, magical and majestic anime fantasy atmosphere.",
+   "status": "done",
+   "files": [
+    "art/final/bg/raidAnHeart_far.webp",
+    "art/final/bg/raidAnHeart_floor.webp",
+    "art/final/bg/raidAnHeart_edge.webp"
+   ],
    "frames": null,
    "anchors": {
     "floorW": 1700,
@@ -4536,7 +4548,7 @@
    "name": "raid_an_heartshard",
    "kind": "icon",
    "raid": "anton",
-   "desc": "a glossy red crystalline shard that looks like a piece of a heart with a tiny glowing vein pattern, wet shine",
+   "desc": "a glowing ruby heart crystal shard with a warm inner pulse, clean faceted cut, sparkling",
    "status": "done",
    "files": [
     "art/final/icon/item_raid_an_heartshard.webp"
@@ -4626,7 +4638,7 @@
    "name": "raid_an_eye",
    "kind": "icon",
    "raid": "anton",
-   "desc": "a closed-lid fleshy eye orb on a thin staff base with fiery orange lashes, eye-guard puzzle object",
+   "desc": "a mystical glowing amber eye gem set in a winged golden mount, eye-guard puzzle object",
    "status": "done",
    "files": [
     "art/final/icon/item_raid_an_eye.webp"
@@ -4916,7 +4928,7 @@
    "kind": "boss",
    "raid": "ozma",
    "cn": "恐怖之卡赞",
-   "desc": "Kazan of Horror, a boss of the Ozma raid (black-green horror zone): a hulking hunched demon shaman with a bloated greyish skin, a dark moss-green and black ragged cloak, a skull mask with four sunken eyes, a long drooping jaw with sharp teeth, bone totems and shrunken heads hanging on the belt, long gnarled arms, holding a gnarled bone staff wrapped with dark vines.",
+   "desc": "Kazan of Horror, a boss of the Ozma raid: a cool chibi armored demon warrior-general in dark moss-black plate armor with antique bronze trim, a stylized horned battle helmet with glowing ember-orange eyes, torn dark cape, heavy iron chain gauntlets on both wrists, holding a heavy ancient greatsword with a dark runic blade (drawn plain). Cute chibi proportions, fierce but clean and heroic cartoon style.",
    "status": "done",
    "files": [
     "art/final/spr/raidOzKazan/air.webp",
@@ -4996,16 +5008,16 @@
    "anchors": {
     "note": "spr.json frames[name] = {w,h,ax,ay}（2x 像素；ax/ay = 脚底锚点）",
     "idle": {
-     "w": 186,
+     "w": 150,
      "h": 252,
-     "ax": 98.3,
+     "ax": 96.1,
      "ay": 252.0
     },
     "walk3": {
-     "w": 165,
-     "h": 247,
-     "ax": 93.2,
-     "ay": 246.9
+     "w": 170,
+     "h": 254,
+     "ax": 108.5,
+     "ay": 254.5
     }
    },
    "suggested": {
@@ -5986,7 +5998,7 @@
    "kind": "elite",
    "raid": "ozma",
    "cn": "腐化祭司",
-   "desc": "A Rot Shaman, an elite of the black-green horror zone of the Ozma raid: a bent grey-skinned priest in a ragged dark olive robe with a rotten wooden mask grown over with dark moss, glowing pale sickly yellow eyes, a necklace of small skulls, long clawed hands, holding a staff with a swaying bundle of dark vines and a hanging censer.",
+   "desc": "A Rot Shaman, an elite of the black-green horror zone of the Ozma raid: a bent grey-skinned priest in a ragged dark olive robe with a carved wooden mask grown over with dark moss, glowing pale golden eyes, a necklace of carved wooden runes, long clawed hands, holding a staff with a swaying bundle of dark vines and a hanging censer.",
    "status": "done",
    "files": [
     "art/final/spr/raidOzRotShaman/air.webp",
@@ -6092,8 +6104,8 @@
    "name": "raidOzSwampHorror",
    "kind": "elite",
    "raid": "ozma",
-   "cn": "沼泽恐魔",
-   "desc": "A Swamp Horror, an elite of the black-green horror zone of the Ozma raid: a huge slimy hunched toad-like demon with dark murky olive skin, glossy black patches, a gigantic wide mouth full of crooked teeth, six small pale eyes, long thick arms with webbed claws, a bulging throat sac, dripping with swamp weeds.",
+   "cn": "沼泽青蛙魔",
+   "desc": "A Swamp Frog-Golem, an elite of the black-green horror zone of the Ozma raid: a chubby cute chibi moss-green frog-golem with smooth skin, a round belly, two big funny cartoon eyes with a silly grin, a large lilypad hat on its head with a tiny pink waterlily flower, stubby webbed hands, cute cartoon fantasy swamp creature.",
    "status": "done",
    "files": [
     "art/final/spr/raidOzSwampHorror/air.webp",
@@ -6173,20 +6185,20 @@
    "anchors": {
     "note": "spr.json frames[name] = {w,h,ax,ay}（2x 像素；ax/ay = 脚底锚点）",
     "idle": {
-     "w": 170,
+     "w": 108,
      "h": 240,
-     "ax": 87.9,
-     "ay": 241.7
+     "ax": 51.6,
+     "ay": 240.0
     },
     "walk3": {
-     "w": 168,
-     "h": 242,
-     "ax": 87.1,
-     "ay": 241.7
+     "w": 108,
+     "h": 238,
+     "ax": 51.6,
+     "ay": 237.6
     }
    },
    "suggested": {
-    "use": "恐怖区精英：沼泽恐魔",
+    "use": "恐怖区精英：沼泽青蛙魔",
     "standH": 120,
     "fly": false,
     "hover": 0,
@@ -6521,7 +6533,7 @@
    "kind": "mob",
    "raid": "ozma",
    "cn": "蓝紫幽鱼",
-   "desc": "A despair fish of the blue-violet despair zone of the Ozma raid: a floating translucent ghost deep-sea fish with a blue-violet body, a big round pale glowing lure eye, long wispy fins like veils, tiny needle teeth, bone-like ribs visible.",
+   "desc": "A despair ghost fish of the blue-violet despair zone of the Ozma raid: a cute floating translucent cartoon goldfish spirit with soft blue-violet glowing scales, big round sparkling cartoon eyes, flowing airy silk fins like ribbons, gentle glowing aura, adorable fantasy spirit fish.",
    "status": "done",
    "files": [
     "art/final/spr/raidOzDroneFish/air.webp",
@@ -6601,23 +6613,23 @@
    "anchors": {
     "note": "spr.json frames[name] = {w,h,ax,ay}（2x 像素；ax/ay = 脚底锚点）",
     "idle": {
-     "w": 91,
+     "w": 103,
      "h": 140,
-     "ax": 47.9,
-     "ay": 192.0
+     "ax": 61.6,
+     "ay": 188.0
     },
     "walk3": {
-     "w": 94,
-     "h": 124,
-     "ax": 52.1,
-     "ay": 184.9
+     "w": 103,
+     "h": 138,
+     "ax": 62.1,
+     "ay": 186.0
     }
    },
    "suggested": {
     "use": "绝望区小怪：蓝紫幽鱼",
     "standH": 70,
     "fly": true,
-    "hover": 26,
+    "hover": 24,
     "cycle": "biped",
     "hint": "scale 0.8~1.0；NOFX 精灵，招式特效由运行时画",
     "replaces": null
@@ -6735,7 +6747,7 @@
    "kind": "mob",
    "raid": "ozma",
    "cn": "沼泽爬行者",
-   "desc": "A bog crawler of the black-green horror zone of the Ozma raid: a long low six-legged salamander-like creature with slimy dark olive-black skin, a flat wide head with many pale eyes, a gaping wide mouth, a thick tail dripping weeds.",
+   "desc": "A bog crawler of the black-green horror zone of the Ozma raid: a cute chubby six-legged cartoon gecko-salamander with smooth dark forest-green skin, a soft yellow belly, two big round curious cartoon eyes, a short stubby tail, cute cartoon fantasy pet style.",
    "status": "done",
    "files": [
     "art/final/spr/raidOzBogCrawler/air.webp",
@@ -6815,16 +6827,16 @@
    "anchors": {
     "note": "spr.json frames[name] = {w,h,ax,ay}（2x 像素；ax/ay = 脚底锚点）",
     "idle": {
-     "w": 233,
+     "w": 210,
      "h": 124,
-     "ax": 142.4,
-     "ay": 126.1
+     "ax": 136.5,
+     "ay": 126.0
     },
     "walk3": {
-     "w": 237,
-     "h": 118,
-     "ax": 145.0,
-     "ay": 119.8
+     "w": 216,
+     "h": 110,
+     "ax": 140.5,
+     "ay": 110.0
     }
    },
    "suggested": {
@@ -6921,7 +6933,7 @@
    "name": "raid_oz_chaos",
    "kind": "icon",
    "raid": "ozma",
-   "desc": "a swirling chaos grudge orb: a dark sphere with churning crimson, indigo and dark green wisps inside, tiny screaming faces, the raid currency",
+   "desc": "a swirling chaos grudge orb: a dark sphere with churning crimson, indigo and dark green wisps inside, tiny swirling star sparks, the raid currency",
    "status": "done",
    "files": [
     "art/final/icon/item_raid_oz_chaos.webp"

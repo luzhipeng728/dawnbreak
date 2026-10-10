@@ -52,7 +52,7 @@ const RAID_DEFS = {
     // 书写的时限都是按两人版（2 支队并行）定的；par(队数) = 相对它的倍率（官方 4 队并行 = ×0.5，2 队 = ×1）。只乘“需要并行”的时限：阶段限时 / 顺序组共享时限 / 共享血量时限
     par: nt => nt >= 2 ? 2 / nt : 1,
     limits: { day: 1, week: 2 },
-    lives: { normal: 6, guide: 3 }, perNode: { normal: 6, guide: 4 },   // 全团每阶段的复活次数（项目规则）；每人每张图的复活币上限 = 官方每队每图 6（引导 4）[QQ]
+    lives: { normal: nt => 3 * nt, guide: 3 }, perNode: { normal: 6, guide: 4 },   // 全团每阶段的复活次数（项目规则）；每人每张图的复活币上限 = 官方每队每图 6（引导 4）[QQ]
     erosion: { normal: 60, guide: 10 },
     rest: 300, subAfter: 180, subWindow: 90,   // 阶段间等待 5 分钟（团长可提前开始）[QQ]
     guard: { minClear: 20, maxDrop: 0.05 },

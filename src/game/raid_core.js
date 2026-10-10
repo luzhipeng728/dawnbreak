@@ -46,6 +46,9 @@ const RAID_DEFS = {
     id: 'siroco', name: '团本 · 无形之希洛克', minLvl: 60, orderMax: 4,
     // 人数档位：引导 1 人 / 两人版（duoMax，每人一支单人队）/ 多队版（minPlayers ~ maxPlayers，每队最多 teamSize 人、最多 maxTeams 队、至少 minTeams 队）
     duoMax: 2, teamSize: 4, minPlayers: 4, minTeams: 2, maxTeams: 4, maxPlayers: 16,
+    // 入口窗口的文案 / 门槛（UI 用，服务端不看）：blurb 简介；reqQuest 主线任务 id 的正则源码（最后一步没完成不能进）；reqName 主线名
+    blurb: '希洛克的幻界：攻坚地图上分头打节点，互相影响（顺序击杀、增益、倒计时、双生同步），最后一起讨伐希洛克。两个阶段：追逐战 / 讨伐战（两人版 80 分钟 / 引导 40 / 30 分钟；多队版时限按队数缩短）。',
+    reqQuest: '^q_si\\d+$', reqName: '希洛克',
     // 书写的时限都是按两人版（2 支队并行）定的；par(队数) = 相对它的倍率（官方 4 队并行 = ×0.5，2 队 = ×1）。只乘“需要并行”的时限：阶段限时 / 顺序组共享时限 / 共享血量时限
     par: nt => nt >= 2 ? 2 / nt : 1,
     limits: { day: 1, week: 2 },
@@ -912,10 +915,11 @@ const RAID_CORE = (() => {
       const cross = team.some(x => x.team !== m.team), D0 = def(S);
       if (nd.solo && (S.tier === 'team' ? cross : ids.length > 1)) return fail(o, 'solo', '这个节点必须分头打');
       if (S.tier === 'team') {
-        if (cross && !nd.together) return fail(o, 'team', '只能带本队的队员一起进');
-        if (ids.length > (D0.teamSize || 4) && !nd.together) return fail(o, 'size', `一队最多 ${D0.teamSize || 4} 人`);
+        if (cross) return fail(o, 'team', '只能带本队的队员一起进');
+        if (ids.length > (D0.teamSize || 4)) return fail(o, 'size', `一队最多 ${D0.teamSize || 4} 人`);
       }
-      if (nd.together && S.graph === 'normal' && !S.sub && act(S).some(x => x.online && !ids.includes(x.uid))) return fail(o, 'together', '最终战要大家一起进（队长带队）');
+      // together（最终合流）：两人版 = 在线的人全部一起进；多队版 = 一整队一起进（一个房间最多 4 人，跨队同房还没做）
+      if (nd.together && S.graph === 'normal' && !S.sub && act(S).some(x => x.online && !ids.includes(x.uid) && (S.tier !== 'team' || x.team === m.team))) return fail(o, 'together', S.tier === 'team' ? '这个节点要整队一起进（队长带队）' : '最终战要大家一起进（队长带队）');
       const PL = nd.pool ? S.pools[nd.pool] : null, P = phaseOf(S);
       const hp0 = PL ? PL.hp : S.cp[nd.id] ? S.cp[nd.id].hp : N.hpStart || 1;
       N.seen = true; N.until = nd.manual ? 0 : N.until;

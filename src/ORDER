@@ -145,6 +145,7 @@ game/raid_core.js
 # 团本领主机制核心（docs/RAID_SIROCO.md §10）：纯逻辑的领主脚本 + 谜题原语 + 玩家状态，node 测试直接 require
 game/raid_mech.js
 game/ozma_core.js
+game/raid_ozma.js
 # 区域流水线（docs/REGION_PIPELINE.md）：怪物技能库 + 领主机制库 → defineRegion(spec) 生成器 → 每个区域一个纯数据 spec（+ 可选的领主自定义钩子）
 game/mon_skills.js
 # 领主差异化 P0（docs/BOSS_SPEC.md）：技能库第二批（leap cone lanes mark plant pool pull、冲刺变体）+ 特性钩子；要在 region.js 前面（样品怪 msLab 放全部技能）

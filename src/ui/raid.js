@@ -89,24 +89,24 @@ addStyle(`
 :is(body.touchui,body.smallui) .rbnode{width:6.6em;padding:.2em}
 :is(body.touchui,body.smallui) .rbfeed{max-height:5.5em}
 `);
-const RAID_TYPE = { main: ['主', '主线'], buff: ['增', '增益'], timer: ['时', '倒计时'], order: ['序', '顺序击杀'], sync: ['双', '同步击杀'], final: ['终', '最终合流'] };
+const RAID_TYPE = { main: ['主', '主线'], buff: ['增', '增益'], timer: ['时', '倒计时'], order: ['序', '顺序击杀'], sync: ['双', '同步击杀'], final: ['终', '最终合流'], func: ['能', '功能图'], key: ['钥', '钥匙图'] };
 const RAID_ST = { locked: '未开放', open: '可进入', busy: '战斗中', down: '等另一边', cleared: '已通关', cool: '重生中', off: '已关闭' };
-const RAID_AREA = { siroco: { 1: ['法则之境', '知性之境', '苦难之境Ⅰ', '苦难之境Ⅱ'], 2: ['第 3 界 · 无欲', '第 2 界 · 意识', '第 1 界 · 真理'] } };
+const RAID_AREA = { siroco: { 1: ['法则之境', '知性之境', '苦难之境Ⅰ', '苦难之境Ⅱ'], 2: ['第 3 界 · 无欲', '第 2 界 · 意识', '第 1 界 · 真理'] }, ozma: { 1: ['毁灭区域', '绝望区域', '恐怖区域'], 2: ['王座前线', '混沌王座'] } };
 const raidFmt = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 const raidCd = (until, cls) => h('span', { class: cls || '', 'data-cd': String(until || 0) }, raidFmt((until || 0) - raidNet.now()));
 // 门槛：Lv60 + 希洛克主线（RAID_PLAN §4.1）；服务端只查等级
-function raidReq() {
-  const D = RAID_DEFS.siroco;
+function raidReq(D) {
+  D = D || RAID_DEFS.siroco;
   if (game.lvl < D.minLvl) return `Lv.${D.minLvl} 才能参加团本`;
-  const qs = Object.keys(QUESTS).filter(id => /^q_si\d+$/.test(id)).sort(), last = qs[qs.length - 1];
-  if (last && questState(last) !== 'done') return `先完成希洛克主线（最后一步「${QUESTS[last].name}」）`;
+  // D.reqQuest = 主线任务 id 的正则源码（最后一步没完成就不能进）；没写 = 只看等级
+  if (D.reqQuest) { const re = new RegExp(D.reqQuest), qs = Object.keys(QUESTS).filter(id => re.test(id)).sort(), last = qs[qs.length - 1]; if (last && questState(last) !== 'done') return `先完成${D.reqName || D.name}主线（最后一步「${QUESTS[last].name}」）`; }
   return null;
 }
 function raidBuffText(b) {
   const p = b.p || {}, n = b.n > 1 ? `（${b.n} 层）` : '';
-  for (const P of RAID_DEFS.siroco.phases) for (const nd of Object.values(P.nodes)) {
+  for (const P of raidNet.def().phases) for (const nd of Object.values(P.nodes)) {
     for (const A of nd.aura || []) if (A.id === b.id && A.text) return A.text.replace(/^.*：/, '') + n;
-    for (const f of [...((nd.fx && nd.fx.clear) || []), ...(nd.enterFx || [])]) {
+    for (const f of [...((nd.fx && nd.fx.clear) || []), ...(nd.enterFx || []), ...Object.values(nd.elites || {}).flatMap(E => E.fx || [])]) {
       if (f.id === b.id && f.kind === 'stack') return `${nd.name}：伤害 ×${p.dmgTaken}${n}`;
       if (f.id === b.id && f.text) return f.text.replace(/（\d+ 秒）$/, '');
       for (const g of f.miss || []) if (g.id === b.id) return `卢克西逃走：受伤 ×${g.p.dmgTaken}`;
@@ -135,6 +135,8 @@ function raidRuleText(nd) {
   for (const A of nd.aura || []) x.push(`没通关期间每 ${A.every} 秒：${A.text.replace(/^.*：/, '')}（作用在「${(raidNet.node(A.to) || {}).name || A.to}」${A.max && A.max < 99 ? `，最多 ${A.max} 层` : ''}）`);
   if (nd.pool) x.push('和其他真理之棺共享血量：撤退 = 这次的伤害退回');
   if (nd.manual) x.push('平时关闭：共鸣时通关「忘却」才打开 60 秒');
+  if ((nd.needKey || []).length) x.push(`需要钥匙：${nd.needKey.join('、')}（钥匙图通关后得到）`);
+  if (nd.elites) x.push(`这里的精英倒下会影响全团：${Object.values(nd.elites).map(E => E.text || '触发效果').join('；')}`);
   if (nd.respawn === 0) x.push('通关后不重生');
   return [t, ...x].join('；');
 }
@@ -144,6 +146,8 @@ function raidRuleBase(nd) {
   if (T === 'sync') return `同步击杀：一边倒下后 ${nd.window || 30} 秒内另一边也要倒，不然会以 ${Math.round((nd.revive || 0.5) * 100)}% 血复活；两边血量差超过 ${Math.round((nd.diff || 0.25) * 100)}% 时血多的一边减伤。`;
   if (T === 'buff') return (f.clear || []).length ? `增益：通关 → ${(f.clear || []).map(x => x.text).join('；')}${nd.respawn ? `；${nd.respawn} 秒后重生，可以反复打` : ''}。` : '惩罚源：尽快通关它，其他图的惩罚就会停下。';
   if (T === 'timer') return `倒计时 ${raidFmt((nd.timer || 240) * 1000)}：没人压住，到 0 → ${(f.expire || []).map(x => x.text).join('、')}；通关后修复 ${nd.repair || 90} 秒再重新计时。`;
+  if (T === 'func') return `功能图：通关 → ${(f.clear || []).map(x => x.text).filter(Boolean).join('；') || '全团增益'}${nd.respawn ? `；${nd.respawn} 秒后重生，可以反复打` : ''}。`;
+  if (T === 'key') return `钥匙图：通关 → ${(f.clear || []).map(x => x.text).filter(Boolean).join('；') || '拿到钥匙，打开需要钥匙的节点'}。`;
   if (T === 'final') return nd.manual ? '阴影之棺：两个人一起进（队长带队）；进门希洛克就虚弱，时间很短，把共享血量打空！' : '最终领主：普通模式里两个人一起进（队长带队，组队房间）；主机每 3 秒存档，房间断了从存档点接着打。';
   return '主线节点：打通才开放下一层。';
 }
@@ -155,12 +159,15 @@ function raidCan(id) {
   if (me.at !== 'camp') return { why: me.at === id ? '你正在这个节点里' : '你正在别的节点里' };
   if (me.ero > t) return { why: `被侵蚀了：还要 ${Math.ceil((me.ero - t) / 1000)} 秒才能进节点` };
   if (N.st !== 'open') return { why: { locked: '还没开放：先通关前面的节点', busy: '有人在打', down: '有人在打', cool: '正在重生', cleared: '已经通关了', off: '已经关闭了' }[N.st] || '' };
-  const mateOn = !!(M && M.online && !M.left), party = !raidNet.local() && typeof netParty !== 'undefined' && netParty.isLeader() && M && netParty.has(M.uid);
+  // 多队版没有“唯一队友”：一起进 = 本队（crew）一起进；两人版 = 唯一队友
+  const team = S.tier === 'team', crew = (team ? raidNet.crew() : M ? [M] : []).filter(x => x.online && !x.left);
+  const mateOn = crew.length > 0, party = !raidNet.local() && typeof netParty !== 'undefined' && netParty.isLeader() && crew.every(x => netParty.has(x.uid));
+  const ready = crew.every(x => x.at === 'camp' && !(x.ero > t)), who = crew.find(x => x.at !== 'camp' || x.ero > t) || crew[0];
   const needT = nd.together && S.graph === 'normal' && !S.sub && mateOn;
-  const canT = !nd.solo && mateOn && M.at === 'camp' && !(M.ero > t) && !!party;
+  const canT = (team || !nd.solo) && mateOn && ready && !!party;
   let why = null;
-  if (needT && !canT) why = !party ? '最终战要两个人一起进：等队长带队（队长点“一起进”）' : `等 ${M.name} 回到营地再一起进`;
-  else if (nd.solo && mateOn) why = `必须分头打${M.at !== 'camp' ? `（${M.name} 在「${(raidNet.node(M.at) || {}).name || '别的节点'}」）` : ''}`;
+  if (needT && !canT) why = !party ? (team ? '这个节点要整队一起进：等队长带队（队长点“一起进”）' : '最终战要两个人一起进：等队长带队（队长点“一起进”）') : `等 ${who.name} 回到营地再一起进`;
+  else if (nd.solo && mateOn && !team) why = `必须分头打${M.at !== 'camp' ? `（${M.name} 在「${(raidNet.node(M.at) || {}).name || '别的节点'}」）` : ''}`;
   return { solo: !needT, together: canT, why };
 }
 const raidUi = {
@@ -181,11 +188,14 @@ const raidUi = {
     const live = S.st === 'routes' || S.st === 'final', maxL = (D.lives || {})[S.mode] || 6;
     const ph = { lobby: '大厅', rest: '休整', cleared: '团本通关', failed: '团本失败' }[S.st] || (P ? P.name : '');
     const cd = live ? raidCd(S.deadline, 'cd' + (S.deadline - t < 180000 ? ' warn' : '')) : S.st === 'rest' ? raidCd(S.restUntil, 'cd') : null;
-    const mode = S.mode === 'guide' ? '引导（单人）' : S.graph === 'guide' ? '普通 · 单人' : '普通 · 2 人';
+    const nAct = S.members.filter(m => !m.left).length, mode = S.mode === 'guide' ? '引导（单人）' : S.graph === 'guide' ? '普通 · 单人' : S.tier === 'team' ? `多队 · ${S.nTeams} 队 ${nAct} 人` : '普通 · 2 人';
     return h('div', { class: 'rbtop' }, h('span', { class: 'ph' }, ph), cd,
       live || S.st === 'rest' ? h('span', { class: 'chip' }, '全团复活 ', h('b', {}, `${S.lives}/${maxL}`)) : null,
       h('span', { class: 'chip' }, mode, S.sub ? ' · 补位中' : ''),
       L ? h('span', { class: 'chip' }, `今天剩 ${L.dayLeft}/${L.max.day} · 本周剩 ${L.weekLeft}/${L.max.week}`) : null,
+      S.chaos ? h('span', { class: 'chip bf' }, `混沌等级 ${S.chaos.lv}/${S.chaos.max}`) : null,
+      ...Object.keys(S.keys || {}).map(k => h('span', { class: 'chip bf' }, `钥匙：${k}`)),
+      ...(S.gbuffs || []).filter(b => !b.until || b.until > t).map(b => h('span', { class: 'chip bf' }, `全团：${raidBuffText({ ...b, node: null })} `, b.until ? raidCd(b.until) : null)),
       ...Object.entries(S.glim || {}).filter(([, G]) => G.until > t).map(([, G]) => h('span', { class: 'chip bf' }, '破坏之门共享时限 ', raidCd(G.until))),
       ...Object.entries(S.pools || {}).filter(([, Q]) => Q.until).map(([k, Q]) => h('span', { class: 'chip bf' }, `${((P && P.pools && P.pools[k]) || {}).name || '共享领主'} ${Math.round(Q.hp * 100)}% `, raidCd(Q.until))),
       S.rot ? h('span', { class: 'chip' + (S.rot.res ? ' bf' : '') }, S.rot.res ? '共鸣中：去打忘却！' : `形态：${S.rot.forms.join(' / ')}`) : null,
@@ -229,20 +239,22 @@ const raidUi = {
       map.append(h('div', { class: cls, 'data-node': nd.id, style: `left:${nd.pos[0] * 100}%;top:${nd.pos[1] * 100}%`, title: RAID_TYPE[nd.type] ? RAID_TYPE[nd.type][1] : '',
         onclick: () => { sfx.click(); this.sel = this.sel === nd.id ? null : nd.id; menus.refresh('raidboard'); } },
         h('div', { class: 'ic' }, ic), h('div', { class: 'nm' }, nd.name), big, h('div', { class: 'sub' }, sub, order, ...extra),
-        who.length ? h('div', { class: 'who' }, who.map(m => h('span', { class: m.uid === me ? 'me' : '' }, m.uid === me ? '你' : m.name))) : null));
+        who.length ? h('div', { class: 'who' }, who.map(m => h('span', { class: m.uid === me ? 'me' : '', style: raidNet.teamColor(m.uid) ? `color:${raidNet.teamColor(m.uid)}` : '' }, m.uid === me ? '你' : m.name))) : null));
     }
     return map;
   },
   members() {
     const S = raidNet.S, me = raidNet.me(), t = raidNet.now();
-    return h('div', { class: 'rbbox' }, h('div', { class: 'lbl' }, '队员'), S.members.filter(m => !m.left).map(m => {
+    const order = S.tier === 'team' && S.teams.length ? S.teams.flatMap(T => T.members.map(u => S.members.find(m => m.uid === u))).filter(m => m && !m.left) : S.members.filter(m => !m.left);
+    return h('div', { class: 'rbbox' }, h('div', { class: 'lbl' }, S.tier === 'team' ? '队员（按队着色）' : '队员'), order.map(m => {
       const nd = m.at !== 'camp' && raidNet.node(m.at), N = nd && S.nodes[m.at];
       const st = !m.online ? '离线' : nd ? `在「${nd.name}」${N ? ` · 领主 ${Math.round((N.hp ?? 1) * 100)}%` : ''}` : '在营地';
       const job = CLASSES[m.cls] ? (m.job && CLASSES[m.cls].jobs && CLASSES[m.cls].jobs[m.job] ? CLASSES[m.cls].jobs[m.job].name : CLASSES[m.cls].name) : '';
-      return h('div', { class: 'rbmem' + (m.online ? '' : ' off') },
-        h('div', { class: 'av' }, (m.name || '?').slice(0, 1)),
+      const tc = S.tier === 'team' ? raidNet.teamColor(m.uid) : null, tn = tc ? (raidNet.teams().find(T => T.id === m.team) || {}).name : '';
+      return h('div', { class: 'rbmem' + (m.online ? '' : ' off'), style: tc ? `border-left:3px solid ${tc}` : '' },
+        h('div', { class: 'av', style: tc ? `background:${tc};color:#222` : '' }, (m.name || '?').slice(0, 1)),
         h('div', { class: 'col', style: 'gap:0;min-width:0;flex:1' },
-          h('span', { class: 'nm' }, S.leader === m.uid ? '♛ ' : '', m.name, m.uid === me ? '（你）' : '', h('span', { class: 'small dim' }, job ? ' ' + job : '')),
+          h('span', { class: 'nm' }, S.leader === m.uid ? '♛ ' : '', m.name, m.uid === me ? '（你）' : '', h('span', { class: 'small dim' }, job ? ' ' + job : ''), tn ? h('span', { class: 'small', style: `color:${tc};margin-left:.4em` }, tn) : null),
           h('span', { class: 'st' }, st, m.ero > t ? [' · 侵蚀 ', raidCd(m.ero)] : '', m.rw === false && S.st !== 'lobby' ? ' · 练习' : '', S.marks && S.marks[m.uid] ? ` · 标记：${(raidNet.node(S.marks[m.uid]) || {}).name || ''}` : '')));
     }));
   },
@@ -254,9 +266,10 @@ const raidUi = {
   nodeBox(id) {
     const S = raidNet.S, nd = raidNet.node(id), N = nd && S.nodes[id]; if (!nd || !N) return null;
     const c = raidCan(id), me = raidNet.me(), M = raidNet.mate(), lead = S.leader === me, [ic, tn] = RAID_TYPE[nd.type] || ['?', ''];
+    const markBtns = lead && S.tier === 'team' && !raidNet.local() && raidNet.live() ? S.teams.map(T => h('button', { class: 'btn blue', 'data-act': 'markteam' + T.id, style: `border-color:${T.color}`, onclick: () => { sfx.click(); raidNet.markTeam(T.id, id); toastMsg(`已标记给${T.name}`, T.color); } }, `标记给${T.name}`)) : [];
     const go = together => { sfx.click(); if (raidNet.enter(id, together)) toastMsg(`正在进入「${nd.name}」…`, '#e0c0ff'); };
     return h('div', { class: 'rbbox rbnd' },
-      h('div', { class: 'hd2' }, h('span', { class: 'chip' }, ic), nd.name, h('span', { class: 'small dim' }, tn + (nd.solo ? ' · 必须分头' : ''))),
+      h('div', { class: 'hd2' }, h('span', { class: 'chip' }, ic), nd.name, h('span', { class: 'small dim' }, tn + (nd.solo ? (S.tier === 'team' ? ' · 同时只能一队' : ' · 必须分头') : ''))),
       h('div', { class: 'small', style: 'color:#ffd8a0' }, '领主：', raidBossName(nd)),
       h('div', { class: 'rule small' }, raidRuleText(nd)),
       h('div', { class: 'small' }, '状态：', RAID_ST[N.st] || N.st, N.by && N.by.length ? `（${N.by.map(u => (S.members.find(m => m.uid === u) || {}).name || '?').join('、')}）` : '', nd.type === 'order' && N.order ? ` · 顺序数字 ${N.order}` : ''),
@@ -264,17 +277,24 @@ const raidUi = {
       h('div', { class: 'btns' },
         c.solo ? h('button', { class: 'btn', 'data-act': 'solo', onclick: () => go(false) }, '单独进') : null,
         c.together ? h('button', { class: 'btn', 'data-act': 'together', onclick: () => go(true) }, '一起进') : null,
-        lead && M && !raidNet.local() && raidNet.live() ? h('button', { class: 'btn blue', onclick: () => { sfx.click(); raidNet.mark(M.uid, id); toastMsg(`已标记给 ${M.name}`, '#ffe070'); } }, '标记给队友') : null));
+        lead && M && !raidNet.local() && raidNet.live() ? h('button', { class: 'btn blue', onclick: () => { sfx.click(); raidNet.mark(M.uid, id); toastMsg(`已标记给 ${M.name}`, '#ffe070'); } }, '标记给队友') : null,
+        ...markBtns));
   },
   lobby() {
     const S = raidNet.S, me = raidNet.me(), lead = S.leader === me, mine = raidNet.mine(), D = raidNet.def();
     const act = S.members.filter(m => !m.left), block = RAID_CORE.canStart(S, me);
     const lootNames = { owner: '归属拾取', leader: '队长分配', random: '随机分配', auction: '队内竞拍' }, lootMode = S.loot && lootNames[S.loot.mode] ? S.loot.mode : 'owner';
     return h('div', { class: 'rbbox rblobby' },
-      h('div', { class: 'lbl' }, `大厅 · ${S.mode === 'guide' ? '引导（单人）' : `普通（${act.length}/${D.maxPlayers || 2} 人）`}`),
-      act.map(m => h('div', { class: 'row2' }, h('b', { style: 'color:#ffe8a8' }, S.leader === m.uid ? '♛ ' : '', m.name, m.uid === me ? '（你）' : ''), h('span', { class: 'small dim' }, m.online ? '' : '离线'),
-        h('span', { class: 'rd', style: `color:${S.leader === m.uid || m.ready ? '#8aff9a' : '#ffb08a'}` }, S.leader === m.uid ? '团长' : m.ready ? '已准备' : '没准备'))),
-      S.mode === 'normal' && act.length < 2 ? h('div', { class: 'small', style: 'color:#d8c8e8' }, '邀请一名队友进队伍，队友在阿甘左那里点“加入”；也可以直接开始：1 个人进普通 = 引导的节点、普通的数值和奖励。') : null,
+      h('div', { class: 'lbl' }, `大厅 · ${S.mode === 'guide' ? '引导（单人）' : S.tier === 'team' ? `多队版（${act.length}/${RAID_CORE.capacity(S)} 人 · ≥${D.minPlayers} 人起开 · 每队最多 ${D.teamSize} 人 · 最多 ${D.maxTeams} 队）` : `普通（${act.length}/${RAID_CORE.capacity(S)} 人）`}`),
+      act.map(m => {
+        const tc = S.tier === 'team' && m.team >= 0 ? raidNet.teamColor(m.uid) : null;
+        const sel = S.tier === 'team' && lead ? h('select', { class: 'txt', 'data-act': 'team' + m.uid, onchange: ev => { if (!raidNet.setTeam(m.uid, +ev.target.value)) ev.target.value = String(m.team); } },
+          h('option', { value: '-1' }, '自动分队'), ...Array.from({ length: D.maxTeams }, (_, i) => h('option', { value: String(i), selected: m.team === i }, `${i + 1} 队`))) : S.tier === 'team' ? h('span', { class: 'small', style: tc ? `color:${tc}` : '' }, m.team >= 0 ? `${m.team + 1} 队` : '自动分队') : null;
+        return h('div', { class: 'row2' }, h('b', { style: `color:${tc || '#ffe8a8'}` }, S.leader === m.uid ? '♛ ' : '', m.name, m.uid === me ? '（你）' : ''), h('span', { class: 'small dim' }, m.online ? '' : '离线'), sel,
+          h('span', { class: 'rd', style: `color:${S.leader === m.uid || m.ready ? '#8aff9a' : '#ffb08a'}` }, S.leader === m.uid ? '团长' : m.ready ? '已准备' : '没准备'));
+      }),
+      S.tier === 'team' ? h('div', { class: 'small', style: 'color:#d8c8e8' }, '团长可以给每个人指定队；没指定的按“同一个队伍的人一队”自动补齐，至少分成 2 队。要邀请别的队伍进来，团长在队伍 / 好友里邀请（raid:invite）。') : null,
+      S.mode === 'normal' && S.tier !== 'team' && act.length < 2 ? h('div', { class: 'small', style: 'color:#d8c8e8' }, '邀请一名队友进队伍，队友在阿甘左那里点“加入”；也可以直接开始：1 个人进普通 = 引导的节点、普通的数值和奖励。') : null,
       S.mode === 'normal' ? h('div', { class: 'row', style: 'gap:.45em;align-items:center' }, h('span', { class: 'small dim' }, '装备分配'), lead ? h('select', { class: 'txt', value: lootMode, onchange: ev => { const mode = ev.target.value; if (!raidNet.setLootMode(mode)) ev.target.value = lootMode; } }, Object.entries(lootNames).map(([k, v]) => h('option', { value: k }, v))) : h('span', {}, lootNames[lootMode])) : null,
       raidNet.limits && !raidNet.limits.ok ? h('div', { class: 'small', style: 'color:#ffd0a0' }, '你今天 / 本周的次数用完了：这次算练习（没有奖励、不翻牌）。') : null,
       h('div', { class: 'rbbar' },
@@ -305,27 +325,31 @@ const raidUi = {
 Object.assign(menus, {
   // 团本入口（阿甘左）：团本列表、次数、建团 / 加入 / 准备 / 开始
   w_raid(npc) {
-    const S = raidNet.S, L = raidNet.limits, req = raidReq(), me = raidNet.me(), inv = raidNet.invite, P = typeof netParty !== 'undefined' && !raidNet.local() ? netParty.p : null;
+    const S = raidNet.S, L = raidNet.limits, me = raidNet.me(), inv = raidNet.invite, P = typeof netParty !== 'undefined' && !raidNet.local() ? netParty.p : null;
     if ((!L || Date.now() - (raidNet.limitsT || 0) > 30000) && !this._raidFetching) { raidNet.limitsT = Date.now(); this._raidFetching = true; raidNet.fetch().finally(() => { this._raidFetching = false; }); }
     const body = h('div', { class: 'col', style: 'gap:.55em' });
     for (const D of Object.values(RAID_DEFS)) {
       const lim = L ? h('div', { class: 'sub lim' }, '今天剩 ', h('b', {}, `${L.dayLeft}/${L.max.day}`), ' · 本周剩 ', h('b', {}, `${L.weekLeft}/${L.max.week}`),
         ` · 每天 06:00 / 每周四 06:00 重置（下次 ${new Date(L.nextWeek).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric', weekday: 'short' })}）`) : h('div', { class: 'sub' }, '正在查询次数…');
+      const req = raidReq(D), duo = D.duoMax || 2, hasTeam = (D.maxPlayers || 0) > duo;
       const card = h('div', { class: 'rcard', 'data-raid': D.id },
-        h('div', { class: 'nm' }, D.name, h('span', { class: 'small dim', style: 'margin-left:.6em' }, `Lv.${D.minLvl} · 1~${D.maxPlayers || 2} 人`)),
-        h('div', { class: 'sub' }, '希洛克的幻界：攻坚地图上分头打节点，互相影响（顺序击杀、增益、倒计时、双生同步），最后两个人一起讨伐希洛克。两个阶段：追逐战 25 分钟 / 讨伐战 20 分钟（引导 40 / 30 分钟）。'),
+        h('div', { class: 'nm' }, D.name, h('span', { class: 'small dim', style: 'margin-left:.6em' }, `Lv.${D.minLvl} · 1~${duo} 人${hasTeam ? ` / 多队 ${D.minPlayers}~${D.maxPlayers} 人` : ''}`)),
+        h('div', { class: 'sub' }, D.blurb || '团本：攻坚地图上分头打节点，互相影响。'),
         lim,
         L && !L.ok ? h('div', { class: 'rnote' }, '次数用完了也能进：这次算练习——没有奖励、不翻牌。') : null,
         req ? h('div', { class: 'rnote', style: 'color:#ff9a8a' }, req) : null);
       if (!raidNet.live()) {
-        const busyP = P && P.members.length > (D.maxPlayers || 2), notLead = P && P.leader !== me;
+        const busyP = P && P.members.length > duo, notLead = P && P.leader !== me;
         card.append(h('div', { class: 'rbtns' },
           h('button', { class: 'btn' + (req || raidNet.local() || busyP || notLead ? ' off' : ''), 'data-act': 'normal', onclick: () => {
-            if (req || raidNet.local() || busyP || notLead) { toastMsg(req || (raidNet.local() ? '没有登录：只能单人引导' : busyP ? `当前团本最多 ${D.maxPlayers || 2} 人` : '只有队长可以建团'), '#ffd0a0'); sfx.error(); return; }
-            sfx.click(); raidNet.create('normal'); } }, '建团（普通）'),
-          h('button', { class: 'btn blue' + (req ? ' off' : ''), 'data-act': 'guide', onclick: () => { if (req) { toastMsg(req, '#ffd0a0'); sfx.error(); return; } sfx.click(); raidNet.create('guide'); } }, '单人引导'),
+            if (req || raidNet.local() || busyP || notLead) { toastMsg(req || (raidNet.local() ? '没有登录：只能单人引导' : busyP ? `两人版最多 ${duo} 人` : '只有队长可以建团'), '#ffd0a0'); sfx.error(); return; }
+            sfx.click(); raidNet.create('normal', D.id); } }, '建团（两人）'),
+          hasTeam ? h('button', { class: 'btn' + (req || raidNet.local() || notLead ? ' off' : ''), 'data-act': 'team', onclick: () => {
+            if (req || raidNet.local() || notLead) { toastMsg(req || (raidNet.local() ? '没有登录：只能单人引导' : '只有队长可以建团'), '#ffd0a0'); sfx.error(); return; }
+            sfx.click(); raidNet.create('normal', D.id, true); } }, '建团（多队）') : null,
+          h('button', { class: 'btn blue' + (req ? ' off' : ''), 'data-act': 'guide', onclick: () => { if (req) { toastMsg(req, '#ffd0a0'); sfx.error(); return; } sfx.click(); raidNet.create('guide', D.id); } }, '单人引导'),
           inv ? h('button', { class: 'btn' + (req ? ' off' : ''), 'data-act': 'join', onclick: () => { if (req) { toastMsg(req, '#ffd0a0'); sfx.error(); return; } sfx.click(); raidNet.join(inv.sid); } }, '加入队长的团本') : null),
-          h('div', { class: 'sub' }, '普通：先组队（最多 2 人），队长建团，队友在这里点“加入”。1 个人进普通 = 引导的节点、普通的数值和奖励。', h('br'), '引导：1 个人，每层只有一个节点、机制减半，奖励 ×0.6。'),
+          h('div', { class: 'sub' }, `两人：先组队（最多 ${duo} 人），队长建团，队友在这里点“加入”。1 个人进普通 = 引导的节点、普通的数值和奖励。`, hasTeam ? [h('br'), `多队：${D.minPlayers}~${D.maxPlayers} 人，每队最多 ${D.teamSize} 人（一个队伍一队），团长分队 / 邀请别的队伍；数值和时限随队数缩放。`] : null, h('br'), '引导：1 个人，每层只有一个节点、机制减半，奖励 ×0.6。'),
           raidNet.local() ? h('div', { class: 'rnote' }, '没有登录：只能打单人引导，进度存在这台设备上。') : null);
       }
       body.append(card);
@@ -466,6 +490,12 @@ netUiHooks.push(c => {
   if (C.pool) sp.push([`共享血量 ${Math.round((C.pool.hp ?? 1) * 100)}%`, '#ffb0ff']);
   if (C.form) sp.push([`形态：${C.form}`, '#e0c0ff']);
   if (M) { const nd = M.at !== 'camp' && raidNet.node(M.at), N = nd && S.nodes[M.at]; rows.push([[!M.online ? `${M.name}：离线` : M.at === C.node ? `${M.name}：一起打` : nd ? `${M.name}：${nd.name} ${Math.round(((N && N.hp) ?? 1) * 100)}%` : `${M.name}：在营地`, M.online ? '#9ad8ff' : '#999']]); }
+  // 多队版：没有“唯一队友”，每个别的队一行（队色）：在哪个节点、领主血量；本队队员离线 / 倒下的另算
+  if (!M && S.tier === 'team') for (const T of S.teams) {
+    const mem = T.members.map(u => S.members.find(x => x.uid === u)).filter(x => x && !x.left), my = T.id === raidNet.teamOf(raidNet.me());
+    const at = mem.find(x => x.at !== 'camp'), nd = at && raidNet.node(at.at), N = nd && S.nodes[at.at], off = mem.filter(x => !x.online).length;
+    rows.push([[`${T.name}${my ? '（本队）' : ''}：${!mem.length ? '空' : nd ? `${nd.name} ${Math.round(((N && N.hp) ?? 1) * 100)}%` : '在营地'}${off ? ` · ${off} 人离线` : ''}`, T.color]]);
+  }
   if (sp.length) rows.push(sp);
   const bl = C.buffs.filter(b => !b.until || b.until > t);
   if (bl.length) rows.push(bl.map(b => [`${raidBuffText(b)}${b.until ? ` ${Math.ceil((b.until - t) / 1000)}秒` : ''}`, '#f0c0ff']));

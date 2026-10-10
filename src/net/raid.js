@@ -49,7 +49,15 @@ const raidNet = {
   phase(id) { const G = this.graph(), k = id || (this.S && this.S.phase); return G && k ? G.phases.find(P => P.id === k) || null : null; },
   node(id) { const P = this.phase(); return P && Object.prototype.hasOwnProperty.call(P.nodes, id) ? P.nodes[id] : null; },
   mine() { return this.S ? this.S.members.find(m => m.uid === this.me()) || null : null; },
-  mate() { return this.S ? this.S.members.find(m => m.uid !== this.me() && !m.left) || null : null; },
+  // 两人版 / 引导里的“唯一队友”；多队版没有唯一队友（返回 null）——多队版请用 crew() / teams() / teamOf()
+  mate() { return this.S && this.S.tier !== 'team' ? this.S.members.find(m => m.uid !== this.me() && !m.left) || null : null; },
+  tier() { return (this.S && this.S.tier) || 'duo'; },
+  // 多队：teams() = [{ id, name, color, members: [uid], leader }]；teamOf(uid) = 队序号（-1 = 没分队）；crew() = 我这队里除我以外没离开的人；others() = 全团其他人
+  teams() { return this.S && this.S.teams || []; },
+  teamOf(uid) { const m = this.S && this.S.members.find(x => x.uid === uid); return m && m.team != null ? m.team : -1; },
+  teamColor(uid) { const t = this.teams().find(x => x.id === this.teamOf(uid)); return t ? t.color : null; },
+  others() { return this.S ? this.S.members.filter(m => m.uid !== this.me() && !m.left) : []; },
+  crew() { const t = this.teamOf(this.me()); return this.others().filter(m => this.S.tier === 'team' ? m.team === t : true); },
   live() { return !!this.S && !!RAID_CORE.LIVE[this.S.st]; },
   flipRecord(sid, phase) {
     const key = `${sid}:${phase}`, d = save.data || {};
@@ -76,13 +84,17 @@ const raidNet = {
     if (!net.send({ t, ...o })) { toastMsg('没有连上服务器，稍后再试', '#ff9a6a'); return false; }
     return true;
   },
-  create(mode) { return this.send('raid:create', { raid: 'siroco', mode, cid: this.cid(), char: this.char() }); },
+  create(mode, raid, team) { return this.send('raid:create', { raid: raid || 'siroco', mode, team: !!team || undefined, cid: this.cid(), char: this.char() }); },
   join(sid) { return this.send('raid:join', { sid, cid: this.cid(), char: this.char() }); },
   ready(on) { return this.send('raid:ready', { on }); },
   start() { return this.send('raid:start'); },
   leave() { return this.send('raid:leave'); },
-  enter(node, together) { const M = this.mate(); return this.send('raid:enter', { node, with: together && M ? [M.uid] : undefined }); },
+  // together：带上同队的人一起进（两人版 = 唯一队友；多队版 = 本队其他人，需要是同一个队伍的队长带队）
+  enter(node, together) { const L = together ? this.crew().filter(m => m.online).map(m => m.uid) : []; return this.send('raid:enter', { node, with: L.length ? L : undefined }); },
   mark(uid, node) { return this.send('raid:mark', { uid, node }); },
+  markTeam(team, node) { return this.send('raid:mark', { team, node }); },   // 团长标记：整队指向一个节点
+  setTeam(uid, team) { return this.send('raid:team', { uid, team }); },   // 团长分队（多队版大厅）
+  invite(uid) { return this.send('raid:invite', { uid }); },   // 团长邀请别的队伍进多队版大厅
   claim(phase) { return this.S && this.send('raid:claim', { sid: this.S.sid, phase }); },
   setLootMode(mode) { return this.S && this.send('raid:loot', { sid: this.S.sid, mode }); },
   flip(op, phase, index) { return this.S && this.send('raid:flip', { sid: this.S.sid, op, phase, index }); },
@@ -115,6 +127,8 @@ const raidNet = {
   },
   ev(e, v) { this.evc(this.ctx, e, v); },
   // 精英倒下（game/raid_elite.js）：主机上报，规则核心按节点 elites[id].fx 执行全局效果（开关节点 / 增益 / 倒计时 / 钥匙…）
+  // 理智值变化（自己扣 / 回，奥兹玛内容用）：服务端记账，归零 / 倒下由 raid:fx sanity 回来
+  sanity(d) { const C = this.ctx; if (C && !C.done && d) this.evc(C, 'san', d); },
   eliteKill(id) { const C = this.ctx; if (C && C.isHost && !C.done && id) this.evc(C, 'elite', String(id)); },
   flush() { if (this.local() || !net.connected) return; for (const it of this.queue) it.sent = net.send(it.m) || it.sent; },
   // 刷新页面也不丢：排队的上报 + 当前挑战（刷新后发现自己还挂在节点里，就报 lost 把节点放出来）
@@ -239,7 +253,7 @@ const raidNet = {
     const me = this.me(), mm = this.mine(), nd = this.node(m.node) || {};
     const def = raidNodeDef(m.dg, m);
     const C = this.ctx = { sid: m.sid, run: m.run, node: m.node, name: m.name, type: m.type, dg: def ? def.id : null, boss: null, host: m.host, by: m.by || [me], isHost: m.host === me,
-      together: (m.by || []).length > 1, scale: m.scale || {}, buffs: (m.buffs || []).map(b => ({ ...b })), cp: m.cp || null, hpStart: m.hpStart || 0, order: m.order || 0,
+      together: (m.by || []).length > 1, scale: m.scale || {}, team: m.team, chaos: m.chaos || 0, buffs: [...(m.buffs || []).map(b => ({ ...b })), ...(m.gbuffs || []).map(b => ({ id: b.id, kind: 'buff', p: b.p, until: b.until, global: true }))], cp: m.cp || null, hpStart: m.hpStart || 0, order: m.order || 0,
       orderTurn: m.orderTurn !== false, sub: !!m.sub, cpNode: !!nd.cp, q: 0, hpSent: 1, cpT: 0, t0: Date.now(), practice: !!(mm && mm.rw === false),
       started: false, done: false, cleared: false, held: null, win: 0 };
     this.persist();
@@ -353,6 +367,15 @@ const raidNet = {
       case 'sub': this.say(p.on ? '切换到补位规则' : '恢复正常规则', '#bfe8ff'); break;
       case 'mark': this.markFor = m.node; if (m.node) { const n = this.node(m.node); toastMsg(`团长标记：去「${n ? n.name : m.node}」`, '#ffe070'); } break;
       case 'life': break;
+      // 通用团本能力（raid_core.js 的 func / key / countdown / 理智 / 混沌）：全团增益按 buff 处理（dmgTaken 乘到领主身上），其余 p 字段由内容通过 bus 事件自己消费
+      case 'gbuff':
+        if (C && !C.done) { C.buffs = C.buffs.filter(x => x.id !== p.id); const f = { id: p.id, kind: 'buff', p: p.p || {}, until: p.until || 0, global: true }; C.buffs.push(f); if (C.isHost) this.buffOn(b, f); }
+        this.say(`全团增益：${p.id}${p.dur ? `（${p.dur} 秒）` : ''}`, '#f0c0ff'); bus.emit('raidGbuff', { on: true, id: p.id, p: p.p || {}, until: p.until || 0 }); break;
+      case 'ungbuff': if (C) { C.buffs = C.buffs.filter(x => x.id !== p.id); if (C.isHost) this.buffOff(b, p.id); } bus.emit('raidGbuff', { on: false, id: p.id }); break;
+      case 'key': this.say(`拿到钥匙：${p.id}`, '#ffe070'); bus.emit('raidKey', { id: p.id }); break;
+      case 'unlock': case 'lock': case 'countdown': { const n = this.node(m.node); this.say(`${n ? n.name : m.node}：${{ unlock: '被打开了', lock: '被关闭了', countdown: '开始倒计时' }[m.kind]}`, '#ffd8a0'); break; }
+      case 'chaos': this.chaos = p.lv; this.say(`混沌等级：${p.lv}`, '#ff9ae0'); bus.emit('raidChaos', { lv: p.lv }); break;
+      case 'sanity': this.san = p.v; bus.emit('raidSanity', { v: p.v, mini: !!p.mini, dead: !!p.dead }); break;
     }
     this.changed();
   },

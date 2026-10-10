@@ -4,15 +4,16 @@
    每天 / 每周次数（raid_week，按角色）、领奖幂等（raid_claim）、清理过期会话。
    会话和队伍（party.js）是分开的：建团时从队伍里拉人，之后队伍解散 / 重组都不影响会话；队伍里有人在团本里时不能邀请外人、不能移交队长。
    WS（客户端 → 服务端）：
-     raid:create { raid, mode:'normal'|'guide', cid, char }  建团（队长，或者没组队的单人）。普通模式会给队友发 raid:open
+     raid:create { raid, mode:'normal'|'guide', team?: true, cid, char }  建团（team = 多队版：≥ minPlayers 人，最多 maxPlayers）（队长，或者没组队的单人）。普通模式会给队友发 raid:open
      raid:join { sid, cid, char } / raid:ready { on } / raid:start / raid:leave
          加入 / 准备 / 团长开始（休整中 = 提前进下一阶段）/ 离开（开始后离开 = 放弃，次数照扣）
      raid:enter { node, with?: [uid] }    进节点；with = 一起进（要是队长，收到 raid:entered 后自己发 room:open）→ 进的人都收到 raid:entered
      raid:ev { node, run, q, e, v }       实例上报：e = hp | down | clear | fail | death | revive | cp；q = 这次挑战里自己的序号（补发重复的回 dup）→ raid:ack
-     raid:mark { uid, node } / raid:resume { sid } / raid:claim { sid, phase } / raid:loot { mode } / raid:flip { op, phase, index }
+     raid:team { uid, team } 团长分队（多队版大厅）/ raid:invite { uid } 团长邀请别的队伍进多队版大厅（对方和他队伍里的人收到 raid:open，可 raid:join）
+      raid:mark { uid | team, node } / raid:resume { sid } / raid:claim { sid, phase } / raid:loot { mode } / raid:flip { op, phase, index }
    WS（服务端 → 客户端）：raid { run, now, resume? } 全量 | raid:d { sid, now, set, nodes } 变化 | raid:fx { sid, kind, node, p } | raid:entered { sid, run, … } |
      raid:ack { sid, run, q, e, ok, res?, dup?, code?, text? } | raid:note { sid, text, code?, bad? } | raid:end { sid, ok, why } |
-     raid:open { sid, raid, mode, leader } | raid:claimed { sid, phase, reward, dup?, limits }
+     raid:open { sid, raid, mode, team?, leader } | raid:claimed { sid, phase, reward, dup?, limits }
    HTTP：GET /api/raid?cid=&raid= → { raid, limits, run, invite, defs, now } */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,7 +25,7 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const TZ = 480;   // 每天 / 每周按北京时间算（06:00 换日，周四 06:00 换周），和 signin.js 一致
 const KEEP_ENDED = 10 * 60_000, LOBBY_IDLE = 30 * 60_000, DB_KEEP = 7 * 86400_000;
 const LIVE_SQL = `('lobby','routes','rest','final')`;
-const EVS = new Set(['hp', 'down', 'clear', 'fail', 'death', 'revive', 'cp', 'boss']);
+const EVS = new Set(['hp', 'down', 'clear', 'fail', 'death', 'revive', 'cp', 'boss', 'elite', 'san']);
 const txt = (s, n) => String(s ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n);
 const KEY_RE = /^[a-z][a-z0-9_]{0,23}$/, CLS_RE = /^[a-z]{2,12}$/;
 
@@ -35,8 +36,11 @@ export function loadRaidCore(file) {
   const cands = [file, process.env.DNF_RAID_CORE, path.join(DIR, '..', 'lib', 'raid_core.js'), path.join(DIR, '..', '..', 'src', 'game', 'raid_core.js')].filter(Boolean);
   const f = cands.find(p => fs.existsSync(p));
   if (!f) throw new Error('找不到团本规则文件 raid_core.js（' + cands.join(' / ') + '）');
-  const core = vm.runInContext('"use strict";\n' + fs.readFileSync(f, 'utf8') + '\n;RAID_CORE', vm.createContext({}), { filename: f, timeout: 5000 });
-  core.file = f;
+  // 团本定义包（和 raid_core.js 在同一个目录；有就一起加载，往 RAID_DEFS 里登记别的团本）：奥兹玛 = ozma_core.js（内容清单）+ raid_ozma.js（登记 RAID_DEFS.ozma）。顺序：清单在前、核心居中、登记在后
+  const dir = path.dirname(f), pre = ['ozma_core.js'].map(n => path.join(dir, n)).filter(p => fs.existsSync(p)), post = ['raid_ozma.js'].map(n => path.join(dir, n)).filter(p => fs.existsSync(p));
+  const code = [...pre, f, ...post].map(p => fs.readFileSync(p, 'utf8')).join('\n;\n');
+  const core = vm.runInContext('"use strict";\n' + code + '\n;RAID_CORE', vm.createContext({}), { filename: f, timeout: 5000 });
+  core.file = f; core.packs = [...pre, ...post].map(p => path.basename(p));
   return core;
 }
 const CORE = loadRaidCore();
@@ -166,7 +170,8 @@ export default {
         const D = CORE.defOf(A.S.raid);
         if (A.S.st !== 'lobby') return '团本进行中，不能邀请团本以外的人';
         if (A.S.mode === 'guide') return '引导模式的团本只能一个人';
-        if (A.S.members.length >= (D.maxPlayers || 2)) return `当前团本最多 ${D.maxPlayers || 2} 人`;
+        const cap = CORE.capacity(A.S);
+        if (A.S.members.filter(m => !m.left).length >= cap) return `当前团本最多 ${cap} 人`;
         return null;
       },
       // party.js：有人离开 / 被请离队伍。还没开始的团本里把他移出去（掉线超时不算，回来还能接着准备）
@@ -183,11 +188,12 @@ export default {
         if (ctx.mods.room && ctx.mods.room.of(me)) return note(c, null, '先离开地下城 / 决斗再建团');
         const P = ctx.mods.party.of(me), ch = charOf(c, msg);
         if (mode === 'normal' && P && P.leader !== me) return note(c, null, '只有队长可以建团');
-        if (mode === 'normal' && P && P.members.length > (D.maxPlayers || 2)) return note(c, null, `当前团本最多 ${D.maxPlayers || 2} 人`);
+        const team = mode === 'normal' && !!msg.team && (D.maxPlayers || 0) > (D.duoMax || 2), cap = team ? D.maxPlayers : (D.duoMax || 2);
+        if (mode === 'normal' && P && P.members.length > cap) return note(c, null, `当前团本最多 ${cap} 人`);
         if (D.minLvl && ch.lvl < D.minLvl) return note(c, null, `需要 ${D.minLvl} 级`);
         const sid = 'rd' + C.boot + '_' + (seq++), t = now();
-        const S = CORE.init(raid, [{ uid: me, cid: cidOf(msg.cid), name: ch.name, cls: ch.cls, job: ch.job }], mode, t, { sid, guard: guard(), seed: crypto.randomInt(2 ** 31), lootMode: msg.lootMode });
-        const W = wrap(S, t); runs.set(sid, W); index(W); save(W);
+        const S = CORE.init(raid, [{ uid: me, cid: cidOf(msg.cid), name: ch.name, cls: ch.cls, job: ch.job, party: P ? P.leader : null }], mode, t, { sid, guard: guard(), seed: crypto.randomInt(2 ** 31), lootMode: msg.lootMode, team });
+        const W = wrap(S, t); W.invites = new Set(); runs.set(sid, W); index(W); save(W);
         c.send({ t: 'raid', run: W.sent, now: t });
         if (mode === 'normal' && P) for (const id of P.members) if (id !== me) ctx.sendTo(id, { t: 'raid:open', sid, raid, mode, leader: { id: me, name: c.user.name } });
       },
@@ -196,10 +202,12 @@ export default {
         if (!W || W.S.st !== 'lobby') return note(c, null, '这个团本已经开始了，或者不存在');
         if (mine(me) && mine(me) !== W) return note(c, W, '你已经在别的团本里了');
         const P = ctx.mods.party.of(me);
-        if (!P || !P.members.includes(W.S.leader)) return note(c, W, '要和团长在同一个队伍里才能加入');
+        // 两人版 / 引导：要和团长在同一个队伍里。多队版：团长也可以 raid:invite 别的队伍（W.invites），被邀请的人（和他队伍里的人）可以加入
+        const invited = !!(W.invites && W.invites.has(me));
+        if (!invited && (!P || !P.members.includes(W.S.leader))) return note(c, W, '要和团长在同一个队伍里才能加入');
         const ch = charOf(c, msg), D = CORE.defOf(W.S.raid);
         if (D.minLvl && ch.lvl < D.minLvl) return note(c, W, `需要 ${D.minLvl} 级`);
-        const out = apply(W, { t: 'join', uid: me, cid: cidOf(msg.cid), name: ch.name, cls: ch.cls, job: ch.job }, c);
+        const out = apply(W, { t: 'join', uid: me, cid: cidOf(msg.cid), name: ch.name, cls: ch.cls, job: ch.job, party: P ? P.leader : null }, c);
         if (!out.err) c.send({ t: 'raid', run: W.sent, now: now() });
       },
       ready(c, msg) { const W = mine(c.user.id); if (W) apply(W, { t: 'ready', uid: c.user.id, on: msg.on !== false }, c); },
@@ -228,7 +236,7 @@ export default {
       },
       enter(c, msg) {
         const me = c.user.id, W = mine(me); if (!W) return note(c, null, '你不在团本里');
-        const w = Array.isArray(msg.with) ? [...new Set(msg.with.map(Number).filter(x => Number.isInteger(x) && x > 0 && x !== me))].slice(0, 3) : [];
+        const w = Array.isArray(msg.with) ? [...new Set(msg.with.map(Number).filter(x => Number.isInteger(x) && x > 0 && x !== me))].slice(0, Math.max(3, ((CORE.defOf(W.S.raid) || {}).teamSize || 4) - 1)) : [];
         if (w.length) {
           const P = ctx.mods.party.of(me);
           if (!P || P.leader !== me || w.some(id => !P.members.includes(id))) return note(c, W, '一起进要先组队，并且由队长带队', 'party');
@@ -244,13 +252,28 @@ export default {
         if (e === 'hp') v = +msg.v;
         else if (e === 'cp') v = msg.v && typeof msg.v === 'object' ? { hp: +msg.v.hp, ph: Number.isInteger(msg.v.ph) ? msg.v.ph : -1 } : null;
         else if (e === 'fail') v = txt(msg.v, 12);
+        else if (e === 'elite') v = txt(msg.v, 24);
+        else if (e === 'san') v = +msg.v;
         const out = CORE.event(W.S, { t: e, uid: me, node: msg.node == null ? null : txt(msg.node, 24), run, q, v }, now());
         W.touched = now();
         commit(W, out, e !== 'hp' && e !== 'cp');
         if (out.err) ack(false, { code: out.err.code, text: out.err.text });
         else ack(true, out.ack || {});
       },
-      mark(c, msg) { const W = mine(c.user.id); if (W) apply(W, { t: 'mark', uid: c.user.id, to: +msg.uid, node: msg.node == null ? null : txt(msg.node, 24) }, c); },
+      mark(c, msg) { const W = mine(c.user.id); if (W) apply(W, { t: 'mark', uid: c.user.id, to: +msg.uid, team: Number.isInteger(msg.team) ? msg.team : null, node: msg.node == null ? null : txt(msg.node, 24) }, c); },
+      // 团长分队（多队版大厅）：raid:team { uid, team }（team = 队序号，-1 取消）
+      team(c, msg) { const W = mine(c.user.id); if (W) apply(W, { t: 'team', uid: c.user.id, to: +msg.uid, team: Number.isInteger(msg.team) ? msg.team : -1 }, c); },
+      // 团长邀请别的队伍进多队版大厅：raid:invite { uid }。被邀请的人和他队伍里的人都收到 raid:open，之后可以 raid:join
+      invite(c, msg) {
+        const me = c.user.id, W = mine(me), to = +msg.uid;
+        if (!W) return note(c, null, '你不在团本里');
+        if (W.S.leader !== me) return note(c, W, '只有团长能邀请', 'leader');
+        if (W.S.st !== 'lobby' || W.S.tier !== 'team') return note(c, W, '只有多队版的大厅能邀请别的队伍', 'tier');
+        if (!Number.isInteger(to) || to <= 0 || to === me || mine(to)) return note(c, W, '对方不能被邀请（不存在 / 已在团本里）', 'invite');
+        const P = ctx.mods.party.of(to), ids = P ? P.members : [to];
+        W.invites = W.invites || new Set();
+        for (const id of ids) { if (mine(id)) continue; W.invites.add(id); ctx.sendTo(id, { t: 'raid:open', sid: W.S.sid, raid: W.S.raid, mode: W.S.mode, team: true, leader: { id: me, name: c.user.name } }); }
+      },
       loot(c, msg) {
         const W = mine(c.user.id); if (!W) return;
         const out = CORE.setLootMode(W.S, c.user.id, txt(msg.mode, 16));
@@ -340,6 +363,8 @@ export default {
     'raid:enter'(c, msg, ctx) { ctx.mods.raid.enter(c, msg); },
     'raid:ev'(c, msg, ctx) { ctx.mods.raid.ev(c, msg); },
     'raid:mark'(c, msg, ctx) { ctx.mods.raid.mark(c, msg); },
+    'raid:team'(c, msg, ctx) { ctx.mods.raid.team(c, msg); },
+    'raid:invite'(c, msg, ctx) { ctx.mods.raid.invite(c, msg); },
     'raid:loot'(c, msg, ctx) { ctx.mods.raid.loot(c, msg); },
     'raid:flip'(c, msg, ctx) { ctx.mods.raid.flip(c, msg); },
     'raid:resume'(c, msg, ctx) { ctx.mods.raid.resume(c, msg); },
@@ -351,7 +376,7 @@ export default {
       const S = A.of(uid), P = ctx.mods.party.of(uid), L = P && P.leader !== uid ? A.of(P.leader) : null;
       const invite = !S && L && L.st === 'lobby' && L.mode === 'normal' ? { sid: L.sid, raid: L.raid, mode: L.mode, leader: P.leader } : null;
       return { raid, limits: A.limitsOf(uid, txt(q.cid, 24) || '0', raid), run: S ? CORE.view(S) : null, invite, now: A.now(),
-        defs: Object.values(CORE.defs).map(D => ({ id: D.id, name: D.name, minLvl: D.minLvl, maxPlayers: D.maxPlayers, limits: D.limits })) };
+        defs: Object.values(CORE.defs).map(D => ({ id: D.id, name: D.name, minLvl: D.minLvl, maxPlayers: D.maxPlayers, duoMax: D.duoMax || 2, teamSize: D.teamSize || 0, minPlayers: D.minPlayers || 0, maxTeams: D.maxTeams || 0, limits: D.limits })) };
     });
   },
 };

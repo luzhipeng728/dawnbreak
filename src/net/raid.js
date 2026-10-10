@@ -317,8 +317,17 @@ const raidNet = {
   },
   // 会话状态和本地实例对齐（断线期间错过了裁决、被放出节点……）
   reconcile() {
-    const C = this.ctx, S = this.S; if (!C || !S || S.sid !== C.sid || C.done) return;
-    const N = S.nodes[C.node], me = this.mine();
+    const S = this.S, me = this.mine();
+    if (!S || S.st === 'lobby' || !RAID_CORE.LIVE[S.st]) return;
+    if (typeof game !== 'undefined' && game.scene === 'town' && !game.dungeon && (!this.ctx || this.ctx.done)) {
+      if (me && me.at && me.at !== 'camp') {
+        const N = S.nodes && S.nodes[me.at], run = N && N.run;
+        if (run) this.evc({ sid: S.sid, node: me.at, run, q: 0, isHost: true }, 'fail', 'lost');
+      }
+      return;
+    }
+    const C = this.ctx; if (!C || S.sid !== C.sid || C.done) return;
+    const N = S.nodes[C.node];
     if (C.held && N && !this.queue.some(x => x.m.run === C.run && x.m.e === 'down')) {
       if (N.st === 'cleared' || N.st === 'cool' || N.st === 'off') this.release();
       else if (N.st === 'busy' || N.st === 'open') this.unhold(N.hp || 1);
@@ -340,6 +349,9 @@ const raidNet = {
       else if (m.ok && m.res === 'heal') this.unhold(1);
       else if (!m.ok && m.code === 'fast') this.unhold(0.05);
       else if (!m.ok) this.release();
+    } else if (m.e === 'clear' && !m.ok) {
+      C.cleared = false;
+      toastMsg(`通关未能确认：${m.text || m.code || '请重试'}`, '#ff9a7a');
     } else if (m.e === 'revive') {
       const dg = game.dungeon; C.reviveWait = false;
       if (m.ok && m.res === 'life') { if (dg && dg.raid === C && dg.state === 'dead') { C.reviveOk = true; dg.revive(); } }
@@ -594,6 +606,11 @@ bus.on('sceneEnter', () => {
     if (!C.done && !C.cleared) raidNet.evc(C, 'fail', 'retreat');
     C.done = true; raidNet.ctx = null; raidNet.persist();
     if (raidNet.S) raidNet.back = true;
+  }
+  const S = raidNet.S, me = raidNet.mine();
+  if (S && me && me.at && me.at !== 'camp' && !game.dungeon && (!raidNet.ctx || raidNet.ctx.done)) {
+    const N = S.nodes && S.nodes[me.at], run = N && N.run;
+    if (run) raidNet.evc({ sid: S.sid, node: me.at, run, q: 0, isHost: true }, 'fail', 'lost');
   }
   raidNet.changed();
 });

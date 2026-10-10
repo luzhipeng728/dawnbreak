@@ -119,9 +119,26 @@ console.log('— 引导模式');
 {
   const S = begin('guide');
   ok(S.graph === 'guide' && st(S, 'fog_a') === 'open' && !S.nodes.fog_b, '引导图只有一个黑雾之源');
-  for (const id of ['fog_a', 'quake_a', 'cannon', 'pillar_a1', 'pillar_a2']) { const c = clear(S, 1, id); ok(!c.err, '引导：' + id, c.err); }
+  // 引导模式下玩家爆发极快（例如 8 秒、15 秒），不能被 minClear 拦截
+  const c1 = clear(S, 1, 'fog_a', 12);
+  ok(!c1.err && st(S, 'fog_a') === 'cleared', '引导：12 秒通关 fog_a 不被拦截');
+  const c2 = clear(S, 1, 'cannon', 8);
+  ok(!c2.err && st(S, 'cannon') === 'cleared', '引导：8 秒极速通关 cannon（舰炮防御战）不被拦截');
+  ok(st(S, 'pillar_a1') === 'open', '通关 cannon 后擎天之柱 1 正常解锁开放');
+  const c3 = clear(S, 1, 'pillar_a1', 15);
+  ok(!c3.err && st(S, 'pillar_a1') === 'cleared', '引导：15 秒通关 pillar_a1');
+  ok(st(S, 'pillar_a2') === 'open', '通关 pillar_a1 后擎天之柱 2 正常解锁开放');
+  const c4 = clear(S, 1, 'pillar_a2', 16);
+  ok(!c4.err && st(S, 'pillar_a2') === 'cleared', '引导：通关 pillar_a2 达成阶段目标');
   const sc = R.scale(S, 'fog_a', 1) || R.scale(S, 'fog_a');
   ok(sc && (sc.mech === 0.6 || (sc.mech < 1)), '引导：机制强度 ×0.6（机制球 4→2 / 电球减半的依据）', sc);
+
+  // 普通模式防作弊：5 秒阈值（<5 秒报 fast，≥5 秒放行）
+  const Sn = begin('normal');
+  const eFast = enter(Sn, 1, 'fog_a');
+  const rFast = eFast.ack.run;
+  const dFast = ev(Sn, 1, rFast, 'down', null, sec(2));
+  ok(dFast.err && dFast.err.code === 'fast', '普通模式：2 秒极速上报被拒绝（fast）');
 }
 
 console.log('— 服务端同款加载（raid_core + raid_anton，空 vm 上下文）');

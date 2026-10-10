@@ -28,7 +28,7 @@
     lives: { normal: 6, guide: 3 }, perNode: { normal: 6, guide: 4 },
     erosion: { normal: 60, guide: 10 },
     rest: 300, subAfter: 180, subWindow: 90,
-    guard: { minClear: 20, maxDrop: 0.05 },
+    guard: { minClear: { normal: 5, guide: 0 }, maxDrop: 0.05 },
     lvl: { node: 60, final: 62 },
     // mech：机制强度（引导模式 0.6 = 机制球 4→2、内尔贝电球数 / 惩罚减半）；pen：本团本没有跨图惩罚，保留默认
     scale: {

@@ -55,7 +55,7 @@ const RAID_DEFS = {
     lives: { normal: nt => 3 * nt, guide: 3 }, perNode: { normal: 6, guide: 4 },   // 全团每阶段的复活次数（项目规则）；每人每张图的复活币上限 = 官方每队每图 6（引导 4）[QQ]
     erosion: { normal: 60, guide: 10 },
     rest: 300, subAfter: 180, subWindow: 90,   // 阶段间等待 5 分钟（团长可提前开始）[QQ]
-    guard: { minClear: 20, maxDrop: 0.05 },
+    guard: { minClear: { normal: 5, guide: 0 }, maxDrop: 0.05 },
     lvl: { node: 62, final: 64 },
     scale: {
       normal: { hp: 1, atk: 1, mech: 1, cur: 1, gear: 1, penalty: true, pen: nt => Math.min(1, nt / 4) },   // 跨图惩罚每层强度 = 队数 / 4（2 队 ×0.5，4 队 ×1）
@@ -611,9 +611,12 @@ const RAID_CORE = (() => {
   function downRun(S, R, now, o) {
     const nd = nodeOf(S, R.node), N = S.nodes[R.node];
     if (R.down) return fail(o, 'dup', '这次挑战已经上报过了');
-    if (N.st !== 'busy') return fail(o, 'state', '节点状态不对');
-    const min = (nd.minClear ?? S.guard.minClear) * 1000 * (R.hp0 ?? 1);
-    if (now - R.t0 < min) return fail(o, 'fast', '通关时间不合理（太快了）');
+    const rawMin = nd.minClear != null ? nd.minClear : (S.guard && S.guard.minClear);
+    const minSec = (S.mode === 'guide' || S.tier === 'guide' || S.graph === 'guide')
+      ? (typeof rawMin === 'object' && rawMin ? (byMode(rawMin, S) || 0) : 0)
+      : (typeof rawMin === 'object' && rawMin ? (byMode(rawMin, S) || 5) : (rawMin != null ? Number(rawMin) : 5));
+    const min = Math.max(0, minSec) * 1000 * (R.hp0 ?? 1);
+    if (min > 0 && now - R.t0 < min) return fail(o, 'fast', '通关时间不合理（太快了）');
     if (nd.type === 'order' && !S.sub && !myTurn(S, nd)) {
       for (const x of Object.values(phaseOf(S).nodes)) {
         if (x.type !== 'order' || x.group !== nd.group || S.nodes[x.id].st !== 'busy') continue;

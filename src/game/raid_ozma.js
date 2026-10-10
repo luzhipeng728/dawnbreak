@@ -57,7 +57,7 @@ const RAID_OZMA = (() => {
     par: nt => 1,
     // 复活币：全团共享，团队版随队数增加（官方小队模式 10 枚）；每人每图上限
     lives: { normal: nt => Math.max(6, nt * 4), guide: 10 }, perNode: { normal: 6, guide: 6 }, erosion: { normal: 60, guide: 10 },
-    rest: 300, subAfter: 180, subWindow: 90, guard: { minClear: 20, maxDrop: 0.05 },
+    rest: 300, subAfter: 180, subWindow: 90, guard: { minClear: { normal: 5, guide: 0 }, maxDrop: 0.05 },
     lvl: { node: 64, final: 65 },
     // 理智值：初始 100，归零第一次进小游戏回 restore，第二次倒下；混沌等级 1~3：等级越高货币越多（chaos.cur）
     sanity: { max: 100, restore: 50 }, chaos: { max: 3, cur: [1, 1.3, 1.7] },

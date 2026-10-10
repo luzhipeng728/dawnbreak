@@ -51,6 +51,7 @@
 | [`RAID_SIROCO.md`](RAID_SIROCO.md) | 现行 | 团本 · 无形之希洛克：官方规则对照、两人版取舍、分歧项与来源、实现进度（P0~P4） |
 | [`RAID_ANTON.md`](RAID_ANTON.md) | 现行 | 团本 · 安徒恩攻坚战（Neo 版）：流程、精英对应、来源 / 存疑 / 原创标注、奖励 |
 | [`RAID_OZMA.md`](RAID_OZMA.md) | 现行 | 团本 · 奥兹玛攻坚战：节点图（三区域 / 功能图 / 倒计时 / 锁血）、理智与混沌、精英与领主机制、融合装备，来源 / 存疑 / 原创标注 |
+| [`HANDOFF_RAID_REDESIGN.md`](HANDOFF_RAID_REDESIGN.md) | 交接 | 团本重设计（多队 / 精英 / 安徒恩 / 奥兹玛）进度、未完成项（美术、部署、线上验证）与下一步 |
 | [`RAID_FRAMEWORK.md`](RAID_FRAMEWORK.md) | 现行 | 团本框架：多队模型、精英原语、通用机制、新增团本的注册流程 |
 | [`REGION_HANDOFF.md`](REGION_HANDOFF.md) | 过程记录 | 海上列车 / 时空之门区域交接（已完成） |
 

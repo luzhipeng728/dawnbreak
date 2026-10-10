@@ -1,12 +1,12 @@
 {
- "generated": "2026-10-10 14:33:39",
+ "generated": "2026-10-10 14:38:28",
  "note": "团本专属美术清单。精灵走 NOFX，帧名同普通怪（idle walk1-8 run1-8 atk1-4 cast1-2 low1-2 hit1-2 down getup air jump），ax/ay 为 2x 像素的脚底锚点，res=2。",
  "counts": {
   "boss": 24,
   "elite": 20,
   "mob": 1,
   "bg": 0,
-  "icon": 0
+  "icon": 36
  },
  "items": [
   {
@@ -1580,8 +1580,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "a single glowing deep violet flower petal with a gold edge floating above a tiny crystal dish, the raid currency, soft violet light",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_petal.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1593,8 +1595,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "a glowing shard of broken white glass containing a tiny memory scene of a cracked porcelain mask, indigo sparkles",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_memory.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1606,8 +1610,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "a cracked round hand mirror with a dark gold frame, a red tearful eye reflected in the glass, crimson crack lines",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_mirror.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1619,8 +1625,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "an ornate black iron key with a violet gem in the bow and tiny chains, glowing indigo runes along the shaft",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_gatekey.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1632,8 +1640,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "a small gothic hourglass with violet sand and bat-wing frame, the sand glowing, countdown puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_hourglass.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1645,8 +1655,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "a white porcelain theatre mask with violet glowing cracks and gold trim, small and cute, floating",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_mask.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1658,8 +1670,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "two small crystal orbs, one violet and one cyan, joined by a thin glowing line, resonance puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_resonance.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1671,8 +1685,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "a single glowing violet energy orb inside a small dark gold cage, twin sister orb puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_orb_violet.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1684,8 +1700,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "a single glowing icy cyan energy orb inside a small silver cage, twin sister orb puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_orb_cyan.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1697,8 +1715,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "a tiny upright black coffin with white porcelain masks and violet ribbons, the shadow coffin raid emblem",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_coffin.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1710,8 +1730,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "a small golden balance scale with one dark pan and one light pan, tiny gems, judgement puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_scale.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -1723,8 +1745,10 @@
    "kind": "icon",
    "raid": "siroco",
    "desc": "a dark violet raid pass ticket with a gold eye emblem and a torn corner, glowing edges",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_si_pass.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3688,8 +3712,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a chunk of raw dark magic ore, jagged black crystal with glowing orange-red veins and a teal-blue core, the raid currency",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_manaore.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3701,8 +3727,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a glossy red crystalline shard that looks like a piece of a heart with a tiny glowing vein pattern, wet shine",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_heartshard.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3714,8 +3742,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a bone-white egg-shaped key with a red gem and a coiled worm motif, hatchery key puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_hatchkey.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3727,8 +3757,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a floating tri-colored energy ball split into red, orange and blue sections, elemental ball puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_elemball.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3740,8 +3772,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a tiny grey-blue ship cannon on a brass mount with a glowing red charge crystal, cannon defense puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_cannon.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3753,8 +3787,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a small glass bottle full of swirling grey-blue black fog with a cork and chain, black fog source puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_fogbottle.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3766,8 +3802,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a tiny black obsidian pillar with glowing orange magma cracks and a ring of small gems, sky-pillar puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_pillar.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3779,8 +3817,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a closed-lid fleshy eye orb on a thin staff base with fiery orange lashes, eye-guard puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_eye.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3792,8 +3832,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a glutton-series fusion equipment emblem: a bone-white and dark red armor chestpiece shaped like a toothy maw with gold trim, glowing",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_glutton_set.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3805,8 +3847,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "an ancient-series fusion equipment emblem: an ornate rusted bronze and teal armor chestpiece with ancient runes and a tiny glowing heart gem, glowing",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_ancient_set.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3818,8 +3862,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a fusion core: a red-and-teal two-tone crystal sphere in a gold cage with swirling light, fusion altar material",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_fusion_core.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -3831,8 +3877,10 @@
    "kind": "icon",
    "raid": "anton",
    "desc": "a dark red raid pass ticket with a gold beast-eye emblem and a torn corner, glowing edges",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_an_pass.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5508,8 +5556,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "a swirling chaos grudge orb: a dark sphere with churning crimson, indigo and dark green wisps inside, tiny screaming faces, the raid currency",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_chaos.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5521,8 +5571,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "a destruction-series fusion equipment emblem: a black and crimson spiked armor chestpiece with a glowing ember core, glowing",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_destruction.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5534,8 +5586,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "a despair-series fusion equipment emblem: a deep indigo and silver tear-drop themed armor chestpiece with a weeping crystal core, glowing",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_despair.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5547,8 +5601,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "a horror-series fusion equipment emblem: a black and dark moss-green bone-and-vine armor chestpiece with a staring pale yellow eye core, glowing",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_horror.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5560,8 +5616,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "a sacrifice-series fusion equipment emblem: a white and gold ritual armor chestpiece with a heart-shaped broken chain and an offering bowl, glowing",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_sacrifice.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5573,8 +5631,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "a divine-flame-series fusion equipment emblem: a gold and white-hot orange sacred armor chestpiece wreathed in a stylized divine flame, glowing",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_godflame.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5586,8 +5646,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "a small glass vial of calm glowing pale teal-white liquid with a tiny brain-and-star emblem, sanity potion",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_sanity.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5599,8 +5661,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "a small floating ring-shaped dimensional door of gold and black with a swirling starry inside, dimension door puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_door.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5612,8 +5676,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "a tiny black stone altar with a glowing gold rune circle and a small floating key crystal, altar puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_altar.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5625,8 +5691,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "two small crossed swords, one crimson and one indigo, chaos-level twin-sword puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_twinsword.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5638,8 +5706,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "a tiny cracked gold pocket watch with ticking hands and sparks of crimson light, countdown puzzle object",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_clock.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {
@@ -5651,8 +5721,10 @@
    "kind": "icon",
    "raid": "ozma",
    "desc": "an ornate gold and black key with a three-colored gem in the bow of crimson, indigo and dark green, chaos throne key",
-   "status": "pending",
-   "files": [],
+   "status": "done",
+   "files": [
+    "art/final/icon/item_raid_oz_throne_key.webp"
+   ],
    "frames": null,
    "anchors": null,
    "suggested": {

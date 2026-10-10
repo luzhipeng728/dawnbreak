@@ -41,9 +41,13 @@
 const RAID_DEFS = {
   // 希洛克攻坚战：完整保留官方节点图（P1 16 张 / P2 15 张图），2 名玩家轮流打（每人算官方的一支小队）。
   // 官方数值来源和取舍见 docs/RAID_SIROCO.md；[QQ] = 国服官方版本页（dnf.qq.com/cp/a20200922versionm），分歧项在那里写了另一种取值。
-  // 2 人化的比例（scale.normal）：pen = 跨图惩罚每层的强度 ×0.5（官方 4 队并行 → 2 人）；“需要并行”的时限（破坏之门共享时限、真理之棺 8 分钟、阶段 40 分钟）×2
+  // 两人版的比例（scale.normal，数值字段可以写成 nt => 值，nt = 队数）：pen = 跨图惩罚每层的强度（官方 4 队并行：2 队 ×0.5）；“需要并行”的时限（破坏之门共享时限、真理之棺 8 分钟、阶段 40 分钟）写的是两人版的 ×2，按 par(队数) 缩放
   siroco: {
-    id: 'siroco', name: '团本 · 无形之希洛克', minLvl: 60, maxPlayers: 2, orderMax: 4,
+    id: 'siroco', name: '团本 · 无形之希洛克', minLvl: 60, orderMax: 4,
+    // 人数档位：引导 1 人 / 两人版（duoMax，每人一支单人队）/ 多队版（minPlayers ~ maxPlayers，每队最多 teamSize 人、最多 maxTeams 队、至少 minTeams 队）
+    duoMax: 2, teamSize: 4, minPlayers: 4, minTeams: 2, maxTeams: 4, maxPlayers: 16,
+    // 书写的时限都是按两人版（2 支队并行）定的；par(队数) = 相对它的倍率（官方 4 队并行 = ×0.5，2 队 = ×1）。只乘“需要并行”的时限：阶段限时 / 顺序组共享时限 / 共享血量时限
+    par: nt => nt >= 2 ? 2 / nt : 1,
     limits: { day: 1, week: 2 },
     lives: { normal: 6, guide: 3 }, perNode: { normal: 6, guide: 4 },   // 全团每阶段的复活次数（项目规则）；每人每张图的复活币上限 = 官方每队每图 6（引导 4）[QQ]
     erosion: { normal: 60, guide: 10 },
@@ -51,7 +55,7 @@ const RAID_DEFS = {
     guard: { minClear: 20, maxDrop: 0.05 },
     lvl: { node: 62, final: 64 },
     scale: {
-      normal: { hp: 1, atk: 1, mech: 1, cur: 1, gear: 1, penalty: true, pen: 0.5 },
+      normal: { hp: 1, atk: 1, mech: 1, cur: 1, gear: 1, penalty: true, pen: nt => Math.min(1, nt / 4) },   // 跨图惩罚每层强度 = 队数 / 4（2 队 ×0.5，4 队 ×1）
       guide: { hp: 0.85, atk: 0.85, mech: 0.6, cur: 0.6, gear: 0.6, penalty: false, pen: 0 },
     },
     phases: [
@@ -139,7 +143,10 @@ const RAID_DEFS = {
 const RAID_CORE = (() => {
   const VER = 2, DAY = 86400000, RESET = 6 * 3600000, BJ = 480;
   const LIVE = { lobby: 1, routes: 1, rest: 1, final: 1 };
-  const SCALE = RAID_DEFS.siroco.scale;
+  // 数值表缺省（团本没写 scale 时用）。表里的数值字段可以是 nt => 值（nt = 这场的队数）：见 scaleOf
+  const SCALE = { normal: { hp: 1, atk: 1, mech: 1, cur: 1, gear: 1, penalty: true, pen: 1 }, guide: { hp: 0.85, atk: 0.85, mech: 0.6, cur: 0.6, gear: 0.6, penalty: false, pen: 0 } };
+  // 多队版每队的颜色（情况板 / 标记 / 队员列表按队着色）
+  const TEAM_COLORS = Object.freeze(['#ff6b6b', '#5aa9ff', '#6bd66b', '#ffd24a', '#c58bff', '#ff9a3c', '#4ad6c8', '#ff7ac6']);
   // 官方组队拾取规则。`owner` 是掉落归属（击杀者 / 来源队员），`leader` 是队长分配，
   // `random` 是在线队员随机分配，`auction` 先进入竞拍池、由队员竞价后结算。
   // 规则核心不碰 UI / 网络，普通地下城和团本都可以复用这套纯函数。
@@ -179,7 +186,19 @@ const RAID_CORE = (() => {
   const nodeOf = (S, id) => { const P = phaseOf(S); return P && typeof id === 'string' && Object.prototype.hasOwnProperty.call(P.nodes, id) ? P.nodes[id] : null; };
   const mem = (S, uid) => S.members.find(m => m.uid === uid) || null;
   const act = S => S.members.filter(m => !m.left);
-  const byMode = (v, S) => v && typeof v === 'object' ? (v[S.mode] ?? v.normal) : v;
+  // 取值：{ normal, guide } 按模式取；函数 (队数, S) => 值 按这场的队数取（规则参数随队数缩放，不写死 ×2 / ×0.5）
+  const byMode = (v, S) => { if (v && typeof v === 'object') v = v[S.mode] ?? v.normal; return typeof v === 'function' ? v(S.nTeams || 1, S) : v; };
+  // 需要并行的时限（阶段限时 / 顺序组共享时限 / 共享血量时限）按 def.par(队数) 缩放；只在普通图（多人）里生效
+  const tmul = S => { const D = def(S); return S.graph === 'normal' && typeof D.par === 'function' ? D.par(S.nTeams || 1) : 1; };
+  const tlim = (S, v) => { const x = byMode(v, S); return x ? Math.round(x * tmul(S)) : x; };
+  function scaleOf(S) {
+    const D = def(S), tab = D.scale || SCALE, T = tab[S.mode] || tab.normal || SCALE.normal, nt = S.nTeams || 1, o = {};
+    for (const k of Object.keys(T)) o[k] = typeof T[k] === 'function' ? T[k](nt, S) : T[k];
+    return o;
+  }
+  // 人数上限：多人普通版按 maxPlayers，否则两人版 duoMax（缺省 2）
+  const duoCap = D => D.duoMax || Math.min(D.maxPlayers || 2, 2);
+  const capacity = S => { const D = def(S); return S.tier === 'team' ? (D.maxPlayers || duoCap(D)) : duoCap(D); };
   const push = (o, to, kind, node, p) => { o.fx.push({ to, kind, node: node || null, p: p || null }); };
   const note = (o, to, text, node) => push(o, to, 'note', node, { text });
   const fail = (o, code, text) => { o.err = { code, text }; return o; };
@@ -199,13 +218,18 @@ const RAID_CORE = (() => {
       gold: Number.isFinite(Number(m.gold)) ? Math.max(0, Math.floor(Number(m.gold))) : null,
       vaultGold: Number.isFinite(Number(m.vaultGold)) ? Math.max(0, Math.floor(Number(m.vaultGold))) : 0,
       goldCap: Number.isFinite(Number(m.goldCap)) ? Math.min(AUCTION_GOLD_CAP, Math.max(1, Math.floor(Number(m.goldCap)))) : AUCTION_GOLD_CAP,
+      // team：所在队（-1 = 还没分队，开始时按团长分的 / 同一个队伍（party）优先凑一队 / 自动补齐）；party：来自哪个队伍（服务端传，只用来自动分队）
+      team: Number.isInteger(m.team) ? m.team : -1, party: m.party == null ? null : String(m.party), san: null, sanZ: 0,
       ready: false, online: m.online !== false, offAt: 0, at: 'camp', ero: 0, left: false, rw: true });
   }
   function init(raid, members, mode, now, opt) {
     opt = opt || {};
     const D = defOf(raid); if (!D) throw new Error('没有这个团本：' + raid);
     mode = mode === 'guide' ? 'guide' : 'normal';
-    const S = { v: VER, sid: String(opt.sid || ''), raid, mode, graph: mode, st: 'lobby', phase: -1, leader: members[0].uid,
+    // 人数档位 tier：guide 引导（1 人）/ duo 两人版（每人一支单人队）/ team 多队版（opt.team：≥ minPlayers 人、分成多队）
+    const tier = mode === 'guide' ? 'guide' : opt.team && (D.maxPlayers || 0) > duoCap(D) ? 'team' : 'duo';
+    const S = { v: VER, sid: String(opt.sid || ''), raid, mode, graph: mode, tier, nTeams: tier === 'guide' ? 1 : tier === 'duo' ? 2 : 0, teams: [], keys: {}, gbuffs: [],
+      chaos: D.chaos ? { lv: 1, max: D.chaos.max || 3 } : null, st: 'lobby', phase: -1, leader: members[0].uid,
       created: now, started: 0, ended: 0, why: null, phaseT0: 0, deadline: 0, restUntil: 0, lives: 0, sub: false,
       members: [], nodes: {}, buffs: [], win: {}, cp: {}, marks: {}, rev: {}, runs: {}, runSeq: 0,
       rs: opt.seed != null ? opt.seed | 0 : hash(String(opt.sid || '') + ':' + now), res: { phases: [], used: {} }, stats: { deaths: 0, penalties: 0 },
@@ -215,6 +239,7 @@ const RAID_CORE = (() => {
       loot: { mode: LOOT_MODES.includes(opt.lootMode) ? opt.lootMode : 'owner', seq: 0, offers: {}, history: [], wallets: {} },
       guard: Object.assign({}, D.guard, opt.guard || {}) };
     for (const m of members) addMember(S, m);
+    if (D.sanity) for (const m of S.members) m.san = D.sanity.max || 100;
     for (const m of S.members) {
       const w = opt.wallets && (opt.wallets[m.uid] || opt.wallets[String(m.uid)]) || {};
       S.loot.wallets[String(m.uid)] = {
@@ -234,6 +259,18 @@ const RAID_CORE = (() => {
     if (!S.loot || typeof S.loot !== 'object') S.loot = { mode: 'owner', seq: 0, offers: {}, history: [], wallets: {} };
     if (!LOOT_MODES.includes(S.loot.mode)) S.loot.mode = 'owner';
     S.loot.seq = S.loot.seq | 0; S.loot.offers ||= {}; S.loot.history ||= []; S.loot.wallets ||= {};
+    // 多队字段（旧会话没有：按两人版 / 引导补齐）
+    if (!S.tier) S.tier = S.mode === 'guide' ? 'guide' : 'duo';
+    if (S.nTeams == null) S.nTeams = S.tier === 'guide' || (S.st !== 'lobby' && S.graph === 'guide') ? 1 : 2;
+    if (!Array.isArray(S.teams)) S.teams = [];
+    S.keys ||= {}; S.gbuffs ||= [];
+    if (S.chaos === undefined) S.chaos = null;
+    const started = S.st !== 'lobby';
+    if (started && !S.teams.length && S.members.length) {
+      const per = S.graph === 'guide' ? [S.members.map(m => m.uid)] : S.members.map(m => [m.uid]);
+      S.teams = per.map((u, i) => ({ id: i, members: u }));
+    }
+    S.members.forEach((m, i) => { if (m.team === undefined) m.team = started ? (S.graph === 'guide' ? 0 : i) : -1; if (m.party === undefined) m.party = null; if (m.san === undefined) { m.san = null; m.sanZ = 0; } });
     for (const m of S.members || []) {
       const k = String(m.uid), w = S.loot.wallets[k] || {};
       w.gold = Number.isFinite(Number(w.gold)) ? Math.max(0, Math.floor(Number(w.gold))) : (m.gold == null ? AUCTION_GOLD_CAP : Math.max(0, Math.floor(Number(m.gold))));
@@ -245,10 +282,60 @@ const RAID_CORE = (() => {
     return S;
   }
 
+  // ---- 分队（团长分队 / 自动补齐）----
+  // 多队版：m.team >= 0 的是团长手动分的；其余的按 m.party（同一个队伍的人尽量一队）、再按人数最少的队补齐。至少 minTeams 队，每队最多 teamSize 人。
+  // 引导 / 两人版：不用分（引导 = 一队，两人版 = 每人一队）。返回 { ok, teams: [[uid…]…] } 或 { ok:false, code, text }
+  function planTeams(S) {
+    const D = def(S), A = act(S), uids = A.map(m => m.uid);
+    if (S.tier === 'guide') return { ok: true, teams: [uids] };
+    if (S.tier === 'duo') return { ok: true, teams: A.length >= 2 ? uids.map(u => [u]) : [uids] };
+    const size = D.teamSize || 4, minP = D.minPlayers || 4, minT = D.minTeams || 2, maxT = D.maxTeams || 4;
+    if (A.length < minP) return { ok: false, code: 'count', text: `多队版至少要 ${minP} 人（现在 ${A.length} 人）` };
+    if (A.length > size * maxT) return { ok: false, code: 'count', text: `多队版最多 ${size * maxT} 人` };
+    const bins = Array.from({ length: maxT }, () => []), free = [];
+    let hi = 0, explicit = false;
+    for (const m of A) { if (m.team >= 0 && m.team < maxT) { bins[m.team].push(m.uid); hi = Math.max(hi, m.team + 1); explicit = true; } else free.push(m); }
+    if (bins.some(b => b.length > size)) return { ok: false, code: 'size', text: `每队最多 ${size} 人` };
+    let limit = Math.max(hi, Math.min(maxT, Math.max(minT, Math.ceil(A.length / size))));
+    const groups = new Map();
+    for (const m of free) { const k = m.party != null ? 'p' + m.party : 'u' + m.uid; (groups.get(k) || groups.set(k, []).get(k)).push(m.uid); }
+    const place = (g) => {
+      for (;;) {
+        let best = -1;
+        for (let i = 0; i < limit; i++) if (size - bins[i].length >= g.length && (best < 0 || bins[i].length < bins[best].length)) best = i;
+        if (best >= 0) { bins[best].push(...g); return; }
+        if (g.length > 1) { g.splice(0).forEach(u => place([u])); return; }   // 放不下整组就拆开
+        if (limit >= maxT) return;
+        limit++;
+      }
+    };
+    for (const g of [...groups.values()].sort((a, b) => b.length - a.length)) place(g);
+    let teams = bins.filter(b => b.length);
+    if (teams.length < minT) {
+      if (explicit) return { ok: false, code: 'teams', text: `至少要分成 ${minT} 队` };
+      const n = Math.min(minT, A.length), re = Array.from({ length: n }, () => []);
+      uids.forEach((u, i) => re[i % n].push(u)); teams = re;
+    }
+    const order = new Map(uids.map((u, i) => [u, i]));
+    return { ok: true, teams: teams.map(t => t.slice().sort((a, b) => order.get(a) - order.get(b))) };
+  }
+  // 给客户端看的分队：开始后 = 实际分队；大厅（多队版）= 团长已经手动分的队
+  function teamsOf(S) {
+    let list = S.teams;
+    if (S.st === 'lobby') {
+      if (S.tier !== 'team') return [];
+      const by = {}; for (const m of act(S)) if (m.team >= 0) (by[m.team] = by[m.team] || []).push(m.uid);
+      list = Object.keys(by).map(Number).sort((a, b) => a - b).map(i => ({ id: i, members: by[i] }));
+    }
+    return list.map(t => ({ id: t.id, name: `${t.id + 1} 队`, color: TEAM_COLORS[t.id % TEAM_COLORS.length], members: t.members.slice(),
+      leader: (t.members.find(u => { const x = mem(S, u); return x && !x.left; }) ?? null) }));
+  }
+  const teamOf = (S, uid) => { const m = mem(S, uid); return m ? m.team : -1; };
+
   // ---- 阶段 ----
   function beginPhase(S, i, now, o) {
     const P = graph(S.raid, S.graph).phases[i], D = def(S);
-    S.phase = i; S.st = 'routes'; S.phaseT0 = now; S.deadline = now + byMode(P.limit, S) * 1000; S.restUntil = 0;
+    S.phase = i; S.st = 'routes'; S.phaseT0 = now; S.deadline = now + tlim(S, P.limit) * 1000; S.restUntil = 0; S.keys = {}; S.gbuffs = [];
     S.lives = byMode(D.lives, S); S.rev = {}; S.buffs = []; S.win = {}; S.cp = {}; S.marks = {}; S.aura = {}; S.glim = {};
     for (const R of Object.values(S.runs)) if (!R.end) { R.end = 'phase'; R.endAt = now; }
     S.nodes = {};
@@ -260,7 +347,7 @@ const RAID_CORE = (() => {
     for (const ids of Object.values(groups)) rollOrder(S, ids);
     for (const m of S.members) m.at = 'camp';
     push(o, 'all', 'phase', null, { phase: P.id, start: true, deadline: S.deadline, lives: S.lives });
-    note(o, 'all', `${P.name}开始：限时 ${Math.round(byMode(P.limit, S) / 60)} 分钟`);
+    note(o, 'all', `${P.name}开始：限时 ${Math.round(tlim(S, P.limit) / 60)} 分钟`);
   }
   function rollOrder(S, ids) {
     const pool = []; for (let k = 1; k <= Math.max(def(S).orderMax || 4, ids.length); k++) pool.push(k);
@@ -311,6 +398,15 @@ const RAID_CORE = (() => {
   }
   function twin(S, nd) { return Object.values(phaseOf(S).nodes).find(x => x.type === 'sync' && x.group === nd.group && x.id !== nd.id) || null; }
   function activeBuffs(S, id, now) { return S.buffs.filter(b => b.node === id && (!b.until || b.until > now)).map(b => ({ id: b.id, kind: b.kind, p: b.p, until: b.until })); }
+  // 理智值（def.sanity = { max, restore }）：归零第一次 = 进小游戏恢复到 restore，第二次 = 倒下（客户端按 sanity fx 的 dead 处理）
+  function sanityAdd(S, m, d, o) {
+    const D = def(S).sanity; if (!D || !m || m.left || m.san == null) return;
+    const max = D.max || 100; m.san = Math.max(0, Math.min(max, m.san + d));
+    if (m.san > 0) { push(o, [m.uid], 'sanity', null, { v: m.san }); return; }
+    m.sanZ = (m.sanZ || 0) + 1;
+    if (m.sanZ === 1) { m.san = D.restore ?? 50; push(o, [m.uid], 'sanity', null, { v: m.san, mini: true }); note(o, [m.uid], '理智值归零：进入小游戏恢复理智（再次归零会倒下）'); }
+    else { push(o, [m.uid], 'sanity', null, { v: 0, dead: true }); note(o, 'all', `${m.name} 理智归零倒下了`); }
+  }
   function applyFx(S, nd, list, now, o) {
     for (const f of list || []) {
       const to = f.to || nd.id, T = S.nodes[to];
@@ -327,6 +423,26 @@ const RAID_CORE = (() => {
         S.buffs.push({ id, node: to, kind: 'buff', p, until, from: nd.id, n });
         push(o, runners(S, to), 'buff', to, { id, p, dur: f.dur || 60, until, n });
         if (f.text) { note(o, 'all', `${f.text}（${n} 层：伤害 ×${f.steps[n - 1]}）`, to); continue; }
+      } else if (f.kind === 'gbuff') {
+        // 全团增益（功能图）：不属于某个节点，所有队的所有挑战都吃；dur 秒（0 = 直到这个阶段结束）。同 id 刷新
+        const id = f.id || 'gbuff', until = f.dur ? now + f.dur * 1000 : 0;
+        S.gbuffs = S.gbuffs.filter(b => b.id !== id);
+        S.gbuffs.push({ id, p: f.p || {}, until, from: nd.id });
+        push(o, 'all', 'gbuff', nd.id, { id, p: f.p || {}, dur: f.dur || 0, until });
+      } else if (f.kind === 'key') {
+        S.keys[f.id] = true; push(o, 'all', 'key', nd.id, { id: f.id });
+      } else if (f.kind === 'unlock') {   // 强制打开一个节点（开关节点；精英 / 机关击杀用）
+        if (T && T.st === 'locked') { openNode(S, nodeOf(S, to), now); push(o, 'all', 'unlock', to, {}); }
+      } else if (f.kind === 'lock') {
+        if (T && T.st === 'open' && !T.run) { T.st = 'locked'; T.until = 0; push(o, 'all', 'lock', to, {}); }
+      } else if (f.kind === 'countdown') {   // 给倒计时节点开始 / 重置倒计时（精英击杀触发倒计时；节点没开放时不动）
+        const tnd = nodeOf(S, to);
+        if (T && tnd && (T.st === 'open' || T.st === 'busy')) { T.timer = now + (f.sec || tnd.timer || 60) * 1000; push(o, 'all', 'countdown', to, { until: T.timer }); }
+      } else if (f.kind === 'sanity') {   // 理智值：to = 'all'（默认，在线全员）| 'run'（这个节点里的人）
+        const ids = f.who === 'run' ? runners(S, to) : act(S).map(m => m.uid);
+        for (const u of ids) sanityAdd(S, mem(S, u), f.v || 0, o);
+      } else if (f.kind === 'chaos') {   // 混沌等级：+ / − 级，夹在 1~max
+        if (S.chaos) { S.chaos.lv = Math.max(1, Math.min(S.chaos.max, S.chaos.lv + (f.v || 1))); push(o, 'all', 'chaos', nd.id, { lv: S.chaos.lv }); }
       } else if (f.kind === 'heal') {
         if (!T || T.st === 'cleared') continue;
         T.hp = 1; push(o, runners(S, to), 'heal', to, { hp: 1 });
@@ -388,13 +504,13 @@ const RAID_CORE = (() => {
   function clearNode(S, id, now, o) {
     const nd = nodeOf(S, id), N = S.nodes[id], who = runners(S, id);
     N.n++; N.hp = 0; N.hpStart = 0; delete S.cp[id];
-    if (nd.type === 'buff') { N.st = 'cool'; N.until = nd.respawn === 0 ? 0 : now + (nd.respawn || 120) * 1000; }   // respawn 0 = 不重生（直到 failReset）
+    if (nd.type === 'buff' || nd.type === 'func') { N.st = 'cool'; N.until = nd.respawn === 0 ? 0 : now + (nd.respawn || 120) * 1000; }   // respawn 0 = 不重生（直到 failReset）；func = 功能图（通关给全团加增益，见 fx gbuff）
     else if (nd.type === 'timer') { N.st = 'cool'; N.until = now + (nd.repair || 90) * 1000; N.timer = 0; }
     else N.st = 'cleared';
     if (nd.group && S.glim && S.glim[nd.group] && Object.values(phaseOf(S).nodes).every(x => x.group !== nd.group || S.nodes[x.id].st === 'cleared')) delete S.glim[nd.group];
     push(o, who, 'done', id, { ok: true });
     note(o, 'all', `${who.length ? names(S, who) : '队友'} 通关了「${nd.name}」`, id);
-    if (nd.type === 'buff') applyFx(S, nd, nd.fx && nd.fx.clear, now, o);
+    applyFx(S, nd, nd.fx && nd.fx.clear, now, o);   // 增益 / 功能 / 钥匙图通关的跨节点效果（别的类型没写 fx.clear 就没有）
   }
   function openNode(S, nd, now) {
     const N = S.nodes[nd.id];
@@ -550,7 +666,10 @@ const RAID_CORE = (() => {
   function subNow(S, now) {
     if (S.graph !== 'normal') return false;
     const A = act(S);
-    return A.length < 2 || A.some(m => !m.online && now - m.offAt >= def(S).subAfter * 1000);
+    if (A.length < 2) return true;
+    // 有一整队都走了 / 离线超过 subAfter 秒 = 队数不够并行了（两人版：队友离线 = 少一队）
+    const live = new Set(A.filter(m => m.online || now - m.offAt < def(S).subAfter * 1000).map(m => m.team));
+    return live.size < (S.nTeams || 2);
   }
   function setSub(S, on, now, o) {
     const D = def(S), P = phaseOf(S);
@@ -646,7 +765,7 @@ const RAID_CORE = (() => {
   }
   // 跨图持续惩罚（aura）：源节点没通关期间，每 every 秒给目标节点“正在进行的那次挑战”叠一层；目标换了一次挑战就从 0 开始
   function auras(S, now, o) {
-    const P = phaseOf(S), pen = (def(S).scale[S.mode] || {}).pen ?? 1;
+    const P = phaseOf(S), pen = scaleOf(S).pen ?? 1;
     if (!scale(S, null, 1).penalty) return;
     for (const nd of Object.values(P.nodes)) {
       if (!nd.aura) continue;
@@ -667,7 +786,7 @@ const RAID_CORE = (() => {
       }
     }
   }
-  const canOpen = (S, nd) => !nd.manual && nd.need.every(x => S.nodes[x].st === 'cleared') && nd.needEnter.every(x => S.nodes[x].seen) && (!nd.needBoss.length || nd.needBoss.some(x => S.nodes[x].boss));
+  const canOpen = (S, nd) => !nd.manual && nd.need.every(x => S.nodes[x].st === 'cleared') && (nd.needKey || []).every(k => S.keys[k]) && nd.needEnter.every(x => S.nodes[x].seen) && (!nd.needBoss.length || nd.needBoss.some(x => S.nodes[x].boss));
   function sweep(S, now, o) {
     if (S.st !== 'routes' && S.st !== 'final') return;
     const P = phaseOf(S);
@@ -680,6 +799,7 @@ const RAID_CORE = (() => {
         if (stop && stop.st === 'cleared' && N.st !== 'off' && !N.run) { N.st = 'off'; N.until = 0; N.timer = 0; }
       }
     }
+    S.gbuffs = S.gbuffs.filter(b => { const gone = b.until && b.until <= now; if (gone) push(o, 'all', 'ungbuff', b.from, { id: b.id }); return !gone; });
     for (const k of Object.keys(S.aura || {})) { const A = S.aura[k], N = S.nodes[A.src]; if (!N || (N.st !== 'open' && N.st !== 'busy')) delete S.aura[k]; }
     S.buffs = S.buffs.filter(b => {
       const src = b.kind === 'aura' && S.nodes[b.from];
@@ -701,6 +821,7 @@ const RAID_CORE = (() => {
     const A = act(S);
     if (A.some(m => !m.online)) return { code: 'offline', text: '还有人不在线' };
     if (A.some(m => !m.ready && m.uid !== S.leader)) return { code: 'ready', text: '还有人没准备好' };
+    if (S.tier === 'team') { const p = planTeams(S); if (!p.ok) return { code: p.code, text: p.text }; }
     return null;
   }
 
@@ -709,10 +830,11 @@ const RAID_CORE = (() => {
     join(S, ev, now, o, m) {
       if (S.st !== 'lobby') return fail(o, 'state', '团本已经开始了');
       const D = def(S);
-      if (m) { m.cid = String(ev.cid || m.cid); m.name = String(ev.name || m.name); m.cls = ev.cls || m.cls; m.job = ev.job || m.job; return; }
+      if (m) { m.cid = String(ev.cid || m.cid); m.name = String(ev.name || m.name); m.cls = ev.cls || m.cls; m.job = ev.job || m.job; if (ev.party != null) m.party = String(ev.party); return; }
       if (S.mode === 'guide') return fail(o, 'guide', '引导模式只能一个人打');
-      if (act(S).length >= (D.maxPlayers || 2)) return fail(o, 'full', `这个团本最多 ${D.maxPlayers || 2} 人`);
+      if (act(S).length >= capacity(S)) return fail(o, 'full', `这个团本最多 ${capacity(S)} 人`);
       addMember(S, ev);
+      if (D.sanity) S.members[S.members.length - 1].san = D.sanity.max || 100;
       note(o, 'all', `${ev.name || '队友'} 加入了团本`);
     },
     ready(S, ev, now, o, m) {
@@ -725,6 +847,10 @@ const RAID_CORE = (() => {
       const A = act(S);
       for (const x of A) x.rw = !ev.rw || ev.rw[x.uid] !== false;
       S.graph = S.mode === 'guide' || A.length < 2 ? 'guide' : 'normal';
+      const plan = planTeams(S);   // canStart 已经检查过，这里一定 ok
+      S.teams = plan.teams.map((u, i) => ({ id: i, members: u.slice() }));
+      for (const t of S.teams) for (const u of t.members) mem(S, u).team = t.id;
+      S.nTeams = S.graph === 'guide' ? 1 : S.teams.length;
       S.started = now;
       beginPhase(S, 0, now, o);
       const pr = A.filter(x => !x.rw);
@@ -751,10 +877,22 @@ const RAID_CORE = (() => {
     },
     mark(S, ev, now, o, m) {
       if (S.leader !== m.uid) return fail(o, 'leader', '只有团长能标记');
-      const to = mem(S, ev.to); if (!to || to.left) return fail(o, 'member', '没有这个队员');
       if (ev.node != null && !nodeOf(S, ev.node)) return fail(o, 'node', '没有这个节点');
-      S.marks[to.uid] = ev.node || null;
-      push(o, [to.uid], 'mark', ev.node || null, { by: m.uid });
+      // 标记目标：to = 队员 uid（只标这个人）| team = 队序号（整队）
+      const tos = ev.team != null ? act(S).filter(x => x.team === (ev.team | 0)) : [mem(S, ev.to)].filter(x => x && !x.left);
+      if (!tos.length) return fail(o, ev.team != null ? 'team' : 'member', ev.team != null ? '没有这个队' : '没有这个队员');
+      for (const to of tos) { S.marks[to.uid] = ev.node || null; push(o, [to.uid], 'mark', ev.node || null, { by: m.uid }); }
+    },
+    // 团长分队（大厅、多队版）：to = 队员，team = 队序号（-1 = 取消分队）；每队最多 teamSize 人
+    team(S, ev, now, o, m) {
+      if (S.st !== 'lobby') return fail(o, 'state', '团本已经开始了，不能再分队');
+      if (S.leader !== m.uid) return fail(o, 'leader', '只有团长能分队');
+      if (S.tier !== 'team') return fail(o, 'tier', '只有多队版需要分队');
+      const D = def(S), to = mem(S, ev.to), t = Number.isInteger(ev.team) ? ev.team : -1;
+      if (!to || to.left) return fail(o, 'member', '没有这个队员');
+      if (t < -1 || t >= (D.maxTeams || 4)) return fail(o, 'team', `最多 ${D.maxTeams || 4} 队`);
+      if (t >= 0 && to.team !== t && act(S).filter(x => x.team === t).length >= (D.teamSize || 4)) return fail(o, 'size', `每队最多 ${D.teamSize || 4} 人`);
+      to.team = t;
     },
     enter(S, ev, now, o, m) {
       if (S.st !== 'routes' && S.st !== 'final') return fail(o, 'state', S.st === 'rest' ? '休整中：等下一阶段开始' : '团本还没开始');
@@ -770,14 +908,20 @@ const RAID_CORE = (() => {
       }
       if (N.run) return fail(o, 'taken', '这个节点已经有人在打了');
       if (N.st !== 'open') return fail(o, 'locked', N.st === 'locked' ? '这个节点还没开放' : N.st === 'cool' ? '这个节点正在重生' : '这个节点已经打完了');
-      if (nd.solo && ids.length > 1) return fail(o, 'solo', '这个节点必须分头打');
+      // 分队：solo = 同一时间只能一队（一队里可以多人一起进）。两人版每人一队 → 和原来一样“不能两个人一起进”；多队版只能带本队的人（最终战除外）
+      const cross = team.some(x => x.team !== m.team), D0 = def(S);
+      if (nd.solo && (S.tier === 'team' ? cross : ids.length > 1)) return fail(o, 'solo', '这个节点必须分头打');
+      if (S.tier === 'team') {
+        if (cross && !nd.together) return fail(o, 'team', '只能带本队的队员一起进');
+        if (ids.length > (D0.teamSize || 4) && !nd.together) return fail(o, 'size', `一队最多 ${D0.teamSize || 4} 人`);
+      }
       if (nd.together && S.graph === 'normal' && !S.sub && act(S).some(x => x.online && !ids.includes(x.uid))) return fail(o, 'together', '最终战要大家一起进（队长带队）');
       const PL = nd.pool ? S.pools[nd.pool] : null, P = phaseOf(S);
       const hp0 = PL ? PL.hp : S.cp[nd.id] ? S.cp[nd.id].hp : N.hpStart || 1;
       N.seen = true; N.until = nd.manual ? 0 : N.until;
-      const gl = byMode(nd.groupLimit, S);
+      const gl = tlim(S, nd.groupLimit);
       if (gl && nd.group && !S.glim[nd.group]) { S.glim[nd.group] = { until: now + gl * 1000 }; note(o, 'all', `破坏之门开始计时：${Math.round(gl / 60)} 分钟内按顺序打完 4 扇门，不然全部重置`); }
-      const pl = PL && byMode((P.pools[nd.pool] || {}).limit, S);
+      const pl = PL && tlim(S, (P.pools[nd.pool] || {}).limit);
       if (pl && !PL.until) { PL.until = now + pl * 1000; note(o, 'all', `${P.pools[nd.pool].name || '共享领主'}开始计时：${Math.round(pl / 60)} 分钟内打空共享血量`); }
       applyFx(S, nd, nd.enterFx, now, o);   // 进门就生效的效果（阴影之棺的虚弱）：这时还没有 run，不单独推送，随 entered 的 buffs 一起下发
       const rl = byMode(nd.runLimit, S);
@@ -786,7 +930,7 @@ const RAID_CORE = (() => {
       for (const x of team) x.at = nd.id;
       const rot = P.rot && nd.pool === P.rot.pool && nd.slot != null ? (nd.slot + S.rot) % P.rot.forms.length : -1;
       push(o, ids, 'entered', nd.id, { run: R.id, node: nd.id, name: nd.name, type: nd.type, dg: rot >= 0 ? P.rot.dgs[rot] : nd.dg || null, boss: nd.boss || null, host: m.uid, by: ids,
-        scale: scale(S, nd.id, ids.length), buffs: activeBuffs(S, nd.id, now), cp: S.cp[nd.id] || null, hpStart: hp0 < 1 ? hp0 : 0, order: N.order || 0,
+        scale: scale(S, nd.id, ids.length), buffs: activeBuffs(S, nd.id, now), gbuffs: S.gbuffs.map(b => ({ id: b.id, p: b.p, until: b.until })), team: m.team, chaos: S.chaos ? S.chaos.lv : 0, cp: S.cp[nd.id] || null, hpStart: hp0 < 1 ? hp0 : 0, order: N.order || 0,
         orderTurn: nd.type === 'order' && !S.sub ? myTurn(S, nd) : true, sub: S.sub, deadline: S.deadline,
         limit: R.limit, pool: PL ? { name: nd.pool, hp: PL.hp, until: PL.until, by: Object.assign({}, PL.by) } : null, form: rot >= 0 ? P.rot.forms[rot] : null });
       o.ack = { run: R.id };
@@ -846,6 +990,24 @@ const RAID_CORE = (() => {
       push(o, [m.uid], 'life', R.node, { ok: true, left: S.lives, nodeLeft: per - used - 1 });
       o.ack = { res: 'life' };
     },
+    // 精英被击杀（主机报）：节点的 elites[id] = { fx: [...], once } 的效果生效（开关节点 / 全团增益 / 倒计时 / 钥匙…）；ev.v = 精英 id
+    elite(S, ev, now, o, m) {
+      const R = runOf(S, ev, o, m, true); if (!R) return;
+      const nd = nodeOf(S, R.node), id = String(ev.v || ''), E = nd && nd.elites && own(nd.elites, id) ? nd.elites[id] : null;
+      if (!E) return fail(o, 'elite', '这个节点没有这个精英');
+      R.elite = R.elite || {};
+      if (E.once !== false && R.elite[id]) { o.ack = { dup: true }; return; }
+      R.elite[id] = (R.elite[id] || 0) + 1;
+      applyFx(S, nd, E.fx, now, o);
+      if (E.text) note(o, 'all', E.text, nd.id);
+      o.ack = { res: 'elite' };
+    },
+    // 理智值变化（自己报：被打 / 机制扣、恢复）：单次限幅 ±40
+    san(S, ev, now, o, m) {
+      if (!def(S).sanity) return fail(o, 'bad', '这个团本没有理智值');
+      const d = +ev.v; if (!Number.isFinite(d)) return fail(o, 'bad', '理智值不对');
+      sanityAdd(S, m, Math.max(-40, Math.min(40, d)), o);
+    },
     cp(S, ev, now, o, m) {
       const R = runOf(S, ev, o, m, true); if (!R) return;
       const nd = nodeOf(S, R.node); if (!nd.cp) return fail(o, 'bad', '这个节点没有存档点');
@@ -895,6 +1057,7 @@ const RAID_CORE = (() => {
     for (const L of Object.values(S.pools || {})) L.until = f(L.until);
     for (const A of Object.values(S.aura || {})) A.next = f(A.next);
     for (const b of S.buffs) b.until = f(b.until);
+    for (const b of S.gbuffs || []) b.until = f(b.until);
     for (const W of Object.values(S.win)) { W.until = f(W.until); W.t0 = f(W.t0); }
     for (const m of S.members) { m.ero = f(m.ero); m.offAt = f(m.offAt); }
     for (const R of Object.values(S.runs)) { R.t0 = f(R.t0); R.endAt = f(R.endAt); R.limit = f(R.limit); if (R.down) R.down += dt; }
@@ -911,7 +1074,9 @@ const RAID_CORE = (() => {
     const aura = {}; for (const A of Object.values(S.aura || {})) aura[A.to] = (aura[A.to] || 0) + A.n;
     return { sid: S.sid, raid: S.raid, mode: S.mode, graph: S.graph, st: S.st, phase: P ? P.id : 0, leader: S.leader,
       created: S.created, started: S.started, ended: S.ended, why: S.why, deadline: S.deadline, restUntil: S.restUntil, lives: S.lives, sub: S.sub,
-      members: S.members.map(m => ({ uid: m.uid, cid: m.cid, name: m.name, cls: m.cls, job: m.job, ready: m.ready, online: m.online, at: m.at, ero: m.ero, left: m.left, rw: m.rw })),
+      tier: S.tier, nTeams: S.nTeams, teams: teamsOf(S), unassigned: S.st === 'lobby' && S.tier === 'team' ? act(S).filter(m => m.team < 0).map(m => m.uid) : [],
+      keys: Object.assign({}, S.keys), gbuffs: S.gbuffs.map(b => ({ id: b.id, p: b.p, until: b.until, from: b.from })), chaos: S.chaos ? Object.assign({}, S.chaos) : null,
+      members: S.members.map(m => ({ uid: m.uid, cid: m.cid, name: m.name, cls: m.cls, job: m.job, ready: m.ready, online: m.online, at: m.at, ero: m.ero, left: m.left, rw: m.rw, team: m.team, san: m.san, sanZ: m.sanZ || 0 })),
       nodes, buffs: S.buffs.map(b => ({ id: b.id, node: b.node, kind: b.kind, p: b.p, until: b.until, n: b.n || 0, from: b.from || null })),
       pools: JSON.parse(JSON.stringify(S.pools || {})), glim: JSON.parse(JSON.stringify(S.glim || {})), aura,
       rot: P && P.rot ? { i: S.rot, res: S.rot === P.rot.resonance, forms: formsNow(S) } : null,
@@ -924,8 +1089,8 @@ const RAID_CORE = (() => {
 
   // ---- 数值（RA3 按它生成节点里的怪；组队房间的 ×1.6 由现有 coop 的 COOP_HP 负责，这里不重复乘）----
   function scale(S, nodeId, n) {
-    const D = def(S), T = (D.scale || SCALE)[S.mode] || SCALE.normal, nd = nodeOf(S, nodeId) || {};
-    return { mode: S.mode, guide: S.graph === 'guide', sub: S.sub, n: n || 1, hp: T.hp, atk: T.atk, mech: T.mech, cur: T.cur, gear: T.gear,
+    const D = def(S), T = scaleOf(S), nd = nodeOf(S, nodeId) || {};
+    return { mode: S.mode, guide: S.graph === 'guide', sub: S.sub, n: n || 1, teams: S.nTeams || 1, tier: S.tier, par: tmul(S), chaos: S.chaos ? S.chaos.lv : 0, hp: T.hp, atk: T.atk, mech: T.mech, cur: T.cur, gear: T.gear,
       penalty: !!T.penalty && S.graph === 'normal', pen: T.pen ?? 1, lvl: nd.type === 'final' ? D.lvl.final : D.lvl.node };
   }
 
@@ -963,7 +1128,7 @@ const RAID_CORE = (() => {
   function rollReward(S, uid, phaseId, r) {
     ensureMeta(S);
     r = r || Math.random;
-    const D = def(S), RW = D.rewards || {}, T = (D.scale || SCALE)[S.mode] || SCALE.normal, sc = { cur: T.cur, gear: T.gear };
+    const D = def(S), RW = D.rewards || {}, T = scaleOf(S), sc = { cur: T.cur * (S.chaos && D.chaos && D.chaos.cur ? D.chaos.cur[S.chaos.lv - 1] ?? 1 : 1), gear: T.gear };
     if (typeof RW.roll === 'function') return RW.roll({ S, uid, phase: phaseId, rnd: r, scale: sc, mode: S.mode });
     return { phase: phaseId, cards: (RW['p' + phaseId] || []).map(c => card(RW, c, sc, r)).filter(Boolean) };
   }
@@ -1148,6 +1313,6 @@ const RAID_CORE = (() => {
 
   return { VER, defs: RAID_DEFS, LIVE, LOOT_MODES, flipLimit, flipComplete, defOf, graph, init, event, tick, abort, view, scale, canStart, limits, consume, dayNo, weekNo, rollReward,
     flipOpen, flipSetReward, flipPick, flipClose, lootMode, setLootMode, lootCandidates, lootParticipants, lootWallet, lootOffer, lootAssign, lootBid, lootResolve, shift,
-    AUCTION_GOLD_CAP, AUCTION_FEE_RATE };
+    TEAM_COLORS, planTeams, teamOf, teamsOf, capacity, scaleOf, AUCTION_GOLD_CAP, AUCTION_FEE_RATE };
 })();
 const raidInit = RAID_CORE.init, raidEvent = RAID_CORE.event, raidTick = RAID_CORE.tick;

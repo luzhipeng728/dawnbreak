@@ -1,0 +1,78 @@
+// 奥兹玛浏览器冒烟：内容注册（物品 / 商店 / NPC / 精英 / 领主脚本 / 锁血）+ 理智·混沌 HUD（暗角 / 扭曲滤镜 / 小游戏 / 倒下）
+// 用法：node test/ozma_ui.mjs   截图：test/shots/ozma/*.png
+import fs from 'fs';
+import { launch, URL_BASE } from './lib.mjs';
+const out = 'test/shots/ozma'; fs.mkdirSync(out, { recursive: true });
+let fail = 0; const ok = (v, m, x) => { console.log(v ? '  ✓' : '  ✗', m, v || x === undefined ? '' : JSON.stringify(x).slice(0, 300)); if (!v) fail++; };
+const { page, browser } = await launch({ width: 1280, height: 720 });
+const errs = []; page.on('pageerror', e => errs.push(String(e)));
+await page.goto(`${URL_BASE}?dungeon=ozma_ruin_path&lv=60&cls=sword&mute&fresh`);
+await page.waitForFunction(() => window.__READY && typeof game !== 'undefined' && game.scene === 'dungeon', null, { timeout: 60000 }).catch(() => {});
+
+console.log('— 内容注册');
+const reg = await page.evaluate(() => {
+  const r = {};
+  r.gear = typeof OZMA_RAID_GEAR !== 'undefined' ? OZMA_RAID_GEAR.length : -1;
+  r.gearDef = OZMA_RAID_GEAR.every(k => ITEMS[k] && ITEMS[k].set && ITEMS[k].rar === 5 && ITEMS[k].lvl === 65);
+  r.sets = ['ruin', 'despair', 'terror', 'sacrifice', 'flame'].every(s => SETS['set_ozma_' + s] && SETS['set_ozma_' + s].pieces.length === 5);
+  r.currency = !!ITEMS.raid_ozma_grudge;
+  r.shop = typeof SHOPS !== 'undefined' ? !!SHOPS.ozma_raid : null;
+  r.npc = !!(SCENES.ozma_town && JSON.stringify(SCENES.ozma_town.npcs || []).includes('ozmaQuarter'));
+  r.elites = ['ozEliteRuin', 'ozEliteDespair', 'ozEliteTerror', 'ozEliteSuppress', 'ozEliteChaos'].map(i => !!RAID_ELITES[i]);
+  r.eliteSpec = Object.fromEntries(['ozma_ruin_path', 'ozma_despair_serha', 'ozma_terror_land', 'ozma_p2_elerinon', 'ozma_p2_throne'].map(id => [id, DUNGEONS[id] && DUNGEONS[id].eliteSpec]));
+  const mech = id => { const d = DUNGEONS['ozma_' + id], M = MON[d.boss.kind || d.boss]; return (M.msMechs || []).map(m => m.use + (m.floor ? ':' + m.floor : '')); };
+  r.throne = mech('p2_throne'); r.kazan = mech('terror_martyr'); r.armis = mech('p2_armis');
+  r.names = ['ruin_beyond', 'despair_lunen', 'terror_martyr', 'p2_armis', 'p2_throne'].map(id => MON[DUNGEONS['ozma_' + id].boss.kind || DUNGEONS['ozma_' + id].boss].name);
+  r.doors = !!RAID_MECH.PUZ.doors;
+  r.scripts = Object.keys(DUNGEONS).filter(k => k.startsWith('ozma_')).filter(k => (MON[DUNGEONS[k].boss.kind || DUNGEONS[k].boss].msMechs || []).some(m => m.use === 'raidScript')).length;
+  r.def = !!RAID_DEFS.ozma && !!RAID_DEFS.ozma.sanity;
+  r.gateSkills = ['ruin', 'despair', 'terror'].map(a => (MON['ozma_gate_' + a].attacks || []).length);
+  return r;
+});
+ok(reg.gear === 25 && reg.gearDef && reg.sets, '融合装备 25 件（5 系列 × 5，rar 5、Lv65）', reg);
+ok(reg.currency && reg.shop && reg.npc, '混沌的怨念 / 攻坚商店 / 军需官 NPC', reg);
+ok(reg.elites.every(Boolean) && reg.eliteSpec.ozma_ruin_path === 'ozEliteRuin' && reg.eliteSpec.ozma_p2_elerinon === 'ozEliteSuppress' && reg.eliteSpec.ozma_p2_throne === 'ozEliteChaos', '精英已登记并挂到各地图的精英房', reg.eliteSpec);
+ok(reg.scripts === 18 && reg.doors, '18 个领主挂了 raidScript，次元之门可用', reg.scripts);
+ok(reg.throne.includes('ozmaLock:0.5') && reg.kazan.includes('ozmaLock:1') && !reg.armis.includes('ozmaLock:1'), '奥兹玛 50% 锁血 / 卡赞无敌（祭坛解除）机制已挂', [reg.throne, reg.kazan]);
+ok(reg.names.join() === '贝利亚斯,提亚马特,卡赞,阿斯特罗斯,奥兹玛', '领主名：贝利亚斯 / 提亚马特 / 卡赞 / 阿斯特罗斯 / 奥兹玛', reg.names);
+ok(reg.gateSkills.every(n => n >= 4), '门将各有 ≥4 个技能（前冲 / 召唤 / 震地环…）', reg.gateSkills);
+ok(reg.def, '浏览器端 RAID_DEFS.ozma 就绪');
+
+console.log('— 理智 / 混沌 HUD');
+const inDg = await page.evaluate(() => game.scene);
+ok(inDg === 'dungeon', '进了奥兹玛副本', inDg);
+await page.evaluate(() => {
+  const S = { raid: 'ozma', graph: 'normal', members: [{ uid: 'u1', san: 100, name: 'me' }], chaos: { lv: 2, max: 3 }, gbuffs: [], keys: {}, st: 'routes' };
+  raidNet.S = S; raidNet.mine = () => S.members[0]; raidNet.me = () => 'u1';
+});
+await page.waitForTimeout(500);
+let h = await page.evaluate(() => ({ on: OZMA_HUD.on, lv: OZMA_HUD.lv, op: +document.getElementById('ozVig').style.opacity, filter: document.getElementById('world').style.filter, bar: document.getElementById('ozSan').textContent, chip: document.getElementById('ozChaos').textContent }));
+ok(h.on && h.lv === 2 && /混沌等级 2/.test(h.chip) && /理智 100/.test(h.bar) && h.filter === '', '理智满：显示理智条 / 混沌等级 2，没有扭曲', h);
+await page.screenshot({ path: out + '/hud_full.png' });
+await page.evaluate(() => { raidNet.S.members[0].san = 30; bus.emit('raidSanity', { v: 30 }); });
+await page.waitForTimeout(700);
+h = await page.evaluate(() => ({ op: +document.getElementById('ozVig').style.opacity, filter: document.getElementById('world').style.filter, scale: document.getElementById('ozDisp').getAttribute('scale'), bar: document.getElementById('ozSan').textContent }));
+ok(h.op > 0.6 && /ozSanFx/.test(h.filter) && +h.scale > 5, '理智 30：暗角变深 + 扭曲滤镜', h);
+await page.screenshot({ path: out + '/hud_low.png' });
+await page.evaluate(() => { raidNet.S.members[0].san = 50; bus.emit('raidSanity', { v: 50, mini: true }); });
+await page.waitForTimeout(300);
+const mini = await page.evaluate(() => ({ has: !!document.getElementById('ozMini'), paused: game.paused, btns: document.querySelectorAll('#ozMini button').length, n: OZMA_HUD.minis }));
+ok(mini.has && mini.paused && mini.btns === 5, '第一次归零：弹出「稳住心神」小游戏、游戏暂停', mini);
+await page.screenshot({ path: out + '/mini.png' });
+await page.evaluate(() => { const b = [...document.querySelectorAll('#ozMini button')].find(x => x.dataset.n === '3'); b.click(); });
+const again = await page.evaluate(() => [...document.querySelectorAll('#ozMini button')].filter(b => b.disabled).length);
+ok(again === 0, '点错顺序：重来');
+await page.evaluate(() => OZMA_HUD.autoSolve());
+await page.waitForTimeout(600);
+const done = await page.evaluate(() => ({ has: !!document.getElementById('ozMini'), paused: game.paused, mini: OZMA_HUD.mini }));
+ok(!done.has && !done.paused && !done.mini, '按 1~5 完成：小游戏关闭、游戏继续', done);
+await page.evaluate(() => { raidNet.S.members[0].san = 0; bus.emit('raidSanity', { v: 0, dead: true }); });
+await page.waitForTimeout(400);
+const dead = await page.evaluate(() => ({ dead: OZMA_HUD.dead, hp: game.player && game.player.hp }));
+ok(dead.dead === 1 && dead.hp <= 0, '第二次归零：倒下', dead);
+await page.evaluate(() => { raidNet.S.chaos.lv = 3; bus.emit('raidChaos', { lv: 3 }); });
+await page.waitForTimeout(300);
+ok(await page.evaluate(() => /混沌等级 3/.test(document.getElementById('ozChaos').textContent)), '混沌等级变化：徽记同步');
+ok(!errs.length, '浏览器无 pageerror', errs);
+await browser.close();
+console.log(fail ? `\n${fail} 项失败` : '\n全部通过'); process.exit(fail ? 1 : 0);

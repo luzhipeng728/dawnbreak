@@ -43,7 +43,7 @@ const RAID_OZMA = (() => {
     fx: { clear: [{ kind: 'gbuff', id: 'elerinon_sup', p: { dmgTaken: 1.15 }, dur: 150, text: '埃利诺斯被压制：全团对领主的伤害 +15%（150 秒）' }],
       expire: [{ kind: 'reset', areas: [1], text: '埃利诺斯没压住：爆炸，阿斯特罗斯所在图的进度重置了' }, { kind: 'sanity', v: -15, text: '爆炸冲击：全团理智 -15' }] },
     elites: { ozEliteSuppress: { fx: [{ kind: 'countdown', to: 'p2_elerinon', sec: 420, text: '压制者倒下：倒计时重置' }] } }, guide: false };
-  nodes2.p2_armis = { name: '阿尔米斯 · 阿斯特罗斯', type: 'main', area: 1, pos: [0.22, 0.75], need: [], dg: 'ozma_p2_armis', boss: 'p2_armis', cp: true,
+  nodes2.p2_armis = { name: '阿尔米斯 · 阿斯特罗斯', type: 'main', area: 1, pos: [0.22, 0.75], need: [], dg: 'ozma_p2_armis', boss: 'p2_armis', cp: true, elites: { ozEliteChaos: { fx: [{ kind: 'sanity', v: 10 }] } },
     fx: { clear: [{ kind: 'gbuff', id: 'ozmaUnlock', p: {}, dur: 0, text: '阿斯特罗斯倒下：奥兹玛的锁血解除了' }] }, guide: { name: '阿尔米斯 · 阿斯特罗斯' } };
   nodes2.p2_throne = { name: '混沌王座 · 奥兹玛', type: 'final', area: 2, pos: [0.75, 0.5], need: [], dg: 'ozma_p2_throne', boss: 'p2_throne', cp: true, hold: 0.5, elites: { ozEliteChaos: { fx: [{ kind: 'sanity', v: 10 }] } },
     guide: { need: ['p2_armis'], hold: 0 } };

@@ -48,10 +48,15 @@ const OZMA_MOBS = {
   ozma_priest: { name: '奥兹玛黑暗祭司', tier: 'elite', arch: 'kiter', elem: 'dark', art: ['gbl', { hue: 170, sat: 1.2, bright: .58 }], size: [15, 12, 112], skills: OZMA_MOB_SKILLS.priest },
 };
 
+// 门将：每个区域一组专属技能（docs/RAID_OZMA.md §5）；破防机制在 raid_elite 的 eliteSpec（ozma_raid.js 的 defineRaidElite），技能的抬手 / 前冲就是破招要打断的东西
+const OZMA_GATE_BASE = [{ use: 'guard', dur: 2.2, reduce: .8, cd: [7, 10], w: 1.4 }, { use: 'swipe', clip: 'slam', reach: 110, width: 30, dmg: 1.28, down: true, sa: true, cd: [2.5, 3.7], w: 2 }];
 const OZMA_GATEKEEPERS = {
-  ruin: { name: '毁灭门将', art: ['gatekeeper', { hue: 165, sat: .8, bright: .68 }], elem: 'dark' },
-  despair: { name: '绝望门将', art: ['gatekeeper', { hue: 100, sat: 1.2, bright: .72 }], elem: 'dark' },
-  terror: { name: '恐怖门将', art: ['gatekeeper', { hue: -30, sat: 1.2, bright: .8 }], elem: 'fire' },
+  ruin: { name: '毁灭门将', art: ['gatekeeper', { hue: 165, sat: .8, bright: .68 }], elem: 'dark',   // 前冲 + 黑焰扇射：抬手时闪光，被打断就硬直
+    skills: [...OZMA_GATE_BASE, { use: 'dash', len: 380, speed: 760, windup: 1, dmg: 1.3, down: true, cd: [6, 8], col: '#ff8060' }, { use: 'shot', mode: 'spread', n: 5, spread: 70, speed: 300, dmg: .8, col: '#ff8060', cd: [5, 7] }] },
+  despair: { name: '绝望门将', art: ['gatekeeper', { hue: 100, sat: 1.2, bright: .72 }], elem: 'dark',   // 召唤残灵 + 追踪弹 + 十字光柱：绝望之球要拦截
+    skills: [...OZMA_GATE_BASE, { use: 'shot', mode: 'homing', n: 3, spread: 50, speed: 240, turn: 1.8, dmg: .85, col: '#c090ff', cd: [4, 6] }, { use: 'aoe', shape: 'cross', at: 'target', hw: 26, windup: 1.1, dmg: 1.15, cd: [6, 8], col: '#c080ff' }, { use: 'summon', kind: 'ozma_wisp', n: 2, max: 4, cd: [12, 15] }] },
+  terror: { name: '恐怖门将', art: ['gatekeeper', { hue: -30, sat: 1.2, bright: .8 }], elem: 'fire',   // 震地环 + 岩刺雨 + 冲锋：破壳后才吃得到伤害
+    skills: [...OZMA_GATE_BASE, { use: 'aoe', shape: 'ring', at: 'self', r: 170, r0: 60, windup: 1.2, dmg: 1.15, cd: [7, 9], col: '#ffa050' }, { use: 'rain', kind: 'bolt', n: 4, r: 52, windup: 1.1, dmg: 1, cd: [8, 10] }, { use: 'dash', len: 340, speed: 720, windup: .9, dmg: 1.2, down: true, cd: [6, 9] }] },
 };
 
 const OZMA_BOSS_ART = ['siroco', 'gatekeeper', 'assassin', 'boneLord', 'tauKing', 'nex'];
@@ -63,6 +68,9 @@ const OZMA_ATTACKS = [
   { use: 'rain', kind: 'hex', n: 5, r: 48, windup: 1.1, dmg: 1.05, col: '#b070ff', cd: [8, 11] },
 ];
 
+// 团本里的领主名（docs/RAID_OZMA.md §3）：规则清单（ozma_core）里的原名保留给它自己的测试，这里按团本流程改成官方领主名
+const OZMA_LORD_NAME = { ruin_beyond: '贝利亚斯', despair_lunen: '提亚马特', terror_martyr: '卡赞', p2_armis: '阿斯特罗斯', p2_throne: '奥兹玛' };
+const OZMA_ELITE_OF = { ruin: 'ozEliteRuin', despair: 'ozEliteDespair', terror: 'ozEliteTerror', p2_elerinon: 'ozEliteSuppress', p2_armis: 'ozEliteChaos', p2_throne: 'ozEliteChaos' };
 const ozmaBoss = (M, region, i, final = false) => {
   const gate = OZMA_GATEKEEPERS[region] || { name: '王座门将' };
   const colors = { ruin: '#bf82ff', despair: '#ff8ca8', terror: '#ffad5e', elerinon: '#9eb7ff' };
@@ -73,7 +81,7 @@ const ozmaBoss = (M, region, i, final = false) => {
         : { use: 'hazard', kind: 'fire', every: 3.6, n: 2, r: 54, dmg: 1.05, col, say: '黑焰地火蔓延——移动！' };
   const phase3 = final ? { at: .25, enter: { say: '王座终焉读条——分队同时打断！', mechs: [{ use: 'stagger', windup: 3.6, need: .05, onBreak: 'groggy', col }] }, skills: [{ ...OZMA_ATTACKS[4], dmg: 1.2, cd: [5.5, 7.5] }, { use: 'mech', mech: { use: 'safezone', windup: 2.8, n: 3, r: 68, frac: .45, col }, cd: [19, 24] }] } : null;
   return {
-    name: M.boss, tier: 'raid', lvl: final ? 65 : 64, art: OZMA_BOSS_ART[i % OZMA_BOSS_ART.length], size: [20, 16, 138], scale: final ? 1.42 : 1.26,
+    name: OZMA_LORD_NAME[M.id] || M.boss, tier: 'raid', lvl: final ? 65 : 64, art: OZMA_BOSS_ART[i % OZMA_BOSS_ART.length], size: [20, 16, 138], scale: final ? 1.42 : 1.26,
     elem: region === 'terror' || final ? 'fire' : 'dark', pref: 150, hook: null,
     mechs: [{ use: 'groggy', max: final ? 125 : 110, dur: final ? 8 : 6, mul: final ? 1.65 : 1.5 }, { use: 'enrage', t: final ? 360 : 240, atk: 1.7, speed: 1.25 }],
     phases: [
@@ -105,7 +113,7 @@ for (const A of OZMA_AREA_DEFS) {
     OZMA_BOSSES[boss] = ozmaBoss(M, A.id, i);
     OZMA_DUNGEONS[`ozma_${M.id}`] = {
       name: `奥兹玛 · ${M.name}`, lvl: [OZMA_LEVEL, OZMA_LEVEL], theme: A.theme, layout: 'raid', rooms: 4, branches: 0, rows: 1, cols: 4,
-      mobs: OZMA_MOB_LIST, elite: gate, boss: boss, bossAdds: 0, bossLvl: OZMA_LEVEL, bgm: 'dungeon', bossBgm: 'boss', raid: true, hidden: false,
+      mobs: OZMA_MOB_LIST, elite: gate, eliteSpec: OZMA_ELITE_OF[A.id], boss: boss, bossAdds: 0, bossLvl: OZMA_LEVEL, bgm: 'dungeon', bossBgm: 'boss', raid: true, hidden: false,
       gate: { scene: 'ozma_field', x: OZMA_GATE[A.id] + i * 145, col: '170,120,255' }, preBoss: { kind: gate, say: `${M.gatekeeper}挡住了通往领主房的路！` },
       desc: `${M.name}：清理小怪波次，击败门将与${M.boss}。Boss 攻击、阶段和失败机制按奥兹玛攻坚清单执行。`,
       drops: { boss: [['crystal', .04]], mats: [['crystal', .09, 6], ['m_soul', .004, 1]] },
@@ -118,7 +126,7 @@ for (const [i, M] of (OZMA_CORE_MAPS.filter(M => M.id.startsWith('p2_'))).entrie
   OZMA_BOSSES[boss] = ozmaBoss(M, 'elerinon', i + 20, true);
   OZMA_DUNGEONS[`ozma_${M.id}`] = {
       name: `奥兹玛 · ${M.name}`, lvl: [OZMA_LEVEL, OZMA_LEVEL], theme: 'ozmaElerinon', layout: 'raid', rooms: 5, branches: 0, rows: 1, cols: 5,
-    mobs: OZMA_MOB_LIST, elite: 'ozma_gate_terror', boss, bossAdds: 0, bossLvl: OZMA_LEVEL, bgm: 'abyss', bossBgm: 'boss', raid: true, hidden: false,
+    mobs: OZMA_MOB_LIST, elite: 'ozma_gate_terror', eliteSpec: OZMA_ELITE_OF[M.id], boss, bossAdds: 0, bossLvl: OZMA_LEVEL, bgm: 'abyss', bossBgm: 'boss', raid: true, hidden: false,
     gate: { scene: 'ozma_field', x: 2360 + i * 150, col: '120,160,255' }, preBoss: { kind: 'ozma_gate_terror', say: '王座门将出现了！' },
     desc: `${M.name}：终局地图。队伍共享奥兹玛王座血量，失败会触发狂暴/终焉机制。`,
     drops: { boss: [['crystal', .06]], mats: [['crystal', .12, 8], ['m_soul', .006, 1]] },
@@ -130,12 +138,18 @@ const OZMA_SPEC = {
   id: 'ozma', name: '奥兹玛攻坚战 · 黑暗一侧', lvl: OZMA_LEVEL, lvlMax: OZMA_LEVEL, power: 8.2, bossPower: .9, atkPower: 3.8,
   entry: { scene: 'siroco_town', side: 'up', x: 1640, to: 'ozma_town', minLv: OZMA_LEVEL, label: `奥兹玛攻坚战（Lv.${OZMA_LEVEL}）` },
   themes: Object.fromEntries(Object.entries(OZMA_PALETTES).map(([id, p]) => [`ozma${id[0].toUpperCase()}${id.slice(1)}`, ozmaTheme(id, p)])),
-  monsters: { ...OZMA_MOBS, ...Object.fromEntries(Object.entries(OZMA_GATEKEEPERS).map(([id, G]) => [`ozma_gate_${id}`, { name: G.name, tier: 'elite', arch: 'guard', elem: G.elem, art: G.art, size: [20, 15, 130], traits: { sa: 'cast' }, skills: [{ use: 'guard', dur: 2.2, reduce: .8, cd: [7, 10], w: 1.4 }, { use: 'swipe', clip: 'slam', reach: 110, width: 30, dmg: 1.28, down: true, sa: true, cd: [2.5, 3.7], w: 2 }, { use: 'aoe', shape: 'cross', at: 'target', hw: 24, windup: 1.1, dmg: 1.12, cd: [7, 9], col: '#c080ff' }] }])) },
+  monsters: { ...OZMA_MOBS, ...Object.fromEntries(Object.entries(OZMA_GATEKEEPERS).map(([id, G]) => [`ozma_gate_${id}`, { name: G.name, tier: 'elite', arch: 'guard', elem: G.elem, art: G.art, size: [20, 15, 130], traits: { sa: 'cast' }, skills: G.skills }])) },
   bosses: OZMA_BOSSES,
   dungeons: OZMA_DUNGEONS,
   scenes: {
-    ozma_town: { name: '圣者之地', area: '奥兹玛攻坚营地', kind: 'town', width: 2800, theme: 'ozmaElerinon', bgm: 'guild', ambient: 'magic', map: [32, -12], exits: [{ side: 'down', x: 1400, to: 'siroco_town' }, { side: 'right', to: 'ozma_field' }] },
+    ozma_town: { name: '圣者之地', area: '奥兹玛攻坚营地', kind: 'town', width: 2800, theme: 'ozmaElerinon', bgm: 'guild', ambient: 'magic', map: [32, -12], npcs: [{ npc: 'ozmaQuarter', x: 1180, y: 54 }], exits: [{ side: 'down', x: 1400, to: 'siroco_town' }, { side: 'right', to: 'ozma_field' }] },
     ozma_field: { name: '黑暗一侧', area: '奥兹玛攻坚地图', kind: 'field', width: 3000, theme: 'ozmaRuin', bgm: 'field', ambient: 'wisps', map: [35, -16], exits: [{ side: 'left', to: 'ozma_town' }] },
+  },
+  npcs: {
+    ozmaQuarter: { name: '混沌军需官', title: '奥兹玛攻坚商人 · 融合装备', art: 'world/npc_agonzo', h: 112, services: ['shop:ozma_raid', 'repair'],
+      greet: ['混沌的怨念，换成称手的融合装备吧。'],
+      lines: ['理智归零别慌：第一次会被拉进小游戏，稳住心神就能回来；第二次就真的倒下了。', '混沌等级越高，翻出来的怨念越多——双剑图可以把它推高。'],
+      look: 'A grizzled raid quartermaster in dark crimson-violet armor with a tattered cloak, a brass ledger and a lantern, standing beside crates of glowing violet chaos shards' },
   },
   story: null,
 };

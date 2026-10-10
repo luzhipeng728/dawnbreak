@@ -177,6 +177,8 @@ content/regions/siroco_bosses.js
 content/regions/siroco.js
 # 奥兹玛攻坚战（官方 Dark Side / Elerinon）：区域清单展开为真实 DUNGEONS/MON
 content/regions/ozma.js
+# 奥兹玛团本内容（精英破防 / 领主脚本 / 奥兹玛锁血 / 理智扣减，docs/RAID_OZMA.md §5~§7）：要在区域、raid_mech_rt、raid_elite 之后
+content/raids/ozma_raid.js
 # 希洛克团本节点（RA3）：每个攻坚节点使用独立地图定义；raid:true 让节点跳过疲劳与普通副本入口
 content/raids/siroco_raid.js
 # 安徒恩团本节点（docs/RAID_ANTON.md）：精英 / 领主 / 地下城；规则在 game/raid_anton.js，奖励在 content/items/raid_anton.js
@@ -235,6 +237,8 @@ net/party_sync.js
 net/raid.js
 net/raid_pen.js
 ui/raid.js
+# 奥兹玛理智 / 混沌 HUD + 小游戏（docs/RAID_OZMA.md §7）
+ui/raid_ozma.js
 # 社交与经济服务（拍卖行 / 邮件 / 排行榜 / 全服公告 / 签到 / 管理员后台；依赖 net/net.js、物品窗口、npc.js，窗口在 ui/social/*）
 net/social.js
 net/social_guild.js

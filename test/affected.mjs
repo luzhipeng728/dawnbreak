@@ -70,6 +70,7 @@ const RULES = [
   [/^src\/game\/raid_core\.js$|^server\/modules\/raid\.js$|^server\/core\/party\.js$|^tools\/item_catalog\.mjs$/, [srvT('raid'), nodeT('raid_auction'), nodeT('raid_core_rules'), nodeT('raid_rewards')]],
   [/^src\/(net|ui)\/raid\.js$|^src\/game\/raid_core\.js$|^server\/modules\/raid\.js$|^src\/net\/coop\.js$/, [nodeT('raid_ui'), nodeT('mp_raid'), nodeT('raid_auction'), nodeT('raid_core_rules'), nodeT('raid_rewards')]],
   [/^src\/game\/raid_(core|elite|ozma)\.js$|^test\/raid_(teams|elite)\.mjs$/, [nodeT('raid_teams'), nodeT('raid_elite'), nodeT('raid_siroco_rules')]],   // 多队模型 / 精英原语（纯逻辑，毫秒级）
+  [/^src\/game\/raid_mech(_rt)?\.js$|^src\/content\/raids\/siroco_raid\.js$|^test\/(lib_raidmech|raid_(mech_multi|mech_rt_multi|mech_core|mech_lab|bosses))\.mjs$/, [nodeT('raid_mech_core'), nodeT('raid_mech_multi'), nodeT('raid_mech_rt_multi'), nodeT('raid_mech_lab'), nodeT('raid_bosses')]],   // 领主机制（纯逻辑 + 多人化 + 浏览器实验室）
   [/^src\/game\/ozma_core\.js$|^src\/content\/regions\/ozma\.js$/, [nodeT('ozma_core'), nodeT('ozma_maps'), nodeT('ozma_runtime')]],
   [/^server\/(modules\/admin|admin\/)|^src\/ui\/social\/gm\.js$/, [srvT('admin'), nodeT('admin_console')]],
   [/^src\/game\/(mon_skills|mon_skills_ext|region)\.js$|^src\/content\/regions\/siroco/, [T('region_siroco', 'test/region.mjs', 'siroco', 'data,skills,mechs')]],

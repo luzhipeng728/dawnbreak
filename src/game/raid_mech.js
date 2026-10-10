@@ -37,6 +37,8 @@ const RAID_MECH = (() => {
     chill: { name: '寒气', col: '#bfefff', max: 3, dur: 8, eff: 'slow', onMax: 'freeze' },
     freeze: { name: '冰冻', col: '#8ad8ff', max: 1, dur: 2, eff: 'stun' },
     gloom: { name: '黑暗', col: '#4a3a6a', max: 1, dur: 6, eff: 'blind' },
+    heart: { name: '红心', col: '#ff6a8a', max: 1, dur: 0, eff: 'none' },   // 哈妮尔的传心：持心者才能消分身阵
+    leeched: { name: '被吸血', col: '#ff4a6a', max: 1, dur: 0, eff: 'none' },   // 卢克西的吸血：要有人站到连线中间挡住
   };
   // S = { id: { n, t } }；返回满层触发的状态 id（已经加上），没有返回 null
   function stAdd(S, id, o = {}) {
@@ -133,13 +135,14 @@ const RAID_MECH = (() => {
     } });
 
   // 引导光球：走近光球它会跟着你，把 n 个都带进中间的祭坛
-  def('guide', { defaults: { n: 3, dur: 24, grab: 70, speed: 150, goal: 60, lag: 34, toBoss: false, label: '光', goalLabel: '祭坛' }, name: '引导光球', hint: '走近光球，把它们带进祭坛',
-    init(p, R, C) { const goal = { x: Math.round(C.W / 2), y: Math.round(C.D / 2), r: p.goal, col: '#ffe070', label: '祭坛', on: false, shape: 'circle' }; const orbs = spots(p.n, C, R, 0.15, 0.85).map(q => ({ ...q, x: q.x < goal.x ? Math.max(40, q.x - C.W * 0.1) : Math.min(C.W - 40, q.x + C.W * 0.1), r: 16, col: '#bfefff', label: p.label, on: false, shape: 'orb' })); return { goal, orbs, done: 0, marks: [goal, ...orbs] }; },
+  def('guide', { defaults: { n: 3, dur: 24, grab: 70, speed: 150, goal: 60, lag: 34, toBoss: false, each: false, label: '光', goalLabel: '祭坛' }, name: '引导光球', hint: '走近光球，把它们带进祭坛',
+    init(p, R, C) { const goal = { x: Math.round(C.W / 2), y: Math.round(C.D / 2), r: p.goal, col: '#ffe070', label: '祭坛', on: false, shape: 'circle' }; const orbs = spots(p.n, C, R, 0.15, 0.85).map(q => ({ ...q, x: q.x < goal.x ? Math.max(40, q.x - C.W * 0.1) : Math.min(C.W - 40, q.x + C.W * 0.1), r: 16, col: '#bfefff', label: p.label, on: false, shape: 'orb' })); const bind = p.each && C.players.length >= 2 ? orbs.map((_, i) => C.players[i % C.players.length]) : null;   // each：每个球只认一个人（崔拉 & 昙娜：两名玩家各引一个）；一个人时降级成谁都能引
+      if (bind) orbs.forEach((o, i) => { o.col = i % 2 ? '#c8a0ff' : '#f0f8ff'; }); return { goal, orbs, done: 0, bind, marks: [goal, ...orbs] }; },
     on(st, p, ev) { if (ev.k === 'pos') P(st)[ev.who] = { x: ev.x, y: ev.y }; else if (ev.k === 'anchor' && p.toBoss) { st.goal.x = ev.x; st.goal.y = ev.y; } },
     tick(st, p, dt) {
-      for (const o of st.orbs) {
+      for (const [oi, o] of st.orbs.entries()) {
         if (o.on) continue;
-        let best = null, bd = 1e9; for (const w in P(st)) { const q = st.pl[w], d = gdist(q, o); if (d < bd) { bd = d; best = q; } }
+        let best = null, bd = 1e9; for (const w in P(st)) { if (st.bind && st.bind[oi] !== w) continue; const q = st.pl[w], d = gdist(q, o); if (d < bd) { bd = d; best = q; } }
         if (best && bd < p.grab && bd > p.lag) { const k = Math.min(1, p.speed * dt / bd); o.x += (best.x - o.x) * k; o.y += (best.y - o.y) * k; }
         if (gdist(o, st.goal) < st.goal.r) { o.on = true; o.x = st.goal.x; o.y = st.goal.y; st.done++; }
       }
@@ -283,15 +286,23 @@ const RAID_MECH = (() => {
     text: (st, p) => `${Math.min(100, Math.round(st.acc / p.need * 100))}%` });
 
   // 清除法阵：场上有 n 个法阵（会慢慢变大，every 秒再冒一个，最多 max 个），站进去 hold 秒清掉；读条结束时还剩就失败（魅惑之沼、泪水洼）
-  def('clear', { defaults: { n: 3, max: 6, every: 0, hold: 1.2, r: 44, grow: 4, rMax: 90, dur: 18, col: '#ff6ad0', label: '' }, name: '清除法阵', hint: '站进每个法阵把它清掉',
-    init(p, R, C) { const st = { marks: [], left: 0, sp: 0, rr: R, C }; for (const q of shuffle(spots(p.n, C, R, 0.2, 0.8), R)) PUZ.clear.add(st, p, q); return st; },
+  def('clear', { defaults: { n: 3, max: 6, every: 0, hold: 1.2, r: 44, grow: 4, rMax: 90, dur: 18, col: '#ff6ad0', label: '', heart: false }, name: '清除法阵', hint: '站进每个法阵把它清掉',
+    // heart：哈妮尔的传心——只有持心者站进去才算，红心碰到队友就传过去（两个人以上才启用；一个人时谁都能消）
+    init(p, R, C) { const st = { marks: [], left: 0, sp: 0, rr: R, C, heart: p.heart && C.players.length >= 2 ? { who: C.players[Math.floor(R() * C.players.length)], cd: 0.8 } : null }; for (const q of shuffle(spots(p.n, C, R, 0.2, 0.8), R)) PUZ.clear.add(st, p, q); if (st.heart) st.out0 = [{ k: 'status', who: st.heart.who, id: 'heart' }]; return st; },
+    onEnd(st) { if (st.heart) st.out.push({ k: 'unstatus', who: st.heart.who, id: 'heart' }); },
     add(st, p, q) { st.marks.push({ x: q.x, y: q.y, r: p.r, col: p.col, label: p.label, on: true, shape: 'circle', h: 0 }); st.left++; },
     on(st, p, ev) { if (ev.k === 'pos') P(st)[ev.who] = { x: ev.x, y: ev.y }; },
     tick(st, p, dt, R, C) {
       if (p.every) { st.sp += dt; if (st.sp >= p.every && st.marks.filter(m => m.on).length < p.max) { st.sp = 0; PUZ.clear.add(st, p, { x: Math.round(C.W * (0.15 + 0.7 * R())), y: Math.round(C.D * (0.15 + 0.7 * R())) }); } }
+      const H = st.heart;
+      if (H) {
+        H.cd -= dt;
+        if (!P(st)[H.who] && Object.keys(P(st)).length) { st.out.push({ k: 'unstatus', who: H.who, id: 'heart' }); H.who = Object.keys(st.pl)[0]; st.out.push({ k: 'status', who: H.who, id: 'heart' }); }
+        const hq = P(st)[H.who]; if (hq && H.cd <= 0) for (const w in st.pl) if (w !== H.who && gdist(st.pl[w], hq) < 50) { st.out.push({ k: 'unstatus', who: H.who, id: 'heart' }, { k: 'status', who: w, id: 'heart' }); H.who = w; H.cd = 1.2; say(st, '传心！', '#ff8aa8'); break; }
+      }
       for (const m of st.marks) {
         if (!m.on) continue; m.r = Math.min(p.rMax, m.r + p.grow * dt);
-        if (Object.values(P(st)).some(q => inMark(q, m))) { m.h += dt; m.label = `${Math.max(0, p.hold - m.h).toFixed(1)}`; if (m.h >= p.hold) { m.on = false; m.r = 0; m.label = ''; st.left--; } } else { m.h = Math.max(0, m.h - dt * 0.5); m.label = p.label; }
+        if ((H ? [P(st)[H.who]].filter(Boolean) : Object.values(P(st))).some(q => inMark(q, m))) { m.h += dt; m.label = `${Math.max(0, p.hold - m.h).toFixed(1)}`; if (m.h >= p.hold) { m.on = false; m.r = 0; m.label = ''; st.left--; } } else { m.h = Math.max(0, m.h - dt * 0.5); m.label = p.label; }
       }
       st.marks = st.marks.filter(m => m.on);
       if (!st.left && (!p.every || st.t > p.dur * 0.6)) st.res = 'solve';
@@ -313,6 +324,22 @@ const RAID_MECH = (() => {
     tick(st, p, dt) { st.g += p.rate * dt; if (st.g >= p.max) { st.g = 0; st.bad++; for (const w of Object.keys(P(st)).concat(Object.keys(P(st)).length ? [] : ['me'])) hurt(st, w, p.hurt, 'gauge'); say(st, '泡泡爆炸了！', '#ffe070'); if (st.bad > p.maxBad) st.res = 'fail'; } },
     bar: (st, p) => ({ k: st.g / p.max, label: p.label, col: '#ffe070' }) });
 
+  // 吸血（卢克西）：一个人被连线吸血，领主和他之间的连线上要有队友站着挡住——挡住了就由挡的人分担一半；没人挡 = 被吸的人每 tick 挨一下。两个人以上才有（minPlayers），一个人时用 alt 降级
+  def('leech', { defaults: { dur: 14, tick: 0.5, hurt: 0.06, share: 0.5, r: 64, swap: 7, maxBad: 8 }, minPlayers: 2, name: '吸血', hint: '被吸血的人要有队友站到他和领主的连线中间挡住', survive: true,
+    init(p, R, C) { const target = C.players[Math.floor(R() * C.players.length)]; return { target, blocker: null, bad: 0, acc: 0, sw: 0, anchor: null, rr: R, marks: [{ x: 0, y: 0, r: p.r, col: '#ffe070', label: '挡位', on: false, shape: 'ring', at: 'mid' }], out0: [{ k: 'status', who: target, id: 'leeched' }] }; },
+    seg(a, q, o) { const dx = a.x - q.x, dy = (a.y - q.y) / GRY, L2 = dx * dx + dy * dy; let k = L2 ? ((o.x - q.x) * dx + ((o.y - q.y) / GRY) * dy) / L2 : 0; k = clamp(k, 0, 1); return Math.hypot(o.x - (q.x + dx * k), (o.y - (q.y + dy * k * GRY)) / GRY); },
+    on(st, p, ev) { if (ev.k === 'pos') P(st)[ev.who] = { x: ev.x, y: ev.y }; else if (ev.k === 'anchor') st.anchor = { x: ev.x, y: ev.y }; },
+    tick(st, p, dt) {
+      const T = P(st)[st.target], m = st.marks[0]; if (!T || !st.anchor) return;
+      m.x = (T.x + st.anchor.x) / 2; m.y = (T.y + st.anchor.y) / 2;
+      st.blocker = null; for (const w in st.pl) if (w !== st.target && PUZ.leech.seg(st.anchor, T, st.pl[w]) < p.r) { st.blocker = w; break; }
+      m.on = !!st.blocker; m.label = st.blocker ? '已挡住' : '挡位';
+      st.sw += dt; if (st.sw >= p.swap && Object.keys(st.pl).length > 1) { st.sw = 0; const old = st.target, ws = Object.keys(st.pl).filter(w => w !== old); st.target = ws[Math.floor(st.rr() * ws.length)]; st.out.push({ k: 'unstatus', who: old, id: 'leeched' }, { k: 'status', who: st.target, id: 'leeched' }); }
+      st.acc += dt; if (st.acc < p.tick) return; st.acc -= p.tick;
+      if (st.blocker) hurt(st, st.blocker, p.hurt * p.share, 'leech', false); else { st.bad++; hurt(st, st.target, p.hurt, 'leech', false); if (st.bad > p.maxBad) st.res = 'fail'; }
+    },
+    onEnd(st) { st.out.push({ k: 'unstatus', who: st.target, id: 'leeched' }); } });
+
   // 吸入气息：12 点方向的气息柱，站进去累计 need 秒解开；但每个人头顶的条在柱子里会涨、离开会降，条满还在里面 = 大爆炸（希洛克的气息）
   def('absorb', { defaults: { need: 6, max: 100, fill: 28, cool: 30, hurt: 0.5, maxBad: 0, r: 52, dur: 24 }, name: '吸入气息', hint: '轮流进气息柱吸气：头顶的条满了要立刻出来',
     init(p, R, C) { return { prog: 0, g: {}, bad: 0, marks: [{ x: Math.round(C.W * (0.35 + 0.3 * R())), y: Math.round(C.D * 0.15), r: p.r, col: '#c080ff', label: '气息', on: true, shape: 'circle' }] }; },
@@ -333,12 +360,14 @@ const RAID_MECH = (() => {
   function scaleP(p, mode) { if (mode !== 'guide') return p; const q = { ...p }; if (q.hurt) q.hurt *= 0.5; if (q.dur) q.dur *= 1.25; return q; }
   function puzNew(spec, R, C) {
     const D = PUZ[spec.use]; if (!D) throw new Error('raid_mech: 没有谜题 ' + spec.use);
+    // minPlayers：人数不够时降级成 alt（简化版），没有 alt 就不出（返回 null）
+    if ((spec.minPlayers ?? D.minPlayers) > ((C.players || []).length || 1)) return spec.alt ? puzNew({ name: spec.name, ...spec.alt }, R, C) : null;
     const p = scaleP({ ...D.defaults, ...spec }, C.mode);
     const st = { id: spec.use, name: spec.name || D.name, hint: spec.hint || D.hint, p, t: 0, res: null, out: [], ...D.init(p, R, C) };
     if (st.out0) { st.out.push(...st.out0); delete st.out0; }
     return st;
   }
-  function puzEv(st, ev) { if (!st.res) PUZ[st.id].on(st, st.p, ev); }
+  function puzEv(st, ev) { if (ev.k === 'leave' && st.pl) delete st.pl[ev.who]; if (!st.res) PUZ[st.id].on(st, st.p, ev); }
   function puzTick(st, dt, R, C) {
     const D = PUZ[st.id]; if (st.ended) return;
     if (!st.res) { st.t += dt; if (D.tick) D.tick(st, st.p, dt, R, C); if (!st.res && st.p.dur && st.t >= st.p.dur) st.res = D.survive ? 'solve' : 'fail'; }
@@ -369,7 +398,7 @@ const RAID_MECH = (() => {
   function startCast(S) {
     const pz = pickWeak(S); if (!pz) return;
     if (pz.skipGuide && S.C.mode === 'guide') return;   // 官方引导模式去掉的机制（维塔 / 奈克斯的苏醒之路……）
-    S.cast = puzNew(pz, S.R, S.C); S.ph = 'cast'; S.phT = 0; S.stat.casts++;
+    const cz = puzNew(pz, S.R, S.C); if (!cz) return; S.cast = cz; S.ph = 'cast'; S.phT = 0; S.stat.casts++;
     const c = { ...(S.spec.cast || {}), ...(pz.cast || {}) }; S.out.push({ k: 'cast', id: S.cast.id, name: c.name || S.cast.name, dur: S.cast.p.dur || 0, puzzle: S.cast.name, hint: S.cast.hint });
     if (c.say) S.out.push({ k: 'say', text: c.say, col: '#ff9a7a' });
     if (S.spec.lines && S.spec.lines.cast) S.out.push({ k: 'line', id: 'cast', text: S.spec.lines.cast });
@@ -386,7 +415,7 @@ const RAID_MECH = (() => {
     const ev = io.ev || []; S.t += dt; S.phT += dt; if (io.hp != null) S.hp = io.hp;
     for (const e of ev) { if (S.cast) puzEv(S.cast, e); for (const s of S.side) puzEv(s, e); }
     // 定时机制招（不影响虚弱 / 灭团，只按各自的挨打结算）
-    if (S.ph === 'fight' || S.ph === 'cast') (S.spec.atk || []).forEach((a, i) => { S.atkT[i] -= dt; if (S.atkT[i] <= 0 && !S.side.some(s => s.atk === i)) { S.atkT[i] = range(a.every, S.R); const s = puzNew(a.puzzle, S.R, S.C); s.atk = i; S.side.push(s); S.out.push({ k: 'atk', id: s.id, name: s.name, hint: s.hint }); } });
+    if (S.ph === 'fight' || S.ph === 'cast') (S.spec.atk || []).forEach((a, i) => { S.atkT[i] -= dt; if (S.atkT[i] <= 0 && !S.side.some(s => s.atk === i)) { S.atkT[i] = range(a.every, S.R); const s = puzNew(a.puzzle, S.R, S.C); if (!s) return; s.atk = i; S.side.push(s); S.out.push({ k: 'atk', id: s.id, name: s.name, hint: s.hint }); } });
     for (const s of S.side) { puzTick(s, dt, S.R, S.C); S.out.push(...drain(s)); }
     S.side = S.side.filter(s => !s.res);
     if (S.ph === 'intro') { if (S.phT >= (S.spec.intro.dur || 0)) { S.ph = 'fight'; S.phT = 0; S.out.push({ k: 'invul', on: false }); const W = S.spec.weak; if (W && W.at) while (S.weakI < W.at.length && S.hp < W.at[S.weakI] - 0.05) S.weakI++; } }   // 进场时血量已经低于门槛（共享血量）：跳过那些门槛
@@ -402,7 +431,7 @@ const RAID_MECH = (() => {
   }
   // 调试 / 测试：立刻读条虚弱池第 i 个谜题、立刻放第 i 个定时机制招
   function forceCast(S, i) { if (S.cast) return false; S.pickI = i; S.ph = 'fight'; startCast(S); return !!S.cast; }
-  function forceAtk(S, i) { const a = (S.spec.atk || [])[i]; if (!a) return false; const s = puzNew(a.puzzle, S.R, S.C); s.atk = i; S.side.push(s); S.out.push({ k: 'atk', id: s.id, name: s.name, hint: s.hint }); return true; }
+  function forceAtk(S, i) { const a = (S.spec.atk || [])[i]; if (!a) return false; const s = puzNew(a.puzzle, S.R, S.C); if (!s) return false; s.atk = i; S.side.push(s); S.out.push({ k: 'atk', id: s.id, name: s.name, hint: s.hint }); return true; }
   const view = S => ({ ph: S.ph, t: +S.t.toFixed(2), phT: +S.phT.toFixed(2), cast: S.cast && { id: S.cast.id, t: S.cast.t, dur: S.cast.p.dur, name: S.cast.name, hint: S.cast.hint, text: puzText(S.cast), bar: puzBar(S.cast) }, side: S.side.map(s => ({ id: s.id, t: s.t, name: s.name, hint: s.hint, text: puzText(s), bar: puzBar(s) })) });
 
   return { rng, shuffle, gdist, ELEM, OPP, STATUS, puzBar, stAdd, stTick, stHas, stN, stDel, PUZ, puzNew, puzEv, puzTick, puzText, drain, scriptNew, scriptTick, view, forceCast, forceAtk, SCRIPT_DEF };

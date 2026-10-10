@@ -71,9 +71,9 @@ const SIROCO_RAID_SCRIPTS = {
     weak: { at: [0.55, 0.2], pool: [{ use: 'dps', name: '防御姿态', need: 0.05, dur: 10, onSolve: { dur: 0, say: '防御姿态被打破了！' }, cast: { name: '防御姿态（绝望技）' } }] },
     onFail: { frac: 1, down: true, say: '全屏爆炸！' }, lines: { intro: '……你们是来找回名字的吗？', cast: '退下！', low: '我的名字……' } },
   // 哈妮尔：虚弱三选一随机——魅惑之沼（清掉所有沼泽）/ 心灵之锁（按顺序踩 5 个法阵）/ 魅惑之舞（蓝条结束前打空橙条）；失败全屏秒杀 [233-黎]
-  //   分身：持心者站进分身脚下的紫阵 ~1 秒消除 [233-黎] → 定时机制招 clear（两人版没有“传心”，谁都能消）
+  //   分身：持心者站进分身脚下的紫阵 ~1 秒消除 [233-黎] → 定时机制招 clear + heart（两人以上红心在人之间传递、只有持心者能消阵；一个人时降级成谁都能消）
   siRaidBoss_haniel: { intro: { dur: 2.5, say: '魅惑之哈妮尔现身了' },
-    atk: [{ every: [30, 36], first: 20, puzzle: { use: 'clear', name: '分身之阵', n: 2, hold: 1, grow: 0, dur: 12, col: '#c060ff', failHurt: 0.2 } }],
+    atk: [{ every: [30, 36], first: 20, puzzle: { use: 'clear', name: '分身之阵', n: 2, hold: 1, grow: 0, dur: 12, col: '#c060ff', failHurt: 0.2, heart: true } }],
     weak: { at: [0.75, 0.5, 0.25], pick: 'random', pool: [
       { use: 'clear', name: '魅惑之沼', n: 3, every: 4, max: 6, grow: 5, hold: 1.5, dur: 20, col: '#ff6ad0' },
       { use: 'pads', name: '心灵之锁', n: 5, peek: 6, dur: 16, maxWrong: 3 },
@@ -84,9 +84,9 @@ const SIROCO_RAID_SCRIPTS = {
     weak: { at: [0.5, 0.2], pool: [{ use: 'realBody', name: '希洛克之舞', n: 5, dur: 12, every: 2.5, col: '#ff8ad8', maxWrong: 1 }] },
     onSolve: { dur: 6, mul: 1.5 }, lines: { intro: '第六发魔弹，送给你。', cast: '跳一支希洛克之舞吧！', solve: '被看穿了？' } },
   // 崔拉 & 昙娜：开心的玩球啦（黑白两球相撞 → 破防，否则全屏爆炸）；弹球（多段攻击打断 → 短暂破防）[91-界][NAMU-WIT]
-  //   两人版：两个球都由你引导到中间相撞（官方是两名玩家的连线交叉）【取舍】
+  //   each：两人以上每个球只认一个人（官方两名玩家各引一个）；一个人时降级成都由你引导【取舍】
   siRaidBoss_kulaTanna: { intro: { dur: 2.5, say: '崔拉和昙娜手拉着手出现了' },
-    weak: { at: [0.65, 0.3], pool: [{ use: 'guide', name: '开心的玩球啦', n: 2, dur: 22, label: '球', goalLabel: '相撞点' }, { use: 'dps', name: '弹球', need: 0.03, dur: 7, onSolve: { dur: 4 } }] },
+    weak: { at: [0.65, 0.3], pool: [{ use: 'guide', name: '开心的玩球啦', n: 2, dur: 22, label: '球', goalLabel: '相撞点', each: true }, { use: 'dps', name: '弹球', need: 0.03, dur: 7, onSolve: { dur: 4 } }] },
     onSolve: { dur: 6, mul: 1.5 }, lines: { intro: '一起玩吧！', cast: '开心的玩球啦！', solve: '撞、撞到了……' } },
   // 明皓：召唤玄武束缚（连打挣脱）；必杀：黑红齿轮滚两次（定时机制招：只有蹲下的人躲得过滚过来的齿轮 → 用 lanes 招式见技能表）；没有破防 [YW-昼][NAMU-WIT]【分歧：两组招式描述差异大，取 [YW-昼] 为主】
   siRaidBoss_myungho: { intro: { dur: 2.5, say: '万兽之皇明皓咆哮着' },
@@ -138,8 +138,9 @@ const SIROCO_RAID_SCRIPTS = {
   siRaidBoss_kain: { intro: { dur: 2.5, say: '迷雾中的暗杀者凯恩' },
     weak: { at: [0.6, 0.25], pool: [{ use: 'realBody', name: '残影', n: 4, rounds: 3, dur: 22, every: 2.2, col: '#8a8aa0', maxWrong: 2 }] }, onSolve: { dur: 8, mul: 1.5 },
     lines: { intro: '……', cast: '看得见我吗？', solve: '啧。' } },
-  // 第 1 界 · 忘却（卢克西）：无敌期间拿宝玉撞她（共鸣 / 增伤由 P1 的规则核心处理）[PKVS-P2][NAMU-C1]；吸血（挡黄血）两人版做不了 → 没做【取舍】
+  // 第 1 界 · 忘却（卢克西）：无敌期间拿宝玉撞她（共鸣 / 增伤由 P1 的规则核心处理）[PKVS-P2][NAMU-C1]；吸血：被连线的人要有队友站到连线中间挡住（leech，两人以上；一个人时降级成连线拉开距离 tether）
   siRaidBoss_luxi: { intro: { dur: 2.5 },
+    atk: [{ every: [26, 32], first: 14, puzzle: { use: 'leech', name: '吸血', dur: 14, alt: { use: 'tether', name: '吸血', dur: 8, min: 220 } } }],
     weak: { at: [0.7, 0.35], pool: [{ use: 'gem', name: '宝玉撞击', n: 2, toBoss: true, dur: 24, label: '宝玉', altarLabel: '卢克西' }] }, onSolve: { dur: 8, mul: 1.5 },
     lines: { intro: '我会让你们忘掉一切。', cast: '来啊，撞过来！' } },
   // 真理的意识之棺 · 基里：绝望技「灵魂抽取」（灵魂换到别人身体里 → 只打同色的魂，中途互换）[NAMU-C1]

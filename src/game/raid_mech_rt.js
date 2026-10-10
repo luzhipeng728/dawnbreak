@@ -5,7 +5,9 @@
      输入：本机玩家位置 / 朝向 / 是否蹲下（按住 ↓）/ 连打攻击、领主位置、打到物件 / 物件被打碎、被领主打中
      输出：谜题物件（msObjDef 程序画的水晶 / 心脏 / 图腾 / 墓碑）按 objs 生成和回收，地面标记（板 / 地砖 / 气泡 / 祭坛 / 光球 / 护罩圈）按 marks 画，
           挨打按最大 HP 结算（普通难度 ×0.6），状态翻译成异常（定身 / 减速 / 眩晕 / 失明），读条 / 虚弱 / 灭团 / 台词 / BGM 节拍
-   只在主机（单人实例就是自己）跑；组队时队员那边看不到谜题（docs/RAID_SIROCO.md §10 “还没做”）。
+    只在主机跑（单人实例就是自己）；同房全部玩家都是输入：本机 = 'me'、组队队员 = 他的 uid（主机上的影子位置 / 队员自己上报的蹲下·连打·受击 rmin）。
+    组队：主机每 200ms 把物件 / 地面标记 / HUD 数据（netState）镜像给队员，挨打 / 状态 / 传送 / 台词用 msNetEv 发给对应的人，队员自己结算（mirror）。
+    只有一个人时自动降级：哈妮尔传心 / 崔拉&昙娜各引一球 / 卢克西吸血挡位这些多人机制回到简化版（raid_mech.js 里的 minPlayers / alt）。
    ===================================================================== */
 Object.assign(MON, {
   rmObj_crystal: msObjDef('水晶', { shape: 'crystal', col: '#b890ff', h: 84 }),
@@ -14,6 +16,42 @@ Object.assign(MON, {
   rmObj_pillar: msObjDef('墓碑', { shape: 'pillar', col: '#b08a5a', h: 100, botSkip: true }),
 });
 const RM_EFF_DUR = 99;
+// ---- 多人：谁在这个房间里 ----
+// 主机 / 单机：[['me', 本机玩家], [队员 uid, 队员影子]…]；队员客户端不跑脚本（只镜像）
+function rmRoster() {
+  const L = [['me', msSelf()]];
+  if (typeof coop !== 'undefined' && coop.role === 'host' && coop.state === 'play') for (const [uid, g] of coop.mates) L.push([String(uid), g]);
+  return L.filter(([, e]) => e && !e.dead && !e.away);
+}
+const rmWho = e => (e && e.ghost ? String(e.uid) : 'me');
+function rmEnt(who) {
+  if (who === 'me') return msSelf();
+  if (typeof coop === 'undefined') return null;
+  for (const [uid, g] of coop.mates) if (String(uid) === who) return g;
+  return null;
+}
+// 按人结算挨打：本机直接扣，队员由主机发消息、队员自己算（队友的影子由队友自己的客户端结算）
+function rmHurtWho(m, st, who, frac, down) {
+  if (frac <= 0) return;
+  if (who === 'me') { rmHurt(m, msSelf(), frac, down); return; }
+  const e = rmEnt(who); if (!e || e.dead || e.away) return;
+  msNetEv(m, st, 'hurt', { w: who, f: +frac.toFixed(4), d: down ? 1 : 0 });
+}
+// 灭团：同房每个人都挨一遍
+function rmWipeAll(m, st, frac, down) { for (const [who] of rmRoster()) rmHurtWho(m, st, who, frac, down); }
+// 队员上报（只发给主机）：蹲下 / 连打 / 被打中。队员客户端在 mirror.update 里发，主机在 coop.onRelay 里收
+let rmRelayHooked = false;
+function rmNetInit() {
+  if (rmRelayHooked || typeof coop === 'undefined') return; rmRelayHooked = true;
+  const prev = coop.onRelay;
+  coop.onRelay = function (from, d) {
+    if (d && d.k === 'rmin') { if (this.role === 'host') rmMateIn(from, d); return; }
+    return prev.call(this, from, d);
+  };
+}
+const rmMateBuf = {};   // uid → { c: 蹲下, t: 收到的时间, m: 连打次数, h: 被打中次数 }
+function rmMateIn(uid, d) { const b = rmMateBuf[uid] ??= { c: 0, t: 0, m: 0, h: 0 }; b.c = d.c ? 1 : 0; b.t = game.t || 0; b.m += Math.min(5, d.m | 0); b.h += Math.min(5, d.h | 0); }
+function rmMateGet(uid) { const b = rmMateBuf[uid]; return b && (game.t || 0) - b.t < 0.7 ? b : null; }
 // 本机玩家是否蹲下：按住 ↓ 0.12 秒以上、在地上（机器人 / 测试可以直接设 p.raidCrouch）
 const rmCrouch = p => !!(p && (p.raidCrouch || (typeof input !== 'undefined' && p === (game.realPlayer || game.player) && input.heldFor('down') > 0.12)) && (p.z || 0) < 4);
 // 按最大 HP 结算的伤害（down = 打倒）
@@ -35,9 +73,9 @@ function rmCue(m) {
 function rmMarksFx(m, st) {
   return addFx({ x: 0, y: -1e5, z: 0, dur: 1e9, st,
     // 领主倒下 / 被移走：机制不会再 update，这里收尾（谜题物件也算房间里的怪，不收会卡住通关）
-    update() { if (!st.ended && (m.dead || (m.remove && !m.msHidden) || !ents.includes(m) && !m.msHidden)) { st.done = st.ended = true; BOSS_MECHS.raidScript.end(m, st); this.dur = 0; } },
+    update() { if (st.mirror) { if (st.done) this.dur = 0; return; } if (!st.ended && (m.dead || (m.remove && !m.msHidden) || !ents.includes(m) && !m.msHidden)) { st.done = st.ended = true; BOSS_MECHS.raidScript.end(m, st); this.dur = 0; } },
     draw(c) {
-    const S = this.st.S, L = []; if (S.cast && S.cast.marks) L.push(...S.cast.marks); for (const s of S.side) if (s.marks) L.push(...s.marks);
+    const L = rmMarkList(this.st);
     const P = msSelf(), now = game.t || 0;
     for (const mk of L) {
       const X = sx(mk.x), Y = sy(mk.y, 0), on = !!mk.on, a = on ? 0.5 + 0.2 * Math.sin(now * 6) : 0.3;
@@ -59,16 +97,25 @@ function rmMarksFx(m, st) {
       if (mk.label) { const ly = Y - (mk.shape === 'orb' ? 42 : 4); if (mk.label.length <= 2) uiTextWorld(c, mk.label, X, ly + 10, on ? '#fff6c0' : '#e8e0f8'); else uiTextWorld2(c, mk.label, X, ly, on ? '#fff6c0' : '#d8d0e8'); }
     }
     // 连线：领主 → 本机玩家（太近变红）
-    for (const s of S.side.concat(S.cast ? [S.cast] : [])) if (s.id === 'tether' && P && s.anchor) { const near = gdistXY(P, s.anchor) < s.p.min; c.save(); c.strokeStyle = near ? '#ff4a4a' : '#7affd0'; c.lineWidth = 3; c.globalAlpha = 0.8; c.setLineDash([6, 6]); c.lineDashOffset = -now * 40; c.beginPath(); c.moveTo(sx(s.anchor.x), sy(s.anchor.y, 70)); c.lineTo(sx(P.x), sy(P.y, 50)); c.stroke(); c.restore(); }
+    const TT = rmTether(this.st); if (TT && P) { const near = gdistXY(P, TT) < TT.min; c.save(); c.strokeStyle = near ? '#ff4a4a' : '#7affd0'; c.lineWidth = 3; c.globalAlpha = 0.8; c.setLineDash([6, 6]); c.lineDashOffset = -now * 40; c.beginPath(); c.moveTo(sx(TT.x), sy(TT.y, 70)); c.lineTo(sx(P.x), sy(P.y, 50)); c.stroke(); c.restore(); }
   } });
+}
+function rmMarkList(st) {
+  if (!st.S) return st.M || [];
+  const S = st.S, L = []; if (S.cast && S.cast.marks) L.push(...S.cast.marks); for (const s of S.side) if (s.marks) L.push(...s.marks); return L;
+}
+function rmTether(st) {
+  if (!st.S) return st.tt || null;
+  const S = st.S; for (const s of S.side.concat(S.cast ? [S.cast] : [])) if (s.id === 'tether' && s.anchor) return { x: s.anchor.x, y: s.anchor.y, min: s.p.min };
+  return null;
 }
 const gdistXY = (a, b) => Math.hypot(a.x - b.x, (a.y - b.y) / GR);
 function rmRaidMode() { return typeof raidNet !== 'undefined' && raidNet.S && raidNet.S.graph === 'guide' ? 'guide' : 'normal'; }
 
 defineBossMech('raidScript', { defaults: {},
   start(m, st, p) {
-    st.S = RAID_MECH.scriptNew(p, Math.floor(Math.random() * 1e9), { W: msRoomW(), D: DEPTH, mode: p.mode || rmRaidMode(), players: ['me'] });
-    st.ents = {}; st.q = []; st.ps = {}; st.php = null; st.intro = false; st.brk = 0; st.rest = 0; st.restWait = null; st.p = p; st.log = [];
+    st.S = RAID_MECH.scriptNew(p, Math.floor(Math.random() * 1e9), { W: msRoomW(), D: DEPTH, mode: p.mode || rmRaidMode(), players: rmRoster().map(r => r[0]) });
+    rmNetInit(); st.known = new Set(['me']); st.ents = {}; st.q = []; st.ps = {}; st.php = null; st.intro = false; st.brk = 0; st.rest = 0; st.restWait = null; st.p = p; st.log = [];
     st.fx = rmMarksFx(m, st);
     if (p.orderCue) { const k = rmRaidOrder(); if (k) { msSay(m, `吸入了 ${k} 个灵魂`, '#e0c0ff', 15); for (let i = 0; i < k; i++) rmSoulFx(m, i); } }
     rmApply(m, st, RAID_MECH.scriptTick(st.S, 0, { hp: m.hp / m.hpMax }));
@@ -78,18 +125,29 @@ defineBossMech('raidScript', { defaults: {},
     // 子弹时间里领主的 dt 已经变慢（谜题时限 / 虚弱跟着延长 = 官方“用无之轨迹延长机制时间”）；rdt = 真实时间（玩家的状态、子弹时间本身）
     const rdt = rmBtRealDt(m, dt), sdt = st.S.ph === 'break' && p.btNoBreak ? rdt : dt;   // btNoBreak：子弹时间不能延长虚弱（维塔 [NAMU-PAIN]）
     rmBtTick(m, st, rdt);
-    const P = msSelf(), ev = st.q.splice(0);
-    if (P && !P.dead) {
-      ev.push({ k: 'pos', who: 'me', x: P.x, y: P.y, face: P.face, z: P.z || 0, crouch: rmCrouch(P) });
-      if (RAID_MECH.stHas(st.ps, 'buried') && (P.raidMash || (typeof input !== 'undefined' && input.hit('attack')))) { P.raidMash = false; ev.push({ k: 'mash', who: 'me' }); }
-      if (st.php != null && P.hp < st.php - 0.5) ev.push({ k: 'hurt', who: 'me' });
-      st.php = P.hp;
+    const ev = st.q.splice(0), roster = rmRoster(), alive = new Set();
+    for (const [who, e] of roster) {
+      alive.add(who);
+      if (who === 'me') {
+        ev.push({ k: 'pos', who, x: e.x, y: e.y, face: e.face, z: e.z || 0, crouch: rmCrouch(e) });
+        if (RAID_MECH.stHas(st.ps, 'buried') && (e.raidMash || (typeof input !== 'undefined' && input.hit('attack')))) { e.raidMash = false; ev.push({ k: 'mash', who }); }
+        if (st.php != null && e.hp < st.php - 0.5) ev.push({ k: 'hurt', who });
+        st.php = e.hp;
+      } else {
+        const b = rmMateGet(who);
+        ev.push({ k: 'pos', who, x: e.x, y: e.y, face: e.face, z: e.z || 0, crouch: !!(b && b.c) });
+        const bb = rmMateBuf[who]; if (bb) { for (; bb.m > 0; bb.m--) ev.push({ k: 'mash', who }); for (; bb.h > 0; bb.h--) ev.push({ k: 'hurt', who }); }
+      }
     }
+    for (const w of [...st.known]) if (!alive.has(w)) { st.known.delete(w); ev.push({ k: 'leave', who: w }); }
+    for (const w of alive) st.known.add(w);
+    st.S.C.players = [...alive];
     ev.push({ k: 'anchor', x: m.x, y: m.y, face: m.face });
     for (const key of Object.keys(st.ents)) {
       const e = st.ents[key], [tag, i] = key.split(':');
-      if (e.dead || e.remove || e.hp <= 0) { if (!e.__rmGone) ev.push({ k: 'kill', tag, i: +i, who: 'me' }); delete st.ents[key]; continue; }
-      if (e.hp < e.__rmHp) { ev.push({ k: 'hit', tag, i: +i, who: 'me' }); if (e.__rmKeep) e.hp = e.hpMax; }
+      const by = rmWho(e.lastHitBy);
+      if (e.dead || e.remove || e.hp <= 0) { if (!e.__rmGone) ev.push({ k: 'kill', tag, i: +i, who: by }); delete st.ents[key]; continue; }
+      if (e.hp < e.__rmHp) { ev.push({ k: 'hit', tag, i: +i, who: by }); e.lastHitBy = null; if (e.__rmKeep) e.hp = e.hpMax; }
       e.__rmHp = e.hp;
     }
     rmApply(m, st, RAID_MECH.scriptTick(st.S, sdt, { hp: m.hp / m.hpMax, ev }));
@@ -106,7 +164,7 @@ defineBossMech('raidScript', { defaults: {},
     if (st.S.ph === 'cast') { m.aiCd = Math.max(m.aiCd || 0, 0.3); if (Math.random() < 0.25) fxCharge(m, '#c080ff'); }
     if (st.brk > 0) { st.brk -= sdt; m.stun = Math.max(m.stun || 0, Math.min(0.3, st.brk)); m.aiCd = Math.max(m.aiCd || 0, 0.3); if (m.st !== 'hit' && m.st !== 'air' && m.st !== 'down') m.setState('hit'); }
   },
-  onHit(m, st, dmg, a) { if (st.q && a && (a.team === 'p' || (a.owner && a.owner.team === 'p'))) st.q.push({ k: 'hit', tag: 'boss', who: 'me' }, { k: 'dmg', frac: (dmg || 0) / m.hpMax, who: 'me' }); },
+  onHit(m, st, dmg, a) { if (st.q && a && (a.team === 'p' || (a.owner && a.owner.team === 'p'))) { const who = rmWho(a.ghost ? a : a.owner && a.owner.ghost ? a.owner : null); st.q.push({ k: 'hit', tag: 'boss', who }, { k: 'dmg', frac: (dmg || 0) / m.hpMax, who }); } },
   end(m, st) {
     if (!st.S) return;
     for (const e of Object.values(st.ents)) { e.__rmGone = true; e.remove = true; }
@@ -116,16 +174,57 @@ defineBossMech('raidScript', { defaults: {},
     if (m.__rmSpd != null) { m.speed = m.__rmSpd; m.__rmSpd = null; }
   },
   hud(c, m, st, x, y, w) {
-    if (!st.S) return 0;
-    const V = RAID_MECH.view(st.S); let h = 0;
-    if (V.ph === 'intro') { msBar(c, x, y, w, 1 - V.phT / (st.S.spec.intro.dur || 1), '#b890ff', '出场 · 无敌'); h += 16; }
-    if (V.cast) { const k = V.cast.dur ? 1 - V.cast.t / V.cast.dur : 1; msBar(c, x, y + h, w, k, '#ff7a5a', `${(st.S.spec.cast && st.S.spec.cast.name) || '读条'} · ${V.cast.name}`); uiText(`${V.cast.hint}${V.cast.text ? '　' + V.cast.text : ''}`, x + w / 2, y + h + 32, { size: 14, align: 'center', color: '#ffe0c0', sw: 3 }); h += 36; }
-    if (V.ph === 'break') { { const B = st.S.brkSpec || st.S.spec.onSolve; msBar(c, x, y + h, w, 1 - V.phT / B.dur, '#7aff9a', `虚弱！受到伤害 ×${B.mul}`); }; h += 16; }
+    let V, B, cn, idur;
+    if (st.S) { V = RAID_MECH.view(st.S); B = st.S.brkSpec || st.S.spec.onSolve; cn = st.S.spec.cast && st.S.spec.cast.name; idur = st.S.spec.intro.dur || 1; }
+    else if (st.V) { V = st.V; B = st.B || { dur: 1, mul: 1 }; cn = st.cn; idur = st.idur || 1; }   // 队员：主机发来的 HUD 数据
+    else return 0;
+    let h = 0;
+    if (V.ph === 'intro') { msBar(c, x, y, w, 1 - V.phT / idur, '#b890ff', '出场 · 无敌'); h += 16; }
+    if (V.cast) { const k = V.cast.dur ? 1 - V.cast.t / V.cast.dur : 1; msBar(c, x, y + h, w, k, '#ff7a5a', `${cn || '读条'} · ${V.cast.name}`); uiText(`${V.cast.hint}${V.cast.text ? '　' + V.cast.text : ''}`, x + w / 2, y + h + 32, { size: 14, align: 'center', color: '#ffe0c0', sw: 3 }); h += 36; }
+    if (V.ph === 'break') { msBar(c, x, y + h, w, 1 - V.phT / B.dur, '#7aff9a', `虚弱！受到伤害 ×${B.mul}`); h += 16; }
     for (const s of V.side) { uiText(`${s.name}：${s.hint}${s.text ? '　' + s.text : ''}`, x + w / 2, y + h + 14, { size: 14, align: 'center', color: '#ffb0a0', sw: 3 }); h += 18; }
     for (const b of [V.cast && V.cast.bar, ...V.side.map(s => s.bar)]) if (b) { msBar(c, x, y + h, w, b.k, b.col, b.label); h += 16; }   // 谜题自己的条：呼吸 / 护盾 / 聚集 / 吸入
     h += rmPoolHud(c, x, y + h, w);
     h += rmBtHud(c, x, y + h, w);
     return h;
+  },
+  // 组队同步：主机把 HUD / 地面标记 / 物件外观每 200ms 镜像给队员（coop_mech 的 netState），事件（挨打 / 状态 / 传送 / 台词）走 msNetEv
+  net(m, st) { return { r: 1 }; },
+  netState(st) {
+    const S = st.S; if (!S) return null;
+    const r = v => Math.round(v), mk = rmMarkList(st).map(q => ({ x: r(q.x), y: r(q.y), r: r(q.r || 0), w: q.w ? r(q.w) : undefined, h: q.h ? r(q.h) : undefined, col: q.col, label: q.label || '', on: q.on ? 1 : 0, shape: q.shape })), TT = rmTether(st);
+    return { V: RAID_MECH.view(S), B: S.brkSpec || S.spec.onSolve, cn: S.spec.cast && S.spec.cast.name, idur: S.spec.intro.dur || 1, M: mk, tt: TT && { x: r(TT.x), y: r(TT.y), min: TT.min },
+      O: Object.values(st.ents).filter(e => e.nid).map(e => ({ n: e.nid, s: e.__rmShape, c: e.__rmCol, l: e.name, g: e.__rmGlow ? 1 : 0 })) };
+  },
+  mirror: {
+    start(m, st) {
+      rmNetInit(); st.ps = {}; st.php = null; st.cin = 0; st.crc = false; st.fx = rmMarksFx(m, st);
+    },
+    update(m, st, p, dt) {
+      const P = game.player; if (!P) return;
+      for (const id of RAID_MECH.stTick(st.ps, dt)) rmStatusOff(st, id);
+      // 上报给主机：蹲下（变化或蹲着时每 0.2 秒一次）、连打、被打中
+      const crouch = rmCrouch(P), mash = RAID_MECH.stHas(st.ps, 'buried') && typeof input !== 'undefined' && input.hit('attack') ? 1 : 0, hurt = st.php != null && P.hp < st.php - 0.5 ? 1 : 0; st.php = P.hp;
+      st.cin = (st.cin || 0) - dt; st.mi = (st.mi || 0) + mash; st.hi = (st.hi || 0) + hurt;
+      if (typeof coop !== 'undefined' && (crouch !== st.crc || st.mi || st.hi || (crouch && st.cin <= 0))) { coop.send({ k: 'rmin', c: crouch ? 1 : 0, m: st.mi, h: st.hi }); st.crc = crouch; st.cin = 0.2; st.mi = st.hi = 0; }
+      // 物件外观（颜色 / 标签 / 发光）以主机为准
+      for (const o of st.O || []) { const e = typeof coop !== 'undefined' && coop.puppets.get(o.n); if (!e || e.dead) continue; if (o.l) e.name = o.l; e.__rmGlow = !!o.g; if (o.s && (e.__rmCol !== o.c || e.__rmShape !== o.s) && typeof MsObjModel !== 'undefined') { e.__rmCol = o.c; e.__rmShape = o.s; e.model = new MsObjModel(o.s, o.c, (MON['rmObj_' + o.s] || {}).h || 80); e.model.ent = e; } }
+    },
+    ev(m, st, p, e, d) {
+      const P = game.player, mine = typeof coop !== 'undefined' && d.w === String(coop.me());
+      switch (e) {
+        case 'hurt': if (mine && m && P) rmHurt(m, P, d.f, !!d.d); break;
+        case 'stOn': if (mine) rmStatusOn(st, d.id, d); break;
+        case 'stOff': if (mine) { RAID_MECH.stDel(st.ps, d.id); rmStatusOff(st, d.id); } break;
+        case 'tp': if (mine && P) { if (P.act) P.endAct(); P.x = clamp(d.x, 30, msRoomW() - 30); P.y = clamp(d.y, 0, DEPTH); P.vx = P.vy = 0; fxBurst(P.x, P.y, 30, 120, '#7affd0'); } break;
+        case 'say': if (P) fxText(d.t, P.x, P.y, P.z + P.h + 30, { col: d.c || '#ffe070', size: 14, dur: 1.4 }); break;
+        case 'cast': if (m) msSay(m, d.n, '#ff9a7a', 16); toastMsg(`${d.p}：${d.h}`, '#ffb08a'); sfx.boom(0.6); break;
+        case 'cue': rmCue(m); break;
+        case 'line': if (m) msSay(m, `「${d.t}」`, '#ffe8c0', 15); if (typeof chatSys === 'function') chatSys(`【${m ? m.name : '领主'}】${d.t}`); break;
+        case 'wipe': cam.flash = 0.35; cam.flashCol = '#ff4a4a'; cam.shake = Math.max(cam.shake, 14); sfx.boom(1.4); toastMsg('没能解开——灭团攻击！', '#ff6a6a'); break;
+      }
+    },
+    end(m, st) { if (st.fx) st.fx.dur = 0; if (st.ps) for (const id of Object.keys(st.ps)) rmStatusOff(st, id); },
   },
   test: { solve: null } });
 
@@ -136,18 +235,18 @@ function rmApply(m, st, out) {
     st.log.push({ k: o.k, id: o.id, t: +(game.t || 0).toFixed(2) }); if (st.log.length > 200) st.log.splice(0, 100);
     switch (o.k) {
       case 'invul': st.intro = o.on; if (o.on) { m.invul = Math.max(m.invul, 0.5); msSay(m, '出场 · 无敌', '#d8c0ff', 14); } else m.invul = 0; break;
-      case 'cast': m.msQueue = []; msSay(m, o.name, '#ff9a7a', 16); toastMsg(`${o.puzzle}：${o.hint}`, '#ffb08a'); sfx.boom(0.6); msLog('mech', m, { id: 'raid:' + o.id }); break;
+      case 'cast': m.msQueue = []; msSay(m, o.name, '#ff9a7a', 16); toastMsg(`${o.puzzle}：${o.hint}`, '#ffb08a'); sfx.boom(0.6); msLog('mech', m, { id: 'raid:' + o.id }); msNetEv(m, st, 'cast', { n: o.name, p: o.puzzle, h: o.hint }); break;
       case 'atk': msSay(m, o.name, '#ffb0a0', 14); toastMsg(`${o.name}：${o.hint}`, '#ffb0a0'); break;
       case 'break': st.brk = o.dur; m.msMul.raidBreak = o.mul; if (m.act) m.endAct(); m.superArmor = 0; m.setState('hit'); msGroggyFx(m); break;
       case 'unbreak': st.brk = 0; delete m.msMul.raidBreak; msSay(m, '虚弱结束', '#ffd8a0', 12); break;
-      case 'wipe': cam.flash = 0.35; cam.flashCol = '#ff4a4a'; cam.shake = Math.max(cam.shake, 14); sfx.boom(1.4); if (P) rmHurt(m, P, o.frac, o.down); toastMsg('没能解开——灭团攻击！', '#ff6a6a'); break;
-      case 'hurt': if (o.who === 'me' && P) rmHurt(m, P, o.frac * msPunishK(), o.down); break;
-      case 'status': if (o.who === 'me') rmStatusOn(st, o.id, o); break;
-      case 'unstatus': if (o.who === 'me') { RAID_MECH.stDel(st.ps, o.id); rmStatusOff(st, o.id); } break;
-      case 'tp': if (o.who === 'me' && P) { if (P.act) P.endAct(); P.x = clamp(o.x, 30, msRoomW() - 30); P.y = clamp(o.y, 0, DEPTH); P.vx = P.vy = 0; fxBurst(P.x, P.y, 30, 120, '#7affd0'); } break;
-      case 'say': if (P) fxText(o.text, P.x, P.y, P.z + P.h + 30, { col: o.col || '#ffe070', size: 14, dur: 1.4 }); break;
-      case 'line': msSay(m, `「${o.text}」`, '#ffe8c0', 15); if (typeof chatSys === 'function') chatSys(`【${m.name}】${o.text}`); break;
-      case 'cue': rmCue(m); break;
+      case 'wipe': cam.flash = 0.35; cam.flashCol = '#ff4a4a'; cam.shake = Math.max(cam.shake, 14); sfx.boom(1.4); rmWipeAll(m, st, o.frac, o.down); toastMsg('没能解开——灭团攻击！', '#ff6a6a'); msNetEv(m, st, 'wipe', {}); break;
+      case 'hurt': rmHurtWho(m, st, o.who, o.frac * msPunishK(), o.down); break;
+      case 'status': if (o.who === 'me') rmStatusOn(st, o.id, o); else if (rmEnt(o.who)) msNetEv(m, st, 'stOn', { w: o.who, id: o.id, n: o.n, dur: o.dur }); break;
+      case 'unstatus': if (o.who === 'me') { RAID_MECH.stDel(st.ps, o.id); rmStatusOff(st, o.id); } else if (rmEnt(o.who)) msNetEv(m, st, 'stOff', { w: o.who, id: o.id }); break;
+      case 'tp': if (o.who !== 'me') { if (rmEnt(o.who)) msNetEv(m, st, 'tp', { w: o.who, x: Math.round(o.x), y: Math.round(o.y) }); } else if (P) { if (P.act) P.endAct(); P.x = clamp(o.x, 30, msRoomW() - 30); P.y = clamp(o.y, 0, DEPTH); P.vx = P.vy = 0; fxBurst(P.x, P.y, 30, 120, '#7affd0'); } break;
+      case 'say': if (P) fxText(o.text, P.x, P.y, P.z + P.h + 30, { col: o.col || '#ffe070', size: 14, dur: 1.4 }); msNetEv(m, st, 'say', { t: o.text, c: o.col }); break;
+      case 'line': msSay(m, `「${o.text}」`, '#ffe8c0', 15); if (typeof chatSys === 'function') chatSys(`【${m.name}】${o.text}`); msNetEv(m, st, 'line', { t: o.text }); break;
+      case 'cue': rmCue(m); msNetEv(m, st, 'cue', {}); break;
       case 'skill': if (!m.act && !m.dead && monForceSkill(m, o.id) && st.p.rest) { st.restWait = game.t || 0; } break;
       case 'solve': case 'fail': msLog(o.k, m, { id: 'raid:' + o.id }); MS_STATS.mech['raid:' + o.id + (o.k === 'solve' ? 'Solve' : 'Fail')] = (MS_STATS.mech['raid:' + o.id + (o.k === 'solve' ? 'Solve' : 'Fail')] || 0) + 1; break;
     }
@@ -170,11 +269,12 @@ function rmSyncObjs(m, st) {
     const key = o.tag + ':' + o.i; if (!o.alive) continue; want.add(key);
     let e = st.ents[key];
     if (!e) {
-      const P = msSelf(), x = o.at ? (P ? P.x : m.x) : o.x, y = o.at ? (P ? P.y + 2 : m.y) : o.y;
+      const P = o.at && o.at !== true ? (rmEnt(o.at) || msSelf()) : msSelf(), x = o.at ? (P ? P.x : m.x) : o.x, y = o.at ? (P ? P.y + 2 : m.y) : o.y;
       e = spawnMonster('rmObj_' + o.shape, clamp(x, 40, msRoomW() - 40), clamp(y, 4, DEPTH - 4), { lvl: m.lvl });
       e.model = new MsObjModel(o.shape, o.col, (MON['rmObj_' + o.shape] || {}).h || 80); e.model.ent = e;
       e.hp = e.hpMax = o.hits || 3; msMulSet(e, 'hitHp', 1e-9); e.__rmHp = e.hp; e.__rmKeep = !!o.keep; e.invul = 0; e.aiCd = 1e9;
       if (o.label) e.name = o.label;
+      e.__rmShape = o.shape; e.__rmCol = o.col; e.lastHitBy = null;
       st.ents[key] = e;
     }
     e.__rmGlow = !!o.glow;

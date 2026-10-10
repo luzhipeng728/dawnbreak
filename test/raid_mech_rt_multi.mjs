@@ -12,7 +12,7 @@ await setupRaidLab(page);
 await page.evaluate(() => {
   window.NET = [];
   window.mkMate = (uid, x = 700, y = 100) => ({ ghost: true, uid, team: 'p', x, y, z: 0, face: 1, hp: 1000, hpMax: 1000, dead: false, away: false });
-  window.host = (mates) => { coop.role = 'host'; coop.state = 'play'; coop.mates.clear(); for (const g of mates) coop.mates.set(g.uid, g); window.NET.length = 0; msNet = (m, st, ev, d) => window.NET.push({ ev, d }); };
+  window.host = (mates) => { coop.role = 'host'; coop.state = 'play'; coop.mates.clear(); for (const g of mates) coop.mates.set(g.uid, g); window.NET.length = 0; msNet = (m, st, ev, d) => window.NET.push(ev === 'hook' && d.h === 'rmHurt' ? { ev: 'hurt', d } : { ev, d }); /* 挨打走钩子通道，记成 hurt */ };
   window.unhost = () => { coop.role = null; coop.state = 'none'; coop.mates.clear(); msNet = null; };
   window.spawnB = spec => { const m = T.spawn(spec); m.nid = 777; return m; };
 });
@@ -86,8 +86,8 @@ await page.evaluate(() => {
     const out = {}; out.marks = rmMarkList(gs).length; out.V = !!gs.V.cast;
     const cv = document.createElement('canvas'); cv.width = 1280; cv.height = 720; out.hud = M.hud(cv.getContext('2d'), guestM, gs, 560, 40, 800);
     const p = game.player; p.hp = p.hpMax; p.invul = 0; const myId = String(coop.me());
-    M.mirror.ev(m, gs, gs.p, 'hurt', { w: 'someone-else', f: 0.2, d: 0 }); out.other = p.hp === p.hpMax;
-    M.mirror.ev(m, gs, gs.p, 'hurt', { w: myId, f: 0.2, d: 0 }); out.mine = +(1 - p.hp / p.hpMax).toFixed(2);
+    MS_MIRROR.rmHurt(m, { w: 'someone-else', f: 0.2, d: 0 }); out.other = p.hp === p.hpMax;
+    MS_MIRROR.rmHurt(m, { w: myId, f: 0.2, d: 0 }); out.mine = +(1 - p.hp / p.hpMax).toFixed(2);
     gs.ps = {}; p.invul = 0; M.mirror.ev(m, gs, gs.p, 'stOn', { w: myId, id: 'buried' }); out.buried = !!gs.ps.buried && !!(p.status && p.status.root);
     M.mirror.ev(m, gs, gs.p, 'stOff', { w: myId, id: 'buried' }); out.free = !gs.ps.buried && !(p.status && p.status.root);
     window.__keepOn = true; return out;

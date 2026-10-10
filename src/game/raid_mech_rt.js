@@ -31,14 +31,17 @@ function rmEnt(who) {
   return null;
 }
 // 按人结算挨打：本机直接扣，队员由主机发消息、队员自己算（队友的影子由队友自己的客户端结算）
-function rmHurtWho(m, st, who, frac, down) {
+//   rmHurtWho(m, who, frac, down) / rmWipeAll(m, frac, down) 任何带 nid 的怪（领主 / 精英）都能调，走钩子通道（MS_MIRROR.rmHurt），不需要机制实例
+function rmHurtWho(m, who, frac, down) {
   if (frac <= 0) return;
   if (who === 'me') { rmHurt(m, msSelf(), frac, down); return; }
   const e = rmEnt(who); if (!e || e.dead || e.away) return;
-  msNetEv(m, st, 'hurt', { w: who, f: +frac.toFixed(4), d: down ? 1 : 0 });
+  msNetEv(m, null, 'hook', { h: 'rmHurt', w: who, f: +frac.toFixed(4), d: down ? 1 : 0 });
 }
 // 灭团：同房每个人都挨一遍
-function rmWipeAll(m, st, frac, down) { for (const [who] of rmRoster()) rmHurtWho(m, st, who, frac, down); }
+function rmWipeAll(m, frac, down) { for (const [who] of rmRoster()) rmHurtWho(m, who, frac, down); }
+// 队员那边（钩子通道）：只有目标是自己才结算
+MS_MIRROR.rmHurt = (m, D) => { if (typeof coop !== 'undefined' && D.w === String(coop.me()) && game.player) rmHurt(m, game.player, D.f, !!D.d); };
 // 队员上报（只发给主机）：蹲下 / 连打 / 被打中。队员客户端在 mirror.update 里发，主机在 coop.onRelay 里收
 let rmRelayHooked = false;
 function rmNetInit() {
@@ -213,7 +216,6 @@ defineBossMech('raidScript', { defaults: {},
     ev(m, st, p, e, d) {
       const P = game.player, mine = typeof coop !== 'undefined' && d.w === String(coop.me());
       switch (e) {
-        case 'hurt': if (mine && m && P) rmHurt(m, P, d.f, !!d.d); break;
         case 'stOn': if (mine) rmStatusOn(st, d.id, d); break;
         case 'stOff': if (mine) { RAID_MECH.stDel(st.ps, d.id); rmStatusOff(st, d.id); } break;
         case 'tp': if (mine && P) { if (P.act) P.endAct(); P.x = clamp(d.x, 30, msRoomW() - 30); P.y = clamp(d.y, 0, DEPTH); P.vx = P.vy = 0; fxBurst(P.x, P.y, 30, 120, '#7affd0'); } break;
@@ -239,8 +241,8 @@ function rmApply(m, st, out) {
       case 'atk': msSay(m, o.name, '#ffb0a0', 14); toastMsg(`${o.name}：${o.hint}`, '#ffb0a0'); break;
       case 'break': st.brk = o.dur; m.msMul.raidBreak = o.mul; if (m.act) m.endAct(); m.superArmor = 0; m.setState('hit'); msGroggyFx(m); break;
       case 'unbreak': st.brk = 0; delete m.msMul.raidBreak; msSay(m, '虚弱结束', '#ffd8a0', 12); break;
-      case 'wipe': cam.flash = 0.35; cam.flashCol = '#ff4a4a'; cam.shake = Math.max(cam.shake, 14); sfx.boom(1.4); rmWipeAll(m, st, o.frac, o.down); toastMsg('没能解开——灭团攻击！', '#ff6a6a'); msNetEv(m, st, 'wipe', {}); break;
-      case 'hurt': rmHurtWho(m, st, o.who, o.frac * msPunishK(), o.down); break;
+      case 'wipe': cam.flash = 0.35; cam.flashCol = '#ff4a4a'; cam.shake = Math.max(cam.shake, 14); sfx.boom(1.4); rmWipeAll(m, o.frac, o.down); toastMsg('没能解开——灭团攻击！', '#ff6a6a'); msNetEv(m, st, 'wipe', {}); break;
+      case 'hurt': rmHurtWho(m, o.who, o.frac * msPunishK(), o.down); break;
       case 'status': if (o.who === 'me') rmStatusOn(st, o.id, o); else if (rmEnt(o.who)) msNetEv(m, st, 'stOn', { w: o.who, id: o.id, n: o.n, dur: o.dur }); break;
       case 'unstatus': if (o.who === 'me') { RAID_MECH.stDel(st.ps, o.id); rmStatusOff(st, o.id); } else if (rmEnt(o.who)) msNetEv(m, st, 'stOff', { w: o.who, id: o.id }); break;
       case 'tp': if (o.who !== 'me') { if (rmEnt(o.who)) msNetEv(m, st, 'tp', { w: o.who, x: Math.round(o.x), y: Math.round(o.y) }); } else if (P) { if (P.act) P.endAct(); P.x = clamp(o.x, 30, msRoomW() - 30); P.y = clamp(o.y, 0, DEPTH); P.vx = P.vy = 0; fxBurst(P.x, P.y, 30, 120, '#7affd0'); } break;

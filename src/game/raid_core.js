@@ -404,8 +404,9 @@ const RAID_CORE = (() => {
   // 理智值（def.sanity = { max, restore }）：归零第一次 = 进小游戏恢复到 restore，第二次 = 倒下（客户端按 sanity fx 的 dead 处理）
   function sanityAdd(S, m, d, o) {
     const D = def(S).sanity; if (!D || !m || m.left || m.san == null) return;
-    const max = D.max || 100; m.san = Math.max(0, Math.min(max, m.san + d));
-    if (m.san > 0) { push(o, [m.uid], 'sanity', null, { v: m.san }); return; }
+    // 全团增益里的 sanMax（赛赫之类的功能图）= 理智上限加成
+    const max = (D.max || 100) + (S.gbuffs || []).reduce((a, b) => a + ((b.p && b.p.sanMax) || 0), 0); m.san = Math.max(0, Math.min(max, m.san + d));
+    if (m.san > 0) { push(o, [m.uid], 'sanity', null, { v: m.san, max }); return; }
     m.sanZ = (m.sanZ || 0) + 1;
     if (m.sanZ === 1) { m.san = D.restore ?? 50; push(o, [m.uid], 'sanity', null, { v: m.san, mini: true }); note(o, [m.uid], '理智值归零：进入小游戏恢复理智（再次归零会倒下）'); }
     else { push(o, [m.uid], 'sanity', null, { v: 0, dead: true }); note(o, 'all', `${m.name} 理智归零倒下了`); }

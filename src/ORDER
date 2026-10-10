@@ -157,6 +157,8 @@ game/mon_skills_ext.js
 # 团本领主机制运行时：BOSS_MECHS.raidScript，把 raid_mech 的事件翻译成物件 / 地面标记 / 挨打 / 状态（用到 msObjDef，要在 mon_skills_ext 后面）
 game/raid_mech_rt.js
 # 团本精英原语（破防条件 + 登记表 + 运行时挂载；dungeon.js 刷 elite 房时用 eliteSpec 调 raidEliteAttach）：用到 rmObj_* / msBar / msTicker，放在 raid_mech_rt 后面
+# 奥兹玛专属谜题（次元之门，往 RAID_MECH.PUZ 登记，docs/RAID_OZMA.md §6）
+game/raid_ozma_mech.js
 game/raid_elite.js
 game/region.js
 content/regions/darkelf_bosses.js

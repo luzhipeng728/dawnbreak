@@ -73,5 +73,17 @@ defineShop('siroco_raid', { name: '希洛克攻坚商店', markup: 1, greet: '�
   { name: '融合装备', goods: () => typeof SIROCO_RAID_GEAR !== 'undefined' ? SIROCO_RAID_GEAR.slice() : [] },
   { name: '团本补给', goods: ['hpM', 'hpL', 'mpM', 'mpL', 'elixir'] },
 ] });
+// 奥兹玛攻坚商店（营地 NPC，同希洛克：商店以金币结算，货币兑换走奖励接口）
+defineShop('ozma_raid', { name: '奥兹玛攻坚商店', markup: 1, greet: '混沌的怨念，换成称手的融合装备吧。', tabs: [
+  { name: '攻坚材料', goods: ['raid_ozma_grudge'] },
+  { name: '融合装备', goods: () => typeof OZMA_RAID_GEAR !== 'undefined' ? OZMA_RAID_GEAR.slice() : [] },
+  { name: '团本补给', goods: ['hpM', 'hpL', 'mpM', 'mpL', 'elixir'] },
+] });
+// 安徒恩攻坚商店：魔能矿 / 荒古融合核 + 三套融合装备（同样只做金币结算，团本货币走奖励接口）
+defineShop('anton_raid', { name: '安徒恩攻坚商店', markup: 1, greet: '魔能矿和荒古融合核，换成能在巨兽体内活下来的装备吧。', tabs: [
+  { name: '攻坚材料', goods: ['raid_magic_ore', 'raid_an_core'] },
+  { name: '融合装备', goods: () => typeof ANTON_RAID_GEAR !== 'undefined' ? ANTON_RAID_GEAR.slice() : [] },
+  { name: '团本补给', goods: ['hpM', 'hpL', 'mpM', 'mpL', 'elixir'] },
+] });
 defineShop('_default', { name: '杂货店', greet: '随便看看吧。', tabs: [
   { name: '药剂', goods: ['hpS', 'hpM', 'mpS', 'mpM'] }, { name: '杂货', goods: ['crystal', 'bread'] }] });

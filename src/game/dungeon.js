@@ -10,6 +10,15 @@ const DIFFS = [
 const RANKS = [['F', 0, 0], ['E', 35, 0], ['D', 45, 0], ['C', 55, 0], ['B', 65, 0.05], ['A', 75, 0.1], ['S', 85, 0.15], ['SS', 95, 0.2], ['SSS', 105, 0.3]];
 const RANK_COL = { F: '#8a8a8a', E: '#9a9a9a', D: '#b0b0b0', C: '#9ad0ff', B: '#6ab8ff', A: '#6aff9a', S: '#ffd23a', SS: '#ff9a2a', SSS: '#ff4a6a' };
 function rankOf(score) { let r = RANKS[0]; for (const x of RANKS) if (score >= x[1]) r = x; return r; }
+// 权重 0 的条目只用于素材预加载，不能作为普通怪或增援抽出。
+function dungeonMob(pool, random = Math.random) {
+  const choices = pool.filter(([, weight]) => weight > 0);
+  const total = choices.reduce((n, [, weight]) => n + weight, 0);
+  if (!total) return null;
+  let r = random() * total;
+  for (const [kind, weight] of choices) { r -= weight; if (r < 0) return kind; }
+  return choices[choices.length - 1][0];
+}
 
 /* ---- 生成房间网格：从起点随机游走到领主房，再加若干支路（def.fixed = 固定房间结构，见 genFixedLayout）---- */
 function genLayout(def, seed) {
@@ -122,9 +131,9 @@ class Dungeon {
     const lv = def.lvl[0] + Math.floor(R() * (def.lvl[1] - def.lvl[0] + 1));
     const o = { lvl: lv, mul: D.hp * this.hpMul, atkMul: D.atk, expMul: D.exp };
     const RS = room.spec || {}, pool = RS.mobs || def.mobs;   // 固定房间（genFixedLayout）可以单独写这个房间的小怪池 / 数量 / 准备房
-    const pick = () => { const tot = pool.reduce((s, m) => s + m[1], 0); let r = R() * tot; for (const m of pool) { r -= m[1]; if (r <= 0) return m[0]; } return pool[0][0]; };
+    const pick = () => dungeonMob(pool, R);
     const count = RS.prep ? 0 : RS.n ?? (room.type === 'start' ? 3 + Math.floor(R() * 2) : room.type === 'boss' ? def.bossAdds || 2 : room.type === 'elite' && RS.elite ? 0 : 4 + Math.floor(R() * 4));
-    for (let i = 0; i < count; i++) spawnMonster(pick(), 380 + R() * (W - 480), 20 + R() * (DEPTH - 40), o);
+    for (let i = 0; i < count; i++) { const kind = pick(); if (kind) spawnMonster(kind, 380 + R() * (W - 480), 20 + R() * (DEPTH - 40), o); }
     if (room.type === 'elite') {
       const em = spawnMonster(RS.elite || def.elite || pick(), W * 0.6, DEPTH / 2, { ...o, elite: true, lvl: lv + 1 });
       // 团本精英（game/raid_elite.js）：房间 / 地下城写了 eliteSpec（登记 id 或内联 spec）就挂上破防条件 + 专属技能；普通精英不受影响
@@ -137,7 +146,7 @@ class Dungeon {
       for (const P of def.bossProps || []) if (MON[P.kind]) spawnMonster(P.kind, P.x <= 1 ? W * P.x : P.x, (P.y ?? 0.5) <= 1 ? DEPTH * (P.y ?? 0.5) : P.y, { ...o, lvl: def.boss.lvl - 1 });   // 摆设里是怪物 id 的（投冰车、笼子……）由主机刷
     }
     // 第二波（大房间）
-    this.waves = room.type === 'normal' && W > 1500 && !RS.prep ? [{ n: 3 + Math.floor(R() * 2), o }] : [];
+    this.waves = room.type === 'normal' && W > 1500 && !RS.prep ? [{ n: 3 + Math.floor(R() * 2), o, pool }] : [];
   }
   update(dt) {
     this.t += dt;
@@ -158,7 +167,7 @@ class Dungeon {
     this.lastComboCounted = game.combo;
     const alive = ents.filter(e => e.team === 'e' && !e.dead).length;
     if (!this.guest && !this.room.cleared && alive === 0) {
-      if (this.waves && this.waves.length) { const w = this.waves.shift(); for (let i = 0; i < w.n; i++) spawnMonster(pick(this.def.mobs)[0], cam.x + rnd(80, WW - 80), rnd(20, DEPTH - 20), { ...w.o, drop: true }); }
+      if (this.waves && this.waves.length) { const w = this.waves.shift(); for (let i = 0; i < w.n; i++) { const kind = dungeonMob(w.pool || this.room.spec?.mobs || this.def.mobs); if (kind) spawnMonster(kind, cam.x + rnd(80, WW - 80), rnd(20, DEPTH - 20), { ...w.o, drop: true }); } }
       else if (this.room.type !== 'boss') { this.room.cleared = true; this.onCleared(false); }
     }
     // 门

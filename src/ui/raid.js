@@ -185,7 +185,8 @@ const raidUi = {
   },
   top() {
     const S = raidNet.S, D = raidNet.def(), P = raidNet.phase(), L = raidNet.limits, t = raidNet.now();
-    const live = S.st === 'routes' || S.st === 'final', maxL = (D.lives || {})[S.mode] || 6;
+    const live = S.st === 'routes' || S.st === 'final', lives = D.lives && typeof D.lives === 'object' ? D.lives[S.mode] ?? D.lives.normal : D.lives;
+    const maxL = (typeof lives === 'function' ? lives(S.nTeams || 1, S) : lives) ?? 6;
     const ph = { lobby: '大厅', rest: '休整', cleared: '团本通关', failed: '团本失败' }[S.st] || (P ? P.name : '');
     const cd = live ? raidCd(S.deadline, 'cd' + (S.deadline - t < 180000 ? ' warn' : '')) : S.st === 'rest' ? raidCd(S.restUntil, 'cd') : null;
     const nAct = S.members.filter(m => !m.left).length, mode = S.mode === 'guide' ? '引导（单人）' : S.graph === 'guide' ? '普通 · 单人' : S.tier === 'team' ? `多队 · ${S.nTeams} 队 ${nAct} 人` : '普通 · 2 人';

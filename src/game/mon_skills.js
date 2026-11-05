@@ -1003,6 +1003,12 @@ defineBossMech('protect', { defaults: { kind: 'msHeart', lives: 5, at: 'left', t
     const W = msRoomW(), x = typeof p.at === 'number' ? W * p.at : p.at === 'right' ? W - 120 : p.at === 'center' ? W / 2 : 120;
     const o = st.obj = spawnMonster(p.kind, x, DEPTH / 2, { lvl: m.lvl, ...skyMul() }); o.invul = 1e9; o.botSkip = true; o.noLoot = true; if (p.name) o.name = p.name; o.msProtect = st;
     st.lives = p.lives; st.spawnT = p.spawn ? (p.spawn.first ?? 2) : 1e9; st.tauntT = 0;
+    // 领主死亡后 AI 不再更新；独立检查也覆盖直接移除领主的路径。
+    msTicker(() => {
+      if (st.ended) return true;
+      if (!m.dead && (m.msHidden || !m.remove && ents.includes(m))) return false;
+      st.cancelled = true; msMechEnd(m, st); return true;
+    });
     if (p.say) { toastMsg(p.say, p.col); msSay(m, p.say, p.col, 15); }
     msProtectFx(m, st, p);
   },
@@ -1024,9 +1030,8 @@ defineBossMech('protect', { defaults: { kind: 'msHeart', lives: 5, at: 'left', t
     }
   },
   end(m, st, p) {
-    msMechResult(m, st, !st.lost);
-    if (st.lost) msProtectLose(m, st, p);
-    if (st.obj && !st.obj.dead && !p.keep) { st.obj.invul = 0; st.obj.remove = true; fxBurst(st.obj.x, st.obj.y, 50, 140, p.col); }
+    if (!st.cancelled) { msMechResult(m, st, !st.lost); if (st.lost) msProtectLose(m, st, p); }
+    if (st.obj && (st.cancelled || !st.obj.dead && !p.keep)) { st.obj.invul = 0; st.obj.remove = true; fxBurst(st.obj.x, st.obj.y, 50, 140, p.col); }
   },
   netState: st => ({ lives: st.lives }),
   mirror: { start(m, st, p) { st.lives = p.lives; if (p.say) toastMsg(p.say, p.col); }, ev(m, st, p, e, d) { if (e === 'tc') msProtectTouchFx({ x: d.x, y: d.y, z: 0, h: 80 }, p); if (e === 'lose' && m) msProtectLoseFx(m, st, p, true); if (e === 'arr') toastMsg(d.t, p.col); } },
